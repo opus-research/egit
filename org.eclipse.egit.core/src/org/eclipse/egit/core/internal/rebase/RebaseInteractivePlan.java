@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 SAP AG and others
+ * Copyright (c) 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Tobias Pfeifer (SAP AG) - initial implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 485511
  *******************************************************************************/
 package org.eclipse.egit.core.internal.rebase;
 
@@ -21,7 +20,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.egit.core.Activator;
@@ -104,7 +102,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 		public void planWasUpdatedFromRepository(RebaseInteractivePlan plan);
 	}
 
-	private CopyOnWriteArrayList<RebaseInteractivePlanChangeListener> planChangeListeners = new CopyOnWriteArrayList<RebaseInteractivePlanChangeListener>();
+	private ArrayList<RebaseInteractivePlanChangeListener> planChangeListeners = new ArrayList<RebaseInteractivePlanChangeListener>();
 
 	private List<PlanElement> todoList;
 
@@ -154,18 +152,16 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(this.repository);
-		if (entry != null) {
-			entry.addIndexDiffChangedListener(this);
-		}
+
+		entry.addIndexDiffChangedListener(this);
 	}
 
 	private void unregisterIndexDiffChangeListener() {
 		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(this.repository);
-		if (entry != null) {
-			entry.removeIndexDiffChangedListener(this);
-		}
+
+		entry.removeIndexDiffChangedListener(this);
 	}
 
 	private void registerRefChangedListener() {
@@ -176,7 +172,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	/**
 	 * Reparse plan when {@code IndexDiff} changed
 	 */
-	@Override
 	public void indexDiffChanged(Repository repo, IndexDiffData indexDiffData) {
 		if (RebaseInteractivePlan.this.repository == repo)
 			reparsePlan();
@@ -187,7 +182,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 *
 	 * @param event
 	 */
-	@Override
 	public void onRefsChanged(RefsChangedEvent event) {
 		Repository repo = event.getRepository();
 		if (this.repository == repo)
@@ -235,7 +229,9 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 */
 	public boolean addRebaseInteractivePlanChangeListener(
 			RebaseInteractivePlanChangeListener listener) {
-		return planChangeListeners.addIfAbsent(listener);
+		if (planChangeListeners.contains(listener))
+			return false;
+		return planChangeListeners.add(listener);
 	}
 
 	/**
@@ -961,26 +957,22 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 			modCount++;
 		}
 
-		@Override
 		public T get(int index) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			return rel.getList().get(rel.getRelativeIndex());
 		}
 
-		@Override
 		public T remove(int index) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			modCount++;
 			return rel.getList().remove(rel.getRelativeIndex());
 		}
 
-		@Override
 		public T set(int index, T element) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			return rel.getList().set(rel.getRelativeIndex(), element);
 		}
 
-		@Override
 		public int size() {
 			return firstList.size() + secondList.size();
 		}

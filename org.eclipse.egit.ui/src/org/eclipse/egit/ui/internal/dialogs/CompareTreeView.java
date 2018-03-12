@@ -28,9 +28,12 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.AdaptableFileTreeIterator;
+import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
@@ -272,9 +275,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
 						left, right, PlatformUI.getWorkbench()
 								.getActiveWorkbenchWindow().getActivePage());
-				Repository repository = getRepository();
 				CompareUtils.openInCompare(PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage(), repository,
+						.getActiveWorkbenchWindow().getActivePage(),
 						compareInput);
 			} else {
 				IFile file = fileNode.getFile();
@@ -533,7 +535,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			int baseTreeIndex;
 			if (baseCommit == null) {
 				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new FileTreeIterator(repository));
+				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
+						repository, ResourcesPlugin.getWorkspace().getRoot()));
 			} else
 				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
 						repository.newObjectReader(), baseCommit.getTree()));
@@ -633,7 +636,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				if (type != Type.FILE_BOTH_SIDES_SAME) {
 
 					file = ResourceUtil.getFileForLocation(repository,
-						repoRelativePath, false);
+						repoRelativePath);
 				}
 
 				if (baseVersionIterator != null) {
@@ -693,9 +696,10 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	private long getEntrySize(TreeWalk tw, AbstractTreeIterator iterator)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
-		if (iterator instanceof FileTreeIterator) {
+		if (iterator instanceof ContainerTreeIterator)
+			return ((ContainerTreeIterator) iterator).getEntryContentLength();
+		if (iterator instanceof FileTreeIterator)
 			return ((FileTreeIterator) iterator).getEntryContentLength();
-		}
 		try {
 			return tw.getObjectReader().getObjectSize(
 					iterator.getEntryObjectId(), Constants.OBJ_BLOB);
@@ -1093,7 +1097,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				PathNode pathNode = (PathNode) obj;
 				IResource resource = ResourceUtil
 						.getResourceForLocation(repoPath.append(pathNode
-								.getRepoRelativePath()), false);
+								.getRepoRelativePath()));
 				if (resource != null)
 					resources.add(resource);
 			}

@@ -158,7 +158,6 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 	private MenuItem[] fillMenu() {
 		final MenuItem[][] items = new MenuItem[1][];
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				Menu menu = new Menu(new Shell(Display.getDefault()));
 				switchToMenu.fill(menu, 0 /* index */);
@@ -169,7 +168,6 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 	}
 
 	private static class EmptySelection implements ISelection {
-		@Override
 		public boolean isEmpty() {
 			return true;
 		}
@@ -178,7 +176,6 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 	private static void assertTextEquals(final String expectedText,
 			final MenuItem item) {
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				assertEquals(expectedText, item.getText());
 			}
@@ -188,7 +185,6 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 	private static void assertStyleEquals(final int expectedStyle,
 			final MenuItem item) {
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				assertEquals(expectedStyle, item.getStyle());
 			}

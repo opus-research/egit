@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import static org.eclipse.egit.gitflow.Activator.error;
 import static org.eclipse.jgit.lib.Constants.*;
 
-import org.eclipse.egit.gitflow.GitFlowConfig;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
@@ -78,13 +77,17 @@ public final class ReleaseStartOperation extends AbstractReleaseOperation {
 								CoreText.ReleaseStartOperation_releaseNameAlreadyExists,
 								versionName)));
 			}
+			if (!repository.isDevelop()) {
+				throw new CoreException(
+						error(NLS.bind(CoreText.ReleaseStartOperation_notOn, repository.getConfig().getDevelop())));
+			}
 		} catch (IOException e) {
 			throw new CoreException(error(e.getMessage(), e));
 		}
 
 		RevCommit commit = repository.findCommit(startCommitSha1);
 		if (commit == null) {
-			throw new IllegalStateException(NLS.bind(CoreText.StartOperation_unableToFindCommitFor, startCommitSha1));
+			throw new IllegalStateException(NLS.bind(CoreText.ReleaseStartOperation_unableToFindCommit, commit));
 		}
 		start(monitor, branchName, commit);
 	}
@@ -122,11 +125,10 @@ public final class ReleaseStartOperation extends AbstractReleaseOperation {
 	}
 
 	private static String findHead(GitFlowRepository repository) {
-		GitFlowConfig config = repository.getConfig();
-		RevCommit head = repository.findHead(config.getDevelop());
-		if (head == null) {
-			throw new IllegalStateException(NLS.bind(CoreText.StartOperation_unableToFindCommitFor, config.getDevelop()));
+		try {
+			return repository.findHead().getName();
+		} catch (WrongGitFlowStateException e) {
+			throw new IllegalStateException(e);
 		}
-		return head.getName();
 	}
 }

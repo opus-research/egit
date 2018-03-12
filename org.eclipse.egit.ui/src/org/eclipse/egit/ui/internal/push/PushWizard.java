@@ -316,7 +316,7 @@ public class PushWizard extends Wizard {
 										.getActiveWorkbenchWindow().getShell();
 								final Dialog dialog = new PushResultDialog(
 										shell, localDb, result,
-										destinationString, false);
+										destinationString);
 								dialog.open();
 							}
 						});

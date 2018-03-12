@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -59,7 +60,6 @@ public class AddToIndexOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -91,7 +91,6 @@ public class AddToIndexOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
 	 */
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
@@ -106,7 +105,9 @@ public class AddToIndexOperation implements IEGitOperation {
 		if (command == null) {
 			Repository repo = map.getRepository();
 			Git git = new Git(repo);
-			command = git.add();
+			AdaptableFileTreeIterator it = new AdaptableFileTreeIterator(repo,
+					resource.getWorkspace().getRoot());
+			command = git.add().setWorkingTreeIterator(it);
 			addCommands.put(map, command);
 		}
 		String filepattern = map.getRepoRelativePath(resource);

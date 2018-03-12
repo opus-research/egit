@@ -13,11 +13,11 @@ import static org.eclipse.egit.gitflow.GitFlowDefaults.FEATURE_PREFIX;
 import static org.eclipse.egit.gitflow.GitFlowDefaults.HOTFIX_PREFIX;
 import static org.eclipse.egit.gitflow.GitFlowDefaults.RELEASE_PREFIX;
 import static org.eclipse.egit.gitflow.GitFlowDefaults.VERSION_TAG;
-import static org.eclipse.jgit.lib.Constants.DOT_GIT;
 import static org.eclipse.jgit.lib.Constants.R_HEADS;
+import static org.eclipse.jgit.lib.Constants.DOT_GIT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 
@@ -30,7 +30,6 @@ import org.eclipse.egit.gitflow.op.ReleaseFinishOperation;
 import org.eclipse.egit.gitflow.op.ReleaseStartOperation;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.Test;
 
 public class GitFlowRepositoryTest extends AbstractDualRepositoryTestCase {
@@ -122,47 +121,17 @@ public class GitFlowRepositoryTest extends AbstractDualRepositoryTestCase {
 		Repository repository = repository1.getRepository();
 		GitFlowRepository gfRepo = new GitFlowRepository(repository);
 
-		InitParameters initParameters = new InitParameters();
-		initParameters.setDevelop(DEVELOP);
-		initParameters.setMaster(GitFlowDefaults.MASTER);
-		initParameters.setFeature(FEATURE_PREFIX);
-		initParameters.setRelease(RELEASE_PREFIX);
-		initParameters.setHotfix(HOTFIX_PREFIX);
-		initParameters.setVersionTag(VERSION_TAG);
-		new InitOperation(repository, initParameters).execute(null);
+		new InitOperation(repository, DEVELOP, GitFlowDefaults.MASTER,
+				FEATURE_PREFIX, RELEASE_PREFIX, HOTFIX_PREFIX, VERSION_TAG)
+				.execute(null);
 
 		assertTrue(gfRepo.getFeatureBranches().isEmpty());
 
 		new FeatureStartOperation(gfRepo, MY_FEATURE).execute(null);
 
-		Ref actualFeatureRef = repository.exactRef(R_HEADS
+		Ref actualFeatureRef = repository.getRef(R_HEADS
 				+ gfRepo.getConfig().getFeaturePrefix() + MY_FEATURE);
 		assertEquals(MY_FEATURE, gfRepo.getFeatureBranchName(actualFeatureRef));
 	}
 
-
-	@Test
-	public void testIsOnDevelop() throws Exception {
-		Repository repository = repository1.getRepository();
-		GitFlowRepository gfRepo = new GitFlowRepository(repository);
-
-		InitParameters initParameters = new InitParameters();
-		initParameters.setDevelop(DEVELOP);
-		initParameters.setMaster(GitFlowDefaults.MASTER);
-		initParameters.setFeature(FEATURE_PREFIX);
-		initParameters.setRelease(RELEASE_PREFIX);
-		initParameters.setHotfix(HOTFIX_PREFIX);
-		initParameters.setVersionTag(VERSION_TAG);
-		repository1.checkoutBranch(gfRepo.getConfig().getDevelop());
-
-		RevCommit developBranchCommit = repository1.commit("develop branch commit");
-		assertTrue(gfRepo.isOnDevelop(developBranchCommit));
-
-		new FeatureStartOperation(gfRepo, MY_FEATURE).execute(null);
-		RevCommit featureBranchCommit = repository1.commit("feature branch commit");
-		assertFalse(gfRepo.isOnDevelop(featureBranchCommit));
-
-		// the initial commit was made on master, but is also on develop
-		assertTrue(gfRepo.isOnDevelop(initialCommit));
-	}
 }

@@ -2,7 +2,6 @@
  * Copyright (c) 2000, 2012 IBM Corporation and others.
  * Copyright (C) 2009, Tor Arne Vestbø <torarnv@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +11,7 @@
 package org.eclipse.egit.ui.internal.preferences;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,13 +25,12 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
-import org.eclipse.egit.ui.internal.decorators.DecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.DecorationResult;
-import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
+import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
+import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetLabelProvider;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
@@ -54,7 +53,6 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -108,52 +106,46 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 	private static final Map<String, String> CHANGESET_LABEL_BINDINGS;
 
-	private IPropertyChangeListener themeListener;
-
-	/**
-	 * Listens to changes in the date preferences and updates the
-	 * changeSetPreview if the preferences change.
-	 */
-	private IPropertyChangeListener uiPrefsListener;
+	private static IPropertyChangeListener themeListener;
 
 	static {
 		final PreviewResource project = new PreviewResource(
-				"Project", IResource.PROJECT, "repository" + '|' + RepositoryState.MERGING.getDescription(), "master", "↑2 ↓1", true, false, true, StagingState.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				"Project", IResource.PROJECT, "repository" + '|' + RepositoryState.MERGING.getDescription(), "master", "↑2 ↓1", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		final ArrayList<PreviewResource> children = new ArrayList<PreviewResource>();
 
 		children
 				.add(new PreviewResource(
-						"folder", IResource.FOLDER, "repository", null, null, true, false, true, StagingState.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"folder", IResource.FOLDER, "repository", null, null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"tracked.txt", IResource.FILE, "repository", null, null, true, false, false, StagingState.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"tracked.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"untracked.txt", IResource.FILE, "repository", null, null, false, false, false, StagingState.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"untracked.txt", IResource.FILE, "repository", null, null, false, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"ignored.txt", IResource.FILE, "repository", null, null, false, true, false, StagingState.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"ignored.txt", IResource.FILE, "repository", null, null, false, true, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"dirty.txt", IResource.FILE, "repository", null, null, true, false, true, StagingState.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"dirty.txt", IResource.FILE, "repository", null, null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"staged.txt", IResource.FILE, "repository", null, null, true, false, false, StagingState.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"staged.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"partially-staged.txt", IResource.FILE, "repository", null, null, true, false, true, StagingState.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"partially-staged.txt", IResource.FILE, "repository", null, null, true, false, true, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"added.txt", IResource.FILE, "repository", null, null, true, false, false, StagingState.ADDED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"added.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.ADDED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"removed.txt", IResource.FILE, "repository", null, null, true, false, false, StagingState.REMOVED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"removed.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.REMOVED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"conflict.txt", IResource.FILE, "repository", null, null, true, false, true, StagingState.NOT_STAGED, true, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"conflict.txt", IResource.FILE, "repository", null, null, true, false, true, Staged.NOT_STAGED, true, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"assume-unchanged.txt", IResource.FILE, "repository", null, null, true, false, false, StagingState.NOT_STAGED, false, true)); //$NON-NLS-1$ //$NON-NLS-2$
+						"assume-valid.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.NOT_STAGED, false, true)); //$NON-NLS-1$ //$NON-NLS-2$
 		project.children = children;
 		PREVIEW_FILESYSTEM_ROOT = Collections.singleton(project);
 
@@ -262,18 +254,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		};
 		PlatformUI.getWorkbench().getThemeManager().addPropertyChangeListener(
 				themeListener);
-
-		uiPrefsListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (UIPreferences.DATE_FORMAT.equals(property)
-						|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
-					changeSetPreview.refresh();
-				}
-			}
-		};
-		getPreferenceStore().addPropertyChangeListener(uiPrefsListener);
 
 		Dialog.applyDialogFont(parent);
 
@@ -437,6 +417,14 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private final FormatEditor changeSetLabelFormat;
 
+		private final Text dateFormat;
+
+		private final Label dateFormatPreview;
+
+		private final Date exampleDate = new Date();
+
+		private boolean formatValid;
+
 		public OtherDecorationTab(TabFolder parent) {
 			Composite composite = SWTUtils.createHVFillComposite(parent,
 					SWTUtils.MARGINS_DEFAULT, 3);
@@ -449,30 +437,60 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
 
+			Label dfLabel = SWTUtils.createLabel(composite, UIText.DecoratorPreferencesPage_dateFormat);
+			dfLabel.setLayoutData(SWTUtils.createGridData(SWT.DEFAULT,
+					SWT.DEFAULT, false, false));
+			dateFormat = SWTUtils.createText(composite, 2);
+
+			Label dpLabel = SWTUtils.createLabel(composite, UIText.DecoratorPreferencesPage_dateFormatPreview);
+			dpLabel.setLayoutData(SWTUtils.createGridData(SWT.DEFAULT,
+					SWT.DEFAULT, false, false));
+			dateFormatPreview = SWTUtils.createLabel(composite, null, 2);
+
 			tabItem.setText(UIText.DecoratorPreferencesPage_otherDecorations);
 			tabItem.setControl(composite);
 			tabItem.setData(UIText.DecoratorPreferencesPage_otherDecorations);
 
 			changeSetLabelFormat.addModifyListener(this);
+			dateFormat.addModifyListener(this);
+		}
+
+		private void updateDateFormatPreview() {
+			SimpleDateFormat sdf;
+			try {
+				sdf = new SimpleDateFormat(dateFormat.getText());
+				dateFormatPreview.setText(sdf.format(exampleDate));
+				formatValid = true;
+			} catch (Exception ex) {
+				dateFormatPreview.setText(UIText.DecoratorPreferencesPage_wrongDateFormat);
+				formatValid = false;
+			}
 		}
 
 		@Override
 		public void initializeValues(IPreferenceStore store) {
 			changeSetLabelFormat.initializeValue(store);
+			dateFormat.setText(store.getString(UIPreferences.DATE_FORMAT));
 		}
 
 		@Override
 		public void performDefaults(IPreferenceStore store) {
 			changeSetLabelFormat.performDefaults(store);
+			dateFormat.setText(store.getDefaultString(UIPreferences.DATE_FORMAT));
 		}
 
 		@Override
 		public void performOk(IPreferenceStore store) {
 			changeSetLabelFormat.performOk(store);
+
+			if (formatValid) {
+				store.setValue(UIPreferences.DATE_FORMAT, dateFormat.getText());
+			}
 		}
 
 		@Override
 		public void modifyText(ModifyEvent e) {
+			updateDateFormatPreview();
 			setChanged();
 			notifyObservers();
 		}
@@ -564,7 +582,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private Button showConflicts;
 
-		private Button showAssumeUnchanged;
+		private Button showAssumeValid;
 
 		private Button showDirty;
 
@@ -580,8 +598,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					UIText.DecoratorPreferencesPage_iconsShowStaged);
 			showConflicts = SWTUtils.createCheckBox(composite,
 					UIText.DecoratorPreferencesPage_iconsShowConflicts);
-			showAssumeUnchanged = SWTUtils.createCheckBox(composite,
-					UIText.DecoratorPreferencesPage_iconsShowAssumeUnchanged);
+			showAssumeValid = SWTUtils.createCheckBox(composite,
+					UIText.DecoratorPreferencesPage_iconsShowAssumeValid);
 			showDirty = SWTUtils.createCheckBox(composite,
 					UIText.GitDecoratorPreferencePage_iconsShowDirty);
 
@@ -589,7 +607,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showUntracked.addSelectionListener(this);
 			showStaged.addSelectionListener(this);
 			showConflicts.addSelectionListener(this);
-			showAssumeUnchanged.addSelectionListener(this);
+			showAssumeValid.addSelectionListener(this);
 			showDirty.addSelectionListener(this);
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
@@ -607,9 +625,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					.getBoolean(UIPreferences.DECORATOR_SHOW_STAGED_ICON));
 			showConflicts.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON));
-			showAssumeUnchanged
+			showAssumeValid
 					.setSelection(store
-							.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON));
+							.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
 			showDirty.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
@@ -628,9 +646,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			showConflicts
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON));
-			showAssumeUnchanged
+			showAssumeValid
 					.setSelection(store
-							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON));
+							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON));
 			showDirty
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
@@ -646,8 +664,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					.getSelection());
 			store.setValue(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON,
 					showConflicts.getSelection());
-			store.setValue(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON,
-					showAssumeUnchanged.getSelection());
+			store.setValue(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON,
+					showAssumeValid.getSelection());
 			store.setValue(UIPreferences.DECORATOR_SHOW_DIRTY_ICON,
 					showDirty.getSelection());
 		}
@@ -760,7 +778,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	public void dispose() {
 		PlatformUI.getWorkbench().getThemeManager()
 				.removePropertyChangeListener(themeListener);
-		getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
 		super.dispose();
 	}
 
@@ -831,8 +848,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 				public String getText(Object element) {
 					if (element instanceof GitModelCommitMockup) {
 						String format = store.getString(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT);
-						return ((GitModelCommitMockup) element)
-								.getMokeupText(format);
+						String dateFormat = store.getString(UIPreferences.DATE_FORMAT);
+						return ((GitModelCommitMockup)element).getMokeupText(format, dateFormat);
 					}
 					return super.getText(element);
 				}
@@ -1006,13 +1023,11 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		private static final Date date = new Date();
 		private static final String committer = "Committer Name";  //$NON-NLS-1$
 
-		public String getMokeupText(String format) {
-			PreferenceBasedDateFormatter formatter = PreferenceBasedDateFormatter
-					.create();
+		public String getMokeupText(String format, String dateFormat) {
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
 
 			Map<String, String> bindings = new HashMap<String, String>();
-			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_DATE,
-					formatter.formatDate(date));
+			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_DATE, sdf.format(date));
 			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_AUTHOR, author);
 			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_COMMITTER, committer);
 			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_SHORT_MESSAGE, message);
@@ -1021,31 +1036,47 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static class PreviewResource extends DecoratableResource {
+	private static class PreviewResource implements IDecoratableResource {
 		private final String name;
+
+		private final String repositoryName;
+
+		private final String branch;
+
+		private final String branchStatus;
 
 		private final int type;
 
 		private Collection children;
 
-		public PreviewResource(String name, int type, String repositoryName,
-				String branch, String branchStatus, boolean tracked,
-				boolean ignored, boolean dirty, @NonNull StagingState staged,
-				boolean conflicts, boolean assumeUnchanged) {
+		private boolean tracked;
 
-			super(null);
+		private boolean ignored;
+
+		private boolean dirty;
+
+		private boolean conflicts;
+
+		private Staged staged;
+
+		private boolean assumeValid;
+
+		public PreviewResource(String name, int type, String repositoryName, String branch,
+				String branchStatus, boolean tracked, boolean ignored, boolean dirty, Staged staged,
+				boolean conflicts, boolean assumeValid) {
+
 			this.name = name;
 			this.repositoryName = repositoryName;
 			this.branch = branch;
 			this.branchStatus = branchStatus;
 			this.type = type;
 			this.children = Collections.EMPTY_LIST;
-			setTracked(tracked);
-			setIgnored(ignored);
-			setDirty(dirty);
-			setStagingState(staged);
-			setConflicts(conflicts);
-			setAssumeUnchanged(assumeUnchanged);
+			this.tracked = tracked;
+			this.ignored = ignored;
+			this.dirty = dirty;
+			this.staged = staged;
+			this.conflicts = conflicts;
+			this.assumeValid = assumeValid;
 		}
 
 		@Override
@@ -1054,9 +1085,53 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 
 		@Override
+		public String getRepositoryName() {
+			return repositoryName;
+		}
+
+		@Override
 		public int getType() {
 			return type;
 		}
 
+		@Override
+		public String getBranch() {
+			return branch;
+		}
+
+		@Override
+		public String getBranchStatus() {
+			return branchStatus;
+		}
+
+		@Override
+		public boolean isTracked() {
+			return tracked;
+		}
+
+		@Override
+		public boolean isIgnored() {
+			return ignored;
+		}
+
+		@Override
+		public boolean isDirty() {
+			return dirty;
+		}
+
+		@Override
+		public Staged staged() {
+			return staged;
+		}
+
+		@Override
+		public boolean hasConflicts() {
+			return conflicts;
+		}
+
+		@Override
+		public boolean isAssumeValid() {
+			return assumeValid;
+		}
 	}
 }

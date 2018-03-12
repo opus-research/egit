@@ -13,9 +13,7 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
@@ -36,11 +34,9 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
@@ -75,8 +71,6 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	private final int style;
 
 	private final boolean multiMode;
-
-	private boolean preselectedBranch;
 
 	/**
 	 * @param parentShell
@@ -179,8 +173,6 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 			viewer.setComparator(new ViewerComparator(
 					CommonUtils.STRING_ASCENDING_COMPARATOR));
 			viewer.setInput(nodes);
-
-			preselectBranchMultiMode(nodes, fTree);
 		} else {
 			branchesList = new TableViewer(area, this.style | SWT.H_SCROLL
 					| SWT.V_SCROLL | SWT.BORDER);
@@ -191,9 +183,6 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 			branchesList.setComparator(new ViewerComparator(
 					CommonUtils.STRING_ASCENDING_COMPARATOR));
 			branchesList.setInput(nodes);
-
-			preselectBranchSingleMode(nodes, branchesList);
-
 			branchesList
 					.addSelectionChangedListener(new ISelectionChangedListener() {
 						@Override
@@ -211,43 +200,9 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 		return area;
 	}
 
-	private Set<Ref> getLocalBranches(List<T> list) {
-		Set<Ref> branches = new HashSet<Ref>();
-		for (Object o : list) {
-			if (o instanceof Ref) {
-				Ref r = (Ref) o;
-				String name = r.getName();
-				if (name.startsWith(Constants.R_HEADS)) {
-					branches.add(r);
-				}
-			}
-		}
-		return branches;
-	}
-
-	private void preselectBranchMultiMode(List<T> list,
-			FilteredCheckboxTree tree) {
-		Set<Ref> branches = getLocalBranches(list);
-		if (branches.size() == 1) {
-			Ref b = branches.iterator().next();
-			tree.getCheckboxTreeViewer().setChecked(b, true);
-			preselectedBranch = true;
-		}
-	}
-
-	private void preselectBranchSingleMode(List<T> list, TableViewer table) {
-		Set<Ref> branches = getLocalBranches(list);
-		if (branches.size() == 1) {
-			Ref b = branches.iterator().next();
-			table.setSelection(new StructuredSelection(b), true);
-			preselectedBranch = true;
-		}
-
-	}
-
 	private void checkPage() {
 		Button ok = getButton(OK);
-		if (ok == null || ok.isDisposed()) {
+		if (ok.isDisposed()) {
 			return;
 		}
 
@@ -284,7 +239,7 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	@Override
 	public void create() {
 		super.create();
-		getButton(OK).setEnabled(preselectedBranch);
+		getButton(OK).setEnabled(false);
 	}
 
 	/**

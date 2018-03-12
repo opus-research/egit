@@ -42,7 +42,6 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.BranchConfig;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -203,20 +202,8 @@ class PushToGerritPage extends WizardPage {
 
 	private void setLastUsedBranch() {
 		String lastBranch = settings.get(lastBranchKey);
-		try {
-			// use upstream if the current branch is tracking a branch
-			final BranchConfig branchConfig = new BranchConfig(
-					repository.getConfig(), repository.getBranch());
-			final String trackedBranch = branchConfig.getMerge();
-			if (trackedBranch != null) {
-				lastBranch = trackedBranch.replace(Constants.R_HEADS, ""); //$NON-NLS-1$
-			}
-		} catch (final IOException e) {
-			throw new RuntimeException(e);
-		}
-		if (lastBranch != null) {
+		if (lastBranch != null)
 			branchText.setText(lastBranch);
-		}
 	}
 
 	private void checkPage() {
@@ -267,8 +254,7 @@ class PushToGerritPage extends WizardPage {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
 					PushResultDialog dlg = new PushResultDialog(shell,
-							repository, result[0], op.getDestinationString(),
-							false);
+							repository, result[0], op.getDestinationString());
 					dlg.showConfigureButton(false);
 					dlg.open();
 				}

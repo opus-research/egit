@@ -126,17 +126,6 @@ public class GitMergeEditorInput extends CompareEditorInput {
 		return Display.getCurrent() != null;
 	}
 
-	/**
-	 * @param monitor
-	 * @return return the diff container
-	 * @throws InterruptedException
-	 * @throws InvocationTargetException
-	 */
-	public IDiffContainer getDiffContainer(IProgressMonitor monitor)
-			throws InvocationTargetException, InterruptedException {
-		return (IDiffContainer) prepareInput(monitor);
-	}
-
 	@Override
 	protected Object prepareInput(IProgressMonitor monitor)
 			throws InvocationTargetException, InterruptedException {
@@ -366,7 +355,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 						.getAbsolutePath());
 				IPath location = repositoryPath
 						.append(fit.getEntryPathString());
-				IFile file = ResourceUtil.getFileForLocation(location, false);
+				IFile file = ResourceUtil.getFileForLocation(location);
 				if (!conflicting || useWorkspace) {
 					if (file != null)
 						rev = new LocalFileRevision(file);

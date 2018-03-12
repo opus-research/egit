@@ -25,7 +25,6 @@ public class PushWizardTester {
 	public RepoPropertiesPage openPushWizard(final Repository repository)
 			throws Exception {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				try {
 					Shell shell = PlatformUI.getWorkbench()

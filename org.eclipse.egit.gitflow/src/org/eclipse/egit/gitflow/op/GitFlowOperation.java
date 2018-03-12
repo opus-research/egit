@@ -10,7 +10,6 @@ package org.eclipse.egit.gitflow.op;
 
 import static java.lang.String.format;
 import static org.eclipse.egit.gitflow.Activator.error;
-import static org.eclipse.jgit.api.MergeCommand.FastForwardMode.NO_FF;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -34,16 +33,12 @@ import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.RevWalkUtils;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RemoteConfig;
 
 /**
  * Common logic for Git Flow operations.
  */
-// TODO: This class should be called AbstractGitFlowOperation for consistency
 abstract public class GitFlowOperation implements IEGitOperation {
 	/**
 	 * git path separator
@@ -107,18 +102,13 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 *
 	 * @param monitor
 	 * @param branchName
-	 * @param squash
-	 * @param fastForwardSingleCommit Has no effect if {@code squash} is true.
-	 * @param keepBranch
 	 * @throws CoreException
-	 * @since 4.1
 	 */
-	protected void finish(IProgressMonitor monitor, String branchName,
-			boolean squash, boolean keepBranch, boolean fastForwardSingleCommit)
+	protected void finish(IProgressMonitor monitor, String branchName)
 			throws CoreException {
 		try {
-			mergeResult = mergeTo(monitor, branchName, repository.getConfig()
-					.getDevelop(), squash, fastForwardSingleCommit);
+			mergeResult = mergeTo(monitor, branchName,
+					repository.getConfig().getDevelop());
 			if (!mergeResult.getMergeStatus().isSuccessful()) {
 				return;
 			}
@@ -128,42 +118,22 @@ abstract public class GitFlowOperation implements IEGitOperation {
 				throw new IllegalStateException(String.format(
 						CoreText.GitFlowOperation_branchMissing, branchName));
 			}
-			boolean forceDelete = squash;
-
-			if (!keepBranch) {
-				new DeleteBranchOperation(repository.getRepository(), branch,
-						forceDelete).execute(monitor);
-			}
+			new DeleteBranchOperation(repository.getRepository(), branch, false)
+					.execute(monitor);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	/**
-	 * Finish without squash, NO_FF and keep for single commit branches:
-	 * {@link org.eclipse.egit.gitflow.op.GitFlowOperation#finish(IProgressMonitor, String, boolean, boolean, boolean)}
-	 *
-	 * @param monitor
-	 * @param branchName
-	 * @throws CoreException
-	 */
-	protected void finish(IProgressMonitor monitor, String branchName)
-			throws CoreException {
-		finish(monitor, branchName, false, false, false);
-	}
-
-	/**
 	 * @param monitor
 	 * @param branchName
 	 * @param targetBranchName
-	 * @param squash
-	 * @param fastForwardSingleCommit Has no effect if {@code squash} is true.
 	 * @return result of merging back to targetBranchName
 	 * @throws CoreException
-	 * @since 4.1
 	 */
 	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
-			String targetBranchName, boolean squash, boolean fastForwardSingleCommit) throws CoreException {
+			String targetBranchName) throws CoreException {
 		try {
 			if (!repository.hasBranch(targetBranchName)) {
 				throw new RuntimeException(String.format(
@@ -183,87 +153,11 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			MergeOperation mergeOperation = new MergeOperation(
 					repository.getRepository(), branchName);
-			mergeOperation.setSquash(squash);
-			if (squash) {
-				mergeOperation.setCommit(true);
-			}
-			if (!squash && (!fastForwardSingleCommit || hasMultipleCommits(branchName))) {
-				mergeOperation.setFastForwardMode(NO_FF);
-			}
 			mergeOperation.execute(monitor);
-
 			return mergeOperation.getResult();
-		} catch (GitAPIException | IOException e) {
+		} catch (GitAPIException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private boolean hasMultipleCommits(String branchName) throws IOException {
-		return getAheadOfDevelopCount(branchName) > 1;
-	}
-
-	private int getAheadOfDevelopCount(String branchName) throws IOException {
-		String parentBranch = repository.getConfig().getDevelop();
-
-		Ref develop = repository.findBranch(parentBranch);
-		Ref branch = repository.findBranch(branchName);
-
-		RevWalk walk = new RevWalk(repository.getRepository());
-
-		RevCommit branchCommit = walk.parseCommit(branch.getObjectId());
-		RevCommit developCommit = walk.parseCommit(develop.getObjectId());
-
-		RevCommit mergeBase = findCommonBase(walk, branchCommit, developCommit);
-
-		walk.reset();
-		walk.setRevFilter(RevFilter.ALL);
-		int aheadCount = RevWalkUtils.count(walk, branchCommit, mergeBase);
-
-		return aheadCount;
-	}
-
-	private RevCommit findCommonBase(RevWalk walk, RevCommit branchCommit,
-			RevCommit developCommit) throws IOException {
-		walk.setRevFilter(RevFilter.MERGE_BASE);
-		walk.markStart(branchCommit);
-		walk.markStart(developCommit);
-		return walk.next();
-	}
-
-	/**
-	 * Merge without squash and NO_FF for single commit branches:
-	 * {@link org.eclipse.egit.gitflow.op.GitFlowOperation#mergeTo(IProgressMonitor, String, String, boolean, boolean)}
-	 *
-	 * @param monitor
-	 * @param branchName
-	 * @param targetBranchName
-	 * @return result of merging back to targetBranchName
-	 * @throws CoreException
-	 */
-	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
-			String targetBranchName) throws CoreException {
-		return mergeTo(monitor, branchName, targetBranchName, false, false);
-	}
-
-	/**
-	 * Fetch using the default remote configuration
-	 *
-	 * @param monitor
-	 * @param timeout
-	 *            timeout in seconds
-	 * @return result of fetching from remote
-	 * @throws URISyntaxException
-	 * @throws InvocationTargetException
-	 *
-	 * @since 4.2
-	 */
-	protected FetchResult fetch(IProgressMonitor monitor, int timeout)
-			throws URISyntaxException, InvocationTargetException {
-		RemoteConfig config = repository.getConfig().getDefaultRemoteConfig();
-		FetchOperation fetchOperation = new FetchOperation(
-				repository.getRepository(), config, timeout, false);
-		fetchOperation.run(monitor);
-		return fetchOperation.getOperationResult();
 	}
 
 	/**
@@ -271,13 +165,14 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 * @return resulting of fetching from remote
 	 * @throws URISyntaxException
 	 * @throws InvocationTargetException
-	 * @deprecated Use {@link GitFlowOperation#fetch(IProgressMonitor, int)}
-	 *             instead.
 	 */
-	@Deprecated
 	protected FetchResult fetch(IProgressMonitor monitor)
 			throws URISyntaxException, InvocationTargetException {
-		return fetch(monitor, 0);
+		RemoteConfig config = repository.getConfig().getDefaultRemoteConfig();
+		FetchOperation fetchOperation = new FetchOperation(
+				repository.getRepository(), config, 0, false);
+		fetchOperation.run(monitor);
+		return fetchOperation.getOperationResult();
 	}
 
 	/**

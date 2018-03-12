@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -325,27 +324,25 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		String preset = presetUri;
 		if (presetUri == null) {
-			Clipboard clipboard = new Clipboard(Display.getCurrent());
-			String text = (String) clipboard
-					.getContents(TextTransfer.getInstance());
+			Clipboard clippy = new Clipboard(Display.getCurrent());
+			String text = (String) clippy.getContents(TextTransfer
+					.getInstance());
 			try {
 				if (text != null) {
-					text = stripGitCloneCommand(text);
+					text = text.trim();
 					int index = text.indexOf(' ');
 					if (index > 0)
 						text = text.substring(0, index);
 					URIish u = new URIish(text);
 					if (canHandleProtocol(u))
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
-								|| Protocol.HTTP.handles(u)
-								|| Protocol.HTTPS.handles(u)
 								|| text.endsWith(Constants.DOT_GIT_EXT))
 							preset = text;
 				}
 			} catch (URISyntaxException e) {
 				// ignore, preset is null
 			}
-			clipboard.dispose();
+			clippy.dispose();
 		}
 		this.presetUri = preset;
 
@@ -557,8 +554,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					}
 				// if nothing else, we start the search from the default folder for repositories
 				if (EMPTY_STRING.equals(dialog.getFilterPath()))
-					dialog.setFilterPath(
-							RepositoryUtil.getDefaultRepositoryDir());
+					dialog.setFilterPath(UIUtils.getDefaultRepositoryDir());
 				String result = dialog.open();
 				if (result != null)
 					uriText.setText("file:///" + result); //$NON-NLS-1$
