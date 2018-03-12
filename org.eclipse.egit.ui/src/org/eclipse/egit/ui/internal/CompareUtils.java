@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2013 SAP AG and others.
+ * Copyright (c) 2010-2012 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,8 +11,6 @@
  *    Stefan Lay (SAP AG) - initial implementation
  *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
  *    Robin Stocker <robin@nibor.org>
- *    Laurent Goubet <laurent.goubet@obeo.fr>
- *    Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
@@ -30,14 +28,9 @@ import org.eclipse.compare.structuremergeviewer.DiffNode;
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.compare.structuremergeviewer.IStructureComparator;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -49,14 +42,12 @@ import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
-import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jgit.dircache.DirCache;
@@ -412,20 +403,6 @@ public class CompareUtils {
 	}
 
 	/**
-	 * Returns an editable typed element for a local file.
-	 *
-	 * @param location
-	 * @return typed element for the file
-	 */
-	public static ITypedElement getFileTypedElement(IPath location) {
-		IFile file = ResourceUtil.getFileForLocation(location);
-		if (file != null)
-			return SaveableCompareEditorInput.createFileElement(file);
-		else
-			return new LocalNonWorkspaceTypedElement(location);
-	}
-
-	/**
 	 * Get a typed element for the file as contained in HEAD. Tries to return
 	 * the last commit that modified the file in order to have more useful
 	 * author information.
@@ -503,45 +480,6 @@ public class CompareUtils {
 		return getIndexTypedElement(repository, repoRelativePath, encoding);
 	}
 
-	/**
-	 * Returns an editable typed element for the index entry of the specified
-	 * path. Note that this should only be used for stage 0.
-	 *
-	 * @param location
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getIndexTypedElement(final IPath location)
-			throws IOException {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		if (mapping != null)
-			return getIndexTypedElement(mapping.getRepository(),
-					mapping.getRepoRelativePath(location));
-		else
-			return null;
-	}
-
-	/**
-	 * Returns a read-only typed element for the index entry with the specified
-	 * stage. It's only meant to be used for stages other than 0 (on conflicts).
-	 *
-	 * @param location
-	 * @param stage
-	 * @return typed element for index with specified stage, or null
-	 */
-	public static ITypedElement getIndexTypedElement(final IPath location,
-			int stage) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		if (mapping == null)
-			return null;
-		Repository repository = mapping.getRepository();
-		String repoRelativePath = mapping.getRepoRelativePath(location);
-		IFileRevision revision = GitFileRevision.inIndex(repository,
-				repoRelativePath, stage);
-		String encoding = CompareCoreUtils.getResourceEncoding(repository, repoRelativePath);
-		return new FileRevisionTypedElement(revision, encoding);
-	}
-
 	private static ITypedElement getIndexTypedElement(
 			final Repository repository, final String gitPath,
 			String encoding) throws IOException {
@@ -551,14 +489,6 @@ public class CompareUtils {
 			entry = dc.getEntry(gitPath);
 		} finally {
 			dc.unlock();
-		}
-
-		if (!entry.isMerged()) {
-			// Conflicting -> edit of index entry not allowed, show "ours" stage
-			// (better than "base")
-			IFileRevision revision = GitFileRevision.inIndex(repository,
-					gitPath, DirCacheEntry.STAGE_2);
-			return new FileRevisionTypedElement(revision, encoding);
 		}
 
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
@@ -757,47 +687,4 @@ public class CompareUtils {
 		}
 	}
 
-	/**
-	 * Indicates if it is OK to open the selected file directly in a compare
-	 * editor.
-	 * <p>
-	 * It is not OK to show the single file if the file is part of a
-	 * logical model element that spans multiple files.
-	 * </p>
-	 *
-	 * @param file
-	 *            file the user is trying to compare
-	 * @return <code>true</code> if the file can be opened directly in a compare
-	 *         editor, <code>false</code> if the synchronize view should be
-	 *         opened instead.
-	 */
-	public static boolean canDirectlyOpenInCompare(IFile file) {
-		/*
-		 * Note : it would be better to use a remote context here in order to
-		 * give the model provider a chance to resolve the remote logical model
-		 * instead of only relying on the local one. However, this might be a
-		 * long operation and would not really provide more context : we're
-		 * trying to determine if the local file can be compared alone, this can
-		 * be done by relying on the local model only.
-		 */
-		final ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
-				file, ResourceMappingContext.LOCAL_CONTEXT);
-
-		for (ResourceMapping mapping : mappings) {
-			try {
-				final ResourceTraversal[] traversals = mapping.getTraversals(
-						ResourceMappingContext.LOCAL_CONTEXT, null);
-				for (ResourceTraversal traversal : traversals) {
-					final IResource[] resources = traversal.getResources();
-					for (IResource resource : resources) {
-						if (!resource.equals(file))
-							return false;
-					}
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		return true;
-	}
 }
