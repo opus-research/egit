@@ -24,10 +24,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.GitResourceDeltaVisitor;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.AddToIndexOperation;
+import org.eclipse.egit.core.project.GitProjectData;
+import org.eclipse.egit.core.project.RepositoryChangeListener;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -44,7 +43,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 	private final GitSynchronizeDataSet gsds;
 
-	private final IndexDiffChangedListener indexChangeListener;
+	private final RepositoryChangeListener repoChangeListener;
 
 	private final IResourceChangeListener resourceChangeListener;
 
@@ -59,10 +58,9 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 		this.gsds = gsds;
 
 
-		indexChangeListener = new IndexDiffChangedListener() {
-			public void indexDiffChanged(Repository repository,
-					IndexDiffData indexDiffData) {
-				handleRepositoryChange(subscriber, repository);
+		repoChangeListener = new RepositoryChangeListener() {
+			public void repositoryChanged(RepositoryMapping which) {
+				handleRepositoryChange(subscriber, which);
 			}
 		};
 		resourceChangeListener = new IResourceChangeListener() {
@@ -75,10 +73,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 				handleResourceChange(subscriber, delta);
 			}
 		};
-		IndexDiffCache indexDiffCache = Activator.getDefault().getIndexDiffCache();
-		if (indexDiffCache != null)
-			indexDiffCache.addIndexDiffChangedListener(indexChangeListener);
-
+		GitProjectData.addRepositoryChangeListener(repoChangeListener);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(resourceChangeListener);
 
 		initialize();
@@ -114,18 +109,15 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 	@Override
 	public void dispose() {
-		IndexDiffCache indexDiffCache = Activator.getDefault().getIndexDiffCache();
-		if (indexDiffCache != null)
-			indexDiffCache.removeIndexDiffChangedListener(indexChangeListener);
-
+		GitProjectData.removeRepositoryChangeListener(repoChangeListener);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
 		super.dispose();
 	}
 
 	private void handleRepositoryChange(
-			GitResourceVariantTreeSubscriber subscriber, Repository which) {
+			GitResourceVariantTreeSubscriber subscriber, RepositoryMapping which) {
 		for (GitSynchronizeData gsd : gsds)
-			if (which.equals(gsd.getRepository()))
+			if (which.getRepository().equals(gsd.getRepository()))
 				updateRevs(gsd);
 
 		subscriber.reset(this.gsds);
