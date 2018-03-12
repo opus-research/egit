@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
+ * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
+ * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +9,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.util.ArrayList;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 
@@ -16,23 +17,22 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.history.RevObjectSelectionProvider;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.IWorkbenchPart;
 
 /**
- * Common functionality resource based EGit operations.
- *
+ * Common functionality for EGit operations.
  */
-public abstract class AbstractRevCommitOperationAction implements IObjectActionDelegate {
+public abstract class AbstractOperationAction implements IObjectActionDelegate {
 	/**
 	 * The active workbench part
 	 */
@@ -60,61 +60,54 @@ public abstract class AbstractRevCommitOperationAction implements IObjectActionD
 	 *
 	 * @return a {@link IEGitOperation} for invoking this operation later on
 	 */
-	protected abstract IEGitOperation createOperation(final List<RevCommit> selection);
-
-	/**
-	 * @return the name of the execution Job
-	 */
-	protected abstract String getJobName();
+	protected abstract IEGitOperation createOperation(final List selection);
 
 	/**
 	 * A method to invoke when the operation is finished.
-	 * The method is called outside the UI thread.
 	 */
 	protected void postOperation() {
 		// Empty
 	}
 
 	public void run(final IAction act) {
-		op = createOperation(getSelectedCommits());
-		if(op==null)
-			return;
-		String jobname = getJobName();
-		Job job = new Job(jobname) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+		op = createOperation(selection);
+		if (op != null) {
+			try {
 				try {
-					op.execute(monitor);
+					wp.getSite().getWorkbenchWindow().run(true, false,
+							new IRunnableWithProgress() {
+								public void run(final IProgressMonitor monitor)
+										throws InvocationTargetException {
+									try {
+										op.execute(monitor);
+									} catch (CoreException ce) {
+										throw new InvocationTargetException(ce);
+									}
+								}
+							});
+				} finally {
 					postOperation();
-				} catch (CoreException e) {
-					return Activator.createErrorStatus(e.getStatus()
-							.getMessage(), e);
 				}
-				return Status.OK_STATUS;
+			} catch (Throwable e) {
+				final String msg = NLS.bind(UIText.GenericOperationFailed, act
+						.getText());
+				final IStatus status;
+
+				if (e instanceof InvocationTargetException) {
+					e = e.getCause();
+				}
+
+				if (e instanceof CoreException) {
+					status = ((CoreException) e).getStatus();
+				} else {
+					status = new Status(IStatus.ERROR, Activator.getPluginId(),
+							1, msg, e);
+				}
+
+				Activator.logError(msg, e);
+				ErrorDialog.openError(wp.getSite().getShell(), act.getText(),
+						msg, status, status.getSeverity());
 			}
-		};
-		job.setUser(true);
-		job.setRule(op.getSchedulingRule());
-		job.schedule();
-	}
-
-	private List<RevCommit> getSelectedCommits() {
-		List<RevCommit> commits = new ArrayList<RevCommit>();
-		for(Object object: selection) {
-			if(object instanceof RevCommit)
-				commits.add((RevCommit) object);
 		}
-		return commits;
-	}
-
-	/**
-	 * Find out which repository is involved here
-	 *
-	 * @return the Git repository associated with the selected RevObject
-	 */
-	protected Repository getActiveRepository() {
-		RevObjectSelectionProvider selectionProvider = (RevObjectSelectionProvider) wp
-				.getSite().getSelectionProvider();
-		return selectionProvider.getActiveRepository();
 	}
 }

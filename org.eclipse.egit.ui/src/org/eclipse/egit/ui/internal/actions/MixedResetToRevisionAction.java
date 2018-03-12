@@ -12,23 +12,17 @@ import java.util.List;
 
 import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.core.op.ResetOperation;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.lib.AnyObjectId;
 
 /**
  * Mixed reset to selected revision
  */
-public class MixedResetToRevisionAction extends AbstractRevCommitOperationAction {
+public class MixedResetToRevisionAction extends AbstractRevObjectAction {
 
 	@Override
-	protected IEGitOperation createOperation(List<RevCommit> selection) {
+	protected IEGitOperation createOperation(List selection) {
 		return new ResetOperation(getActiveRepository(),
-				selection.get(0).name(),
+				((AnyObjectId) selection.get(0)).name(),
 				ResetOperation.ResetType.MIXED);
-	}
-
-	@Override
-	protected String getJobName() {
-		return UIText.MixedResetToRevisionAction_mixedReset;
 	}
 }

@@ -60,8 +60,8 @@ public class DiscardChangesOperation implements IEGitOperation {
 		schedulingRule = calcRefreshRule(files);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	/**
+	 * @return the rule needed to execute this operation
 	 */
 	public ISchedulingRule getSchedulingRule() {
 		return schedulingRule;

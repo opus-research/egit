@@ -40,16 +40,10 @@ public class UIText extends NLS {
 	public static String Activator_scanningRepositories;
 
 	/** */
-	public static String AddToIndexAction_addingFiles;
-
-	/** */
 	public static String AddToIndexAction_addingFilesFailed;
 
 	/** */
 	public static String AddToIndexAction_indexesWithUnmergedEntries;
-
-	/** */
-	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
 	public static String WizardProjectsImportPage_ImportProjectsTitle;
@@ -119,9 +113,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SelectRemoteNamePage_SelectRemoteNameMessage;
-
-	/** */
-	public static String SetQuickdiffBaselineAction_setQuickdiffBaseline;
 
 	/** */
 	public static String SharingWizard_windowTitle;
@@ -220,15 +211,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorReadingHeadCommit;
 
 	/** */
-	public static String GitHistoryPage_CreatePatch;
-
-	/** */
-	public static String GitHistoryPage_Date;
-
-	/** */
-	public static String GitHistoryPage_ErrorNotWritten;
-
-	/** */
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
@@ -245,15 +227,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_openFailed;
-
-	/** */
-	public static String GitHistoryPage_seeLog;
-
-	/** */
-	public static String GitHistoryPage_From;
-
-	/** */
-	public static String GitHistoryPage_Subject;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -425,9 +398,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_uriChoice;
-
-	/** */
-	public static String SoftResetToRevisionAction_softReset;
 
 	/** */
 	public static String SourceBranchPage_repoEmpty;
@@ -760,16 +730,7 @@ public class UIText extends NLS {
 	public static String ResetAction_repositoryState;
 
 	/** */
-	public static String ResetAction_reset;
-
-	/** */
 	public static String ResetAction_resetFailed;
-
-	/** */
-	public static String ResetQuickdiffBaselineAction_resetQuickdiffBaseline;
-
-	/** */
-	public static String ResetQuickdiffBaselineHeadParentAction_0;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
@@ -785,9 +746,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResourceHistory_toggleTooltips;
-
-	/** */
-	public static String HardResetToRevisionAction_hardReset;
 
 	/** */
 	public static String HistoryPage_authorColumn;
@@ -1582,9 +1540,6 @@ public class UIText extends NLS {
 	public static String IgnoreAction_error;
 
 	/** */
-	public static String Track_addToVersionControl;
-
-	/** */
 	public static String Track_error;
 
 	/** */
@@ -1667,9 +1622,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_DeleteBranchMenu;
-
-	/** */
-	public static String RepositoriesView_DeleteRepoDeterminProjectsMessage;
 
 	/** */
 	public static String RepositoriesView_Error_WindowTitle;
@@ -1789,9 +1741,6 @@ public class UIText extends NLS {
 	public static String DiscardChangesAction_refreshErrorMessage;
 
 	/** */
-	public static String Disconnect_disconnect;
-
-	/** */
 	public static String GitCompareFileRevisionEditorInput_contentIdentifier;
 
 	/** */
@@ -1814,36 +1763,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreateGeneralProjectPage_ProjectNameLabel;
-
-	/** */
-	public static String GitCreatePatchWizard_Browse;
-
-	/** */
-	public static String GitCreatePatchWizard_Clipboard;
-
-	/** */
-	public static String GitCreatePatchWizard_CreatePatchTitle;
-
-	/** */
-	public static String GitCreatePatchWizard_File;
-
-	/** */
-	public static String GitCreatePatchWizard_GitFormat;
-
-	/** */
-	public static String GitCreatePatchWizard_InternalError;
-
-	/** */
-	public static String GitCreatePatchWizard_SelectLocationDescription;
-
-	/** */
-	public static String GitCreatePatchWizard_SelectLocationTitle;
-
-	/** */
-	public static String GitCreatePatchWizard_SelectOptionsDescription;
-
-	/** */
-	public static String GitCreatePatchWizard_SelectOptionsTitle;
 
 	/** */
 	public static String GitCreateProjectViaWizardWizard_AbortedMessage;
@@ -1945,19 +1864,10 @@ public class UIText extends NLS {
 	public static String GitShareProjectsPage_RepositoryLabel;
 
 	/** */
-	public static String MixedResetToRevisionAction_mixedReset;
-
-	/** */
 	public static String UIIcons_errorDeterminingIconBase;
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
-
-	/** */
-	public static String Untrack_untrack;
-
-	/** */
-	public static String Update_update;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$

@@ -22,8 +22,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -46,7 +44,7 @@ import org.eclipse.osgi.util.NLS;
  * </p>
  */
 public class UntrackOperation implements IEGitOperation {
-	private final Collection<IResource> rsrcList;
+	private final Collection rsrcList;
 
 	private final IdentityHashMap<Repository, DirCacheEditor> edits;
 
@@ -59,7 +57,7 @@ public class UntrackOperation implements IEGitOperation {
 	 *            collection of {@link IResource}s which should be removed from
 	 *            the relevant Git repositories.
 	 */
-	public UntrackOperation(final Collection<IResource> rsrcs) {
+	public UntrackOperation(final Collection rsrcs) {
 		rsrcList = rsrcs;
 		edits = new IdentityHashMap<Repository, DirCacheEditor>();
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
@@ -101,13 +99,6 @@ public class UntrackOperation implements IEGitOperation {
 			mappings.clear();
 			m.done();
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		return new MultiRule(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	private void remove(final IResource path) throws CoreException {
