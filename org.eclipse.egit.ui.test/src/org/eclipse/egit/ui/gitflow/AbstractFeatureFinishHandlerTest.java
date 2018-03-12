@@ -21,6 +21,7 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swtbot.eclipse.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
+import org.eclipse.ui.PlatformUI;
 import org.junit.runner.RunWith;
 
 /**
@@ -36,9 +37,12 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 				util.getPluginLocalizedValue("TeamMenu.label"),
 				util.getPluginLocalizedValue("TeamGitFlowMenu.name", false, Activator.getDefault().getBundle()),
 				util.getPluginLocalizedValue("TeamGitFlowFeatureFinish.name", false, Activator.getDefault().getBundle()) };
-
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
-		bot.waitUntil(shellIsActive(UIText.FinishFeatureDialog_title));
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
+			}
+		});
 		selectOptions();
 		bot.checkBox(UIText.FinishFeatureDialog_saveAsDefault).click();
 		bot.button("OK").click();
@@ -61,7 +65,12 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 				util.getPluginLocalizedValue("TeamGitFlowMenu.name", false, Activator.getDefault().getBundle()),
 				util.getPluginLocalizedValue("TeamGitFlowFeatureStart.name", false, Activator.getDefault().getBundle()) };
 
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
+			}
+		});
 
 		bot.waitUntil(shellIsActive(UIText.FeatureStartHandler_provideFeatureName));
 		bot.text().setText(featureName);
@@ -78,7 +87,12 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 				util.getPluginLocalizedValue("TeamGitFlowMenu.name", false, Activator.getDefault().getBundle()),
 				util.getPluginLocalizedValue("TeamGitFlowFeatureCheckout.name", false, Activator.getDefault().getBundle()) };
 
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
+			}
+		});
 
 		bot.waitUntil(shellIsActive(UIText.FeatureCheckoutHandler_selectFeature));
 		bot.text().setText("these are not the features you're looking for");

@@ -659,16 +659,10 @@ public class FetchGerritChangePage extends WizardPage {
 
 				@Override
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
-					try {
-						internalDoFetch(spec, uri, doCheckout, doCreateTag,
-								doCreateBranch, doCheckoutNewBranch,
-								doActivateAdditionalRefs, textForTag,
-								textForBranch, monitor);
-					} catch (CoreException ce) {
-						return ce.getStatus();
-					} catch (Exception e) {
-						return Activator.createErrorStatus(e.getLocalizedMessage(), e);
-					}
+					internalDoFetch(spec, uri, doCheckout, doCreateTag,
+							doCreateBranch, doCheckoutNewBranch,
+							doActivateAdditionalRefs,
+							textForTag, textForBranch, monitor);
 					return org.eclipse.core.runtime.Status.OK_STATUS;
 				}
 
@@ -718,10 +712,9 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private void internalDoFetch(RefSpec spec, String uri, boolean doCheckout,
 			boolean doCreateTag, boolean doCreateBranch,
-			boolean doCheckoutNewBranch, boolean doActivateAdditionalRefs,
-			String textForTag, String textForBranch, IProgressMonitor monitor)
-					throws IOException, CoreException, URISyntaxException,
-					GitAPIException {
+			boolean doCheckoutNewBranch,
+			boolean doActivateAdditionalRefs, String textForTag,
+			String textForBranch, IProgressMonitor monitor) {
 
 		int totalWork = 1;
 		if (doCheckout)
@@ -750,6 +743,8 @@ public class FetchGerritChangePage extends WizardPage {
 
 			storeLastUsedUri(uri);
 
+		} catch (Exception e) {
+			Activator.handleError(e.getMessage(), e, true);
 		} finally {
 			monitor.done();
 		}
@@ -894,7 +889,7 @@ public class FetchGerritChangePage extends WizardPage {
 				try {
 					proposals = getRefsForContentAssist();
 				} catch (InvocationTargetException e) {
-					Activator.handleError(e.getMessage(), e, true);
+					Activator.handleError(e.getMessage(), e, false);
 					return null;
 				} catch (InterruptedException e) {
 					return null;
