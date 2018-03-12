@@ -71,9 +71,6 @@ public class ConfigureRemoteWizard extends Wizard {
 						configureFetchSpecPage
 								.setSelection(new RepositorySelection(
 										configureFetchUriPage.getUri(), null));
-						configureFetchSpecPage
-								.setCredentials(configureFetchUriPage
-										.getCredentials());
 					}
 				});
 			} catch (InvocationTargetException e) {
@@ -102,7 +99,7 @@ public class ConfigureRemoteWizard extends Wizard {
 								.setSelection(new RepositorySelection(
 										configurePushUriPage.getAllUris()
 												.get(0), null));
-						configurePushSpecPage.setCredentials(configurePushUriPage.getCredentials());
+
 					}
 				});
 			} catch (InvocationTargetException e) {
