@@ -69,14 +69,6 @@ public class TestUtils {
 		return testDir;
 	}
 
-	private File baseTempDir;
-
-	public TestUtils() {
-		// ensure that concurrent test runs don't use the same directory
-		baseTempDir = new File(rootDir, System.currentTimeMillis() + "-"
-				+ Integer.toHexString(System.identityHashCode(this)));
-	}
-
 	/**
 	 * Return the base directory in which temporary directories are created.
 	 * Current implementation returns a "temporary" folder in the user home.
@@ -84,7 +76,7 @@ public class TestUtils {
 	 * @return a "temporary" folder in the user home that may not exist.
 	 */
 	public File getBaseTempDir() {
-		return baseTempDir;
+		return rootDir;
 	}
 
 	/**
@@ -100,7 +92,6 @@ public class TestUtils {
 		File result = new File(getBaseTempDir(), name);
 		if (result.exists())
 			FileUtils.delete(result, FileUtils.RECURSIVE | FileUtils.RETRY);
-		FileUtils.mkdirs(result, true);
 		return result;
 	}
 
