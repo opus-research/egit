@@ -97,15 +97,6 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
-	public static String BlameInformationControl_Author;
-
-	/** */
-	public static String BlameInformationControl_Commit;
-
-	/** */
-	public static String BlameInformationControl_Committer;
-
-	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
@@ -158,9 +149,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SharingWizard_MoveProjectActionLabel;
-
-	/** */
-	public static String ShowBlameHandler_JobName;
 
 	/** */
 	public static String GenerateHistoryJob_BuildingListMessage;
@@ -3762,15 +3750,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_commitFailed;
-
-	/** */
-	public static String StagingView_committingNotPossible;
-
-	/** */
-	public static String StagingView_headCommitChanged;
-
-	/** */
-	public static String StagingView_noStagedFiles;
 
 	/** */
 	public static String StagingView_NoSelectionTitle;

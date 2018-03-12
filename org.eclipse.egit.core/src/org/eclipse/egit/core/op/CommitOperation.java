@@ -327,7 +327,8 @@ public class CommitOperation implements IEGitOperation {
 
 		Git git = new Git(repo);
 		try {
-			return git.commit()
+			return git
+					.commit()
 					.setAll(true)
 					.setAuthor(
 							new PersonIdent(authorIdent, commitDate, timeZone))

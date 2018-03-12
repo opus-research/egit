@@ -54,6 +54,10 @@ public class CommitHelper {
 
 	boolean isCherryPickResolved;
 
+	private String previousCommitMessage;
+
+	private String previousAuthor;
+
 	private String commitMessage;
 
 	/**
@@ -82,7 +86,7 @@ public class CommitHelper {
 			isCherryPickResolved = true;
 			mergeRepository = repository;
 		}
-		previousCommit = getHeadCommit(repository);
+		loadPreviousCommit();
 		final UserConfig config = repository.getConfig().get(UserConfig.KEY);
 		author = config.getAuthorName();
 		final String authorEmail = config.getAuthorEmail();
@@ -92,6 +96,12 @@ public class CommitHelper {
 		final String committerEmail = config.getCommitterEmail();
 		committer = committer + " <" + committerEmail + ">"; //$NON-NLS-1$ //$NON-NLS-2$
 
+		if (previousCommit != null) {
+			previousCommitMessage = previousCommit.getFullMessage();
+			PersonIdent previousAuthorIdent = previousCommit.getAuthorIdent();
+			previousAuthor = previousAuthorIdent.getName()
+					+ " <" + previousAuthorIdent.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
 		if (isMergedResolved || isCherryPickResolved) {
 			commitMessage = getMergeResolveMessage(mergeRepository);
 		}
@@ -101,17 +111,15 @@ public class CommitHelper {
 		}
 	}
 
-	private static RevCommit getHeadCommit(Repository repository) {
-		RevCommit headCommit = null;
+	private void loadPreviousCommit() {
 		try {
 			ObjectId parentId = repository.resolve(Constants.HEAD);
 			if (parentId != null)
-				headCommit = new RevWalk(repository).parseCommit(parentId);
+				previousCommit = new RevWalk(repository).parseCommit(parentId);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
 					true);
 		}
-		return headCommit;
 	}
 
 	private String getMergeResolveMessage(Repository mergeRepository) {
@@ -125,8 +133,9 @@ public class CommitHelper {
 				StringBuilder message = new StringBuilder();
 				String s;
 				String newLine = newLine();
-				while ((s = br.readLine()) != null)
+				while ((s = br.readLine()) != null) {
 					message.append(s).append(newLine);
+				}
 				return message.toString();
 			} catch (IOException e) {
 				throw new IllegalStateException(e);
@@ -188,6 +197,20 @@ public class CommitHelper {
 	}
 
 	/**
+	 * @return previous commit message
+	 */
+	public String getPreviousCommitMessage() {
+		return previousCommitMessage;
+	}
+
+	/**
+	 * @return previous author
+	 */
+	public String getPreviousAuthor() {
+		return previousAuthor;
+	}
+
+	/**
 	 * @return commit message
 	 */
 	public String getCommitMessage() {
@@ -213,64 +236,6 @@ public class CommitHelper {
 	 */
 	public RevCommit getPreviousCommit() {
 		return previousCommit;
-	}
-
-	/**
-	 * @param repository
-	 * @return info related to the HEAD commit
-	 */
-	public static CommitInfo getHeadCommitInfo(Repository repository) {
-		RevCommit headCommit = getHeadCommit(repository);
-		if (headCommit == null)
-			return null;
-		String commitMessage = headCommit.getFullMessage();
-		PersonIdent authorIdent = headCommit.getAuthorIdent();
-		String author = authorIdent.getName()
-				+ " <" + authorIdent.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
-		return new CommitInfo(headCommit, author, commitMessage);
-	}
-
-	/**
-	 * Commit Info
-	 *
-	 */
-	public static class CommitInfo {
-		private RevCommit commit;
-		private String author;
-		private String commitMessage;
-
-		/**
-		 * @param commit
-		 * @param author
-		 * @param commitMessage
-		 */
-		public CommitInfo(RevCommit commit, String author, String commitMessage) {
-			super();
-			this.commit = commit;
-			this.author = author;
-			this.commitMessage = commitMessage;
-		}
-
-		/**
-		 * @return commit
-		 */
-		public RevCommit getCommit() {
-			return commit;
-		}
-
-		/**
-		 * @return author
-		 */
-		public String getAuthor() {
-			return author;
-		}
-
-		/**
-		 * @return commit message
-		 */
-		public String getCommitMessage() {
-			return commitMessage;
-		}
 	}
 
 }

@@ -327,6 +327,10 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private Repository repository;
 
+	private String previousCommitMessage;
+
+	private String previousAuthor;
+
 	/**
 	 * @param parentShell
 	 */
@@ -440,6 +444,15 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	/**
+	 * Pre-set the previous author if amending the commit
+	 *
+	 * @param previousAuthor
+	 */
+	public void setPreviousAuthor(String previousAuthor) {
+		this.previousAuthor = previousAuthor;
+	}
+
+	/**
 	 * @return whether the last commit is to be amended
 	 */
 	public boolean isAmending() {
@@ -453,6 +466,15 @@ public class CommitDialog extends TitleAreaDialog {
 	 */
 	public void setAmending(boolean amending) {
 		this.amending = amending;
+	}
+
+	/**
+	 * Set the message from the previous commit for amending.
+	 *
+	 * @param string
+	 */
+	public void setPreviousCommitMessage(String string) {
+		previousCommitMessage = string;
 	}
 
 	/**
@@ -674,14 +696,15 @@ public class CommitDialog extends TitleAreaDialog {
 
 			public void updateChangeIdToggleSelection(boolean selection) {
 				changeIdItem.setSelection(selection);
+				createChangeId = selection;
 			}
 		};
 
 		commitMessageComponent = new CommitMessageComponent(repository, listener);
-		commitMessageComponent.enableListers(false);
-		commitMessageComponent.setDefaults();
 		commitMessageComponent.attachControls(commitText, authorText, committerText);
+		commitMessageComponent.setPreviousCommitMessage(previousCommitMessage);
 		commitMessageComponent.setCommitMessage(commitMessage);
+		commitMessageComponent.setPreviousAuthor(previousAuthor);
 		commitMessageComponent.setAuthor(author);
 		commitMessageComponent.setCommitter(committer);
 		commitMessageComponent.setAmending(amending);
@@ -706,7 +729,6 @@ public class CommitDialog extends TitleAreaDialog {
 		});
 
 		commitMessageComponent.updateUI();
-		commitMessageComponent.enableListers(true);
 
 		filesSection = toolkit.createSection(container,
 				ExpandableComposite.TITLE_BAR

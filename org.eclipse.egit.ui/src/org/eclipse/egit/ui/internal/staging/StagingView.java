@@ -24,6 +24,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -38,8 +39,6 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitUI;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -71,7 +70,6 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -91,6 +89,7 @@ import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.team.core.TeamException;
@@ -122,33 +121,21 @@ public class StagingView extends ViewPart {
 	public static final String VIEW_ID = "org.eclipse.egit.ui.StagingView"; //$NON-NLS-1$
 
 	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
-
 	private ScrolledForm form;
-
 	private Section stagedSection;
-
 	private Section unstagedSection;
-
 	private TableViewer stagedTableViewer;
-
 	private TableViewer unstagedTableViewer;
-
 	private SpellcheckableMessageArea commitMessageText;
-
 	private Text committerText;
-
 	private Text authorText;
-
 	private Action commitAction;
-
 	private CommitMessageComponent commitMessageComponent;
 
 	private boolean reactOnSelection = true;
 
 	private final List<ListenerHandle> myListeners = new LinkedList<ListenerHandle>();
-
 	private ISelectionListener selectionChangedListener;
-
 	private Repository currentRepository;
 
 	private final RefsChangedListener myRefsChangedListener = new RefsChangedListener() {
@@ -164,13 +151,9 @@ public class StagingView extends ViewPart {
 			reload(event.getRepository());
 		}
 	};
-
 	private Action signedOffByAction;
-
 	private Action addChangeIdAction;
-
 	private Action amendPreviousCommitAction;
-
 	private Action openNewCommitsAction;
 
 	@Override
@@ -197,16 +180,16 @@ public class StagingView extends ViewPart {
 
 		SashForm horizontalSashForm = new SashForm(form.getBody(), SWT.NONE);
 		toolkit.adapt(horizontalSashForm, true, true);
-		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(horizontalSashForm);
+		horizontalSashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
+				true, 1, 1));
 
-		SashForm verticalSashForm = new SashForm(horizontalSashForm,
+		SashForm veriticalSashForm = new SashForm(horizontalSashForm,
 				SWT.VERTICAL);
-		toolkit.adapt(verticalSashForm, true, true);
-		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(verticalSashForm);
+		toolkit.adapt(veriticalSashForm, true, true);
+		veriticalSashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
+				true, 1, 1));
 
-		unstagedSection = toolkit.createSection(verticalSashForm,
+		unstagedSection = toolkit.createSection(veriticalSashForm,
 				ExpandableComposite.TITLE_BAR);
 
 		Composite unstagedTableComposite = toolkit
@@ -258,8 +241,7 @@ public class StagingView extends ViewPart {
 				horizontalSashForm, ExpandableComposite.TITLE_BAR);
 		commitMessageSection.setText(UIText.StagingView_CommitMessage);
 
-		Composite commitMessageComposite = toolkit
-				.createComposite(commitMessageSection);
+		Composite commitMessageComposite = toolkit.createComposite(commitMessageSection);
 		toolkit.paintBordersFor(commitMessageComposite);
 		commitMessageSection.setClient(commitMessageComposite);
 		GridLayoutFactory.fillDefaults().numColumns(1)
@@ -290,12 +272,12 @@ public class StagingView extends ViewPart {
 				.setForeground(
 						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
 		committerText = toolkit.createText(composite, null);
-		committerText.setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TEXT_BORDER);
+		committerText
+				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
 		committerText.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).create());
 
-		stagedSection = toolkit.createSection(verticalSashForm,
+		stagedSection = toolkit.createSection(veriticalSashForm,
 				ExpandableComposite.TITLE_BAR);
 		Composite stagedTableComposite = toolkit.createComposite(stagedSection);
 		toolkit.paintBordersFor(stagedTableComposite);
@@ -371,9 +353,13 @@ public class StagingView extends ViewPart {
 				addChangeIdAction.setChecked(selection);
 			}
 		};
-		commitMessageComponent = new CommitMessageComponent(listener);
+		commitMessageComponent = new CommitMessageComponent(currentRepository,
+				listener);
 		commitMessageComponent.attachControls(commitMessageText, authorText,
 				committerText);
+
+		horizontalSashForm.setWeights(new int[] { 40, 60 });
+		veriticalSashForm.setWeights(new int[] { 50, 50 });
 
 		// react on selection changes
 		ISelectionService srv = (ISelectionService) getSite().getService(
@@ -419,8 +405,7 @@ public class StagingView extends ViewPart {
 
 		toolbar.add(new Separator());
 
-		commitAction = new Action(UIText.StagingView_Commit,
-				IAction.AS_PUSH_BUTTON) {
+		commitAction = new Action(UIText.StagingView_Commit, IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				commit();
 			}
@@ -446,20 +431,10 @@ public class StagingView extends ViewPart {
 				.add(openNewCommitsAction);
 	}
 
-	private void updateSectionText() {
-		Integer stagedCount = Integer.valueOf(stagedTableViewer.getTable()
-				.getItemCount());
-		stagedSection.setText(MessageFormat.format(
-				UIText.StagingView_StagedChanges, stagedCount));
-		Integer unstagedCount = Integer.valueOf(unstagedTableViewer.getTable()
-				.getItemCount());
-		unstagedSection.setText(MessageFormat.format(
-				UIText.StagingView_UnstagedChanges, unstagedCount));
-	}
+
 
 	private void compareWith(OpenEvent event) {
-		IStructuredSelection selection = (IStructuredSelection) event
-				.getSelection();
+		IStructuredSelection selection = (IStructuredSelection) event.getSelection();
 		if (selection.isEmpty())
 			return;
 		StagingEntry stagingEntry = (StagingEntry) selection.getFirstElement();
@@ -494,8 +469,7 @@ public class StagingView extends ViewPart {
 				if (adapted != null)
 					showResource(adapted);
 			} else if (ssel.getFirstElement() instanceof RepositoryTreeNode) {
-				RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel
-						.getFirstElement();
+				RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel.getFirstElement();
 				reload(repoNode.getRepository());
 			}
 		}
@@ -506,16 +480,15 @@ public class StagingView extends ViewPart {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 		if (mapping == null)
 			return;
-		if (mapping.getRepository() != currentRepository) {
+		if (mapping.getRepository() != currentRepository)
 			reload(mapping.getRepository());
-		}
 	}
 
 	private void attachListeners(Repository repository) {
-		myListeners.add(repository.getListenerList().addIndexChangedListener(
-				myIndexChangedListener));
-		myListeners.add(repository.getListenerList().addRefsChangedListener(
-				myRefsChangedListener));
+		myListeners.add(repository.getListenerList()
+				.addIndexChangedListener(myIndexChangedListener));
+		myListeners.add(repository.getListenerList()
+				.addRefsChangedListener(myRefsChangedListener));
 	}
 
 	private void removeListeners() {
@@ -531,7 +504,7 @@ public class StagingView extends ViewPart {
 		Iterator iterator = selection.iterator();
 		while (iterator.hasNext()) {
 			StagingEntry entry = (StagingEntry) iterator.next();
-			switch (entry.getState()) {
+			switch(entry.getState()) {
 			case ADDED:
 			case CHANGED:
 			case REMOVED:
@@ -576,8 +549,7 @@ public class StagingView extends ViewPart {
 		final RevCommit headRev;
 		try {
 			final Ref head = currentRepository.getRef(Constants.HEAD);
-			headRev = new RevWalk(currentRepository).parseCommit(head
-					.getObjectId());
+			headRev = new RevWalk(currentRepository).parseCommit(head.getObjectId());
 		} catch (IOException e1) {
 			// TODO fix text
 			MessageDialog.openError(getSite().getShell(),
@@ -622,7 +594,7 @@ public class StagingView extends ViewPart {
 		Iterator iterator = selection.iterator();
 		while (iterator.hasNext()) {
 			StagingEntry entry = (StagingEntry) iterator.next();
-			switch (entry.getState()) {
+			switch(entry.getState()) {
 			case ADDED:
 				edit.add(new DirCacheEditor.DeletePath(entry.getPath()));
 				break;
@@ -630,8 +602,7 @@ public class StagingView extends ViewPart {
 			case REMOVED:
 				// set the index object id/file mode back to our head revision
 				try {
-					final TreeWalk tw = TreeWalk.forPath(currentRepository,
-							entry.getPath(), headRev.getTree());
+					final TreeWalk tw = TreeWalk.forPath(currentRepository, entry.getPath(), headRev.getTree());
 					if (tw != null) {
 						edit.add(new DirCacheEditor.PathEdit(entry.getPath()) {
 							@Override
@@ -661,17 +632,15 @@ public class StagingView extends ViewPart {
 		ICommandService commandService = (ICommandService) PlatformUI
 				.getWorkbench().getService(ICommandService.class);
 		Command cmd = commandService.getCommand(commandId);
-		if (!cmd.isDefined()) {
+		if (!cmd.isDefined())
 			return false;
-		}
 
 		IHandlerService handlerService = (IHandlerService) PlatformUI
 				.getWorkbench().getService(IHandlerService.class);
 		EvaluationContext c = null;
 		if (selection != null) {
-			c = new EvaluationContext(
-					handlerService.createContextSnapshot(false),
-					selection.toList());
+			c = new EvaluationContext(handlerService
+					.createContextSnapshot(false), selection.toList());
 			c.addVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME, selection);
 			c.removeVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
 		}
@@ -694,10 +663,10 @@ public class StagingView extends ViewPart {
 		final boolean repositoryChanged = repository != currentRepository;
 		currentRepository = repository;
 
+
 		final IndexDiff indexDiff;
 		try {
-			WorkingTreeIterator iterator = IteratorService
-					.createInitialIterator(repository);
+			WorkingTreeIterator iterator = IteratorService.createInitialIterator(repository);
 			indexDiff = new IndexDiff(repository, Constants.HEAD, iterator);
 			indexDiff.diff();
 		} catch (IOException e) {
@@ -711,6 +680,7 @@ public class StagingView extends ViewPart {
 			public void run() {
 				if (form.isDisposed())
 					return;
+
 				unstagedTableViewer.setInput(new Object[] { repository,
 						indexDiff });
 				stagedTableViewer
@@ -718,13 +688,27 @@ public class StagingView extends ViewPart {
 				commitAction.setEnabled(repository.getRepositoryState()
 						.canCommit());
 				form.setText(StagingView.getRepositoryName(repository));
-				updateCommitMessageComponent(repositoryChanged);
-				updateSectionText();
+				if (repositoryChanged) {
+					updateCommitMessageComponent();
+					clearCommitMessageToggles();
+					updateSectionText();
+				}
 			}
 
 		});
 
 		return indexDiff;
+	}
+
+	private void updateSectionText() {
+		stagedSection.setText(MessageFormat.format(
+				UIText.StagingView_StagedChanges,
+				Integer.valueOf(stagedTableViewer.getTable().getItemCount())));
+		unstagedSection
+				.setText(MessageFormat.format(
+						UIText.StagingView_UnstagedChanges, Integer
+								.valueOf(unstagedTableViewer.getTable()
+										.getItemCount())));
 	}
 
 	private void clearCommitMessageToggles() {
@@ -733,121 +717,16 @@ public class StagingView extends ViewPart {
 		signedOffByAction.setChecked(false);
 	}
 
-	void updateCommitMessageComponent(boolean repositoryChanged) {
+	void updateCommitMessageComponent() {
 		CommitHelper helper = new CommitHelper(currentRepository);
-		CommitMessageComponentState oldState = null;
-		if (repositoryChanged) {
-			if (userEnteredCommmitMessage())
-				saveCommitMessageComponentState();
-			else
-				deleteCommitMessageComponentState();
-			oldState = loadCommitMessageComponentState();
-			commitMessageComponent.setRepository(currentRepository);
-			if (oldState == null) {
-				loadInitialState(helper);
-			} else {
-				loadExistingState(helper, oldState);
-			}
-		} else {
-			// repository did not change
-			if (userEnteredCommmitMessage()) {
-				if (!commitMessageComponent.getHeadCommit().equals(
-						helper.getPreviousCommit()))
-					addHeadChangedWarning(commitMessageComponent
-							.getCommitMessage());
-			} else
-				loadInitialState(helper);
-		}
-		amendPreviousCommitAction.setChecked(commitMessageComponent
-				.isAmending());
-		amendPreviousCommitAction.setEnabled(amendAllowed(helper));
-	}
-
-	private void loadExistingState(CommitHelper helper,
-			CommitMessageComponentState oldState) {
-		boolean headCommitChanged = !oldState.getHeadCommit().equals(
-				getCommitId(helper.getPreviousCommit()));
-		commitMessageComponent.enableListers(false);
-		commitMessageComponent.setAuthor(oldState.getAuthor());
-		if (headCommitChanged)
-			addHeadChangedWarning(oldState.getCommitMessage());
-		else
-			commitMessageComponent
-					.setCommitMessage(oldState.getCommitMessage());
-		commitMessageComponent.setCommitter(oldState.getCommitter());
-		commitMessageComponent.setHeadCommit(getCommitId(helper
-				.getPreviousCommit()));
-		boolean amendAllowed = amendAllowed(helper);
-		commitMessageComponent.setAmendAllowed(amendAllowed);
-		if (!amendAllowed) {
-			commitMessageComponent.setAmending(false);
-		} else {
-			if (!headCommitChanged && oldState.getAmend())
-				commitMessageComponent.setAmending(true);
-			else
-				commitMessageComponent.setAmending(false);
-		}
-		commitMessageComponent.updateUIFromState();
-		commitMessageComponent.updateSignedOffAndChangeIdButton();
-		commitMessageComponent.enableListers(true);
-	}
-
-	private void addHeadChangedWarning(String commitMessage) {
-		String message = UIText.StagingView_headCommitChanged + "\n\n" + //$NON-NLS-1$
-				commitMessage;
-		commitMessageComponent.setCommitMessage(message);
-	}
-
-	private void loadInitialState(CommitHelper helper) {
-		commitMessageComponent.enableListers(false);
-		commitMessageComponent.resetState();
+		commitMessageComponent.setRepository(currentRepository);
 		commitMessageComponent.setAuthor(helper.getAuthor());
 		commitMessageComponent.setCommitMessage(helper.getCommitMessage());
 		commitMessageComponent.setCommitter(helper.getCommitter());
-		commitMessageComponent.setHeadCommit(getCommitId(helper
-				.getPreviousCommit()));
-		commitMessageComponent.setAmendAllowed(amendAllowed(helper));
-		commitMessageComponent.setAmending(false);
-		commitMessageComponent.setSignedOff(false);
-		commitMessageComponent.setCreateChangeId(false);
+		commitMessageComponent.setPreviousAuthor(helper.getPreviousAuthor());
+		commitMessageComponent.setPreviousCommitMessage(helper
+				.getPreviousCommitMessage());
 		commitMessageComponent.updateUI();
-		commitMessageComponent.enableListers(true);
-	}
-
-	private boolean amendAllowed(CommitHelper commitHelper) {
-		return !commitHelper.isMergedResolved()
-				&& !commitHelper.isCherryPickResolved();
-	}
-
-	private boolean userEnteredCommmitMessage() {
-		if (commitMessageComponent.getRepository() == null)
-			return false;
-		String message = commitMessageComponent.getCommitMessage();
-		if (message == null || message.trim().length() == 0)
-			return false;
-		return true;
-	}
-
-	private ObjectId getCommitId(RevCommit commit) {
-		if (commit == null)
-			return ObjectId.zeroId();
-		return commit.getId();
-	}
-
-	private void saveCommitMessageComponentState() {
-		CommitMessageComponentStateManager.persistState(
-				commitMessageComponent.getRepository(),
-				commitMessageComponent.getState());
-	}
-
-	private void deleteCommitMessageComponentState() {
-		if (commitMessageComponent.getRepository() != null)
-			CommitMessageComponentStateManager
-					.deleteState(commitMessageComponent.getRepository());
-	}
-
-	private CommitMessageComponentState loadCommitMessageComponentState() {
-		return CommitMessageComponentStateManager.loadState(currentRepository);
 	}
 
 	private static String getRepositoryName(Repository repository) {
@@ -861,22 +740,20 @@ public class StagingView extends ViewPart {
 	}
 
 	private void commit() {
-		if (stagedTableViewer.getTable().getItemCount() == 0
-				&& !amendPreviousCommitAction.isChecked()) {
-			MessageDialog.openError(getSite().getShell(),
-					UIText.StagingView_committingNotPossible,
-					UIText.StagingView_noStagedFiles);
-			return;
-		}
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
-		final Repository repository = currentRepository;
 		CommitOperation commitOperation = null;
+		final Repository repository = currentRepository;
 		try {
 			commitOperation = new CommitOperation(repository,
 					commitMessageComponent.getAuthor(),
 					commitMessageComponent.getCommitter(),
 					commitMessageComponent.getCommitMessage()) {
+
+				public void execute(IProgressMonitor m) throws CoreException {
+					super.execute(m);
+					reload(currentRepository);
+				}
 
 				protected RevCommit commit() throws TeamException {
 					RevCommit commit = super.commit();
@@ -914,7 +791,7 @@ public class StagingView extends ViewPart {
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
 		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
-		CommitUI.performCommit(currentRepository, commitOperation);
+		CommitUI.performCommit(repository, commitOperation);
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
 	}

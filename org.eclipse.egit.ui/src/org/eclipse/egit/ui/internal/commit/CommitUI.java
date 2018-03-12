@@ -45,7 +45,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -177,6 +176,8 @@ public class CommitUI  {
 		commitDialog.setAuthor(commitHelper.getAuthor());
 		commitDialog.setCommitter(commitHelper.getCommitter());
 		commitDialog.setAllowToChangeSelection(!commitHelper.isMergedResolved && !commitHelper.isCherryPickResolved);
+		commitDialog.setPreviousCommitMessage(commitHelper.getPreviousCommitMessage());
+		commitDialog.setPreviousAuthor(commitHelper.getPreviousAuthor());
 		commitDialog.setCommitMessage(commitHelper.getCommitMessage());
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
@@ -215,8 +216,6 @@ public class CommitUI  {
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					commitOperation.execute(monitor);
-					CommitMessageComponentStateManager.deleteState(
-							repository);
 					RepositoryMapping mapping = RepositoryMapping
 							.findRepositoryMapping(repository);
 					if (mapping != null)
