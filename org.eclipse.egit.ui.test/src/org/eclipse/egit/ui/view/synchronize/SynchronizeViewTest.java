@@ -22,13 +22,10 @@ import static org.eclipse.jgit.lib.Constants.MASTER;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileWriter;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -38,7 +35,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
@@ -57,8 +56,8 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
+import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -143,8 +142,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
-	@Test
-	public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
+	@Test public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
 		// given
 		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
@@ -329,61 +327,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, projectTree.getItems().length);
 	}
 
-	@Test public void shouldShowNonWorkspaceFileInSynchronization()
-			throws Exception {
-		// given
-		String name = "non-workspace.txt";
-		File root = new File(getTestDirectory(), REPO1);
-		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
-		writer.append("file content");
-		writer.close();
-
-		// when
-		launchSynchronization(SynchronizeWithAction_tagsName, INITIAL_TAG,
-				SynchronizeWithAction_localRepoName, HEAD, true);
-
-		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		SWTBotTreeItem workingTree = syncViewTree
-				.expandNode(UIText.GitModelWorkingTree_workingTree);
-		assertEquals(1, syncViewTree.getAllItems().length);
-		assertEquals(1, workingTree.getNodes(name).size());
-	}
-
-	@Test
-	public void shouldShowCompareEditorForNonWorkspaceFileFromSynchronization()
-			throws Exception {
-		// given
-		String content = "file content";
-		String name = "non-workspace.txt";
-		File root = new File(getTestDirectory(), REPO1);
-		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
-		writer.append(content);
-		writer.close();
-
-		// when
-		launchSynchronization(SynchronizeWithAction_tagsName, INITIAL_TAG,
-				SynchronizeWithAction_localRepoName, HEAD, true);
-
-		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		SWTBotTreeItem workingTree = syncViewTree
-				.expandNode(UIText.GitModelWorkingTree_workingTree);
-		assertEquals(1, syncViewTree.getAllItems().length);
-		workingTree.expand().getNode(name).doubleClick();
-
-		SWTBotEditor editor = bot.editorByTitle(name);
-		editor.setFocus();
-
-		// the WidgetNotFoundException will be thrown when widget with given content cannot be not found
-		SWTBotStyledText left = editor.bot().styledText(content);
-		SWTBotStyledText right = editor.bot().styledText("");
-		// to be complete sure asert that both sides are not the same
-		assertNotSame(left, right);
-	}
-
 	// this test always fails with cause:
 	// Timeout after: 5000 ms.: Could not find context menu with text:
 	// Synchronize
@@ -543,14 +486,14 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	private void launchSynchronization(String srcRepo, String srcRef,
-			String dstRepo, String dstRef, boolean includeLocal) throws InterruptedException{
+			String dstRepo, String dstRef, boolean includeLocal) {
 		launchSynchronization(REPO1, PROJ1, srcRepo, srcRef, dstRepo, dstRef,
 				includeLocal);
 	}
 
 	private void launchSynchronization(String repo, String projectName,
 			String srcRepo, String srcRef, String dstRepo, String dstRef,
-			boolean includeLocal) throws InterruptedException {
+			boolean includeLocal) {
 		showDialog(projectName, "Team", "Synchronize...");
 
 		bot.shell("Synchronize repository: " + repo + File.separator + ".git")
@@ -573,9 +516,43 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		if (dstRef != null)
 			bot.comboBox(3).setSelection(dstRef);
 
+		// register synchronization finish hook
+		SynchronizeFinishHook sfh = new SynchronizeFinishHook();
+		Job.getJobManager().addJobChangeListener(sfh);
+
+		// fire action
 		bot.button(IDialogConstants.OK_LABEL).click();
 
-		Job.getJobManager().join(ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
+		try {
+			bot.waitUntil(sfh, 120000);
+		} finally {
+			Job.getJobManager().removeJobChangeListener(sfh);
+		}
+	}
+
+	private static class SynchronizeFinishHook extends JobChangeAdapter
+			implements ICondition {
+		private boolean state = false;
+
+		public void done(IJobChangeEvent event) {
+			if (event.getJob().belongsTo(
+					ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION))
+				state = true;
+		}
+
+		public boolean test() throws Exception {
+			return state;
+		}
+
+		public void init(SWTBot swtBot) {
+			// unused
+		}
+
+		public String getFailureMessage() {
+			// unused
+			return null;
+		}
+
 	}
 
 	private SWTBot setPresentationModel(String model) throws Exception {

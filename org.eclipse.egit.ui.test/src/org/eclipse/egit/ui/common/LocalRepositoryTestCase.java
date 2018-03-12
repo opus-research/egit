@@ -146,12 +146,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// suppress the configuration dialog
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, false);
-		// suppress the detached head warning dialog
-		org.eclipse.egit.ui.Activator
-				.getDefault()
-				.getPreferenceStore()
-				.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
-						false);
 	}
 
 	@AfterClass
