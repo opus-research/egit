@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,11 +46,6 @@ import org.eclipse.swt.graphics.Rectangle;
  */
 public class RepositoriesViewLabelProvider extends LabelProvider implements
 		IStyledLabelProvider {
-
-	/**
-	 * Pattern used to append counter information to labels
-	 */
-	private static final String COUNTER_PATTERN = " ({0})"; //$NON-NLS-1$
 
 	/**
 	 * A map of regular images to their decorated counterpart.
@@ -272,16 +266,6 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 							.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
 				}
 				return dirString;
-			case TAGS:
-				StyledString tagsLabel = new StyledString(getSimpleText(node));
-				addCount(tagsLabel, node.getRepository().getTags().size());
-				return tagsLabel;
-			case REMOTES:
-				StyledString remotesLabel = new StyledString(
-						getSimpleText(node));
-				addCount(remotesLabel, node.getRepository().getConfig()
-						.getSubsections(RepositoriesView.REMOTE).size());
-				return remotesLabel;
 			case PUSH:
 				// fall through
 			case FETCH:
@@ -298,7 +282,11 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 				// fall through
 			case BRANCHHIERARCHY:
 				// fall through
+			case TAGS:
+				// fall through;
 			case ADDITIONALREFS:
+				// fall through
+			case REMOTES:
 				// fall through
 			case REMOTE:
 				// fall through
@@ -319,11 +307,6 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 
 		return null;
 
-	}
-
-	private void addCount(StyledString styled, int count) {
-		String formatted = MessageFormat.format(COUNTER_PATTERN, count);
-		styled.append(formatted, StyledString.COUNTER_STYLER);
 	}
 
 	private String getSimpleText(RepositoryTreeNode node) {
