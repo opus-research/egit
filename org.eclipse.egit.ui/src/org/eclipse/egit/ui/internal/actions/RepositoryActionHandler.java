@@ -243,24 +243,21 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *
 	 * @param event
 	 *
-	 * @return repositories for selection, or an empty array
+	 * @return repository for current project, or null
 	 * @throws ExecutionException
 	 */
 	protected Repository[] getRepositories(ExecutionEvent event)
 			throws ExecutionException {
 		IProject[] selectedProjects = getSelectedProjects(event);
-		return getRepositoriesFor(selectedProjects);
-	}
-
-	/**
-	 * Get the currently selected repositories. All selected projects must map
-	 * to a repository.
-	 *
-	 * @return repositories for selection, or an empty array
-	 */
-	protected Repository[] getRepositories() {
-		IProject[] selectedProjects = getSelectedProjects(getSelection());
-		return getRepositoriesFor(selectedProjects);
+		Set<Repository> repos = new HashSet<Repository>(selectedProjects.length);
+		for (IProject project : selectedProjects) {
+			RepositoryMapping repositoryMapping = RepositoryMapping
+					.getMapping(project);
+			if (repositoryMapping == null)
+				return new Repository[0];
+			repos.add(repositoryMapping.getRepository());
+		}
+		return repos.toArray(new Repository[repos.size()]);
 	}
 
 	/**
@@ -498,5 +495,20 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 					UIText.MergeAction_CannotMerge, message);
 		}
 		return (message == null);
+	}
+
+	/**
+	 *
+	 * @return {@code true} when {@link Constants#HEAD} can be resolved,
+	 *         {@code false} otherwise
+	 */
+	protected boolean containsHead() {
+		try {
+			return getRepository().resolve(Constants.HEAD) != null;
+		} catch (Exception e) {
+			// do nothing
+		}
+
+		return false;
 	}
 }
