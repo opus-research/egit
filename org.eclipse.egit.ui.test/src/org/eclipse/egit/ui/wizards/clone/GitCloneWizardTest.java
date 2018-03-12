@@ -19,25 +19,17 @@ import java.io.File;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.ui.test.Eclipse;
+import org.eclipse.egit.ui.common.EGitTestCase;
+import org.eclipse.egit.ui.common.GitImportRepoWizard;
+import org.eclipse.egit.ui.common.RepoPropertiesPage;
+import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
+import org.eclipse.egit.ui.common.WorkingCopyPage;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
-import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(SWTBotJunit4ClassRunner.class)
-public class GitCloneWizardTest {
-	static {
-		System.setProperty("org.eclipse.swtbot.playback.delay", "50");
-	}
-
-	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
+public class GitCloneWizardTest extends EGitTestCase {
 
 	private GitImportRepoWizard importWizard;
 
@@ -45,7 +37,8 @@ public class GitCloneWizardTest {
 	public void updatesParameterFieldsInImportDialogWhenURIIsUpdated()
 			throws Exception {
 
-		RepoPropertiesPage propertiesPage = importWizard.openWizard();
+		importWizard.openWizard();
+		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
 
 		propertiesPage.setURI("git://www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT", "git",
@@ -71,19 +64,19 @@ public class GitCloneWizardTest {
 
 		propertiesPage.setURI("ssh://user@www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT",
-				"git+ssh", "", true, "user", "", true, true);
+				"ssh", "", true, "user", "", true, true);
 
 		propertiesPage.setURI("ssh://user@www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT",
-				"git+ssh", "", true, "user", "", true, true);
+				"ssh", "", true, "user", "", true, true);
 
 		propertiesPage.setURI("ssh://user:hi@www.jgit.org:33/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT",
-				"git+ssh", "33", true, "user", "hi", true, true);
+				"ssh", "33", true, "user", "hi", true, true);
 
 		propertiesPage.setURI("ssh:///EGIT");
 		propertiesPage.assertSourceParams(" Host required for ssh protocol.",
-				"", "/EGIT", "git+ssh", "", true, "", "", true, true);
+				"", "/EGIT", "ssh", "", true, "", "", true, true);
 
 		propertiesPage.setURI("file:///some/place");
 		if (Platform.getOS().equals(Platform.OS_WIN32))
@@ -104,26 +97,26 @@ public class GitCloneWizardTest {
 		propertiesPage.assertURI("ssh://user@example.com/EGIT");
 
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"git+ssh", "", true, "user", "", true, true);
+				"ssh", "", true, "user", "", true, true);
 
 		// ..change user
 		bot.textWithLabel("User:").setText("gitney");
 		propertiesPage.assertURI("ssh://gitney@example.com/EGIT");
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"git+ssh", "", true, "gitney", "", true, true);
+				"ssh", "", true, "gitney", "", true, true);
 
 		// ..change password
 		bot.textWithLabel("Password:").setText("fsck");
 		// Password is not written into the URL here!
 		propertiesPage.assertURI("ssh://gitney@example.com/EGIT");
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"git+ssh", "", true, "gitney", "fsck", true, true);
+				"ssh", "", true, "gitney", "fsck", true, true);
 
 		// change port number
 		bot.textWithLabel("Port:").setText("99");
 		propertiesPage.assertURI("ssh://gitney@example.com:99/EGIT");
 		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"git+ssh", "99", true, "gitney", "fsck", true, true);
+				"ssh", "99", true, "gitney", "fsck", true, true);
 
 		// change protocol to another with user/password capability
 		bot.comboBoxWithLabel("Protocol:").setSelection("ftp");
@@ -177,11 +170,11 @@ public class GitCloneWizardTest {
 	@SuppressWarnings("boxing")
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
-		File destRepo = new File(new File(ResourcesPlugin.getWorkspace()
-				.getRoot().getLocation().toFile().getParent(),
-				"junit-workspace"), "egit");
+		File destRepo = new File(ResourcesPlugin.getWorkspace().getRoot()
+				.getLocation().toFile(), "egit");
 
-		RepoPropertiesPage propertiesPage = importWizard.openWizard();
+		importWizard.openWizard();
+		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
 
 		RepoRemoteBranchesPage remoteBranches = propertiesPage
 				.nextToRemoteBranches("git://repo.or.cz/egit.git");
@@ -194,7 +187,6 @@ public class GitCloneWizardTest {
 		workingCopy.assertDirectory(destRepo.toString());
 		workingCopy.assertBranch("master");
 		workingCopy.assertRemoteName("origin");
-		workingCopy.doNotImportProjectsAfterClone();
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
@@ -225,7 +217,8 @@ public class GitCloneWizardTest {
 
 	@Test
 	public void clonedRepositoryShouldExistOnFileSystem() throws Exception {
-		RepoPropertiesPage repoProperties = importWizard.openWizard();
+		importWizard.openWizard();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://repo.or.cz/egit.git");
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
@@ -235,11 +228,11 @@ public class GitCloneWizardTest {
 	@Test
 	public void alteringSomeParametersDuringClone() throws Exception {
 
-		File destRepo = new File(new File(ResourcesPlugin.getWorkspace()
-				.getRoot().getLocation().toFile().getParent(),
-				"junit-workspace"), "EGIT2");
+		File destRepo = new File(ResourcesPlugin.getWorkspace().getRoot()
+				.getLocation().toFile(), "egit2");
 
-		RepoPropertiesPage repoProperties = importWizard.openWizard();
+		importWizard.openWizard();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://repo.or.cz/egit.git");
 		remoteBranches.deselectAllBranches();
@@ -254,7 +247,6 @@ public class GitCloneWizardTest {
 		workingCopy.setDirectory(destRepo.toString());
 		workingCopy.assertBranch("historical/pre-eclipse");
 		workingCopy.setRemoteName("src");
-		workingCopy.doNotImportProjectsAfterClone();
 		workingCopy.waitForCreate();
 
 		// Some random sampling to see we got something. We do not test
@@ -277,7 +269,8 @@ public class GitCloneWizardTest {
 
 	@Test
 	public void invalidHostnameFreezesDialog() throws Exception {
-		RepoPropertiesPage repoProperties = importWizard.openWizard();
+		importWizard.openWizard();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://no.example.com/EGIT");
 		remoteBranches
@@ -290,7 +283,8 @@ public class GitCloneWizardTest {
 	// an error. Perhaps set a higher timeout for this test ?
 	@Ignore
 	public void invalidPortFreezesDialog() throws Exception {
-		RepoPropertiesPage repoProperties = importWizard.openWizard();
+		importWizard.openWizard();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://localhost:80/EGIT");
 		remoteBranches
@@ -303,7 +297,8 @@ public class GitCloneWizardTest {
 	// an error. Perhaps set a higher timeout for this test ?
 	@Ignore
 	public void timeoutToASocketFreezesDialog() throws Exception {
-		RepoPropertiesPage repoProperties = importWizard.openWizard();
+		importWizard.openWizard();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://www.example.com/EGIT");
 		remoteBranches
@@ -317,24 +312,6 @@ public class GitCloneWizardTest {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
 		importWizard = new GitImportRepoWizard();
-	}
-
-	// TODO: push this in the junit class runner. This can then be shared across
-	// all tests.
-	@BeforeClass
-	public static void closeWelcomePage() {
-		try {
-			bot.viewByTitle("Welcome").close();
-		} catch (WidgetNotFoundException e) {
-			// somebody else probably closed it, lets not feel bad about it.
-		}
-	}
-
-	// TODO: push this in the junit class runner. This can then be shared across
-	// all tests.
-	@After
-	public void resetWorkbench() {
-		new Eclipse().reset();
 	}
 
 }

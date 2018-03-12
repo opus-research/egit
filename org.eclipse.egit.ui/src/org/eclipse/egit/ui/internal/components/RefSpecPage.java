@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,25 +14,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.TagOpt;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.TagOpt;
-import org.eclipse.jgit.transport.URIish;
 
 /**
  * This wizard page allows user easy selection of specifications for push or
@@ -39,19 +42,16 @@ import org.eclipse.jgit.transport.URIish;
  * <p>
  * Page is relying highly on {@link RefSpecPanel} component, see its description
  * for details.
- * <p>
- * Page is designed to be successor of {@link RepositorySelectionPage} in
- * wizard.
  */
-public class RefSpecPage extends BaseWizardPage {
+public class RefSpecPage extends WizardPage {
 
 	private final Repository local;
-
-	private final RepositorySelectionPage repoPage;
 
 	private final boolean pushPage;
 
 	private RepositorySelection validatedRepoSelection;
+
+	private RepositorySelection currentRepoSelection;
 
 	private RefSpecPanel specsPanel;
 
@@ -65,6 +65,8 @@ public class RefSpecPage extends BaseWizardPage {
 
 	private String transportError;
 
+	private String configName;
+
 	/**
 	 * Create specifications selection page for provided context.
 	 *
@@ -73,15 +75,10 @@ public class RefSpecPage extends BaseWizardPage {
 	 * @param pushPage
 	 *            true if this page is used for push specifications selection,
 	 *            false if it used for fetch specifications selection.
-	 * @param repoPage
-	 *            repository selection page - must be predecessor of this page
-	 *            in wizard.
 	 */
-	public RefSpecPage(final Repository local, final boolean pushPage,
-			final RepositorySelectionPage repoPage) {
+	public RefSpecPage(final Repository local, final boolean pushPage) {
 		super(RefSpecPage.class.getName());
 		this.local = local;
-		this.repoPage = repoPage;
 		this.pushPage = pushPage;
 		if (pushPage) {
 			setTitle(UIText.RefSpecPage_titlePush);
@@ -91,14 +88,18 @@ public class RefSpecPage extends BaseWizardPage {
 			setDescription(UIText.RefSpecPage_descriptionFetch);
 		}
 
-		repoPage.addSelectionListener(new SelectionChangeListener() {
-			public void selectionChanged() {
-				if (!repoPage.selectionEquals(validatedRepoSelection))
-					setPageComplete(false);
-				else
-					checkPage();
-			}
-		});
+	}
+
+	/**
+	 * @param selection
+	 */
+	public void setSelection(RepositorySelection selection) {
+		if (!selection.equals(validatedRepoSelection)) {
+			currentRepoSelection = selection;
+			setPageComplete(false);
+		} else
+			checkPage();
+		revalidate();
 	}
 
 	public void createControl(Composite parent) {
@@ -110,17 +111,10 @@ public class RefSpecPage extends BaseWizardPage {
 				new GridData(SWT.FILL, SWT.FILL, true, true));
 		specsPanel.addRefSpecTableListener(new SelectionChangeListener() {
 			public void selectionChanged() {
-				notifySelectionChanged();
 				checkPage();
 			}
 		});
 
-		final SelectionAdapter changesNotifier = new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				notifySelectionChanged();
-			}
-		};
 		if (!pushPage) {
 			final Group tagsGroup = new Group(panel, SWT.NULL);
 			tagsGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
@@ -134,27 +128,24 @@ public class RefSpecPage extends BaseWizardPage {
 			tagsFetchTagsButton
 					.setText(UIText.RefSpecPage_annotatedTagsFetchTags);
 			tagsNoTagsButton = new Button(tagsGroup, SWT.RADIO);
-			tagsNoTagsButton
-					.setText(UIText.RefSpecPage_annotatedTagsNoTags);
-			tagsAutoFollowButton.addSelectionListener(changesNotifier);
-			tagsFetchTagsButton.addSelectionListener(changesNotifier);
-			tagsNoTagsButton.addSelectionListener(changesNotifier);
+			tagsNoTagsButton.setText(UIText.RefSpecPage_annotatedTagsNoTags);
 		}
 
 		saveButton = new Button(panel, SWT.CHECK);
 		saveButton.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, true, false));
-		saveButton.addSelectionListener(changesNotifier);
 
+		Dialog.applyDialogFont(panel);
 		setControl(panel);
-		notifySelectionChanged();
 		checkPage();
 	}
 
-	@Override
-	public void setVisible(final boolean visible) {
-		if (visible)
-			revalidate();
-		super.setVisible(visible);
+	/**
+	 * Special mode: the configuration is determined by the wizard
+	 *
+	 * @param configName
+	 */
+	public void setConfigName(String configName) {
+		this.configName = configName;
 	}
 
 	/**
@@ -201,24 +192,26 @@ public class RefSpecPage extends BaseWizardPage {
 	}
 
 	private void revalidate() {
-		final RepositorySelection newRepoSelection = repoPage.getSelection();
 
-		if (repoPage.selectionEquals(validatedRepoSelection)) {
+		if (currentRepoSelection != null
+				&& currentRepoSelection.equals(validatedRepoSelection)) {
 			// nothing changed on previous page
 			checkPage();
 			return;
 		}
 
+		if (currentRepoSelection == null)
+			return;
+
 		specsPanel.clearRefSpecs();
 		specsPanel.setEnable(false);
 		saveButton.setVisible(false);
 		saveButton.setSelection(false);
-		notifySelectionChanged();
 		validatedRepoSelection = null;
 		transportError = null;
 		getControl().getDisplay().asyncExec(new Runnable() {
 			public void run() {
-				revalidateImpl(newRepoSelection);
+				revalidateImpl(currentRepoSelection);
 			}
 		});
 	}
@@ -229,7 +222,12 @@ public class RefSpecPage extends BaseWizardPage {
 			final URIish uri;
 			uri = newRepoSelection.getURI();
 			listRemotesOp = new ListRemoteOperation(local, uri);
-			getContainer().run(true, true, listRemotesOp);
+			getContainer().run(true, true, new IRunnableWithProgress() {
+				public void run(IProgressMonitor monitor)
+						throws InvocationTargetException, InterruptedException {
+					listRemotesOp.run(monitor);
+				}
+			});
 		} catch (InvocationTargetException e) {
 			final Throwable cause = e.getCause();
 			transportError(cause.getMessage());
@@ -245,32 +243,40 @@ public class RefSpecPage extends BaseWizardPage {
 		}
 
 		this.validatedRepoSelection = newRepoSelection;
-		final String remoteName = validatedRepoSelection.getConfigName();
-		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
-				remoteName);
+		final String actRemoteName;
+		if (configName == null)
+			actRemoteName = validatedRepoSelection.getConfigName();
+		else
+			actRemoteName = configName;
 
-		tagsAutoFollowButton.setSelection(false);
-		tagsFetchTagsButton.setSelection(false);
-		tagsNoTagsButton.setSelection(false);
+		specsPanel.setAssistanceData(local, listRemotesOp.getRemoteRefs(),
+				actRemoteName);
 
 		if (newRepoSelection.isConfigSelected()) {
 			saveButton.setVisible(true);
 			saveButton.setText(NLS.bind(UIText.RefSpecPage_saveSpecifications,
-					remoteName));
+					actRemoteName));
 			saveButton.getParent().layout();
-			final TagOpt tagOpt = newRepoSelection.getConfig().getTagOpt();
-			switch (tagOpt) {
-			case AUTO_FOLLOW:
-				tagsAutoFollowButton.setSelection(true);
-				break;
-			case FETCH_TAGS:
-				tagsFetchTagsButton.setSelection(true);
-				break;
-			case NO_TAGS:
-				tagsNoTagsButton.setSelection(true);
-				break;
+
+			if (!pushPage) {
+				tagsAutoFollowButton.setSelection(false);
+				tagsFetchTagsButton.setSelection(false);
+				tagsNoTagsButton.setSelection(false);
+
+				final TagOpt tagOpt = newRepoSelection.getConfig().getTagOpt();
+				switch (tagOpt) {
+				case AUTO_FOLLOW:
+					tagsAutoFollowButton.setSelection(true);
+					break;
+				case FETCH_TAGS:
+					tagsFetchTagsButton.setSelection(true);
+					break;
+				case NO_TAGS:
+					tagsNoTagsButton.setSelection(true);
+					break;
+				}
 			}
-		} else
+		} else if (!pushPage)
 			tagsAutoFollowButton.setSelection(true);
 
 		checkPage();

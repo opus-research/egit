@@ -14,15 +14,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-import org.eclipse.core.internal.resources.ResourceException;
-import org.eclipse.core.resources.IResourceStatus;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitTag;
-import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.team.core.history.ITag;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -30,6 +27,9 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.core.history.ITag;
 
 /**
  * An {@link IFileRevision} for a version of a specified resource in the
@@ -69,7 +69,7 @@ class CommitFileRevision extends GitFileRevision {
 			throws CoreException {
 		if (blobId == null)
 			blobId = locateBlobObjectId();
-		return new BlobStorage(db, path, blobId);
+		return new CommitBlobStorage(db, path, blobId, commit);
 	}
 
 	public long getTimestamp() {
@@ -89,7 +89,7 @@ class CommitFileRevision extends GitFileRevision {
 	}
 
 	public String toString() {
-		return commit.getId() + ":" + path;
+		return commit.getId() + ":" + path;  //$NON-NLS-1$
 	}
 
 	public ITag[] getTags() {
@@ -118,14 +118,63 @@ class CommitFileRevision extends GitFileRevision {
 		try {
 			final TreeWalk w = TreeWalk.forPath(db, path, commit.getTree());
 			if (w == null)
-				throw new ResourceException(IResourceStatus.FAILED_READ_LOCAL,
-						Path.fromPortableString(path), "Path not in "
-								+ commit.getId() + ".", null);
+				throw new CoreException(Activator.error(NLS.bind(
+						CoreText.CommitFileRevision_pathNotIn, commit.getId().name(),
+						path), null));
 			return w.getObjectId(0);
 		} catch (IOException e) {
-			throw new ResourceException(IResourceStatus.FAILED_READ_LOCAL, Path
-					.fromPortableString(path), "IO error looking up path in "
-					+ commit.getId() + ".", e);
+			throw new CoreException(Activator.error(NLS.bind(
+					CoreText.CommitFileRevision_errorLookingUpPath, commit
+							.getId().name(), path), e));
 		}
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((author == null) ? 0 : author.hashCode());
+		result = prime * result + ((blobId == null) ? 0 : blobId.hashCode());
+		result = prime * result + ((commit == null) ? 0 : commit.hashCode());
+		result = prime * result + ((db == null) ? 0 : db.hashCode());
+		result = prime * result + ((path == null) ? 0 : path.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		CommitFileRevision other = (CommitFileRevision) obj;
+		if (author == null) {
+			if (other.author != null)
+				return false;
+		} else if (!author.equals(other.author))
+			return false;
+		if (blobId == null) {
+			if (other.blobId != null)
+				return false;
+		} else if (!blobId.equals(other.blobId))
+			return false;
+		if (commit == null) {
+			if (other.commit != null)
+				return false;
+		} else if (!commit.equals(other.commit))
+			return false;
+		if (db == null) {
+			if (other.db != null)
+				return false;
+		} else if (!db.equals(other.db))
+			return false;
+		if (path == null) {
+			if (other.path != null)
+				return false;
+		} else if (!path.equals(other.path))
+			return false;
+		return true;
 	}
 }

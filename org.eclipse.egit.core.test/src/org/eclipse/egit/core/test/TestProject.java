@@ -9,8 +9,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.eclipse.core.resources.IFolder;
@@ -20,8 +20,6 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IPluginDescriptor;
-import org.eclipse.core.runtime.IPluginRegistry;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.IClasspathEntry;
@@ -33,6 +31,7 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.launching.JavaRuntime;
+import org.osgi.framework.Bundle;
 
 public class TestProject {
 	public IProject project;
@@ -40,6 +39,8 @@ public class TestProject {
 	public IJavaProject javaProject;
 
 	private IPackageFragmentRoot sourceFolder;
+	private String location;
+	private TestUtils testUtils = new TestUtils();
 
 	/**
 	 * @throws CoreException
@@ -49,18 +50,24 @@ public class TestProject {
 		this(false);
 	}
 
+	public TestProject(boolean remove) throws CoreException {
+		this(remove, "Project-1");
+	}
+
 	/**
 	 * @param remove
 	 *            should project be removed if already exists
+	 * @param projectName
 	 * @throws CoreException
 	 */
-	public TestProject(final boolean remove) throws CoreException {
+	public TestProject(final boolean remove, String projectName) throws CoreException {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		project = root.getProject("Project-1");
+		project = root.getProject(projectName);
 		if (remove)
 			project.delete(true, null);
 		project.create(null);
 		project.open(null);
+		location = project.getLocation().toOSString();
 		javaProject = JavaCore.create(project);
 		IFolder binFolder = createBinFolder();
 		setJavaNature();
@@ -77,8 +84,7 @@ public class TestProject {
 		return javaProject;
 	}
 
-	public void addJar(String plugin, String jar) throws MalformedURLException,
-			IOException, JavaModelException {
+	public void addJar(String plugin, String jar) throws JavaModelException {
 		Path result = findFileInPlugin(plugin, jar);
 		IClasspathEntry[] oldEntries = javaProject.getRawClasspath();
 		IClasspathEntry[] newEntries = new IClasspathEntry[oldEntries.length + 1];
@@ -105,9 +111,12 @@ public class TestProject {
 		return cu.getTypes()[0];
 	}
 
-	public void dispose() throws CoreException {
+	public void dispose() throws CoreException, IOException {
 		waitForIndexer();
-		project.delete(true, true, null);
+		if (project.exists())
+			project.delete(true, true, null);
+		else
+			testUtils.deleteRecursive(new File(location));
 	}
 
 	private IFolder createBinFolder() throws CoreException {
@@ -149,14 +158,10 @@ public class TestProject {
 		javaProject.setRawClasspath(newEntries, null);
 	}
 
-	private Path findFileInPlugin(String plugin, String file)
-			throws MalformedURLException, IOException {
-		IPluginRegistry registry = Platform.getPluginRegistry();
-		IPluginDescriptor descriptor = registry.getPluginDescriptor(plugin);
-		URL pluginURL = descriptor.getInstallURL();
-		URL jarURL = new URL(pluginURL, file);
-		URL localJarURL = Platform.asLocalURL(jarURL);
-		return new Path(localJarURL.getPath());
+	private Path findFileInPlugin(String plugin, String file) {
+		Bundle bundle = Platform.getBundle(plugin);
+		URL resource = bundle.getResource(file);
+		return new Path(resource.getPath());
 	}
 
 	public void waitForIndexer() {
