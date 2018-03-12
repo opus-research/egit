@@ -66,9 +66,7 @@ public class CommitOperation implements IEGitOperation {
 
 	private Repository repo;
 
-	private Collection<String> notTracked;
-
-	private HashSet<String> removed;
+	Collection<String> notTracked;
 
 	private boolean createChangeId;
 
@@ -76,14 +74,11 @@ public class CommitOperation implements IEGitOperation {
 
 	RevCommit commit = null;
 
-
 	/**
 	 * @param filesToCommit
 	 *            a list of files which will be included in the commit
 	 * @param notTracked
 	 *            a list of all untracked files
-	 * @param removed
-	 *            a list of removed files
 	 * @param author
 	 *            the author of the commit
 	 * @param committer
@@ -93,8 +88,7 @@ public class CommitOperation implements IEGitOperation {
 	 * @throws CoreException
 	 */
 	public CommitOperation(IFile[] filesToCommit, Collection<IFile> notTracked,
-			Collection<IFile> removed, String author, String committer,
-			String message) throws CoreException {
+			String author, String committer, String message) throws CoreException {
 		this.author = author;
 		this.committer = committer;
 		this.message = message;
@@ -112,8 +106,6 @@ public class CommitOperation implements IEGitOperation {
 	 *            a list of files which will be included in the commit
 	 * @param notTracked
 	 *            a list of all untracked files
-	 * @param removed
-	 *            a list of removed files
 	 * @param author
 	 *            the author of the commit
 	 * @param committer
@@ -122,10 +114,8 @@ public class CommitOperation implements IEGitOperation {
 	 *            the commit message
 	 * @throws CoreException
 	 */
-	public CommitOperation(Repository repository,
-			Collection<String> filesToCommit, Collection<String> notTracked,
-			Collection<String> removed, String author, String committer,
-			String message) throws CoreException {
+	public CommitOperation(Repository repository, Collection<String> filesToCommit, Collection<String> notTracked,
+			String author, String committer, String message) throws CoreException {
 		this.repo = repository;
 		this.author = author;
 		this.committer = committer;
@@ -134,8 +124,6 @@ public class CommitOperation implements IEGitOperation {
 			commitFileList = new HashSet<String>(filesToCommit);
 		if (notTracked != null)
 			this.notTracked = new HashSet<String>(notTracked);
-		if (removed != null)
-			this.removed = new HashSet<String>(removed);
 	}
 
 	/**
@@ -226,8 +214,6 @@ public class CommitOperation implements IEGitOperation {
 		boolean fileAdded = false;
 		for (String path : notTracked)
 			if (commitFileList.contains(path)) {
-				if (removed != null && removed.contains(path))
-					continue;
 				addCommand.addFilepattern(path);
 				fileAdded = true;
 			}
