@@ -1156,9 +1156,6 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_browseButton;
 
 	/** */
-	public static String CloneDestinationPage_cloneSubmodulesButton;
-
-	/** */
 	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
 
 	/** */
@@ -2563,12 +2560,6 @@ public class UIText extends NLS {
 	public static String CommitDialogPreferencePage_formatting;
 
 	/** */
-	public static String CommitDialogPreferencePage_includeUntrackedFiles;
-
-	/** */
-	public static String CommitDialogPreferencePage_includeUntrackedFilesTooltip;
-
-	/** */
 	public static String CommitDialogPreferencePage_signedOffBy;
 
 	/** */
@@ -2594,6 +2585,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip;
+
+	/** */
+	public static String DecoratorPreferencesPage_computeRecursiveLimit;
+
+	/** */
+	public static String DecoratorPreferencesPage_computeRecursiveLimitTooltip;
 
 	/** */
 	public static String DecoratorPreferencesPage_description;
