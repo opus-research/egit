@@ -72,12 +72,6 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 
 	private final RepositoryTreeNode<Repository> tags;
 
-	private boolean showLocalBranches = true;
-
-	private boolean showRemoteBranches = true;
-
-	private boolean showTags = true;
-
 	/**
 	 * Construct a dialog to select a branch.
 	 * <p>
@@ -201,12 +195,9 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		super.create();
 
 		List<RepositoryTreeNode> roots = new ArrayList<RepositoryTreeNode>();
-		if (showLocalBranches)
-			roots.add(localBranches);
-		if (showRemoteBranches)
-			roots.add(remoteBranches);
-		if (showTags)
-			roots.add(tags);
+		roots.add(localBranches);
+		roots.add(remoteBranches);
+		roots.add(tags);
 
 		branchTree.setInput(roots);
 
@@ -331,15 +322,4 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
-	/**
-	 * @param showLocalBranches show/hide the local branches root
-	 * @param showRemoteBranches show/hide the remote branches root
-	 * @param showTags show/hide the tag root
-	 */
-	protected void setRootsToShow(boolean showLocalBranches,
-			boolean showRemoteBranches, boolean showTags) {
-		this.showLocalBranches = showLocalBranches;
-		this.showRemoteBranches = showRemoteBranches;
-		this.showTags = showTags;
-	}
 }
