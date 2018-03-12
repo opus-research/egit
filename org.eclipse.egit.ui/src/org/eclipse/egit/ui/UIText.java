@@ -400,9 +400,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorParsingHead;
 
 	/** */
-	public static String GitHistoryPage_errorReadingAdditionalRefs;
-
-	/** */
 	public static String GitHistoryPage_errorSettingStartPoints;
 
 	/** */
