@@ -51,35 +51,31 @@ public class OpenInTextEditorHandler extends AbstractHistoryCommandHandler {
 			IFile resource = (IFile) input;
 			final RepositoryMapping map = RepositoryMapping
 					.getMapping(resource);
-			if (map != null) {
-				gitPath = map.getRepoRelativePath(resource);
-				Iterator<?> it = selection.iterator();
-				while (it.hasNext()) {
-					RevCommit commit = (RevCommit) it.next();
-					String commitPath = getRenamedPath(gitPath, commit);
-					IFileRevision rev = null;
+			gitPath = map.getRepoRelativePath(resource);
+			Iterator<?> it = selection.iterator();
+			while (it.hasNext()) {
+				RevCommit commit = (RevCommit) it.next();
+				String commitPath = getRenamedPath(gitPath, commit);
+				IFileRevision rev = null;
+				try {
+					rev = CompareUtils.getFileRevision(commitPath, commit,
+							map.getRepository(), null);
+				} catch (IOException e) {
+					Activator.logError(NLS.bind(
+							UIText.GitHistoryPage_errorLookingUpPath,
+							commitPath, commit.getId()), e);
+					errorOccurred = true;
+				}
+				if (rev != null)
 					try {
-						rev = CompareUtils.getFileRevision(commitPath, commit,
-								map.getRepository(), null);
-					} catch (IOException e) {
-						Activator.logError(NLS.bind(
-								UIText.GitHistoryPage_errorLookingUpPath,
-								commitPath, commit.getId()), e);
+						EgitUiEditorUtils.openTextEditor(getPart(event)
+								.getSite().getPage(), rev, null);
+					} catch (CoreException e) {
+						Activator.logError(e.getMessage(), e);
 						errorOccurred = true;
 					}
-					if (rev != null) {
-						try {
-							EgitUiEditorUtils.openTextEditor(
-									getPart(event).getSite().getPage(), rev,
-									null);
-						} catch (CoreException e) {
-							Activator.logError(e.getMessage(), e);
-							errorOccurred = true;
-						}
-					} else {
-						ids.add(commit.getId());
-					}
-				}
+				else
+					ids.add(commit.getId());
 			}
 		}
 		if (input instanceof File) {

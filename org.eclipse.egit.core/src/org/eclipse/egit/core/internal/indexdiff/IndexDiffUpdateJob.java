@@ -41,7 +41,6 @@ abstract class IndexDiffUpdateJob extends Job {
 	 */
 	public IndexDiffUpdateJob(String name, long delay) {
 		super(name);
-		setSystem(true);
 		defaultDelay = delay;
 		cleanup();
 	}
