@@ -3,7 +3,7 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2010-2012, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2010-2011, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -24,8 +24,10 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -113,9 +115,7 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		ISchedulingRule, TableLoader {
-
-	private static final int INITIAL_ITEM = -1;
+		ISchedulingRule {
 
 	/** actions used in GitHistoryPage **/
 	private static class GitHistoryPageActions {
@@ -212,6 +212,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		BooleanPrefAction showRelativeDateAction;
 
+		BooleanPrefAction showEmailAddressesAction;
+
 		BooleanPrefAction showNotesAction;
 
 		BooleanPrefAction wrapCommentAction;
@@ -263,6 +265,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			createShowCommentAction();
 			createShowFilesAction();
 			createShowRelativeDateAction();
+			createShowEmailAddressesAction();
 			createShowNotesAction();
 			createWrapCommentAction();
 			createFillCommentAction();
@@ -430,6 +433,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			};
 			showRelativeDateAction.apply(showRelativeDateAction.isChecked());
 			actionsToDispose.add(showRelativeDateAction);
+		}
+
+		private void createShowEmailAddressesAction() {
+			showEmailAddressesAction = new BooleanPrefAction(
+					UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES,
+					UIText.GitHistoryPage_toggleEmailAddresses) {
+				void apply(boolean date) {
+					// nothing, just set the Preference
+				}
+			};
+			showEmailAddressesAction.apply(showEmailAddressesAction.isChecked());
+			actionsToDispose.add(showEmailAddressesAction);
 		}
 
 		private void createShowNotesAction() {
@@ -619,6 +634,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					graph.getTableView().refresh();
 				}
 			}
+			if (UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES.equals(prop)) {
+				Object oldValue = event.getOldValue();
+				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
+					graph.setShowEmailAddresses(isShowingEmailAddresses());
+					graph.getTableView().refresh();
+				}
+			}
 			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
 					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
 				graph.getTableView().refresh();
@@ -717,9 +739,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		graphDetailSplit = new SashForm(historyControl, SWT.VERTICAL);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				graphDetailSplit);
-		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr, this);
+		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
 
 		graph.setRelativeDate(isShowingRelativeDates());
+		graph.setShowEmailAddresses(isShowingEmailAddresses());
 		Activator.getDefault().getPreferenceStore()
 				.addPropertyChangeListener(listener);
 
@@ -908,6 +931,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		showSubMenuMgr.add(actions.findAction);
 		showSubMenuMgr.add(actions.showFilesAction);
 		showSubMenuMgr.add(actions.showCommentAction);
+		showSubMenuMgr.add(new Separator());
+		showSubMenuMgr.add(actions.showRelativeDateAction);
+		showSubMenuMgr.add(actions.showEmailAddressesAction);
 
 		IMenuManager filterSubMenuMgr = new MenuManager(
 				UIText.GitHistoryPage_FilterSubMenuLabel);
@@ -924,9 +950,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(actions.wrapCommentAction);
 		viewMenuMgr.add(actions.fillCommentAction);
-
-		viewMenuMgr.add(new Separator());
-		viewMenuMgr.add(actions.showRelativeDateAction);
 	}
 
 	public void dispose() {
@@ -1408,7 +1431,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	void showCommitList(final Job j, final SWTCommitList list,
-			final SWTCommit[] asArray, final RevCommit toSelect, final boolean incomplete, final RevFlag highlightFlag) {
+			final SWTCommit[] asArray, final boolean incomplete, final RevFlag highlightFlag) {
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
@@ -1419,9 +1442,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		graph.getControl().getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				if (!graph.getControl().isDisposed() && job == j) {
-					graph.setInput(highlightFlag, list, asArray, input, true);
-					if (toSelect != null)
-						graph.selectCommit(toSelect);
+					graph.setInput(highlightFlag, list, asArray, input);
 					if (trace)
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.HISTORYVIEW.getLocation(),
@@ -1487,7 +1508,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				setupFileViewer(walk, db, paths);
 				setupCommentViewer(db);
 
-				loadHistory(INITIAL_ITEM, walk);
+				scheduleNewGenerateHistoryJob(walk);
 			} else
 				// needed for context menu and double click
 				graph.setHistoryPageInput(input);
@@ -1758,38 +1779,31 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return true;
 	}
 
-	public void loadItem(int item) {
-		if (job == null || job.loadMoreItemsThreshold() < item)
-			loadHistory(item, null);
-	}
-
-	public void loadCommit(RevCommit c) {
-		if (job == null)
-			return;
-		job.setLoadHint(c);
+	private void scheduleNewGenerateHistoryJob(RevWalk walk) {
+		final GenerateHistoryJob rj = new GenerateHistoryJob(this,
+				graph.getControl(), walk);
+		rj.setRule(this);
+		rj.addJobChangeListener(new JobChangeAdapter() {
+			@Override
+			public void done(final IJobChangeEvent event) {
+				rj.getWalk().release();
+				final Control graphctl = graph.getControl();
+				if (job != rj || graphctl.isDisposed())
+					return;
+				graphctl.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						if (job == rj)
+							job = null;
+					}
+				});
+			}
+		});
+		job = rj;
 		if (trace)
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
 					"Scheduling GenerateHistoryJob"); //$NON-NLS-1$
-		schedule(job);
-	}
-
-	/**
-	 * Load history items incrementally
-	 * @param itemToLoad hint for index of item that should be loaded
-	 * @param walk the revwalk, used only if itemToLoad ==  INITIAL_ITEM
-	 */
-	private void loadHistory(final int itemToLoad, RevWalk walk) {
-		if (itemToLoad == INITIAL_ITEM) {
-			job = new GenerateHistoryJob(this, graph.getControl(), walk);
-			job.setRule(this);
-		}
-		job.setLoadHint(itemToLoad);
-		if (trace)
-			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.HISTORYVIEW.getLocation(),
-					"Scheduling GenerateHistoryJob"); //$NON-NLS-1$
-		schedule(job);
+		schedule(rj);
 	}
 
 	private IWorkbenchPartSite getPartSite() {
@@ -1875,6 +1889,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private boolean isShowingRelativeDates() {
 		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
+	}
+
+	private boolean isShowingEmailAddresses() {
+		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES);
 	}
 
 	public boolean contains(ISchedulingRule rule) {
