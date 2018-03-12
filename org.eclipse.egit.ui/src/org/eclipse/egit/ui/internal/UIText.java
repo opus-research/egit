@@ -2359,6 +2359,12 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
+	public static String CommitDialog_IgnoreErrors;
+
+	/** */
+	public static String CommitDialog_MessageErrors;
+
+	/** */
 	public static String ConfigurationChecker_checkConfiguration;
 
 	/** */
@@ -3175,9 +3181,6 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_warnAboutCommitMessageSecondLine;
 
 	/** */
-	public static String CommittingPreferencePage_secondLineCheckTooltip;
-
-	/** */
 	public static String CommittingPreferencePage_footers;
 
 	/** */
@@ -3194,6 +3197,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommittingPreferencePage_signedOffByTooltip;
+
+	/** */
+	public static String CommittingPreferencePage_CheckBeforeCommitting;
+
+	/** */
+	public static String CommittingPreferencePage_WarnBeforeCommitting;
+
+	/** */
+	public static String CommittingPreferencePage_WarnBeforeCommittingTitle;
+
+	/** */
+	public static String CommittingPreferencePage_WarnBlock_Errors;
+
+	/** */
+	public static String CommittingPreferencePage_WarnBlock_WarningsAndErrors;
+
+	/** */
+	public static String CommittingPreferencePage_BlockCommit;
+
+	/** */
+	public static String CommittingPreferencePage_BlockCommitCombo;
 
 	/** */
 	public static String Decorator_exceptionMessage;
@@ -3940,45 +3964,6 @@ public class UIText extends NLS {
 	public static String MultiPullResultDialog_WindowTitle;
 
 	/** */
-	public static String MultiPushResultDialog_DetailsButton;
-
-	/** */
-	public static String MultiPushResultDialog_ErrorsOccuredColumnHeader;
-	
-	/** */
-	public static String MultiPushResultDialog_FailedStatus;
-
-	/** */
-	public static String MultiPushResultDialog_NoErrors;
-
-	/** */
-	public static String MultiPushResultDialog_OkStatus;
-
-	/** */
-	public static String MultiPushResultDialog_OverallStatusColumnHeader;
-
-	/** */
-	public static String MultiPushResultDialog_RepositoryColumnHeader;
-
-	/** */
-	public static String MultiPushResultDialog_UnknownStatus;
-
-	/** */
-	public static String MultiPushResultDialog_WindowTitle;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_PushingTaskName;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_PushingMultipleTaskName;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_NotConfiguredRepository;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_NotTriedMessage;
-
-	/** */
 	public static String UIIcons_errorDeterminingIconBase;
 
 	/** */
@@ -4227,6 +4212,7 @@ public class UIText extends NLS {
 
 	/** */
 	public static String Header_contextMenu_copy_SHA1;
+
 	/** */
 
 	public static String Header_copy_SHA1_error_title;
@@ -5190,6 +5176,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
+
+	/** */
+	public static String StagingView_IgnoreErrors;
+
+	/** */
+	public static String StagingView_MessageErrors;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;

@@ -15,6 +15,7 @@ import java.util.Arrays;
 
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.URLHyperlinkDetector;
 import org.eclipse.jface.text.rules.IToken;
@@ -100,8 +101,8 @@ public class HyperlinkTokenScannerTest {
 		IDocument testDocument = new Document(text);
 		when(viewer.getDocument()).thenReturn(testDocument);
 		HyperlinkTokenScanner scanner = new HyperlinkTokenScanner(detectors,
-				viewer);
-		scanner.setRange(testDocument, offset, length);
+				viewer, null);
+		scanner.setRangeAndColor(testDocument, offset, length, null);
 		IToken token = null;
 		char[] found = new char[text.length()];
 		Arrays.fill(found, ' ');
@@ -109,10 +110,14 @@ public class HyperlinkTokenScannerTest {
 			int tokenOffset = scanner.getTokenOffset();
 			int tokenLength = scanner.getTokenLength();
 			char ch = 'x';
-			if (token == HyperlinkTokenScanner.HYPERLINK) {
-				ch = 'H';
-			} else if (token == HyperlinkTokenScanner.DEFAULT) {
+			Object data = token.getData();
+			if (data == null) {
 				ch = 'D';
+			} else if (data instanceof TextAttribute) {
+				int style = ((TextAttribute) data).getStyle();
+				if ((style & TextAttribute.UNDERLINE) != 0) {
+					ch = 'H';
+				}
 			}
 			Arrays.fill(found, tokenOffset, tokenOffset + tokenLength, ch);
 		}
