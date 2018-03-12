@@ -899,7 +899,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 						.getAdapter(IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping
-							.getMapping(resource);
+							.getMapping((IResource) o);
 					Repository repo = mapping.getRepository();
 					input = new HistoryPageInput(repo,
 							new IResource[] { resource });
