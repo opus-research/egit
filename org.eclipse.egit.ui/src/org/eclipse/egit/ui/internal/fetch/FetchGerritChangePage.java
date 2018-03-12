@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -383,27 +384,33 @@ public class FetchGerritChangePage extends WizardPage {
 				.applyTo(runInBackgroud);
 		runInBackgroud.setText(UIText.FetchGerritChangePage_RunInBackground);
 
-		// get all available URIs from the repository
-		SortedSet<String> uris = new TreeSet<String>();
+		// get all available Gerrit URIs from the repository
+		SortedSet<String> uris = new TreeSet<>();
 		try {
 			for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig())) {
-				if (rc.getURIs().size() > 0)
-					uris.add(rc.getURIs().get(0).toPrivateString());
-				for (URIish u : rc.getPushURIs())
-					uris.add(u.toPrivateString());
+				if (GerritUtil.isGerritRemote(rc)) {
+					if (rc.getURIs().size() > 0) {
+						uris.add(rc.getURIs().get(0).toPrivateString());
+					}
+					for (URIish u : rc.getPushURIs()) {
+						uris.add(u.toPrivateString());
+					}
+				}
 
 			}
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, false);
 			setErrorMessage(e.getMessage());
 		}
-		for (String aUri : uris)
+		for (String aUri : uris) {
 			uriCombo.add(aUri);
-		if (defaultUri != null)
+		}
+		if (defaultUri != null) {
 			uriCombo.setText(defaultUri);
-		else
+		} else {
 			selectLastUsedUri();
+		}
 		restoreRunInBackgroundSelection();
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
@@ -609,7 +616,7 @@ public class FetchGerritChangePage extends WizardPage {
 							}
 
 							listOp.run(monitor);
-							changeRefs = new ArrayList<Change>();
+							changeRefs = new ArrayList<>();
 							for (Ref ref : listOp.getRemoteRefs()) {
 								Change change = Change.fromRef(ref.getName());
 								if (change != null)
@@ -761,7 +768,7 @@ public class FetchGerritChangePage extends WizardPage {
 		int timeout = Activator.getDefault().getPreferenceStore()
 				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 
-		List<RefSpec> specs = new ArrayList<RefSpec>(1);
+		List<RefSpec> specs = new ArrayList<>(1);
 		specs.add(spec);
 
 		String taskName = NLS
@@ -861,7 +868,7 @@ public class FetchGerritChangePage extends WizardPage {
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+				List<IContentProposal> resultList = new ArrayList<>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
