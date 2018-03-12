@@ -95,8 +95,9 @@ public class SubmoduleSyncTest extends GitRepositoriesViewTestBase {
 
 		refreshAndWait();
 		SWTBotTree tree = getOrOpenView().bot().tree();
-		TestUtil.expandAndWait(tree.getAllItems()[0])
-				.getNode(
+		tree.getAllItems()[0]
+				.expand()
+				.expandNode(
 						UIText.RepositoriesViewLabelProvider_SubmodulesNodeText)
 				.select();
 		ContextMenuHelper.clickContextMenuSync(tree, myUtil
