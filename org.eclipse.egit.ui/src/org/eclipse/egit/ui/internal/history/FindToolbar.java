@@ -494,7 +494,8 @@ public class FindToolbar extends Composite {
 				// Don't keep beeping every time if the user is deleting
 				// a long not found pattern
 				if (lastErrorPattern == null
-						|| !lastErrorPattern.startsWith(pattern)) {
+						|| (lastErrorPattern != null && !lastErrorPattern
+								.startsWith(pattern))) {
 					getDisplay().beep();
 					nextButton.setEnabled(false);
 					previousButton.setEnabled(false);
