@@ -39,8 +39,7 @@ public class PullFromUpstreamActionHandler extends RepositoryActionHandler {
 			return false;
 		try {
 			String fullBranch = repo.getFullBranch();
-			return (fullBranch.startsWith(Constants.R_REFS))
-					&& !repo.getAllRefs().isEmpty();
+			return (fullBranch.startsWith(Constants.R_REFS));
 		} catch (IOException e) {
 			return false;
 		}
