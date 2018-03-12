@@ -78,8 +78,6 @@ class PushToGerritPage extends WizardPage {
 
 	private Combo uriCombo;
 
-	private Combo prefixCombo;
-
 	private Label branchTextlabel;
 
 	private Text branchText;
@@ -123,10 +121,9 @@ class PushToGerritPage extends WizardPage {
 		branchTextlabel = new Label(main, SWT.NONE);
 
 		// we visualize the prefix here
-		prefixCombo = new Combo(main, SWT.READ_ONLY | SWT.DROP_DOWN);
-		prefixCombo.add("refs/for/"); //$NON-NLS-1$
-		prefixCombo.add("refs/drafts/"); //$NON-NLS-1$
-		prefixCombo.select(0);
+		Text prefix = new Text(main, SWT.NONE);
+		prefix.setText("refs/for/"); //$NON-NLS-1$
+		prefix.setEnabled(false);
 
 		branchTextlabel.setText(UIText.PushToGerritPage_BranchLabel);
 		branchText = new Text(main, SWT.SINGLE | SWT.BORDER);
@@ -219,9 +216,8 @@ class PushToGerritPage extends WizardPage {
 			URIish uri = new URIish(uriCombo.getText());
 			Ref currentHead = repository.getRef(Constants.HEAD);
 			RemoteRefUpdate update = new RemoteRefUpdate(repository,
-					currentHead, prefixCombo.getItem(prefixCombo
-							.getSelectionIndex()) + branchText.getText(),
-					false, null, null);
+					currentHead,
+					"refs/for/" + branchText.getText(), false, null, null); //$NON-NLS-1$
 			PushOperationSpecification spec = new PushOperationSpecification();
 
 			spec.addURIRefUpdates(uri, Arrays.asList(update));
