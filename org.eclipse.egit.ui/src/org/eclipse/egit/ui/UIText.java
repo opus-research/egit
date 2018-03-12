@@ -3934,18 +3934,6 @@ public class UIText extends NLS {
 	public static String RenameBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
-	public static String RepositoryStatistics_BytesUsedToPersistLoosePackedObjects;
-
-	/** */
-	public static String RepositoryStatistics_NrOfLoosePackedObjects;
-
-	/** */
-	public static String RepositoryStatistics_NrOfLoosePackedRefs;
-
-	/** */
-	public static String RepositoryStatistics_NrOfPackfiles;
-
-	/** */
 	public static String RevertFailureDialog_Message;
 
 	/** */
