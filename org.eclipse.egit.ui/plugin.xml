@@ -37,12 +37,11 @@
                icon="$nl$/icons/obj16/disconnect_co.gif"
                id="org.eclipse.egit.ui.internal.actions.Disconnect"
                label="%DisconnectAction_label"
-               menubarPath="team.main/group11"
+               menubarPath="team.main/group10"
                tooltip="%DisconnectAction_tooltip">
          </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.FetchAction"
-               definitionId="org.eclipse.egit.ui.RepositoriesViewFetch"
                icon="$nl$/icons/obj16/pull.gif"
                id="org.eclipse.egit.ui.internal.actions.FetchAction"
                label="%FetchAction_label"
@@ -79,7 +78,6 @@
                tooltip="%TagAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.MergeAction"
-               definitionId="org.eclipse.egit.ui.RepositoriesViewMerge"
                icon="$nl$/icons/obj16/merge.gif"
                id="org.eclipse.egit.ui.internal.actions.MergeAction"
                label="%MergeAction_label"
@@ -116,7 +114,6 @@
                tooltip="%AssumeUnchangedAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.CommitAction"
-               definitionId="org.eclipse.egit.ui.team.Commit"
                icon="$nl$/icons/obj16/commit.gif"
                id="org.eclipse.egit.ui.internal.actions.CommitAction"
                label="%CommitAction_label"
@@ -136,7 +133,6 @@
                tooltip="%CompareWithHeadAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-               definitionId="org.eclipse.egit.ui.team.Ignore"
                icon="$nl$/icons/obj16/ignore.gif"
                id="org.eclipse.egit.ui.internal.actions.IgnoreAction"
                label="%IgnoreAction_label"
@@ -156,30 +152,12 @@
                menubarPath="replaceWithMenu/gitReplaceWithGroup"
                tooltip="%DiscardChangesAction_tooltip"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
-               definitionId="org.eclipse.egit.ui.team.ApplyPatch"
+               class="org.eclipse.team.internal.ui.actions.ApplyPatchAction"
                enablesFor="*"
                id="org.eclipse.egit.ui.internal.actions.applyPatch"
                label="%ApplyPatchAction_label"
                menubarPath="team.main/group6"
                overrideActionId="org.eclipse.team.ui.applyPatch">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ShowHistoryAction"
-               definitionId="org.eclipse.egit.ui.team.ShowHistory"
-               icon="icons/obj16/history.gif"
-               id="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler"
-               label="%ShowResourceInHistoryAction_label"
-               menubarPath="team.main/group10"
-               tooltip="%ShowResourceInHistoryAction_tooltip">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewAction"
-               definitionId="org.eclipse.egit.ui.team.ShowRepositoriesView"
-               icon="icons/eview16/repo_rep.gif"
-               id="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewAction"
-               label="%ShowRepositoryAction_label"
-               menubarPath="team.main/group10">
          </action>
 	  </objectContribution>
 	  <objectContribution
@@ -504,7 +482,6 @@
       </actionSet>
    </extension>
    <extension
-         name="The shared commands"
          point="org.eclipse.ui.commands">
       <command
             defaultHandler="org.eclipse.egit.ui.internal.commands.ShareSingleProjectCommand"
@@ -517,10 +494,6 @@
                optional="false"
                values="org.eclipse.egit.ui.internal.commands.ProjectNameParameterValues">
          </commandParameter>
-      </command>
-      <command
-            id="org.eclipse.egit.ui.CheckoutCommand"
-            name="%CheckoutCommand">
       </command>
    </extension>
    <extension
@@ -709,7 +682,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.CheckoutCommand"
+               commandId="org.eclipse.egit.ui.RepositoriesViewCheckout"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -1075,9 +1048,6 @@
             <visibleWhen
                   checkEnabled="false">
                <and>
-                  <count
-                        value="1">
-                  </count>
                   <iterate>
                      <and>
                         <or>
@@ -1244,7 +1214,6 @@
       </menuContribution>
    </extension>
    <extension
-         name="The commands for the repositories view"
          point="org.eclipse.ui.commands">
       <command
             id="org.eclipse.egit.ui.RepositoriesViewAddRepository"
@@ -1434,14 +1403,6 @@
             commandId="org.eclipse.egit.ui.RepositoriesViewReset"
             icon="icons/obj16/reset.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.ShowRepositoriesView"
-            icon="icons/eview16/repo_rep.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.ShowHistory"
-            icon="icons/obj16/history.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -1490,7 +1451,7 @@
       </participant>
    </extension>
    <extension
-         name="%TeamMenuCommandsLabel"
+         name="The commands for the Team menu"
          point="org.eclipse.ui.commands">
       <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.BranchActionHandler"
@@ -1519,7 +1480,7 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.DiscardChangesActionHandler"
             id="org.eclipse.egit.ui.team.Discard"
-            name="%DiscardChangesAction_label">
+            name="discard">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.actions.FetchActionHandler"
@@ -1556,78 +1517,10 @@
             id="org.eclipse.egit.ui.team.Tag"
             name="%TagAction_label">
       </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler"
-            id="org.eclipse.egit.ui.team.ShowHistory"
-                  name="%ShowResourceInHistoryAction_label">
+            <command
+                  defaultHandler="org.eclipse.egit.ui.internal.actions.TrackHandler"
+                  id="org.eclipse.egit.ui.team.Track"
+                  name="%TrackAction_label">
       </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewActionHandler"
-            id="org.eclipse.egit.ui.team.ShowRepositoriesView"
-            name="%ShowRepositoryAction_label">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ApplyPatchActionHandler"
-            id="org.eclipse.egit.ui.team.ApplyPatch"
-            name="%ApplyPatchAction_label">
-      </command>
-   </extension>
-   <extension
-         name="The handlers for shared commands"
-         point="org.eclipse.ui.handlers">
-      <handler
-            commandId="org.eclipse.egit.ui.CheckoutCommand">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.CheckoutCommand">
-         <class
-               class="org.eclipse.egit.ui.internal.history.command.CheckoutHandler"></class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.history.SWTCommit">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-   </extension>
-   <extension
-         point="org.eclipse.ui.bindings">
-      <key
-            commandId="org.eclipse.egit.ui.team.Commit"
-            contextId="org.eclipse.ui.contexts.window"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+M3+C">
-      </key>
-      <key
-            commandId="org.eclipse.egit.ui.team.Ignore"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+M3+I">
-      </key>
-      <key
-            commandId="org.eclipse.egit.ui.RepositoriesViewMerge"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+M3+M">
-      </key>
    </extension>
 </plugin>

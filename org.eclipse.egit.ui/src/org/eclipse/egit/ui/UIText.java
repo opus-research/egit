@@ -22,12 +22,6 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_filterText;
 
 	/** */
-	public static String AbstractHitoryViewCommandHandler_CanNotGetCommitMessage;
-
-	/** */
-	public static String AbstractHitoryViewCommandHandler_NoRepositoryMessage;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -164,9 +158,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GenerateHistoryJob_errorComputingHistory;
-
-	/** */
-	public static String EgitUiUtils_CouldNotOpenEditorMessage;
 
 	/** */
 	public static String ExistingOrNewPage_CreateButton;
@@ -377,12 +368,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
-
-	/** */
-	public static String CheckoutHandler_SelectBranchMessage;
-
-	/** */
-	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
@@ -1078,9 +1063,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_DeselectAll;
 
 	/** */
-	public static String CommitDialog_ErrorAddingFiles;
-
-	/** */
 	public static String CommitDialog_ErrorInvalidAuthor;
 
 	/** */
@@ -1199,18 +1181,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigureUriPage_Remove_button;
-
-	/** */
-	public static String CommitMessageArea_copy;
-
-	/** */
-	public static String CommitMessageArea_cut;
-
-	/** */
-	public static String CommitMessageArea_paste;
-
-	/** */
-	public static String CommitMessageArea_selectAll;
 
 	/** */
 	public static String CommitMessageViewer_author;
