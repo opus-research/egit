@@ -3524,9 +3524,6 @@ public class UIText extends NLS {
 	public static String CommitSearchPage_CaseSensitive;
 
 	/** */
-	public static String CommitSearchPage_CheckAll;
-
-	/** */
 	public static String CommitSearchPage_CommitId;
 
 	/** */
@@ -3558,9 +3555,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitSearchPage_TreeId;
-
-	/** */
-	public static String CommitSearchPage_UncheckAll;
 
 	/** */
 	public static String CommitSearchQuery_Label;
