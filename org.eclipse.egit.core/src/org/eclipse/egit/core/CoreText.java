@@ -24,12 +24,6 @@ public class CoreText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.coretext"; //$NON-NLS-1$
 
 	/** */
-	public static String Activator_AutoShareJobName;
-
-	/** */
-	public static String Activator_AutoSharingFailed;
-
-	/** */
 	public static String Activator_ReconfigureWindowCacheError;
 
 	/** */
@@ -231,9 +225,6 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
-	public static String ProjectUtil_taskCheckingDirectory;
-
-	/** */
 	public static String PullOperation_DetachedHeadMessage;
 
 	/** */
@@ -300,7 +291,7 @@ public class CoreText extends NLS {
 	public static String OperationNotYetExecuted;
 
 	/** */
-	public static String ProjectReference_InvalidTokensCount;
+	public static String GitProjectSetCapability_InvalidTokensCount;
 
 	/** */
 	public static String GitProjectSetCapability_CloneToExistingDirectory;
