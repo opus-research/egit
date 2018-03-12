@@ -22,8 +22,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -32,6 +30,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -173,9 +172,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	/**
 	 * @param filter
 	 *            0: none, 1: repository, 2: project, 3: folder
-	 * @throws Exception 
 	 */
-	private void initFilter(int filter) throws Exception {
+	private void initFilter(int filter) {
 		getHistoryViewTable(PROJ1);
 		SWTBotView view = bot
 				.viewById("org.eclipse.team.ui.GenericHistoryView");
@@ -236,9 +234,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	 * @param path
 	 *            must be length 2 or three (folder or file)
 	 * @return the bale
-	 * @throws Exception 
 	 */
-	private SWTBotTable getHistoryViewTable(String... path) throws Exception {
+	private SWTBotTable getHistoryViewTable(String... path) {
 		SWTBotTree projectExplorerTree = bot.viewById(
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		SWTBotTreeItem explorerItem;
@@ -254,14 +251,6 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Show In",
 				"History");
 		// explorerItem.select();
-		// join GenerateHistoryJob 
-		Job.getJobManager().join(JobFamilies.GENERATE_HISTORY, null);
-		// join UI update triggered by GenerateHistoryJob
-		projectExplorerTree.widget.getDisplay().syncExec(new Runnable(){
-
-			public void run() {
-				// empty
-			}});
 		return bot.viewById("org.eclipse.team.ui.GenericHistoryView").bot()
 				.table();
 	}
@@ -296,8 +285,9 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
-				commit[0] = (RevCommit) table.widget.getSelection()[0]
-						.getData();
+				TableItem tableItem = table.widget.getSelection()[0];
+				ensureTableItemLoaded(tableItem);
+				commit[0] = (RevCommit) tableItem.getData();
 			}
 		});
 
@@ -326,8 +316,9 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
-				commit[0] = (RevCommit) table.widget.getSelection()[0]
-						.getData();
+				TableItem tableItem = table.widget.getSelection()[0];
+				ensureTableItemLoaded(tableItem);
+				commit[0] = (RevCommit) tableItem.getData();
 			}
 		});
 
@@ -336,5 +327,15 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		waitInUI();
 		assertEquals(commit[0].getId().name(), repo.getBranch());
+	}
+
+	/**
+	 * Workaround to ensure that the TableItem of a SWT table with style
+	 * SWT_VIRTUAL is loaded.
+	 *
+	 * @param item
+	 */
+	private static void ensureTableItemLoaded(TableItem item) {
+		item.setText(item.getText()); // TODO: is there a better solution?
 	}
 }

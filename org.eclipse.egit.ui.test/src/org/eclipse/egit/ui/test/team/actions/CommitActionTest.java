@@ -17,10 +17,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.TagOperation;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -107,8 +105,6 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 		commitDialog.bot().styledTextWithLabel(UIText.CommitDialog_CommitMessage)
 				.setText("The new commit");
 		commitDialog.bot().button(UIText.CommitDialog_Commit).click();
-		// wait until commit is completed
-		Job.getJobManager().join(JobFamilies.COMMIT, null);
 		testOpenCommitWithoutChanged();
 	}
 

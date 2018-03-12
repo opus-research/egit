@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,19 +35,20 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
@@ -86,11 +88,24 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		}
 
 		resetState();
+		final IProject[] projects = getProjectsInRepositoryOfSelectedResources(event);
 		try {
-			buildIndexHeadDiffList(event);
-		} catch (IOException e) {
-			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e,
+			PlatformUI.getWorkbench().getProgressService().busyCursorWhile(new IRunnableWithProgress() {
+
+				public void run(IProgressMonitor monitor) throws InvocationTargetException,
+						InterruptedException {
+					try {
+						buildIndexHeadDiffList(projects, monitor);
+					} catch (IOException e) {
+						throw new InvocationTargetException(e);
+					}
+				}
+			});
+		} catch (InvocationTargetException e) {
+			Activator.handleError(UIText.CommitAction_errorComputingDiffs, e.getCause(),
 					true);
+			return null;
+		} catch (InterruptedException e) {
 			return null;
 		}
 
@@ -202,14 +217,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 				}
 				return Status.OK_STATUS;
 			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.COMMIT))
-					return true;
-				return super.belongsTo(family);
-			}
-
 		};
 		job.setUser(true);
 		job.schedule();
@@ -271,11 +278,11 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		}
 	}
 
-	private void buildIndexHeadDiffList(ExecutionEvent event)
-			throws IOException, ExecutionException {
+	private void buildIndexHeadDiffList(IProject[] selectedProjects, IProgressMonitor monitor)
+			throws IOException, OperationCanceledException {
 		HashMap<Repository, HashSet<IProject>> repositories = new HashMap<Repository, HashSet<IProject>>();
 
-		for (IProject project : getProjectsInRepositoryOfSelectedResources(event)) {
+		for (IProject project : selectedProjects) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(project);
 			assert repositoryMapping != null;
@@ -292,9 +299,13 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			projects.add(project);
 		}
 
+		monitor.beginTask(UIText.CommitActionHandler_caculatingChanges,
+				repositories.size());
 		for (Map.Entry<Repository, HashSet<IProject>> entry : repositories
 				.entrySet()) {
 			Repository repository = entry.getKey();
+			monitor.subTask(NLS.bind(UIText.CommitActionHandler_repository,
+					repository.getDirectory().getPath()));
 			HashSet<IProject> projects = entry.getValue();
 
 			AdaptableFileTreeIterator fileTreeIterator =
@@ -312,7 +323,11 @@ public class CommitActionHandler extends RepositoryActionHandler {
 				includeList(project, indexDiff.getModified(), notIndexed);
 				includeList(project, indexDiff.getUntracked(), notTracked);
 			}
+			if (monitor.isCanceled())
+				throw new OperationCanceledException();
+			monitor.worked(1);
 		}
+		monitor.done();
 	}
 
 	private void includeList(IProject project, HashSet<String> added,
