@@ -1115,6 +1115,30 @@ public class UIText extends NLS {
 	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
+	public static String CherryPickHandler_NoCherryPickPerformedMessage;
+
+	/** */
+	public static String CherryPickHandler_NoCherryPickPerformedTitle;
+
+	/** */
+	public static String CherryPickHandler_CherryPickConflictsMessage;
+
+	/** */
+	public static String CherryPickHandler_CherryPickConflictsTitle;
+
+	/** */
+	public static String CherryPickHandler_CherryPickFailedMessage;
+
+	/** */
+	public static String CherryPickHandler_CouldNotDeleteFile;
+
+	/** */
+	public static String CherryPickHandler_ErrorMsgTemplate;
+
+	/** */
+	public static String CherryPickHandler_IndexDirty;
+
+	/** */
 	public static String CherryPickHandler_JobName;
 
 	/** */
@@ -1122,6 +1146,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_ConfirmTitle;
+
+	/** */
+	public static String CherryPickHandler_unknown;
+
+	/** */
+	public static String CherryPickHandler_WorktreeDirty;
 
 	/** */
 	public static String CherryPickOperation_InternalError;
@@ -2843,19 +2873,10 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_streamFileThreshold;
 
 	/** */
-	public static String BasicConfigurationDialog_ConfigLocationInfo;
-
-	/** */
 	public static String BasicConfigurationDialog_DialogMessage;
 
 	/** */
 	public static String BasicConfigurationDialog_DialogTitle;
-
-	/** */
-	public static String BasicConfigurationDialog_DontShowAgain;
-
-	/** */
-	public static String BasicConfigurationDialog_OpenPreferencePage;
 
 	/** */
 	public static String BasicConfigurationDialog_UserEmailLabel;
@@ -3939,19 +3960,10 @@ public class UIText extends NLS {
 	public static String CommitEditor_couldNotShowRepository;
 
 	/** */
-	public static String CommitEditor_couldNotFindStashCommit;
-
-	/** */
-	public static String CommitEditor_couldNotGetStashIndex;
-
-	/** */
 	public static String CommitEditor_showGitRepo;
 
 	/** */
-	public static String CommitEditor_TitleHeaderCommit;
-
-	/** */
-	public static String CommitEditor_TitleHeaderStashedCommit;
+	public static String CommitEditor_TitleHeader;
 
 	/** */
 	public static String CommitEditorInput_Name;
@@ -4003,21 +4015,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_TooltipSignedOffByCommitter;
-
-	/** */
-	public static String StashEditorPage_UnstagedChanges;
-
-	/** */
-	public static String StashEditorPage_StagedChanges;
-
-	/** */
-	public static String StashEditorPage_LabelParent0;
-
-	/** */
-	public static String StashEditorPage_LabelParent1;
-
-	/** */
-	public static String StashEditorPage_LabelParent2;
 
 	/** */
 	public static String Header_contextMenu_copy;
@@ -4992,9 +4989,6 @@ public class UIText extends NLS {
 	public static String StashDropCommand_dropFailed;
 
 	/** */
-	public static String StashDropCommand_stashCommitNotFound;
-
-	/** */
 	public static String StashDropCommand_jobTitle;
 
 	/** */
@@ -5058,7 +5052,7 @@ public class UIText extends NLS {
 	public static String CustomPromptDialog_information_about;
 
 	/** */
-	public static String GitModelSynchronize_fetchGitDataJobName;
+	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedTitle;
