@@ -1029,9 +1029,6 @@ public class UIText extends NLS {
 	public static String CleanRepositoryPage_title;
 
 	/** */
-	public static String CleanWizard_title;
-
-	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */

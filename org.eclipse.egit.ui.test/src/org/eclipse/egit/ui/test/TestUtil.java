@@ -390,7 +390,7 @@ public class TestUtil {
 				fail("File " + path + " has repository content "
 						+ new String(repoContent, "UTF-8")
 						+ " instead of expected content "
-						+ new String(expectedContent, "UTF-8"));
+						+ new String(expectedContent));
 			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
