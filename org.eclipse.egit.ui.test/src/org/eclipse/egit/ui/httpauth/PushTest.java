@@ -52,7 +52,7 @@ public class PushTest extends EGitTestCase {
 		TestUtil.disableProxy();
 		remoteRepository = new SampleTestRepository(NUMBER_RANDOM_COMMITS, true);
 		localRepoPath = new File(ResourcesPlugin.getWorkspace().getRoot()
-				.getLocation().toFile(), "test" + System.nanoTime());
+				.getLocation().toFile(), "test1");
 		String branch = Constants.R_HEADS + SampleTestRepository.FIX;
 		CloneOperation cloneOperation = new CloneOperation(new URIish(
 				remoteRepository.getUri()), true, null, localRepoPath, branch,
@@ -73,8 +73,9 @@ public class PushTest extends EGitTestCase {
 		// change file
 		TestUtil.appendFileContent(file, "additional content", true);
 		// commit change
+		String repoRelativePath = "test1/" + SampleTestRepository.A_txt_name;
 		Git git = new Git(localRepository);
-		git.add().addFilepattern(SampleTestRepository.A_txt_name).call();
+		git.add().addFilepattern(repoRelativePath).call();
 		git.commit().setMessage("Change").call();
 		configurePush();
 		// push change
@@ -104,14 +105,10 @@ public class PushTest extends EGitTestCase {
 
 	@After
 	public void tearDown() throws Exception {
-		if (remoteRepository != null)
-			remoteRepository.shutDown();
+		remoteRepository.shutDown();
 		Activator.getDefault().getRepositoryCache().clear();
-		if (localRepository != null)
-			localRepository.close();
-		if (localRepoPath != null)
-			FileUtils.delete(localRepoPath, FileUtils.RECURSIVE
-					| FileUtils.RETRY);
+		localRepository.close();
+		FileUtils.delete(localRepoPath, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
 
 }

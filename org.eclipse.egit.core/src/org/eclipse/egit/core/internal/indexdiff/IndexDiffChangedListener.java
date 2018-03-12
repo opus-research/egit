@@ -11,8 +11,8 @@ package org.eclipse.egit.core.internal.indexdiff;
 import org.eclipse.jgit.lib.Repository;
 
 /**
- * This interface is used to notify clients about changes in index diffs. See
- * also: {@link IndexDiffCache}
+ * This interface is used to notify clients about changes in index diffs.
+ * See also: {@link IndexDiffCache}
  */
 public interface IndexDiffChangedListener {
 

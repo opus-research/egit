@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.RevertCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
@@ -43,8 +42,6 @@ public class RevertCommitOperation implements IEGitOperation {
 	private RevCommit newHead;
 
 	private List<Ref> reverted;
-
-	private MergeResult result;
 
 	/**
 	 * Create revert commit operation
@@ -84,7 +81,6 @@ public class RevertCommitOperation implements IEGitOperation {
 				try {
 					newHead = command.call();
 					reverted = command.getRevertedRefs();
-					result = command.getFailingResult();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
@@ -92,7 +88,7 @@ public class RevertCommitOperation implements IEGitOperation {
 				pm.worked(1);
 
 				ProjectUtil.refreshValidProjects(
-						ProjectUtil.getValidOpenProjects(repo),
+						ProjectUtil.getValidProjects(repo),
 						new SubProgressMonitor(pm, 1));
 
 				pm.done();
@@ -105,12 +101,4 @@ public class RevertCommitOperation implements IEGitOperation {
 		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 
-	/**
-	 * Get failing result of merge
-	 *
-	 * @return merge result
-	 */
-	public MergeResult getFailingResult() {
-		return result;
-	}
 }
