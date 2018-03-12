@@ -63,7 +63,7 @@ public class TreeWalkResourceVariantTreeProviderTest extends VariantsTestCase {
 			treeWalk.addTree(sourceTree);
 			treeWalk.addTree(remoteTree);
 			TreeWalkResourceVariantTreeProvider treeProvider = new TreeWalkResourceVariantTreeProvider(
-					repo, treeWalk);
+					repo, treeWalk, 0, 1, 2);
 
 			assertEquals(1, treeProvider.getRoots().size());
 			assertTrue(treeProvider.getRoots().contains(iProject));
