@@ -2803,9 +2803,6 @@ public class UIText extends NLS {
 	public static String RepositoriesViewLabelProvider_RemoteTrackingNodetext;
 
 	/** */
-	public static String RepositoriesViewLabelProvider_SubmodulesNodeText;
-
-	/** */
 	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
 
 	/** */
