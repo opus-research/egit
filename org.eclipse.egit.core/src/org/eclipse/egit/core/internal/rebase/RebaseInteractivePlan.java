@@ -94,13 +94,9 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 
 	private JoinedList<List<PlanElement>, PlanElement> planList;
 
-	private ReversedList<JoinedList<List<PlanElement>, PlanElement>, PlanElement> reversedPlanList;
-
 	private final Repository repository;
 
 	private static final Map<File, RebaseInteractivePlan> planRegistry = new HashMap<File, RebaseInteractivePlan>();
-
-	private boolean reversed = false;
 
 	private static final String REBASE_TODO = "rebase-merge/git-rebase-todo"; //$NON-NLS-1$
 
@@ -121,15 +117,14 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	public static RebaseInteractivePlan getPlan(Repository repo) {
 		RebaseInteractivePlan plan = planRegistry.get(repo.getDirectory());
 		if (plan == null) {
-			plan = new RebaseInteractivePlan(repo, false);
+			plan = new RebaseInteractivePlan(repo);
 			planRegistry.put(repo.getDirectory(), plan);
 		}
 		return plan;
 	}
 
-	private RebaseInteractivePlan(Repository repo, boolean reversed) {
+	private RebaseInteractivePlan(Repository repo) {
 		this.repository = repo;
-		setReversed(reversed);
 		reparsePlan();
 		registerIndexDiffChangeListener();
 
@@ -152,26 +147,8 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	}
 
 	public void indexDiffChanged(Repository repo, IndexDiffData indexDiffData) {
-		if (RebaseInteractivePlan.this.repository == repo
-				&& isRebasingInteractive())
+		if (RebaseInteractivePlan.this.repository == repo)
 			reparsePlan();
-	}
-
-	/**
-	 * @param reversed
-	 *            if true this plan provides a list of {@link PlanElement Elements}
-	 *            in reversed order
-	 */
-	public void setReversed(boolean reversed) {
-		this.reversed = reversed;
-	}
-
-	/**
-	 * @return true if the plan provides a list of {@link PlanElement Elements} in
-	 *         reversed order, otherwise false
-	 */
-	public boolean isReversed() {
-		return reversed;
 	}
 
 	/**
@@ -181,6 +158,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	 * will create a new {@link RebaseInteractivePlan} instance.
 	 */
 	public void dispose() {
+		notifyPlanWasUpdatedFromRepository();
 		planRegistry.remove(this.repository.getDirectory());
 		planList.clear();
 		planChangeListeners.clear();
@@ -192,8 +170,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	 *         plan.
 	 */
 	public List<PlanElement> getList() {
-		if (reversed)
-			return reversedPlanList;
 		return planList;
 	}
 
@@ -258,7 +234,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 		doneList = parseDone();
 		todoList = parseTodo();
 		planList = JoinedList.wrap(doneList, todoList);
-		reversedPlanList = ReversedList.wrap(planList);
 		notifyPlanWasUpdatedFromRepository();
 	}
 
@@ -315,40 +290,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	}
 
 	/**
-	 * Move the element at the given index in the given list up if possible,
-	 * otherwise this method has no effect on the list. Moving an element up is
-	 * not possible if the list does not contain an element with the given index
-	 * or the element at the given index has no next element.
-	 *
-	 * @param index
-	 * @param list
-	 * @return true if an element has been moved up, otherwise false
-	 */
-	private static boolean moveUp(final int index, final List<?> list) {
-		if (index < 0 || index >= list.size() - 1)
-			return false;
-		Collections.swap(list, index, index + 1);
-		return true;
-	}
-
-	/**
-	 * Move the element at the given index in the given list down if possible,
-	 * otherwise this method has no effect on the list. Moving an element down
-	 * is not possible if the list does not contain an element with the given
-	 * index or the element at the given index has no previous element.
-	 *
-	 * @param index
-	 * @param list
-	 * @return true if an element has been moved down, otherwise false
-	 */
-	private static boolean moveDown(final int index, final List<?> list) {
-		if (index <= 0 || index >= list.size())
-			return false;
-		Collections.swap(list, index, index - 1);
-		return true;
-	}
-
-	/**
 	 * Moves an {@link PlanElement} of Type {@link ElementType#TODO} down if
 	 * possible
 	 *
@@ -356,14 +297,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	 *            the {@link PlanElement} to move down
 	 */
 	public void moveTodoEntryDown(PlanElement element) {
-		List<PlanElement> list = todoList;
-		if (reversed)
-			list = ReversedList.wrap(todoList);
-		int oldIndex = list.indexOf(element);
-		moveDown(oldIndex, list);
-		int newIndex = list.indexOf(element);
-		if (oldIndex != newIndex)
-			notifyPlanElementsOrderChange(element, oldIndex, newIndex);
+		new MoveHelper(todoList, this).moveTodoEntryDown(element);
 	}
 
 	/**
@@ -373,24 +307,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	 *            the {@link PlanElement} to move up
 	 */
 	public void moveTodoEntryUp(PlanElement element) {
-		List<PlanElement> list = todoList;
-		if (reversed)
-			list = ReversedList.wrap(todoList);
-		int oldIndex = list.indexOf(element);
-		moveUp(oldIndex, list);
-		int newIndex = list.indexOf(element);
-		if (oldIndex != newIndex)
-			notifyPlanElementsOrderChange(element, oldIndex, newIndex);
-	}
-
-	private static void move(int sourceIndex, int targetIndex, final List<PlanElement> list) {
-		if (sourceIndex == targetIndex)
-			return;
-		if (sourceIndex < targetIndex) {
-			Collections.rotate(list.subList(sourceIndex, targetIndex + 1), -1);
-		} else {
-			Collections.rotate(list.subList(targetIndex, sourceIndex + 1), 1);
-		}
+		new MoveHelper(todoList, this).moveTodoEntryUp(element);
 	}
 
 	/**
@@ -407,36 +324,8 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	 */
 	public void moveTodoEntry(PlanElement sourceElement, PlanElement targetElement,
 			boolean before) {
-		if (sourceElement == targetElement)
-			return;
-		Assert.isNotNull(sourceElement);
-		Assert.isNotNull(targetElement);
-		if (ElementType.TODO != sourceElement.getElementType())
-			throw new IllegalArgumentException();
-
-		List<PlanElement> list = todoList;
-		if (reversed) {
-			list = ReversedList.wrap(todoList);
-		}
-
-		int initialSourceIndex = list.indexOf(sourceElement);
-		int targetIndex = list.indexOf(targetElement);
-
-		if (targetIndex == -1 || initialSourceIndex == -1)
-			return;
-		if (targetIndex == initialSourceIndex)
-			return;
-
-		if (targetIndex > initialSourceIndex && before)
-			targetIndex--;
-		if (targetIndex < initialSourceIndex && !before)
-			targetIndex++;
-
-		move(initialSourceIndex, targetIndex, list);
-		int newIndex = list.indexOf(sourceElement);
-		if (initialSourceIndex != newIndex)
-			notifyPlanElementsOrderChange(sourceElement, initialSourceIndex,
-					newIndex);
+		new MoveHelper(todoList, this).moveTodoEntry(sourceElement,
+				targetElement, before);
 	}
 
 	/**
@@ -694,73 +583,155 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener {
 	}
 
 	/**
-	 * List that provides a reversed view to the wrapped list
+	 * @author d044495
 	 *
-	 * @param <L>
-	 *            The concrete type of the wrapped list
-	 * @param <T>
-	 *            The type of the elements in the wrapped list
 	 */
-	public static class ReversedList<L extends List<T>, T> extends
-			AbstractList<T> {
-		private final L wrapped;
+	public static class MoveHelper {
+
+		private List<PlanElement> todoList;
+
+		private RebaseInteractivePlan plan;
 
 		/**
-		 * @param wrapped
+		 * @param todoList
+		 * @param plan
 		 */
-		private ReversedList(L wrapped) {
-			super();
-			this.wrapped = wrapped;
+		public MoveHelper(List<PlanElement> todoList, RebaseInteractivePlan plan) {
+			this.todoList = todoList;
+			this.plan = plan;
 		}
 
 		/**
-		 * Creates a newly List that provides a reversed view wrapped list.
+		 * Move the element at the given index in the given list up if possible,
+		 * otherwise this method has no effect on the list. Moving an element up
+		 * is not possible if the list does not contain an element with the
+		 * given index or the element at the given index has no next element.
 		 *
+		 * @param index
 		 * @param list
-		 *            the list to wrap
-		 * @return a new reversed view on the given list
+		 * @return true if an element has been moved up, otherwise false
 		 */
-		public static <L extends List<T>, T> ReversedList<L, T> wrap(L list) {
-			return new ReversedList<L, T>(list);
+		private static boolean moveUp(final int index, final List<?> list) {
+			if (index <= 0 || index > list.size())
+				return false;
+			Collections.swap(list, index, index - 1);
+			return true;
 		}
 
 		/**
-		 * @return the list that is wrapped from this ReversableList Object
+		 * Move the element at the given index in the given list down if
+		 * possible, otherwise this method has no effect on the list. Moving an
+		 * element down is not possible if the list does not contain an element
+		 * with the given index or the element at the given index has no
+		 * previous element.
+		 *
+		 * @param index
+		 * @param list
+		 * @return true if an element has been moved down, otherwise false
 		 */
-		public L getWrapped() {
-			return wrapped;
+		private static boolean moveDown(final int index, final List<?> list) {
+			if (index < 0 || index >= list.size() - 1)
+				return false;
+			Collections.swap(list, index, index + 1);
+			return true;
 		}
 
-		private int reversedIndex(int index) {
-			return size() - index;
+		/**
+		 * Moves an {@link PlanElement} of Type {@link ElementType#TODO} down if
+		 * possible
+		 *
+		 * @param element
+		 *            the {@link PlanElement} to move down
+		 */
+		public void moveTodoEntryDown(PlanElement element) {
+			List<PlanElement> list = todoList;
+			int initialIndex = list.indexOf(element);
+			int oldIndex;
+			do {
+				oldIndex = list.indexOf(element);
+				moveDown(oldIndex, list);
+			} while (list.get(oldIndex).isComment());
+			int newIndex = list.indexOf(element);
+			if (initialIndex != newIndex)
+				plan.notifyPlanElementsOrderChange(element, initialIndex,
+						newIndex);
 		}
 
-		@Override
-		public T get(int index) {
-			return wrapped.get(reversedIndex(index) - 1);
+		/**
+		 * Moves an {@link PlanElement} of Type {@link ElementType#TODO} up if
+		 * possible
+		 *
+		 * @param element
+		 *            the {@link PlanElement} to move up
+		 */
+		public void moveTodoEntryUp(PlanElement element) {
+			List<PlanElement> list = todoList;
+			int initialIndex = list.indexOf(element);
+			int oldIndex;
+			do {
+				oldIndex = list.indexOf(element);
+				moveUp(oldIndex, list);
+			} while (list.get(oldIndex).isComment());
+			int newIndex = list.indexOf(element);
+			if (initialIndex != newIndex)
+				plan.notifyPlanElementsOrderChange(element, initialIndex,
+						newIndex);
 		}
 
-		@Override
-		public int size() {
-			return wrapped.size();
+		private static void move(int sourceIndex, int targetIndex,
+				final List<PlanElement> list) {
+			if (sourceIndex == targetIndex)
+				return;
+			if (sourceIndex < targetIndex) {
+				Collections.rotate(list.subList(sourceIndex, targetIndex + 1),
+						-1);
+			} else {
+				Collections.rotate(list.subList(targetIndex, sourceIndex + 1),
+						1);
+			}
 		}
 
-		@Override
-		public void add(int index, T element) {
-			wrapped.add(reversedIndex(index), element);
-			modCount++;
-		}
+		/**
+		 * Moves a given {@link PlanElement sourceElement} of Type
+		 * {@link ElementType#TODO} to the current position of a
+		 * {@link PlanElement targetElement} in it's list representation
+		 * (considering that this list representation may be reversed). If
+		 * <code>before</code> is true the {@link PlanElement sourceElement}
+		 * will be placed just before the {@link PlanElement targetElement}
+		 *
+		 * @param sourceElement
+		 * @param targetElement
+		 * @param before
+		 */
+		public void moveTodoEntry(PlanElement sourceElement,
+				PlanElement targetElement, boolean before) {
+			if (sourceElement == targetElement)
+				return;
+			Assert.isNotNull(sourceElement);
+			Assert.isNotNull(targetElement);
+			if (ElementType.TODO != sourceElement.getElementType())
+				throw new IllegalArgumentException();
 
-		@Override
-		public T set(int index, T element) {
-			return wrapped.set(reversedIndex(index) - 1, element);
-		}
+			List<PlanElement> list = todoList;
 
-		@Override
-		public T remove(int index) {
-			T removed = wrapped.remove(reversedIndex(index));
-			modCount++;
-			return removed;
+			int initialSourceIndex = list.indexOf(sourceElement);
+			int targetIndex = list.indexOf(targetElement);
+
+			if (targetIndex == -1 || initialSourceIndex == -1)
+				return;
+			if (targetIndex == initialSourceIndex)
+				return;
+
+			if (targetIndex > initialSourceIndex && before)
+				targetIndex--;
+			if (targetIndex < initialSourceIndex && !before)
+				targetIndex++;
+
+			move(initialSourceIndex, targetIndex, list);
+			int newIndex = list.indexOf(sourceElement);
+			if (initialSourceIndex != newIndex)
+				plan.notifyPlanElementsOrderChange(sourceElement,
+						initialSourceIndex, newIndex);
 		}
 	}
 
