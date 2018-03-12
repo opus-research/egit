@@ -3,8 +3,9 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2011-2012, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +38,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
-import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -81,7 +81,6 @@ import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -137,8 +136,6 @@ class CommitGraphTable {
 
 	private SWTCommitList allCommits;
 
-	private int allCommitsLength = 0;
-
 	// used for resolving PlotCommit objects by ids
 	private HashMap<String, PlotCommit> commitsMap = null;
 
@@ -156,35 +153,17 @@ class CommitGraphTable {
 
 	private GraphLabelProvider graphLabelProvider;
 
-	private final TableLoader tableLoader;
-
-	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
-
-	CommitGraphTable(Composite parent, final TableLoader loader) {
+	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		infoBackgroundColor = parent.getDisplay().getSystemColor(
 				SWT.COLOR_INFO_BACKGROUND);
-		tableLoader = loader;
 
-		final Table rawTable = new Table(parent, SWT.MULTI | SWT.H_SCROLL
+		Table rawTable = new Table(parent, SWT.MULTI | SWT.H_SCROLL
 				| SWT.V_SCROLL | SWT.BORDER | SWT.FULL_SELECTION | SWT.VIRTUAL);
 		rawTable.setHeaderVisible(true);
 		rawTable.setLinesVisible(false);
 		rawTable.setFont(nFont);
-		rawTable.addListener(SWT.SetData, new Listener() {
-			public void handleEvent(Event event) {
-				if (tableLoader != null) {
-					TableItem item = (TableItem) event.item;
-					int index = rawTable.indexOf(item);
-					if (trace)
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.HISTORYVIEW.getLocation(),
-								"Item " + index); //$NON-NLS-1$
-					tableLoader.loadItem(index);
-				}
-			}
-		});
 
 		final TableLayout layout = new TableLayout();
 		rawTable.setLayout(layout);
@@ -304,8 +283,8 @@ class CommitGraphTable {
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
-			final MenuManager menuMgr, final TableLoader loader) {
-		this(parent, loader);
+			final MenuManager menuMgr) {
+		this(parent);
 
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
@@ -388,8 +367,6 @@ class CommitGraphTable {
 			table.setSelection(new StructuredSelection(c), true);
 		else if (commitsMap != null) {
 			PlotCommit swtCommit = commitsMap.get(c.getId().name());
-			if (swtCommit == null && tableLoader != null)
-				tableLoader.loadCommit(c);
 			if (swtCommit != null)
 				table.setSelection(new StructuredSelection(swtCommit), true);
 		}
@@ -405,10 +382,6 @@ class CommitGraphTable {
 
 	void setRelativeDate(boolean booleanValue) {
 		graphLabelProvider.setRelativeDate(booleanValue);
-	}
-
-	void setShowEmailAddresses(boolean booleanValue) {
-		graphLabelProvider.setShowEmailAddresses(booleanValue);
 	}
 
 	private boolean canDoCopy() {
@@ -437,28 +410,21 @@ class CommitGraphTable {
 	}
 
 	void setInput(final RevFlag hFlag, final SWTCommitList list,
-			final SWTCommit[] asArray, HistoryPageInput input, boolean keepPosition) {
-		int topIndex = -1;
-		if (keepPosition)
-			topIndex = table.getTable().getTopIndex();
+			final SWTCommit[] asArray, HistoryPageInput input) {
 		setHistoryPageInput(input);
 		final SWTCommitList oldList = allCommits;
 		if (oldList != null && oldList != list)
 			oldList.dispose();
 		highlight = hFlag;
 		allCommits = list;
-		int newAllCommitsLength = allCommits.size();
 		table.setInput(asArray);
 		if (asArray != null && asArray.length > 0) {
-			if (oldList != list || allCommitsLength < newAllCommitsLength)
+			if (oldList != list)
 				initCommitsMap();
 		} else
 			table.getTable().deselectAll();
-		allCommitsLength = newAllCommitsLength;
 		if (commitToShow != null)
 			selectCommit(commitToShow);
-		if (keepPosition)
-			table.getTable().setTopIndex(topIndex);
 	}
 
 	void setHistoryPageInput(HistoryPageInput input) {
@@ -479,19 +445,6 @@ class CommitGraphTable {
 	}
 
 	private void createColumns(final Table rawTable, final TableLayout layout) {
-		final TableColumn commitId = new TableColumn(rawTable, SWT.NONE);
-		commitId.setResizable(true);
-		commitId.setText(UIText.CommitGraphTable_CommitId);
-		int minWidth;
-		GC gc = new GC(rawTable.getDisplay());
-		try {
-			gc.setFont(rawTable.getFont());
-			minWidth = gc.stringExtent("0000000").x + 5; //$NON-NLS-1$
-		} finally {
-			gc.dispose();
-		}
-		layout.addColumnData(new ColumnWeightData(3, minWidth, true));
-
 		final TableColumn graph = new TableColumn(rawTable, SWT.NONE);
 		graph.setResizable(true);
 		graph.setText(UIText.CommitGraphTable_messageColumn);
@@ -509,6 +462,12 @@ class CommitGraphTable {
 		date.setText(UIText.HistoryPage_authorDateColumn);
 		date.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(5, true));
+
+		final TableColumn commitId = new TableColumn(rawTable, SWT.NONE);
+		commitId.setResizable(true);
+		commitId.setText(UIText.CommitGraphTable_CommitId);
+		commitId.setWidth(50);
+		layout.addColumnData(new ColumnWeightData(3, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
 		committer.setResizable(true);
@@ -547,7 +506,7 @@ class CommitGraphTable {
 		else
 			event.gc.setFont(nFont);
 
-		if (event.index == 1) {
+		if (event.index == 0) {
 			renderer.paint(event, input == null ? null : input.getHead());
 			return;
 		}

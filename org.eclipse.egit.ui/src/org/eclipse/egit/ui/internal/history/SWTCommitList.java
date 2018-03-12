@@ -53,7 +53,6 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 	}
 
 	public void dispose() {
-		clear();
 		for (Color color : allColors)
 			color.dispose();
 		if (!control.isDisposed())
@@ -83,8 +82,6 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 	}
 
 	static class SWTLane extends PlotLane {
-		private static final long serialVersionUID = 1L;
-
 		Color color;
 		@Override
 		public boolean equals(Object o) {
