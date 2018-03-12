@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jgit.lib.FileRepository;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -49,7 +48,7 @@ public class RepositoryCache {
 		Reference<Repository> r = repositoryCache.get(gitDir);
 		Repository d = r != null ? r.get() : null;
 		if (d == null) {
-			d = new FileRepository(gitDir);
+			d = new Repository(gitDir);
 			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
 		}
 		prune(repositoryCache);

@@ -14,7 +14,6 @@ import static org.junit.Assert.fail;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.test.GitTestCase;
-import org.eclipse.jgit.lib.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.After;
@@ -28,7 +27,7 @@ public class BlobStorageTest extends GitTestCase {
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		repository = new FileRepository(gitDir);
+		repository = new Repository(gitDir);
 		repository.create();
 	}
 

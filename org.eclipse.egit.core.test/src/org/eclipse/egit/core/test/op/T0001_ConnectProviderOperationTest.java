@@ -29,7 +29,6 @@ import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileRepository;
 import org.eclipse.jgit.lib.FileTreeEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectWriter;
@@ -58,7 +57,7 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 
 		File gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
-		Repository repository = new FileRepository(gitDir);
+		Repository repository = new Repository(gitDir);
 		repository.create();
 		repository.close();
 		ConnectProviderOperation operation = new ConnectProviderOperation(
@@ -81,7 +80,7 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 
 		File gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
-		Repository thisGit = new FileRepository(gitDir);
+		Repository thisGit = new Repository(gitDir);
 		thisGit.create();
 		Tree rootTree = new Tree(thisGit);
 		Tree prjTree = rootTree.addTree(project.getProject().getName());
