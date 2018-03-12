@@ -48,7 +48,7 @@ public class BranchAction extends RepositoryAction {
 			return;
 		}
 
-		BranchSelectionDialog dialog = new BranchSelectionDialog(getShell(), repository);
+		BranchSelectionDialog dialog = new BranchSelectionDialog(getShell(), repository, false);
 		if (dialog.open() != Window.OK) {
 			return;
 		}
