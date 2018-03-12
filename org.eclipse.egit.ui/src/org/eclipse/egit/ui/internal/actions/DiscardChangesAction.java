@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-
 /**
  * Checkout all selected dirty files.
  */
@@ -17,7 +16,6 @@ public class DiscardChangesAction extends RepositoryAction {
 	 *
 	 */
 	public DiscardChangesAction() {
-		super(ActionCommands.DISCARD_CHANGES_ACTION,
-				new DiscardChangesActionHandler());
+		super(ActionCommands.DISCARD_CHANGES_ACTION, new DiscardChangesActionHandler());
 	}
 }
