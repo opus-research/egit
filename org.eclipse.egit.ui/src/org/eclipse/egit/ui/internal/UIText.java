@@ -2367,9 +2367,6 @@ public class UIText extends NLS {
 	public static String PushResultDialog_ConfigureButton;
 
 	/** */
-	public static String PushResultDialog_ToggleShowButton;
-
-	/** */
 	public static String PushResultTable_columnStatusRepo;
 
 	/** */
