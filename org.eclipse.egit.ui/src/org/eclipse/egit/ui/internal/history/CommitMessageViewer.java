@@ -29,7 +29,6 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -47,11 +46,11 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextUtilities;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetectorExtension2;
 import org.eclipse.jface.text.rules.FastPartitioner;
 import org.eclipse.jface.text.rules.IPartitionTokenScanner;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -62,6 +61,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.FocusEvent;
@@ -73,7 +73,7 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
-class CommitMessageViewer extends HyperlinkSourceViewer {
+class CommitMessageViewer extends SourceViewer {
 
 	static final String HEADER_CONTENT_TYPE = "__egit_commit_msg_header"; //$NON-NLS-1$
 
@@ -147,22 +147,13 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 		fill = store
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL);
 
-		// React on changes in the JFace color preferences by updating the view
+		// React on changes in the JFace color preferences
 		syntaxColoringListener = new IPropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				if (JFacePreferences.HYPERLINK_COLOR
 						.equals(event.getProperty())) {
-					if (!t.isDisposed()) {
-						t.getDisplay().asyncExec(new Runnable() {
-							@Override
-							public void run() {
-								if (!t.isDisposed()) {
-									refresh();
-								}
-							}
-						});
-					}
+					format();
 				}
 			}
 		};
@@ -264,6 +255,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 
 	void addDoneListenerToFormatJob() {
 		formatJob.addJobChangeListener(new JobChangeAdapter() {
+
 			@Override
 			public void done(IJobChangeEvent event) {
 				if (!event.getResult().isOK())
@@ -271,12 +263,11 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 				final StyledText text = getTextWidget();
 				if (text == null || text.isDisposed())
 					return;
-				final FormatResult result = ((FormatJob) event.getJob())
-						.getFormatResult();
+				final FormatJob job = (FormatJob) event.getJob();
 				text.getDisplay().asyncExec(new Runnable() {
 					@Override
 					public void run() {
-						applyFormatJobResultInUI(result);
+						applyFormatJobResultInUI(job.getFormatResult());
 					}
 				});
 			}
@@ -397,11 +388,30 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 		setDocument(new CommitDocument(formatResult));
 	}
 
+	static class ObjectLink {
+		private final RevCommit target;
+		private final IRegion region;
+
+		public ObjectLink(RevCommit target, IRegion region) {
+			this.target = target;
+			this.region = region;
+		}
+
+		public IRegion getRegion() {
+			return region;
+		}
+
+		public RevCommit getTarget() {
+			return target;
+		}
+
+	}
+
 	private class ObjectHyperlink implements IHyperlink {
 
-		private final GitCommitReference link;
+		ObjectLink link;
 
-		public ObjectHyperlink(GitCommitReference link) {
+		public ObjectHyperlink(ObjectLink link) {
 			this.link = link;
 		}
 
@@ -422,9 +432,8 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 
 		@Override
 		public void open() {
-			for (final Object l : navListeners.getListeners()) {
+			for (final Object l : navListeners.getListeners())
 				((CommitNavigationListener) l).showCommit(link.getTarget());
-			}
 		}
 
 	}
@@ -441,9 +450,9 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 			super(format.getCommitInfo());
 			headerEnd = format.getHeaderEnd();
 			footerStart = format.getFooterStart();
-			List<GitCommitReference> knownLinks = format.getKnownLinks();
+			List<ObjectLink> knownLinks = format.getKnownLinks();
 			hyperlinks = new ArrayList<>(knownLinks.size());
-			for (GitCommitReference o : knownLinks) {
+			for (ObjectLink o : knownLinks) {
 				hyperlinks.add(new ObjectHyperlink(o));
 			}
 			IDocumentPartitioner partitioner = new FastPartitioner(
@@ -504,8 +513,8 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 
 		@Override
 		public IToken nextToken() {
-			tokenStart = currentOffset;
 			if (currentOffset < end) {
+				tokenStart = currentOffset;
 				if (currentOffset < headerEnd) {
 					currentOffset = Math.min(headerEnd, end);
 					return HEADER;
@@ -538,8 +547,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 
 	}
 
-	static class KnownHyperlinksDetector
-			implements IHyperlinkDetector, IHyperlinkDetectorExtension2 {
+	static class KnownHyperlinksDetector implements IHyperlinkDetector {
 
 		@Override
 		public IHyperlink[] detectHyperlinks(ITextViewer textViewer,
@@ -560,11 +568,6 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 				}
 			}
 			return null;
-		}
-
-		@Override
-		public int getStateMask() {
-			return -1;
 		}
 
 	}

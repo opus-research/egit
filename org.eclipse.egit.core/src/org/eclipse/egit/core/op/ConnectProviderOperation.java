@@ -87,7 +87,6 @@ public class ConnectProviderOperation implements IEGitOperation {
 		this.projects.putAll(projects);
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null) {
@@ -204,7 +203,6 @@ public class ConnectProviderOperation implements IEGitOperation {
 		return derived;
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		Set<IProject> projectSet = projects.keySet();
 		return new MultiRule(projectSet.toArray(new IProject[projectSet.size()]));
@@ -221,13 +219,9 @@ public class ConnectProviderOperation implements IEGitOperation {
 	@Nullable
 	private RepositoryMapping findActualRepository(
 			Collection<RepositoryMapping> repos, File suggestedRepo) {
-		File path = Path.fromOSString(suggestedRepo.getPath()).toFile();
+		IPath path = Path.fromOSString(suggestedRepo.getPath());
 		for (RepositoryMapping rm : repos) {
-			IPath other = rm.getGitDirAbsolutePath();
-			if (other == null) {
-				continue;
-			}
-			if (path.equals(other.toFile())) {
+			if (path.equals(rm.getGitDirAbsolutePath())) {
 				return rm;
 			}
 		}

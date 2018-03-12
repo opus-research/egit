@@ -47,7 +47,6 @@ public class IndexResourceVariant extends AbstractGitResourceVariant {
 				objectId, rawMode);
 	}
 
-	@Override
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
 		return new IndexBlobStorage(repository, path, objectId);
 	}

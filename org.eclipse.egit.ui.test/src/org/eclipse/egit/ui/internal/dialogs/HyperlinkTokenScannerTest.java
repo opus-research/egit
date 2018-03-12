@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextAttribute;
@@ -21,8 +20,6 @@ import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.URLHyperlinkDetector;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.source.ISourceViewer;
-import org.eclipse.jface.text.source.SourceViewerConfiguration;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -33,12 +30,6 @@ public class HyperlinkTokenScannerTest {
 
 	@Mock
 	private ISourceViewer viewer;
-
-	@Mock
-	private SourceViewerConfiguration configuration;
-
-	@Mock
-	private IPreferenceStore preferenceStore;
 
 	private IHyperlinkDetector[] detectors = new IHyperlinkDetector[] {
 			new URLHyperlinkDetector() };
@@ -103,22 +94,14 @@ public class HyperlinkTokenScannerTest {
 		assertTokens(testString, 15, 14, expected);
 	}
 
-	@SuppressWarnings("boxing")
 	private void assertTokens(String text, int offset, int length,
 			String expected) {
 		assertEquals("Test definition problem: 'expected' length mismatch",
 				text.length(), expected.length());
 		IDocument testDocument = new Document(text);
 		when(viewer.getDocument()).thenReturn(testDocument);
-		when(configuration.getHyperlinkDetectors(viewer)).thenReturn(detectors);
-		when(preferenceStore
-				.getBoolean(AbstractTextEditor.PREFERENCE_HYPERLINKS_ENABLED))
-						.thenReturn(true);
-		when(preferenceStore.getBoolean(
-				"org.eclipse.ui.internal.editors.text.URLHyperlinkDetector"))
-						.thenReturn(false);
-		HyperlinkTokenScanner scanner = new HyperlinkTokenScanner(configuration,
-				viewer, preferenceStore, null);
+		HyperlinkTokenScanner scanner = new HyperlinkTokenScanner(detectors,
+				viewer, null);
 		scanner.setRangeAndColor(testDocument, offset, length, null);
 		IToken token = null;
 		char[] found = new char[text.length()];

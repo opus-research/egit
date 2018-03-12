@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.history.CommitMessageViewer.ObjectLink;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -51,10 +52,9 @@ class FormatJob extends Job {
 
 	@Override
 	protected IStatus run(IProgressMonitor monitor) {
-		if (monitor.isCanceled()) {
+		if(monitor.isCanceled())
 			return Status.CANCEL_STATUS;
-		}
-		FormatResult commitInfo;
+		final FormatResult commitInfo;
 		CommitInfoBuilder builder;
 		try {
 			synchronized(lock) {
@@ -68,9 +68,8 @@ class FormatJob extends Job {
 		} catch (IOException e) {
 			return Activator.createErrorStatus(e.getMessage(), e);
 		}
-		if (monitor.isCanceled()) {
+		if(monitor.isCanceled())
 			return Status.CANCEL_STATUS;
-		}
 		synchronized(lock) {
 			formatResult = commitInfo;
 		}
@@ -120,13 +119,13 @@ class FormatJob extends Job {
 	static class FormatResult{
 		private final String commitInfo;
 
-		private final List<GitCommitReference> knownLinks;
+		private final List<ObjectLink> knownLinks;
 
 		private final int headerEnd;
 
 		private final int footerStart;
 
-		FormatResult(String commmitInfo, List<GitCommitReference> links,
+		FormatResult(String commmitInfo, List<ObjectLink> links,
 				int headerEnd, int footerStart) {
 			this.commitInfo = commmitInfo;
 			this.knownLinks = links;
@@ -138,7 +137,7 @@ class FormatJob extends Job {
 			return commitInfo;
 		}
 
-		public List<GitCommitReference> getKnownLinks() {
+		public List<ObjectLink> getKnownLinks() {
 			return knownLinks;
 		}
 

@@ -14,7 +14,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.history.FindToolbar;
@@ -25,14 +24,6 @@ import org.eclipse.jface.preference.IPreferenceStore;
  * Plugin extension point to initialize the plugin runtime preferences.
  */
 public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
-
-	/** */
-	public static final String COMMITTING_PREFERENCE_PAGE_WARN_BLOCK_ERRORS = String
-			.valueOf(IMarker.SEVERITY_ERROR);
-
-	/** */
-	public static final String COMMITTING_PREFERENCE_PAGE_WARN_BLOCK_WARNINGS_AND_ERRORS = String
-			.valueOf(IMarker.SEVERITY_WARNING);
 
 	/**
 	 * Calls super constructor.
@@ -75,12 +66,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_DIRTY_ICON, false);
-		store.setDefault(UIPreferences.WARN_BEFORE_COMMITTING, false);
-		store.setDefault(UIPreferences.WARN_BEFORE_COMMITTING_LEVEL,
-				COMMITTING_PREFERENCE_PAGE_WARN_BLOCK_ERRORS);
-		store.setDefault(UIPreferences.BLOCK_COMMIT, false);
-		store.setDefault(UIPreferences.BLOCK_COMMIT_LEVEL,
-				COMMITTING_PREFERENCE_PAGE_WARN_BLOCK_ERRORS);
 
 		w = new int[] { 500, 500 };
 		store.setDefault(UIPreferences.RESOURCEHISTORY_GRAPH_SPLIT, UIPreferences.intArrayToString(w));
@@ -122,9 +107,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 				StagingView.Presentation.LIST.name());
 		store.setDefault(UIPreferences.STAGING_VIEW_FILENAME_MODE, true);
 		store.setDefault(UIPreferences.STAGING_VIEW_COMPARE_MODE, true);
-		store.setDefault(UIPreferences.STAGING_VIEW_MAX_LIMIT_LIST_MODE, 10000);
-		store.setDefault(UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED,
-				false);
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);
 		store.setDefault(UIPreferences.CHECKOUT_PROJECT_RESTORE, true);
