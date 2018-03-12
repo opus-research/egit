@@ -25,8 +25,19 @@ import org.eclipse.team.ui.history.HistoryPageSaveablePart;
  */
 public class ShowResourceInHistoryAction extends TeamAction {
 
-	@Override
+	// There are changes in Eclipse 3.3 requiring that execute be implemented
+	// for it to compile. while 3.2 requires that run is implemented instead.
+	/**
+	 * See {@link #run}
+	 *
+	 * @param action
+	 */
 	public void execute(IAction action) {
+		run(action);
+	}
+
+	@Override
+	public void run(IAction action) {
 		TeamUI.getHistoryView().showHistoryFor(
 				new ResourceList(getSelectedResources()));
 	}

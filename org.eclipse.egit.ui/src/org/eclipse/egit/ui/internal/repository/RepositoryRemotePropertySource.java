@@ -62,13 +62,10 @@ public class RepositoryRemotePropertySource implements IPropertySource {
 		}
 		List<IPropertyDescriptor> resultList = new ArrayList<IPropertyDescriptor>();
 		PropertyDescriptor desc = new PropertyDescriptor(RepositoriesView.URL,
-				UIText.RepositoryRemotePropertySource_RemoteFetchURL_label);
+				UIText.RepositoryRemotePropertySource_RemoteUrlLabel);
 		resultList.add(desc);
 		desc = new PropertyDescriptor(RepositoriesView.FETCH,
 				UIText.RepositoryRemotePropertySource_FetchLabel);
-		resultList.add(desc);
-		desc = new PropertyDescriptor(RepositoriesView.PUSHURL,
-				UIText.RepositoryRemotePropertySource_RemotePushUrl_label);
 		resultList.add(desc);
 		desc = new PropertyDescriptor(RepositoriesView.PUSH,
 				UIText.RepositoryRemotePropertySource_PushLabel);
