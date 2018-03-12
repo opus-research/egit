@@ -52,7 +52,7 @@ public class RepositoryUtil {
 
 	private final Map<String, String> repositoryNameCache = new HashMap<String, String>();
 
-	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
+	private final IEclipsePreferences prefs = new InstanceScope()
 			.getNode(Activator.getPluginId());
 
 	/**
@@ -235,27 +235,20 @@ public class RepositoryUtil {
 	 * @param repository
 	 * @return the name
 	 */
-	public String getRepositoryName(final Repository repository) {
-		File gitDir = repository.getDirectory();
-		if (gitDir == null)
-			return ""; //$NON-NLS-1$
-
-		// Use parent file for non-bare repositories
-		if (!repository.isBare()) {
-			gitDir = gitDir.getParentFile();
-			if (gitDir == null)
-				return ""; //$NON-NLS-1$
-		}
-
+	public String getRepositoryName(Repository repository) {
 		synchronized (repositoryNameCache) {
-			final String path = gitDir.getPath().toString();
-			String name = repositoryNameCache.get(path);
-			if (name != null)
+			File gitDir = repository.getDirectory();
+			if (gitDir != null) {
+				String name = repositoryNameCache.get(gitDir.getPath()
+						.toString());
+				if (name != null)
+					return name;
+				name = gitDir.getParentFile().getName();
+				repositoryNameCache.put(gitDir.getPath().toString(), name);
 				return name;
-			name = gitDir.getName();
-			repositoryNameCache.put(path, name);
-			return name;
+			}
 		}
+		return ""; //$NON-NLS-1$
 	}
 
 	/**
