@@ -73,11 +73,10 @@ public class BaseToolManager {
 	 * @param path
 	 *            tool path
 	 * @param options
-	 *            tool options (can be multiple strings)
+	 *            tool options
 	 * @return true if successful
 	 */
-	public boolean addPreDefinedTool(String name, String path,
-			String... options) {
+	public boolean addPreDefinedTool(String name, String path, String options) {
 		listPreDefined.add(new PreDefinedTool(name, path, options));
 		return false;
 	}

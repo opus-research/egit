@@ -152,7 +152,7 @@ public class ToolsUtils {
 	 * @param localCompareFilePath
 	 * @param remoteCompareFilePath
 	 * @param baseCompareFilePath
-	 * @param toolCmd
+	 * @param mergeCmd
 	 * @param tempDir
 	 * @return the exit code
 	 * @throws InterruptedException
@@ -160,23 +160,23 @@ public class ToolsUtils {
 	 */
 	public static int executeTool(String mergedCompareFilePath,
 			String localCompareFilePath, String remoteCompareFilePath,
-			String baseCompareFilePath, String toolCmd, File tempDir)
+			String baseCompareFilePath, String mergeCmd, File tempDir)
 					throws IOException, InterruptedException {
 		if (mergedCompareFilePath != null && localCompareFilePath != null
-				&& remoteCompareFilePath != null && toolCmd != null) {
+				&& remoteCompareFilePath != null && mergeCmd != null) {
 			if (baseCompareFilePath == null) {
 				baseCompareFilePath = ""; //$NON-NLS-1$
 			}
 			String osname = System.getProperty("os.name", "") //$NON-NLS-1$ //$NON-NLS-2$
 					.toLowerCase();
-			int indexLast = toolCmd.indexOf(".sh"); //$NON-NLS-1$
+			int indexLast = mergeCmd.indexOf(".sh"); //$NON-NLS-1$
 			if (osname.indexOf("windows") != -1 //$NON-NLS-1$
 					&& indexLast != -1) {
-				return runExternalToolMsysBash(toolCmd,
+				return runExternalToolMsysBash(mergeCmd,
 						mergedCompareFilePath, localCompareFilePath,
 						remoteCompareFilePath, baseCompareFilePath, tempDir);
 			} else {
-				return runExternalToolNative(toolCmd,
+				return runExternalToolNative(mergeCmd,
 						mergedCompareFilePath, localCompareFilePath,
 						remoteCompareFilePath, baseCompareFilePath);
 			}
@@ -287,14 +287,14 @@ public class ToolsUtils {
 	}
 
 	/**
-	 * @param baseDirPath
+	 * @param baseDir
 	 * @param fileName
 	 * @param subName
 	 * @param revision
 	 * @param writeToTemp
 	 * @return the temp file name loaded
 	 */
-	public static String loadToTempFile(File baseDirPath, String fileName,
+	public static String loadToTempFile(File baseDir, String fileName,
 			String subName, FileRevisionTypedElement revision,
 			boolean writeToTemp) {
 		String tempFileName = null;
@@ -302,16 +302,16 @@ public class ToolsUtils {
 			System.out.println("revision.getName: " //$NON-NLS-1$
 					+ revision.getName());
 			String revisionFilePath = revision.getPath();
-			if (baseDirPath != null && revisionFilePath != null) {
+			if (baseDir != null && revisionFilePath != null) {
 				System.out.println("revision.getPath: " //$NON-NLS-1$
 						+ revisionFilePath);
 				try {
 					if (writeToTemp) {
-						File subPath = createSubDirectory(baseDirPath, subName);
+						File subPath = createSubDirectory(baseDir, subName);
 						tempFileName = subPath.getAbsolutePath()
 								+ File.separator + fileName;
 					} else {
-						tempFileName = baseDirPath.getAbsolutePath()
+						tempFileName = baseDir.getAbsolutePath()
 								+ File.separator + fileName + "." //$NON-NLS-1$
 								+ subName;
 					}
