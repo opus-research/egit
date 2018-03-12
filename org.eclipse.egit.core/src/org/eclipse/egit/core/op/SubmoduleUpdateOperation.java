@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012, 2016 GitHub Inc and others.
+ *  Copyright (c) 2012, 2015 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
@@ -37,7 +38,7 @@ import org.eclipse.team.core.TeamException;
 /**
  * Operation that updates a repository's submodules
  */
-public class SubmoduleUpdateOperation extends AbstractMergingOperation {
+public class SubmoduleUpdateOperation implements IEGitOperation {
 
 	private final Repository repository;
 
@@ -87,7 +88,8 @@ public class SubmoduleUpdateOperation extends AbstractMergingOperation {
 						update.addPath(path);
 					update.setProgressMonitor(new EclipseGitProgressTransformer(
 							progress.newChild(2)));
-					MergeStrategy strategy = getApplicableMergeStrategy();
+					MergeStrategy strategy = Activator.getDefault()
+							.getPreferredMergeStrategy();
 					if (strategy != null) {
 						update.setStrategy(strategy);
 					}

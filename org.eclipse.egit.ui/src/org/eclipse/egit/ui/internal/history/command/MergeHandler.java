@@ -38,7 +38,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -78,7 +77,6 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 					e);
 		}
 
-		MergeStrategy mergeStrategy = org.eclipse.egit.core.Activator.getDefault().getPreferredMergeStrategy();
 		String refName;
 		if (nodes.isEmpty()) {
 			refName = commitId.getName();
@@ -88,17 +86,14 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
 					HandlerUtil.getActiveShellChecked(event), nodes,
 					UIText.MergeHandler_SelectBranchTitle,
-					UIText.MergeHandler_SelectBranchMessage, SWT.SINGLE, true);
-			if (dlg.open() == Window.OK) {
+					UIText.MergeHandler_SelectBranchMessage, SWT.SINGLE);
+			if (dlg.open() == Window.OK)
 				refName = dlg.getSelectedNode().getName();
-				mergeStrategy = dlg.getSelectedStrategy();
-			} else {
+			else
 				return null;
-			}
 		}
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 		final MergeOperation op = new MergeOperation(repository, refName);
-		op.setMergeStrategy(mergeStrategy);
 		Job job = new WorkspaceJob(jobname) {
 
 			@Override
