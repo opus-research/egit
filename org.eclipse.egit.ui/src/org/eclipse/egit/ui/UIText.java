@@ -2940,9 +2940,6 @@ public class UIText extends NLS {
 	public static String DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox;
 
 	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox;
-
-	/** */
 	public static String DeleteTagCommand_messageConfirmMultipleTag;
 
 	/** */
@@ -4418,9 +4415,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Commit;
-
-	/** */
-	public static String StagingView_CommitToolTip;
 
 	/** */
 	public static String StagingView_checkoutFailed;
