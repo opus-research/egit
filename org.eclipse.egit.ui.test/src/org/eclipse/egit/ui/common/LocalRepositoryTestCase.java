@@ -36,6 +36,7 @@ import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.RepositoryCache;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.AddToIndexOperation;
@@ -47,7 +48,12 @@ import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
+import org.eclipse.egit.ui.internal.rebase.RebaseInteractiveView;
+import org.eclipse.egit.ui.internal.reflog.ReflogView;
+import org.eclipse.egit.ui.internal.repository.RepositoriesView;
+import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -69,10 +75,14 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.team.ui.history.IHistoryView;
+import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 /**
  * Base class for testing with local (file-system based) repositories
@@ -140,12 +150,31 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static final String FILE2 = "test2.txt";
 
-
-
 	protected final static TestUtils testUtils = new TestUtils();
+
+	private static final String[] VIEWS_TO_CLOSE = { //
+			RebaseInteractiveView.VIEW_ID, //
+			ISynchronizeView.VIEW_ID, //
+			IHistoryView.VIEW_ID, //
+			CompareTreeView.ID, //
+			ReflogView.VIEW_ID, //
+			StagingView.VIEW_ID, //
+			RepositoriesView.VIEW_ID, //
+			"org.eclipse.search.ui.views.SearchView", //
+			"org.eclipse.ui.views.PropertySheet"
+	};
+
+	@Rule
+	public TestName testName = new TestName();
 
 	public File getTestDirectory() {
 		return testDirectory;
+	}
+
+	protected static void closeGitViews() {
+		for (String viewId : VIEWS_TO_CLOSE) {
+			TestUtil.hideView(viewId);
+		}
 	}
 
 	@Before
@@ -153,7 +182,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		testMethodNumber++;
 		// create standalone temporary directory
 		testDirectory = testUtils.createTempDir("LocalRepositoriesTests"
-				+ testMethodNumber);
+				+ testMethodNumber + '_' + testName.getMethodName());
 		if (testDirectory.exists())
 			FileUtils.delete(testDirectory, FileUtils.RECURSIVE
 					| FileUtils.RETRY);
@@ -174,6 +203,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		TestUtil.processUIEvents();
 		// close all editors/dialogs
 		new Eclipse().reset();
+		closeGitViews();
 		TestUtil.processUIEvents();
 		// cleanup
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
@@ -201,6 +231,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				.getPreferenceStore()
 				.setValue(UIPreferences.SHOW_DETACHED_HEAD_WARNING,
 						false);
+		closeGitViews();
 	}
 
 	@AfterClass
@@ -208,11 +239,18 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		testUtils.deleteTempDirs();
 	}
 
-	protected static void shutDownRepositories() {
+	protected static void shutDownRepositories() throws Exception {
 		RepositoryCache cache = Activator.getDefault().getRepositoryCache();
 		for(Repository repository:cache.getAllRepositories())
 			repository.close();
 		cache.clear();
+		IEclipsePreferences prefs = Activator.getDefault().getRepositoryUtil()
+				.getPreferences();
+		synchronized (prefs) {
+			prefs.put(RepositoryUtil.PREFS_DIRECTORIES, "");
+			prefs.put(RepositoryUtil.PREFS_DIRECTORIES_REL, "");
+			prefs.flush();
+		}
 	}
 
 	protected static void deleteAllProjects() throws Exception {
@@ -236,40 +274,23 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected File createProjectAndCommitToRepository(String repoName)
 			throws Exception {
+		return createProjectAndCommitToRepository(repoName, PROJ1, PROJ2);
+	}
 
-		File gitDir = new File(new File(testDirectory, repoName),
-				Constants.DOT_GIT);
-		Repository myRepository = new RepositoryBuilder().setGitDir(gitDir)
-				.build();
-		myRepository.create();
+	protected File createProjectAndCommitToRepository(String repoName,
+			String projectName) throws Exception {
+		return createProjectAndCommitToRepository(repoName, projectName, null);
+	}
+
+	protected File createProjectAndCommitToRepository(String repoName,
+			String project1Name, String project2Name) throws Exception {
+
+		Repository myRepository = createLocalTestRepository(repoName);
+		File gitDir = myRepository.getDirectory();
 
 		// we need to commit into master first
-		IProject firstProject = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(PROJ1);
-
-		if (firstProject.exists()) {
-			firstProject.delete(true, null);
-			TestUtil.waitForJobs(100, 5000);
-		}
-		IProjectDescription desc = ResourcesPlugin.getWorkspace()
-				.newProjectDescription(PROJ1);
-		desc.setLocation(new Path(new File(myRepository.getWorkTree(), PROJ1)
-				.getPath()));
-		firstProject.create(desc, null);
-		firstProject.open(null);
-		TestUtil.waitForJobs(50, 5000);
-
-		assertTrue("Project is not accessible: " + firstProject,
-				firstProject.isAccessible());
-
-		IFolder folder = firstProject.getFolder(FOLDER);
-		folder.create(false, true, null);
-		IFile textFile = folder.getFile(FILE1);
-		textFile.create(new ByteArrayInputStream("Hello, world"
-				.getBytes(firstProject.getDefaultCharset())), false, null);
-		IFile textFile2 = folder.getFile(FILE2);
-		textFile2.create(new ByteArrayInputStream("Some more content"
-				.getBytes(firstProject.getDefaultCharset())), false, null);
+		IProject firstProject = createStandardTestProjectInRepository(
+				myRepository, project1Name);
 
 		try {
 			new ConnectProviderOperation(firstProject, gitDir).execute(null);
@@ -278,53 +299,43 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		}
 		assertConnected(firstProject);
 
-		IProject secondProject = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(PROJ2);
+		IProject secondProject = null;
+		if (project2Name != null) {
+			secondProject = createStandardTestProjectInRepository(myRepository,
+					project2Name);
 
-		if (secondProject.exists()) {
-			secondProject.delete(true, null);
-			TestUtil.waitForJobs(100, 5000);
+			// TODO we should be able to hide the .project
+			// IFile gitignore = secondPoject.getFile(".gitignore");
+			// gitignore.create(new ByteArrayInputStream("/.project\n"
+			// .getBytes(firstProject.getDefaultCharset())), false, null);
+
+			try {
+				new ConnectProviderOperation(secondProject, gitDir)
+						.execute(null);
+			} catch (Exception e) {
+				Activator.logError("Failed to connect project to repository",
+						e);
+			}
+			assertConnected(secondProject);
 		}
-
-		desc = ResourcesPlugin.getWorkspace().newProjectDescription(PROJ2);
-		desc.setLocation(new Path(new File(myRepository.getWorkTree(), PROJ2)
-				.getPath()));
-		secondProject.create(desc, null);
-		secondProject.open(null);
-		TestUtil.waitForJobs(50, 5000);
-
-		assertTrue("Project is not accessible: " + secondProject,
-				secondProject.isAccessible());
-
-		IFolder secondfolder = secondProject.getFolder(FOLDER);
-		secondfolder.create(false, true, null);
-		IFile secondtextFile = secondfolder.getFile(FILE1);
-		secondtextFile.create(new ByteArrayInputStream("Hello, world"
-				.getBytes(firstProject.getDefaultCharset())), false, null);
-		IFile secondtextFile2 = secondfolder.getFile(FILE2);
-		secondtextFile2.create(new ByteArrayInputStream("Some more content"
-				.getBytes(firstProject.getDefaultCharset())), false, null);
-
-		TestUtil.waitForJobs(50, 5000);
-
-		// TODO we should be able to hide the .project
-		// IFile gitignore = secondPoject.getFile(".gitignore");
-		// gitignore.create(new ByteArrayInputStream("/.project\n"
-		// .getBytes(firstProject.getDefaultCharset())), false, null);
-
-		try {
-			new ConnectProviderOperation(secondProject, gitDir).execute(null);
-		} catch (Exception e) {
-			Activator.logError("Failed to connect project to repository", e);
-		}
-		assertConnected(secondProject);
 
 		IFile dotProject = firstProject.getFile(".project");
 		assertTrue(".project is not accessible: " + dotProject,
 				dotProject.isAccessible());
+		IFolder folder = firstProject.getFolder(FOLDER);
+		IFile textFile = folder.getFile(FILE1);
+		IFile textFile2 = folder.getFile(FILE2);
+		IFile[] commitables = null;
+		if (secondProject != null) {
+			folder = secondProject.getFolder(FOLDER);
+			IFile secondtextFile = folder.getFile(FILE1);
+			IFile secondtextFile2 = folder.getFile(FILE2);
 
-		IFile[] commitables = new IFile[] { dotProject,
-				textFile, textFile2, secondtextFile, secondtextFile2 };
+			commitables = new IFile[] { dotProject, textFile, textFile2,
+					secondtextFile, secondtextFile2 };
+		} else {
+			commitables = new IFile[] { dotProject, textFile, textFile2 };
+		}
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
@@ -336,13 +347,60 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// now create a stable branch (from master)
 		createStableBranch(myRepository);
 		// and check in some stuff into master again
-		touchAndSubmit(null);
+		String newContent = "Touched at " + System.currentTimeMillis();
+		IFile file = touch(firstProject.getName(), FOLDER + '/' + FILE1,
+				newContent);
+		addAndCommit(file, newContent);
 
 		// Make sure cache entry is already listening for changes
 		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
 		cache.getIndexDiffCacheEntry(lookupRepository(gitDir));
 
 		return gitDir;
+	}
+
+	protected Repository createLocalTestRepository(String repoName)
+			throws IOException {
+		File gitDir = new File(new File(testDirectory, repoName),
+				Constants.DOT_GIT);
+		Repository myRepository = new RepositoryBuilder().setGitDir(gitDir)
+				.build();
+		myRepository.create();
+		return myRepository;
+	}
+
+	protected IProject createStandardTestProjectInRepository(
+			Repository repository, String name) throws Exception {
+		IProject project = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(name);
+
+		if (project.exists()) {
+			project.delete(true, null);
+			TestUtil.waitForJobs(100, 5000);
+		}
+		IProjectDescription desc = ResourcesPlugin.getWorkspace()
+				.newProjectDescription(name);
+		desc.setLocation(
+				new Path(new File(repository.getWorkTree(), name).getPath()));
+		project.create(desc, null);
+		project.open(null);
+		TestUtil.waitForJobs(50, 5000);
+
+		assertTrue("Project is not accessible: " + project,
+				project.isAccessible());
+
+		IFolder folder = project.getFolder(FOLDER);
+		folder.create(false, true, null);
+		IFile textFile = folder.getFile(FILE1);
+		textFile.create(
+				new ByteArrayInputStream(
+						"Hello, world".getBytes(project.getDefaultCharset())),
+				false, null);
+		IFile textFile2 = folder.getFile(FILE2);
+		textFile2.create(new ByteArrayInputStream(
+				"Some more content".getBytes(project.getDefaultCharset())),
+				false, null);
+		return project;
 	}
 
 	protected RepositoryMapping assertConnected(IProject project) {
@@ -459,7 +517,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	protected static void createBranch(Repository myRepository,
 			String newRefName) throws IOException {
 		RefUpdate updateRef = myRepository.updateRef(newRefName);
-		Ref sourceBranch = myRepository.getRef("refs/heads/master");
+		Ref sourceBranch = myRepository.exactRef("refs/heads/master");
 		ObjectId startAt = sourceBranch.getObjectId();
 		String startBranch = Repository.shortenRefName(sourceBranch.getName());
 		updateRef.setNewObjectId(startAt);
@@ -490,6 +548,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	protected void shareProjects(File repositoryDir) throws Exception {
 		Repository myRepository = lookupRepository(repositoryDir);
 		FilenameFilter projectFilter = new FilenameFilter() {
+			@Override
 			public boolean accept(File dir, String name) {
 				return name.equals(".project");
 			}

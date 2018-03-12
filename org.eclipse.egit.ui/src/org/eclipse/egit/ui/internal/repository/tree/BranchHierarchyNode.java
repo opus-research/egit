@@ -46,7 +46,7 @@ public class BranchHierarchyNode extends RepositoryTreeNode<IPath> {
 	 * @throws IOException
 	 */
 	public List<IPath> getChildPaths() throws IOException {
-		List<IPath> result = new ArrayList<IPath>();
+		List<IPath> result = new ArrayList<>();
 		for (IPath myPath : getPathList()) {
 			if (getObject().isPrefixOf(myPath)) {
 				int segmentDiff = myPath.segmentCount()
@@ -63,17 +63,18 @@ public class BranchHierarchyNode extends RepositoryTreeNode<IPath> {
 	}
 
 	/**
-	 * @return the child Refs (branches)
+	 * @return the direct child Refs (branches) only
 	 * @throws IOException
 	 */
 	public List<Ref> getChildRefs() throws IOException {
-		List<Ref> childRefs = new ArrayList<Ref>();
+		List<Ref> childRefs = new ArrayList<>();
 		for (IPath myPath : getPathList()) {
 			if (getObject().isPrefixOf(myPath)) {
 				int segmentDiff = myPath.segmentCount()
 						- getObject().segmentCount();
 				if (segmentDiff == 1) {
-					Ref ref = getRepository().getRef(myPath.toPortableString());
+					Ref ref = getRepository()
+							.findRef(myPath.toPortableString());
 					childRefs.add(ref);
 				}
 			}
@@ -81,8 +82,23 @@ public class BranchHierarchyNode extends RepositoryTreeNode<IPath> {
 		return childRefs;
 	}
 
+	/**
+	 * @return all child Refs reachable from this hierarchy node
+	 * @throws IOException
+	 */
+	public List<Ref> getChildRefsRecursive() throws IOException {
+		List<Ref> childRefs = new ArrayList<>();
+		for (IPath myPath : getPathList()) {
+			if (getObject().isPrefixOf(myPath)) {
+				Ref ref = getRepository().exactRef(myPath.toPortableString());
+				childRefs.add(ref);
+			}
+		}
+		return childRefs;
+	}
+
 	private List<IPath> getPathList() throws IOException {
-		List<IPath> result = new ArrayList<IPath>();
+		List<IPath> result = new ArrayList<>();
 		Map<String, Ref> refsMap = getRepository().getRefDatabase().getRefs(
 				getObject().toPortableString()); // getObject() returns path ending with /
 		for (Map.Entry<String, Ref> entry : refsMap.entrySet()) {

@@ -8,6 +8,7 @@
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    Laurent Delaigue (Obeo) - use of preferred merge strategy
+ *    Stephan Hackstedt <stephan.hackstedt@googlemail.com - bug 477695
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -20,9 +21,9 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
@@ -37,7 +38,7 @@ import org.eclipse.team.core.TeamException;
 /**
  * Operation that updates a repository's submodules
  */
-public class SubmoduleUpdateOperation extends AbstractMergingOperation {
+public class SubmoduleUpdateOperation implements IEGitOperation {
 
 	private final Repository repository;
 
@@ -64,11 +65,14 @@ public class SubmoduleUpdateOperation extends AbstractMergingOperation {
 		return this;
 	}
 
+	@Override
 	public void execute(final IProgressMonitor monitor) throws CoreException {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
+			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
-				pm.beginTask("", 3); //$NON-NLS-1$
+				SubMonitor progress = SubMonitor.convert(pm, 3);
+
 				Git git = Git.wrap(repository);
 
 				Collection<String> updated = null;
@@ -77,33 +81,32 @@ public class SubmoduleUpdateOperation extends AbstractMergingOperation {
 					for (String path : paths)
 						init.addPath(path);
 					init.call();
-					pm.worked(1);
+					progress.worked(1);
 
 					SubmoduleUpdateCommand update = git.submoduleUpdate();
 					for (String path : paths)
 						update.addPath(path);
 					update.setProgressMonitor(new EclipseGitProgressTransformer(
-							new SubProgressMonitor(pm, 2)));
-					MergeStrategy strategy = getApplicableMergeStrategy();
+							progress.newChild(2)));
+					MergeStrategy strategy = Activator.getDefault()
+							.getPreferredMergeStrategy();
 					if (strategy != null) {
 						update.setStrategy(strategy);
 					}
 					updated = update.call();
-					pm.worked(1);
-					SubProgressMonitor refreshMonitor = new SubProgressMonitor(
-							pm, 1);
-					refreshMonitor.beginTask("", updated.size()); //$NON-NLS-1$
+					progress.worked(1);
+					SubMonitor refreshMonitor = progress
+							.newChild(updated.size());
 					for (String path : updated) {
 						Repository subRepo = SubmoduleWalk
 								.getSubmoduleRepository(repository, path);
 						if (subRepo != null)
 							ProjectUtil.refreshValidProjects(
 									ProjectUtil.getValidOpenProjects(subRepo),
-									new SubProgressMonitor(refreshMonitor, 1));
+									refreshMonitor.newChild(1));
 						else
 							refreshMonitor.worked(1);
 					}
-					refreshMonitor.done();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
@@ -113,15 +116,14 @@ public class SubmoduleUpdateOperation extends AbstractMergingOperation {
 				} finally {
 					if (updated != null && !updated.isEmpty())
 						repository.notifyIndexChanged();
-					pm.done();
 				}
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE,
-				monitor != null ? monitor : new NullProgressMonitor());
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return ResourcesPlugin.getWorkspace().getRoot();
 	}

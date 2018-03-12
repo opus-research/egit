@@ -13,7 +13,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.io.File;
+
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
@@ -105,6 +108,60 @@ public class RepositoryMappingTest extends GitTestCase {
 
 		assertNotNull(mapping);
 		assertEquals(repository, mapping.getRepository());
+	}
+
+	@Test
+	public void shouldResolveRelativePathRelativeToContainer() {
+		IPath projectPath = project.getProject().getLocation();
+		RepositoryMapping mapping = RepositoryMapping
+				.create(project.getProject(), new File(".git"));
+		assertEquals(projectPath.append(".git"),
+				mapping.getGitDirAbsolutePath());
+	}
+
+	/**
+	 * Tests that a {@link RepositoryMapping} internally uses a relative path if
+	 * at all possible.
+	 */
+	@Test
+	public void shouldResolveAsRelativePath() {
+		IProject proj = project.getProject();
+		IPath projectPath = proj.getLocation()
+				.removeTrailingSeparator();
+		String gitHereTest = ".git";
+		String gitTest = "../../.git";
+		String gitSubdirTest = "foobar/.git";
+		String gitSubmoduleTest = "../../.git/modules/submodule";
+		// Construct an absolute path different from the project location:
+		// should be preserved. upToSegment ensures we don't loose the root
+		// component.
+		String gitAbsolute = projectPath.uptoSegment(0)
+				.append(projectPath.segment(0) + "fake").append(".git")
+				.toPortableString();
+		String parents = "";
+		while (projectPath.segmentCount() > 2) {
+			String pathString = projectPath.toOSString();
+			assertRepoMappingPath(proj, pathString, gitHereTest, parents);
+			assertRepoMappingPath(proj, pathString, gitTest, parents);
+			assertRepoMappingPath(proj, pathString, gitSubdirTest, parents);
+			assertRepoMappingPath(proj, pathString, gitSubmoduleTest, parents);
+			assertRepoMappingPath(proj, pathString, gitAbsolute, "");
+			projectPath = projectPath.removeLastSegments(1);
+			parents += "../";
+		}
+	}
+
+	private void assertRepoMappingPath(IProject testProject, String pathOS,
+			String testDirPortable, String parentsPortable) {
+		String testDirOS = testDirPortable.replace('/', File.separatorChar);
+		File testFile = new File(testDirOS);
+		if (!testFile.isAbsolute()) {
+			testFile = new File(new File(pathOS), testDirOS);
+		}
+		RepositoryMapping mapping = RepositoryMapping.create(testProject,
+				testFile);
+		assertEquals(parentsPortable + testDirPortable,
+				mapping.getGitDirPath().toPortableString());
 	}
 
 	private IPath getWorkTreePath() {

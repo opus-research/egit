@@ -25,13 +25,14 @@ import java.util.Set;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceProxy;
+import org.eclipse.core.resources.IResourceProxyVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.MultiStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
@@ -41,7 +42,7 @@ import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -51,6 +52,8 @@ import org.eclipse.team.core.RepositoryProvider;
  */
 public class ConnectProviderOperation implements IEGitOperation {
 	private final Map<IProject, File> projects = new LinkedHashMap<IProject, File>();
+
+	private boolean refreshResources = true;
 
 	/**
 	 * Create a new connection operation to execute within the workspace.
@@ -87,24 +90,14 @@ public class ConnectProviderOperation implements IEGitOperation {
 		this.projects.putAll(projects);
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor;
-		if (m == null) {
-			monitor = new NullProgressMonitor();
-		} else {
-			monitor = m;
-		}
-
-		monitor.beginTask(CoreText.ConnectProviderOperation_connecting,
-				100 * projects.size());
+		SubMonitor progress = SubMonitor.convert(m,
+				CoreText.ConnectProviderOperation_connecting, projects.size());
 		MultiStatus ms = new MultiStatus(Activator.getPluginId(), 0,
 				CoreText.ConnectProviderOperation_ConnectErrors, null);
-		try {
-			for (Entry<IProject, File> entry : projects.entrySet()) {
-				connectProject(entry, ms, monitor);
-			}
-		} finally {
-			monitor.done();
+		for (Entry<IProject, File> entry : projects.entrySet()) {
+			connectProject(entry, ms, progress.newChild(1));
 		}
 		if (!ms.isOK()) {
 			throw new CoreException(ms);
@@ -118,7 +111,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 		String taskName = NLS.bind(
 				CoreText.ConnectProviderOperation_ConnectingProject,
 				project.getName());
-		monitor.setTaskName(taskName);
+		SubMonitor subMon = SubMonitor.convert(monitor, taskName, 100);
 
 		if (GitTraceLocation.CORE.isActive()) {
 			GitTraceLocation.getTrace()
@@ -127,13 +120,11 @@ public class ConnectProviderOperation implements IEGitOperation {
 
 		RepositoryFinder finder = new RepositoryFinder(project);
 		finder.setFindInChildren(false);
-		Collection<RepositoryMapping> repos = finder
-				.find(new SubProgressMonitor(monitor, 40));
+		Collection<RepositoryMapping> repos = finder.find(subMon.newChild(50));
 		if (repos.isEmpty()) {
 			ms.add(Activator.error(NLS.bind(
 					CoreText.ConnectProviderOperation_NoRepositoriesError,
 					project.getName()), null));
-			monitor.worked(60);
 			return;
 		}
 		RepositoryMapping actualMapping = findActualRepository(repos,
@@ -144,8 +135,6 @@ public class ConnectProviderOperation implements IEGitOperation {
 					new Object[] { project.getName(),
 							entry.getValue().toString(), repos.toString() }),
 					null));
-
-			monitor.worked(60);
 			return;
 		}
 		GitProjectData projectData = new GitProjectData(project);
@@ -163,10 +152,47 @@ public class ConnectProviderOperation implements IEGitOperation {
 			return;
 		}
 		RepositoryProvider.map(project, GitProvider.ID);
-		autoIgnoreDerivedResources(project, monitor);
-		project.refreshLocal(IResource.DEPTH_INFINITE,
-				new SubProgressMonitor(monitor, 50));
-		monitor.worked(10);
+
+		if (refreshResources) {
+			touchGitResources(project, subMon.newChild(10));
+			project.refreshLocal(IResource.DEPTH_INFINITE, subMon.newChild(30));
+		} else {
+			subMon.worked(40);
+		}
+
+		autoIgnoreDerivedResources(project, subMon.newChild(10));
+	}
+
+	/**
+	 * Touches all descendants named ".git" so that they'll be included in a
+	 * subsequent resource delta.
+	 *
+	 * @param project
+	 *            to process
+	 * @param monitor
+	 *            for progress reporting and cancellation, may be {@code null}
+	 *            if neither is desired
+	 */
+	private void touchGitResources(IProject project, IProgressMonitor monitor) {
+		final SubMonitor progress = SubMonitor.convert(monitor, 1);
+		try {
+			project.accept(new IResourceProxyVisitor() {
+				@Override
+				public boolean visit(IResourceProxy resource)
+						throws CoreException {
+					int type = resource.getType();
+					if ((type == IResource.FILE || type == IResource.FOLDER)
+							&& Constants.DOT_GIT.equals(resource.getName())) {
+						progress.setWorkRemaining(2);
+						resource.requestResource().touch(progress.newChild(1));
+						return false;
+					}
+					return true;
+				}
+			}, IResource.NONE);
+		} catch (CoreException e) {
+			Activator.logError(e.getMessage(), e);
+		}
 	}
 
 	private void deleteGitProvider(MultiStatus ms, IProject project) {
@@ -185,8 +211,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 		List<IPath> paths = findDerivedResources(project);
 		if (paths.size() > 0) {
 			IgnoreOperation ignoreOp = new IgnoreOperation(paths);
-			IProgressMonitor subMonitor = new SubProgressMonitor(monitor, 1);
-			ignoreOp.execute(subMonitor);
+			ignoreOp.execute(monitor);
 		}
 	}
 
@@ -203,6 +228,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 		return derived;
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		Set<IProject> projectSet = projects.keySet();
 		return new MultiRule(projectSet.toArray(new IProject[projectSet.size()]));
@@ -219,12 +245,24 @@ public class ConnectProviderOperation implements IEGitOperation {
 	@Nullable
 	private RepositoryMapping findActualRepository(
 			Collection<RepositoryMapping> repos, File suggestedRepo) {
-		IPath path = Path.fromOSString(suggestedRepo.getPath());
+		File path = Path.fromOSString(suggestedRepo.getPath()).toFile();
 		for (RepositoryMapping rm : repos) {
-			if (path.equals(rm.getGitDirAbsolutePath())) {
+			IPath other = rm.getGitDirAbsolutePath();
+			if (other == null) {
+				continue;
+			}
+			if (path.equals(other.toFile())) {
 				return rm;
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * @param refresh
+	 *            true to refresh resources after connect operation (default)
+	 */
+	public void setRefreshResources(boolean refresh) {
+		this.refreshResources = refresh;
 	}
 }

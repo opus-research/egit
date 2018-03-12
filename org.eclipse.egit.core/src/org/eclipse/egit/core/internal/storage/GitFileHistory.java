@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map.Entry;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -66,8 +67,10 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 		final RepositoryMapping rm = RepositoryMapping.getMapping(resource);
 		if (rm == null) {
+			IProject project = resource.getProject();
+			String projectName = project != null ? project.getName() : ""; //$NON-NLS-1$
 			Activator.logError(NLS.bind(CoreText.GitFileHistory_gitNotAttached,
-					resource.getProject().getName()), null);
+					projectName), null);
 			db = null;
 			walk = null;
 		} else {
@@ -95,9 +98,11 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		try {
 			final AnyObjectId headId = db.resolve(Constants.HEAD);
 			if (headId == null) {
+				IProject project = resource.getProject();
+				String projectName = project != null? project.getName() : ""; //$NON-NLS-1$
 				Activator.logError(NLS.bind(
 						CoreText.GitFileHistory_noHeadRevisionAvailable,
-						resource.getProject().getName()), null);
+						projectName), null);
 				return NO_REVISIONS;
 			}
 
@@ -119,9 +124,10 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 			walk.markStart(root);
 		} catch (IOException e) {
+			IProject project = resource.getProject();
+			String projectName = project != null? project.getName() : ""; //$NON-NLS-1$
 			Activator.logError(NLS.bind(
-					CoreText.GitFileHistory_invalidHeadRevision, resource
-							.getProject().getName()), e);
+					CoreText.GitFileHistory_invalidHeadRevision, projectName), e);
 			return NO_REVISIONS;
 		}
 
@@ -174,6 +180,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		}
 	}
 
+	@Override
 	public IFileRevision[] getContributors(final IFileRevision ifr) {
 		String path = getGitPath(ifr);
 		RevCommit commit = getRevCommit(ifr);
@@ -188,6 +195,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		return NO_REVISIONS;
 	}
 
+	@Override
 	public IFileRevision[] getTargets(final IFileRevision ifr) {
 		String path = getGitPath(ifr);
 		RevCommit commit = getRevCommit(ifr);
@@ -237,6 +245,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		return null;
 	}
 
+	@Override
 	public IFileRevision getFileRevision(final String id) {
 		if (id == null || id.equals("") //$NON-NLS-1$
 				|| GitFileRevision.WORKSPACE.equals(id))
@@ -252,12 +261,14 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		return null;
 	}
 
+	@Override
 	public IFileRevision[] getFileRevisions() {
 		final IFileRevision[] r = new IFileRevision[revisions.length];
 		System.arraycopy(revisions, 0, r, 0, r.length);
 		return r;
 	}
 
+	@Override
 	public Object getAdapter(Class adapter) {
 		return null;
 	}

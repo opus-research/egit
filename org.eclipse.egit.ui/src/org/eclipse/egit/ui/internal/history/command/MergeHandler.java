@@ -13,11 +13,16 @@
 
 package org.eclipse.egit.ui.internal.history.command;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
@@ -26,13 +31,11 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.MergeActionHandler;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
-import org.eclipse.egit.ui.internal.jobs.MergeJob;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
-import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
@@ -65,26 +68,44 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 		if (!MergeActionHandler.checkMergeIsPossible(repository, getShell(event)))
 			return null;
 
-		List<RefNode> nodes = getRefNodes(commitId, repository,
-				Constants.R_REFS);
+		List<Ref> nodes;
+		try {
+			nodes = getBranchesOfCommit(getSelection(event), repository, true);
+		} catch (IOException e) {
+			throw new ExecutionException(
+					UIText.AbstractHistoryCommitHandler_cantGetBranches,
+					e);
+		}
+
 		String refName;
-		if (nodes.isEmpty())
+		if (nodes.isEmpty()) {
 			refName = commitId.getName();
-		else if (nodes.size() == 1)
-			refName = nodes.get(0).getObject().getName();
-		else {
-			BranchSelectionDialog<RefNode> dlg = new BranchSelectionDialog<RefNode>(
+		} else if (nodes.size() == 1) {
+			refName = nodes.get(0).getName();
+		} else {
+			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
 					HandlerUtil.getActiveShellChecked(event), nodes,
 					UIText.MergeHandler_SelectBranchTitle,
 					UIText.MergeHandler_SelectBranchMessage, SWT.SINGLE);
 			if (dlg.open() == Window.OK)
-				refName = dlg.getSelectedNode().getObject().getName();
+				refName = dlg.getSelectedNode().getName();
 			else
 				return null;
 		}
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 		final MergeOperation op = new MergeOperation(repository, refName);
-		Job job = new MergeJob(jobname, op);
+		Job job = new WorkspaceJob(jobname) {
+
+			@Override
+			public IStatus runInWorkspace(IProgressMonitor monitor) {
+				try {
+					op.execute(monitor);
+				} catch (final CoreException e) {
+					return e.getStatus();
+				}
+				return Status.OK_STATUS;
+			}
+		};
 		job.setUser(true);
 		job.setRule(op.getSchedulingRule());
 		job.addJobChangeListener(new JobChangeAdapter() {

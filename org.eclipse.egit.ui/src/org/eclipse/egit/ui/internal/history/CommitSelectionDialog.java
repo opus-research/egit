@@ -107,8 +107,8 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		final ResourceManager resources = new LocalResourceManager(
 				JFaceResources.getResources());
 		UIUtils.hookDisposal(main, resources);
-		table = new CommitGraphTable(main, null, resources);
-		table.setRelativeDate(GitHistoryPage.isShowingRelativeDates());
+		// Table never shows e-mail addresses because it might get rather wide.
+		table = new CommitGraphTable(main, null, resources, false);
 		table.getTableView().addSelectionChangedListener(
 				new ISelectionChangedListener() {
 					@Override
@@ -257,7 +257,7 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		if (filterResources == null)
 			return TreeFilter.ALL;
 
-		List<TreeFilter> filters = new ArrayList<TreeFilter>();
+		List<TreeFilter> filters = new ArrayList<>();
 		for (IResource resource : filterResources) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 			if (mapping != null) {

@@ -42,6 +42,15 @@ public class UIText extends NLS {
 	/**	 */
 	public static String AbstractGitFlowHandler_finishConflicts;
 
+	/** */
+	public static String BranchSelectionTree_IdColumn;
+
+	/** */
+	public static String BranchSelectionTree_MessageColumn;
+
+	/** */
+	public static String BranchSelectionTree_NameColumn;
+
 	/**	 */
 	public static String FeatureFinishHandler_finishingFeature;
 
@@ -112,6 +121,9 @@ public class UIText extends NLS {
 	public static String HotfixStartHandler_startingNewHotfix;
 
 	/**	 */
+	public static String InitDialog_branchDoesNotExistYetAndWillBeCreated;
+
+	/**	 */
 	public static String InitDialog_chooseBranchNamesAndPrefixes;
 
 	/**	 */
@@ -136,10 +148,25 @@ public class UIText extends NLS {
 	public static String InitDialog_masterBranch;
 
 	/**	 */
+	public static String InitDialog_masterBranchIsMissing;
+
+	/**	 */
 	public static String InitDialog_releaseBranchPrefix;
 
 	/**	 */
+	public static String InitDialog_selectedMasterBranchDoesNotExistCreateNow;
+
+	/**	 */
 	public static String InitDialog_versionTagPrefix;
+
+	/**	 */
+	public static String InitHandler_doYouWantToInitNow;
+
+	/**	 */
+	public static String InitHandler_emptyRepository;
+
+	/**	 */
+	public static String InitHandler_initialCommit;
 
 	/**	 */
 	public static String InitHandler_initializing;
@@ -194,6 +221,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
+
+	/** */
+	public static String FinishFeatureDialog_keepBranch;
+
+	/** */
+	public static String FinishFeatureDialog_saveAsDefault;
 
 	/** */
 	public static String FinishFeatureDialog_squashCheck;

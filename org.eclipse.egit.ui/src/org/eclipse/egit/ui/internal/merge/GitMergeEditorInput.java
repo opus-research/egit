@@ -144,7 +144,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 								UIText.RepositoryAction_multiRepoSelection));
 			}
 			Repository repo = pathsByRepository.keySet().iterator().next();
-			List<String> filterPaths = new ArrayList<String>(
+			List<String> filterPaths = new ArrayList<>(
 					pathsByRepository.get(repo));
 
 			if (monitor.isCanceled())
@@ -199,7 +199,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			}
 
 			// try to obtain the common ancestor
-			List<RevCommit> startPoints = new ArrayList<RevCommit>();
+			List<RevCommit> startPoints = new ArrayList<>();
 			rw.setRevFilter(RevFilter.MERGE_BASE);
 			startPoints.add(rightCommit);
 			startPoints.add(headCommit);
@@ -283,7 +283,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					fileTreeIndex);
 			// filter by selected resources
 			if (filterPaths.size() > 1) {
-				List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
+				List<TreeFilter> suffixFilters = new ArrayList<>();
 				for (String filterPath : filterPaths)
 					suffixFilters.add(PathFilter.create(filterPath));
 				TreeFilter otf = OrTreeFilter.create(suffixFilters);
@@ -355,7 +355,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 						.getAbsolutePath());
 				IPath location = repositoryPath
 						.append(fit.getEntryPathString());
-				IFile file = ResourceUtil.getFileForLocation(location);
+				IFile file = ResourceUtil.getFileForLocation(location, false);
 				if (!conflicting || useWorkspace) {
 					if (file != null)
 						rev = new LocalFileRevision(file);
