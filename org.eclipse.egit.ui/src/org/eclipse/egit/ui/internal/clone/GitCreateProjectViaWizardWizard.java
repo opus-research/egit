@@ -241,7 +241,6 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 					try {
 						final String projectName = myCreateGeneralProjectPage
 								.getProjectName();
-						final boolean defaultLocation = myCreateGeneralProjectPage.isDefaultLocation();
 						getContainer().run(true, false,
 								new WorkspaceModifyOperation() {
 
@@ -256,8 +255,7 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 												.getWorkspace()
 												.newProjectDescription(
 														projectName);
-										if (!defaultLocation)
-											desc.setLocation(new Path(myGitDir));
+										desc.setLocation(new Path(myGitDir));
 
 										IProject prj = ResourcesPlugin
 												.getWorkspace().getRoot()
