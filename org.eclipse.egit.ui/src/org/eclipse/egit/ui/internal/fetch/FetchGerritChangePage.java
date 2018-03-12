@@ -96,16 +96,12 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Text branchText;
 
-	private String refName;
-
 	/**
 	 * @param repository
-	 * @param refName initial value for the ref field
 	 */
-	public FetchGerritChangePage(Repository repository, String refName) {
+	public FetchGerritChangePage(Repository repository) {
 		super(FetchGerritChangePage.class.getName());
 		this.repository = repository;
-		this.refName = refName;
 		setTitle(NLS
 				.bind(UIText.FetchGerritChangePage_PageTitle,
 						Activator.getDefault().getRepositoryUtil()
@@ -152,8 +148,6 @@ public class FetchGerritChangePage extends WizardPage {
 		});
 
 		branchTextlabel = new Label(checkoutGroup, SWT.NONE);
-		GridDataFactory.defaultsFor(branchTextlabel).exclude(false)
-				.applyTo(branchTextlabel);
 		branchTextlabel.setText(UIText.FetchGerritChangePage_BranchNameText);
 		branchText = new Text(checkoutGroup, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
@@ -247,13 +241,6 @@ public class FetchGerritChangePage extends WizardPage {
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
-	}
-
-	@Override
-	public void setVisible(boolean visible) {
-		super.setVisible(visible);
-		if (visible && refName != null)
-			refText.setText(refName);
 	}
 
 	private void checkPage() {
