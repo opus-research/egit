@@ -59,7 +59,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
-import org.eclipse.ui.PlatformUI;
 
 class SourceBranchPage extends WizardPage {
 
@@ -80,8 +79,6 @@ class SourceBranchPage extends WizardPage {
 	private CheckboxTableViewer refsViewer;
 
 	private UserPasswordCredentials credentials;
-
-	private String helpContext = null;
 
 	SourceBranchPage() {
 		super(SourceBranchPage.class.getName());
@@ -175,21 +172,6 @@ class SourceBranchPage extends WizardPage {
 
 	public void setCredentials(UserPasswordCredentials credentials) {
 		this.credentials = credentials;
-	}
-
-	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	/**
