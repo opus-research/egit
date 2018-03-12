@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2011, IBM Corporation
- * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +11,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.io.IOException;
+
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -20,10 +22,7 @@ import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.eclipse.swt.graphics.Image;
 
-/**
- * A Label Provider for Commits
- */
-public class GraphLabelProvider extends BaseLabelProvider implements
+class GraphLabelProvider extends BaseLabelProvider implements
 		ITableLabelProvider {
 	private GitDateFormatter dateFormatter;
 
@@ -37,14 +36,17 @@ public class GraphLabelProvider extends BaseLabelProvider implements
 
 	private Format format = Format.LOCALE;
 
-	/**
-	 * Default constructor
-	 */
-	public GraphLabelProvider() {
+	GraphLabelProvider() {
 	}
 
 	public String getColumnText(final Object element, final int columnIndex) {
-		final RevCommit c = (RevCommit) element;
+		final SWTCommit c = (SWTCommit) element;
+		try {
+			c.parseBody();
+		} catch (IOException e) {
+			Activator.error("Error parsing body", e); //$NON-NLS-1$
+			return ""; //$NON-NLS-1$
+		}
 		if (columnIndex == 0)
 			return c.getId().abbreviate(7).name();
 		if (columnIndex == 1)
