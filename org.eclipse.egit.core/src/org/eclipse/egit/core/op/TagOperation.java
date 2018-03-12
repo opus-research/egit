@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -94,12 +94,9 @@ public class TagOperation implements IEGitOperation {
 		try {
 			ObjectId tagId;
 			repo.open(startPointRef);
-			ObjectInserter inserter = repo.newObjectInserter();
-			try {
+			try (ObjectInserter inserter = repo.newObjectInserter()) {
 				tagId = inserter.insert(tag);
 				inserter.flush();
-			} finally {
-				inserter.close();
 			}
 			return tagId;
 		} catch (IOException e) {
