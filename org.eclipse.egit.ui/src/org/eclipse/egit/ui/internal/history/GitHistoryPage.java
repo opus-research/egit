@@ -596,14 +596,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent event) {
-			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(event
-					.getProperty())) {
+			final String prop = event.getProperty();
+			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(prop)) {
 				Object oldValue = event.getOldValue();
 				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
 					graph.setRelativeDate(isShowingRelativeDates());
 					graph.getTableView().refresh();
 				}
 			}
+			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
+					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
+				graph.getTableView().refresh();
 		}
 	};
 
@@ -830,15 +833,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				}
 
 				final PlotCommit<?> c = (PlotCommit<?>) sel.getFirstElement();
+				commentViewer.setInput(c);
 				final PlotWalk walk = new PlotWalk(input.getRepository());
 				try {
 					final RevCommit unfilteredCommit = walk.parseCommit(c);
 					for (RevCommit parent : unfilteredCommit.getParents())
 						walk.parseBody(parent);
-					commentViewer.setInput(unfilteredCommit);
 					fileViewer.setInput(unfilteredCommit);
 				} catch (IOException e) {
-					commentViewer.setInput(c);
 					fileViewer.setInput(c);
 				} finally {
 					walk.dispose();
