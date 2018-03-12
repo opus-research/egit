@@ -119,7 +119,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repo = getSelectionRepository();
+		final Repository repo = getRepository();
 		return repo != null && containsHead(repo);
 	}
 

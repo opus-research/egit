@@ -28,7 +28,7 @@ public class RenameBranchActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		Repository repo = getSelectionRepository();
+		Repository repo = getRepository();
 		return repo != null && containsHead(repo);
 	}
 }

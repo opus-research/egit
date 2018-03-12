@@ -46,7 +46,7 @@ public class SimplePushActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repository = getSelectionRepository();
+		final Repository repository = getRepository();
 		return repository != null
 				&& SimpleConfigurePushDialog
 						.getConfiguredRemote(repository) != null;
