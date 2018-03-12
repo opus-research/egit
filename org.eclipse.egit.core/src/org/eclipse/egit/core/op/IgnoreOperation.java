@@ -61,8 +61,7 @@ public class IgnoreOperation implements IEGitOperation {
 	 * @param resources
 	 */
 	public IgnoreOperation(IResource[] resources) {
-		this.resources = new IResource[resources.length];
-		System.arraycopy(resources, 0, this.resources, 0, resources.length);
+		this.resources = resources;
 		gitignoreOutsideWSChanged = false;
 		schedulingRule = calcSchedulingRule();
 	}

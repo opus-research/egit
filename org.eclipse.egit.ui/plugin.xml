@@ -824,11 +824,16 @@
                class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamActionHandler">
          </class>
          <activeWhen>
-            <iterate>
-               <adapt
-                     type="org.eclipse.core.resources.IProject">
-               </adapt>
-            </iterate>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.core.resources.IProject">
+                  </adapt>
+               </iterate>
+            </and>
          </activeWhen>
       </handler>
       <handler
