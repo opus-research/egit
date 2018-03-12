@@ -134,6 +134,8 @@ class CommitGraphTable {
 
 	MenuListener menuListener;
 
+	private RevCommit commitToShow;
+
 	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
@@ -312,14 +314,21 @@ class CommitGraphTable {
 		return table.getControl();
 	}
 
+	void selectCommitStored(final RevCommit c) {
+		commitToShow = c;
+		selectCommit(c);
+	}
+
 	void selectCommit(final RevCommit c) {
 		if (c instanceof PlotCommit) {
 			table.setSelection(new StructuredSelection(c));
 			table.reveal(c);
-		} else {
+		} else if (commitsMap != null) {
 			PlotCommit swtCommit = commitsMap.get(c.getId().name());
-			table.setSelection(new StructuredSelection(swtCommit));
-			table.reveal(swtCommit);
+			if (swtCommit != null) {
+				table.setSelection(new StructuredSelection(swtCommit));
+				table.reveal(swtCommit);
+			}
 		}
 	}
 
@@ -369,6 +378,8 @@ class CommitGraphTable {
 		} else {
 			table.getTable().deselectAll();
 		}
+		if (commitToShow != null)
+			selectCommit(commitToShow);
 	}
 
 	void setHistoryPageInput(HistoryPageInput input) {
@@ -379,8 +390,12 @@ class CommitGraphTable {
 
 	private void initCommitsMap() {
 		commitsMap = new HashMap<String, PlotCommit>();
-		for (PlotCommit commit : allCommits)
-			commitsMap.put(commit.getId().name(), commit);
+		// ensure that filling (GenerateHistoryJob) and reading (here)
+		// the commit list is thread safe
+		synchronized (allCommits) {
+			for (PlotCommit commit : allCommits)
+				commitsMap.put(commit.getId().name(), commit);
+		}
 	}
 
 	private void createColumns(final Table rawTable, final TableLayout layout) {
@@ -440,7 +455,7 @@ class CommitGraphTable {
 			event.gc.setFont(nFont);
 
 		if (event.index == 0) {
-			renderer.paint(event, input.getHead());
+			renderer.paint(event, input == null ? null : input.getHead());
 			return;
 		}
 

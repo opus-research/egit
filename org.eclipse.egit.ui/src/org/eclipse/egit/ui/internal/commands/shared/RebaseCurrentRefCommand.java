@@ -7,8 +7,12 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Dariusz Luksza (dariusz@luksza.org) - disable command when HEAD cannot be
+ *    										resolved
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.repository.tree.command;
+package org.eclipse.egit.ui.internal.commands.shared;
+
+import static org.eclipse.ui.handlers.HandlerUtil.getCurrentSelectionChecked;
 
 import java.io.IOException;
 
@@ -19,10 +23,11 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
-import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
@@ -32,18 +37,28 @@ import org.eclipse.ui.ISources;
 /**
  * Implements "Rebase" to the currently checked out {@link Ref}
  */
-public class RebaseCurrentRefCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
+	/** */
+	public RebaseCurrentRefCommand() {
+		super(null, null, null);
+	}
+
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		BasicConfigurationDialog.show();
-		RepositoryTreeNode node = getSelectedNodes(event).get(0);
-
-		final Repository repository = node.getRepository();
 
 		Ref ref;
-		if (node instanceof RefNode)
-			ref = ((RefNode) node).getObject();
-		else {
+		ISelection currentSelection = getCurrentSelectionChecked(event);
+		if (currentSelection instanceof IStructuredSelection) {
+			IStructuredSelection selection = (IStructuredSelection) currentSelection;
+			Object selected = selection.getFirstElement();
+
+			ref = getRef(selected);
+		} else
+			ref = null;
+
+		final Repository repository = getRepository(event);
+
+		if (ref == null) {
 			RebaseTargetSelectionDialog rebaseTargetSelectionDialog = new RebaseTargetSelectionDialog(
 					getShell(event), repository);
 			if (rebaseTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
@@ -72,13 +87,25 @@ public class RebaseCurrentRefCommand extends
 					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
 			if (selection instanceof IStructuredSelection) {
 				IStructuredSelection sel = (IStructuredSelection) selection;
-				if (sel.getFirstElement() instanceof RefNode)
-					setBaseEnabled(((RefNode) ((IStructuredSelection) selection)
-							.getFirstElement()).getRepository()
-							.getRepositoryState() == RepositoryState.SAFE);
+				if (sel.getFirstElement() instanceof RepositoryTreeNode) {
+					Repository repo = ((RepositoryTreeNode) ((IStructuredSelection) selection)
+							.getFirstElement()).getRepository();
+					boolean isSafe = repo.getRepositoryState() == RepositoryState.SAFE;
+
+					setBaseEnabled(isSafe && hasHead(repo));
+				}
 				return;
 			}
 		}
 		setBaseEnabled(true);
 	}
+
+	private boolean hasHead(Repository repo) {
+		try {
+			return repo.getRef(Constants.HEAD).getObjectId() != null;
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
 }
