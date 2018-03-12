@@ -16,7 +16,6 @@ import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -41,8 +40,7 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 
 	private final GitSyncCache gitCache;
 
-	private final Map<IResource, IResourceVariant> cache = Collections
-			.synchronizedMap(new WeakHashMap<IResource, IResourceVariant>());
+	private final Map<IResource, IResourceVariant> cache = new WeakHashMap<IResource, IResourceVariant>();
 
 	protected final GitSynchronizeDataSet gsds;
 
@@ -98,9 +96,8 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		if (gitCache == null)
 			return null;
 
-		IResourceVariant cachedVariant = cache.get(resource);
-		if (cachedVariant != null)
-			return cachedVariant;
+		if (cache.containsKey(resource))
+			return cache.get(resource);
 
 		GitSynchronizeData gsd = gsds.getData(resource.getProject());
 		if (gsd == null)

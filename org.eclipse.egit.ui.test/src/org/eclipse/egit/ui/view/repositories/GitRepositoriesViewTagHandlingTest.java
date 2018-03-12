@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.push.PushTagsWizardTester;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -173,20 +172,6 @@ public class GitRepositoriesViewTagHandlingTest extends
 		assertEquals("Wrong content", initialContent, getTestFileContent());
 	}
 
-	@Test
-	public void testPushTagPreselectsTag() throws Exception {
-		createTag("tag-to-push", "Tag to push");
-		SWTBotTree tree = getOrOpenView().bot().tree();
-		myRepoViewUtil.getTagsItem(tree, repositoryFile)
-				.expand().getNode("tag-to-push").select();
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("RepoViewPushTag.label"));
-
-		PushTagsWizardTester tester = PushTagsWizardTester.forShell();
-		tester.assertTagChecked("tag-to-push");
-		tester.cancel();
-	}
-
 	private String getCommitIdOfTag(String tagName) throws Exception {
 		return revWalk.parseTag(repository.resolve(tagName)).getObject()
 				.getId().name();
@@ -205,8 +190,7 @@ public class GitRepositoriesViewTagHandlingTest extends
 		createDialog.bot()
 				.styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText(message);
-		createDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
-				.click();
+		createDialog.bot().button(IDialogConstants.OK_LABEL).click();
 		TestUtil.joinJobs(JobFamilies.TAG);
 	}
 

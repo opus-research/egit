@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.StashCreateOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -49,8 +48,6 @@ public class StashCreateUI {
 	 * @return true if a stash create operation was triggered
 	 */
 	public boolean createStash(Shell shell) {
-		if (!UIUtils.saveAllEditors(repo))
-			return false;
 		InputDialog commitMessageDialog = new InputDialog(shell,
 				UIText.StashCreateCommand_titleEnterCommitMessage,
 				UIText.StashCreateCommand_messageEnterCommitMessage,

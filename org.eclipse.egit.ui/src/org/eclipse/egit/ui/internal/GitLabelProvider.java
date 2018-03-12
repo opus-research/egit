@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2013 Benjamin Muskalla and others.
+ * Copyright (c) 2011 Benjamin Muskalla and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,7 +15,6 @@ import java.io.IOException;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.clone.ProjectRecord;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
@@ -128,11 +127,8 @@ public class GitLabelProvider extends LabelProvider implements
 		if (element instanceof Repository)
 			return RepositoryTreeNodeType.REPO.getIcon();
 
-		if (element instanceof RefNode)
-			return getRefIcon(((RefNode) element).getObject());
-
-		if (element instanceof Ref)
-			return getRefIcon((Ref) element);
+		if (element instanceof RefNode || element instanceof Ref)
+			return RepositoryTreeNodeType.REF.getIcon();
 
 		if (element instanceof GitModelBlob || element instanceof GitModelTree) {
 			Object adapter = ((IAdaptable) element).getAdapter(IResource.class);
@@ -180,14 +176,13 @@ public class GitLabelProvider extends LabelProvider implements
 	public static StyledString getStyledTextFor(Repository repository)
 			throws IOException {
 		File directory = repository.getDirectory();
-
-		RepositoryUtil repositoryUtil = Activator.getDefault()
-				.getRepositoryUtil();
-
 		StyledString string = new StyledString();
-		string.append(repositoryUtil.getRepositoryName(repository));
+		if (!repository.isBare())
+			string.append(directory.getParentFile().getName());
+		else
+			string.append(directory.getName());
 
-		String branch = repositoryUtil
+		String branch = Activator.getDefault().getRepositoryUtil()
 				.getShortBranch(repository);
 		if (branch != null) {
 			string.append(' ');
@@ -227,17 +222,6 @@ public class GitLabelProvider extends LabelProvider implements
 		return getImageCache().createImage(UIIcons.CHANGESET);
 	}
 
-	private Image getRefIcon(Ref ref) {
-		String name = ref.getName();
-		if (name.startsWith(Constants.R_HEADS)
-				|| name.startsWith(Constants.R_REMOTES))
-			return RepositoryTreeNodeType.REF.getIcon();
-		else if (name.startsWith(Constants.R_TAGS))
-			return RepositoryTreeNodeType.TAG.getIcon();
-		else
-			return RepositoryTreeNodeType.ADDITIONALREF.getIcon();
-	}
-
 	private LabelProvider getWorkbenchLabelProvider() {
 		if (workbenchLabelProvider == null)
 			workbenchLabelProvider = new WorkbenchLabelProvider();
@@ -259,11 +243,13 @@ public class GitLabelProvider extends LabelProvider implements
 	 * @return simple text for repository
 	 */
 	public static String getSimpleTextFor(Repository repository) {
-		String name = Activator.getDefault().getRepositoryUtil()
-				.getRepositoryName(repository);
-		File directory = repository.getDirectory();
+		File directory;
+		if (!repository.isBare())
+			directory = repository.getDirectory().getParentFile();
+		else
+			directory = repository.getDirectory();
 		StringBuilder sb = new StringBuilder();
-		sb.append(name);
+		sb.append(directory.getName());
 		sb.append(" - "); //$NON-NLS-1$
 		sb.append(directory.getAbsolutePath());
 		return sb.toString();
