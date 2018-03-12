@@ -119,7 +119,7 @@ class CreateBranchPage extends WizardPage {
 	 * @param repo
 	 *            the repository
 	 * @param baseCommit
-	 *            the commit to base the new branch on, may be null
+	 *            the commit to base the new branch on, must not be null
 	 */
 	public CreateBranchPage(Repository repo, RevCommit baseCommit) {
 		super(CreateBranchPage.class.getName());
@@ -392,7 +392,7 @@ class CreateBranchPage extends WizardPage {
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
 					IProgressMonitor.UNKNOWN);
-			BranchOperationUI.checkout(myRepository, Constants.R_HEADS + newRefName)
+			new BranchOperationUI(myRepository, Constants.R_HEADS + newRefName)
 					.run(monitor);
 		}
 	}
