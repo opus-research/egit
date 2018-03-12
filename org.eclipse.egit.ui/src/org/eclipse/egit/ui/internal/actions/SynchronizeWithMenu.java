@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -85,12 +86,12 @@ public class SynchronizeWithMenu extends ContributionItem implements
 	public void fill(final Menu menu, int index) {
 		if (srv == null)
 			return;
-		final IResource selectedResource = getSelection();
-		if (selectedResource == null)
+		final IProject selectedProject = getSelection();
+		if (selectedProject == null)
 			return;
 
 		RepositoryMapping mapping = RepositoryMapping
-				.getMapping(selectedResource.getProject());
+				.getMapping(selectedProject);
 		if (mapping == null)
 			return;
 
@@ -144,7 +145,7 @@ public class SynchronizeWithMenu extends ContributionItem implements
 					GitSynchronizeData data;
 					try {
 						data = new GitSynchronizeData(repo, HEAD, name, true);
-						GitModelSynchronize.launch(data, new IResource[] { selectedResource });
+						GitModelSynchronize.launch(data, new IResource[] { selectedProject });
 					} catch (IOException e) {
 						Activator.logError(e.getMessage(), e);
 					}
@@ -175,7 +176,7 @@ public class SynchronizeWithMenu extends ContributionItem implements
 
 	public void initialize(IServiceLocator serviceLocator) {
 		srv = (ISelectionService) serviceLocator
-				.getService(ISelectionService.class);
+		.getService(ISelectionService.class);
 	}
 
 	@Override
@@ -188,19 +189,18 @@ public class SynchronizeWithMenu extends ContributionItem implements
 		branchImage.dispose();
 	}
 
-	private IResource getSelection() {
+	private IProject getSelection() {
 		ISelection sel = srv.getSelection();
 
 		if (!(sel instanceof IStructuredSelection))
 			return null;
 
 		Object selected = ((IStructuredSelection) sel).getFirstElement();
-		System.out.println(selected.getClass());
 		if (selected instanceof IAdaptable)
-			return (IResource) ((IAdaptable) selected)
-					.getAdapter(IResource.class);
-		if (selected instanceof IResource)
-			return (IResource) selected;
+			return (IProject) ((IAdaptable) selected)
+					.getAdapter(IProject.class);
+		if (selected instanceof IProject)
+			return (IProject) selected;
 
 		return null;
 	}

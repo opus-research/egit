@@ -48,6 +48,12 @@
                menubarPath="team.main/group5">
          </action>
          <action
+               class="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspaceAction"
+               id="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspace"
+               icon="$nl$/icons/obj16/remotespec.gif"
+               label="%SynchronizeWorkspace_label"
+               menubarPath="team.main/group3"/>
+         <action
                class="org.eclipse.egit.ui.internal.actions.MergeAction"
                definitionId="org.eclipse.egit.ui.team.Merge"
                icon="$nl$/icons/obj16/merge.gif"
@@ -78,19 +84,6 @@
                label="%FetchFromUpstreamAction.label"
                menubarPath="team.main/group1">
          </action>
-     </objectContribution>
-     <objectContribution id="org.eclipse.egit.ui.containerContributions"
-            objectClass="org.eclipse.core.resources.IContainer"
-            adaptable="true">
-         <filter name="projectPersistentProperty"
-               value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
-         </filter>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspaceAction"
-               id="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspace"
-               icon="$nl$/icons/obj16/remotespec.gif"
-               label="%SynchronizeWorkspace_label"
-               menubarPath="team.main/group3"/>
      </objectContribution>
      <objectContribution
             adaptable="true"
@@ -1376,6 +1369,9 @@
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
                         </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
+                        </instanceof>
                      </or>
                   </iterate>
                </and>
@@ -2624,17 +2620,17 @@
                      id="org.eclipse.egit.ui.synchronize">
                   </dynamic>
                   <visibleWhen checkEnabled="false">
-                  <and>
+                     <and>
                         <count value="1" />
-                     <iterate>
-                        <and>
-                           <adapt type="org.eclipse.core.resources.IContainer">
-                              <test property="GitResource.isShared" />
-                           </adapt>
-                        </and>
-                     </iterate>
-                  </and>
-               </visibleWhen>
+                        <iterate>
+                           <and>
+                              <adapt type="org.eclipse.core.resources.IProject">
+                                <test property="GitResource.isShared" />
+                              </adapt>
+                           </and>
+                        </iterate>
+                     </and>
+                  </visibleWhen>
                </menu>
                <separator
                      name="org.eclipse.egit.ui.separator1"
@@ -3734,25 +3730,25 @@
      <variable
 	   description="%GitVariable_git_dir"
 	   name="git_dir"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable_git_repo_relative_path"
 	   name="git_repo_relative_path"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable__git_work_tree_description"
 	   name="git_work_tree"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable_git_branch_description"
 	   name="git_branch"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
   </extension>
