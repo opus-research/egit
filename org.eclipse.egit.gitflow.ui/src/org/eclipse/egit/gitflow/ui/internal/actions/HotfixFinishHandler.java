@@ -39,9 +39,6 @@ public class HotfixFinishHandler extends AbstractGitFlowHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
-		if (gfRepo == null) {
-			return error(UIText.Handlers_noGitflowRepositoryFound);
-		}
 
 		HotfixFinishOperation hotfixFinishOperation;
 		try {
