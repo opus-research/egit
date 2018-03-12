@@ -240,7 +240,6 @@
                class="org.eclipse.egit.ui.internal.actions.ShowBlameAction"
                enablesFor="1"
                id="org.eclipse.egit.ui.internal.actions.ShowBlameAction"
-               definitionId="org.eclipse.egit.ui.team.ShowBlame"
                label="%ShowBlameAction_label"
                icon="icons/etool16/annotate.gif"
                menubarPath="team.main/group10">
@@ -368,14 +367,6 @@
 	      <keywordReference
 	            id="org.eclipse.egit.ui.keyword.refresh"/>
       </page>
-      <page name="%GitPreferences_ProjectPreferencePage_name"
-	    category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.ProjectsPreferencePage"
-	        id="org.eclipse.egit.ui.internal.preferences.ProjectsPreferencePage" >
-	    <keywordReference
-		  id="org.eclipse.egit.ui.keyword.git">
-	    </keywordReference>
-      </page>
       <page name="%GitPreferences_WindowCachePreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage"
@@ -419,15 +410,6 @@
                id="org.eclipse.egit.ui.keyword.git">
          </keywordReference>
       </page>
-      <page
-            category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.ViewsPreferencePage"
-            name="%ViewsPreferencePage.name">
-         <keywordReference
-               id="org.eclipse.egit.ui.keyword.git">
-         </keywordReference>
-      </page>
    </extension>
 
    <extension point="org.eclipse.ui.propertyPages">
@@ -436,19 +418,13 @@
             class="org.eclipse.egit.ui.internal.preferences.GitProjectPropertyPage"
             id="org.eclipse.egit.ui.preferences.GitProjectPropertyPage">
 	    <enabledWhen>
-		<adapt type="org.eclipse.core.resources.IResource">
+		<adapt type="org.eclipse.core.resources.IProject">
 			<test
 				property="org.eclipse.core.resources.projectPersistentProperty"
 				args="org.eclipse.team.core.repository, org.eclipse.egit.core.GitProvider">
 			</test>
 		</adapt>
 	    </enabledWhen>
-      </page>
-      <page
-            class="org.eclipse.egit.ui.internal.repository.RepositoryPropertyPage"
-            id="org.eclipse.egit.ui.property.RepositoryPropertyPage"
-            name="%RepositoryConfigPropertyPage"
-            objectClass="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
       </page>
    </extension>
 
@@ -812,12 +788,6 @@
             id="org.eclipse.egit.ui.team.Rebase"
             name="%RebaseCommand.name">
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.team.ShowBlame"
-            name="%ShowBlameCommand.name"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ShowBlameActionHandler">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -961,8 +931,8 @@
          <activeWhen>
             <and>
                <count
-                     value="+">
-              </count>
+                     value="1">
+               </count>
                <and>
                   <iterate>
                      <instanceof
@@ -1464,10 +1434,16 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                         </instanceof>
                         <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
+                        </instanceof>
+                        <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
                         </instanceof>
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
                         </instanceof>
                      </or>
                   </iterate>
@@ -1922,41 +1898,8 @@
             </visibleWhen>
          </command>
          <separator
-               name="##Repo-0">
+               name="##Repo-1">
          </separator>
-         <menu
-                   label="%SwitchToMenu.label">
-               <dynamic
-                     class="org.eclipse.egit.ui.internal.actions.SwitchToMenu"
-                     id="org.eclipse.egit.ui.switchToMenu">
-               </dynamic>
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <or>
-                         <instanceof
-                               value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                         </instanceof>
-                         <instanceof
-                                value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
-                         </instanceof>
-                         <instanceof
-                                value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
-                         </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </menu>
-         <separator
-               name="##Repo-1"
-               visible="true" />
          <command
                commandId="org.eclipse.egit.ui.team.Commit"
                icon="icons/obj16/commit.gif"
@@ -2963,25 +2906,6 @@
                   visible="true">
             </separator>
          </menu>
-      </menuContribution>
-      <menuContribution
-         locationURI="popup:#AbstractTextEditorRulerContext?after=QuickDiff.Toggle">
-         <command
-            commandId="org.eclipse.egit.ui.team.ShowBlame"
-            label="%ShowBlameAction_label"
-            style="push">
-            <visibleWhen
-               checkEnabled="false">
-               <with
-                     variable="activeEditorInput">
-                  <adapt
-                     type="org.eclipse.core.resources.IFile">
-                     <test
-                        property="GitResource.isShared" />>
-                  </adapt>
-               </with>
-            </visibleWhen>
-         </command>
       </menuContribution>
    </extension>
    <extension
