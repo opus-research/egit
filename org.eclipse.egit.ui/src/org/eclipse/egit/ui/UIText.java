@@ -841,27 +841,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
-	public static String CleanRepositoryPage_cleanDirs;
-
-	/** */
-	public static String CleanRepositoryPage_cleanFiles;
-
-	/** */
-	public static String CleanRepositoryPage_cleaningItems;
-
-	/** */
-	public static String CleanRepositoryPage_findingItems;
-
-	/** */
-	public static String CleanRepositoryPage_includeIgnored;
-
-	/** */
-	public static String CleanRepositoryPage_message;
-
-	/** */
-	public static String CleanRepositoryPage_title;
-
-	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
@@ -3809,9 +3788,6 @@ public class UIText extends NLS {
 	public static String SimpleConfigureFetchDialog_AddRefSpecButton;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_AdvancedCompositeButton;
-
-	/** */
 	public static String SimpleConfigureFetchDialog_BranchLabel;
 
 	/** */
@@ -4374,6 +4350,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
+
+	/** */
+	public static String RebasePulldownAction_Continue;
+
+	/** */
+	public static String RebasePulldownAction_Skip;
+
+	/** */
+	public static String RebasePulldownAction_Abort;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
