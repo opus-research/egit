@@ -1241,7 +1241,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 					break;
 				case MISSING:
 					if (rm == null)
-						rm = git.rm().setCached(true);
+						rm = git.rm();
 					rm.addFilepattern(entry.getPath());
 					break;
 				}
