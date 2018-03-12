@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.MultiStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -91,13 +92,23 @@ public class ConnectProviderOperation implements IEGitOperation {
 
 	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(m,
-				CoreText.ConnectProviderOperation_connecting,
+		IProgressMonitor monitor;
+		if (m == null) {
+			monitor = new NullProgressMonitor();
+		} else {
+			monitor = m;
+		}
+
+		monitor.beginTask(CoreText.ConnectProviderOperation_connecting,
 				100 * projects.size());
 		MultiStatus ms = new MultiStatus(Activator.getPluginId(), 0,
 				CoreText.ConnectProviderOperation_ConnectErrors, null);
-		for (Entry<IProject, File> entry : projects.entrySet()) {
-			connectProject(entry, ms, progress.newChild(100));
+		try {
+			for (Entry<IProject, File> entry : projects.entrySet()) {
+				connectProject(entry, ms, monitor);
+			}
+		} finally {
+			monitor.done();
 		}
 		if (!ms.isOK()) {
 			throw new CoreException(ms);
