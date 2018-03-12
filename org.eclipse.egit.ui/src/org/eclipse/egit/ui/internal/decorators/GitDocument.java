@@ -144,15 +144,6 @@ class GitDocument extends Document implements RefsChangedListener {
 			}
 
 			tw = TreeWalk.forPath(repository, gitPath, treeId);
-			if (tw == null) {
-				setResolved(null, null, null, ""); //$NON-NLS-1$
-				String msg = NLS
-						.bind(UIText.GitDocument_errorLoadTree, new Object[] {
-								treeId, baseline, resource, repository });
-				Activator.logError(msg, new Throwable());
-				setResolved(null, null, null, ""); //$NON-NLS-1$
-				return;
-			}
 			ObjectId id = tw.getObjectId(0);
 			if (id.equals(ObjectId.zeroId())) {
 				setResolved(null, null, null, ""); //$NON-NLS-1$
@@ -214,15 +205,11 @@ class GitDocument extends Document implements RefsChangedListener {
 	}
 
 	public void onRefsChanged(final RefsChangedEvent e) {
-		Activator.getDefault().getWorkbench().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				try {
-					populate();
-				} catch (Exception e1) {
-					Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
-				}
-			}
-		});
+		try {
+			populate();
+		} catch (IOException e1) {
+			Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
+		}
 	}
 
 	private Repository getRepository() {
