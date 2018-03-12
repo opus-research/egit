@@ -152,7 +152,7 @@ class FetchResultTable {
 		 * @param ref
 		 * @return shortened ref name
 		 */
-		protected String shortenRef(final String ref) {
+		protected String shortenRef(String ref) {
 			return NoteMap.shortenRefName(Repository.shortenRefName(ref));
 		}
 
@@ -338,7 +338,7 @@ class FetchResultTable {
 	private void addToolbar(Composite parent) {
 		ToolBar toolbar = new ToolBar(parent, SWT.VERTICAL);
 		GridDataFactory.fillDefaults().grab(false, true).applyTo(toolbar);
-		UIUtils.addExpansionItems(toolbar, treeViewer);
+		UIUtils.addExpandsionItems(toolbar, treeViewer);
 	}
 
 	void setData(final Repository db, final FetchResult fetchResult) {

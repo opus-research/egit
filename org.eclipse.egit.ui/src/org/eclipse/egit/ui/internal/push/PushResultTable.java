@@ -219,7 +219,7 @@ class PushResultTable {
 	private void addToolbar(Composite parent) {
 		ToolBar toolbar = new ToolBar(parent, SWT.VERTICAL);
 		GridDataFactory.fillDefaults().grab(false, true).applyTo(toolbar);
-		UIUtils.addExpansionItems(toolbar, treeViewer);
+		UIUtils.addExpandsionItems(toolbar, treeViewer);
 	}
 
 	private String getResult(RefUpdateElement element) {

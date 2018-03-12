@@ -479,7 +479,7 @@ public class UIUtils {
 	 * @param viewer
 	 * @return given toolbar
 	 */
-	public static ToolBar addExpansionItems(final ToolBar toolbar,
+	public static ToolBar addExpandsionItems(final ToolBar toolbar,
 			final AbstractTreeViewer viewer) {
 		ToolItem collapseItem = new ToolItem(toolbar, SWT.PUSH);
 		Image collapseImage = UIIcons.COLLAPSEALL.createImage();

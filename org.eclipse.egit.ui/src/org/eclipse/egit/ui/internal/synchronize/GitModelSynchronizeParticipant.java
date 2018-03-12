@@ -151,7 +151,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			if (res != null && res.getType() == IResource.FILE)
 				return true;
 		}
-		return super.hasCompareInputFor(object);
+		return false;
 	}
 
 	@Override
