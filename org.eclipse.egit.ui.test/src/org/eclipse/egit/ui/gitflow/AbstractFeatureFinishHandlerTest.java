@@ -96,12 +96,10 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 
 		bot.waitUntil(shellIsActive(UIText.FeatureCheckoutHandler_selectFeature));
 		bot.text().setText("these are not the features you're looking for");
-		// Wait for filter to hit. Minimum delay must be greater than
-		// FilteredTree.getRefreshJobDelay().
-		TestUtil.waitForJobs(500, 5000);
+		bot.sleep(300); // wait for filter to hit
 		assertFalse(bot.tree().hasItems());
-		bot.text().setText(featureName);
-		TestUtil.waitForJobs(500, 5000);
+		bot.text().selectAll();
+		bot.text().typeText(featureName);
 		bot.tree().select(featureName);
 		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));

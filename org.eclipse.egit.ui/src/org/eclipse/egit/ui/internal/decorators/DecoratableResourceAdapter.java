@@ -27,7 +27,6 @@ import org.eclipse.egit.ui.internal.resources.ResourceStateFactory;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 class DecoratableResourceAdapter extends DecoratableResource {
 
@@ -61,19 +60,12 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			setConflicts(baseState.hasConflicts());
 			setAssumeUnchanged(baseState.isAssumeUnchanged());
 			setStagingState(baseState.getStagingState());
-			if (resource.getType() == IResource.PROJECT
-					|| resource.equals(mapping.getContainer())) {
-				// We only need this very expensive info for project decoration,
-				// and for decorating folders that are submodule roots.
+			if (resource.getType() == IResource.PROJECT) {
+				// We only need this very expensive info for project decoration
 				repositoryName = DecoratableResourceHelper
 						.getRepositoryName(repository);
 				branch = DecoratableResourceHelper.getShortBranch(repository);
 				branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
-				RevCommit headCommit = DecoratableResourceHelper
-						.getHeadCommit(repository);
-				if (headCommit != null) {
-					commitMessage = headCommit.getShortMessage();
-				}
 			}
 		} finally {
 			if (trace)
