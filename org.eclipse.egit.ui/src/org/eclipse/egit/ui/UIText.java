@@ -331,6 +331,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_ToggleSelection_button;
 
 	/** */
+	public static String CompareWithIndexAction_FileNotInIndex;
+
+	/** */
 	public static String RepositoryAction_errorFindingRepo;
 
 	/** */
@@ -1147,9 +1150,6 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
-	public static String CreateBranchPage_BranchNameTooltip;
-
-	/** */
 	public static String CreateBranchPage_CheckingOutMessage;
 
 	/** */
@@ -1160,18 +1160,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_ChosseNameMessage;
-
-	/** */
-	public static String CreateBranchPage_CreateLocalBasedTitle;
-
-	/** */
-	public static String CreateBranchPage_CreateLocalTitle;
-
-	/** */
-	public static String CreateBranchPage_CreateRemoteBaseOnTitle;
-
-	/** */
-	public static String CreateBranchPage_CreateRemoteTitle;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -1187,6 +1175,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_SourceBranchTooltip;
+
+	/** */
+	public static String CreateBranchPage_Title;
 
 	/** */
 	public static String PushResultTable_columnStatusRepo;
@@ -1699,13 +1690,10 @@ public class UIText extends NLS {
 	public static String RepositoriesView_LinkWithSelection_action;
 
 	/** */
+	public static String RepositoriesView_NewBranchMenu;
+
+	/** */
 	public static String RepositoriesView_NewBranchTitle;
-
-	/** */
-	public static String RepositoriesView_NewLocalBranchMenu;
-
-	/** */
-	public static String RepositoriesView_NewRemoteBranchMenu;
 
 	/** */
 	public static String RepositoriesView_NewRemoteMenu;
@@ -2045,51 +2033,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitCombo_showSuggestedCommits;
-
-	/** */
-	public static String CommitAction_commit;
-
-	/** */
-	public static String GitResourceVariantTree_couldNotFindBlob;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingMembers;
-
-	/** */
-	public static String GitResourceVariantTree_fetchingVariant;
-
-	/** */
-	public static String GitResourceVariantTree_unableToReadRepository;
-
-	/** */
-	public static String GitSynchronizeWizard_synchronize;
-
-	/** */
-	public static String GitSynchronizeWizard_gitResourceSynchronization;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_title;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_description;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_repositories;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_branches;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_selectAll;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_deselectAll;
-
-	/** */
-	public static String GitBranchSubscriberParticipant_git;
-
-	/** */
-	public static String GitBranchResourceVariantTreeSubscriber_gitBranches;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
