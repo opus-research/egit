@@ -9,11 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test.op;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +22,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.test.GitTestCase;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileTreeEntry;
@@ -36,12 +32,9 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
-import org.eclipse.team.core.RepositoryProvider;
-import org.junit.Test;
 
 public class T0001_ConnectProviderOperationTest extends GitTestCase {
 
-	@Test
 	public void testNoRepository() throws CoreException {
 
 		ConnectProviderOperation operation = new ConnectProviderOperation(
@@ -52,7 +45,6 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 		assertTrue(!gitDir.exists());
 	}
 
-	@Test
 	public void testNewRepository() throws CoreException, IOException {
 
 		File gitDir = new File(project.getProject().getWorkspace().getRoot()
@@ -69,7 +61,6 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 		assertTrue(gitDir.exists());
 	}
 
-	@Test
 	public void testNewUnsharedFile() throws CoreException, IOException,
 			InterruptedException {
 
