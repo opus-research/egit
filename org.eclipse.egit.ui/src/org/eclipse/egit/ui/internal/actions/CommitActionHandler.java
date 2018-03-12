@@ -13,10 +13,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -54,10 +50,10 @@ import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
+import org.eclipse.jgit.lib.UserConfig;
 import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.Team;
@@ -105,23 +101,17 @@ public class CommitActionHandler extends RepositoryActionHandler {
 
 		Repository[] repos = getRepositoriesFor(getProjectsForSelectedResources(event));
 		Repository repository = null;
-		Repository mergeRepository = null;
 		amendAllowed = repos.length == 1;
-		boolean isMergedResolved = false;
 		for (Repository repo : repos) {
 			repository = repo;
 			RepositoryState state = repo.getRepositoryState();
 			// currently we don't support committing a merge commit
-			if (!state.canCommit()) {
+			if (state == RepositoryState.MERGING_RESOLVED || !state.canCommit()) {
 				MessageDialog.openError(getShell(event),
 						UIText.CommitAction_cannotCommit, NLS.bind(
 								UIText.CommitAction_repositoryState, state
 										.getDescription()));
 				return null;
-			}
-			else if (state.equals(RepositoryState.MERGING_RESOLVED)) {
-				isMergedResolved = true;
-				mergeRepository = repo;
 			}
 		}
 
@@ -145,7 +135,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		String author = null;
 		String committer = null;
 		if (repository != null) {
-			final RepositoryConfig config = repository.getConfig();
+			final UserConfig config = repository.getConfig().get(UserConfig.KEY);
 			author = config.getAuthorName();
 			final String authorEmail = config.getAuthorEmail();
 			author = author + " <" + authorEmail + ">"; //$NON-NLS-1$ //$NON-NLS-2$
@@ -162,16 +152,12 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		commitDialog.setPreselectedFiles(getSelectedFiles(event));
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
-		commitDialog.setAllowToChangeSelection(!isMergedResolved);
 
 		if (previousCommit != null) {
 			commitDialog.setPreviousCommitMessage(previousCommit.getMessage());
 			PersonIdent previousAuthor = previousCommit.getAuthor();
 			commitDialog.setPreviousAuthor(previousAuthor.getName()
 					+ " <" + previousAuthor.getEmailAddress() + ">"); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-		if (isMergedResolved) {
-			commitDialog.setCommitMessage(getMergeResolveMessage(mergeRepository, event));
 		}
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
@@ -187,9 +173,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			commitOperation.setRepos(repos);
 		}
 		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
-		commitOperation.setMergeResolve(isMergedResolved);
-			if (isMergedResolved)
-				commitOperation.setRepos(repos);
 		String jobname = UIText.CommitAction_CommittingChanges;
 		Job job = new Job(jobname) {
 			@Override
@@ -408,7 +391,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			String repoRelativePath = map.getRepoRelativePath(resource);
 			Entry entry = index.getEntry(repoRelativePath);
 			if (entry != null)
-				return entry.isModified(map.getWorkDir());
+				return entry.isModified(map.getWorkTree());
 			return false;
 		} catch (UnsupportedEncodingException e) {
 			if (GitTraceLocation.UI.isActive())
@@ -429,44 +412,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		} catch (ExecutionException e) {
 			Activator.handleError(e.getMessage(), e, false);
 			return false;
-		}
-	}
-
-	private String getMergeResolveMessage(Repository mergeRepository,
-			ExecutionEvent event) throws ExecutionException {
-		File mergeMsg = new File(mergeRepository.getDirectory(), Constants.MERGE_MSG);
-		FileReader reader;
-		try {
-			reader = new FileReader(mergeMsg);
-		} catch (FileNotFoundException e) {
-			MessageDialog.openError(getShell(event),
-					UIText.CommitAction_MergeHeadErrorTitle,
-					UIText.CommitAction_MergeHeadErrorMessage);
-			throw new IllegalStateException(e);
-		}
-		BufferedReader br = new BufferedReader(reader);
-		StringBuffer message = new StringBuffer();
-		String s;
-		String newLine = newLine();
-		try {
-			while ((s = br.readLine()) != null) {
-				message.append(s).append(newLine);
-			}
-		} catch (IOException e) {
-			MessageDialog.openError(getShell(event),
-					UIText.CommitAction_MergeHeadErrorTitle,
-					UIText.CommitAction_ErrorReadingMergeMsg);
-			throw new IllegalStateException(e);
-		}
-		return message.toString();
-	}
-
-	private String newLine(){
-		if(System.getProperty("os.name").indexOf("Windows") != -1){ //$NON-NLS-1$ //$NON-NLS-2$
-			return "\r\n"; //$NON-NLS-1$
-		}
-		else {
-			return "\n"; //$NON-NLS-1$
 		}
 	}
 

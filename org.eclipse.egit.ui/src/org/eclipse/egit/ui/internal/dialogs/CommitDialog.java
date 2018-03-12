@@ -32,6 +32,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -39,9 +40,7 @@ import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
-import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
@@ -83,7 +82,6 @@ import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.team.internal.ui.history.FileRevisionTypedElement;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
@@ -191,7 +189,6 @@ public class CommitDialog extends Dialog {
 		commitText = new Text(container, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL);
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
 				.hint(600, 200).create());
-		commitText.setText(commitMessage);
 
 		// allow to commit with ctrl-enter
 		commitText.addKeyListener(new KeyAdapter() {
@@ -389,31 +386,13 @@ public class CommitDialog extends Dialog {
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items);
 		filesViewer.getTable().setMenu(getContextMenu());
-		if (!allowToChangeSelection) {
-			amendingButton.setSelection(false);
-			amendingButton.setEnabled(false);
-			showUntrackedButton.setSelection(false);
-			showUntrackedButton.setEnabled(false);
 
-			filesViewer.addCheckStateListener(new ICheckStateListener() {
-
-				public void checkStateChanged(CheckStateChangedEvent event) {
-				       if( !event.getChecked() ) {
-				    	   filesViewer.setAllChecked(true);
-				       }
-				}
-			});
-			filesViewer.setAllGrayed(true);
-			filesViewer.setAllChecked(true);
-		}
-		else {
-			// pre-emptively check any preselected files
-			for (IFile selectedFile : preselectedFiles) {
-				for (CommitItem item : items) {
-					if (item.file.equals(selectedFile)) {
-						filesViewer.setChecked(item, true);
-						break;
-					}
+		// pre-emptively check any preselected files
+		for (IFile selectedFile : preselectedFiles) {
+			for (CommitItem item : items) {
+				if (item.file.equals(selectedFile)) {
+					filesViewer.setChecked(item, true);
+					break;
 				}
 			}
 		}
@@ -516,8 +495,6 @@ public class CommitDialog extends Dialog {
 	}
 
 	private Menu getContextMenu() {
-		if (!allowToChangeSelection)
-			return null;
 		Menu menu = new Menu(filesViewer.getTable());
 		MenuItem item = new MenuItem(menu, SWT.PUSH);
 		item.setText(UIText.CommitDialog_AddFileOnDiskToIndex);
@@ -540,8 +517,8 @@ public class CommitDialog extends Dialog {
 						index = repo.getIndex();
 						String repoRelativePath = map.getRepoRelativePath(commitItem.file);
 						Entry entry = index.getEntry(repoRelativePath);
-						if (entry != null && entry.isModified(map.getWorkDir())) {
-							entry.update(new File(map.getWorkDir(), entry.getName()));
+						if (entry != null && entry.isModified(map.getWorkTree())) {
+							entry.update(new File(map.getWorkTree(), entry.getName()));
 							if (!changedIndexes.contains(index))
 								changedIndexes.add(index);
 							commitItem.status = UIText.CommitDialog_StatusModified;
@@ -549,7 +526,7 @@ public class CommitDialog extends Dialog {
 							final Tree headTree = repo.mapTree(Constants.HEAD);
 							TreeEntry  headEntry = (headTree == null ? null : headTree.findBlobMember(repoRelativePath));
 							if (headEntry == null){
-								entry = index.add(map.getWorkDir(), new File(map.getWorkDir(), repoRelativePath));
+								entry = index.add(map.getWorkTree(), new File(map.getWorkTree(), repoRelativePath));
 								if (!changedIndexes.contains(index))
 									changedIndexes.add(index);
 								commitItem.status = UIText.CommitDialog_StatusAdded;
@@ -593,7 +570,7 @@ public class CommitDialog extends Dialog {
 				if (indexEntry == null) {
 					prefix = UIText.CommitDialog_StatusUntracked;
 				}
-				else if (indexEntry.isModified(repositoryMapping.getWorkDir()))
+				else if (indexEntry.isModified(repositoryMapping.getWorkTree()))
 					prefix = UIText.CommitDialog_StatusAddedIndexDiff;
 			} else if (indexEntry == null) {
 				prefix = UIText.CommitDialog_StatusRemoved;
@@ -601,12 +578,12 @@ public class CommitDialog extends Dialog {
 					&& !headEntry.getId().equals(indexEntry.getObjectId())) {
 				prefix = UIText.CommitDialog_StatusModified;
 
-				if (indexEntry.isModified(repositoryMapping.getWorkDir()))
+				if (indexEntry.isModified(repositoryMapping.getWorkTree()))
 					prefix = UIText.CommitDialog_StatusModifiedIndexDiff;
-			} else if (!new File(repositoryMapping.getWorkDir(), indexEntry
+			} else if (!new File(repositoryMapping.getWorkTree(), indexEntry
 					.getName()).isFile()) {
 				prefix = UIText.CommitDialog_StatusRemovedNotStaged;
-			} else if (indexEntry.isModified(repositoryMapping.getWorkDir())) {
+			} else if (indexEntry.isModified(repositoryMapping.getWorkTree())) {
 				prefix = UIText.CommitDialog_StatusModifiedNotStaged;
 			}
 
@@ -642,7 +619,6 @@ public class CommitDialog extends Dialog {
 	private boolean amendAllowed = true;
 	private boolean showUntracked = true;
 	private boolean createChangeId = false;
-	private boolean allowToChangeSelection = true;
 
 	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
 	private String previousCommitMessage = ""; //$NON-NLS-1$
@@ -938,14 +914,6 @@ public class CommitDialog extends Dialog {
 	 */
 	public void setAmendAllowed(boolean amendAllowed) {
 		this.amendAllowed = amendAllowed;
-	}
-
-	/**
-	 * Set whether is is allowed to change the set of selected files
-	 * @param allowToChangeSelection
-	 */
-	public void setAllowToChangeSelection(boolean allowToChangeSelection) {
-		this.allowToChangeSelection = allowToChangeSelection;
 	}
 
 	@Override
