@@ -161,10 +161,4 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ReleaseFinishOperation_unexpectedConflictsReleaseAborted;
-
-	/** */
-	public static String UIIcons_errorDeterminingIconBase;
-
-	/** */
-	public static String UIIcons_errorLoadingPluginImage;
 }
