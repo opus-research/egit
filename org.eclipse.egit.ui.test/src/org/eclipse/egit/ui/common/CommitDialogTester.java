@@ -10,7 +10,7 @@ package org.eclipse.egit.ui.common;
 
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -18,6 +18,7 @@ import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarToggleButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 
 public class CommitDialogTester {
 
@@ -150,11 +151,12 @@ public class CommitDialogTester {
 	}
 
 	public int getRowCount() {
-		return commitDialog.bot().table().rowCount();
+		return commitDialog.bot().tree().rowCount();
 	}
 
 	public String getEntryText(int rowIndex) {
-		return commitDialog.bot().table().getTableItem(rowIndex).getText(1);
+		SWTBotTreeItem treeItem = commitDialog.bot().tree().getAllItems()[rowIndex];
+		return treeItem.cell(1);
 	}
 
 	public String getCommitMessage() {
@@ -164,6 +166,22 @@ public class CommitDialogTester {
 	}
 
 	public boolean isEntryChecked(int rowIndex) {
-		return commitDialog.bot().table().getTableItem(rowIndex).isChecked();
+		SWTBotTreeItem treeItem = commitDialog.bot().tree().getAllItems()[rowIndex];
+		return treeItem.isChecked();
 	}
+
+	public void setShowUntracked(boolean untracked) {
+		SWTBotToolbarToggleButton button = commitDialog.bot()
+				.toolbarToggleButtonWithTooltip(
+						UIText.CommitDialog_ShowUntrackedFiles);
+		selectToolbarToggle(button, untracked);
+	}
+
+	public boolean getShowUntracked() {
+		SWTBotToolbarToggleButton button = commitDialog.bot()
+				.toolbarToggleButtonWithTooltip(
+						UIText.CommitDialog_ShowUntrackedFiles);
+		return button.isChecked();
+	}
+
 }

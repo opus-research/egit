@@ -4,8 +4,9 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Shunichi Fuji <palglowr@gmail.com>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2013, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -205,8 +206,10 @@ public class RepositoryMapping {
 	 * bother.
 	 *
 	 * @param rsrc
-	 * @return the path relative to the Git repository, including base name.
-	 *         <code>null</code> if the path cannot be determined.
+	 * @return the path relative to the Git repository, including base name. An
+	 *         empty string (<code>""</code>) if passed resource corresponds to
+	 *         working directory (root). <code>null</code> if the path cannot be
+	 *         determined.
 	 */
 	public String getRepoRelativePath(final IResource rsrc) {
 		IPath location = rsrc.getLocation();
@@ -222,8 +225,10 @@ public class RepositoryMapping {
 	 * bother.
 	 *
 	 * @param location
-	 * @return the path relative to the Git repository, including base name.
-	 *         <code>null</code> if the path cannot be determined.
+	 * @return the path relative to the Git repository, including base name. An
+	 *         empty string (<code>""</code>) if passed location corresponds to
+	 *         working directory (root). <code>null</code> if the path cannot be
+	 *         determined.
 	 */
 	public String getRepoRelativePath(IPath location) {
 		final int pfxLen = workdirPrefix.length();
@@ -284,11 +289,8 @@ public class RepositoryMapping {
 			if (mapping == null)
 				continue;
 
-			Path workingTree = new Path(mapping.getWorkTree().toString());
-			IPath relative = path.makeRelativeTo(workingTree);
-			String firstSegment = relative.segment(0);
-
-			if (firstSegment == null || !"..".equals(firstSegment)) //$NON-NLS-1$
+			IPath workingTree = new Path(mapping.getWorkTree().toString());
+			if (workingTree.isPrefixOf(path))
 				return mapping;
 		}
 

@@ -105,7 +105,7 @@
                icon="$nl$/icons/obj16/untrack.gif"
                id="org.eclipse.egit.ui.internal.actions.Untrack"
                label="%UntrackAction_label"
-               menubarPath="team.main/group9"/>
+               menubarPath="team.main/group8"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.CommitAction"
                definitionId="org.eclipse.egit.ui.team.Commit"
@@ -154,14 +154,14 @@
                icon="$nl$/icons/obj16/unstage.gif"
                id="org.eclipse.egit.ui.internal.actions.RemoveFromIndexAction"
                label="%RemoveFromIndexAction_label"
-               menubarPath="team.main/group9"/>
+               menubarPath="team.main/group8"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
                definitionId="org.eclipse.egit.ui.team.AddToIndex"
                icon="$nl$/icons/obj16/add.gif"
                id="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
                label="%AddToIndexAction_label"
-               menubarPath="team.main/group9"/>
+               menubarPath="team.main/group8"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
                id="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
@@ -204,7 +204,7 @@
                icon="icons/obj16/history.gif"
                id="org.eclipse.egit.ui.internal.actions.ShowHistoryActionHandler"
                label="%ShowResourceInHistoryAction_label"
-               menubarPath="team.main/group10">
+               menubarPath="team.main/group9">
          </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewAction"
@@ -212,7 +212,7 @@
                icon="icons/eview16/repo_rep.gif"
                id="org.eclipse.egit.ui.internal.actions.ShowRepositoriesViewAction"
                label="%ShowRepositoryAction_label"
-               menubarPath="team.main/group10">
+               menubarPath="team.main/group9">
          </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.MergeToolAction"
@@ -265,7 +265,7 @@
                definitionId="org.eclipse.egit.ui.team.ShowBlame"
                label="%ShowBlameAction_label"
                icon="icons/etool16/annotate.gif"
-               menubarPath="team.main/group10">
+               menubarPath="team.main/group9">
          </action>
       </objectContribution>
    </extension>
@@ -661,6 +661,35 @@
             %Theme_DiffRemoveForegroundColor_description
          </description>
       </colorDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffHeadlineForegroundColor"
+            isEditable="true"
+            label="%Theme_DiffHeadlineForegroundColor_label"
+            value="COLOR_BLACK">
+         <description>
+            %Theme_DiffHeadlineForegroundColor_description
+         </description>
+      </colorDefinition>
+      <colorDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            id="org.eclipse.egit.ui.DiffHeadlineBackgroundColor"
+            isEditable="true"
+            label="%Theme_DiffHeadlineBackgroundColor_label"
+            value="170,170,170">
+         <description>
+            %Theme_DiffHeadlineBackgroundColor_description
+         </description>
+      </colorDefinition>
+      <fontDefinition
+            categoryId="org.eclipse.egit.ui.GitTheme"
+            defaultsTo="org.eclipse.jface.textfont"
+            id="org.eclipse.egit.ui.DiffHeadlineFont"
+            label="%Theme_DiffHeadlineFont_label">
+         <description>
+            %Theme_DiffHeadlineFont_description
+         </description>
+      </fontDefinition>
    </extension>
 
 <!-- ********** QuickDiff text editor support ************** -->
@@ -3709,7 +3738,7 @@
                               <and>
                                  <test property="GitResource.isShared" />
                                  <test property="GitResource.isContainer" />
-                              </and>                           
+                              </and>
                            </adapt>
                         </and>
                      </iterate>
@@ -3958,7 +3987,9 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ImportProjectsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewImportProjects"
-            name="%ImportProjectsCommand">
+            name="%ImportProjectsCommand"
+            description="%ImportProjectsCommand_description"
+            >
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -4687,6 +4718,7 @@
       </key>
       <!-- Command+Shift+3 takes a screenshot on the Mac. Delete and redefine key binding: -->
       <key
+            platform="carbon"
             commandId=""
             contextId="org.eclipse.ui.contexts.window"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
@@ -4765,7 +4797,7 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.RenameBranchOnCommitHandler"
             id="org.eclipse.egit.ui.history.RenameBranch"
             name="%RenameBranchCommand">
-      </command>      
+      </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"
             id="org.eclipse.egit.ui.history.CreateTag"

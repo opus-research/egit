@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,11 +45,11 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
@@ -97,6 +97,7 @@ import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RmCommand;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
@@ -1141,12 +1142,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
 			return;
 		final IStructuredSelection iss = (IStructuredSelection) s;
-		for (Iterator<StagingEntry> it = iss.iterator(); it.hasNext();) {
-			String relativePath = it.next().getPath();
-			String path = new Path(currentRepository.getWorkTree()
-					.getAbsolutePath()).append(relativePath)
-					.toOSString();
-			openFileInEditor(path);
+		for (Object element : iss.toList()) {
+			if (element instanceof StagingEntry) {
+				StagingEntry entry = (StagingEntry) element;
+				String relativePath = entry.getPath();
+				String path = new Path(currentRepository.getWorkTree()
+						.getAbsolutePath()).append(relativePath)
+						.toOSString();
+				openFileInEditor(path);
+			}
 		}
 	}
 
@@ -1240,7 +1244,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 					break;
 				case MISSING:
 					if (rm == null)
-						rm = git.rm();
+						rm = git.rm().setCached(true);
 					rm.addFilepattern(entry.getPath());
 					break;
 				}
@@ -1268,16 +1272,22 @@ public class StagingView extends ViewPart implements IShowInSource {
 				add.call();
 			} catch (NoFilepatternException e1) {
 				// cannot happen
-			} catch (Exception e2) {
-				Activator.error(e2.getMessage(), e2);
+			} catch (JGitInternalException e1) {
+				Activator.handleError(e1.getCause().getMessage(),
+						e1.getCause(), true);
+			} catch (Exception e1) {
+				Activator.handleError(e1.getMessage(), e1, true);
 			}
 		if (rm != null)
 			try {
 				rm.call();
 			} catch (NoFilepatternException e) {
 				// cannot happen
-			} catch (Exception e2) {
-				Activator.error(e2.getMessage(), e2);
+			} catch (JGitInternalException e) {
+				Activator.handleError(e.getCause().getMessage(), e.getCause(),
+						true);
+			} catch (Exception e) {
+				Activator.handleError(e.getMessage(), e, true);
 			}
 	}
 
