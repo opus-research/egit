@@ -33,11 +33,9 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DefaultTextDoubleClickStrategy;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -325,39 +323,10 @@ class CommitMessageViewer extends SourceViewer implements
 						});
 
 						text.setStyleRanges(styleRanges);
-
-						revealFirstDiff();
 					}
-
 				});
 			}
 		});
-	}
-
-	/**
-	 * Tries to reveal the first line of the first currently selected diff in
-	 * the diff viewer
-	 */
-	private void revealFirstDiff() {
-		if (currentDiffs.isEmpty())
-			return;
-
-		String lineToSelect = currentDiffs.get(0).getPath();
-		int linesNmbr = getDocument().getNumberOfLines();
-		for (int i = 1; i < linesNmbr; i++) {
-			try {
-				IRegion lineInfo = getDocument().getLineInformation(i);
-				String line = getDocument().get(lineInfo.getOffset(),
-						lineInfo.getLength());
-				if (line.contains(lineToSelect)) {
-					getTextWidget().setCaretOffset(lineInfo.getOffset());
-					revealRange(lineInfo.getOffset(), lineInfo.getLength());
-					return;
-				}
-			} catch (BadLocationException e) {
-				// don't care
-			}
-		}
 	}
 
 	@Override
@@ -392,7 +361,6 @@ class CommitMessageViewer extends SourceViewer implements
 		// so we only rebuild this when the commit did in fact change
 		if (input == commit)
 			return;
-		setDocument(new Document("")); //$NON-NLS-1$
 		currentDiffs.clear();
 		commit = (PlotCommit<?>) input;
 		allRefs = getBranches();
