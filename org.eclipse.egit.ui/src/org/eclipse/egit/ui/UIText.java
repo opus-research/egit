@@ -1192,9 +1192,6 @@ public class UIText extends NLS {
 	public static String RefSpecPanel_fetch;
 
 	/** */
-	public static String RefSpecPanel_fetchTitle;
-
-	/** */
 	public static String RefSpecPanel_srcFetchDescription;
 
 	/** */
@@ -1247,9 +1244,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPanel_push;
-
-	/** */
-	public static String RefSpecPanel_pushTitle;
 
 	/** */
 	public static String RefSpecPanel_srcPushDescription;
