@@ -230,8 +230,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		IResourceVariant remote = mock(IResourceVariant.class);
 		when(remote.isContainer()).thenReturn(false);
-		when(remote.getStorage(any(IProgressMonitor.class)))
-				.thenReturn(storage);
+		when(remote.getStorage(any(IProgressMonitor.class))).thenReturn(
+				storage);
 
 		// then
 		assertFalse(grvc.compare(local, remote));
@@ -268,8 +268,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		IResourceVariant remote = mock(IResourceVariant.class);
 		when(remote.isContainer()).thenReturn(false);
-		when(remote.getStorage(any(IProgressMonitor.class)))
-				.thenReturn(storage);
+		when(remote.getStorage(any(IProgressMonitor.class))).thenReturn(
+				storage);
 
 		// then
 		assertFalse(grvc.compare(local, remote));
@@ -308,8 +308,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		IResourceVariant remote = mock(IResourceVariant.class);
 		when(remote.isContainer()).thenReturn(false);
-		when(remote.getStorage(any(IProgressMonitor.class)))
-				.thenReturn(storage);
+		when(remote.getStorage(any(IProgressMonitor.class))).thenReturn(
+				storage);
 
 		// then
 		assertFalse(grvc.compare(local, remote));
@@ -352,8 +352,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		IResourceVariant remote = mock(IResourceVariant.class);
 		when(remote.isContainer()).thenReturn(false);
-		when(remote.getStorage(any(IProgressMonitor.class)))
-				.thenReturn(storage);
+		when(remote.getStorage(any(IProgressMonitor.class))).thenReturn(
+				storage);
 
 		// then
 		assertFalse(grvc.compare(local, remote));
@@ -389,8 +389,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		IResourceVariant remote = mock(IResourceVariant.class);
 		when(remote.isContainer()).thenReturn(false);
-		when(remote.getStorage(any(IProgressMonitor.class)))
-				.thenReturn(storage);
+		when(remote.getStorage(any(IProgressMonitor.class))).thenReturn(
+				storage);
 
 		// then
 		assertTrue(grvc.compare(local, remote));
@@ -429,8 +429,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		IResourceVariant remote = mock(IResourceVariant.class);
 		when(remote.isContainer()).thenReturn(false);
-		when(remote.getStorage(any(IProgressMonitor.class)))
-				.thenReturn(storage);
+		when(remote.getStorage(any(IProgressMonitor.class))).thenReturn(
+				storage);
 
 		// then
 		assertTrue(grvc.compare(local, remote));
@@ -635,8 +635,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	}
 
 	/**
-	 * Comparing two remote files that have different git ObjectId should return
-	 * false.
+	 * Comparing two remote files that have different git ObjectId should return false.
 	 *
 	 * @throws Exception
 	 */
@@ -679,8 +678,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		// given
 		File file = testRepo.createFile(iProject, "test-file");
-		RevCommit commit = testRepo.appendContentAndCommit(iProject, file, "a",
-				"initial commit");
+		RevCommit commit = testRepo.appendContentAndCommit(iProject, file,
+				"a", "initial commit");
 
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 		GitRemoteFile base = new GitRemoteFile(repo, commit, commit.getTree(),

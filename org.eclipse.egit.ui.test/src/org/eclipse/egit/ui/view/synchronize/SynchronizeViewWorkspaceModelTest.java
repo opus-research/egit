@@ -90,7 +90,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		assertEquals(1, syncViewTree.getAllItems().length);
+		assertEquals(2, syncViewTree.getAllItems().length);
 	}
 
 	@Test
@@ -112,7 +112,6 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 			throws Exception {
 		// given
 		resetRepositoryToCreateInitialTag();
-		makeChangesAndCommit(PROJ1);
 		changeFilesInProject();
 
 		// when
