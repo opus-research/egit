@@ -652,11 +652,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 		public int hashCode() {
 			return super.hashCode();
 		}
-
-		@Override
-		public String toString() {
-			return line.toString();
-		}
 	}
 
 	/**
