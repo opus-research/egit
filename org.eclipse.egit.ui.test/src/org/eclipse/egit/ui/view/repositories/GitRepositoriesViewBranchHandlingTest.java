@@ -24,7 +24,7 @@ import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -38,7 +38,7 @@ import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
@@ -378,7 +378,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		String title = NLS.bind(
 				UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
-				new FileRepository(clonedRepositoryFile).getBranch());
+				FileRepositoryBuilder.create(clonedRepositoryFile).getBranch());
 
 		SWTBotShell mergeDialog = bot.shell(title);
 		// TODO do some merge here
@@ -409,7 +409,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		ContextMenuHelper.clickContextMenuSync(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+				"Properties");
 
 		SWTBotView propsView = bot.viewByTitle("Properties");
 		SWTBotTreeItem rootItem = propsView
@@ -493,7 +493,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		ContextMenuHelper.clickContextMenu(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+				"Properties");
 
 		propsView = bot.viewByTitle("Properties");
 		rootItem = propsView

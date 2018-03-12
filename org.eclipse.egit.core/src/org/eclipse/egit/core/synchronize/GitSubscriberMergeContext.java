@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.GitResourceDeltaVisitor;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
@@ -131,9 +131,16 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 	}
 
 	private void handleRepositoryChange(Repository which) {
-		for (GitSynchronizeData gsd : gsds)
-			if (which.equals(gsd.getRepository()))
+		boolean shouldRefresh = false;
+		for (GitSynchronizeData gsd : gsds) {
+			if (which.equals(gsd.getRepository())) {
 				updateRevs(gsd);
+				shouldRefresh = true;
+			}
+		}
+
+		if (!shouldRefresh)
+			return;
 
 		subscriber.reset(this.gsds);
 		ResourceTraversal[] traversals = getScopeManager().getScope()

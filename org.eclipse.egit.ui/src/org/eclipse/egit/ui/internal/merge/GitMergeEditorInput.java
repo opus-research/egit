@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, 2013 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,19 +23,20 @@ import org.eclipse.compare.structuremergeviewer.IDiffContainer;
 import org.eclipse.compare.structuremergeviewer.IDiffElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.FileEditableRevision;
-import org.eclipse.egit.ui.internal.LocalFileRevision;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
+import org.eclipse.egit.ui.internal.LocalFileRevision;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.dircache.DirCacheEntry;
@@ -113,7 +114,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				if (repo != null && repo != map.getRepository())
 					throw new InvocationTargetException(
 							new IllegalStateException(
-									UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
+									UIText.RepositoryAction_multiRepoSelection));
 				filterPaths.add(map.getRepoRelativePath(resource));
 				repo = map.getRepository();
 			}
@@ -121,7 +122,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			if (repo == null)
 				throw new InvocationTargetException(
 						new IllegalStateException(
-								UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
+								UIText.RepositoryAction_multiRepoSelection));
 
 			if (monitor.isCanceled())
 				throw new InterruptedException();
@@ -214,7 +215,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 
 			// build the nodes
 			try {
-				return buildDiffContainer(repo, rightCommit, headCommit,
+				return buildDiffContainer(repo, headCommit,
 						ancestorCommit, filterPaths, rw, monitor);
 			} catch (IOException e) {
 				throw new InvocationTargetException(e);
@@ -240,7 +241,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 	}
 
 	private IDiffContainer buildDiffContainer(Repository repository,
-			RevCommit rightCommit, RevCommit headCommit,
+			RevCommit headCommit,
 			RevCommit ancestorCommit, List<String> filterPaths, RevWalk rw,
 			IProgressMonitor monitor) throws IOException, InterruptedException {
 
@@ -310,10 +311,13 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					continue;
 
 				ITypedElement right;
-				if (conflicting)
-					right = CompareUtils.getFileRevisionTypedElement(gitPath,
-							rightCommit, repository);
-				else
+				if (conflicting) {
+					GitFileRevision revision = GitFileRevision.inIndex(
+							repository, gitPath, DirCacheEntry.STAGE_3);
+					String encoding = CompareCoreUtils.getResourceEncoding(
+							repository, gitPath);
+					right = new FileRevisionTypedElement(revision, encoding);
+				} else
 					right = CompareUtils.getFileRevisionTypedElement(gitPath,
 							headCommit, repository);
 
@@ -325,9 +329,8 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				// if the file is not conflicting (as it was auto-merged)
 				// we will show the auto-merged (local) version
 
-				IPath locationPath = new Path(fit.getEntryFile().getPath());
-				final IFile file = ResourcesPlugin.getWorkspace().getRoot()
-						.getFileForLocation(locationPath);
+				IFile file = ResourceUtil.getFileForLocation(repository,
+						fit.getEntryPathString());
 				if (file == null)
 					// TODO in the future, we should be able to show a version
 					// for a non-workspace file as well
@@ -335,8 +338,8 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				if (!conflicting || useWorkspace)
 					rev = new LocalFileRevision(file);
 				else
-					rev = GitFileRevision.inCommit(repository, headCommit,
-							gitPath, null);
+					rev = GitFileRevision.inIndex(repository, gitPath,
+							DirCacheEntry.STAGE_2);
 
 				IRunnableContext runnableContext = getContainer();
 				if (runnableContext == null)
