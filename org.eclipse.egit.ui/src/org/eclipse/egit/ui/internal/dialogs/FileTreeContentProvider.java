@@ -275,8 +275,7 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 				String segment = path.segment(i);
 				Node foundNode = null;
 				for (Node node : parentNode.getChildren()) {
-					if (node.getName().equals(segment)
-							&& !(node instanceof FileNode)) {
+					if (node.getName().equals(segment)) {
 						foundNode = node;
 						break;
 					}

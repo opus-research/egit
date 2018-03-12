@@ -30,11 +30,9 @@ import org.eclipse.egit.gitflow.op.FeatureTrackOperation;
 import static org.eclipse.egit.gitflow.ui.Activator.error;
 
 import org.eclipse.egit.gitflow.ui.Activator;
-
 import static org.eclipse.egit.gitflow.ui.internal.JobFamilies.GITFLOW_FAMILY;
-
 import org.eclipse.egit.gitflow.ui.internal.UIText;
-import org.eclipse.egit.gitflow.ui.internal.dialogs.AbstractGitFlowBranchSelectionDialog;
+import org.eclipse.egit.gitflow.ui.internal.dialog.AbstractGitFlowBranchSelectionDialog;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
@@ -49,9 +47,6 @@ public class FeatureTrackHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
-		if (gfRepo == null) {
-			return error(UIText.Handlers_noGitflowRepositoryFound);
-		}
 		final List<Ref> refs = new ArrayList<Ref>();
 		Shell activeShell = HandlerUtil.getActiveShell(event);
 

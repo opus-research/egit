@@ -361,7 +361,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			openPreviousVersion.setEnabled(oneOrMoreSelected && !addSelected);
 			compare.setEnabled(sel.size() == 1);
 			blame.setEnabled(oneOrMoreSelected);
-			if (sel.size() == 1 && !db.isBare()) {
+			if (sel.size() == 1) {
 				FileDiff diff = (FileDiff) sel.getFirstElement();
 				String path = new Path(getRepository().getWorkTree()
 						.getAbsolutePath()).append(diff.getPath())

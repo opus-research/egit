@@ -17,12 +17,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import org.eclipse.core.resources.IEncodedStorage;
+import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -38,7 +37,7 @@ import org.eclipse.osgi.util.NLS;
  *
  * @since 4.0
  */
-public class GitBlobStorage implements IEncodedStorage {
+public class GitBlobStorage implements IStorage {
 	/** Repository containing the object this storage provides access to. */
 	protected final Repository db;
 
@@ -47,8 +46,6 @@ public class GitBlobStorage implements IEncodedStorage {
 
 	/** Id of this object in its repository. */
 	protected final ObjectId blobId;
-
-	private String charset;
 
 	/**
 	 * @param repository
@@ -173,16 +170,5 @@ public class GitBlobStorage implements IEncodedStorage {
 		}
 		return new Path(db.getWorkTree().getAbsolutePath() + File.separatorChar
 				+ path);
-	}
-
-	/**
-	 * @since 4.1
-	 */
-	@Override
-	public String getCharset() throws CoreException {
-		if (charset == null) {
-			charset = CompareCoreUtils.getResourceEncoding(db, path);
-		}
-		return charset;
 	}
 }
