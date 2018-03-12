@@ -42,9 +42,8 @@ public class CompareWithWorkingTreeHandler extends
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file.getProject());
 				final String gitPath = mapping.getRepoRelativePath(file);
-				final String commitPath = getRenamedPath(gitPath, commit);
 				ITypedElement right = CompareUtils.getFileRevisionTypedElement(
-						commitPath, commit, mapping.getRepository());
+						gitPath, commit, mapping.getRepository());
 				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 						SaveableCompareEditorInput.createFileElement(file),
 						right, null);
@@ -62,11 +61,10 @@ public class CompareWithWorkingTreeHandler extends
 					throw new ExecutionException(e.getMessage(), e);
 				}
 				final String gitPath = getRepoRelativePath(repo, file);
-				final String commitPath = getRenamedPath(gitPath, commit);
 				ITypedElement left = CompareUtils.getFileRevisionTypedElement(
 						gitPath, leftCommit, repo);
 				ITypedElement right = CompareUtils.getFileRevisionTypedElement(
-						commitPath, commit, repo);
+						gitPath, commit, repo);
 				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 						left, right, null);
 				openInCompare(event, in);
