@@ -435,7 +435,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		}
 
 		public String getType() {
-			return ITypedElement.UNKNOWN_TYPE;
+			return null;
 		}
 
 	}

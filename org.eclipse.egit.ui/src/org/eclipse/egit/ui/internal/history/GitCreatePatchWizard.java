@@ -30,7 +30,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -117,13 +116,13 @@ public class GitCreatePatchWizard extends Wizard {
 		String pageTitle = UIText.GitCreatePatchWizard_SelectLocationTitle;
 		String pageDescription = UIText.GitCreatePatchWizard_SelectLocationDescription;
 
-		locationPage = new LocationPage(pageTitle, pageTitle, UIIcons.WIZBAN_CREATE_PATCH);
+		locationPage = new LocationPage(pageTitle, pageTitle, null);
 		locationPage.setDescription(pageDescription);
 		addPage(locationPage);
 
 		pageTitle = UIText.GitCreatePatchWizard_SelectOptionsTitle;
 		pageDescription = UIText.GitCreatePatchWizard_SelectOptionsDescription;
-		optionsPage = new OptionsPage(pageTitle, pageTitle, UIIcons.WIZBAN_CREATE_PATCH);
+		optionsPage = new OptionsPage(pageTitle, pageTitle, null);
 		optionsPage.setDescription(pageDescription);
 		addPage(optionsPage);
 	}
@@ -265,6 +264,8 @@ public class GitCreatePatchWizard extends Wizard {
 
 		private Button fsBrowseButton;
 
+		private boolean canValidate = true;
+
 		private boolean pageValid;
 
 		/**
@@ -283,7 +284,6 @@ public class GitCreatePatchWizard extends Wizard {
 			gridLayout.numColumns = 3;
 			composite.setLayout(gridLayout);
 			composite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-			initializeDialogUnits(composite);
 			setControl(composite);
 
 			// clipboard
@@ -292,18 +292,15 @@ public class GitCreatePatchWizard extends Wizard {
 			cpRadio = new Button(composite, SWT.RADIO);
 			cpRadio.setText(UIText.GitCreatePatchWizard_Clipboard);
 			cpRadio.setLayoutData(gd);
-			cpRadio.setSelection(true);
 
 			// filesystem
 			fsRadio = new Button(composite, SWT.RADIO);
 			fsRadio.setText(UIText.GitCreatePatchWizard_File);
-			fsRadio.setSelection(false);
 
 			fsPathText = new Text(composite, SWT.BORDER);
 			gd = new GridData(GridData.FILL_HORIZONTAL);
 			fsPathText.setLayoutData(gd);
 			fsPathText.setText(createFileName());
-			fsPathText.setEnabled(false);
 
 			fsBrowseButton = new Button(composite, SWT.PUSH);
 			fsBrowseButton.setText(UIText.GitCreatePatchWizard_Browse);
@@ -313,25 +310,10 @@ public class GitCreatePatchWizard extends Wizard {
 					SWT.DEFAULT, true);
 			data.widthHint = Math.max(widthHint, minSize.x);
 			fsBrowseButton.setLayoutData(data);
-			fsBrowseButton.setEnabled(false);
-
-			cpRadio.addListener(SWT.Selection, new Listener() {
-				public void handleEvent(Event event) {
-					// disable other input controls
-					fsPathText.setEnabled(false);
-					fsBrowseButton.setEnabled(false);
-					validatePage();
-				}
-			});
 
 			fsRadio.addListener(SWT.Selection, new Listener() {
 
 				public void handleEvent(Event event) {
-					// enable filesystem input controls
-					fsPathText.setEnabled(true);
-					fsBrowseButton.setEnabled(true);
-					// set focus to filesystem input text control
-					fsPathText.setFocus();
 					validatePage();
 				}
 			});
@@ -389,11 +371,11 @@ public class GitCreatePatchWizard extends Wizard {
 		 * @return page is valid
 		 */
 		protected boolean validatePage() {
-			if (fsRadio.getSelection()) {
+			if (!canValidate)
+				return false;
+
+			if (fsRadio.getSelection())
 				pageValid = validateFilesystemLocation();
-			} else if (cpRadio.getSelection()) {
-				pageValid = true;
-			}
 
 			/**
 			 * Avoid draw flicker by clearing error message if all is valid.
@@ -418,29 +400,29 @@ public class GitCreatePatchWizard extends Wizard {
 			final String pathString = fsPathText.getText().trim();
 			if (pathString.length() == 0
 					|| !new Path("").isValidPath(pathString)) { //$NON-NLS-1$
-				setErrorMessage(UIText.GitCreatePatchWizard_FilesystemError);
+				setErrorMessage(""); //$NON-NLS-1$
 				return false;
 			}
 
 			final File file = new File(pathString);
 			if (!file.isAbsolute()) {
-				setErrorMessage(UIText.GitCreatePatchWizard_FilesystemInvalidError);
+				setErrorMessage(""); //$NON-NLS-1$
 				return false;
 			}
 
 			if (file.isDirectory()) {
-				setErrorMessage(UIText.GitCreatePatchWizard_FilesystemDirectoryError);
+				setErrorMessage(""); //$NON-NLS-1$
 				return false;
 			}
 
 			if (pathString.endsWith("/") || pathString.endsWith("\\")) { //$NON-NLS-1$//$NON-NLS-2$
-				setErrorMessage(UIText.GitCreatePatchWizard_FilesystemDirectoryNotExistsError);
+				setErrorMessage(""); //$NON-NLS-1$
 				return false;
 			}
 
 			final File parent = file.getParentFile();
 			if (!(parent.exists() && parent.isDirectory())) {
-				setErrorMessage(UIText.GitCreatePatchWizard_FilesystemDirectoryNotExistsError);
+				setErrorMessage(""); //$NON-NLS-1$
 				return false;
 			}
 			return true;
