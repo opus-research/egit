@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
@@ -213,6 +214,8 @@ class PushToGerritPage extends WizardPage {
 
 	void doPush(IProgressMonitor monitor) {
 		try {
+			int timeout = Activator.getDefault().getPreferenceStore()
+					.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			URIish uri = new URIish(uriCombo.getText());
 			Ref currentHead = repository.getRef(Constants.HEAD);
 			RemoteRefUpdate update = new RemoteRefUpdate(repository,
@@ -222,7 +225,8 @@ class PushToGerritPage extends WizardPage {
 			PushOperationSpecification spec = new PushOperationSpecification();
 
 			spec.addURIRefUpdates(uri, Arrays.asList(update));
-			PushOperationUI op = new PushOperationUI(repository, spec, false);
+			PushOperationUI op = new PushOperationUI(repository, spec, timeout,
+					false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
 			PushOperationResult result = op.execute(monitor);
 			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
