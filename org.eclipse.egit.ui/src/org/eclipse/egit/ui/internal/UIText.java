@@ -714,9 +714,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_DoNothingRadioText;
 
 	/** */
-	public static String RebaseResultDialog_Edit;
-
-	/** */
 	public static String RebaseResultDialog_FastForward;
 
 	/** */
