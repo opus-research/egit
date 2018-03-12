@@ -1185,9 +1185,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT);
 		showControl(ignoreErrors, visible);
-		// update the whole view, since the commit message text height may need
-		// to be reduced to give space for the checkbox
-		mainSashForm.layout();
+		ignoreErrors.getParent().layout(true);
 	}
 
 	private int getProblemsSeverity() {
