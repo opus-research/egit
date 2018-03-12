@@ -18,8 +18,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 @SuiteClasses( { GitCloneWizardTest.class, GlobalConfigurationPageTest.class,
-		SharingWizardTest.class, GitRepositoriesViewTest.class,
-		SynchronizeViewTest.class })
+		SharingWizardTest.class, GitRepositoriesViewTest.class })
 public class AllTests {
 	// empty class, don't need anything here
 }
