@@ -106,7 +106,6 @@ public class ListRemoteOperation {
 	private void checkState() {
 		if (remoteRefsMap == null)
 			throw new IllegalStateException(
-					"Error occurred during remote repo " +  //$NON-NLS-1$
-					"listing, no refs available"); //$NON-NLS-1$
+					"Error occurred during remote repo listing, no refs available");
 	}
 }
