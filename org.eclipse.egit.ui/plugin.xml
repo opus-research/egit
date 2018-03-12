@@ -107,14 +107,7 @@
                label="%UntrackAction_label"
                menubarPath="team.main/group9"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedAction"
-               icon="icons/obj16/no-assume-unchanged.gif"
-               id="org.eclipse.egit.ui.internal.actions.NoAssumeUnchanged"
-               label="%NoAssumeUnchangedAction_label"
-               menubarPath="team.main/group9">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.AssumeUnchangedAction"
+               class="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
                icon="icons/obj16/assume-unchanged.gif"
                id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
                label="%AssumeUnchangedAction_label"
@@ -1327,6 +1320,31 @@
                </and>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewClearCredentials"
+               label="%RepoViewClearCredentialsLabel"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
          <separator
                name="FirstSeparator"
                visible="true">
@@ -1707,6 +1725,12 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ChangeCredentialsCommand"
             id="org.eclipse.egit.ui.RepositoriesViewChangeCredentials"
             name="%ChangeCredentialsCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ClearCredentialsCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewClearCredentials"
+            name="%ClearCredentialsCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"

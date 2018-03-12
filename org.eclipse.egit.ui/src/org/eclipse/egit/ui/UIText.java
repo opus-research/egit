@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -89,9 +88,6 @@ public class UIText extends NLS {
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
-	public static String AssumeUnchanged_noAssumeUnchanged;
-
-	/** */
 	public static String WizardProjectsImportPage_ImportProjectsTitle;
 
 	/** */
@@ -126,6 +122,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String WizardProjectsImportPage_CreateProjectsTask;
+
+	/** */
+	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
 	public static String SelectRemoteNamePage_ConfigureFetch_button;
@@ -222,9 +221,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCloneWizard_errorCannotCreate;
-
-	/** */
-	public static String GitCloneWizard_writeToSecureStoreFailed;
 
 	/** */
 	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
@@ -605,6 +601,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
+	public static String ClearCredentialsCommand_clearingCredentialsFailed;
+
+	/** */
 	public static String ChangeCredentialsCommand_writingToSecureStoreFailed;
 
 	/** */
@@ -714,6 +713,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_errorValidating;
+
+	/** */
+	public static String RepositorySelectionPage_storeInSecureStore;
 
 	/** */
 	public static String RepositorySelectionPage_tip_file;
@@ -2535,7 +2537,16 @@ public class UIText extends NLS {
 	public static String LoginDialog_repository;
 
 	/** */
+	public static String LoginDialog_storeInSecureStore;
+
+	/** */
 	public static String LoginDialog_user;
+
+	/** */
+	public static String LoginService_readingCredentialsFailed;
+
+	/** */
+	public static String LoginService_storingCredentialsFailed;
 
 	/** */
 	public static String NewRemoteWizard_CheckingUriTaskName;
