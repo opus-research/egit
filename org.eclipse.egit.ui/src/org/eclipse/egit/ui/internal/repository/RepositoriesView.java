@@ -75,7 +75,6 @@ import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
@@ -260,9 +259,7 @@ public class RepositoriesView extends CommonNavigator {
 				.getDisplay());
 
 		Label addLabel = new Label(optionsArea, SWT.NONE);
-		Image addImage = UIIcons.CREATE_REPOSITORY.createImage();
-		UIUtils.hookDisposal(addLabel, addImage);
-		addLabel.setImage(addImage);
+		addLabel.setImage(UIIcons.CREATE_REPOSITORY.createImage());
 		Hyperlink addLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkAdd, SWT.WRAP);
 		addLink.setForeground(linkColor);
@@ -278,9 +275,7 @@ public class RepositoriesView extends CommonNavigator {
 				.grab(true, false).applyTo(addLink);
 
 		Label cloneLabel = new Label(optionsArea, SWT.NONE);
-		Image cloneImage = UIIcons.CLONEGIT.createImage();
-		UIUtils.hookDisposal(cloneLabel, cloneImage);
-		cloneLabel.setImage(cloneImage);
+		cloneLabel.setImage(UIIcons.CLONEGIT.createImage());
 		Hyperlink cloneLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkClone, SWT.WRAP);
 		cloneLink.setForeground(linkColor);
@@ -296,9 +291,7 @@ public class RepositoriesView extends CommonNavigator {
 				.grab(true, false).applyTo(cloneLink);
 
 		Label createLabel = new Label(optionsArea, SWT.NONE);
-		Image createImage = UIIcons.NEW_REPOSITORY.createImage();
-		UIUtils.hookDisposal(createLabel, createImage);
-		createLabel.setImage(createImage);
+		createLabel.setImage(UIIcons.NEW_REPOSITORY.createImage());
 		Hyperlink createLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkCreate, SWT.WRAP);
 		createLink.setForeground(linkColor);
