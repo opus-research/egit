@@ -65,7 +65,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -755,12 +754,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			}
 			if (!paths.isEmpty()) {
 				showPaths(paths);
-				return true;
-			}
-
-			Repository repository = SelectionUtils.getRepository(ss);
-			if (repository != null) {
-				showRepository(repository);
 				return true;
 			}
 		}

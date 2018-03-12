@@ -190,6 +190,9 @@ public class CoreText extends NLS {
 	public static String ResetOperation_performingReset;
 
 	/** */
+	public static String ResourceUtil_SaveLocalHistoryFailed;
+
+	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -371,9 +374,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_repositoryChangedTaskName;
-
-	/** */
-	public static String GitProjectData_UnmapJobName;
 
 	/** */
 	public static String GitProjectData_UnmappingGoneResourceFailed;
