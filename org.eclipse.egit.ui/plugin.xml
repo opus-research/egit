@@ -3036,7 +3036,7 @@
                   <iterate>
                      <and>
                         <test
-                              property="GitRepository.canResetHead">
+                              property="GitRepository.isSafe">
                         </test>
                         <or>
                            <instanceof
@@ -4709,6 +4709,20 @@
             contextId="org.eclipse.ui.contexts.window"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+#">
+      </key>
+      <!-- Command+Shift+3 takes a screenshot on the Mac. Delete and redefine key binding: -->
+      <key
+            commandId=""
+            contextId="org.eclipse.ui.contexts.window"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+#">
+      </key>
+      <key
+            platform="carbon"
+            commandId="org.eclipse.egit.ui.team.Commit"
+            contextId="org.eclipse.ui.contexts.window"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="COMMAND+ALT+3">
       </key>
       <key
             commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
