@@ -24,9 +24,9 @@ import java.util.TimeZone;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -46,7 +46,6 @@ import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
 import org.eclipse.jgit.lib.GitIndex.Entry;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Scan for modified resources in the same project as the selected resources.
@@ -68,7 +67,7 @@ public class CommitAction extends RepositoryAction {
 		try {
 			buildIndexHeadDiffList();
 		} catch (IOException e) {
-			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorComputingDiffs);
+			Utils.handleError(getTargetPart().getSite().getShell(), e, "Error during commit", "Error occurred computing diffs");
 			return;
 		}
 
@@ -79,8 +78,8 @@ public class CommitAction extends RepositoryAction {
 			repository = repo;
 			if (!repo.getRepositoryState().canCommit()) {
 				MessageDialog.openError(getTargetPart().getSite().getShell(),
-					UIText.CommitAction_cannotCommit,
-					NLS.bind(UIText.CommitAction_repositoryState, repo.getRepositoryState().getDescription()));
+					"Cannot commit now", "Repository state:"
+							+ repo.getRepositoryState().getDescription());
 				return;
 			}
 		}
@@ -90,13 +89,13 @@ public class CommitAction extends RepositoryAction {
 			if (amendAllowed && previousCommit != null) {
 				boolean result = MessageDialog
 				.openQuestion(getTargetPart().getSite().getShell(),
-						UIText.CommitAction_noFilesToCommit,
-				UIText.CommitAction_amendCommit);
+						"No files to commit",
+				"No changed items were selected. Do you wish to amend the last commit?");
 				if (!result)
 					return;
 				amending = true;
 			} else {
-				MessageDialog.openWarning(getTargetPart().getSite().getShell(), UIText.CommitAction_noFilesToCommit, UIText.CommitAction_amendNotPossible);
+				MessageDialog.openWarning(getTargetPart().getSite().getShell(), "No files to commit", "Commit/amend not possible. Possible causes:\n\n- No changed items were selected\n- Multiple repositories selected\n- No repositories selected\n- No previous commits");
 				return;
 			}
 		}
@@ -135,7 +134,7 @@ public class CommitAction extends RepositoryAction {
 		try {
 			performCommit(commitDialog, commitMessage);
 		} catch (TeamException e) {
-			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorOnCommit);
+			Utils.handleError(getTargetPart().getSite().getShell(), e, "Error during commit", "Error occurred while committing");
 		}
 	}
 
@@ -156,26 +155,26 @@ public class CommitAction extends RepositoryAction {
 			if (parentId != null)
 				previousCommit = repo.mapCommit(parentId);
 		} catch (IOException e) {
-			Utils.handleError(getTargetPart().getSite().getShell(), e, UIText.CommitAction_errorDuringCommit, UIText.CommitAction_errorRetrievingCommit);
+			Utils.handleError(getTargetPart().getSite().getShell(), e, "Error during commit", "Error occurred retrieving last commit");
 		}
 	}
 
 	private void performCommit(CommitDialog commitDialog, String commitMessage)
 			throws TeamException {
-		// System.out.println("Commit Message: " + commitMessage);
+
 		IFile[] selectedItems = commitDialog.getSelectedFiles();
 
 		HashMap<Repository, Tree> treeMap = new HashMap<Repository, Tree>();
 		try {
 			prepareTrees(selectedItems, treeMap);
 		} catch (IOException e) {
-			throw new TeamException(UIText.CommitAction_errorPreparingTrees, e);
+			throw new TeamException("Preparing trees", e);
 		}
 
 		try {
 			doCommits(commitDialog, commitMessage, treeMap);
 		} catch (IOException e) {
-			throw new TeamException(UIText.CommitAction_errorCommittingChanges, e);
+			throw new TeamException("Committing changes", e);
 		}
 		for (IProject proj : getProjectsForSelectedResources()) {
 			RepositoryMapping.getMapping(proj).fireRepositoryChanged();
@@ -221,9 +220,8 @@ public class CommitAction extends RepositoryAction {
 			ru.setNewObjectId(commit.getCommitId());
 			ru.setRefLogMessage(buildReflogMessage(commitMessage), false);
 			if (ru.forceUpdate() == RefUpdate.Result.LOCK_FAILURE) {
-				throw new TeamException(
-						NLS.bind(UIText.CommitAction_failedToUpdate, ru.getName(),
-						commit.getCommitId()));
+				throw new TeamException("Failed to update " + ru.getName()
+						+ " to commit " + commit.getCommitId() + ".");
 			}
 		}
 	}
@@ -241,7 +239,6 @@ public class CommitAction extends RepositoryAction {
 		}
 
 		for (IFile file : selectedItems) {
-			// System.out.println("\t" + file);
 
 			IProject project = file.getProject();
 			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
@@ -252,7 +249,11 @@ public class CommitAction extends RepositoryAction {
 				if (projTree == null)
 					projTree = new Tree(repository);
 				treeMap.put(repository, projTree);
-				System.out.println("Orig tree id: " + projTree.getId()); //$NON-NLS-1$
+				// TODO is this the right Location?
+				if (GitTraceLocation.UI.isActive())
+					GitTraceLocation.getTrace().trace(
+							GitTraceLocation.UI.getLocation(),
+							"Orig tree id: " + projTree.getId()); //$NON-NLS-1$
 			}
 			GitIndex index = repository.getIndex();
 			String repoRelativePath = repositoryMapping
@@ -271,7 +272,11 @@ public class CommitAction extends RepositoryAction {
 				if (!thisfile.isFile()) {
 					index.remove(repositoryMapping.getWorkDir(), thisfile);
 					index.write();
-					System.out.println("Phantom file, so removing from index"); //$NON-NLS-1$
+					// TODO is this the right Location?
+					if (GitTraceLocation.UI.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.UI.getLocation(),
+								"Phantom file, so removing from index"); //$NON-NLS-1$
 					continue;
 				} else {
 					if (idxEntry.update(thisfile))
@@ -285,9 +290,13 @@ public class CommitAction extends RepositoryAction {
 				TreeEntry newMember = projTree.findBlobMember(repoRelativePath);
 
 				newMember.setId(idxEntry.getObjectId());
-				System.out.println("New member id for " + repoRelativePath //$NON-NLS-1$
-						+ ": " + newMember.getId() + " idx id: " //$NON-NLS-1$ //$NON-NLS-2$
-						+ idxEntry.getObjectId());
+				// TODO is this the right Location?
+				if (GitTraceLocation.UI.isActive())
+					GitTraceLocation.getTrace().trace(
+							GitTraceLocation.UI.getLocation(),
+							"New member id for " + repoRelativePath //$NON-NLS-1$
+									+ ": " + newMember.getId() + " idx id: " //$NON-NLS-1$ //$NON-NLS-2$
+									+ idxEntry.getObjectId());
 			}
 		}
 	}
@@ -305,7 +314,11 @@ public class CommitAction extends RepositoryAction {
 
 	private void writeTreeWithSubTrees(Tree tree) throws TeamException {
 		if (tree.getId() == null) {
-			System.out.println("writing tree for: " + tree.getFullName()); //$NON-NLS-1$
+			// TODO is this the right Location?
+			if (GitTraceLocation.UI.isActive())
+				GitTraceLocation.getTrace().trace(
+						GitTraceLocation.UI.getLocation(),
+						"writing tree for: " + tree.getFullName()); //$NON-NLS-1$
 			try {
 				for (TreeEntry entry : tree.members()) {
 					if (entry.isModified()) {
@@ -314,15 +327,19 @@ public class CommitAction extends RepositoryAction {
 						} else {
 							// this shouldn't happen.... not quite sure what to
 							// do here :)
-							System.out.println("BAD JUJU: " //$NON-NLS-1$
-									+ entry.getFullName());
+							// TODO is this the right Location?
+							if (GitTraceLocation.UI.isActive())
+								GitTraceLocation.getTrace().trace(
+										GitTraceLocation.UI.getLocation(),
+										"BAD JUJU: " //$NON-NLS-1$
+												+ entry.getFullName());
 						}
 					}
 				}
 				ObjectWriter writer = new ObjectWriter(tree.getRepository());
 				tree.setId(writer.writeTree(tree));
 			} catch (IOException e) {
-				throw new TeamException(UIText.CommitAction_errorWritingTrees, e);
+				throw new TeamException("Writing trees", e);
 			}
 		}
 	}
@@ -362,10 +379,15 @@ public class CommitAction extends RepositoryAction {
 						files.add((IFile) member);
 					category.add((IFile) member);
 				} else {
-					System.out.println("Couldn't find " + filename); //$NON-NLS-1$
+					// TODO is this the right Location?
+					if (GitTraceLocation.UI.isActive())
+						GitTraceLocation.getTrace().trace(
+								GitTraceLocation.UI.getLocation(),
+								"Couldn't find " + filename); //$NON-NLS-1$
 				}
-			} catch (Exception t) {
-				t.printStackTrace();
+			} catch (Exception e) {
+				if (GitTraceLocation.CORE.isActive())
+					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 				continue;
 			} // if it's outside the workspace, bad things happen
 		}
@@ -385,7 +407,8 @@ public class CommitAction extends RepositoryAction {
 				return true;
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			if (GitTraceLocation.CORE.isActive())
+				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 		}
 		return false;
 	}
@@ -400,9 +423,11 @@ public class CommitAction extends RepositoryAction {
 				return entry.isModified(map.getWorkDir());
 			return false;
 		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
+			if (GitTraceLocation.CORE.isActive())
+				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			if (GitTraceLocation.CORE.isActive())
+				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 		}
 		return false;
 	}

@@ -39,6 +39,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.Constants;
@@ -191,7 +192,11 @@ public class GitProjectData {
 	}
 
 	static void trace(final String m) {
-		Activator.trace("(GitProjectData) " + m);  //$NON-NLS-1$
+		// TODO is this the right location?
+		if (GitTraceLocation.CORE.isActive())
+			GitTraceLocation.getTrace().trace(
+					GitTraceLocation.CORE.getLocation(),
+					"(GitProjectData) " + m); //$NON-NLS-1$
 	}
 
 	private synchronized static void cache(final IProject p,
@@ -220,9 +225,10 @@ public class GitProjectData {
 			}
 		}
 
-		final Reference r = repositoryCache.get(gitDir);
-		Repository d = r != null ? (Repository) r.get() : null;
-		if (d == null) {
+		final Repository d;
+		if (repositoryCache.containsKey(gitDir)) {
+			d = (Repository) repositoryCache.get(gitDir).get();
+		} else {
 			d = new Repository(gitDir);
 			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
 		}
@@ -371,9 +377,8 @@ public class GitProjectData {
 			final FileOutputStream o = new FileOutputStream(tmp);
 			try {
 				final Properties p = new Properties();
-				final Iterator i = mappings.iterator();
-				while (i.hasNext()) {
-					((RepositoryMapping) i.next()).store(p);
+				for (final RepositoryMapping repoMapping : mappings) {
+					repoMapping.store(p);
 				}
 				p.store(o, "GitProjectData");  //$NON-NLS-1$
 				ok = true;
@@ -412,9 +417,8 @@ public class GitProjectData {
 			p.load(o);
 
 			mappings.clear();
-			final Iterator keyItr = p.keySet().iterator();
-			while (keyItr.hasNext()) {
-				final String key = keyItr.next().toString();
+			for (final Object keyObj : p.keySet()) {
+				final String key = keyObj.toString();
 				if (RepositoryMapping.isInitialKey(key)) {
 					mappings.add(new RepositoryMapping(p, key));
 				}
@@ -429,9 +433,8 @@ public class GitProjectData {
 
 	private void remapAll() {
 		protectedResources.clear();
-		final Iterator i = mappings.iterator();
-		while (i.hasNext()) {
-			map((RepositoryMapping) i.next());
+		for (final RepositoryMapping repoMapping : mappings) {
+			map(repoMapping);
 		}
 	}
 

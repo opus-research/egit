@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.ResourceList;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -400,8 +401,8 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 				right = new EditableRevision(nextFile);
 			}
 		} catch (IOException e) {
-			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-					gitPath, commit.getId()), e);
+			Activator.error("IO error looking up path" + gitPath + " in "
+					+ commit.getId() + ".", e);
 		}
 		return right;
 	}
@@ -484,7 +485,14 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 				refschangedRunnable = new Runnable() {
 					public void run() {
 						if (!getControl().isDisposed()) {
-							Activator.trace("Executing async repository changed event"); //$NON-NLS-1$
+							// TODO is this the right location?
+							if (GitTraceLocation.UI.isActive())
+								GitTraceLocation
+										.getTrace()
+										.trace(
+												GitTraceLocation.UI
+														.getLocation(),
+												"Executing async repository changed event"); //$NON-NLS-1$
 							refschangedRunnable = null;
 							inputSet();
 						}
@@ -621,7 +629,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	}
 
 	private IAction createFindToolbarAction() {
-		final IAction r = new Action(UIText.GitHistoryPage_find, UIIcons.ELCL16_FIND) {
+		final IAction r = new Action("Fi", UIIcons.ELCL16_FIND) {
 			public void run() {
 				prefs.setValue(SHOW_FIND_TOOLBAR, isChecked());
 				layout();
@@ -841,8 +849,8 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		try {
 			headId = db.resolve(Constants.HEAD);
 		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.GitHistoryPage_errorParsingHead,
-					db.getDirectory().getAbsolutePath()), e);
+			Activator.logError("Cannot parse HEAD in: "
+					+ db.getDirectory().getAbsolutePath(), e);
 			return false;
 		}
 
@@ -857,7 +865,7 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 			currentWalk = new SWTWalk(db);
 			currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 			currentWalk.sort(RevSort.BOUNDARY, true);
-			highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
+			highlightFlag = currentWalk.newFlag("highlight");
 		} else {
 			currentWalk.reset();
 		}
@@ -867,8 +875,8 @@ public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 		try {
 			currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.GitHistoryPage_errorReadingHeadCommit,
-					headId, db.getDirectory().getAbsolutePath()), e);
+			Activator.logError("Cannot read HEAD commit " + headId + " in: "
+					+ db.getDirectory().getAbsolutePath(), e);
 			return false;
 		}
 
