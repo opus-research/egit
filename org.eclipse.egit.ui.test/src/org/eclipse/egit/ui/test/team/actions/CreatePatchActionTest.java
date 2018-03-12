@@ -20,7 +20,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -32,8 +32,8 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.TagBuilder;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.RawParseUtils;
@@ -107,7 +107,7 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 		perspective = bot.activePerspective();
 		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 		File gitDir = createProjectAndCommitToRepository();
-		repo = new RepositoryBuilder().setGitDir(gitDir).build();
+		repo = FileRepositoryBuilder.create(gitDir);
 
 		IFile[] commitables = getAllFiles();
 		ArrayList<IFile> untracked = new ArrayList<IFile>();

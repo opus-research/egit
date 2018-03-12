@@ -31,6 +31,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.team.core.RepositoryProvider;
@@ -66,7 +67,7 @@ public class DynamicVariablesTest extends EGitTestCase {
 		FileUtils.mkdir(new File(root.getLocation().toFile(),"Sub"), true);
 		gitDir = new File(new File(root.getLocation().toFile(), "Sub"), Constants.DOT_GIT);
 
-		repository = new RepositoryBuilder().setGitDir(gitDir).build();
+		repository = FileRepositoryBuilder.create(gitDir);
 		repository.create();
 
 		project = root.getProject(TEST_PROJECT);

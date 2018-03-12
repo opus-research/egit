@@ -34,7 +34,7 @@ import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.team.core.RepositoryProvider;
 import org.junit.Test;
 
@@ -54,8 +54,7 @@ public class ConnectProviderOperationTest extends GitTestCase {
 	@Test
 	public void testNewRepository() throws CoreException, IOException {
 
-		Repository repository = new RepositoryBuilder().setGitDir(gitDir)
-				.build();
+		Repository repository = FileRepositoryBuilder.create(gitDir);
 		repository.create();
 		repository.close();
 		ConnectProviderOperation operation = new ConnectProviderOperation(
@@ -73,8 +72,7 @@ public class ConnectProviderOperationTest extends GitTestCase {
 		IEclipsePreferences p = InstanceScope.INSTANCE.getNode(Activator
 				.getPluginId());
 		p.putBoolean(GitCorePreferences.core_autoIgnoreDerivedResources, true);
-		Repository repository = new RepositoryBuilder().setGitDir(gitDir)
-				.build();
+		Repository repository = FileRepositoryBuilder.create(gitDir);
 		repository.create();
 		repository.close();
 		project.setBinFolderDerived();

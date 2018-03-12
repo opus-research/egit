@@ -32,7 +32,7 @@ import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.junit.Before;
@@ -58,7 +58,7 @@ public class ContainerTreeIteratorResourceFilterTest extends GitTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		repository = new RepositoryBuilder().setGitDir(gitDir).build();
+		repository = FileRepositoryBuilder.create(gitDir);
 		repository.create();
 
 		connectProject(project.getProject());
