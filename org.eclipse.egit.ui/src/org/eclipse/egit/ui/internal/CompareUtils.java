@@ -635,17 +635,21 @@ public class CompareUtils {
 			Repository repository, final String gitPath, String srcRev,
 			String dstRev) {
 		ITypedElement ancestor = null;
+		RevCommit commonAncestor = null;
 		try {
 			final ObjectId srcID = repository.resolve(srcRev);
 			final ObjectId dstID = repository.resolve(dstRev);
 			if (srcID != null && dstID != null)
-				ancestor = getFileRevisionTypedElementForCommonAncestor(
-						gitPath, srcID, dstID, repository);
+				commonAncestor = RevUtils.getCommonAncestor(repository, srcID,
+						dstID);
 		} catch (IOException e) {
 			Activator
 					.logError(NLS.bind(UIText.CompareUtils_errorCommonAncestor,
 							srcRev, dstRev), e);
 		}
+		if (commonAncestor != null)
+			ancestor = CompareUtils.getFileRevisionTypedElement(gitPath,
+					commonAncestor, repository);
 		return ancestor;
 	}
 
