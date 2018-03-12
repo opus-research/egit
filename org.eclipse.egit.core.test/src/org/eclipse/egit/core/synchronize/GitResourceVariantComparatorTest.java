@@ -8,8 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -34,6 +34,7 @@ import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -97,7 +98,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 	@Test
 	@SuppressWarnings("boxing")
-	public void shouldReturnFalseWhenRemoteDoesNotExist2() throws Exception {
+	public void shouldReturnFalseWhenRemoteDoesNotExist2() throws Exception{
 		// when
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
 				null);
@@ -105,7 +106,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		// given
 		IResource local = mock(IResource.class);
 		when(local.exists()).thenReturn(false);
-		IResourceVariant remote = new GitRemoteFolder(repo, null, null, null, "./");
+		IResourceVariant remote = new GitFolderResourceVariant(repo, null,
+				ObjectId.zeroId(), "./");
 
 		// then
 		assertFalse(grvc.compare(local, remote));
@@ -151,7 +153,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		IPath localPath = mock(IPath.class);
 		IContainer local = mock(IContainer.class);
 		when(local.exists()).thenReturn(true);
-		when(local.getLocation()).thenReturn(localPath);
+		when(local.getFullPath()).thenReturn(localPath);
 
 		File file = testRepo.createFile(iProject, "test" + File.separator
 				+ "keep");
@@ -159,7 +161,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				"initial commit");
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
-		GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
+		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo, null,
 				commit.getTree(), path);
 
 		// then
@@ -186,13 +188,13 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		RevCommit commit = testRepo.addAndCommit(iProject, file,
 				"initial commit");
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
-		IPath iPath = new Path(path);
+		IPath iPath = new Path(File.separator + path);
 
 		IContainer local = mock(IContainer.class);
 		when(local.exists()).thenReturn(true);
-		when(local.getLocation()).thenReturn(iPath);
+		when(local.getFullPath()).thenReturn(iPath);
 
-		GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
+		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo, null,
 				commit.getTree(), path);
 
 		// then
@@ -210,8 +212,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenContentLengthIsDifferent()
 			throws Exception {
 		// when
-		byte[] shortContent = "short content".getBytes("UTF-8");
-		byte[] longContent = "very long long content".getBytes("UTF-8");
+		byte[] shortContent = "short content".getBytes();
+		byte[] longContent = "very long long content".getBytes();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
@@ -247,9 +249,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	@SuppressWarnings("boxing")
 	public void shouldReturnFalseWhenShortContentIsDifferent() throws Exception {
 		// when
-		byte[] localContent = "very long long content".getBytes("UTF-8");
+		byte[] localContent = "very long long content".getBytes();
 		// this typo should be here
-		byte[] remoteContent = "very long lonk content".getBytes("UTF-8");
+		byte[] remoteContent = "very long lonk content".getBytes();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
@@ -369,8 +371,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	@SuppressWarnings("boxing")
 	public void shouldReturnTrueWhenShortContentIsDifferent() throws Exception {
 		// when
-		byte[] localContent = "very long long content".getBytes("UTF-8");
-		byte[] remoteContent = "very long long content".getBytes("UTF-8");
+		byte[] localContent = "very long long content".getBytes();
+		byte[] remoteContent = "very long long content".getBytes();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
@@ -461,9 +463,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				"second commit");
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
-		GitRemoteFile base = new GitRemoteFile(repo, baseCommit,
+		GitBlobResourceVariant base = new GitBlobResourceVariant(repo, null,
 				baseCommit.getTree(), path);
-		GitRemoteFile remote = new GitRemoteFile(repo, baseCommit,
+		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo, null,
 				remoteCommit.getTree(), path);
 
 		// then
@@ -492,9 +494,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				"second commit");
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
-		GitRemoteFile base = new GitRemoteFile(repo, baseCommit,
+		GitBlobResourceVariant base = new GitBlobResourceVariant(repo, null,
 				baseCommit.getTree(), path);
-		GitRemoteFile remote = new GitRemoteFile(repo, remoteCommit,
+		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo, null,
 				remoteCommit.getTree(), path);
 
 		// then
@@ -522,9 +524,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String filePath = Repository.stripWorkDir(repo.getWorkTree(), file);
 		String folderPath = Repository.stripWorkDir(repo.getWorkTree(),
 				new File(file.getParent()));
-		GitRemoteFile base = new GitRemoteFile(repo, commit, commit.getTree(),
-				filePath);
-		GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
+		GitBlobResourceVariant base = new GitBlobResourceVariant(repo, null,
+				commit.getTree(), filePath);
+		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo, null,
 				commit.getTree(), folderPath);
 
 		// then
@@ -553,9 +555,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String folderPath = Repository.stripWorkDir(repo.getWorkTree(),
 				new File(file.getParent()));
 
-		GitRemoteFolder base = new GitRemoteFolder(repo, null, commit,
+		GitFolderResourceVariant base = new GitFolderResourceVariant(repo, null,
 				commit.getTree(), folderPath);
-		GitRemoteFile remote = new GitRemoteFile(repo, commit,
+		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo, null,
 				commit.getTree(), filePath);
 
 		// then
@@ -592,11 +594,11 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		tw.next();
 		tw.enterSubtree(); // enter project node
 		tw.next();
-		GitRemoteFolder base = new GitRemoteFolder(repo, null, commit,
+		GitFolderResourceVariant base = new GitFolderResourceVariant(repo, null,
 				tw.getObjectId(nth), tw.getNameString());
 
 		tw.next();
-		GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
+		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo, null,
 				tw.getObjectId(nth), tw.getNameString());
 
 		// then
@@ -625,9 +627,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String path1 = Repository.stripWorkDir(repo.getWorkTree(), new File(
 				file1.getParent()));
 
-		GitRemoteFolder base = new GitRemoteFolder(repo, null, commit,
+		GitFolderResourceVariant base = new GitFolderResourceVariant(repo, null,
 				commit.getTree(), path1);
-		GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
+		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo, null,
 				commit.getTree(), path1);
 
 		// then
@@ -654,10 +656,10 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				file, "bc", "second commit");
 
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
-		GitRemoteFile base = new GitRemoteFile(repo, baseCommit,
+		GitBlobResourceVariant base = new GitBlobResourceVariant(repo, null,
 				baseCommit.getTree(), path);
 
-		GitRemoteFile remote = new GitRemoteFile(repo, remoteCommit,
+		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo, null,
 				remoteCommit.getTree(), path);
 
 		// then
@@ -667,7 +669,6 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	/**
 	 * Comparing two remote files that have the same git ObjectId should return
 	 * true.
-	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -682,10 +683,10 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				"a", "initial commit");
 
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
-		GitRemoteFile base = new GitRemoteFile(repo, commit, commit.getTree(),
-				path);
+		GitBlobResourceVariant base = new GitBlobResourceVariant(repo, null,
+				commit.getTree(), path);
 
-		GitRemoteFile remote = new GitRemoteFile(repo, commit,
+		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo, null,
 				commit.getTree(), path);
 
 		// then

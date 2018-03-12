@@ -13,38 +13,29 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.util.List;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.preferences.ConfigurationScope;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.egit.ui.common.GitImportRepoWizard;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
 import org.eclipse.egit.ui.common.WorkingCopyPage;
-import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.equinox.internal.security.storage.PasswordProviderSelector;
-import org.eclipse.equinox.internal.security.storage.PasswordProviderSelector.ExtStorageModule;
-import org.eclipse.equinox.internal.security.storage.friends.IStorageConstants;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
-@SuppressWarnings("restriction")
 public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 
 	protected static final int NUMBER_RANDOM_COMMITS = 100;
+	protected static SampleTestRepository r;
 	protected GitImportRepoWizard importWizard;
 	protected File destRepo;
-    // package private for FindBugs
-	static SampleTestRepository r;
+
 	@AfterClass
 	public static void tearDown() throws Exception {
 		r.shutDown();
@@ -73,8 +64,8 @@ public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 		// the integrity of the repository here. Only a few basic properties
 		// we'd expect from a clone made this way, that would possibly
 		// not hold true given other parameters in the GUI.
-		Repository repository = FileRepositoryBuilder.create(new File(
-				destinationRepo, Constants.DOT_GIT));
+		Repository repository = new FileRepository(new File(destinationRepo,
+				Constants.DOT_GIT));
 		// we always have an origin/master
 		assertNotNull(repository.resolve("origin/master"));
 		// and a local master initialized from origin/master (default!)
@@ -100,21 +91,10 @@ public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 				ResourcesPlugin.getWorkspace().getRoot().getProjects().length);
 	}
 
-	@BeforeClass
-	public static void disableSecureStoragePasswordProviders() {
-		List availableModules = PasswordProviderSelector.getInstance().findAvailableModules(null);
-		StringBuffer tmp = new StringBuffer();
-		for (Object module : availableModules) {
-			ExtStorageModule storageModule = (ExtStorageModule) module;
-			tmp.append(storageModule.moduleID).append(",");
-		}
-		IEclipsePreferences node = ConfigurationScope.INSTANCE.getNode("org.eclipse.equinox.security");
-		node.put(IStorageConstants.DISABLED_PROVIDERS_KEY, tmp.toString());
-	}
-
 	@Before
 	public void setupViews() {
-		TestUtil.showExplorerView();
+		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
+		bot.viewByTitle("Package Explorer").show();
 		importWizard = new GitImportRepoWizard();
 	}
 

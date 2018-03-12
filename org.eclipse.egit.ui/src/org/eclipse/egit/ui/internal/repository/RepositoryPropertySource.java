@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.preferences.ConfigurationEditorComponent;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -28,7 +28,6 @@ import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Repository;
@@ -72,59 +71,6 @@ public class RepositoryPropertySource implements IPropertySource {
 
 	private static final String EFFECTIVE_ID_PREFIX = "effe"; //$NON-NLS-1$
 
-	private static class EditAction extends Action {
-
-		private RepositoryPropertySource source;
-
-		public EditAction(String text, ImageDescriptor image,
-				RepositoryPropertySource source) {
-			super(text, image);
-			this.source = source;
-		}
-
-		public EditAction setSource(RepositoryPropertySource source) {
-			this.source = source;
-			return this;
-		}
-
-		@Override
-		public String getId() {
-			return EDITACTIONID;
-		}
-
-		@Override
-		public void run() {
-			final StoredConfig config;
-
-			DisplayMode mode = source.getCurrentMode();
-			switch (mode) {
-			case EFFECTIVE:
-				return;
-			case SYSTEM:
-				config = source.systemConfig;
-				break;
-			case USER:
-				config = source.userHomeConfig;
-				break;
-			case REPO:
-				config = source.repositoryConfig;
-				break;
-			default:
-				return;
-			}
-
-			new EditDialog(source.myPage.getSite().getShell(),
-					(FileBasedConfig) config, mode.getText()).open();
-			source.myPage.refresh();
-		}
-
-		@Override
-		public int getStyle() {
-			return IAction.AS_PUSH_BUTTON;
-		}
-
-	}
-
 	private final PropertySheetPage myPage;
 
 	private final FileBasedConfig systemConfig;
@@ -153,7 +99,7 @@ public class RepositoryPropertySource implements IPropertySource {
 
 		effectiveConfig = repository.getConfig();
 		systemConfig = SystemReader.getInstance().openSystemConfig(null, FS.DETECTED);
-		userHomeConfig = SystemReader.getInstance().openUserConfig(null, FS.DETECTED);
+		userHomeConfig = SystemReader.getInstance().openUserConfig(systemConfig, FS.DETECTED);
 
 		if (effectiveConfig instanceof FileBasedConfig) {
 			File configFile = ((FileBasedConfig) effectiveConfig).getFile();
@@ -171,11 +117,6 @@ public class RepositoryPropertySource implements IPropertySource {
 					.getToolBarManager().find(CHANGEMODEACTIONID);
 			singleValueToggleAction = (ActionContributionItem) bars
 					.getToolBarManager().find(SINGLEVALUEACTIONID);
-
-			editAction = ((ActionContributionItem) bars.getToolBarManager()
-					.find(EDITACTIONID));
-			if (editAction != null)
-				((EditAction) editAction.getAction()).setSource(this);
 
 			if (changeModeAction != null) {
 				return;
@@ -238,9 +179,46 @@ public class RepositoryPropertySource implements IPropertySource {
 
 			});
 
-			editAction = new ActionContributionItem(new EditAction(
+			editAction = new ActionContributionItem(new Action(
 					UIText.RepositoryPropertySource_EditConfigButton,
-					UIIcons.EDITCONFIG, this));
+					UIIcons.EDITCONFIG) {
+				@Override
+				public String getId() {
+					return EDITACTIONID;
+				}
+
+				@Override
+				public void run() {
+
+					final StoredConfig config;
+
+					switch (getCurrentMode()) {
+					case EFFECTIVE:
+						return;
+					case SYSTEM:
+						config = systemConfig;
+						break;
+					case USER:
+						config = userHomeConfig;
+						break;
+					case REPO:
+						config = repositoryConfig;
+						break;
+					default:
+						return;
+					}
+
+					new EditDialog(myPage.getSite().getShell(),
+							(FileBasedConfig) config, getCurrentMode()
+									.getText()).open();
+					myPage.refresh();
+				}
+
+				@Override
+				public int getStyle() {
+					return IAction.AS_PUSH_BUTTON;
+				}
+			});
 
 			singleValueToggleAction = new ActionContributionItem(new Action(
 					UIText.RepositoryPropertySource_SingleValueButton) {
@@ -353,13 +331,11 @@ public class RepositoryPropertySource implements IPropertySource {
 		StoredConfig config;
 		String category;
 		String prefix;
-		boolean recursive = false;
 		switch (getCurrentMode()) {
 		case EFFECTIVE:
 			prefix = EFFECTIVE_ID_PREFIX;
 			category = UIText.RepositoryPropertySource_EffectiveConfigurationCategory;
 			config = effectiveConfig;
-			recursive = true;
 			break;
 		case REPO: {
 			prefix = REPO_ID_PREFIX;
@@ -397,7 +373,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			return new IPropertyDescriptor[0];
 		}
 		for (String key : config.getSections()) {
-			for (String sectionItem : config.getNames(key, recursive)) {
+			for (String sectionItem : config.getNames(key)) {
 				String sectionId = key + "." + sectionItem; //$NON-NLS-1$
 				PropertyDescriptor desc = new PropertyDescriptor(prefix
 						+ sectionId, sectionId);
@@ -405,7 +381,7 @@ public class RepositoryPropertySource implements IPropertySource {
 				resultList.add(desc);
 			}
 			for (String sub : config.getSubsections(key)) {
-				for (String sectionItem : config.getNames(key, sub, recursive)) {
+				for (String sectionItem : config.getNames(key, sub)) {
 					String sectionId = key + "." + sub + "." + sectionItem; //$NON-NLS-1$ //$NON-NLS-2$
 					PropertyDescriptor desc = new PropertyDescriptor(prefix
 							+ sectionId, sectionId);
@@ -501,7 +477,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			Composite main = (Composite) super.createDialogArea(parent);
 			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
 					true).applyTo(main);
-			editor = new ConfigurationEditorComponent(main, myConfig, true, false) {
+			editor = new ConfigurationEditorComponent(main, myConfig, true) {
 				@Override
 				protected void setErrorMessage(String message) {
 					EditDialog.this.setErrorMessage(message);

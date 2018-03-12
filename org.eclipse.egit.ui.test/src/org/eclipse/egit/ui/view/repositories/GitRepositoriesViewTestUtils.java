@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,52 +11,23 @@
 package org.eclipse.egit.ui.view.repositories;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemotesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
+import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 
 public class GitRepositoriesViewTestUtils {
 
-	/**
-	 * Create a new instance of {@link RepositoriesViewLabelProvider}
-	 *
-	 * @return label provider
-	 */
-	public static RepositoriesViewLabelProvider createLabelProvider() {
-		final AtomicReference<RepositoriesViewLabelProvider> providerRef = new AtomicReference<RepositoriesViewLabelProvider>();
-		Display.getDefault().syncExec(new Runnable() {
-
-			public void run() {
-				providerRef.set(new RepositoriesViewLabelProvider());
-			}
-
-		});
-		return providerRef.get();
-	}
-
-	protected static final TestUtil myUtil = new TestUtil();
-
-	private final RepositoriesViewLabelProvider labelProvider;
-
-	/**
-	 * Create repositories view test utilities
-	 */
-	public GitRepositoriesViewTestUtils() {
-		labelProvider = createLabelProvider();
-	}
+	private final RepositoriesViewLabelProvider labelProvider = new RepositoriesViewLabelProvider();
 
 	public SWTBotTreeItem getLocalBranchesItem(SWTBotTree tree, File repo)
 			throws Exception {
@@ -157,4 +128,5 @@ public class GitRepositoriesViewTestUtils {
 		return org.eclipse.egit.core.Activator.getDefault()
 				.getRepositoryCache().lookupRepository(directory);
 	}
+
 }

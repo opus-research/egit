@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,9 +13,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CloneOperation;
@@ -23,8 +29,9 @@ import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.test.DualRepositoryTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +66,24 @@ public class ListRemoteOperationTest extends DualRepositoryTestCase {
 		testUtils.addFileToProject(project, "folder1/file1.txt", "Hello world");
 
 		repository1.connect(project);
-		repository1.trackAllFiles(project);
+
+		project.accept(new IResourceVisitor() {
+
+			public boolean visit(IResource resource) throws CoreException {
+				if (resource instanceof IFile) {
+					try {
+						repository1
+								.track(EFS.getStore(resource.getLocationURI())
+										.toLocalFile(0, null));
+					} catch (IOException e) {
+						throw new CoreException(Activator.error(e.getMessage(),
+								e));
+					}
+				}
+				return true;
+			}
+		});
+
 		repository1.commit("Initial commit");
 
 		// let's get rid of the project
@@ -68,16 +92,13 @@ public class ListRemoteOperationTest extends DualRepositoryTestCase {
 		// let's clone repository1 to repository2
 		URIish uri = new URIish("file:///"
 				+ repository1.getRepository().getDirectory().toString());
+		Ref master = repository1.getRepository().getRef("refs/heads/master");
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir2,
-				"refs/heads/master", "origin", 0);
+				master, "origin", 0);
 		clop.run(null);
 
-		Repository existingRepo = Activator
-				.getDefault()
-				.getRepositoryCache()
-				.lookupRepository(
-						new File(workdir2, Constants.DOT_GIT));
-		repository2 = new TestRepository(existingRepo);
+		repository2 = new TestRepository(new FileRepository(new File(workdir2,
+				Constants.DOT_GIT)));
 		// we push to branch "test" of repository2
 		RefUpdate createBranch = repository2.getRepository().updateRef(
 				"refs/heads/test");

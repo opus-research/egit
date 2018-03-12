@@ -17,7 +17,7 @@ import java.util.List;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
@@ -122,8 +122,6 @@ public class GitSelectWizardPage extends WizardPage {
 		if (repo != null)
 			input.add(new WorkingDirNode(null, repo));
 		tv.setInput(input);
-		// expand root node
-		tv.expandToLevel(2);
 		// select the working directory as default
 		tv.setSelection(new StructuredSelection(input.get(0)));
 	}
@@ -207,8 +205,6 @@ public class GitSelectWizardPage extends WizardPage {
 			WorkingDirNode node = new WorkingDirNode(null, initialRepository);
 			input.add(node);
 			tv.setInput(input);
-			// expand root node
-			tv.expandToLevel(2);
 			// select the working directory as default
 			if (initialPath == null)
 				tv.setSelection(new StructuredSelection(input.get(0)));

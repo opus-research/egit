@@ -8,13 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import static java.util.Arrays.asList;
-
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -22,11 +15,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.CannotDeleteCurrentBranchException;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NotMergedException;
 import org.eclipse.jgit.lib.Ref;
@@ -56,7 +47,7 @@ public class DeleteBranchOperation implements IEGitOperation {
 
 	private final Repository repository;
 
-	private final Set<Ref> branches;
+	private final Ref branch;
 
 	private final boolean force;
 
@@ -68,19 +59,8 @@ public class DeleteBranchOperation implements IEGitOperation {
 	 */
 	public DeleteBranchOperation(Repository repository, Ref branch,
 			boolean force) {
-		this(repository, new HashSet<Ref>(asList(branch)), force);
-	}
-
-	/**
-	 * @param repository
-	 * @param branches
-	 *            the list of branches to deleted
-	 * @param force
-	 */
-	public DeleteBranchOperation(Repository repository, Set<Ref> branches,
-			boolean force) {
 		this.repository = repository;
-		this.branches = branches;
+		this.branch = branch;
 		this.force = force;
 	}
 
@@ -101,51 +81,30 @@ public class DeleteBranchOperation implements IEGitOperation {
 
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 			public void run(IProgressMonitor actMonitor) throws CoreException {
-
-				String taskName;
-				if (branches.size() == 1)
-					taskName = NLS.bind(
-							CoreText.DeleteBranchOperation_TaskName, branches
-									.iterator().next().getName());
-				else {
-					StringBuilder names = new StringBuilder();
-					for (Iterator<Ref> it = branches.iterator(); it.hasNext(); ) {
-						Ref ref = it.next();
-						names.append(ref.getName());
-						if (it.hasNext())
-							names.append(", "); //$NON-NLS-1$
-					}
-					taskName = NLS.bind(
-							CoreText.DeleteBranchOperation_TaskName, names);
+				String taskName = NLS.bind(
+						CoreText.DeleteBranchOperation_TaskName, branch
+								.getName());
+				actMonitor.beginTask(taskName, 1);
+				try {
+					new Git(repository).branchDelete().setBranchNames(
+							branch.getName()).setForce(force).call();
+					status = OK;
+				} catch (NotMergedException e) {
+					status = REJECTED_UNMERGED;
+				} catch (CannotDeleteCurrentBranchException e) {
+					status = REJECTED_CURRENT;
+				} catch (JGitInternalException e) {
+					throw new CoreException(Activator.error(e.getMessage(), e));
 				}
-				actMonitor.beginTask(taskName, branches.size());
-				for (Ref branch : branches) {
-					try {
-						new Git(repository).branchDelete().setBranchNames(
-								branch.getName()).setForce(force).call();
-						status = OK;
-					} catch (NotMergedException e) {
-						status = REJECTED_UNMERGED;
-						break;
-					} catch (CannotDeleteCurrentBranchException e) {
-						status = REJECTED_CURRENT;
-						break;
-					} catch (JGitInternalException e) {
-						throw new CoreException(Activator.error(e.getMessage(), e));
-					} catch (GitAPIException e) {
-						throw new CoreException(Activator.error(e.getMessage(), e));
-					}
-					actMonitor.worked(1);
-				}
+				actMonitor.worked(1);
 				actMonitor.done();
 			}
 		};
 		// lock workspace to protect working tree changes
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repository);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 }

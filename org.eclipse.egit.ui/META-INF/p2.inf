@@ -1,3 +1,0 @@
-provides.0.namespace = org.eclipse.equinox.p2.iu
-provides.0.name = org.eclipse.egit.import.feature.group
-provides.0.version = $version$

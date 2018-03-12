@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,31 +10,18 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 
@@ -44,49 +30,6 @@ public class TestUtils {
 	public final static String AUTHOR = "The Author <The.author@some.com>";
 
 	public final static String COMMITTER = "The Commiter <The.committer@some.com>";
-
-	private final static File rootDir = customTestDirectory();
-
-	/**
-	 * Allow to set a custom directory for running tests
-	 *
-	 * @return custom directory defined by system property
-	 *         {@code egit.test.tmpdir} or {@code ~/egit.test.tmpdir} if this
-	 *         property isn't defined
-	 */
-	private static File customTestDirectory() {
-		final String p = System.getProperty("egit.test.tmpdir"); //$NON-NLS-1$
-		File testDir = null;
-		boolean isDefault = true;
-		if (p == null || p.length() == 0)
-			testDir = new File(FS.DETECTED.userHome(), "egit.test.tmpdir"); //$NON-NLS-1$
-		else {
-			isDefault = false;
-			testDir = new File(p).getAbsoluteFile();
-		}
-		System.out.println("egit.test.tmpdir" //$NON-NLS-1$
-				+ (isDefault ? "[default]: " : ": ") //$NON-NLS-1$ $NON-NLS-2$
-				+ testDir.getAbsolutePath());
-		return testDir;
-	}
-
-	private File baseTempDir;
-
-	public TestUtils() {
-		// ensure that concurrent test runs don't use the same directory
-		baseTempDir = new File(rootDir, UUID.randomUUID().toString()
-				.replace("-", ""));
-	}
-
-	/**
-	 * Return the base directory in which temporary directories are created.
-	 * Current implementation returns a "temporary" folder in the user home.
-	 *
-	 * @return a "temporary" folder in the user home that may not exist.
-	 */
-	public File getBaseTempDir() {
-		return baseTempDir;
-	}
 
 	/**
 	 * Create a "temporary" directory
@@ -98,10 +41,11 @@ public class TestUtils {
 	 * @throws IOException
 	 */
 	public File createTempDir(String name) throws IOException {
-		File result = new File(getBaseTempDir(), name);
+		File userHome = FS.DETECTED.userHome();
+		File rootDir = new File(userHome, "EGitCoreTestTempDir");
+		File result = new File(rootDir, name);
 		if (result.exists())
 			FileUtils.delete(result, FileUtils.RECURSIVE | FileUtils.RETRY);
-		FileUtils.mkdirs(result, true);
 		return result;
 	}
 
@@ -111,6 +55,8 @@ public class TestUtils {
 	 * @throws IOException
 	 */
 	public void deleteTempDirs() throws IOException {
+		File userHome = FS.DETECTED.userHome();
+		File rootDir = new File(userHome, "EGitCoreTestTempDir");
 		if (rootDir.exists())
 			FileUtils.delete(rootDir, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
@@ -145,11 +91,11 @@ public class TestUtils {
 	 * @param content
 	 *            the contents
 	 * @return the file
-	 * @throws CoreException
+	 * @throws Exception
 	 *             if the file can not be created
-	 * @throws UnsupportedEncodingException
 	 */
-	public IFile addFileToProject(IProject project, String path, String content) throws CoreException, UnsupportedEncodingException {
+	public IFile addFileToProject(IProject project, String path, String content)
+			throws Exception {
 		IPath filePath = new Path(path);
 		IFolder folder = null;
 		for (int i = 0; i < filePath.segmentCount() - 1; i++) {
@@ -174,33 +120,20 @@ public class TestUtils {
 	 * @param file
 	 * @param newContent
 	 * @return the file
-	 * @throws CoreException
-	 * @throws UnsupportedEncodingException
+	 * @throws Exception
 	 */
-	public IFile changeContentOfFile(IProject project, IFile file, String newContent) throws UnsupportedEncodingException, CoreException {
+	public IFile changeContentOfFile(IProject project, IFile file, String newContent)
+			throws Exception {
 		file.setContents(new ByteArrayInputStream(newContent.getBytes(project
 				.getDefaultCharset())), 0, null);
 		return file;
 	}
 
 	/**
-	 * Create a project in the base directory of temp dirs
-	 *
-	 * @param projectName
-	 *            project name
-	 * @return the project with a location pointing to the local file system
-	 * @throws Exception
-	 */
-	public IProject createProjectInLocalFileSystem(
-			String projectName) throws Exception {
-		return createProjectInLocalFileSystem(getBaseTempDir(), projectName);
-	}
-
-	/**
 	 * Create a project in the local file system
 	 *
 	 * @param parentFile
-	 *            the parent directory
+	 *            the parent
 	 * @param projectName
 	 *            project name
 	 * @return the project with a location pointing to the local file system
@@ -224,90 +157,4 @@ public class TestUtils {
 		project.open(null);
 		return project;
 	}
-
-	/**
-	 * verifies that repository contains exactly the given files.
-	 * @param repository
-	 * @param paths
-	 * @throws Exception
-	 */
-	public void assertRepositoryContainsFiles(Repository repository,
-			String[] paths) throws Exception {
-		Set<String> expectedfiles = new HashSet<String>();
-		for (String path : paths)
-			expectedfiles.add(path);
-		TreeWalk treeWalk = new TreeWalk(repository);
-		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-		treeWalk.setRecursive(true);
-		while (treeWalk.next()) {
-			String path = treeWalk.getPathString();
-			if (!expectedfiles.contains(path))
-				fail("Repository contains unexpected expected file " + path);
-			expectedfiles.remove(path);
-		}
-		if (expectedfiles.size() > 0) {
-			StringBuilder message = new StringBuilder(
-					"Repository does not contain expected files: ");
-			for (String path : expectedfiles) {
-				message.append(path);
-				message.append(" ");
-			}
-			fail(message.toString());
-		}
-	}
-
-	/**
-	 * verifies that repository contains exactly the given files with the given
-	 * content. Usage example:<br>
-	 *
-	 * <code>
-	 * assertRepositoryContainsFiles(repository, "foo/a.txt", "content of A",
-	 *                                           "foo/b.txt", "content of B")
-	 * </code>
-	 * @param repository
-	 * @param args
-	 * @throws Exception
-	 */
-	public void assertRepositoryContainsFilesWithContent(Repository repository,
-			String... args) throws Exception {
-		HashMap<String, String> expectedfiles = mkmap(args);
-		TreeWalk treeWalk = new TreeWalk(repository);
-		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-		treeWalk.setRecursive(true);
-		while (treeWalk.next()) {
-			String path = treeWalk.getPathString();
-			assertTrue(expectedfiles.containsKey(path));
-			ObjectId objectId = treeWalk.getObjectId(0);
-			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
-			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
-					.getBytes();
-			if (!Arrays.equals(repoContent, expectedContent)) {
-				fail("File " + path + " has repository content "
-						+ new String(repoContent, "UTF-8")
-						+ " instead of expected content "
-						+ new String(expectedContent, "UTF-8"));
-			}
-			expectedfiles.remove(path);
-		}
-		if (expectedfiles.size() > 0) {
-			StringBuilder message = new StringBuilder(
-					"Repository does not contain expected files: ");
-			for (String path : expectedfiles.keySet()) {
-				message.append(path);
-				message.append(" ");
-			}
-			fail(message.toString());
-		}
-	}
-
-	private static HashMap<String, String> mkmap(String... args) {
-		if ((args.length % 2) > 0)
-			throw new IllegalArgumentException("needs to be pairs");
-		HashMap<String, String> map = new HashMap<String, String>();
-		for (int i = 0; i < args.length; i += 2) {
-			map.put(args[i], args[i+1]);
-		}
-		return map;
-	}
-
 }

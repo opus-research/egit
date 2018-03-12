@@ -14,39 +14,38 @@ package org.eclipse.egit.ui.internal.history.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.RevertCommand;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * Executes the RevertCommit
  */
-public class RevertHandler extends AbstractHistoryCommandHandler {
-	/**
-	 * Command id
-	 */
-	public static final String ID = "org.eclipse.egit.ui.history.Revert"; //$NON-NLS-1$
-
+public class RevertHandler extends AbstractHistoryCommanndHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final RevCommit commit = (RevCommit) getSelection(getPage())
-				.getFirstElement();
-		if (commit == null)
-			return null;
+		BasicConfigurationDialog.show();
+		RevCommit commit = (RevCommit) getSelection(getPage()).getFirstElement();
+		RevCommit newHead;
 		Repository repo = getRepository(event);
-		if (repo == null)
-			return null;
-		BasicConfigurationDialog.show(repo);
 
-		final IStructuredSelection selected = new StructuredSelection(
-				new RepositoryCommit(repo, commit));
-		CommonUtils
-				.runCommand(
-						org.eclipse.egit.ui.internal.commit.command.RevertHandler.ID,
-						selected);
+		RevertCommand revert;
+		Git git = new Git(repo);
+		try {
+			revert = git.revert().include(commit.getId());
+			newHead = revert.call();
+			if (newHead != null && revert.getRevertedRefs().isEmpty())
+				MessageDialog.openWarning(getPart(event).getSite().getShell(),
+						UIText.RevertHandler_NoRevertTitle,
+						UIText.RevertHandler_AlreadyRevertedMessae);
+		} catch (Exception e) {
+			throw new ExecutionException(UIText.RevertOperation_InternalError, e);
+		}
+		if (newHead == null)
+			throw new ExecutionException(UIText.RevertOperation_Failed);
 		return null;
 	}
 }

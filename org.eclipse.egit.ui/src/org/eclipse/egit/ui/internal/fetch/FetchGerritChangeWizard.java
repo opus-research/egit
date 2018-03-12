@@ -10,8 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
-import org.eclipse.core.runtime.Assert;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
 
@@ -23,32 +22,20 @@ public class FetchGerritChangeWizard extends Wizard {
 
 	FetchGerritChangePage page;
 
-	private String refName;
-
 	/**
 	 * @param repository
 	 *            the repository
 	 */
 	public FetchGerritChangeWizard(Repository repository) {
-		Assert.isNotNull(repository);
 		this.repository = repository;
 		setNeedsProgressMonitor(true);
 		setHelpAvailable(false);
 		setWindowTitle(UIText.FetchGerritChangeWizard_WizardTitle);
 	}
 
-	/**
-	 * @param repository
-	 * @param refName initial value for the ref field
-	 */
-	public FetchGerritChangeWizard(Repository repository, String refName) {
-		this(repository);
-		this.refName = refName;
-	}
-
 	@Override
 	public void addPages() {
-		page = new FetchGerritChangePage(repository, refName);
+		page = new FetchGerritChangePage(repository);
 		addPage(page);
 	}
 

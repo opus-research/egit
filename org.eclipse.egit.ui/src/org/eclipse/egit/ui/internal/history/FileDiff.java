@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,17 +12,14 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
-import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.DecorationOverlayDescriptor;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.IDecoration;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -31,7 +27,6 @@ import org.eclipse.jgit.diff.EditList;
 import org.eclipse.jgit.diff.MyersDiff;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
-import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -44,15 +39,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilterMarker;
-import org.eclipse.ui.model.WorkbenchAdapter;
 
-/**
- * A class with information about the changes to a file introduced in a
- * commit.
- */
-public class FileDiff extends WorkbenchAdapter {
+class FileDiff {
 
 	private final RevCommit commit;
 
@@ -66,25 +54,9 @@ public class FileDiff extends WorkbenchAdapter {
 		return r;
 	}
 
-	/**
-	 * Computer file diffs for specified tree walk and commit
-	 *
-	 * @param repository
-	 * @param walk
-	 * @param commit
-	 * @param markTreeFilters
-	 *            optional filters for marking entries, see
-	 *            {@link #isMarked(int)}
-	 * @return non-null but possibly empty array of file diffs
-	 * @throws MissingObjectException
-	 * @throws IncorrectObjectTypeException
-	 * @throws CorruptObjectException
-	 * @throws IOException
-	 */
-	public static FileDiff[] compute(final Repository repository,
-			final TreeWalk walk, final RevCommit commit,
-			final TreeFilter... markTreeFilters) throws MissingObjectException,
-			IncorrectObjectTypeException, CorruptObjectException, IOException {
+	static FileDiff[] compute(final TreeWalk walk, final RevCommit commit)
+			throws MissingObjectException, IncorrectObjectTypeException,
+			CorruptObjectException, IOException {
 		final ArrayList<FileDiff> r = new ArrayList<FileDiff>();
 
 		if (commit.getParentCount() > 0)
@@ -96,43 +68,20 @@ public class FileDiff extends WorkbenchAdapter {
 		}
 
 		if (walk.getTreeCount() <= 2) {
-			List<DiffEntry> entries = DiffEntry.scan(walk, false, markTreeFilters);
-			List<DiffEntry> xentries = new LinkedList<DiffEntry>(entries);
-			RenameDetector detector = new RenameDetector(repository);
-			detector.addAll(entries);
-			List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
-					org.eclipse.jgit.lib.NullProgressMonitor.INSTANCE);
-			for (DiffEntry m : renames) {
-				final FileDiff d = new FileDiff(commit, m);
-				r.add(d);
-				for (Iterator<DiffEntry> i = xentries.iterator(); i.hasNext();) {
-					DiffEntry n = i.next();
-					if (m.getOldPath().equals(n.getOldPath()))
-						i.remove();
-					else if (m.getNewPath().equals(n.getNewPath()))
-						i.remove();
-				}
-			}
-			for (DiffEntry m : xentries) {
-				final FileDiff d = new FileDiff(commit, m);
+			List<DiffEntry> entries = DiffEntry.scan(walk);
+			for (DiffEntry entry : entries) {
+				final FileDiff d = new FileDiff(commit, entry);
 				r.add(d);
 			}
 		}
 		else { // DiffEntry does not support walks with more than two trees
 			final int nTree = walk.getTreeCount();
 			final int myTree = nTree - 1;
-
-			TreeFilterMarker treeFilterMarker = new TreeFilterMarker(
-					markTreeFilters);
-
 			while (walk.next()) {
 				if (matchAnyParent(walk, myTree))
 					continue;
 
-				int treeFilterMarks = treeFilterMarker.getMarks(walk);
-
-				final FileDiffForMerges d = new FileDiffForMerges(commit,
-						treeFilterMarks);
+				final FileDiffForMerges d = new FileDiffForMerges(commit);
 				d.path = walk.getPathString();
 				int m0 = 0;
 				for (int i = 0; i < myTree; i++)
@@ -151,8 +100,6 @@ public class FileDiff extends WorkbenchAdapter {
 					d.blobs[i] = walk.getObjectId(i);
 					d.modes[i] = walk.getFileMode(i);
 				}
-
-
 				r.add(d);
 			}
 
@@ -210,10 +157,9 @@ public class FileDiff extends WorkbenchAdapter {
 			throw new UnsupportedOperationException(
 					"Not supported yet if the number of parents is different from one"); //$NON-NLS-1$
 
-		String projectRelativeNewPath = getProjectRelativePath(db, getNewPath());
-		String projectRelativeOldPath = getProjectRelativePath(db, getOldPath());
-		d.append("diff --git ").append(projectRelativeOldPath).append(" ") //$NON-NLS-1$ //$NON-NLS-2$
-				.append(projectRelativeNewPath).append("\n"); //$NON-NLS-1$
+		String projectRelativePath = getProjectRelativePath(db, getPath());
+		d.append("diff --git ").append(projectRelativePath).append(" ") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(projectRelativePath).append("\n"); //$NON-NLS-1$
 		final ObjectId id1 = getBlobs()[0];
 		final ObjectId id2 = getBlobs()[1];
 		final FileMode mode1 = getModes()[0];
@@ -234,7 +180,7 @@ public class FileDiff extends WorkbenchAdapter {
 			d.append("--- /dev/null\n"); //$NON-NLS-1$
 		else {
 			d.append("--- "); //$NON-NLS-1$
-			d.append(getProjectRelativePath(db, getOldPath()));
+			d.append(getProjectRelativePath(db, getPath()));
 			d.append("\n"); //$NON-NLS-1$
 		}
 
@@ -242,7 +188,7 @@ public class FileDiff extends WorkbenchAdapter {
 			d.append("+++ /dev/null\n"); //$NON-NLS-1$
 		else {
 			d.append("+++ "); //$NON-NLS-1$
-			d.append(getProjectRelativePath(db, getNewPath()));
+			d.append(getProjectRelativePath(db, getPath()));
 			d.append("\n"); //$NON-NLS-1$
 		}
 
@@ -254,9 +200,10 @@ public class FileDiff extends WorkbenchAdapter {
 	}
 
 	private String getProjectRelativePath(Repository db, String repoPath) {
-		IResource resource = ResourceUtil.getFileForLocation(db, repoPath);
-		if (resource == null)
-			return null;
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = workspace.getRoot();
+		IPath absolutePath = new Path(db.getWorkTree().getAbsolutePath()).append(repoPath);
+		IResource resource = root.getFileForLocation(absolutePath);
 		return resource.getProjectRelativePath().toString();
 	}
 
@@ -268,57 +215,20 @@ public class FileDiff extends WorkbenchAdapter {
 		return new RawText(ldr.getCachedBytes(Integer.MAX_VALUE));
 	}
 
-	/**
-	 * Get commit
-	 *
-	 * @return commit
-	 */
 	public RevCommit getCommit() {
 		return commit;
 	}
 
-	/**
-	 * @return the old path in case of a delete, the new path otherwise, but
-	 *         never null or <code>/dev/null</code>
-	 * @see #getNewPath()
-	 * @see #getOldPath()
-	 */
 	public String getPath() {
 		if (ChangeType.DELETE.equals(diffEntry.getChangeType()))
 			return diffEntry.getOldPath();
 		return diffEntry.getNewPath();
 	}
 
-	/**
-	 * @return the old path or <code>/dev/null</code> for a completely new file
-	 * @see #getPath() for getting the new or old path depending on change type
-	 */
-	public String getOldPath() {
-		return diffEntry.getOldPath();
-	}
-
-	/**
-	 * @return the new path or <code>/dev/null</code> for a deleted file
-	 * @see #getPath() for getting the new or old path depending on change type
-	 */
-	public String getNewPath() {
-		return diffEntry.getNewPath();
-	}
-
-	/**
-	 * Get change type
-	 *
-	 * @return type
-	 */
 	public ChangeType getChange() {
 		return diffEntry.getChangeType();
 	}
 
-	/**
-	 * Get blob object ids
-	 *
-	 * @return non-null but possibly empty array of object ids
-	 */
 	public ObjectId[] getBlobs() {
 		List<ObjectId> objectIds = new ArrayList<ObjectId>();
 		if (diffEntry.getOldId() != null)
@@ -328,11 +238,6 @@ public class FileDiff extends WorkbenchAdapter {
 		return objectIds.toArray(new ObjectId[]{});
 	}
 
-	/**
-	 * Get file modes
-	 *
-	 * @return non-null but possibly empty array of file modes
-	 */
 	public FileMode[] getModes() {
 		List<FileMode> modes = new ArrayList<FileMode>();
 		if (diffEntry.getOldMode() != null)
@@ -342,66 +247,9 @@ public class FileDiff extends WorkbenchAdapter {
 		return modes.toArray(new FileMode[]{});
 	}
 
-	/**
-	 * Whether the mark tree filter with the specified index matched during scan
-	 * or not, see
-	 * {@link #compute(Repository, TreeWalk, RevCommit, TreeFilter...)}.
-	 *
-	 * @param index
-	 *            the tree filter index to check
-	 * @return true if it was marked, false otherwise
-	 */
-	public boolean isMarked(int index) {
-		return diffEntry != null && diffEntry.isMarked(index);
-	}
-
-	/**
-	 * Create a file diff for a specified {@link RevCommit} and
-	 * {@link DiffEntry}
-	 *
-	 * @param c
-	 * @param entry
-	 */
-	public FileDiff(final RevCommit c, final DiffEntry entry) {
+	FileDiff(final RevCommit c, final DiffEntry entry) {
 		diffEntry = entry;
 		commit = c;
-	}
-
-	/**
-	 * Is this diff a submodule?
-	 *
-	 * @return true if submodule, false otherwise
-	 */
-	public boolean isSubmodule() {
-		if (diffEntry == null)
-			return false;
-		return diffEntry.getOldMode() == FileMode.GITLINK
-				|| diffEntry.getNewMode() == FileMode.GITLINK;
-	}
-
-	public ImageDescriptor getImageDescriptor(Object object) {
-		final ImageDescriptor base;
-		if (!isSubmodule())
-			base = UIUtils.getEditorImage(getPath());
-		else
-			base = UIIcons.REPOSITORY;
-		switch (getChange()) {
-		case ADD:
-			return new DecorationOverlayDescriptor(base,
-					UIIcons.OVR_STAGED_ADD, IDecoration.BOTTOM_RIGHT);
-		case DELETE:
-			return new DecorationOverlayDescriptor(base,
-					UIIcons.OVR_STAGED_REMOVE, IDecoration.BOTTOM_RIGHT);
-		case RENAME:
-			return new DecorationOverlayDescriptor(base,
-					UIIcons.OVR_STAGED_RENAME, IDecoration.BOTTOM_RIGHT);
-		default:
-			return base;
-		}
-	}
-
-	public String getLabel(Object object) {
-		return getPath();
 	}
 
 	private static class FileDiffForMerges extends FileDiff {
@@ -413,20 +261,12 @@ public class FileDiff extends WorkbenchAdapter {
 
 		private FileMode[] modes;
 
-		private final int treeFilterMarks;
-
-		private FileDiffForMerges(final RevCommit c, int treeFilterMarks) {
+		private FileDiffForMerges(final RevCommit c) {
 			super (c, null);
-			this.treeFilterMarks = treeFilterMarks;
 		}
 
 		@Override
 		public String getPath() {
-			return path;
-		}
-
-		@Override
-		public String getNewPath() {
 			return path;
 		}
 
@@ -443,11 +283,6 @@ public class FileDiff extends WorkbenchAdapter {
 		@Override
 		public FileMode[] getModes() {
 			return modes;
-		}
-
-		@Override
-		public boolean isMarked(int index) {
-			return (treeFilterMarks & (1L << index)) != 0;
 		}
 	}
 }

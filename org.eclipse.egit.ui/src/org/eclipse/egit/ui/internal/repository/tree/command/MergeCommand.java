@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,8 +8,6 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Mathias Kinzler (SAP AG) - move to command framework
- *    Dariusz Luksza (dariusz@luksza.org - set action disabled when HEAD cannot
- *    										be resolved
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -26,7 +24,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
@@ -50,10 +48,10 @@ import org.eclipse.ui.PlatformUI;
 public class MergeCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
+		BasicConfigurationDialog.show();
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
-		final Repository repository = node.getRepository();
 
-		BasicConfigurationDialog.show(repository);
+		final Repository repository = node.getRepository();
 
 		if (!canMerge(repository))
 			return null;
@@ -75,26 +73,20 @@ public class MergeCommand extends
 			targetRef = null;
 
 		final String refName;
-		final MergeOperation op;
-
-		if (targetRef != null) {
+		if (targetRef != null)
 			refName = targetRef;
-			op = new MergeOperation(repository, refName);
-		} else {
+		else {
 			MergeTargetSelectionDialog mergeTargetSelectionDialog = new MergeTargetSelectionDialog(
 					getShell(event), repository);
-			if (mergeTargetSelectionDialog.open() != IDialogConstants.OK_ID)
+			if (mergeTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
+				refName = mergeTargetSelectionDialog.getRefName();
+			} else {
 				return null;
-
-			refName = mergeTargetSelectionDialog.getRefName();
-			op = new MergeOperation(repository, refName);
-			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
-			op.setFastForwardMode(mergeTargetSelectionDialog
-					.getFastForwardMode());
-			op.setCommit(mergeTargetSelectionDialog.isCommit());
+			}
 		}
 
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
+		final MergeOperation op = new MergeOperation(repository, refName);
 		Job job = new Job(jobname) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -112,7 +104,7 @@ public class MergeCommand extends
 			@Override
 			public void done(IJobChangeEvent jobEvent) {
 				IStatus result = jobEvent.getJob().getResult();
-				if (result.getSeverity() == IStatus.CANCEL)
+				if (result.getSeverity() == IStatus.CANCEL) {
 					Display.getDefault().asyncExec(new Runnable() {
 						public void run() {
 							// don't use getShell(event) here since
@@ -125,27 +117,23 @@ public class MergeCommand extends
 									UIText.MergeAction_MergeCanceledMessage);
 						}
 					});
-				else if (!result.isOK())
+				} else if (!result.isOK()) {
 					Activator.handleError(result.getMessage(), result
 							.getException(), true);
-				else
+				} else {
 					Display.getDefault().asyncExec(new Runnable() {
 						public void run() {
 							Shell shell = PlatformUI.getWorkbench()
 									.getActiveWorkbenchWindow().getShell();
-							MergeResultDialog.getDialog(shell, repository, op.getResult()).open();
+							new MergeResultDialog(shell, repository, op.getResult()).open();
 						}
 					});
+				}
 			}
 		});
 		job.schedule();
 
 		return null;
-	}
-
-	@Override
-	public boolean isEnabled() {
-		return selectedRepositoryHasHead();
 	}
 
 	private boolean canMerge(final Repository repository) {
@@ -164,8 +152,9 @@ public class MergeCommand extends
 			ex = e;
 		}
 
-		if (message != null)
+		if (message != null) {
 			Activator.handleError(UIText.MergeAction_CannotMerge, ex, true);
+		}
 		return (message == null);
 	}
 }

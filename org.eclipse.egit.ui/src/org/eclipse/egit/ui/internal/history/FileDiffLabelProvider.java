@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2013 Shawn O. Pearce <spearce@spearce.org> and others.
+ * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,65 +8,58 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.text.MessageFormat;
-
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
-import org.eclipse.swt.graphics.Color;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.jface.viewers.BaseLabelProvider;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.RGB;
+import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.PlatformUI;
 
-/**
- * Label provider for {@link FileDiff} objects
- */
-public class FileDiffLabelProvider extends ColumnLabelProvider {
+class FileDiffLabelProvider extends BaseLabelProvider implements
+		ITableLabelProvider {
+	private Image ADD = UIIcons.ELCL16_ADD.createImage();
 
-	private final ResourceManager resourceManager = new LocalResourceManager(
-			JFaceResources.getResources());
-	private final Color dimmedForegroundColor;
+	private Image COPY = PlatformUI.getWorkbench().getSharedImages().getImage(
+			ISharedImages.IMG_TOOL_COPY);
 
-	/**
-	 * @param dimmedForegroundRgb the color used for as foreground color for "unhighlighted" entries
-	 */
-	public FileDiffLabelProvider(RGB dimmedForegroundRgb) {
-		dimmedForegroundColor = resourceManager.createColor(dimmedForegroundRgb);
+	private Image DELETE = PlatformUI.getWorkbench().getSharedImages()
+			.getImage(ISharedImages.IMG_ETOOL_DELETE);
+
+	private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
+			.getImage(ISharedImages.IMG_OBJ_FILE);
+
+	public String getColumnText(final Object element, final int columnIndex) {
+		if (columnIndex == 0) {
+			final FileDiff c = (FileDiff) element;
+			return c.getPath();
+		}
+		return null;
 	}
 
-	public String getText(final Object element) {
-		return ((FileDiff) element).getLabel(element);
-	}
-
-	public Image getImage(final Object element) {
-		final FileDiff c = (FileDiff) element;
-		return (Image) resourceManager.get(c.getImageDescriptor(c));
+	public Image getColumnImage(final Object element, final int columnIndex) {
+		if (columnIndex == 0) {
+			final FileDiff c = (FileDiff) element;
+			switch (c.getChange()) {
+			case ADD:
+				return ADD;
+			case COPY:
+				return COPY;
+			case DELETE:
+				return DELETE;
+			case RENAME:
+				// fall through
+			case MODIFY:
+				return DEFAULT;
+			}
+		}
+		return null;
 	}
 
 	@Override
 	public void dispose() {
-		this.resourceManager.dispose();
+		ADD.dispose();
+		// DELETE is shared, don't dispose
 		super.dispose();
 	}
 
-	public Color getForeground(Object element) {
-		final FileDiff c = (FileDiff) element;
-		if (!c.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX))
-			return dimmedForegroundColor;
-		else
-			return null;
-	}
-
-	@Override
-	public String getToolTipText(final Object element) {
-		final FileDiff c = (FileDiff) element;
-		if (c.getChange() == ChangeType.RENAME) {
-			return MessageFormat.format(
-					UIText.FileDiffLabelProvider_RenamedFromToolTip,
-					c.getOldPath());
-		}
-		return null;
-	}
 }

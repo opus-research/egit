@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,10 +14,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.junit.After;
-import org.junit.Before;
 
 public abstract class DualRepositoryTestCase {
 
@@ -28,25 +25,6 @@ public abstract class DualRepositoryTestCase {
 	protected TestRepository repository2;
 
 	protected IProject testProject;
-
-	@Before
-	public void beforeTestCase() throws Exception {
-		// ensure there are no shared Repository instances left
-		// when starting a new test
-		Activator.getDefault().getRepositoryCache().clear();
-	}
-
-	@After
-	public void afterTestCase() throws Exception {
-		Activator.getDefault().getRepositoryCache().clear();
-		if (repository1 != null)
-			repository1.dispose();
-		if (repository2 != null)
-			repository2.dispose();
-		if (testProject != null)
-			testProject.delete(false, false, null);
-		testUtils.deleteTempDirs();
-	}
 
 	protected IProject importProject(TestRepository repo, String projectName)
 			throws Exception {
@@ -65,7 +43,4 @@ public abstract class DualRepositoryTestCase {
 		cop.execute(null);
 		return firstProject;
 	}
-
-
-
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,11 +9,13 @@
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
 import static org.eclipse.core.resources.IResource.ALLOW_MISSING_LOCAL;
+import static org.eclipse.core.resources.IResource.DEPTH_INFINITE;
 import static org.eclipse.core.resources.IResource.DEPTH_ONE;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -23,8 +25,6 @@ import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObjectContainer;
 
@@ -41,59 +41,34 @@ class GitContainerMapping extends GitObjectMapping {
 			IProgressMonitor monitor) throws CoreException {
 		GitModelObject[] children = ((GitModelObjectContainer) getModelObject())
 				.getChildren();
-		Set<ResourceTraversal> result = new LinkedHashSet<ResourceTraversal>();
-
-		final GitSynchronizeDataSet dataSet;
-		if (context instanceof GitSubscriberResourceMappingContext)
-			dataSet = ((GitSubscriberResourceMappingContext) context)
-					.getSyncData();
-		else
-			dataSet = null;
+		List<ResourceTraversal> result = new ArrayList<ResourceTraversal>();
 
 		for (GitModelObject child : children) {
-			if (child.isContainer())
-				result.addAll(createTraversalForContainer(child, dataSet));
-			else
-				result.add(createTraversalForFile(child, dataSet));
+			ResourceTraversal traversal;
+			IPath location = child.getLocation();
+
+			if (child.isContainer()) {
+				IContainer container = ROOT.getContainerForLocation(location);
+
+				if (container == null)
+					continue;
+
+				traversal = new ResourceTraversal(
+						new IResource[] { container }, DEPTH_INFINITE,
+						ALLOW_MISSING_LOCAL);
+			} else {
+				IFile file = ROOT.getFileForLocation(location);
+				if (file == null)
+					continue;
+
+				traversal = new ResourceTraversal(new IResource[] { file },
+						DEPTH_ONE, ALLOW_MISSING_LOCAL);
+			}
+
+			result.add(traversal);
 		}
 
 		return result.toArray(new ResourceTraversal[result.size()]);
-	}
-
-	private Set<ResourceTraversal> createTraversalForContainer(
-			GitModelObject child, GitSynchronizeDataSet dataSet) {
-		GitModelObject[] containerChildren = child.getChildren();
-		Set<ResourceTraversal> result = new LinkedHashSet<ResourceTraversal>();
-		for (GitModelObject aChild : containerChildren) {
-			if(aChild.isContainer())
-				result.addAll(createTraversalForContainer(aChild, dataSet));
-			else {
-				ResourceTraversal traversal = createTraversalForFile(aChild,
-						dataSet);
-				if (traversal != null)
-					result.add(traversal);
-			}
-		}
-		return result;
-	}
-
-	private ResourceTraversal createTraversalForFile(GitModelObject aChild, GitSynchronizeDataSet dataSet) {
-		IPath childLocation = aChild.getLocation();
-		IFile file = ROOT.getFileForLocation(childLocation);
-
-		if (file == null) {
-			file = ROOT.getFile(childLocation);
-		}
-
-		ResourceTraversal traversal = null;
-		if (dataSet == null)
-			traversal = new ResourceTraversal(new IResource[] { file },
-					DEPTH_ONE, ALLOW_MISSING_LOCAL);
-		else if (file != null && dataSet.shouldBeIncluded(file))
-			traversal = new ResourceTraversal(new IResource[] { file },
-					DEPTH_ONE, ALLOW_MISSING_LOCAL);
-
-		return traversal;
 	}
 
 }

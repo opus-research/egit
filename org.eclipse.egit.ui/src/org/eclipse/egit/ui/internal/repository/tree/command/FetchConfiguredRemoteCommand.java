@@ -8,8 +8,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Dariusz Luksza (dariusz@luksza.org - set action disabled when there is
- *    										no configuration for remotes
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -19,7 +17,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.fetch.FetchOperationUI;
 import org.eclipse.egit.ui.internal.fetch.SimpleConfigureFetchDialog;
 import org.eclipse.egit.ui.internal.repository.tree.FetchNode;
@@ -33,10 +31,22 @@ import org.eclipse.jgit.transport.RemoteConfig;
  * Fetches from the remote
  */
 public class FetchConfiguredRemoteCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+		RepositoriesViewCommandHandler<FetchNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
-		RemoteConfig config = getRemoteConfig(node);
+		RemoteConfig config = null;
+		if (node instanceof FetchNode) {
+			try {
+				RemoteNode remote = (RemoteNode) node.getParent();
+				config = new RemoteConfig(node.getRepository().getConfig(),
+						remote.getObject());
+			} catch (URISyntaxException e) {
+				throw new ExecutionException(e.getMessage());
+			}
+		} else if (node instanceof RepositoryNode) {
+			config = SimpleConfigureFetchDialog.getConfiguredRemote(node
+					.getRepository());
+		}
 		if (config == null) {
 			MessageDialog
 					.openInformation(
@@ -49,43 +59,6 @@ public class FetchConfiguredRemoteCommand extends
 				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		new FetchOperationUI(node.getRepository(), config, timeout, false)
 				.start();
-		return null;
-	}
-
-	@Override
-	public boolean isEnabled() {
-		RepositoryTreeNode node = getSelectedNodes().get(0);
-		try {
-			return getRemoteConfig(node) != null;
-		} catch (ExecutionException e) {
-			return false;
-		}
-	}
-
-	private RemoteConfig getRemoteConfig(RepositoryTreeNode node)
-			throws ExecutionException {
-		if (node instanceof FetchNode)
-			try {
-				RemoteNode remote = (RemoteNode) node.getParent();
-				return  new RemoteConfig(node.getRepository().getConfig(),
-						remote.getObject());
-			} catch (URISyntaxException e) {
-				throw new ExecutionException(e.getMessage());
-			}
-
-		if (node instanceof RemoteNode)
-			try {
-				RemoteNode remote = (RemoteNode) node;
-				return new RemoteConfig(node.getRepository().getConfig(),
-						remote.getObject());
-			} catch (URISyntaxException e) {
-				throw new ExecutionException(e.getMessage());
-			}
-
-		if (node instanceof RepositoryNode)
-			return SimpleConfigureFetchDialog.getConfiguredRemote(node
-					.getRepository());
-
 		return null;
 	}
 }

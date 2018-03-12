@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 IBM Corporation and others.
+ * Copyright (c) 2010 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,7 +8,6 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *     Dariusz Luksza <dariusz@luksza.org>
- *     Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
@@ -38,7 +37,6 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 		gsd = dataSet;
 	}
 
-	@SuppressWarnings("resource")
 	public boolean compare(IResource local, IResourceVariant remote) {
 		if (!local.exists() || remote == null) {
 			return false;
@@ -86,18 +84,18 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 				closeStream(remoteStream);
 			}
 		} else if (local instanceof IContainer) {
-			GitRemoteFolder gitVariant = (GitRemoteFolder) remote;
+			GitResourceVariant gitVariant = (GitResourceVariant) remote;
 			if (!remote.isContainer() || (local.exists() ^ gitVariant.exists()))
 				return false;
 
-			return local.getLocation().toString().equals(gitVariant.getCachePath());
+			return local.getFullPath().equals(gitVariant.getFullPath());
 		}
 		return false;
 	}
 
 	public boolean compare(IResourceVariant base, IResourceVariant remote) {
-		GitRemoteResource gitBase = (GitRemoteResource) base;
-		GitRemoteResource gitRemote = (GitRemoteResource) remote;
+		GitResourceVariant gitBase = (GitResourceVariant) base;
+		GitResourceVariant gitRemote = (GitResourceVariant) remote;
 
 		boolean exists = gitBase.exists() && gitRemote.exists();
 		boolean equalType = !(gitBase.isContainer() ^ gitRemote.isContainer());

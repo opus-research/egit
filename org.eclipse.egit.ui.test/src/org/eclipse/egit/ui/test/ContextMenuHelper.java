@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,34 +35,7 @@ import org.hamcrest.Matcher;
 public class ContextMenuHelper {
 
 	/**
-	 * Clicks the context menu matching the text, executing the action
-	 * synchronously (blocking until the action completes).
-	 * <p>
-	 * This should be used if the action requires no more UI interaction.
-	 *
-	 * @param bot
-	 *
-	 * @param texts
-	 *            the text on the context menu.
-	 * @throws WidgetNotFoundException
-	 *             if the widget is not found.
-	 * @throws SWTException
-	 *             if the menu item is disabled (the root cause being an
-	 *             {@link IllegalStateException})
-	 */
-	public static void clickContextMenuSync(final AbstractSWTBot<?> bot,
-			final String... texts) {
-		clickContextMenuWithRetry(bot, true, texts);
-	}
-
-	/**
-	 * Clicks the context menu matching the text, executing the action
-	 * asynchronously (non-blocking).
-	 * <p>
-	 * This should only be used when further UI interaction is part of the
-	 * action, e.g. a dialog or wizard. Using
-	 * {@link #clickContextMenuSync(AbstractSWTBot, String...)} is preferred in
-	 * other cases.
+	 * Clicks the context menu matching the text.
 	 *
 	 * @param bot
 	 *
@@ -76,40 +49,7 @@ public class ContextMenuHelper {
 	 */
 	public static void clickContextMenu(final AbstractSWTBot<?> bot,
 			final String... texts) {
-		clickContextMenuWithRetry(bot, false, texts);
-	}
 
-	private static void clickContextMenuWithRetry(final AbstractSWTBot<?> bot,
-			final boolean sync, final String... texts) {
-		int failCount = 0;
-		int maxFailCount = 4;
-		long sleepTime = 250;
-		while (failCount <= maxFailCount)
-			try {
-				clickContextMenuInternal(bot, sync, texts);
-				if (failCount > 0)
-					System.out.println("Retrying clickContextMenu succeeded");
-				break;
-			} catch (WidgetNotFoundException e) {
-				failCount++;
-				if (failCount > maxFailCount) {
-					System.out.println("clickContextMenu failed " + failCount
-							+ " times");
-					throw e;
-				}
-				System.out.println("clickContextMenu failed. Retrying in "
-						+ sleepTime + " ms");
-				try {
-					Thread.sleep(sleepTime);
-					sleepTime *= 2;
-				} catch (InterruptedException e1) {
-					// empty
-				}
-			}
-	}
-
-	private static void clickContextMenuInternal(final AbstractSWTBot<?> bot,
-			final boolean sync, final String... texts) {
 		// show
 		final MenuItem menuItem = UIThreadRunnable
 				.syncExec(new WidgetResult<MenuItem>() {
@@ -122,12 +62,13 @@ public class ContextMenuHelper {
 						return theItem;
 					}
 				});
-		if (menuItem == null)
+		if (menuItem == null) {
 			throw new WidgetNotFoundException("Could not find menu: "
 					+ Arrays.asList(texts));
+		}
 
 		// click
-		click(menuItem, sync);
+		click(menuItem);
 
 		// hide
 		UIThreadRunnable.syncExec(new VoidResult() {
@@ -139,43 +80,23 @@ public class ContextMenuHelper {
 		});
 	}
 
-	public static boolean contextMenuItemExists(final AbstractSWTBot<?> bot,
-			final String... texts) {
-		final MenuItem menuItem = UIThreadRunnable
-				.syncExec(new WidgetResult<MenuItem>() {
-					public MenuItem run() {
-						return getMenuItem(bot, texts);
-					}
-				});
-		return menuItem != null;
-	}
-
+	@SuppressWarnings("unchecked")
 	private static MenuItem getMenuItem(final AbstractSWTBot<?> bot,
 			final String... texts) {
 		MenuItem theItem = null;
-		// try three times to get the menu item
-		for (int i = 0; i < 3; i++) {
-			Control control = (Control) bot.widget;
-			// for dynamic menus, we need to issue this event
-			control.notifyListeners(SWT.MenuDetect, new Event());
-			Menu menu = control.getMenu();
-			for (String text : texts) {
-				Matcher<?> matcher = allOf(instanceOf(MenuItem.class),
-						withMnemonic(text));
-				theItem = show(menu, matcher);
-				if (theItem != null)
-					menu = theItem.getMenu();
-				else {
-					hide(menu);
-					break;
-				}
-			}
-			if (theItem != null)
+		Control control = (Control) bot.widget;
+		// for dynamic menus, we need to issue this event
+		control.notifyListeners(SWT.MenuDetect, new Event());
+		Menu menu = control.getMenu();
+		for (String text : texts) {
+			Matcher<Object> matcher = allOf(instanceOf(MenuItem.class),
+					withMnemonic(text));
+			theItem = show(menu, matcher);
+			if (theItem != null) {
+				menu = theItem.getMenu();
+			} else {
+				hide(menu);
 				break;
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				// ignore
 			}
 		}
 		return theItem;
@@ -206,9 +127,10 @@ public class ContextMenuHelper {
 						return theItem;
 					}
 				});
-		if (menuItem == null)
+		if (menuItem == null) {
 			throw new WidgetNotFoundException("Could not find menu: "
 					+ Arrays.asList(texts));
+		}
 		// hide
 		UIThreadRunnable.syncExec(new VoidResult() {
 			public void run() {
@@ -224,35 +146,34 @@ public class ContextMenuHelper {
 		if (menu != null) {
 			menu.notifyListeners(SWT.Show, new Event());
 			MenuItem[] items = menu.getItems();
-			for (final MenuItem menuItem : items)
-				if (matcher.matches(menuItem))
+			for (final MenuItem menuItem : items) {
+				if (matcher.matches(menuItem)) {
 					return menuItem;
+				}
+			}
 			menu.notifyListeners(SWT.Hide, new Event());
 		}
 		return null;
 	}
 
-	private static void click(final MenuItem menuItem, boolean sync) {
+	private static void click(final MenuItem menuItem) {
 		final Event event = new Event();
 		event.time = (int) System.currentTimeMillis();
 		event.widget = menuItem;
 		event.display = menuItem.getDisplay();
 		event.type = SWT.Selection;
 
-		VoidResult toExecute = new VoidResult() {
+		UIThreadRunnable.asyncExec(menuItem.getDisplay(), new VoidResult() {
 			public void run() {
 				menuItem.notifyListeners(SWT.Selection, event);
 			}
-		};
-		if (sync)
-			UIThreadRunnable.syncExec(menuItem.getDisplay(), toExecute);
-		else
-			UIThreadRunnable.asyncExec(menuItem.getDisplay(), toExecute);
+		});
 	}
 
 	private static void hide(final Menu menu) {
 		menu.notifyListeners(SWT.Hide, new Event());
-		if (menu.getParentMenu() != null)
+		if (menu.getParentMenu() != null) {
 			hide(menu.getParentMenu());
+		}
 	}
 }

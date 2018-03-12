@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2009, Alex Blewitt <alex.blewitt@gmail.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,17 +13,16 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceRuleFactory;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -32,14 +30,17 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -48,7 +49,7 @@ import org.eclipse.osgi.util.NLS;
  */
 public class IgnoreOperation implements IEGitOperation {
 
-	private final Collection<IPath> paths;
+	private IResource[] resources;
 
 	private boolean gitignoreOutsideWSChanged;
 
@@ -57,33 +58,18 @@ public class IgnoreOperation implements IEGitOperation {
 	/**
 	 * construct an IgnoreOperation
 	 *
-	 * @param paths
-	 * @since 2.2
+	 * @param resources
 	 */
-	public IgnoreOperation(Collection<IPath> paths) {
-		this.paths = paths;
+	public IgnoreOperation(IResource[] resources) {
+		this.resources = resources;
 		gitignoreOutsideWSChanged = false;
 		schedulingRule = calcSchedulingRule();
 	}
 
-	/**
-	 * @param resources
-	 * @deprecated use {@link #IgnoreOperation(Collection)}
-	 */
-	@Deprecated
-	public IgnoreOperation(IResource[] resources) {
-		paths = new ArrayList<IPath>(resources.length);
-		for (IResource resource : resources) {
-			IPath location = resource.getLocation();
-			if (location != null)
-				paths.add(location);
-		}
-	}
-
 	public void execute(IProgressMonitor monitor) throws CoreException {
-		monitor.beginTask(CoreText.IgnoreOperation_taskName, paths.size());
+		monitor.beginTask(CoreText.IgnoreOperation_taskName, resources.length);
 		try {
-			for (IPath path : paths) {
+			for (IResource resource : resources) {
 				if (monitor.isCanceled())
 					break;
 				// TODO This is pretty inefficient; multiple ignores in
@@ -92,8 +78,8 @@ public class IgnoreOperation implements IEGitOperation {
 				// NB This does the same thing in
 				// DecoratableResourceAdapter, but neither currently
 				// consult .gitignore
-				if (!RepositoryUtil.isIgnored(path))
-					addIgnore(monitor, path);
+				if (!isIgnored(resource))
+					addIgnore(monitor, resource);
 				monitor.worked(1);
 			}
 			monitor.done();
@@ -103,6 +89,25 @@ public class IgnoreOperation implements IEGitOperation {
 			throw new CoreException(Activator.error(
 					CoreText.IgnoreOperation_error, e));
 		}
+	}
+
+	private boolean isIgnored(IResource resource) throws IOException {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+		Repository repository = mapping.getRepository();
+		String path = mapping.getRepoRelativePath(resource);
+		TreeWalk walk = new TreeWalk(repository);
+		walk.addTree(new FileTreeIterator(repository));
+		walk.setFilter(PathFilter.create(path));
+		while (walk.next()) {
+			WorkingTreeIterator workingTreeIterator = walk.getTree(0,
+					WorkingTreeIterator.class);
+			if (walk.getPathString().equals(path)) {
+				return workingTreeIterator.isEntryIgnored();
+			}
+			if (workingTreeIterator.getEntryFileMode().equals(FileMode.TREE))
+				walk.enterSubtree();
+		}
+		return false;
 	}
 
 	/**
@@ -118,27 +123,25 @@ public class IgnoreOperation implements IEGitOperation {
 		return schedulingRule;
 	}
 
-	private void addIgnore(IProgressMonitor monitor, IPath path)
-			throws UnsupportedEncodingException, CoreException, IOException {
-		IPath parent = path.removeLastSegments(1);
-		IResource resource = ResourceUtil.getResourceForLocation(path);
-		IContainer container = null;
-		if (resource != null)
-			container = resource.getParent();
+	private void addIgnore(IProgressMonitor monitor, IResource resource)
+			throws UnsupportedEncodingException, CoreException {
+		IContainer container = resource.getParent();
+		String entry = "/" + resource.getName() + "\n"; //$NON-NLS-1$  //$NON-NLS-2$
+		ByteArrayInputStream entryBytes = asStream(entry);
 
-		String entry = "/" + path.lastSegment() + "\n"; //$NON-NLS-1$  //$NON-NLS-2$
-
-		if (container == null || container instanceof IWorkspaceRoot) {
+		if (container instanceof IWorkspaceRoot) {
 			Repository repository = RepositoryMapping.getMapping(
-					path).getRepository();
+					resource.getProject()).getRepository();
 			// .gitignore is not accessible as resource
-			IPath gitIgnorePath = parent.append(Constants.GITIGNORE_FILENAME);
+			IPath gitIgnorePath = resource.getLocation().removeLastSegments(1)
+					.append(Constants.GITIGNORE_FILENAME);
 			IPath repoPath = new Path(repository.getWorkTree()
 					.getAbsolutePath());
 			if (!repoPath.isPrefixOf(gitIgnorePath)) {
 				String message = NLS.bind(
-						CoreText.IgnoreOperation_parentOutsideRepo,
-						path.toOSString(), repoPath.toOSString());
+						CoreText.IgnoreOperation_parentOutsideRepo, resource
+								.getLocation().toOSString(), repoPath
+								.toOSString());
 				IStatus status = Activator.error(message, null);
 				throw new CoreException(status);
 			}
@@ -150,9 +153,7 @@ public class IgnoreOperation implements IEGitOperation {
 		} else {
 			IFile gitignore = container.getFile(new Path(
 					Constants.GITIGNORE_FILENAME));
-			entry = getEntry(gitignore.getLocation().toFile(), entry);
 			IProgressMonitor subMonitor = new SubProgressMonitor(monitor, 1);
-			ByteArrayInputStream entryBytes = asStream(entry);
 			if (gitignore.exists())
 				gitignore.appendContents(entryBytes, true, true, subMonitor);
 			else
@@ -160,35 +161,9 @@ public class IgnoreOperation implements IEGitOperation {
 		}
 	}
 
-	private boolean prependNewline(File file) throws IOException {
-		boolean prepend = false;
-		long length = file.length();
-		if (length > 0) {
-			RandomAccessFile raf = new RandomAccessFile(file, "r"); //$NON-NLS-1$
-			try {
-				// Read the last byte and see if it is a newline
-				ByteBuffer buffer = ByteBuffer.allocate(1);
-				FileChannel channel = raf.getChannel();
-				channel.position(length - 1);
-				if (channel.read(buffer) > 0) {
-					buffer.rewind();
-					prepend = buffer.get() != '\n';
-				}
-			} finally {
-				raf.close();
-			}
-		}
-		return prepend;
-	}
-
-	private String getEntry(File file, String entry) throws IOException {
-		return prependNewline(file) ? "\n" + entry : entry; //$NON-NLS-1$
-	}
-
 	private void updateGitIgnore(File gitIgnore, String entry)
 			throws CoreException {
 		try {
-			String ignoreLine = entry;
 			if (!gitIgnore.exists())
 				if (!gitIgnore.createNewFile()) {
 					String error = NLS.bind(
@@ -196,12 +171,10 @@ public class IgnoreOperation implements IEGitOperation {
 							gitIgnore.getAbsolutePath());
 					throw new CoreException(Activator.error(error, null));
 				}
-			else
-				ignoreLine = getEntry(gitIgnore, ignoreLine);
 
 			FileOutputStream os = new FileOutputStream(gitIgnore, true);
 			try {
-				os.write(ignoreLine.getBytes("UTF-8")); //$NON-NLS-1$
+				os.write(entry.getBytes());
 			} finally {
 				os.close();
 			}
@@ -219,6 +192,20 @@ public class IgnoreOperation implements IEGitOperation {
 	}
 
 	private ISchedulingRule calcSchedulingRule() {
-		return RuleUtil.getRuleForContainers(paths);
+		List<ISchedulingRule> rules = new ArrayList<ISchedulingRule>();
+		IResourceRuleFactory ruleFactory = ResourcesPlugin.getWorkspace()
+				.getRuleFactory();
+		for (IResource resource : resources) {
+			IContainer container = resource.getParent();
+			if (!(container instanceof IWorkspaceRoot)) {
+				ISchedulingRule rule = ruleFactory.modifyRule(container);
+				if (rule != null)
+					rules.add(rule);
+			}
+		}
+		if (rules.size() == 0)
+			return null;
+		else
+			return new MultiRule(rules.toArray(new IResource[rules.size()]));
 	}
 }

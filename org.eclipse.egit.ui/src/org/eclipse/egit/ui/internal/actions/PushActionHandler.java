@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -16,11 +15,10 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -53,13 +51,6 @@ public class PushActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		try {
-			Repository repository = getRepository();
-			return repository != null
-					&& repository.getRef(Constants.HEAD).getObjectId() != null;
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, false);
-			return false;
-		}
+		return getRepository() != null;
 	}
 }

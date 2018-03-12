@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,19 +10,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
-import java.util.List;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCreateProjectViaWizardWizard;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.swt.widgets.Display;
 
 /**
  * Implements "Add Projects" for Repository, Working Directory, and Folder
@@ -30,21 +23,7 @@ import org.eclipse.swt.widgets.Display;
 public class ImportProjectsCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<RepositoryTreeNode> selectedNodes = getSelectedNodes(event);
-		if (selectedNodes == null || selectedNodes.isEmpty()) {
-			MessageDialog
-					.openError(Display.getDefault().getActiveShell(),
-					UIText.ImportProjectsWrongSelection,
-					UIText.ImportProjectsSelectionInRepositoryRequired);
-			return null;
-		}
-		if (!(((List) selectedNodes).get(0) instanceof RepositoryTreeNode)) {
-			MessageDialog.openError(Display.getDefault().getActiveShell(),
-					UIText.ImportProjectsWrongSelection,
-					UIText.ImportProjectsSelectionInRepositoryRequired);
-			return null;
-		}
-		RepositoryTreeNode node = selectedNodes.get(0);
+		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 		String path;
 
 		switch (node.getType()) {
@@ -57,21 +36,12 @@ public class ImportProjectsCommand extends
 			path = ((FolderNode) node).getObject().getPath().toString();
 			break;
 		default:
-			MessageDialog.openError(Display.getDefault().getActiveShell(),
-					UIText.ImportProjectsWrongSelection,
-					UIText.ImportProjectsSelectionInRepositoryRequired);
 			return null;
 		}
 
 		WizardDialog dlg = new WizardDialog(
 				getShell(event),
-				new GitCreateProjectViaWizardWizard(node.getRepository(), path)) {
-			@Override
-			protected IDialogSettings getDialogBoundsSettings() {
-				// preserve dialog bounds
-				return Activator.getDefault().getDialogSettings();
-			}
-		};
+				new GitCreateProjectViaWizardWizard(node.getRepository(), path));
 		dlg.setHelpAvailable(false);
 		dlg.open();
 

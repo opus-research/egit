@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2007, 2013 Robin Rosenberg <robin.rosenberg@dewire.com> and others.
+ * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,16 +10,12 @@ package org.eclipse.egit.core.test;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -30,7 +26,6 @@ import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.SystemReader;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public abstract class GitTestCase {
 
@@ -39,15 +34,6 @@ public abstract class GitTestCase {
 	protected TestProject project;
 
 	protected File gitDir;
-
-	@BeforeClass
-	public static void setUpClass() {
-		// suppress auto-ignoring and auto-sharing to avoid interference
-		IEclipsePreferences p = InstanceScope.INSTANCE.getNode(Activator
-				.getPluginId());
-		p.putBoolean(GitCorePreferences.core_autoIgnoreDerivedResources, false);
-		p.putBoolean(GitCorePreferences.core_autoShareProjects, false);
-	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -58,7 +44,7 @@ public abstract class GitTestCase {
 		SystemReader.setInstance(mockSystemReader);
 		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
-						.getParentFile().getAbsoluteFile().toString());
+						.getAbsoluteFile().toString());
 		project = new TestProject(true);
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
@@ -69,16 +55,13 @@ public abstract class GitTestCase {
 	@After
 	public void tearDown() throws Exception {
 		project.dispose();
-		Activator.getDefault().getRepositoryCache().clear();
 		if (gitDir.exists())
 			FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
-		SystemReader.setInstance(null);
 	}
 
 	protected ObjectId createFile(Repository repository, IProject actProject, String name, String content) throws IOException {
 		File file = new File(actProject.getProject().getLocation().toFile(), name);
-		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(
-				file), "UTF-8");
+		FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write(content);
 		fileWriter.close();
 		byte[] fileContents = IO.readFully(file);

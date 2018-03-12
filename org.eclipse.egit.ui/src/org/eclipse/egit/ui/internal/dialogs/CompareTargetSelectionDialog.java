@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -22,19 +22,17 @@ import org.eclipse.swt.widgets.Shell;
  *
  */
 public class CompareTargetSelectionDialog extends AbstractBranchSelectionDialog {
-	private final String resourceName;
+	private final String pathString;
 
 	/**
 	 * @param parentShell
 	 * @param repo
-	 * @param resourceName
+	 * @param pathString
 	 */
 	public CompareTargetSelectionDialog(Shell parentShell, Repository repo,
-			String resourceName) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| SHOW_TAGS | SHOW_REFERENCES | EXPAND_LOCAL_BRANCHES_NODE
-				| SELECT_CURRENT_REF);
-		this.resourceName = resourceName;
+			String pathString) {
+		super(parentShell, repo);
+		this.pathString = pathString;
 	}
 
 	@Override
@@ -51,11 +49,8 @@ public class CompareTargetSelectionDialog extends AbstractBranchSelectionDialog 
 
 	@Override
 	protected String getTitle() {
-		if (resourceName != null && resourceName.length() > 0)
-			return NLS.bind(UIText.CompareTargetSelectionDialog_CompareTitle,
-					resourceName);
-		else
-			return UIText.CompareTargetSelectionDialog_CompareTitleEmptyPath;
+		return NLS.bind(UIText.CompareTargetSelectionDialog_CompareTitle,
+				pathString);
 	}
 
 	@Override

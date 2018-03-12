@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,111 +13,46 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.core.commands.IStateListener;
-import org.eclipse.core.commands.State;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
-import org.eclipse.egit.ui.internal.ResourcePropertyTester;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
-import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
 
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends ColumnLabelProvider
-		implements IStateListener, IStyledLabelProvider {
+public class RepositoriesViewLabelProvider extends LabelProvider implements
+		IStyledLabelProvider {
 
 	/**
 	 * A map of regular images to their decorated counterpart.
 	 */
 	private Map<Image, Image> decoratedImages = new HashMap<Image, Image>();
 
-	private ResourceManager resourceManager = new LocalResourceManager(
-			JFaceResources.getResources());
-
-	private Image annotatedTagImage = resourceManager
-			.createImage(UIIcons.TAG_ANNOTATED);
-
-	private Image gerritRepoImage = resourceManager
-			.createImage(UIIcons.REPOSITORY_GERRIT);
-
-	private final State verboseBranchModeState;
-
-	private boolean verboseBranchMode = false;
-
-	/**
-	 * Constructs a repositories view label provider
-	 */
-	public RepositoriesViewLabelProvider() {
-		ICommandService srv = (ICommandService) PlatformUI.getWorkbench()
-				.getService(ICommandService.class);
-		verboseBranchModeState = srv.getCommand(ToggleBranchCommitCommand.ID)
-				.getState(ToggleBranchCommitCommand.TOGGLE_STATE);
-		verboseBranchModeState.addListener(this);
-		try {
-			this.verboseBranchMode = ((Boolean) verboseBranchModeState
-					.getValue()).booleanValue();
-		} catch (Exception e) {
-			Activator.logError(e.getMessage(), e);
-		}
-	}
-
 	@Override
 	public Image getImage(Object element) {
-		RepositoryTreeNode node = (RepositoryTreeNode) element;
-		RepositoryTreeNodeType type = node.getType();
-		if (type == RepositoryTreeNodeType.TAG) {
-			TagNode tagNode = (TagNode) node;
-			if (tagNode.isAnnotated())
-				return decorateImage(annotatedTagImage, element);
-		} else if (type == RepositoryTreeNodeType.FILE) {
-			Object object = node.getObject();
-			if (object instanceof File) {
-				ImageDescriptor descriptor = PlatformUI.getWorkbench()
-						.getEditorRegistry()
-						.getImageDescriptor(((File) object).getName());
-				return decorateImage((Image) resourceManager.get(descriptor),
-						element);
-			}
-		} else if (type == RepositoryTreeNodeType.REPO) {
-			Object object = node.getObject();
-			if (object instanceof Repository) {
-				Repository r = (Repository) object;
-				if (ResourcePropertyTester.hasGerritConfiguration(r))
-					return gerritRepoImage;
-			}
-		}
-		return decorateImage(node.getType().getIcon(), element);
+		return decorateImage(
+				((RepositoryTreeNode) element).getType().getIcon(), element);
 	}
 
 	@Override
@@ -132,12 +67,10 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 
 	@Override
 	public void dispose() {
-		verboseBranchModeState.removeListener(this);
 		// dispose of our decorated images
 		for (Image image : decoratedImages.values()) {
 			image.dispose();
 		}
-		resourceManager.dispose();
 		decoratedImages.clear();
 		super.dispose();
 	}
@@ -171,8 +104,13 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 				} else if (refName.startsWith(Constants.R_TAGS)) {
 					// tag: HEAD would be on the commit id to which the tag is
 					// pointing
-					TagNode tagNode = (TagNode) node;
-					compareString = tagNode.getCommitId();
+					ObjectId id = node.getRepository().resolve(refName);
+					if (id == null)
+						return image;
+					RevWalk rw = new RevWalk(node.getRepository());
+					RevTag tag = rw.parseTag(id);
+					compareString = tag.getObject().name();
+
 				} else if (refName.startsWith(Constants.R_REMOTES)) {
 					// remote branch: HEAD would be on the commit id to which
 					// the branch is pointing
@@ -180,12 +118,8 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 					if (id == null)
 						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					try {
-						RevCommit commit = rw.parseCommit(id);
-						compareString = commit.getId().name();
-					} finally {
-						rw.release();
-					}
+					RevCommit commit = rw.parseCommit(id);
+					compareString = commit.getId().name();
 				} else if (refName.equals(Constants.HEAD))
 					return getDecoratedImage(image);
 				else {
@@ -204,7 +138,7 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 				return image;
 			}
 
-			if (compareString != null && compareString.equals(branchName)) {
+			if (compareString.equals(branchName)) {
 				return getDecoratedImage(image);
 			}
 
@@ -242,101 +176,6 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 		return decoratedImage;
 	}
 
-	private RevCommit getLatestCommit(RepositoryTreeNode node) {
-		Ref ref = (Ref) node.getObject();
-		ObjectId id;
-		if (ref.isSymbolic())
-			id = ref.getLeaf().getObjectId();
-		else
-			id = ref.getObjectId();
-		if (id == null)
-			return null;
-		RevWalk walk = new RevWalk(node.getRepository());
-		walk.setRetainBody(true);
-		try {
-			return walk.parseCommit(id);
-		} catch (IOException ignored) {
-			return null;
-		} finally {
-			walk.release();
-		}
-	}
-
-	private String abbreviate(final ObjectId id) {
-		if (id != null)
-			return id.abbreviate(7).name();
-		else
-			return ObjectId.zeroId().abbreviate(7).name();
-	}
-
-	/**
-	 * Get styled text for submodule repository node
-	 *
-	 * @param node
-	 * @return styled string
-	 */
-	protected StyledString getStyledTextForSubmodule(RepositoryTreeNode node) {
-		StyledString string = new StyledString();
-		Repository repository = (Repository) node.getObject();
-		String path = Repository.stripWorkDir(node.getParent().getRepository()
-				.getWorkTree(), repository.getWorkTree());
-		string.append(path);
-
-		Ref head;
-		try {
-			head = repository.getRef(Constants.HEAD);
-		} catch (IOException e) {
-			return string;
-		}
-		if (head != null) {
-			string.append(' ');
-			string.append('[', StyledString.DECORATIONS_STYLER);
-			if (head.isSymbolic())
-				string.append(
-						Repository.shortenRefName(head.getLeaf().getName()),
-						StyledString.DECORATIONS_STYLER);
-			else if (head.getObjectId() != null)
-				string.append(abbreviate(head.getObjectId()),
-						StyledString.DECORATIONS_STYLER);
-			string.append(']', StyledString.DECORATIONS_STYLER);
-			if (verboseBranchMode && head.getObjectId() != null) {
-				RevWalk walk = new RevWalk(repository);
-				RevCommit commit;
-				try {
-					commit = walk.parseCommit(head.getObjectId());
-					string.append(' ');
-					string.append(commit.getShortMessage(),
-							StyledString.QUALIFIER_STYLER);
-				} catch (IOException ignored) {
-					// Ignored
-				} finally {
-					walk.release();
-				}
-			}
-		}
-		return string;
-	}
-
-	/**
-	 * Get styled text for commit node
-	 *
-	 * @param node
-	 * @return styled string
-	 */
-	protected StyledString getStyledTextForCommit(StashedCommitNode node) {
-		StyledString string = new StyledString();
-		RevCommit commit = node.getObject();
-		string.append(MessageFormat.format("{0}@'{'{1}'}'", //$NON-NLS-1$
-				Constants.STASH, Integer.valueOf(node.getIndex())));
-		string.append(' ');
-		string.append('[', StyledString.DECORATIONS_STYLER);
-		string.append(abbreviate(commit), StyledString.DECORATIONS_STYLER);
-		string.append(']', StyledString.DECORATIONS_STYLER);
-		string.append(' ');
-		string.append(commit.getShortMessage(), StyledString.QUALIFIER_STYLER);
-		return string;
-	}
-
 	public StyledString getStyledText(Object element) {
 		if (!(element instanceof RepositoryTreeNode))
 			return null;
@@ -346,69 +185,53 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 		try {
 			switch (node.getType()) {
 			case REPO:
-				if (node.getParent() != null
-						&& node.getParent().getType() == RepositoryTreeNodeType.SUBMODULES)
-					return getStyledTextForSubmodule(node);
-				return GitLabelProvider.getStyledTextFor((Repository) node
-						.getObject());
+				Repository repository = (Repository) node.getObject();
+				File directory = repository.getDirectory();
+				StyledString string = new StyledString(directory
+						.getParentFile().getName());
+				string
+						.append(
+								" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+				String branch = repository.getBranch();
+				if (repository.getRepositoryState() != RepositoryState.SAFE)
+					branch += " - " + repository.getRepositoryState().getDescription(); //$NON-NLS-1$
+				string
+						.append(
+								" [" + branch + "]", StyledString.DECORATIONS_STYLER); //$NON-NLS-1$//$NON-NLS-2$
+				return string;
 			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
 				StyledString refName = new StyledString(
 						Repository.shortenRefName(ref.getName()));
-
-				ObjectId refId;
 				if (ref.isSymbolic()) {
-					refName.append(' ');
-					refName.append('[', StyledString.DECORATIONS_STYLER);
+					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
 					refName.append(ref.getLeaf().getName(),
-							StyledString.DECORATIONS_STYLER);
-					refName.append(']', StyledString.DECORATIONS_STYLER);
-					refId = ref.getLeaf().getObjectId();
-				} else
-					refId = ref.getObjectId();
-
-				refName.append(' ');
-				RevCommit commit = getLatestCommit(node);
-				if (commit != null)
-					refName.append(abbreviate(commit),
-							StyledString.QUALIFIER_STYLER)
-							.append(' ')
-							.append(commit.getShortMessage(),
-									StyledString.QUALIFIER_STYLER);
-				else
-					refName.append(abbreviate(refId),
 							StyledString.QUALIFIER_STYLER);
+					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+					refName.append(ObjectId.toString(ref.getLeaf()
+							.getObjectId()), StyledString.QUALIFIER_STYLER);
+				} else {
+					refName.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
+					refName.append(ObjectId.toString(ref.getObjectId()),
+							StyledString.QUALIFIER_STYLER);
+
+				}
 				return refName;
 			case WORKINGDIR:
 				StyledString dirString = new StyledString(
 						UIText.RepositoriesView_WorkingDir_treenode);
 				dirString.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				dirString.append(node.getRepository().getWorkTree()
-						.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
-				return dirString;
-
-			case REF:
-				StyledString styled = null;
-				String nodeText = getSimpleText(node);
-				if (nodeText != null) {
-					styled = new StyledString(nodeText);
-					if (verboseBranchMode) {
-						RevCommit latest = getLatestCommit(node);
-						if (latest != null)
-							styled.append(' ')
-									.append(abbreviate(latest),
-											StyledString.QUALIFIER_STYLER)
-									.append(' ')
-									.append(latest.getShortMessage(),
-											StyledString.QUALIFIER_STYLER);
-					}
+				if (node.getRepository().isBare()) {
+					dirString
+							.append(
+									UIText.RepositoriesViewLabelProvider_BareRepositoryMessage,
+									StyledString.QUALIFIER_STYLER);
+				} else {
+					dirString.append(node.getRepository().getWorkTree()
+							.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
 				}
-				return styled;
-			case TAG:
-				return getStyledTextForTag((TagNode) node);
-			case STASHED_COMMIT:
-				return getStyledTextForCommit((StashedCommitNode) node);
+				return dirString;
 			case PUSH:
 				// fall through
 			case FETCH:
@@ -433,11 +256,11 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 				// fall through
 			case REMOTE:
 				// fall through
-			case SUBMODULES:
+			case ERROR:
 				// fall through
-			case STASH:
+			case REF:
 				// fall through
-			case ERROR: {
+			case TAG: {
 				String label = getSimpleText(node);
 				if (label != null)
 					return new StyledString(label);
@@ -452,41 +275,15 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 
 	}
 
-	private StyledString getStyledTextForTag(TagNode node) {
-		String tagText = getSimpleText(node);
-		if (tagText != null) {
-			StyledString styled = new StyledString(tagText);
-			if (verboseBranchMode) {
-				if (node.getCommitId() != null
-						&& node.getCommitId().length() > 0)
-					styled.append(' ')
-							.append(node.getCommitId().substring(0, 7),
-									StyledString.QUALIFIER_STYLER)
-							.append(' ')
-							.append(node.getCommitShortMessage(),
-									StyledString.QUALIFIER_STYLER);
-			}
-			return styled;
-		} else {
-			return null;
-		}
-	}
-
-	@Override
-	public String getToolTipText(Object element) {
-		if (element instanceof AdditionalRefNode) {
-			AdditionalRefNode additionalRefNode = (AdditionalRefNode) element;
-			Ref ref = additionalRefNode.getObject();
-			return GitLabelProvider.getRefDescription(ref);
-		}
-		return null;
-	}
-
 	private String getSimpleText(RepositoryTreeNode node) {
 		switch (node.getType()) {
 		case REPO:
-			Repository repository = (Repository) node.getObject();
-			return GitLabelProvider.getSimpleTextFor(repository);
+			File directory = ((Repository) node.getObject()).getDirectory();
+			StringBuilder sb = new StringBuilder();
+			sb.append(directory.getParentFile().getName());
+			sb.append(" - "); //$NON-NLS-1$
+			sb.append(directory.getAbsolutePath());
+			return sb.toString();
 		case FILE:
 			// fall through
 		case FOLDER:
@@ -506,15 +303,6 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 			return UIText.RepositoriesViewLabelProvider_SymbolicRefNodeText;
 		case REMOTES:
 			return UIText.RepositoriesView_RemotesNodeText;
-		case SUBMODULES:
-			return UIText.RepositoriesViewLabelProvider_SubmodulesNodeText;
-		case STASH:
-			return UIText.RepositoriesViewLabelProvider_StashNodeText;
-		case STASHED_COMMIT:
-			return MessageFormat.format(
-					"{0}@'{'{1}'}'", //$NON-NLS-1$
-					Constants.STASH,
-					Integer.valueOf(((StashedCommitNode) node).getIndex()));
 		case REF:
 			// fall through
 		case TAG: {
@@ -543,8 +331,13 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 			return refName;
 		}
 		case WORKINGDIR:
-			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-					+ node.getRepository().getWorkTree().getAbsolutePath();
+			if (node.getRepository().isBare())
+				return UIText.RepositoriesView_WorkingDir_treenode
+						+ " - " //$NON-NLS-1$
+						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
+			else
+				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
+						+ node.getRepository().getWorkTree().getAbsolutePath();
 		case REMOTE:
 			// fall through
 		case PUSH:
@@ -556,19 +349,6 @@ public class RepositoriesViewLabelProvider extends ColumnLabelProvider
 
 		}
 		return null;
-	}
-
-	/**
-	 * @see org.eclipse.core.commands.IStateListener#handleStateChange(org.eclipse.core.commands.State,
-	 *      java.lang.Object)
-	 */
-	public void handleStateChange(State state, Object oldValue) {
-		try {
-			this.verboseBranchMode = ((Boolean) state.getValue())
-					.booleanValue();
-		} catch (Exception e) {
-			Activator.logError(e.getMessage(), e);
-		}
 	}
 
 }

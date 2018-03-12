@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2013, Dariusz Luksza <dariusz.luksza@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,16 +10,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import java.io.File;
-
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.variables.IStringVariableManager;
-import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.DirectoryFieldEditor;
@@ -28,12 +21,8 @@ import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
-import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.IWorkbench;
@@ -45,8 +34,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	private final static int GROUP_SPAN = 3;
 
 	private final static String[][] MERGE_MODE_NAMES_AND_VALUES = new String[3][2];
-
-	private final static boolean HAS_DEBUG_UI = hasDebugUiBundle();
 
 	static {
 		MERGE_MODE_NAMES_AND_VALUES[0][0] = UIText.GitPreferenceRoot_MergeMode_0_Label;
@@ -61,7 +48,7 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	 * The default constructor
 	 */
 	public GitPreferenceRoot() {
-		super(FLAT);
+		super(GRID);
 	}
 
 	protected IPreferenceStore doGetPreferenceStore() {
@@ -75,7 +62,16 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	@Override
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
-		GridLayoutFactory.swtDefaults().margins(0, 0).applyTo(main);
+
+		Group initialGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		initialGroup.setText(UIText.GitPreferenceRoot_InitialConfiguration);
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(initialGroup);
+		addField(new BooleanFieldEditor(
+				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
+				UIText.GitPreferenceRoot_ShowInitialConfigDialogCheckbox,
+				initialGroup));
+		updateMargins(initialGroup);
 
 		Group cloningGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		cloningGroup.setText(UIText.GitPreferenceRoot_CloningRepoGroupHeader);
@@ -85,77 +81,42 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 				UIPreferences.DEFAULT_REPO_DIR,
 				UIText.GitPreferenceRoot_DefaultRepoFolderLabel, cloningGroup) {
 
-			/** The own control is the variableButton */
-			private static final int NUMBER_OF_OWN_CONTROLS = 1;
-
-			@Override
-			protected boolean doCheckState() {
-				String fileName = getTextControl().getText();
-				fileName = fileName.trim();
-				if (fileName.length() == 0 && isEmptyStringAllowed())
-					return true;
-
-				IStringVariableManager manager = VariablesPlugin.getDefault().getStringVariableManager();
-				String substitutedFileName;
-				try {
-					substitutedFileName = manager.performStringSubstitution(fileName);
-				} catch (CoreException e) {
-					// It's apparently invalid
-					return false;
-				}
-
-				File file = new File(substitutedFileName);
-				// other than the super implementation, we don't
-				// require the file to exist
-				return !file.exists() || file.isDirectory();
-			}
-
-			@Override
-			public int getNumberOfControls() {
-				return super.getNumberOfControls() + NUMBER_OF_OWN_CONTROLS;
-			}
-
-			@Override
-			protected void doFillIntoGrid(Composite parent, int numColumns) {
-				super.doFillIntoGrid(parent, numColumns - NUMBER_OF_OWN_CONTROLS);
-			}
-
-			@Override
-			protected void adjustForNumColumns(int numColumns) {
-				super.adjustForNumColumns(numColumns - NUMBER_OF_OWN_CONTROLS);
-			}
-
 			@Override
 			protected void createControl(Composite parent) {
 				// setting validate strategy using the setter method is too late
-				super.setValidateStrategy(StringFieldEditor.VALIDATE_ON_KEY_STROKE);
-
+				super
+						.setValidateStrategy(StringFieldEditor.VALIDATE_ON_KEY_STROKE);
 				super.createControl(parent);
-
-				if (HAS_DEBUG_UI)
-					addVariablesButton(parent);
 			}
 
-			private void addVariablesButton(Composite parent) {
-				Button variableButton = new Button(parent, SWT.PUSH);
-				variableButton.setText(UIText.GitPreferenceRoot_DefaultRepoFolderVariableButton);
-
-				variableButton.addSelectionListener(new SelectionAdapter() {
-					public void widgetSelected(SelectionEvent e) {
-						org.eclipse.debug.ui.StringVariableSelectionDialog dialog = new org.eclipse.debug.ui.StringVariableSelectionDialog(
-								getShell());
-						int returnCode = dialog.open();
-						if (returnCode == Window.OK)
-							setStringValue(dialog.getVariableExpression());
-					}
-				});
-			}
 		};
 		updateMargins(cloningGroup);
 		editor.setEmptyStringAllowed(false);
 		editor.getLabelControl(cloningGroup).setToolTipText(
 				UIText.GitPreferenceRoot_DefaultRepoFolderTooltip);
 		addField(editor);
+
+		Group historyGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		historyGroup.setText(UIText.GitPreferenceRoot_HistoryGroupHeader);
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(historyGroup);
+
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
+				UIText.ResourceHistory_toggleCommentWrap, historyGroup));
+
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT,
+				UIText.ResourceHistory_toggleRevComment, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL,
+				UIText.ResourceHistory_toggleRevDetail, historyGroup));
+		addField(new IntegerFieldEditor(UIPreferences.HISTORY_MAX_NUM_COMMITS,
+				UIText.ResourceHistory_MaxNumCommitsInList, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
+				UIText.ResourceHistory_ShowTagSequence, historyGroup));
+		updateMargins(historyGroup);
 
 		Group remoteConnectionsGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
@@ -198,21 +159,14 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		addField(mergeMode);
 		updateMargins(mergeGroup);
 
-		Group blameGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		Group confirmGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(blameGroup);
-		blameGroup.setText(UIText.GitPreferenceRoot_BlameGroupHeader);
-		addField(new BooleanFieldEditor(UIPreferences.BLAME_IGNORE_WHITESPACE,
-				UIText.GitPreferenceRoot_BlameIgnoreWhitespaceLabel, blameGroup));
-		updateMargins(blameGroup);
-
-		Group secureGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(secureGroup);
-		secureGroup.setText(UIText.GitPreferenceRoot_SecureStoreGroupLabel);
-		addField(new BooleanFieldEditor(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE,
-				UIText.GitPreferenceRoot_SecureStoreUseByDefault, secureGroup));
-		updateMargins(secureGroup);
+				.applyTo(confirmGroup);
+		confirmGroup.setText(UIText.GitPreferenceRoot_HideConfirmationGroup);
+		addField(new BooleanFieldEditor(UIPreferences.REBASE_HIDE_CONFIRM,
+				UIText.GitPreferenceRoot_HideRebaseConfirmationField,
+				confirmGroup));
+		updateMargins(confirmGroup);
 	}
 
 	private void updateMargins(Group group) {
@@ -221,14 +175,5 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		GridLayout layout = (GridLayout) group.getLayout();
 		layout.marginWidth = 5;
 		layout.marginHeight = 5;
-	}
-
-	private static final boolean hasDebugUiBundle() {
-		try {
-			return Class
-					.forName("org.eclipse.debug.ui.StringVariableSelectionDialog") != null; //$NON-NLS-1$
-		} catch (ClassNotFoundException e) {
-			return false;
-		}
 	}
 }
