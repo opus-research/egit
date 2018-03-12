@@ -28,8 +28,8 @@ public enum RepositoryTreeNodeType {
 	/** */
 	LOCAL(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
-	/** */
-	BRANCHHIERARCHY(UIIcons.BRANCHES.createImage()), //
+			/** */
+	BRANCHHIERARCHY(UIIcons.REMOTE_SPEC.createImage()), //
 	/** */
 	REMOTETRACKING(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
