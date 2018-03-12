@@ -14,9 +14,16 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.IParameter;
+import org.eclipse.core.commands.Parameterization;
+import org.eclipse.core.commands.ParameterizedCommand;
+import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
@@ -30,6 +37,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -41,15 +49,17 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -76,6 +86,8 @@ import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.layout.GridData;
@@ -85,18 +97,40 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.team.ui.history.HistoryPage;
+import org.eclipse.ui.IActionBars;
+import org.eclipse.ui.IPartListener;
+import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.menus.CommandContributionItem;
+import org.eclipse.ui.menus.CommandContributionItemParameter;
+import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
+
 	private static final String POPUP_ID = "org.eclipse.egit.ui.historyPageContributions"; //$NON-NLS-1$
 
 	private static final String DESCRIPTION_PATTERN = "{0} - {1}"; //$NON-NLS-1$
 
 	private static final String NAME_PATTERN = "{0}: {1} [{2}]"; //$NON-NLS-1$
+
+	/** Standard action: select all */
+	private IAction selectAllAction;
+
+	/** Standard action: copy to clip board */
+	private IAction copyAction;
+
+	/** Show Comment */
+	private IAction showCommentAction;
+
+	/** Show File */
+	private IAction showFilesAction;
 
 	/** Wrap comment */
 	private IAction wrapCommentAction;
@@ -120,8 +154,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private HistoryPageInput input;
 
 	private String name;
-
-	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -185,7 +217,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private FindToolbar findToolbar;
 
 	/** Our context menu manager for the entire page. */
-	private final MenuManager popupMgr = new MenuManager(null, POPUP_ID);
+	private MenuManager popupMgr;
 
 	/** Job that is updating our history view, if we are refreshing. */
 	private GenerateHistoryJob job;
@@ -238,7 +270,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				if (showAllFilter == filter) {
 					showAllFilter = ShowFilter.SHOWALLRESOURCE;
 					showAllResourceVersionsAction.setChecked(true);
-					initAndStartRevWalk(false);
+					refresh();
 				}
 			}
 			if (isChecked() && showAllFilter != filter) {
@@ -251,7 +283,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					showAllFolderVersionsAction.setChecked(false);
 				if (this != showAllResourceVersionsAction)
 					showAllResourceVersionsAction.setChecked(false);
-				initAndStartRevWalk(false);
+				refresh();
 			}
 			GitHistoryPage.this.firePropertyChange(GitHistoryPage.this, P_NAME,
 					oldName, getName());
@@ -279,16 +311,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private ShowFilterAction showAllFolderVersionsAction;
 
 	private ShowFilterAction showAllResourceVersionsAction;
-
-	/**
-	 * The default constructor
-	 */
-	public GitHistoryPage() {
-		trace = GitTraceLocation.HISTORYVIEW.isActive();
-		if (trace)
-			GitTraceLocation.getTrace().traceEntry(
-					GitTraceLocation.HISTORYVIEW.getLocation());
-	}
 
 	private void initActions() {
 		IAction findAction = createFindToolbarAction();
@@ -386,138 +408,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(compareModeAction);
 		viewMenuMgr.add(showAllBranchesAction);
-
-		final IAction showCommentAction = createShowComment();
-		final IAction showFilesAction = createShowFiles();
-		wrapCommentAction = createCommentWrap();
-		fillCommentAction = createCommentFill();
-
-		wrapCommentAction.setEnabled(showCommentAction.isChecked());
-		fillCommentAction.setEnabled(showCommentAction.isChecked());
-
-		viewMenuMgr.add(showFilesAction);
-		viewMenuMgr.add(showCommentAction);
-
-		viewMenuMgr.add(new Separator());
-
-		viewMenuMgr.add(wrapCommentAction);
-		viewMenuMgr.add(fillCommentAction);
-
-		graph.getControl().addMenuDetectListener(new MenuDetectListener() {
-			public void menuDetected(MenuDetectEvent e) {
-				popupMgr.add(showFilesAction);
-				popupMgr.add(showCommentAction);
-			}
-		});
-	}
-
-	void initAndStartRevWalk(boolean forceNewWalk) throws IllegalStateException {
-		try {
-			if (trace)
-				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation());
-
-			cancelRefreshJob();
-			Repository db = input.getRepository();
-			AnyObjectId headId;
-			try {
-				headId = db.resolve(Constants.HEAD);
-			} catch (IOException e) {
-				throw new IllegalStateException(NLS.bind(
-						UIText.GitHistoryPage_errorParsingHead, Activator
-								.getDefault().getRepositoryUtil()
-								.getRepositoryName(db)));
-			}
-			if (headId == null)
-				throw new IllegalStateException(NLS.bind(
-						UIText.GitHistoryPage_errorParsingHead, Activator
-								.getDefault().getRepositoryUtil()
-								.getRepositoryName(db)));
-
-			List<String> paths = buildFilterPaths(input.getItems(), input
-					.getFileList(), db);
-
-			if (forceNewWalk || pathChange(pathFilters, paths)
-					|| currentWalk == null || !headId.equals(currentHeadId)) {
-				// TODO Do not dispose SWTWalk just because HEAD changed
-				// In theory we should be able to update the graph and
-				// not dispose of the SWTWalk, even if HEAD was reset to
-				// HEAD^1 and the old HEAD commit should not be visible.
-				//
-				currentHeadId = headId;
-				if (currentWalk != null)
-					currentWalk.release();
-				currentWalk = new SWTWalk(db);
-				currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
-				currentWalk.sort(RevSort.BOUNDARY, true);
-				highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
-			} else {
-				currentWalk.reset();
-			}
-
-			try {
-				if (store
-						.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
-					markStartAllRefs(Constants.R_HEADS);
-					markStartAllRefs(Constants.R_REMOTES);
-				} else
-					currentWalk.markStart(currentWalk.parseCommit(headId));
-			} catch (IOException e) {
-				throw new IllegalStateException(NLS.bind(
-						UIText.GitHistoryPage_errorReadingHeadCommit, headId,
-						db.getDirectory().getAbsolutePath()), e);
-			}
-
-			final TreeWalk fileWalker = new TreeWalk(db);
-			fileWalker.setRecursive(true);
-			if (paths.size() > 0) {
-				pathFilters = paths;
-				currentWalk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
-						.createFromStrings(paths), TreeFilter.ANY_DIFF));
-				fileWalker.setFilter(currentWalk.getTreeFilter().clone());
-
-			} else {
-				pathFilters = null;
-				currentWalk.setTreeFilter(TreeFilter.ALL);
-				fileWalker.setFilter(TreeFilter.ANY_DIFF);
-			}
-			fileViewer.setTreeWalk(db, fileWalker);
-			fileViewer.refresh();
-			fileViewer.addSelectionChangedListener(commentViewer);
-			commentViewer.setTreeWalk(fileWalker);
-			commentViewer.setDb(db);
-			commentViewer.refresh();
-
-			final SWTCommitList list;
-			list = new SWTCommitList(graph.getControl().getDisplay());
-			list.source(currentWalk);
-			final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
-			rj.addJobChangeListener(new JobChangeAdapter() {
-				@Override
-				public void done(final IJobChangeEvent event) {
-					final Control graphctl = graph.getControl();
-					if (job != rj || graphctl.isDisposed())
-						return;
-					graphctl.getDisplay().asyncExec(new Runnable() {
-						public void run() {
-							if (job == rj)
-								job = null;
-						}
-					});
-				}
-			});
-			job = rj;
-			if (trace)
-				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.HISTORYVIEW.getLocation(),
-						"Scheduling GenerateHistoryJob"); //$NON-NLS-1$
-			schedule(rj);
-		} finally {
-			if (trace)
-				GitTraceLocation.getTrace().traceExit(
-						GitTraceLocation.HISTORYVIEW.getLocation());
-
-		}
 	}
 
 	/**
@@ -530,40 +420,85 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	@Override
 	public void createControl(final Composite parent) {
-		trace = GitTraceLocation.HISTORYVIEW.isActive();
-		if (trace)
-			GitTraceLocation.getTrace().traceEntry(
-					GitTraceLocation.HISTORYVIEW.getLocation());
+		GridData gd;
 
 		ourControl = createMainPanel(parent);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(ourControl);
+		gd = new GridData();
+		gd.verticalAlignment = SWT.FILL;
+		gd.horizontalAlignment = SWT.FILL;
+		gd.grabExcessHorizontalSpace = true;
+		gd.grabExcessVerticalSpace = true;
+		ourControl.setLayoutData(gd);
+
+		gd = new GridData();
+		gd.verticalAlignment = SWT.FILL;
+		gd.horizontalAlignment = SWT.FILL;
+		gd.grabExcessHorizontalSpace = true;
+		gd.grabExcessVerticalSpace = true;
 		graphDetailSplit = new SashForm(ourControl, SWT.VERTICAL);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(
-				graphDetailSplit);
-		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
+		graphDetailSplit.setLayoutData(gd);
+
+		graph = new CommitGraphTable(graphDetailSplit);
+		graph.getTableView().addOpenListener(new IOpenListener() {
+			public void open(OpenEvent event) {
+				if (!input.isSingleFile()) {
+					return;
+				}
+
+				ICommandService srv = (ICommandService) getSite().getService(
+						ICommandService.class);
+				IHandlerService hsrv = (IHandlerService) getSite().getService(
+						IHandlerService.class);
+				Command cmd = srv.getCommand(HistoryViewCommands.SHOWVERSIONS);
+				Parameterization[] parms;
+				if (store
+						.getBoolean(UIPreferences.RESOURCEHISTORY_COMPARE_MODE)) {
+					try {
+						IParameter parm = cmd
+								.getParameter(HistoryViewCommands.COMPARE_MODE_PARAM);
+						parms = new Parameterization[] { new Parameterization(
+								parm, Boolean.TRUE.toString()) };
+					} catch (NotDefinedException e) {
+						Activator.handleError(e.getMessage(), e, true);
+						parms = null;
+					}
+				} else
+					parms = null;
+				ParameterizedCommand pcmd = new ParameterizedCommand(cmd, parms);
+				try {
+					hsrv.executeCommandInContext(pcmd, null, hsrv
+							.getCurrentState());
+				} catch (Exception e) {
+					Activator.handleError(e.getMessage(), e, true);
+				}
+			}
+		});
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
-		commentViewer = new CommitMessageViewer(revInfoSplit, getSite());
-		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
+		commentViewer = new CommitMessageViewer(revInfoSplit);
+		fileViewer = new CommitFileDiffViewer(revInfoSplit);
 		findToolbar = new FindToolbar(ourControl);
 
 		layoutSashForm(graphDetailSplit,
 				UIPreferences.RESOURCEHISTORY_GRAPH_SPLIT);
 		layoutSashForm(revInfoSplit, UIPreferences.RESOURCEHISTORY_REV_SPLIT);
 
+		popupMgr = new MenuManager(null, POPUP_ID);
 		attachCommitSelectionChanged();
 		initActions();
+		createStandardActions();
 
 		getSite().registerContextMenu(POPUP_ID, popupMgr, graph.getTableView());
 		// due to the issues described in bug 322751, it makes no
 		// sense to set a selection provider for the site here
+
+		attachContextMenu(graph.getControl());
+		attachContextMenu(commentViewer.getControl());
+		attachContextMenu(fileViewer.getControl());
 		layout();
 
-		myRefsChangedHandle = Repository.getGlobalListenerList()
-				.addRefsChangedListener(this);
-
-		if (trace)
-			GitTraceLocation.getTrace().traceExit(
-					GitTraceLocation.HISTORYVIEW.getLocation());
+		if (myRefsChangedHandle == null)
+			myRefsChangedHandle = Repository.getGlobalListenerList()
+					.addRefsChangedListener(this);
 	}
 
 	/**
@@ -595,12 +530,181 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 														.getLocation(),
 												"Executing async repository changed event"); //$NON-NLS-1$
 							refschangedRunnable = null;
-							initAndStartRevWalk(true);
+							inputSet();
 						}
 					}
 				};
 				getControl().getDisplay().asyncExec(refschangedRunnable);
 			}
+		}
+	}
+
+	private CommandContributionItem getCommandContributionItem(
+			String commandId, String menuLabel) {
+		CommandContributionItemParameter parameter = new CommandContributionItemParameter(
+				getSite(), commandId, commandId,
+				CommandContributionItem.STYLE_PUSH);
+		parameter.label = menuLabel;
+		return new CommandContributionItem(parameter);
+	}
+
+	private CommandContributionItem getCommandContributionItem(
+			String commandId, String menuLabel, Map<String, String> parameters) {
+		CommandContributionItemParameter parameter = new CommandContributionItemParameter(
+				getSite(), commandId, commandId,
+				CommandContributionItem.STYLE_PUSH);
+		parameter.label = menuLabel;
+		parameter.parameters = parameters;
+		return new CommandContributionItem(parameter);
+	}
+
+	private void attachContextMenu(final Control c) {
+		if (c == graph.getControl()) {
+			// commit table
+			c.setMenu(popupMgr.createContextMenu(c));
+			c.addMenuDetectListener(new MenuDetectListener() {
+				public void menuDetected(MenuDetectEvent e) {
+					popupMgr.removeAll();
+
+					int selectionSize = ((IStructuredSelection) getSelectionProvider()
+							.getSelection()).size();
+
+					if (input.isSingleFile()) {
+						if (selectionSize == 1)
+							if (input.getSingleFile() instanceof IResource)
+								popupMgr
+										.add(getCommandContributionItem(
+												HistoryViewCommands.COMPARE_WITH_TREE,
+												UIText.GitHistoryPage_CompareWithWorkingTreeMenuMenuLabel));
+							else
+								popupMgr
+										.add(getCommandContributionItem(
+												HistoryViewCommands.COMPARE_WITH_TREE,
+												UIText.GitHistoryPage_CompareWithCurrentHeadMenu));
+						else if (selectionSize == 2)
+							popupMgr
+									.add(getCommandContributionItem(
+											HistoryViewCommands.COMPARE_VERSIONS,
+											UIText.GitHistoryPage_CompareWithEachOtherMenuLabel));
+						if (selectionSize > 0) {
+							popupMgr.add(getCommandContributionItem(
+									HistoryViewCommands.OPEN,
+									UIText.GitHistoryPage_OpenMenuLabel));
+							popupMgr
+									.add(getCommandContributionItem(
+											HistoryViewCommands.OPEN_IN_TEXT_EDITOR,
+											UIText.GitHistoryPage_OpenInTextEditorLabel));
+						}
+					}
+
+					if (selectionSize == 1) {
+						popupMgr.add(new Separator());
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CHECKOUT,
+								UIText.GitHistoryPage_CheckoutMenuLabel));
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CREATE_BRANCH,
+								UIText.GitHistoryPage_CreateBranchMenuLabel));
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CREATE_TAG,
+								UIText.GitHistoryPage_CreateTagMenuLabel));
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CREATE_PATCH,
+								UIText.GitHistoryPage_CreatePatchMenuLabel));
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CHERRYPICK,
+								UIText.GitHistoryPage_cherryPickMenuItem));
+						popupMgr.add(new Separator());
+
+						MenuManager resetManager = new MenuManager(
+								UIText.GitHistoryPage_ResetMenuLabel,
+								UIIcons.RESET, "Reset"); //$NON-NLS-1$
+
+						popupMgr.add(resetManager);
+
+						Map<String, String> parameters = new HashMap<String, String>();
+						parameters.put(HistoryViewCommands.RESET_MODE, "Soft"); //$NON-NLS-1$
+						resetManager.add(getCommandContributionItem(
+								HistoryViewCommands.RESET,
+								UIText.GitHistoryPage_ResetSoftMenuLabel,
+								parameters));
+						parameters = new HashMap<String, String>();
+						parameters.put(HistoryViewCommands.RESET_MODE, "Mixed"); //$NON-NLS-1$
+						resetManager.add(getCommandContributionItem(
+								HistoryViewCommands.RESET,
+								UIText.GitHistoryPage_ResetMixedMenuLabel,
+								parameters));
+						parameters = new HashMap<String, String>();
+						parameters.put(HistoryViewCommands.RESET_MODE, "Hard"); //$NON-NLS-1$
+						resetManager.add(getCommandContributionItem(
+								HistoryViewCommands.RESET,
+								UIText.GitHistoryPage_ResetHardMenuLabel,
+								parameters));
+					}
+					popupMgr.add(new Separator());
+
+					MenuManager quickDiffManager = new MenuManager(
+							UIText.GitHistoryPage_QuickdiffMenuLabel, null,
+							"Quickdiff"); //$NON-NLS-1$
+
+					popupMgr.add(quickDiffManager);
+
+					quickDiffManager.add(getCommandContributionItem(
+							HistoryViewCommands.SET_QUICKDIFF_BASELINE,
+							UIText.GitHistoryPage_SetAsBaselineMenuLabel));
+
+					Map<String, String> parameters = new HashMap<String, String>();
+					parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD"); //$NON-NLS-1$
+					quickDiffManager.add(getCommandContributionItem(
+							HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
+							UIText.GitHistoryPage_ResetBaselineToHeadMenuLabel,
+							parameters));
+
+					parameters = new HashMap<String, String>();
+					parameters.put(HistoryViewCommands.BASELINE_TARGET,
+							"HEAD^1"); //$NON-NLS-1$
+					quickDiffManager
+							.add(getCommandContributionItem(
+									HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
+									UIText.GitHistoryPage_ResetBaselineToParentOfHeadMenuLabel,
+									parameters));
+
+					// copy and such after additions
+					popupMgr.add(new Separator(
+							IWorkbenchActionConstants.MB_ADDITIONS));
+					popupMgr.add(copyAction);
+					popupMgr.add(new Separator());
+					popupMgr.add(showCommentAction);
+					popupMgr.add(showFilesAction);
+				}
+			});
+		} else if (c == commentViewer.getControl()) {
+			// comment viewer
+			final MenuManager mgr = new MenuManager();
+			c.setMenu(mgr.createContextMenu(c));
+			c.addMenuDetectListener(new MenuDetectListener() {
+				public void menuDetected(MenuDetectEvent e) {
+					if (mgr.isEmpty()) {
+						mgr.add(selectAllAction);
+						mgr.add(copyAction);
+						mgr.add(new Separator());
+						mgr.add(wrapCommentAction);
+						mgr.add(fillCommentAction);
+					}
+				}
+			});
+		} else {
+			// file list
+			final MenuManager mgr = new MenuManager();
+			c.setMenu(mgr.createContextMenu(c));
+			c.addMenuDetectListener(new MenuDetectListener() {
+				public void menuDetected(MenuDetectEvent e) {
+					if (mgr.isEmpty()) {
+						mgr.add(selectAllAction);
+						mgr.add(copyAction);
+					}
+				}
+			});
 		}
 	}
 
@@ -658,8 +762,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		} else if (!showComment && showFiles) {
 			graphDetailSplit.setMaximizedControl(null);
 			// the parent of the control!
-			revInfoSplit.setMaximizedControl(fileViewer.getControl()
-					.getParent());
+			revInfoSplit.setMaximizedControl(fileViewer.getControl().getParent());
 		} else if (!showComment && !showFiles) {
 			graphDetailSplit.setMaximizedControl(graph.getControl());
 		}
@@ -780,12 +883,61 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		return a;
 	}
 
-	public void dispose() {
-		trace = GitTraceLocation.HISTORYVIEW.isActive();
-		if (trace)
-			GitTraceLocation.getTrace().traceEntry(
-					GitTraceLocation.HISTORYVIEW.getLocation());
+	private void createStandardActions() {
+		final TextAction copy = new TextAction(ITextOperationTarget.COPY);
+		final TextAction sAll = new TextAction(ITextOperationTarget.SELECT_ALL);
 
+		graph.getControl().addFocusListener(copy);
+		graph.getControl().addFocusListener(sAll);
+		graph.addSelectionChangedListener(copy);
+		graph.addSelectionChangedListener(sAll);
+
+		commentViewer.getControl().addFocusListener(copy);
+		commentViewer.getControl().addFocusListener(sAll);
+		commentViewer.addSelectionChangedListener(copy);
+		commentViewer.addSelectionChangedListener(sAll);
+
+		fileViewer.getControl().addFocusListener(copy);
+		fileViewer.getControl().addFocusListener(sAll);
+		fileViewer.addSelectionChangedListener(copy);
+		fileViewer.addSelectionChangedListener(sAll);
+
+		final IActionBars b = getSite().getActionBars();
+		b.setGlobalActionHandler(ActionFactory.COPY.getId(), copy);
+		b.setGlobalActionHandler(ActionFactory.SELECT_ALL.getId(), sAll);
+
+		copyAction = createStandardAction(ActionFactory.COPY);
+		selectAllAction = createStandardAction(ActionFactory.SELECT_ALL);
+
+		showCommentAction = createShowComment();
+		showFilesAction = createShowFiles();
+		wrapCommentAction = createCommentWrap();
+		fillCommentAction = createCommentFill();
+
+		wrapCommentAction.setEnabled(showCommentAction.isChecked());
+		fillCommentAction.setEnabled(showCommentAction.isChecked());
+
+		final IMenuManager menuManager = getSite().getActionBars()
+				.getMenuManager();
+
+		menuManager.add(showFilesAction);
+		menuManager.add(showCommentAction);
+
+		menuManager.add(new Separator());
+
+		menuManager.add(wrapCommentAction);
+		menuManager.add(fillCommentAction);
+	}
+
+	private IAction createStandardAction(final ActionFactory af) {
+		final IPageSite s = getSite();
+		final IWorkbenchAction a = af.create(s.getWorkbenchWindow());
+		if (af instanceof IPartListener)
+			((IPartListener) a).partActivated(s.getPage().getActivePart());
+		return a;
+	}
+
+	public void dispose() {
 		if (myRefsChangedHandle != null) {
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
@@ -827,126 +979,84 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	@Override
 	public boolean setInput(Object object) {
-		try {
-			trace = GitTraceLocation.HISTORYVIEW.isActive();
-			if (trace)
-				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation(), object);
-
-			if (object == getInput())
-				return true;
-			this.input = null;
-			return super.setInput(object);
-		} finally {
-			if (trace)
-				GitTraceLocation.getTrace().traceExit(
-						GitTraceLocation.HISTORYVIEW.getLocation());
-		}
+		if (object == getInput())
+			return true;
+		this.input = null;
+		return super.setInput(object);
 	}
 
 	@Override
 	public boolean inputSet() {
-		try {
-			if (trace)
-				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation());
-			if (this.input != null)
-				return true;
+		cancelRefreshJob();
 
-			cancelRefreshJob();
-			setErrorMessage(null);
-			Object o = super.getInput();
-			if (o == null) {
-				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
-				return false;
+		if (this.input != null)
+			return true;
+
+		setErrorMessage(null);
+		if (currentWalk != null)
+			currentWalk.release();
+		currentWalk = null;
+		Object o = super.getInput();
+		if (o == null) {
+			setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
+			return false;
+		}
+
+		if (o instanceof IResource) {
+			RepositoryMapping mapping = RepositoryMapping
+					.getMapping((IResource) o);
+			if (mapping != null) {
+				Repository repo = mapping.getRepository();
+				input = new HistoryPageInput(repo,
+						new IResource[] { (IResource) o });
+			}
+		} else if (o instanceof RepositoryTreeNode) {
+			RepositoryTreeNode repoNode = (RepositoryTreeNode) o;
+			switch (repoNode.getType()) {
+			case FILE:
+				File file = ((FileNode) repoNode).getObject();
+				input = new HistoryPageInput(repoNode.getRepository(),
+						new File[] { file });
+				break;
+			case FOLDER:
+				File folder = ((FolderNode) repoNode).getObject();
+				input = new HistoryPageInput(repoNode.getRepository(),
+						new File[] { folder });
+				break;
+			default:
+				input = new HistoryPageInput(repoNode.getRepository());
 			}
 
-			if (o instanceof IResource) {
+		} else if (o instanceof HistoryPageInput)
+			input = (HistoryPageInput) o;
+		else if (o instanceof IAdaptable) {
+			IResource resource = (IResource) ((IAdaptable) o)
+					.getAdapter(IResource.class);
+			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping((IResource) o);
-				if (mapping != null) {
-					Repository repo = mapping.getRepository();
-					input = new HistoryPageInput(repo,
-							new IResource[] { (IResource) o });
-				}
-			} else if (o instanceof RepositoryTreeNode) {
-				RepositoryTreeNode repoNode = (RepositoryTreeNode) o;
-				switch (repoNode.getType()) {
-				case FILE:
-					File file = ((FileNode) repoNode).getObject();
-					input = new HistoryPageInput(repoNode.getRepository(),
-							new File[] { file });
-					break;
-				case FOLDER:
-					File folder = ((FolderNode) repoNode).getObject();
-					input = new HistoryPageInput(repoNode.getRepository(),
-							new File[] { folder });
-					break;
-				default:
-					input = new HistoryPageInput(repoNode.getRepository());
-				}
-
-			} else if (o instanceof HistoryPageInput)
-				input = (HistoryPageInput) o;
-			else if (o instanceof IAdaptable) {
-				IResource resource = (IResource) ((IAdaptable) o)
-						.getAdapter(IResource.class);
-				if (resource != null) {
-					RepositoryMapping mapping = RepositoryMapping
-							.getMapping((IResource) o);
-					Repository repo = mapping.getRepository();
-					input = new HistoryPageInput(repo,
-							new IResource[] { resource });
-				}
+				Repository repo = mapping.getRepository();
+				input = new HistoryPageInput(repo, new IResource[] { resource });
 			}
-			if (input == null) {
-				this.name = ""; //$NON-NLS-1$
-				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
-				return false;
-			}
-
-			final IResource[] inResources = input.getItems();
-			final File[] inFiles = input.getFileList();
-			if (inResources != null && inResources.length == 0) {
-				this.name = ""; //$NON-NLS-1$
-				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
-				return false;
-			}
-
-			this.name = calcluateName(input);
-
-			// disable the filters if we have a Repository as input
-			boolean filtersActive = inResources != null || inFiles != null;
-			showAllRepoVersionsAction.setEnabled(filtersActive);
-			showAllProjectVersionsAction.setEnabled(filtersActive);
-			// the repository itself has no notion of projects
-			showAllFolderVersionsAction.setEnabled(inResources != null);
-			showAllResourceVersionsAction.setEnabled(filtersActive);
-
-			try {
-				initAndStartRevWalk(true);
-			} catch (IllegalStateException e) {
-				Activator.handleError(e.getMessage(), e.getCause(), true);
-				return false;
-			}
-
-			try {
-				initAndStartRevWalk(true);
-			} catch (IllegalStateException e) {
-				Activator.handleError(e.getMessage(), e.getCause(), true);
-				return false;
-			}
-			return true;
-		} finally {
-			if (trace)
-				GitTraceLocation.getTrace().traceExit(
-						GitTraceLocation.HISTORYVIEW.getLocation());
 		}
-	}
+		if (input == null) {
+			this.name = ""; //$NON-NLS-1$
+			setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
+			return false;
+		}
 
-	private ArrayList<String> buildFilterPaths(final IResource[] inResources,
-			final File[] inFiles, final Repository db)
-			throws IllegalStateException {
+		final IResource[] inResources = input.getItems();
+		final File[] inFiles = input.getFileList();
+		if (inResources != null && inResources.length == 0) {
+			this.name = ""; //$NON-NLS-1$
+			setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
+			return false;
+		}
+
+		this.name = calcluateName(input);
+
+		final Repository db = input.getRepository();
+
 		final ArrayList<String> paths;
 		if (inResources != null) {
 			paths = new ArrayList<String>(inResources.length);
@@ -955,8 +1065,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				if (map == null)
 					continue;
 				if (db != map.getRepository()) {
-					throw new IllegalStateException(
-							UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
+					setErrorMessage(UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
+					return false;
 				}
 
 				if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
@@ -993,11 +1103,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				}
 
 				if (gitDirPath.isPrefixOf(filePath)) {
-					throw new IllegalStateException(
-							NLS
-									.bind(
-											UIText.GitHistoryPage_FileOrFolderPartOfGitDirMessage,
-											filePath.toOSString()));
+					setErrorMessage(NLS
+							.bind(
+									UIText.GitHistoryPage_FileOrFolderPartOfGitDirMessage,
+									filePath.toOSString()));
+					return false;
 				}
 
 				IPath pathToAdd = filePath.removeFirstSegments(segmentCount)
@@ -1009,7 +1119,107 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		} else {
 			paths = new ArrayList<String>(0);
 		}
-		return paths;
+		// disable the filters if we have a Repository as input
+		boolean filtersActive = inResources != null || inFiles != null;
+		showAllRepoVersionsAction.setEnabled(filtersActive);
+		showAllProjectVersionsAction.setEnabled(filtersActive);
+		// the repository itself has no notion of projects
+		showAllFolderVersionsAction.setEnabled(inResources != null);
+		showAllResourceVersionsAction.setEnabled(filtersActive);
+
+		final AnyObjectId headId;
+		try {
+			headId = db.resolve(Constants.HEAD);
+		} catch (IOException e) {
+			String errorMessage = NLS.bind(
+					UIText.GitHistoryPage_errorParsingHead, db.getDirectory()
+							.getAbsolutePath());
+			setErrorMessage(errorMessage);
+			return false;
+		}
+
+		if (headId == null) {
+			String errorMessage = NLS.bind(
+					UIText.GitHistoryPage_errorParsingHead, Activator
+							.getDefault().getRepositoryUtil()
+							.getRepositoryName(db));
+			setErrorMessage(errorMessage);
+			return false;
+		}
+
+		if (pathChange(pathFilters, paths) || currentWalk == null
+				|| !headId.equals(currentHeadId)) {
+			// TODO Do not dispose SWTWalk just because HEAD changed
+			// In theory we should be able to update the graph and
+			// not dispose of the SWTWalk, even if HEAD was reset to
+			// HEAD^1 and the old HEAD commit should not be visible.
+			//
+			currentHeadId = headId;
+			if (currentWalk != null)
+				currentWalk.release();
+			currentWalk = new SWTWalk(db);
+			currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
+			currentWalk.sort(RevSort.BOUNDARY, true);
+			highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
+		} else {
+			currentWalk.reset();
+		}
+
+		try {
+			if (store.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
+				markStartAllRefs(Constants.R_HEADS);
+				markStartAllRefs(Constants.R_REMOTES);
+			} else
+				currentWalk.markStart(currentWalk.parseCommit(headId));
+		} catch (IOException e) {
+			Activator.logError(NLS.bind(
+					UIText.GitHistoryPage_errorReadingHeadCommit, headId, db
+							.getDirectory().getAbsolutePath()), e);
+			return false;
+		}
+
+		final TreeWalk fileWalker = new TreeWalk(db);
+		fileWalker.setRecursive(true);
+		if (paths.size() > 0) {
+			pathFilters = paths;
+			currentWalk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
+					.createFromStrings(paths), TreeFilter.ANY_DIFF));
+			fileWalker.setFilter(currentWalk.getTreeFilter().clone());
+
+		} else {
+			pathFilters = null;
+			currentWalk.setTreeFilter(TreeFilter.ALL);
+			fileWalker.setFilter(TreeFilter.ANY_DIFF);
+		}
+		fileViewer.setTreeWalk(db, fileWalker);
+		fileViewer.addSelectionChangedListener(commentViewer);
+		commentViewer.setTreeWalk(fileWalker);
+		commentViewer.setDb(db);
+		findToolbar.clear();
+		graph.setInput(highlightFlag, null, null);
+
+		final SWTCommitList list;
+		list = new SWTCommitList(graph.getControl().getDisplay());
+		list.source(currentWalk);
+
+		final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
+		rj.addJobChangeListener(new JobChangeAdapter() {
+			@Override
+			public void done(final IJobChangeEvent event) {
+				final Control graphctl = graph.getControl();
+				if (job != rj || graphctl.isDisposed())
+					return;
+				graphctl.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						if (job == rj)
+							job = null;
+					}
+				});
+			}
+		});
+		job = rj;
+		schedule(rj);
+		return true;
 	}
 
 	/**
@@ -1017,9 +1227,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 *            the message to display instead of the control
 	 */
 	public void setErrorMessage(final String message) {
-		if (trace)
-			GitTraceLocation.getTrace().traceEntry(
-					GitTraceLocation.HISTORYVIEW.getLocation(), message);
 		getHistoryPageSite().getShell().getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				StackLayout layout = (StackLayout) getControl().getParent()
@@ -1034,9 +1241,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				getControl().getParent().layout();
 			}
 		});
-		if (trace)
-			GitTraceLocation.getTrace().traceExit(
-					GitTraceLocation.HISTORYVIEW.getLocation());
 	}
 
 	/**
@@ -1049,27 +1253,33 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 * @throws MissingObjectException
 	 * @throws IncorrectObjectTypeException
 	 */
-	private void markStartAllRefs(String prefix) throws IOException,
-			MissingObjectException, IncorrectObjectTypeException {
-		for (Entry<String, Ref> refEntry : input.getRepository()
-				.getRefDatabase().getRefs(prefix).entrySet()) {
+	private void markStartAllRefs(String prefix) throws IOException, MissingObjectException,
+			IncorrectObjectTypeException {
+		for (Entry<String, Ref> refEntry : input.getRepository().getRefDatabase()
+				.getRefs(prefix).entrySet()) {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			currentWalk.markStart(currentWalk.parseCommit(ref.getObjectId()));
+			currentWalk.markStart(currentWalk.parseCommit(ref
+					.getObjectId()));
 		}
 	}
 
 	private void cancelRefreshJob() {
 		if (job != null && job.getState() != Job.NONE) {
 			job.cancel();
-			try {
-				job.join();
-			} catch (InterruptedException e) {
-				cancelRefreshJob();
-				return;
-			}
+
+			// As the job had to be canceled but was working on
+			// the data connected with the currentWalk we cannot
+			// be sure it really finished. Since the walk is not
+			// thread safe we must throw it away and build a new
+			// one to start another walk. Clearing our field will
+			// ensure that happens.
+			//
 			job = null;
+			currentWalk = null;
+			highlightFlag = null;
+			pathFilters = null;
 		}
 	}
 
@@ -1095,30 +1305,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	void showCommitList(final Job j, final SWTCommitList list,
 			final SWTCommit[] asArray) {
-		if (trace)
-			GitTraceLocation.getTrace().traceEntry(
-					GitTraceLocation.HISTORYVIEW.getLocation(),
-					new Object[] { list, asArray });
 		if (job != j || graph.getControl().isDisposed())
 			return;
 
 		graph.getControl().getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				if (!graph.getControl().isDisposed() && job == j) {
-					graph.setInput(highlightFlag, list, asArray, input);
-					if (trace)
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.HISTORYVIEW.getLocation(),
-								"Setting input to table"); //$NON-NLS-1$
+					graph.setInput(highlightFlag, list, asArray);
 					findToolbar.setInput(highlightFlag, graph.getTableView()
 							.getTable(), asArray);
-					setErrorMessage(null);
 				}
 			}
 		});
-		if (trace)
-			GitTraceLocation.getTrace().traceExit(
-					GitTraceLocation.HISTORYVIEW.getLocation());
 	}
 
 	private IWorkbenchPartSite getWorkbenchSite() {
@@ -1298,6 +1496,77 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		public void dispose() {
 			// stop listening
 			store.removePropertyChangeListener(this);
+		}
+	}
+
+	private class TextAction extends Action implements FocusListener,
+			ISelectionChangedListener {
+		private final int op;
+
+		TextAction(final int operationCode) {
+			op = operationCode;
+			setEnabled(false);
+		}
+
+		public void run() {
+			if (commentViewer.getTextWidget().isFocusControl()) {
+				if (commentViewer.canDoOperation(op))
+					commentViewer.doOperation(op);
+			} else if (fileViewer.getTable().isFocusControl()) {
+				switch (op) {
+				case ITextOperationTarget.COPY:
+					fileViewer.doCopy();
+					break;
+				case ITextOperationTarget.SELECT_ALL:
+					fileViewer.doSelectAll();
+					break;
+				}
+			} else if (graph.getControl().isFocusControl()) {
+				switch (op) {
+				case ITextOperationTarget.COPY:
+					graph.doCopy();
+					break;
+				}
+			}
+		}
+
+		private void update() {
+			if (commentViewer.getTextWidget().isFocusControl()) {
+				setEnabled(commentViewer.canDoOperation(op));
+			} else if (fileViewer.getTable().isFocusControl()) {
+				switch (op) {
+				case ITextOperationTarget.COPY:
+					setEnabled(!fileViewer.getSelection().isEmpty());
+					break;
+				case ITextOperationTarget.SELECT_ALL:
+					setEnabled(fileViewer.getTable().getItemCount() > 0);
+					break;
+				}
+			} else if (graph.getControl().isFocusControl()) {
+				switch (op) {
+				case ITextOperationTarget.COPY:
+					setEnabled(graph.canDoCopy());
+					break;
+				case ITextOperationTarget.SELECT_ALL:
+					setEnabled(false);
+					break;
+				}
+			}
+		}
+
+		public void focusGained(final FocusEvent e) {
+			update();
+		}
+
+		public void selectionChanged(final SelectionChangedEvent event) {
+			update();
+		}
+
+		public void focusLost(final FocusEvent e) {
+			// Ignore lost events. If focus leaves our page then the
+			// workbench will update the global action away from us.
+			// If focus stays in our page someone else should have
+			// gained it from us.
 		}
 	}
 }

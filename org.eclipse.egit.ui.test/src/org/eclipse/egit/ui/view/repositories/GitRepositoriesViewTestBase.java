@@ -69,10 +69,15 @@ public abstract class GitRepositoriesViewTestBase extends
 	private SWTBotView viewbot;
 
 	// the human-readable view name
-	protected final static String viewName = myUtil.getPluginLocalizedValue("GitRepositoriesView_name");
+	protected static String viewName;
 
 	// the human readable Git category
-	private final static String gitCategory = myUtil.getPluginLocalizedValue("GitCategory_name");;
+	private static String gitCategory;
+
+	static {
+		viewName = myUtil.getPluginLocalizedValue("GitRepositoriesView_name");
+		gitCategory = myUtil.getPluginLocalizedValue("GitCategory_name");
+	}
 
 	/**
 	 * remove all configured repositories from the view
@@ -211,7 +216,8 @@ public abstract class GitRepositoriesViewTestBase extends
 		RefUpdate updateRef = myRepository.updateRef(newRefName);
 		Ref sourceBranch = myRepository.getRef("refs/heads/master");
 		ObjectId startAt = sourceBranch.getObjectId();
-		String startBranch = Repository.shortenRefName(sourceBranch.getName());
+		String startBranch = myRepository
+				.shortenRefName(sourceBranch.getName());
 		updateRef.setNewObjectId(startAt);
 		updateRef
 				.setRefLogMessage("branch: Created from " + startBranch, false); //$NON-NLS-1$
