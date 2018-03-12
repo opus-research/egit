@@ -48,8 +48,6 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 
 	@Before
 	public void setup() throws Exception {
-		Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, false);
 		repositoryFile = createProjectAndCommitToRepository();
 		Repository repo = lookupRepository(repositoryFile);
 		TestUtil.configureTestCommitterAsUser(repo);
