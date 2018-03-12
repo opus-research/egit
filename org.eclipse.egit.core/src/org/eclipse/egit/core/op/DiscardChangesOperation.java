@@ -90,8 +90,8 @@ public class DiscardChangesOperation implements IEGitOperation {
 		else
 			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			public void run(IProgressMonitor monitor) throws CoreException {
-				discardChanges(monitor);
+			public void run(IProgressMonitor actMonitor) throws CoreException {
+				discardChanges(actMonitor);
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
@@ -170,9 +170,9 @@ public class DiscardChangesOperation implements IEGitOperation {
 		Entry e = repository.getIndex().getEntry(resRelPath);
 		// resource must exist in the index and be dirty
 		if (e != null && e.getStage() == 0
-				&& e.isModified(repository.getWorkDir())) {
+				&& e.isModified(repository.getWorkTree())) {
 			GitIndex index = repository.getIndex();
-			index.checkoutEntry(repository.getWorkDir(), e);
+			index.checkoutEntry(repository.getWorkTree(), e);
 			modifiedIndexes.add(index);
 		}
 	}

@@ -336,16 +336,16 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			}
 		};
 
-		if (!(commit.getParentCount() == 1))
+		if (commit.getParentCount() > 1)
 			return;
 		try {
 			FileDiff[] diffs = FileDiff.compute(walker, commit);
 
 			for (FileDiff diff : diffs) {
-				if (diff.blobs.length == 2) {
-					String path = diff.path;
+				if (diff.getBlobs().length == 2) {
+					String path = diff.getPath();
 					d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
-					diff.outputDiff(d, db, diffFmt, false, false);
+					diff.outputDiff(d, db, diffFmt, true);
 				}
 			}
 		} catch (IOException e) {
@@ -407,7 +407,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			IStructuredSelection sel = (IStructuredSelection)selection;
 			Object obj = sel.getFirstElement();
 			if (obj instanceof FileDiff) {
-				String path = ((FileDiff)obj).path;
+				String path = ((FileDiff)obj).getPath();
 				findAndSelect(0, formatPathLine(path), true, true, false, false);
 			}
 		}

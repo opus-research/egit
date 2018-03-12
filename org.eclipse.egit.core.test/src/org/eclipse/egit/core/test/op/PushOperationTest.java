@@ -26,22 +26,22 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
-import org.eclipse.egit.core.op.TrackOperation;
 import org.eclipse.egit.core.test.DualRepositoryTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,8 +64,8 @@ public class PushOperationTest extends DualRepositoryTestCase {
 	@Before
 	public void setUp() throws Exception {
 
-		workdir = testUtils.getTempDir("Repository1");
-		workdir2 = testUtils.getTempDir("Repository2");
+		workdir = testUtils.createTempDir("Repository1");
+		workdir2 = testUtils.createTempDir("Repository2");
 
 		repository1 = new TestRepository(new File(workdir, Constants.DOT_GIT));
 
@@ -105,7 +105,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 				"refs/heads/master", "origin");
 		clop.run(null);
 
-		repository2 = new TestRepository(new Repository(new File(workdir2,
+		repository2 = new TestRepository(new FileRepository(new File(workdir2,
 				Constants.DOT_GIT)));
 		// we push to branch "test" of repository2
 		RefUpdate createBranch = repository2.getRepository().updateRef(
@@ -121,8 +121,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		repository2.dispose();
 		repository1 = null;
 		repository2 = null;
-		testUtils.deleteRecursive(workdir);
-		testUtils.deleteRecursive(workdir2);
+		testUtils.deleteTempDirs();
 	}
 
 	/**
@@ -147,12 +146,12 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		IFile[] fileArr = files.toArray(new IFile[files.size()]);
 
 		// TODO This should be removed once we replace GitIndex with DirCache
-		// The following wait is currently needed on file 
+		// The following wait is currently needed on file
 		// systems with low time stamp accuracy or a buggy
 		// java.io.File.lastModified.
 		Thread.sleep(1000);
 
-		TrackOperation trop = new TrackOperation(fileArr);
+		AddToIndexOperation trop = new AddToIndexOperation(files);
 		trop.execute(null);
 		CommitOperation cop = new CommitOperation(fileArr, files, files,
 				TestUtils.AUTHOR, TestUtils.COMMITTER, "Added file");
