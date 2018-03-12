@@ -166,6 +166,9 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
+	public static String EgitUiUtils_CouldNotOpenEditorMessage;
+
+	/** */
 	public static String ExistingOrNewPage_CreateButton;
 
 	/** */
@@ -1196,6 +1199,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigureUriPage_Remove_button;
+
+	/** */
+	public static String CommitMessageArea_copy;
+
+	/** */
+	public static String CommitMessageArea_cut;
+
+	/** */
+	public static String CommitMessageArea_paste;
+
+	/** */
+	public static String CommitMessageArea_selectAll;
 
 	/** */
 	public static String CommitMessageViewer_author;
