@@ -42,7 +42,6 @@ public class ImportProjectsCommand extends
 		WizardDialog dlg = new WizardDialog(
 				getShell(event),
 				new GitCreateProjectViaWizardWizard(node.getRepository(), path));
-		dlg.setHelpAvailable(false);
 		dlg.open();
 
 		return null;

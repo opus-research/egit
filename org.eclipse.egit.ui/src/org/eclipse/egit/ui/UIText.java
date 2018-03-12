@@ -803,22 +803,16 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_promptRemoteName;
 
 	/** */
+	public static String CloneDestinationPage_fieldRequired;
+
+	/** */
 	public static String CloneDestinationPage_browseButton;
 
 	/** */
 	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
 
 	/** */
-	public static String CloneDestinationPage_errorDirectoryRequired;
-
-	/** */
-	public static String CloneDestinationPage_errorInitialBranchRequired;
-
-	/** */
 	public static String CloneDestinationPage_errorNotEmptyDir;
-
-	/** */
-	public static String CloneDestinationPage_errorRemoteNameRequired;
 
 	/** */
 	public static String RefContentProposal_blob;

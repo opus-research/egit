@@ -41,11 +41,8 @@ public class CreateBranchCommand extends
 			try {
 				RevCommit baseCommit = new RevWalk(node.getRepository())
 						.parseCommit(ref.getLeaf().getObjectId());
-				WizardDialog dlg = new WizardDialog(
-						getShell(event),
-						new CreateBranchWizard(node.getRepository(), baseCommit));
-				dlg.setHelpAvailable(false);
-				dlg.open();
+				new WizardDialog(getShell(event), new CreateBranchWizard(node
+						.getRepository(), baseCommit)).open();
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
