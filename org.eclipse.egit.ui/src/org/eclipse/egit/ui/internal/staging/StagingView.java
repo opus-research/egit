@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
-import static org.eclipse.egit.ui.internal.CommonUtils.runCommand;
-
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collection;
@@ -21,6 +19,10 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.ParameterizedCommand;
+import org.eclipse.core.commands.common.CommandException;
+import org.eclipse.core.expressions.EvaluationContext;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -41,6 +43,7 @@ import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -117,14 +120,17 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
+import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
@@ -800,6 +806,39 @@ public class StagingView extends ViewPart {
 		}
 	}
 
+	private static boolean runCommand(String commandId,
+			IStructuredSelection selection) {
+		ICommandService commandService = (ICommandService) PlatformUI
+				.getWorkbench().getService(ICommandService.class);
+		Command cmd = commandService.getCommand(commandId);
+		if (!cmd.isDefined()) {
+			return false;
+		}
+
+		IHandlerService handlerService = (IHandlerService) PlatformUI
+				.getWorkbench().getService(IHandlerService.class);
+		EvaluationContext c = null;
+		if (selection != null) {
+			c = new EvaluationContext(
+					handlerService.createContextSnapshot(false),
+					selection.toList());
+			c.addVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME, selection);
+			c.removeVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
+		}
+		try {
+			if (c != null) {
+				handlerService.executeCommandInContext(
+						new ParameterizedCommand(cmd, null), null, c);
+			} else {
+				handlerService.executeCommand(commandId, null);
+			}
+			return true;
+		} catch (CommandException ignored) {
+			// Ignored
+		}
+		return false;
+	}
+
 	private void reload(final Repository repository) {
 		final boolean repositoryChanged = currentRepository != repository;
 
@@ -815,9 +854,17 @@ public class StagingView extends ViewPart {
 				results.set(indexDiff);
 				return Status.OK_STATUS;
 			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (family.equals(JobFamilies.STAGING_VIEW_REFRESH))
+					return true;
+				return super.belongsTo(family);
+			}
+
 		};
 
-		job.setUser(true);
+		job.setUser(false);
 		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
 
 		job.addJobChangeListener(new JobChangeAdapter() {
@@ -947,8 +994,8 @@ public class StagingView extends ViewPart {
 	}
 
 	private void addHeadChangedWarning(String commitMessage) {
-		String message = UIText.StagingView_headCommitChanged + "\n\n" + //$NON-NLS-1$
-				commitMessage;
+		String message = UIText.StagingView_headCommitChanged + Text.DELIMITER
+				+ Text.DELIMITER + commitMessage;
 		commitMessageComponent.setCommitMessage(message);
 	}
 
