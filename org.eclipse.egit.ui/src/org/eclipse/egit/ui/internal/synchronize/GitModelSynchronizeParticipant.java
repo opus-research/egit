@@ -25,6 +25,7 @@ import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IEncodedStorage;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
@@ -394,14 +395,9 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		IPath path = Path.fromPortableString(containerPath);
 		IContainer mappedContainer = ResourcesPlugin.getWorkspace().getRoot()
 				.getContainerForLocation(path);
-		if (mappedContainer == null) {
+		GitProjectData projectData = GitProjectData.get((IProject) mappedContainer);
+		if (projectData == null)
 			return null;
-		}
-		GitProjectData projectData = GitProjectData
-				.get(mappedContainer.getProject());
-		if (projectData == null) {
-			return null;
-		}
 		RepositoryMapping mapping = projectData.getRepositoryMapping(mappedContainer);
 		if (mapping != null)
 			return mapping.getRepository();
