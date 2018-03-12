@@ -111,8 +111,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		itemSkip.setImage(getImage(UIIcons.REBASE_SKIP));
 		itemSkip.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.SKIP));
-		itemSkip
-				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_SkipText);
+		itemSkip.setText(UIText.RebaseInteractiveStepActionToolBarProvider_SkipText);
 		rebaseActionItems[1] = itemSkip;
 
 		itemEdit = new ToolItem(theToolbar, SWT.RADIO);
@@ -125,29 +124,33 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		itemSquash = new ToolItem(theToolbar, SWT.RADIO);
 		itemSquash.setImage(getImage(UIIcons.SQUASH));
 		itemSquash.addSelectionListener(new ActionSelectionListener(
-						RebaseInteractivePlan.ElementAction.SQUASH));
-		itemSquash.setText(UIText.RebaseInteractiveStepActionToolBarProvider_SquashText);
+				RebaseInteractivePlan.ElementAction.SQUASH));
+		itemSquash
+				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_SquashText);
 		rebaseActionItems[3] = itemSquash;
 
 		itemFixup = new ToolItem(theToolbar, SWT.RADIO);
 		itemFixup.setImage(getImage(UIIcons.FIXUP));
 		itemFixup.addSelectionListener(new ActionSelectionListener(
-						RebaseInteractivePlan.ElementAction.FIXUP));
-		itemFixup.setText(UIText.RebaseInteractiveStepActionToolBarProvider_FixupText);
+				RebaseInteractivePlan.ElementAction.FIXUP));
+		itemFixup
+				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_FixupText);
 		rebaseActionItems[4] = itemFixup;
 
 		itemReword = new ToolItem(theToolbar, SWT.RADIO);
 		itemReword.setImage(getImage(UIIcons.REWORD));
 		itemReword.addSelectionListener(new ActionSelectionListener(
-						RebaseInteractivePlan.ElementAction.REWORD));
-		itemReword.setText(UIText.RebaseInteractiveStepActionToolBarProvider_RewordText);
+				RebaseInteractivePlan.ElementAction.REWORD));
+		itemReword
+				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_RewordText);
 		rebaseActionItems[5] = itemReword;
 
 		new ToolItem(theToolbar, SWT.SEPARATOR);
 
 		itemMoveUp = new ToolItem(theToolbar, SWT.NONE);
 		itemMoveUp.setImage(getImage(UIIcons.ELCL16_PREVIOUS));
-		itemMoveUp.setText(UIText.RebaseInteractiveStepActionToolBarProvider_MoveUpText);
+		itemMoveUp
+				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_MoveUpText);
 		itemMoveUp.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -180,8 +183,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 	private class ActionSelectionListener implements SelectionListener {
 		private final RebaseInteractivePlan.ElementAction type;
 
-		ActionSelectionListener(
-				final RebaseInteractivePlan.ElementAction action) {
+		ActionSelectionListener(final RebaseInteractivePlan.ElementAction action) {
 			this.type = action;
 		}
 
@@ -189,9 +191,8 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			List<RebaseInteractivePlan.PlanElement> selected = getSelectedRebaseTodoLines();
 			if (selected == null || selected.isEmpty())
 				return;
-			for (RebaseInteractivePlan.PlanElement element : selected) {
+			for (RebaseInteractivePlan.PlanElement element : selected)
 				element.setPlanElementAction(type);
-			}
 			mapActionItemsToSelection(view.planTreeViewer.getSelection());
 		}
 
@@ -230,9 +231,8 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		case 1:
 			return selected.get(0);
 		default:
-			if (firstOfMultipleSelection) {
+			if (firstOfMultipleSelection)
 				return selected.get(0);
-			}
 			break;
 		}
 		return null;
@@ -253,12 +253,10 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		List<RebaseInteractivePlan.PlanElement> planEntries = new ArrayList<RebaseInteractivePlan.PlanElement>(
 				selection.size());
 		@SuppressWarnings("unchecked")
-		List<RebaseInteractivePlan.PlanElement> candidates = selection
-				.toList();
+		List<RebaseInteractivePlan.PlanElement> candidates = selection.toList();
 		for (Object candidate : candidates) {
 			if (candidate instanceof RebaseInteractivePlan.PlanElement)
-				planEntries
-						.add((RebaseInteractivePlan.PlanElement) candidate);
+				planEntries.add((RebaseInteractivePlan.PlanElement) candidate);
 		}
 		return planEntries;
 	}
@@ -278,8 +276,7 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			if (structured.size() > 1) {
 				// multi selection
 				setMoveItemsEnabled(false);
-				ElementAction type = firstSelectedEntry
-						.getPlanElementAction();
+				ElementAction type = firstSelectedEntry.getPlanElementAction();
 				for (Iterator iterator = structured.iterator(); iterator
 						.hasNext();) {
 					Object selectedObj = iterator.next();
