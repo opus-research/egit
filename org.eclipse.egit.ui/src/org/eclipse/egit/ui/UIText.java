@@ -502,6 +502,12 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
 
 	/** */
+	public static String GitPreferenceRoot_BlameGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_BlameIgnoreWhitespaceLabel;
+
+	/** */
 	public static String GitPreferenceRoot_fetchBeforeSynchronization;
 
 	/** */
@@ -1192,6 +1198,9 @@ public class UIText extends NLS {
 	public static String RefSpecPanel_fetch;
 
 	/** */
+	public static String RefSpecPanel_fetchTitle;
+
+	/** */
 	public static String RefSpecPanel_srcFetchDescription;
 
 	/** */
@@ -1244,6 +1253,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPanel_push;
+
+	/** */
+	public static String RefSpecPanel_pushTitle;
 
 	/** */
 	public static String RefSpecPanel_srcPushDescription;
@@ -3732,6 +3744,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_Pull;
+
+	/** */
+	public static String GitVariableResolver_InternalError;
+
+	/** */
+	public static String GitVariableResolver_NoSelectedResource;
+
+	/** */
+	public static String GitVariableResolver_VariableReferencesNonExistentResource;
 
 	/** */
 	public static String DecoratableResourceHelper_noHead;

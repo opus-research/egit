@@ -11,12 +11,10 @@ package org.eclipse.egit.ui.internal.staging;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.commands.Command;
@@ -43,16 +41,15 @@ import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
-import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitUI;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
@@ -90,7 +87,6 @@ import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
@@ -113,7 +109,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.team.core.Team;
-import org.eclipse.team.core.TeamException;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -853,6 +848,14 @@ public class StagingView extends ViewPart {
 				results.set(indexDiff);
 				return Status.OK_STATUS;
 			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (family.equals(JobFamilies.STAGING_VIEW_REFRESH))
+					return true;
+				return super.belongsTo(family);
+			}
+
 		};
 
 		job.setUser(false);
@@ -1068,35 +1071,7 @@ public class StagingView extends ViewPart {
 			commitOperation = new CommitOperation(repository,
 					commitMessageComponent.getAuthor(),
 					commitMessageComponent.getCommitter(),
-					commitMessageComponent.getCommitMessage()) {
-
-				protected RevCommit commit() throws TeamException {
-					RevCommit commit = super.commit();
-					openNewCommit(commit);
-					return commit;
-				}
-
-				protected RevCommit commitAll(Date commitDate,
-						TimeZone timeZone, PersonIdent authorIdent,
-						PersonIdent committerIdent) throws TeamException {
-					RevCommit commit = super.commitAll(commitDate, timeZone,
-							authorIdent, committerIdent);
-					openNewCommit(commit);
-					return commit;
-				}
-
-				private void openNewCommit(final RevCommit newCommit) {
-					if (newCommit != null && openNewCommitsAction.isChecked())
-						asyncExec(new Runnable() {
-
-							public void run() {
-								CommitEditor.openQuiet(new RepositoryCommit(
-										repository, newCommit));
-							}
-						});
-				}
-
-			};
+					commitMessageComponent.getCommitMessage());
 		} catch (CoreException e) {
 			Activator.handleError(UIText.StagingView_commitFailed, e, true);
 			return;
@@ -1104,7 +1079,8 @@ public class StagingView extends ViewPart {
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
 		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
-		CommitUI.performCommit(currentRepository, commitOperation);
+		CommitUI.performCommit(currentRepository, commitOperation,
+				openNewCommitsAction.isChecked());
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
 	}
