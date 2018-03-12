@@ -102,7 +102,8 @@ public class CommitMessageComponent {
 		}
 	}
 
-	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
+
+	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
 	/**
 	 * Constant for the extension point for the commit message provider
@@ -156,8 +157,6 @@ public class CommitMessageComponent {
 	private Repository repository;
 
 	private Collection<String> filesToCommit = new ArrayList<String>();
-
-	private Collection<String> preselectedFiles = new ArrayList<String>();
 
 	private ObjectId headCommitId;
 
@@ -277,13 +276,6 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * @param preselectedFiles
-	 */
-	public void setPreselectedFiles(Collection<String> preselectedFiles) {
-		this.preselectedFiles = preselectedFiles;
-	}
-
-	/**
 	 * @return whether to auto-add a signed-off line to the message
 	 */
 	public boolean isSignedOff() {
@@ -305,6 +297,7 @@ public class CommitMessageComponent {
 	public void setAmending(boolean amending) {
 		this.amending = amending;
 	}
+
 
 	/**
 	 * Set whether commit is allowed at the moment.
@@ -396,9 +389,8 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Disable listeners on commit message editor and committer text to change
-	 * data programmatically.
-	 *
+	 * Disable listeners on commit message editor and committer text
+	 * to change data programmatically.
 	 * @param enable
 	 */
 	public void enableListers(boolean enable) {
@@ -536,8 +528,8 @@ public class CommitMessageComponent {
 				ConfigConstants.CONFIG_GERRIT_SECTION,
 				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
 		signedOff = org.eclipse.egit.ui.Activator.getDefault()
-				.getPreferenceStore()
-				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
+		.getPreferenceStore()
+		.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
 	}
 
 	/**
@@ -547,8 +539,7 @@ public class CommitMessageComponent {
 		if (amending)
 			getHeadCommitInfo();
 
-		String calculatedCommitMessage = calculateCommitMessage(filesToCommit,
-				preselectedFiles);
+		String calculatedCommitMessage = calculateCommitMessage(filesToCommit);
 		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(calculatedCommitMessage) > 0;
 		commitText.setText(calculatedCommitMessage);
 		authorText.setText(getSafeString(author));
@@ -569,7 +560,8 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * update signed off and change id button from the commit message
+	 * update signed off and change id button from the
+	 * commit message
 	 */
 	public void updateSignedOffAndChangeIdButton() {
 		updateSignedOffButton();
@@ -587,8 +579,8 @@ public class CommitMessageComponent {
 
 	private boolean isContainedInAnyRemoteBranch(RevCommit commit) {
 		try {
-			Collection<Ref> refs = repository.getRefDatabase()
-					.getRefs(Constants.R_REMOTES).values();
+			Collection<Ref> refs = repository.getRefDatabase().getRefs(
+					Constants.R_REMOTES).values();
 			return RevUtils.isContainedInAnyRef(repository, commit, refs);
 		} catch (IOException e) {
 			// The result only affects a warning, so pretend there was no
@@ -608,12 +600,10 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * @param allPathsToCommit
-	 * @param preselectedPaths
+	 * @param paths
 	 * @return the calculated commit message
 	 */
-	private String calculateCommitMessage(Collection<String> allPathsToCommit,
-			Collection<String> preselectedPaths) {
+	private String calculateCommitMessage(Collection<String> paths) {
 		if (commitMessage != null) {
 			// special case for merge
 			return commitMessage;
@@ -623,26 +613,19 @@ public class CommitMessageComponent {
 			return previousCommitMessage;
 		String calculatedCommitMessage = null;
 
-		Set<IResource> projects = new HashSet<IResource>();
-		for (String path : allPathsToCommit) {
+		Set<IResource> resources = new HashSet<IResource>();
+		for (String path : paths) {
 			IFile file = findFile(path);
 			if (file != null)
-				projects.add(file.getProject());
-		}
-		Set<IResource> preselectedResources = new HashSet<IResource>();
-		for (String preselectedPath : preselectedPaths) {
-			IFile file = findFile(preselectedPath);
-			if (file != null)
-				preselectedResources.add(file);
+				resources.add(file.getProject());
 		}
 		try {
 			ICommitMessageProvider messageProvider = getCommitMessageProvider();
 			if (messageProvider != null) {
-				IResource[] projectsArray = projects.toArray(new IResource[0]);
-				IResource[] preselectedResourcesArray = preselectedResources
+				IResource[] resourcesArray = resources
 						.toArray(new IResource[0]);
-				calculatedCommitMessage = messageProvider.getMessage(
-						projectsArray, preselectedResourcesArray);
+				calculatedCommitMessage = messageProvider
+						.getMessage(resourcesArray);
 			}
 		} catch (CoreException coreException) {
 			Activator.error(coreException.getLocalizedMessage(), coreException);
@@ -860,8 +843,7 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * @param id
-	 *            the id of the current head commit
+	 * @param id the id of the current head commit
 	 */
 	public void setHeadCommit(ObjectId id) {
 		headCommitId = id;
