@@ -25,11 +25,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -105,7 +100,6 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.forms.IFormColors;
@@ -115,7 +109,6 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.part.ViewPart;
-import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /**
  * A GitX style staging view with embedded commit dialog.
@@ -211,7 +204,7 @@ public class StagingView extends ViewPart {
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(unstagedTableViewer.getControl());
 		unstagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TEXT_BORDER);
+				FormToolkit.TREE_BORDER);
 		unstagedTableViewer.getTable().setLinesVisible(true);
 		unstagedTableViewer.setLabelProvider(new StagingViewLabelProvider());
 		unstagedTableViewer.setContentProvider(new StagingViewContentProvider(
@@ -297,7 +290,7 @@ public class StagingView extends ViewPart {
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(stagedTableViewer.getControl());
 		stagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TEXT_BORDER);
+				FormToolkit.TREE_BORDER);
 		stagedTableViewer.getTable().setLinesVisible(true);
 		stagedTableViewer.setLabelProvider(new StagingViewLabelProvider());
 		stagedTableViewer.setContentProvider(new StagingViewContentProvider(
@@ -665,60 +658,10 @@ public class StagingView extends ViewPart {
 		return false;
 	}
 
-	private void reload(final Repository repository) {
-		final IndexDiff[] results = new IndexDiff[1];
-
-		Job job = new Job(UIText.StagingView_IndexDiffReload) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				IndexDiff indexDiff = doReload(repository);
-				results[0] = indexDiff;
-				return Status.OK_STATUS;
-			}
-		};
-
-		job.addJobChangeListener(new JobChangeAdapter() {
-			public void done(final IJobChangeEvent event) {
-				form.getDisplay().asyncExec(new Runnable() {
-					public void run() {
-						if (form.isDisposed())
-							return;
-
-						IndexDiff indexDiff = results[0];
-						unstagedTableViewer.setInput(new Object[] { repository,
-								indexDiff });
-						stagedTableViewer
-								.setInput(new Object[] { repository, indexDiff });
-						commitAction.setEnabled(repository.getRepositoryState()
-								.canCommit());
-						form.setText(StagingView.getRepositoryName(repository));
-						updateCommitMessageComponent();
-						clearCommitMessageToggles();
-						updateSectionText();
-					}
-				});
-			}
-		});
-
-		schedule(job);
-	}
-
-	private void schedule(final Job j) {
-		IWorkbenchPartSite site = getSite();
-		if (site != null) {
-			final IWorkbenchSiteProgressService p;
-			p = (IWorkbenchSiteProgressService) site
-					.getAdapter(IWorkbenchSiteProgressService.class);
-			if (p != null) {
-				p.schedule(j, 0, true /* use half-busy cursor */);
-				return;
-			}
-		}
-		j.schedule();
-	}
-
-	private IndexDiff doReload(final Repository repository) {
+	// TODO move to a Job?
+	private IndexDiff reload(final Repository repository) {
 		currentRepository = repository;
+
 
 		final IndexDiff indexDiff;
 		try {
@@ -731,6 +674,25 @@ public class StagingView extends ViewPart {
 
 		removeListeners();
 		attachListeners(repository);
+
+		form.getDisplay().asyncExec(new Runnable() {
+			public void run() {
+				if (form.isDisposed())
+					return;
+
+				unstagedTableViewer.setInput(new Object[] { repository,
+						indexDiff });
+				stagedTableViewer
+						.setInput(new Object[] { repository, indexDiff });
+				commitAction.setEnabled(repository.getRepositoryState()
+						.canCommit());
+				form.setText(StagingView.getRepositoryName(repository));
+				updateCommitMessageComponent();
+				clearCommitMessageToggles();
+				updateSectionText();
+			}
+
+		});
 
 		return indexDiff;
 	}
