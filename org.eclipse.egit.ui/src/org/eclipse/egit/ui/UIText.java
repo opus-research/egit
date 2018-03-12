@@ -538,9 +538,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_FastForward;
 
 	/** */
-	public static String RebaseResultDialog_Failed;
-
-	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
@@ -1679,6 +1676,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
+
+	/** */
+	public static String ConfigureRemoteWizard_WizardTitle_Change;
 
 	/** */
 	public static String ConfigureRemoteWizard_WizardTitle_New;
