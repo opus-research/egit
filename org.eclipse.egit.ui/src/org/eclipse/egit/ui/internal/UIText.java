@@ -4393,15 +4393,6 @@ public class UIText extends NLS {
 	public static String RevertHandler_AlreadyRevertedMessage;
 
 	/** */
-	public static String RevertHandler_CommitsNotOnCurrentBranch;
-
-	/** */
-	public static String RevertHandler_Error_Title;
-
-	/** */
-	public static String RevertHandler_ErrorCheckingIfCommitsAreOnCurrentBranch;
-
-	/** */
 	public static String RevertHandler_JobName;
 
 	/** */
