@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.history;
 import java.util.Iterator;
 
 import org.eclipse.compare.CompareUI;
-import org.eclipse.compare.ICompareContainer;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.ui.UIText;
@@ -96,12 +95,7 @@ class CommitFileDiffViewer extends TableViewer {
 
 		base = new FileRevisionTypedElement(baseFile);
 		next = new FileRevisionTypedElement(nextFile);
-		in = new GitCompareFileRevisionEditorInput(base, next, null){
-			public void setContainer(ICompareContainer container) {
-				// deliberately empty, for we don't want any open editors
-				// to be changed with the contents of the old history.
-			}
-		};
+		in = new GitCompareFileRevisionEditorInput(base, next, null);
 		CompareUI.openCompareEditor(in);
 	}
 
