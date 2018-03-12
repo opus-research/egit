@@ -1,17 +1,20 @@
 /*******************************************************************************
- * Copyright (C) 2014, 2015 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2014, 2016 Robin Stocker <robin@nibor.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 486857
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.selection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,17 +25,15 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -47,7 +48,6 @@ import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.ide.ResourceUtil;
 
 /**
  * Utilities for working with selections.
@@ -161,26 +161,12 @@ public class SelectionUtils {
 	}
 
 	/**
-	 * Returns the resources contained in the given selection.
-	 *
 	 * @param selection
 	 * @return the resources in the selection
 	 */
 	@NonNull
 	public static IResource[] getSelectedResources(
 			@NonNull IStructuredSelection selection) {
-		Set<IResource> result = getSelectedResourcesSet(selection);
-		return result.toArray(new IResource[result.size()]);
-	}
-
-	/**
-	 * Returns the resources contained in the given selection.
-	 *
-	 * @param selection
-	 * @return the resources in the selection
-	 */
-	private static Set<IResource> getSelectedResourcesSet(
-			IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<IResource>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
@@ -189,7 +175,7 @@ public class SelectionUtils {
 			else
 				result.addAll(extractResourcesFromMapping(o));
 		}
-		return result;
+		return result.toArray(new IResource[result.size()]);
 	}
 
 	private static List<IResource> extractResourcesFromMapping(Object o) {
@@ -217,47 +203,39 @@ public class SelectionUtils {
 	}
 
 	/**
-	 * Determines the most fitting {@link HistoryPageInput} for the given
-	 * {@link IStructuredSelection}. The {@code mandatoryObject} must be
-	 * contained in the selection and in a repository.
-	 * <p>
-	 * Most fitting means that the input will contain all selected resources
-	 * which are contained in the same repository as the given
-	 * {@code mandatoryObject}.
-	 * </p>
+	 * Determines a set of either {@link IResource}s or {@link IPath}s from a
+	 * selection. For selection contents that adapt to {@link IResource} or
+	 * {@link ResourceMapping}, the containing {@link IResource}s are included
+	 * in the result set; otherwise for selection contents that adapt to
+	 * {@link IPath} these paths are included.
 	 *
 	 * @param selection
-	 *            The selection for which the most fitting HistoryPageInput is
-	 *            to be determined.
-	 * @param mandatoryObject
-	 *            The object to which the HistoryPageInput is tailored. Must be
-	 *            contained in the given selection and in a repository.
-	 * @return The most fitting HistoryPageInput. Will return {@code null} when
-	 *         the {@code mandatoryObject} is not contained in the given
-	 *         selection or in a repository.
+	 *            to process
+	 * @return the set of {@link IResource} and {@link IPath} objects from the
+	 *         selection; not containing {@code null} values
 	 */
-	public static HistoryPageInput getMostFittingInput(
-			IStructuredSelection selection, Object mandatoryObject) {
-		Set<IResource> resources = getSelectedResourcesSet(selection);
-		if (!resources.contains(mandatoryObject)) {
-			return null;
-		}
-
-		Repository repository = getRepository((IResource) mandatoryObject);
-		if (repository == null) {
-			return null;
-		}
-
-		for (Iterator<IResource> it = resources.iterator(); it.hasNext();) {
-			IResource resource = it.next();
-			if (getRepository(resource) != repository) {
-				it.remove();
+	@NonNull
+	private static Set<Object> getSelectionContents(
+			@NonNull IStructuredSelection selection) {
+		Set<Object> result = new HashSet<>();
+		for (Object o : selection.toList()) {
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null) {
+				result.add(resource);
+				continue;
+			}
+			ResourceMapping mapping = AdapterUtils.adapt(o,
+					ResourceMapping.class);
+			if (mapping != null) {
+				result.addAll(extractResourcesFromMapping(mapping));
+			} else {
+				IPath location = AdapterUtils.adapt(o, IPath.class);
+				if (location != null) {
+					result.add(location);
+				}
 			}
 		}
-
-		IResource[] resourceArray = resources.toArray(new IResource[resources
-				.size()]);
-		return new HistoryPageInput(repository, resourceArray);
+		return result;
 	}
 
 	/**
@@ -272,42 +250,45 @@ public class SelectionUtils {
 	 *            must be provided if warn = true
 	 * @return repository for current project, or null
 	 */
+	@Nullable
 	private static Repository getRepository(boolean warn,
-			IStructuredSelection selection, Shell shell) {
-		RepositoryMapping mapping = null;
-
-		IPath[] locations = getSelectedLocations(selection);
+			@NonNull IStructuredSelection selection, Shell shell) {
+		Set<Object> elements = getSelectionContents(selection);
 		if (GitTraceLocation.SELECTION.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.SELECTION.getLocation(), "selection=" //$NON-NLS-1$
-							+ selection + ", locations=" //$NON-NLS-1$
-							+ Arrays.toString(locations));
+							+ selection + ", elements=" + elements.toString()); //$NON-NLS-1$
 
-		for (IPath location : locations) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
-			if (repositoryMapping == null)
-				return null;
-			if (mapping == null)
-				mapping = repositoryMapping;
-			if (mapping.getRepository() != repositoryMapping.getRepository()) {
-				if (warn)
+		boolean hadNull = false;
+		Repository result = null;
+		for (Object location : elements) {
+			Repository repo = null;
+			if (location instanceof IResource) {
+				repo = ResourceUtil.getRepository((IResource) location);
+			} else if (location instanceof IPath) {
+				repo = ResourceUtil.getRepository((IPath) location);
+			}
+			if (repo == null) {
+				hadNull = true;
+			}
+			if (result == null) {
+				result = repo;
+			}
+			boolean mismatch = hadNull && result != null;
+			if (mismatch || result != repo) {
+				if (warn) {
 					MessageDialog.openError(shell,
 							UIText.RepositoryAction_multiRepoSelectionTitle,
 							UIText.RepositoryAction_multiRepoSelection);
+				}
 				return null;
 			}
 		}
-		Repository result = null;
-		if (mapping == null)
+
+		if (result == null) {
 			for (Object o : selection.toArray()) {
-				Repository nextRepo = null;
-				if (o instanceof Repository)
-					nextRepo = (Repository) o;
-				else if (o instanceof PlatformObject)
-					nextRepo = CommonUtils.getAdapter(((PlatformObject) o), Repository.class);
-				if (nextRepo != null && result != null
-						&& !result.equals(nextRepo)) {
+				Repository nextRepo = AdapterUtils.adapt(o, Repository.class);
+				if (nextRepo != null && result != null && result != nextRepo) {
 					if (warn)
 						MessageDialog
 								.openError(
@@ -318,8 +299,8 @@ public class SelectionUtils {
 				}
 				result = nextRepo;
 			}
-		else
-			result = mapping.getRepository();
+		}
+
 		if (result == null) {
 			if (warn)
 				MessageDialog.openError(shell,
@@ -345,7 +326,8 @@ public class SelectionUtils {
 			// Note that there is both a getResource(IEditorInput) as well as a
 			// getResource(Object), which don't do the same thing. We explicitly
 			// want the first here.
-			IResource resource = ResourceUtil.getResource(editorInput);
+			IResource resource = org.eclipse.ui.ide.ResourceUtil
+					.getResource(editorInput);
 			if (resource != null)
 				return new StructuredSelection(resource);
 			if (editorInput instanceof FileRevisionEditorInput) {
@@ -370,18 +352,6 @@ public class SelectionUtils {
 		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
 		ctx = hsr.getCurrentState();
 		return ctx;
-	}
-
-	private static Repository getRepository(IResource resource) {
-		IPath location = resource.getLocation();
-		if (location != null) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
-			if (repositoryMapping != null) {
-				return repositoryMapping.getRepository();
-			}
-		}
-		return null;
 	}
 
 }

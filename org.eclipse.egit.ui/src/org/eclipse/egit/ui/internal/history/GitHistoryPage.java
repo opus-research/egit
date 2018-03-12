@@ -9,7 +9,6 @@
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2015, Stefan Dirix (Stefan Dirix <sdirix@eclipsesource.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +29,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -44,7 +42,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -58,9 +55,8 @@ import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
@@ -742,20 +738,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			final String prop = event.getProperty();
-			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(prop)) {
-				Object oldValue = event.getOldValue();
-				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
-					graph.setRelativeDate(isShowingRelativeDates());
-					graph.getTableView().refresh();
-				}
-			}
-			if (UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES.equals(prop)) {
-				Object oldValue = event.getOldValue();
-				if (oldValue == null || !oldValue.equals(event.getNewValue())) {
-					graph.setShowEmailAddresses(isShowingEmailAddresses());
-					graph.getTableView().refresh();
-				}
-			}
 			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
 					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
 				graph.getTableView().refresh();
@@ -873,8 +855,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr,
 				this, resources);
 
-		graph.setRelativeDate(isShowingRelativeDates());
-		graph.setShowEmailAddresses(isShowingEmailAddresses());
 		Activator.getDefault().getPreferenceStore()
 				.addPropertyChangeListener(listener);
 
@@ -1355,32 +1335,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	@Override
 	public boolean setInput(Object object) {
 		try {
-			Object useAsInput = object;
-
-			// Workaround for the limitation of GenericHistoryView to only
-			// forward the first part of a selection and adapting it
-			// immediately to IResource.
-			ISelection selection = getSite().getPage().getSelection();
-			if (selection instanceof IStructuredSelection) {
-				IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-				HistoryPageInput mostFittingInput = SelectionUtils
-						.getMostFittingInput(structuredSelection, object);
-				if (mostFittingInput != null) {
-					useAsInput = mostFittingInput;
-				}
-			}
-
 			// hide the warning text initially
 			setWarningText(null);
 			trace = GitTraceLocation.HISTORYVIEW.isActive();
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation(), useAsInput);
+						GitTraceLocation.HISTORYVIEW.getLocation(), object);
 
-			if (useAsInput == getInput())
+			if (object == getInput())
 				return true;
 			this.input = null;
-			return super.setInput(useAsInput);
+			return super.setInput(object);
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
@@ -1452,10 +1417,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					showHead = true;
 					break;
 				}
-			} else if (o instanceof HistoryPageInput)
+			} else if (o instanceof HistoryPageInput) {
 				input = (HistoryPageInput) o;
-			else if (o instanceof IAdaptable) {
-				IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
+			} else {
+				IResource resource = AdapterUtils.adapt(o, IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(resource);
@@ -1468,8 +1433,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 			if (repo == null) {
 				repo = AdapterUtils.adapt(o, Repository.class);
-				if (repo != null)
-					input = new HistoryPageInput(repo);
+				if (repo != null) {
+					File file = AdapterUtils.adapt(o, File.class);
+					if (file == null) {
+						input = new HistoryPageInput(repo);
+					} else {
+						input = new HistoryPageInput(repo, new File[] { file });
+					}
+				}
 			}
 			selection = AdapterUtils.adapt(o, RevCommit.class);
 
@@ -2308,7 +2279,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IWorkbenchPartSite site = getPartSite();
 		if (site != null) {
 			final IWorkbenchSiteProgressService p;
-			p = CommonUtils.getAdapter(site, IWorkbenchSiteProgressService.class);
+			p = AdapterUtils.adapt(site, IWorkbenchSiteProgressService.class);
 			if (p != null) {
 				p.schedule(j, 0, true /* use half-busy cursor */);
 				return;
@@ -2381,14 +2352,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			job.release();
 			job = null;
 		}
-	}
-
-	static boolean isShowingRelativeDates() {
-		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
-	}
-
-	private boolean isShowingEmailAddresses() {
-		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES);
 	}
 
 	@Override

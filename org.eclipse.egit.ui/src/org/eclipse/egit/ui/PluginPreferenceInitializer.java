@@ -73,7 +73,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.DECORATOR_SHOW_UNTRACKED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_STAGED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON, true);
-		store.setDefault(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON, true);
+		store.setDefault(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_DIRTY_ICON, false);
 		store.setDefault(UIPreferences.WARN_BEFORE_COMMITTING, false);
 		store.setDefault(UIPreferences.WARN_BEFORE_COMMITTING_LEVEL,
@@ -113,6 +113,8 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, true);
 		store.setDefault(UIPreferences.DATE_FORMAT,
 				UIPreferences.DEFAULT_DATE_FORMAT);
+		store.setDefault(UIPreferences.DATE_FORMAT_CHOICE,
+				UIPreferences.DEFAULT_DATE_FORMAT_CHOICE);
 		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);
 		store.setDefault(UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE, true);
 		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);

@@ -7,6 +7,7 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2013, Gunnar Wagenknecht <gunnar@wagenknecht.org>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,8 +32,8 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
@@ -99,14 +100,18 @@ public class RepositoryMapping {
 	private RepositoryMapping(@NonNull
 	final IContainer mappedContainer, final @NonNull IPath location,
 			@NonNull final File gitDir) {
-		final IPath cLoc = location.removeTrailingSeparator();
-		final IPath gLoc = Path.fromOSString(gitDir.getAbsolutePath())
-				.removeTrailingSeparator();
-		final IPath gLocParent = gLoc.removeLastSegments(1);
-
 		container = mappedContainer;
 		containerPathString = container.getProjectRelativePath()
 				.toPortableString();
+		final IPath gLoc = Path.fromOSString(gitDir.getPath())
+				.removeTrailingSeparator();
+		if (!gitDir.isAbsolute()) {
+			// It is relative to location, so we can set it right away.
+			gitDirPathString = gLoc.toPortableString();
+			return;
+		}
+		final IPath cLoc = location.removeTrailingSeparator();
+		final IPath gLocParent = gLoc.removeLastSegments(1);
 
 		if (cLoc.isPrefixOf(gLoc)) {
 			int matchingSegments = gLoc.matchingFirstSegments(cLoc);

@@ -133,7 +133,7 @@ public class UIPreferences {
 	/** */
 	public final static String DECORATOR_SHOW_CONFLICTS_ICON = "decorator_show_conflicts_icon"; //$NON-NLS-1$
 	/** */
-	public final static String DECORATOR_SHOW_ASSUME_VALID_ICON = "decorator_show_assume_valid_icon"; //$NON-NLS-1$
+	public final static String DECORATOR_SHOW_ASSUME_UNCHANGED_ICON = "decorator_show_assume_valid_icon"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_SHOW_DIRTY_ICON = "decorator_show_dirty_icon"; //$NON-NLS-1$
 	/** */
@@ -147,7 +147,13 @@ public class UIPreferences {
 	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
 	/** */
+	public final static String DATE_FORMAT_CHOICE = "date_format_choice"; //$NON-NLS-1$
+	/** */
+	public static final String DATE_FORMAT_CUSTOM = "CUSTOM"; //$NON-NLS-1$
+	/** */
 	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
+	/** */
+	public static final String DEFAULT_DATE_FORMAT_CHOICE = DATE_FORMAT_CUSTOM;
 	/** */
 	public static final String DEFAULT_CHANGESET_FORMAT = "[{author}] ({date}) {short_message}"; //$NON-NLS-1$
 	/** */
