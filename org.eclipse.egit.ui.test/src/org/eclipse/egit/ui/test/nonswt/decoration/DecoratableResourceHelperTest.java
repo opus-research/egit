@@ -1,5 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2011, Philipp Thun <philipp.thun@sap.com>
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +21,15 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
+import org.eclipse.egit.core.JobFamilies;
+import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.decorators.DecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.DecoratableResourceHelper;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
@@ -51,6 +56,8 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 
 	private Git git;
 
+	private IndexDiffCacheEntry indexDiffCacheEntry;
+
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -61,6 +68,8 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 
 		repository = new FileRepository(gitDir);
 		repository.create();
+		repository.close();
+		repository = Activator.getDefault().getRepositoryCache().lookupRepository(gitDir);
 
 		project = root.getProject(TEST_PROJECT);
 		project.create(null);
@@ -78,6 +87,16 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 		git = new Git(repository);
 		git.add().addFilepattern(".").call();
 		git.commit().setMessage("Initial commit").call();
+
+		indexDiffCacheEntry = Activator.getDefault().getIndexDiffCache().getIndexDiffCacheEntry(repository);
+		waitForIndexDiffUpdate(false);
+	}
+
+	private void waitForIndexDiffUpdate(final boolean refreshCache)
+			throws Exception {
+		if (refreshCache)
+			indexDiffCacheEntry.refresh();
+		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 	}
 
 	@After
@@ -123,7 +142,7 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 						Staged.NOT_STAGED),
 				new TestDecoratableResource(file, false, false, false, false,
 						Staged.NOT_STAGED) };
-
+		waitForIndexDiffUpdate(true);
 		IDecoratableResource[] actualDRs = DecoratableResourceHelper
 				.createDecoratableResources(new IResource[] { project, file });
 
@@ -145,7 +164,7 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 						Staged.MODIFIED),
 				new TestDecoratableResource(file, true, false, false, false,
 						Staged.ADDED) };
-
+		waitForIndexDiffUpdate(true);
 		IDecoratableResource[] actualDRs = DecoratableResourceHelper
 				.createDecoratableResources(new IResource[] { project, file });
 
@@ -169,6 +188,7 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 				new TestDecoratableResource(file, true, false, false, false,
 						Staged.NOT_STAGED) };
 
+		waitForIndexDiffUpdate(true);
 		IDecoratableResource[] actualDRs = DecoratableResourceHelper
 				.createDecoratableResources(new IResource[] { project, file });
 
@@ -196,6 +216,7 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 				new TestDecoratableResource(file, true, false, true, false,
 						Staged.NOT_STAGED) };
 
+		waitForIndexDiffUpdate(true);
 		IDecoratableResource[] actualDRs = DecoratableResourceHelper
 				.createDecoratableResources(new IResource[] { project, file });
 
@@ -238,11 +259,12 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 				.getMergeStatus() == MergeStatus.CONFLICTING);
 
 		IDecoratableResource[] expectedDRs = new IDecoratableResource[] {
-				new TestDecoratableResource(project, true, false, true, true,
-						Staged.MODIFIED),
-				new TestDecoratableResource(file, true, false, true, true,
-						Staged.MODIFIED) };
+				new TestDecoratableResource(project, true, false, false, true,
+						Staged.NOT_STAGED),
+				new TestDecoratableResource(file, true, false, false, true,
+						Staged.NOT_STAGED) };
 
+		waitForIndexDiffUpdate(true);
 		IDecoratableResource[] actualDRs = DecoratableResourceHelper
 				.createDecoratableResources(new IResource[] { project, file });
 
