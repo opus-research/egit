@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.eclipse.compare.ITypedElement;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -22,11 +25,11 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.blame.BlameOperation;
+import org.eclipse.egit.ui.internal.synchronize.compare.LocalNonWorkspaceTypedElement;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -42,13 +45,12 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StackLayout;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -61,6 +63,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -80,10 +83,6 @@ public class CommitFileDiffViewer extends TableViewer {
 
 	private Clipboard clipboard;
 
-	private StyledText noInputText;
-
-	private final StackLayout stackLayout;
-
 	private IAction selectAll;
 
 	private IAction copy;
@@ -95,6 +94,8 @@ public class CommitFileDiffViewer extends TableViewer {
 	private IAction openWorkingTreeVersion;
 
 	private IAction compare;
+
+	private IAction compareWorkingTreeVersion;
 
 	private final IWorkbenchSite site;
 
@@ -123,23 +124,9 @@ public class CommitFileDiffViewer extends TableViewer {
 	 */
 	public CommitFileDiffViewer(final Composite parent,
 			final IWorkbenchSite site, final int style) {
-		// since out parent is a SashForm, we can't add the alternate
-		// text to be displayed in case of no input directly to that
-		// parent; we create our own parent instead and set the
-		// StackLayout on it instead
-		super(new Composite(parent, SWT.NONE), style);
+		super(parent, style);
 		this.site = site;
 		final Table rawTable = getTable();
-		Composite main = rawTable.getParent();
-		stackLayout = new StackLayout();
-		main.setLayout(stackLayout);
-
-		// this is the text to be displayed if there is no input
-		noInputText = new StyledText(main, SWT.NONE);
-		// use the same font as in message viewer
-		noInputText.setFont(UIUtils
-				.getFont(UIPreferences.THEME_CommitMessageFont));
-		noInputText.setText(UIText.CommitFileDiffViewer_SelectOneCommitMessage);
 
 		rawTable.setLinesVisible(true);
 
@@ -194,9 +181,8 @@ public class CommitFileDiffViewer extends TableViewer {
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
-				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
+				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();)
 					openFileInEditor(it.next());
-				}
 			}
 		};
 
@@ -255,9 +241,22 @@ public class CommitFileDiffViewer extends TableViewer {
 			}
 		};
 
+		compareWorkingTreeVersion = new Action(
+				UIText.CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel) {
+			@Override
+			public void run() {
+				final ISelection s = getSelection();
+				if (s.isEmpty() || !(s instanceof IStructuredSelection))
+					return;
+				final IStructuredSelection iss = (IStructuredSelection) s;
+				showWorkingDirectoryFileDiff((FileDiff) iss.getFirstElement());
+			}
+		};
+
 		mgr.add(open);
 		mgr.add(openWorkingTreeVersion);
 		mgr.add(compare);
+		mgr.add(compareWorkingTreeVersion);
 		mgr.add(blame);
 
 		mgr.add(new Separator());
@@ -293,11 +292,37 @@ public class CommitFileDiffViewer extends TableViewer {
 		IStructuredSelection sel = (IStructuredSelection) selection;
 		boolean allSelected = !sel.isEmpty()
 				&& sel.size() == getTable().getItemCount();
+		boolean submoduleSelected = false;
+		for (Object item : sel.toArray())
+			if (((FileDiff) item).isSubmodule()) {
+				submoduleSelected = true;
+				break;
+			}
+
 		selectAll.setEnabled(!allSelected);
 		copy.setEnabled(!sel.isEmpty());
-		open.setEnabled(!sel.isEmpty());
-		openWorkingTreeVersion.setEnabled(!sel.isEmpty());
-		compare.setEnabled(sel.size() == 1);
+
+		if (!submoduleSelected) {
+			boolean oneOrMoreSelected = !sel.isEmpty();
+			open.setEnabled(oneOrMoreSelected);
+			openWorkingTreeVersion.setEnabled(oneOrMoreSelected);
+			compare.setEnabled(sel.size() == 1);
+			blame.setEnabled(oneOrMoreSelected);
+			if (sel.size() == 1) {
+				FileDiff diff = (FileDiff) sel.getFirstElement();
+				String path = new Path(getRepository().getWorkTree()
+						.getAbsolutePath()).append(diff.getPath()).toOSString();
+				compareWorkingTreeVersion.setEnabled(new File(path).exists()
+						&& !submoduleSelected);
+			} else
+				compareWorkingTreeVersion.setEnabled(false);
+		} else {
+			open.setEnabled(false);
+			openWorkingTreeVersion.setEnabled(false);
+			compare.setEnabled(false);
+			blame.setEnabled(false);
+			compareWorkingTreeVersion.setEnabled(false);
+		}
 	}
 
 	private IAction createStandardAction(final ActionFactory af) {
@@ -322,12 +347,10 @@ public class CommitFileDiffViewer extends TableViewer {
 
 			@Override
 			public void run() {
-				if (af == ActionFactory.SELECT_ALL) {
+				if (af == ActionFactory.SELECT_ALL)
 					doSelectAll();
-				}
-				if (af == ActionFactory.COPY) {
+				if (af == ActionFactory.COPY)
 					doCopy();
-				}
 			}
 		};
 		action.setEnabled(true);
@@ -338,13 +361,6 @@ public class CommitFileDiffViewer extends TableViewer {
 	protected void inputChanged(final Object input, final Object oldInput) {
 		if (oldInput == null && input == null)
 			return;
-		if (input == null && stackLayout.topControl != noInputText) {
-			stackLayout.topControl = noInputText;
-			getTable().getParent().layout(false);
-		} else if (input != null && stackLayout.topControl != getTable()) {
-			stackLayout.topControl = getTable();
-			getTable().getParent().layout(false);
-		}
 		super.inputChanged(input, oldInput);
 	}
 
@@ -445,6 +461,35 @@ public class CommitFileDiffViewer extends TableViewer {
 		CompareUtils.openInCompare(site.getWorkbenchWindow().getActivePage(),
 				in);
 
+	}
+
+	void showWorkingDirectoryFileDiff(final FileDiff d) {
+		final GitCompareFileRevisionEditorInput in;
+
+		final String p = d.getPath();
+		final RevCommit c = d.getCommit();
+		final ObjectId[] blobs = d.getBlobs();
+		final ITypedElement base;
+		final ITypedElement next;
+
+		String path = new Path(getRepository().getWorkTree().getAbsolutePath())
+				.append(p).toOSString();
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IFile[] files = root.findFilesForLocationURI(new File(path).toURI());
+		if (files.length > 0)
+			next = SaveableCompareEditorInput.createFileElement(files[0]);
+		else
+			next = new LocalNonWorkspaceTypedElement(path);
+
+		if (d.getChange().equals(ChangeType.DELETE))
+			base = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
+		else
+			base = CompareUtils.getFileRevisionTypedElement(p, c,
+					getRepository(), blobs[blobs.length - 1]);
+
+		in = new GitCompareFileRevisionEditorInput(next, base, null);
+		CompareUtils.openInCompare(site.getWorkbenchWindow().getActivePage(),
+				in);
 	}
 
 	TreeWalk getTreeWalk() {

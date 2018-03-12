@@ -50,7 +50,7 @@ public class GitModelWorkbenchAdapter implements IWorkbenchAdapter {
 
 	public Object getParent(Object o) {
 		if (o instanceof GitModelRepository)
-			return null; // repository node desn't have any parent
+			return null; // repository node has no parent
 
 		if (o instanceof GitModelObject)
 			return ((GitModelObject) o).getParent();

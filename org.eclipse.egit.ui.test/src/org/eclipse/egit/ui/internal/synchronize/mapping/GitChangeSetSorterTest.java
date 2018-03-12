@@ -26,7 +26,7 @@ import org.eclipse.ui.navigator.CommonViewer;
 import org.junit.Test;
 
 /**
- * Test for {@link GitChangeSetSorter#compare(Viewer, Object, Object)}. 
+ * Test for {@link GitChangeSetSorter#compare(Viewer, Object, Object)}.
  */
 public class GitChangeSetSorterTest {
 

@@ -23,7 +23,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 
 	private boolean containsFolderLevelSynchronizationRequest = false;
 
-	private final Set<GitSynchronizeData> gsdSet;
+	private final Set<GitSynchronizeData> gsd;
 
 	private final Map<String, GitSynchronizeData> projectMapping;
 
@@ -44,7 +44,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public GitSynchronizeDataSet(boolean forceFetch) {
 		this.forceFetch = forceFetch;
-		gsdSet = new HashSet<GitSynchronizeData>();
+		gsd = new HashSet<GitSynchronizeData>();
 		projectMapping = new HashMap<String, GitSynchronizeData>();
 	}
 
@@ -62,7 +62,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 * @param data
 	 */
 	public void add(GitSynchronizeData data) {
-		gsdSet.add(data);
+		gsd.add(data);
 		if (data.getIncludedPaths() != null
 				&& data.getIncludedPaths().size() > 0)
 			containsFolderLevelSynchronizationRequest = true;
@@ -94,7 +94,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 *         set
 	 */
 	public int size() {
-		return gsdSet.size();
+		return gsd.size();
 	}
 
 	/**
@@ -114,7 +114,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	}
 
 	public Iterator<GitSynchronizeData> iterator() {
-		return gsdSet.iterator();
+		return gsd.iterator();
 	}
 
 	/**
@@ -122,7 +122,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public IProject[] getAllProjects() {
 		Set<IProject> resource = new HashSet<IProject>();
-		for (GitSynchronizeData data : gsdSet) {
+		for (GitSynchronizeData data : gsd) {
 			resource.addAll(data.getProjects());
 		}
 		return resource.toArray(new IProject[resource.size()]);
@@ -137,25 +137,11 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 		return forceFetch;
 	}
 
-
-	/**
-	 * Disposes all nested resources
-	 */
-	public void dispose() {
-		if (projectMapping != null)
-			projectMapping.clear();
-
-		if (gsdSet != null)
-			for (GitSynchronizeData gsd : gsdSet)
-				gsd.dispose();
-
-	}
-
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 
-		for (GitSynchronizeData data : gsdSet) {
+		for (GitSynchronizeData data : gsd) {
 			builder.append(data.getRepository().getWorkTree());
 			builder.append(" "); //$NON-NLS-1$
 		}

@@ -8,10 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.compare.structuremergeviewer.Differencer.ADDITION;
-import static org.eclipse.compare.structuremergeviewer.Differencer.DELETION;
-import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
-import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import java.io.IOException;
@@ -21,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.MutableObjectId;
 import org.eclipse.jgit.lib.ObjectId;
@@ -39,6 +34,36 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
  * Retrieves list of commits and the changes associated with each commit
  */
 public class GitCommitsModelCache {
+
+	/**
+	 * Constant copied from org.eclipse.compare.structuremergeviewer.Differencer.ADDITION
+	 * in order to avoid UI dependencies introduced by the org.eclipse.compare bundle
+	 */
+	public static final int ADDITION = 1;
+
+	/**
+	 * Constant copied from org.eclipse.compare.structuremergeviewer.Differencer.DELETION
+	 * in order to avoid UI dependencies introduced by the org.eclipse.compare bundle
+	 */
+	public static final int DELETION = 2;
+
+	/**
+	 * Constant copied from org.eclipse.compare.structuremergeviewer.Differencer.CHANGE
+	 * in order to avoid UI dependencies introduced by the org.eclipse.compare bundle
+	 */
+	public static final int CHANGE = 3;
+
+	/**
+	 * Constant copied from org.eclipse.compare.structuremergeviewer.Differencer.LEFT
+	 * in order to avoid UI dependencies introduced by the org.eclipse.compare bundle
+	 */
+	public static final int LEFT = 4;
+
+	/**
+	 * Constant copied from org.eclipse.compare.structuremergeviewer.Differencer.RIGHT
+	 * in order to avoid UI dependencies introduced by the org.eclipse.compare bundle
+	 */
+	public static final int RIGHT = 8;
 
 	/**
 	 * Corresponds to {@link RevCommit} object, but contains only those data
@@ -65,8 +90,8 @@ public class GitCommitsModelCache {
 
 		/**
 		 * Indicates if this commit is incoming or outgoing. Returned value
-		 * corresponds to {@link Differencer#LEFT} for incoming and
-		 * {@link Differencer#RIGHT} for outgoing changes
+		 * corresponds to org.eclipse.compare.structuremergeviewer.Differencer#LEFT for incoming and
+		 * org.eclipse.compare.structuremergeviewer.Differencer#RIGHT for outgoing changes
 		 *
 		 * @return change direction
 		 */
@@ -117,13 +142,6 @@ public class GitCommitsModelCache {
 			return children;
 		}
 
-		/**
-		 * Disposes nested resources
-		 */
-		public void dispose() {
-			children.clear();
-		}
-
 	}
 
 	/**
@@ -151,7 +169,7 @@ public class GitCommitsModelCache {
 		 * change.
 		 *
 		 * It uses static values of LEFT, RIGHT, ADDITION, DELETION, CHANGE from
-		 * {@link Differencer} class.
+		 * org.eclipse.compare.structuremergeviewer.Differencer class.
 		 *
 		 * @return kind
 		 */
@@ -413,20 +431,18 @@ public class GitCommitsModelCache {
 	static void calculateAndSetChangeKind(final int direction, Change change) {
 		if (ZERO_ID.equals(change.objectId)) { // missing locally
 			change.objectId = null; // clear zero id;
-			if (direction == Differencer.LEFT)
-				change.kind = direction | Differencer.ADDITION;
+			if (direction == LEFT)
+				change.kind = direction | ADDITION;
 			else // should be Differencer.RIGHT
-				change.kind = direction | Differencer.DELETION;
+				change.kind = direction | DELETION;
 		} else if (ZERO_ID.equals(change.remoteObjectId)) { // missing remotely
 			change.remoteObjectId = null; // clear zero id;
-			change.kind = direction | Differencer.ADDITION;
-			if (direction == Differencer.LEFT)
-				change.kind = direction | Differencer.DELETION;
-			else
-				// should be Differencer.RIGHT
-				change.kind = direction | Differencer.ADDITION;
+			if (direction == LEFT)
+				change.kind = direction | DELETION;
+			else // should be Differencer.RIGHT
+				change.kind = direction | ADDITION;
 		} else
-			change.kind = direction | Differencer.CHANGE;
+			change.kind = direction | CHANGE;
 	}
 
 }

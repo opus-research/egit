@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -144,7 +145,7 @@ public class GitOpenInCompareAction extends Action {
 		try {
 			commit = ow.parseCommit(objectId);
 		} catch (IOException e) {
-			Activator.error(NLS.bind(UIText.GitOpenInCompareAction_cannotRetriveCommitWithId,
+			Activator.error(NLS.bind(UIText.GitOpenInCompareAction_cannotRetrieveCommitWithId,
 					objectId, repo.getDirectory()), e);
 			return null;
 		}
@@ -155,7 +156,12 @@ public class GitOpenInCompareAction extends Action {
 	private IFile getFileForBlob(GitModelBlob blob) {
 		IPath blobLocation = blob.getLocation();
 
-		return getWorkspace().getRoot().getFileForLocation(blobLocation);
+		IWorkspaceRoot root = getWorkspace().getRoot();
+		IFile file = root.getFileForLocation(blobLocation);
+		if (file == null)
+			file = root.getFile(blobLocation);
+
+		return file;
 	}
 
 }
