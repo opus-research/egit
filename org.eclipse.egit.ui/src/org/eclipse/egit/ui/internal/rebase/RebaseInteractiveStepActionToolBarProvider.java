@@ -197,22 +197,8 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			List<RebaseInteractivePlan.PlanElement> selected = getSelectedRebaseTodoLines();
 			if (selected == null || selected.isEmpty())
 				return;
-
-			ElementAction typeToSet = type;
-			if (type != ElementAction.PICK) {
-				boolean allItemsHaveTargetType = true;
-				for (RebaseInteractivePlan.PlanElement element : selected)
-					allItemsHaveTargetType &= element.getPlanElementAction() == type;
-				if (allItemsHaveTargetType) {
-					typeToSet = ElementAction.PICK;
-					itemPick.setSelection(true);
-					if (e.getSource() instanceof ToolItem)
-						((ToolItem) e.getSource()).setSelection(false);
-				}
-			}
-
 			for (RebaseInteractivePlan.PlanElement element : selected)
-				element.setPlanElementAction(typeToSet);
+				element.setPlanElementAction(type);
 			mapActionItemsToSelection(view.planTreeViewer.getSelection());
 		}
 
