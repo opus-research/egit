@@ -979,9 +979,6 @@ public class UIText extends NLS {
 	public static String RepositoryLocationPage_title;
 
 	/** */
-	public static String RepositoryLocationContentProvider_errorProvidingRepoServer;
-
-	/** */
 	public static String RepositorySearchDialog_browse;
 
 	/** */
@@ -2599,12 +2596,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip;
 
 	/** */
-	public static String DecoratorPreferencesPage_computeRecursiveLimit;
-
-	/** */
-	public static String DecoratorPreferencesPage_computeRecursiveLimitTooltip;
-
-	/** */
 	public static String DecoratorPreferencesPage_description;
 
 	/** */
@@ -3008,9 +2999,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitImportWizard_errorParsingURI;
-
-	/** */
-	public static String GitImportWizard_noRepositoryInfo;
 
 	/** */
 	public static String GitImportWizard_WizardTitle;

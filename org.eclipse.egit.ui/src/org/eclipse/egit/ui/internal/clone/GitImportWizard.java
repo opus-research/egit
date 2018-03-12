@@ -38,7 +38,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
-import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -74,10 +73,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 						}});
 				} catch (URISyntaxException e) {
 					Activator.error(UIText.GitImportWizard_errorParsingURI, e);
-				} catch (NoRepositoryInfoException e) {
-					Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
-				} catch (Exception e) {
-					Activator.error(e.getMessage(), e);
 				}
 			}
 			super.setVisible(visible);
@@ -124,26 +119,12 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		} catch (URISyntaxException e) {
 			Activator.error(UIText.GitImportWizard_errorParsingURI, e);
 			return null;
-		} catch (NoRepositoryInfoException e) {
-			Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
-			return null;
-		} catch (Exception e) {
-			Activator.error(e.getMessage(), e);
-			return null;
 		}
 	}
 
 	@Override
 	protected UserPasswordCredentials getCredentials() {
-		try {
-			return currentSearchResult.getGitRepositoryInfo().getCredentials();
-		} catch (NoRepositoryInfoException e) {
-			Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
-			return null;
-		} catch (Exception e) {
-			Activator.error(e.getMessage(), e);
-			return null;
-		}
+		return currentSearchResult.getGitRepositoryInfo().getCredentials();
 	}
 
 	@Override
@@ -242,7 +223,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					IWorkingSet[] workingSetArray = projectsImportPage
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
-					repository[0] = selectRepoPage.getRepository();
+					repository[0] = getClonedRepository();
 				}
 			});
 			ProjectUtils.createProjects(projectsToCreate, repository[0],
@@ -254,7 +235,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			final File[] repoDir = new File[1];
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				public void run() {
-					repoDir[0] = selectRepoPage.getRepository().getDirectory();
+					repoDir[0] = getClonedRepository().getDirectory();
 				}
 			});
 			final List<IProject> previousProjects = Arrays
@@ -299,7 +280,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					defaultLocation[0] = createGeneralProjectPage
 							.isDefaultLocation();
 					path[0] = importWithDirectoriesPage.getPath();
-					repoDir[0] = selectRepoPage.getRepository().getDirectory();
+					repoDir[0] =  getClonedRepository().getDirectory();
 				}
 			});
 			try {
