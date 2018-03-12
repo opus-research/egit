@@ -454,8 +454,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (!commitMessageComponent.isAmending()
-						&& userEnteredCommitMessage())
+				if (userEnteredCommmitMessage())
 					saveCommitMessageComponentState();
 				else
 					deleteCommitMessageComponentState();
@@ -2233,8 +2232,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		if (repositoryChanged)
-			if (commitMessageComponent.isAmending()
-					|| userEnteredCommitMessage())
+			if (userEnteredCommmitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
@@ -2252,16 +2250,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 			else
 				loadExistingState(helper, oldState);
-		} else { // repository did not change
-			if (!commitMessageComponent.isAmending()
-					&& userEnteredCommitMessage()) {
+		} else // repository did not change
+			if (userEnteredCommmitMessage()) {
 				if (!commitMessageComponent.getHeadCommit().equals(
 						helper.getPreviousCommit()))
 					addHeadChangedWarning(commitMessageComponent
 							.getCommitMessage());
 			} else
 				loadInitialState(helper);
-		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
@@ -2323,7 +2319,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		commitMessageComponent.enableListeners(true);
 	}
 
-	private boolean userEnteredCommitMessage() {
+	private boolean userEnteredCommmitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
 		String message = commitMessageComponent.getCommitMessage().replace(
