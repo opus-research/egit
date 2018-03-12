@@ -26,7 +26,6 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -41,23 +40,14 @@ public class ReleaseStartHandler extends AbstractHandler {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
 		final String startCommitSha1 = getStartCommit(event);
 
-		Shell activeShell = HandlerUtil.getActiveShell(event);
-
-		doExecute(gfRepo, startCommitSha1, activeShell);
-
-		return null;
-	}
-
-	void doExecute(GitFlowRepository gfRepo,
-			final String startCommitSha1, Shell activeShell) {
 		InputDialog inputDialog = new InputDialog(
-				activeShell,
+				HandlerUtil.getActiveShell(event),
 				UIText.ReleaseStartHandler_provideReleaseName,
 				UIText.ReleaseStartHandler_provideANameForTheNewRelease, "", //$NON-NLS-1$
 				new ReleaseNameValidator(gfRepo));
 
 		if (inputDialog.open() != Window.OK) {
-			return;
+			return null;
 		}
 
 		final String releaseName = inputDialog.getValue();
@@ -67,6 +57,8 @@ public class ReleaseStartHandler extends AbstractHandler {
 		JobUtil.scheduleUserWorkspaceJob(releaseStartOperation,
 				UIText.ReleaseStartHandler_startingNewRelease,
 				JobFamilies.GITFLOW_FAMILY);
+
+		return null;
 	}
 
 	private String getStartCommit(ExecutionEvent event)
