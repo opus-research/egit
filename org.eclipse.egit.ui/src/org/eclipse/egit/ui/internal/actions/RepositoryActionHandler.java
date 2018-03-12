@@ -491,13 +491,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	/**
-	 * @return true if all selected items map to the same repository, false otherwise.
-	 */
-	protected boolean selectionMapsToSingleRepository() {
-		return getRepository() != null;
-	}
-
-	/**
 	 * @param selection
 	 * @return the resources in the selection
 	 */

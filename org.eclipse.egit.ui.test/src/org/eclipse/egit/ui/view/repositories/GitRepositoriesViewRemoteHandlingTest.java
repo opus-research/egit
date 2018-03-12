@@ -102,7 +102,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		remotesItem.getNode("test").select();
 		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				"Properties");
+				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
 		waitInUI();
 		assertEquals("org.eclipse.ui.views.PropertySheet", bot.activeView()
 				.getReference().getId());
