@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
@@ -67,8 +65,6 @@ class BranchProjectTracker {
 	private static final String KEY_PROJECT = "project"; //$NON-NLS-1$
 
 	private static final String KEY_BRANCH = "branch"; //$NON-NLS-1$
-
-	private static final String REPO_ROOT = "/"; //$NON-NLS-1$
 
 	private final Repository repository;
 
@@ -139,8 +135,6 @@ class BranchProjectTracker {
 			String fullPath = path.toOSString();
 			if (fullPath.startsWith(workDir)) {
 				String relative = fullPath.substring(workDir.length());
-				if (relative.length() == 0)
-					relative = REPO_ROOT;
 				IMemento child = memento.createChild(KEY_PROJECT);
 				child.putTextData(relative);
 			}
@@ -207,15 +201,10 @@ class BranchProjectTracker {
 			return new String[0];
 		}
 		IMemento[] children = memento.getChildren(KEY_PROJECT);
-		if (children.length == 0)
-			return new String[0];
-		List<String> projects = new ArrayList<String>(children.length);
-		for (int i = 0; i < children.length; i++) {
-			String path = children[i].getTextData();
-			if (path != null && path.length() > 0)
-				projects.add(path);
-		}
-		return projects.toArray(new String[projects.size()]);
+		String[] projects = new String[children.length];
+		for (int i = 0; i < children.length; i++)
+			projects[i] = children[i].getTextData();
+		return projects;
 	}
 
 	/**
@@ -244,19 +233,13 @@ class BranchProjectTracker {
 		Set<ProjectRecord> records = new LinkedHashSet<ProjectRecord>();
 		File parent = repository.getWorkTree();
 		for (String path : paths) {
-			File root;
-			if (!REPO_ROOT.equals(path))
-				root = new File(parent, path);
-			else
-				root = parent;
-
+			File root = new File(parent, path);
 			if (!root.isDirectory())
 				continue;
-			File projectDescription = new File(root,
-					IProjectDescription.DESCRIPTION_FILE_NAME);
-			if (!projectDescription.isFile())
+			if (!new File(root, IProjectDescription.DESCRIPTION_FILE_NAME)
+					.exists())
 				continue;
-			records.add(new ProjectRecord(projectDescription));
+			records.add(new ProjectRecord(root));
 		}
 		if (records.isEmpty())
 			return;
