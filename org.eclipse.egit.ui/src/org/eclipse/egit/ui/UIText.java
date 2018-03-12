@@ -679,9 +679,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_NextStepsDoNothing;
 
 	/** */
-	public static String RebaseResultDialog_NothingToCommit;
-
-	/** */
 	public static String RebaseResultDialog_notInWorkspace;
 
 	/** */
@@ -2983,7 +2980,7 @@ public class UIText extends NLS {
 	public static String GitCreatePatchWizard_File;
 
 	/** */
-	public static String GitCreatePatchWizard_GitFormat;
+	public static String GitCreatePatchWizard_Format;
 
 	/** */
 	public static String GitCreatePatchWizard_InternalError;
