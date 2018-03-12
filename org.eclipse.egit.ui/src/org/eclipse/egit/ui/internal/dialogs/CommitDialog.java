@@ -449,7 +449,7 @@ public class CommitDialog extends Dialog {
 	 * @return the calculated commit message
 	 */
 	private String calculateCommitMessage() {
-		if(commitMessage != "") { //$NON-NLS-1$
+		if(commitMessage != null) {
 			// special case for ament or merge
 			return commitMessage;
 		}
