@@ -8,7 +8,6 @@
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -40,7 +37,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
@@ -49,7 +45,6 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
@@ -73,19 +68,13 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextListener;
-import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.presentation.IPresentationReconciler;
-import org.eclipse.jface.text.presentation.PresentationReconciler;
-import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
-import org.eclipse.jface.text.rules.IToken;
-import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
+import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -160,7 +149,7 @@ import org.eclipse.ui.progress.UIJob;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		TableLoader, IShowInSource, IShowInTargetList {
+		ISchedulingRule, TableLoader, IShowInSource, IShowInTargetList {
 
 	private static final int INITIAL_ITEM = -1;
 
@@ -634,18 +623,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
-	private static class HistoryPageRule implements ISchedulingRule {
-		@Override
-		public boolean contains(ISchedulingRule rule) {
-			return this == rule;
-		}
-
-		@Override
-		public boolean isConflicting(ISchedulingRule rule) {
-			return this == rule;
-		}
-	}
-
 	private static final String POPUP_ID = "org.eclipse.egit.ui.historyPageContributions"; //$NON-NLS-1$
 
 	private static final String DESCRIPTION_PATTERN = "{0} - {1}"; //$NON-NLS-1$
@@ -779,10 +756,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private Composite commentAndDiffComposite;
 
-	private volatile boolean resizing;
-
-	private final HistoryPageRule pageSchedulingRule;
-
 	/**
 	 * Determine if the input can be shown in this viewer.
 	 *
@@ -824,11 +797,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	public GitHistoryPage() {
 		trace = GitTraceLocation.HISTORYVIEW.isActive();
-		pageSchedulingRule = new HistoryPageRule();
-		if (trace) {
+		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-		}
 	}
 
 	@Override
@@ -912,59 +883,23 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 
 			@Override
-			public IHyperlinkDetector[] getHyperlinkDetectors(
+			public IHyperlinkPresenter getHyperlinkPresenter(
 					ISourceViewer sourceViewer) {
-				IHyperlinkDetector[] registered = getRegisteredHyperlinkDetectors(
-						sourceViewer);
-				// Add our special detector for commit hyperlinks.
-				IHyperlinkDetector[] result = new IHyperlinkDetector[registered.length
-						+ 1];
-				System.arraycopy(registered, 0, result, 0, registered.length);
-				result[registered.length] = new CommitMessageViewer.KnownHyperlinksDetector();
-				return result;
+				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
+						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
+
+					@Override
+					public void hideHyperlinks() {
+						// We want links to always show.
+					}
+
+				};
 			}
 
 			@Override
-			public String[] getConfiguredContentTypes(
-					ISourceViewer sourceViewer) {
-				return new String[] { IDocument.DEFAULT_CONTENT_TYPE,
-						CommitMessageViewer.HEADER_CONTENT_TYPE,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE };
+			public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
+				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
-
-			@Override
-			public IPresentationReconciler getPresentationReconciler(
-					ISourceViewer viewer) {
-				PresentationReconciler reconciler = new PresentationReconciler();
-				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(viewer));
-				DefaultDamagerRepairer hyperlinkDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(getHyperlinkDetectors(viewer),
-								viewer));
-				reconciler.setDamager(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				reconciler.setRepairer(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				TextAttribute headerDefault = new TextAttribute(
-						PlatformUI.getWorkbench().getDisplay()
-								.getSystemColor(SWT.COLOR_DARK_GRAY));
-				DefaultDamagerRepairer headerDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(getHyperlinkDetectors(viewer),
-								viewer, headerDefault));
-				reconciler.setDamager(headerDamagerRepairer,
-						CommitMessageViewer.HEADER_CONTENT_TYPE);
-				reconciler.setRepairer(headerDamagerRepairer,
-						CommitMessageViewer.HEADER_CONTENT_TYPE);
-				DefaultDamagerRepairer footerDamagerRepairer = new DefaultDamagerRepairer(
-						new FooterTokenScanner(getHyperlinkDetectors(viewer),
-								viewer));
-				reconciler.setDamager(footerDamagerRepairer,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE);
-				reconciler.setRepairer(footerDamagerRepairer,
-						CommitMessageViewer.FOOTER_CONTENT_TYPE);
-				return reconciler;
-			}
-
 		};
 
 		commentViewer.configure(configuration);
@@ -980,10 +915,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		commentAndDiffScrolledComposite.addControlListener(new ControlAdapter() {
 			@Override
 			public void controlResized(ControlEvent e) {
-				if (!resizing && commentViewer.getTextWidget()
-						.getWordWrap()) {
+				if (commentViewer.getTextWidget().getWordWrap())
 					resizeCommentAndDiffScrolledComposite();
-				}
 			}
 		});
 
@@ -1245,11 +1178,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					((IWorkbenchAction) i).dispose();
 		}
 		renameTracker.reset(null);
-		if (job != null) {
-			job.cancel();
-			job = null;
-		}
-		Job.getJobManager().cancel(JobFamilies.HISTORY_DIFF);
 		super.dispose();
 	}
 
@@ -1669,7 +1597,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	@Override
-	public <T> T getAdapter(final Class<T> adapter) {
+	public Object getAdapter(final Class adapter) {
 		return null;
 	}
 
@@ -2016,7 +1944,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void formatDiffs(final List<FileDiff> diffs) {
-		Job.getJobManager().cancel(JobFamilies.HISTORY_DIFF);
 		if (diffs.isEmpty()) {
 			if (UIUtils.isUsable(diffViewer)) {
 				IDocument document = new Document();
@@ -2030,26 +1957,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		Job formatJob = new Job(UIText.GitHistoryPage_FormatDiffJobName) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				int maxLines = Activator.getDefault().getPreferenceStore()
-						.getInt(UIPreferences.HISTORY_MAX_DIFF_LINES);
 				final IDocument document = new Document();
 				final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
-						document, document.getLength(), maxLines);
+						document);
 
 				monitor.beginTask("", diffs.size()); //$NON-NLS-1$
 				for (FileDiff diff : diffs) {
-					if (monitor.isCanceled()) {
+					if (monitor.isCanceled())
 						break;
-					}
-					if (diff.getCommit().getParentCount() > 1) {
+					if (diff.getCommit().getParentCount() > 1)
 						break;
-					}
-					if (document.getNumberOfLines() > maxLines) {
-						break;
-					}
 					monitor.setTaskName(diff.getPath());
 					try {
 						formatter.write(repository, diff);
@@ -2058,16 +1975,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					}
 					monitor.worked(1);
 				}
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
 				monitor.done();
 				UIJob uiJob = new UIJob(UIText.GitHistoryPage_FormatDiffJobName) {
 					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
-						if (uiMonitor.isCanceled()) {
-							return Status.CANCEL_STATUS;
-						}
 						if (UIUtils.isUsable(diffViewer)) {
 							diffViewer.setDocument(document);
 							diffViewer.setFormatter(formatter);
@@ -2075,24 +1986,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 						}
 						return Status.OK_STATUS;
 					}
-
-					@Override
-					public boolean belongsTo(Object family) {
-						return JobFamilies.HISTORY_DIFF.equals(family);
-					}
 				};
-				uiJob.setRule(pageSchedulingRule);
-				GitHistoryPage.this.schedule(uiJob);
+				uiJob.schedule();
 				return Status.OK_STATUS;
 			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				return JobFamilies.HISTORY_DIFF.equals(family);
-			}
 		};
-		formatJob.setRule(pageSchedulingRule);
-		schedule(formatJob);
+		formatJob.schedule();
 	}
 
 	private void setWrap(boolean wrap) {
@@ -2102,32 +2001,19 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void resizeCommentAndDiffScrolledComposite() {
-		resizing = true;
-		long start = 0;
-		int lines = 0;
-		if (trace) {
-			IDocument document = diffViewer.getDocument();
-			lines = document != null ? document.getNumberOfLines() : 0;
-			System.out.println("Lines: " + lines); //$NON-NLS-1$
-			if (lines > 1) {
-				new Exception("resizeCommentAndDiffScrolledComposite") //$NON-NLS-1$
-						.printStackTrace(System.out);
-			}
-			start = System.currentTimeMillis();
+		int widthHint;
+		if (commentViewer.getTextWidget().getWordWrap()) {
+			widthHint = commentAndDiffScrolledComposite.getClientArea().width;
+			if (commentAndDiffScrolledComposite.getVerticalBar() != null
+					&& !commentAndDiffScrolledComposite.getVerticalBar().isVisible())
+				widthHint -= commentAndDiffScrolledComposite.getVerticalBar().getSize().x;
+		} else {
+			widthHint = SWT.DEFAULT;
 		}
-
 		Point size = commentAndDiffComposite
-				.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+				.computeSize(widthHint, SWT.DEFAULT);
+		commentAndDiffComposite.setSize(size);
 		commentAndDiffScrolledComposite.setMinSize(size);
-		resizing = false;
-
-		if (trace) {
-			long stop = System.currentTimeMillis();
-			long time = stop - start;
-			long lps = (lines * 1000) / (time + 1);
-			System.out
-					.println("Resize + diff: " + time + " ms, line/s: " + lps); //$NON-NLS-1$ //$NON-NLS-2$
-		}
 	}
 
 	private TreeWalk createFileWalker(RevWalk walk, Repository db, List<FilterPath> paths) {
@@ -2247,7 +2133,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	private void loadInitialHistory(@NonNull RevWalk walk) {
 		job = new GenerateHistoryJob(this, graph.getControl(), walk, resources);
-		job.setRule(pageSchedulingRule);
+		job.setRule(this);
 		job.setLoadHint(INITIAL_ITEM);
 		if (trace)
 			GitTraceLocation.getTrace().trace(
@@ -2370,6 +2256,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	@Override
+	public boolean contains(ISchedulingRule rule) {
+		return this == rule;
+	}
+
+	@Override
+	public boolean isConflicting(ISchedulingRule rule) {
+		return this == rule;
+	}
+
+	@Override
 	public ShowInContext getShowInContext() {
 		if (fileViewer != null && fileViewer.getControl().isFocusControl())
 			return fileViewer.getShowInContext();
@@ -2391,53 +2287,5 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	public String getRenamedPath(String path, ObjectId commit) {
 		return renameTracker.getPath(commit, path);
-	}
-
-	private static class FooterTokenScanner extends HyperlinkTokenScanner {
-
-		private static final Pattern ITALIC_LINE = Pattern
-				.compile("^[A-Z](?:[A-Za-z]+-)+by: "); //$NON-NLS-1$
-
-		private final IToken italicToken;
-
-		public FooterTokenScanner(IHyperlinkDetector[] hyperlinkDetectors,
-				ISourceViewer viewer) {
-			super(hyperlinkDetectors, viewer);
-			Object defaults = defaultToken.getData();
-			TextAttribute italic;
-			if (defaults instanceof TextAttribute) {
-				TextAttribute defaultAttribute = (TextAttribute) defaults;
-				int style = defaultAttribute.getStyle() ^ SWT.ITALIC;
-				italic = new TextAttribute(defaultAttribute.getForeground(),
-						defaultAttribute.getBackground(), style,
-						defaultAttribute.getFont());
-			} else {
-				italic = new TextAttribute(null, null, SWT.ITALIC);
-			}
-			italicToken = new Token(italic);
-		}
-
-		@Override
-		protected IToken scanToken() {
-			// If we're at a "Signed-off-by" or similar footer line, make it
-			// italic.
-			try {
-				IRegion region = document
-						.getLineInformationOfOffset(currentOffset);
-				if (currentOffset == region.getOffset()) {
-					String line = document.get(currentOffset,
-							region.getLength());
-					Matcher m = ITALIC_LINE.matcher(line);
-					if (m.find()) {
-						currentOffset = Math.min(endOfRange,
-								currentOffset + region.getLength());
-						return italicToken;
-					}
-				}
-			} catch (BadLocationException e) {
-				// Ignore and return null below.
-			}
-			return null;
-		}
 	}
 }

@@ -46,9 +46,6 @@ public class UIText extends NLS {
 	public static String FeatureFinishHandler_finishingFeature;
 
 	/**	 */
-	public static String FeatureFinishHandler_rewordSquashedCommitMessage;
-
-	/**	 */
 	public static String FeatureRebaseHandler_problemsOccurred;
 
 	/**	 */
@@ -91,9 +88,6 @@ public class UIText extends NLS {
 	public static String FeatureTrackHandler_trackingFeature;
 
 	/**	 */
-	public static String Handlers_noGitflowRepositoryFound;
-
-	/**	 */
 	public static String HotfixFinishHandler_Conflicts;
 
 	/**	 */
@@ -112,54 +106,6 @@ public class UIText extends NLS {
 	public static String HotfixStartHandler_startingNewHotfix;
 
 	/**	 */
-	public static String InitDialog_branchDoesNotExistYetAndWillBeCreated;
-
-	/**	 */
-	public static String InitDialog_chooseBranchNamesAndPrefixes;
-
-	/**	 */
-	public static String InitDialog_developBranch;
-
-	/**	 */
-	public static String InitDialog_featureBranchPrefix;
-
-	/**	 */
-	public static String InitDialog_hotfixBranchPrefix;
-
-	/**	 */
-	public static String InitDialog_initializeRepository;
-
-	/**	 */
-	public static String InitDialog_invalidBranchName;
-
-	/**	 */
-	public static String InitDialog_invalidPrefix;
-
-	/**	 */
-	public static String InitDialog_masterBranch;
-
-	/**	 */
-	public static String InitDialog_masterBranchIsMissing;
-
-	/**	 */
-	public static String InitDialog_releaseBranchPrefix;
-
-	/**	 */
-	public static String InitDialog_selectedMasterBranchDoesNotExistCreateNow;
-
-	/**	 */
-	public static String InitDialog_versionTagPrefix;
-
-	/**	 */
-	public static String InitHandler_doYouWantToInitNow;
-
-	/**	 */
-	public static String InitHandler_emptyRepository;
-
-	/**	 */
-	public static String InitHandler_initialCommit;
-
-	/**	 */
 	public static String InitHandler_initializing;
 
 	/**	 */
@@ -176,9 +122,6 @@ public class UIText extends NLS {
 
 	/**	 */
 	public static String ReleaseStartHandler_provideReleaseName;
-
-	/**	 */
-	public static String ReleaseStartHandler_startCommitCouldNotBeDetermined;
 
 	/**	 */
 	public static String ReleaseStartHandler_startingNewRelease;
@@ -214,23 +157,8 @@ public class UIText extends NLS {
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
 
 	/** */
-	public static String FinishFeatureDialog_squashCheck;
-
-	/** */
-	public static String FinishFeatureDialog_title;
-
-	/** */
-	public static String FinishFeatureDialog_setParameterForFinishing;
-
-	/** */
 	public static String HotfixFinishOperation_unexpectedConflictsHotfixAborted;
 
 	/** */
 	public static String ReleaseFinishOperation_unexpectedConflictsReleaseAborted;
-
-	/** */
-	public static String UIIcons_errorDeterminingIconBase;
-
-	/** */
-	public static String UIIcons_errorLoadingPluginImage;
 }
