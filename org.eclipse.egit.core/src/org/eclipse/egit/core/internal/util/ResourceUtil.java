@@ -13,6 +13,7 @@ package org.eclipse.egit.core.internal.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -26,7 +27,6 @@ import java.util.Set;
 import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -45,8 +45,8 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.team.core.RepositoryProvider;
 
 /**
@@ -145,57 +145,46 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * Returns a resource handle for this path in the workspace. Note that
-	 * neither the resource nor the result need exist in the workspace : this
-	 * may return inexistent or otherwise non-accessible IResources.
+	 * Checks if the path relative to the given repository refers to a symbolic
+	 * link
 	 *
 	 * @param repository
-	 *            The repository within which is tracked this file.
+	 *            the repository of the file
 	 * @param repoRelativePath
-	 *            Repository-relative path of the file we need an handle for.
-	 * @param fileMode
-	 *            The kind of file we seek. This will only be used if the file
-	 *            does not exist in the repository's working tree in order to
-	 *            determine whether the handle we need is that of an IContainer
-	 *            or that of an IFile.
+	 *            the repository-relative path of the file to search for
+	 * @return {@code true} if the path in the given repository refers to a
+	 *         symbolic link
+	 */
+	public static boolean isSymbolicLink(Repository repository,
+			String repoRelativePath) {
+		try {
+			File f = new Path(repository.getWorkTree().getAbsolutePath())
+					.append((repoRelativePath)).toFile();
+			return FS.DETECTED.isSymLink(f);
+		} catch (@SuppressWarnings("unused") IOException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Returns a resource handle for this path in the workspace. Note that
+	 * neither the resource nor the result need exist in the workspace : this
+	 * may return inexistant or otherwise non-accessible IResources.
+	 *
+	 * @param path
+	 *            Path for which we need a resource handle.
 	 * @return The resource handle for the given path in the workspace.
 	 */
-	public static IResource getResourceHandleForLocation(Repository repository,
-			String repoRelativePath, int fileMode) {
-		final String workDir = repository.getWorkTree().getAbsolutePath();
-		final IPath path = new Path(workDir + '/' + repoRelativePath);
-		final File file = path.toFile();
-		if (file.exists()) {
-			if (file.isDirectory())
-				return ResourceUtil.getContainerForLocation(path);
-			else
-				return ResourceUtil.getFileForLocation(path);
-		}
+	public static IResource getResourceHandleForLocation(IPath path) {
+		final IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace()
+				.getRoot();
 
-		if (!FileMode.TREE.equals(fileMode)
-				&& !FileMode.REGULAR_FILE.equals(fileMode))
-			return null;
-
-		// This is a file that no longer exists locally, yet we still need to
-		// determine an IResource for it.
-		// Try and find a Project in the workspace which path is a prefix of the
-		// file we seek and which is mapped to the current repository.
-		final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		for (IProject project : root.getProjects()) {
-			if (repository.equals(RepositoryProvider.getProvider(project,
-					GitProvider.ID))) {
-				final IPath projectLocation = project.getLocation();
-				if (projectLocation != null && projectLocation.isPrefixOf(path)) {
-					final IPath projectRelativePath = path
-							.makeRelativeTo(projectLocation);
-					if (FileMode.TREE.equals(fileMode))
-						return project.getFolder(projectRelativePath);
-					else if (FileMode.REGULAR_FILE.equals(fileMode))
-						return project.getFile(projectRelativePath);
-				}
-			}
-		}
-		return null;
+		final IResource resource;
+		if (path.segmentCount() > 1)
+			resource = workspaceRoot.getFile(path);
+		else
+			resource = workspaceRoot.getProject(path.toString());
+		return resource;
 	}
 
 	/**
