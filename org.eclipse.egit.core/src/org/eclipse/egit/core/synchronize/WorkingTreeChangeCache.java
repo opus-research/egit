@@ -8,13 +8,15 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
+import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 import static org.eclipse.egit.core.synchronize.CheckedInCommitsCache.calculateAndSetChangeKind;
+import static org.eclipse.jgit.treewalk.filter.TreeFilter.ANY_DIFF;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.synchronize.CheckedInCommitsCache.Change;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
@@ -22,6 +24,8 @@ import org.eclipse.jgit.lib.MutableObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
 
 /**
  * Builds list of working tree changes.
@@ -32,30 +36,35 @@ public class WorkingTreeChangeCache {
 	 * @param repo
 	 *            with should be scanned
 	 * @return list of changes in working tree
-	 * @throws IOException
 	 */
-	public static Map<String, Change> build(Repository repo) throws IOException {
+	public static Map<String, Change> build(Repository repo) {
 		TreeWalk tw = new TreeWalk(repo);
-		tw.addTree(new FileTreeIterator(repo));
-		tw.addTree(new DirCacheIterator(repo.readDirCache()));
-		tw.setRecursive(true);
+		try {
+			tw.addTree(new FileTreeIterator(repo));
+			tw.addTree(new DirCacheIterator(repo.readDirCache()));
+			tw.setFilter(AndTreeFilter.create(new NotIgnoredFilter(0), ANY_DIFF));
+			tw.setRecursive(true);
 
-		Map<String, Change> result = new HashMap<String, Change>();
-		MutableObjectId idBuf = new MutableObjectId();
-		while (tw.next()) {
-			Change change = new Change();
-			change.name = tw.getNameString();
-			tw.getObjectId(idBuf, 0);
-			change.objectId = AbbreviatedObjectId.fromObjectId(idBuf);
-			tw.getObjectId(idBuf, 1);
-			change.remoteObjectId = AbbreviatedObjectId.fromObjectId(idBuf);
-			calculateAndSetChangeKind(LEFT, change);
+			Map<String, Change> result = new HashMap<String, Change>();
+			MutableObjectId idBuf = new MutableObjectId();
+			while (tw.next()) {
+				Change change = new Change();
+				change.name = tw.getNameString();
+				tw.getObjectId(idBuf, 0);
+				change.objectId = AbbreviatedObjectId.fromObjectId(idBuf);
+				tw.getObjectId(idBuf, 1);
+				change.remoteObjectId = AbbreviatedObjectId.fromObjectId(idBuf);
+				calculateAndSetChangeKind(RIGHT, change);
 
-			result.put(tw.getPathString(), change);
+				result.put(tw.getPathString(), change);
+			}
+			tw.release();
+
+			return result;
+		} catch (IOException e) {
+			Activator.error(e.getMessage(), e);
+			return new HashMap<String, CheckedInCommitsCache.Change>(0);
 		}
-		tw.release();
-
-		return result;
 	}
 
 }
