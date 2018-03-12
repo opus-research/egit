@@ -274,7 +274,7 @@ public class ProjectUtil {
 		for (String member : fileList) {
 			File file = new File(workTree, member);
 
-			IContainer container = findProjectOrWorkspaceRoot(file);
+			IContainer container = findContainer(file);
 			if (container instanceof IProject)
 				result.add((IProject) container);
 		}
@@ -283,17 +283,16 @@ public class ProjectUtil {
 	}
 
 	/**
-	 * Looks up the IProject containing the given file, if available. This is
+	 * Looks up the IContainer containing the given file, if available. This is
 	 * done by path comparison, which is very cheap compared to
-	 * IWorkspaceRoot.findContainersForLocationURI(). If no project is found the
-	 * code returns the {@link IWorkspaceRoot} or the file is inside the
-	 * workspace.
+	 * IWorkspaceRoot.findContainersForLocationURI()
 	 *
 	 * @param file
 	 *            the path to lookup a container for
-	 * @return the IProject or IWorkspaceRoot or <code>null</code> if not found.
+	 * @return the IContainer (either IProject or IWorkspaceRoot) or
+	 *         <code>null</code> if not found.
 	 */
-	public static IContainer findProjectOrWorkspaceRoot(File file) {
+	public static IContainer findContainer(File file) {
 		String absFile = file.getAbsolutePath();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject[] allProjects = root.getProjects();
