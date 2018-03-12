@@ -514,7 +514,7 @@ public class RepositoryUtil {
 	 * @param repository
 	 *            the repository to check
 	 * @return the fast-forward mode for the current branch
-	 * @since 3.0
+	 * @since 2.4
 	 */
 	public FastForwardMode getFastForwardMode(Repository repository) {
 		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
