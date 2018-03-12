@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2012 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -12,21 +12,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
-import java.text.MessageFormat;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
-import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateTagHandler;
+import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
 import org.eclipse.egit.ui.internal.commit.command.RevertHandler;
-import org.eclipse.egit.ui.internal.commit.command.ShowInHistoryHandler;
-import org.eclipse.egit.ui.internal.commit.command.StashApplyHandler;
-import org.eclipse.egit.ui.internal.commit.command.StashDropHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
@@ -36,13 +31,10 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -64,15 +56,13 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.menus.IMenuService;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.UIJob;
 
 /**
  * Editor class to view a commit in a form editor.
  */
 public class CommitEditor extends SharedHeaderFormEditor implements
-		RefsChangedListener, IShowInSource {
+		RefsChangedListener {
 
 	/**
 	 * ID - editor id
@@ -90,40 +80,9 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	public static final IEditorPart open(RepositoryCommit commit)
 			throws PartInitException {
-		return open(commit, true);
-	}
-
-	/**
-	 * Open commit in editor
-	 *
-	 * @param commit
-	 * @param activateOnOpen <code>true</code> if the newly opened editor should be activated
-	 * @return opened editor part
-	 * @throws PartInitException
-	 * @since 2.1
-	 */
-	public static final IEditorPart open(RepositoryCommit commit, boolean activateOnOpen)
-			throws PartInitException {
 		CommitEditorInput input = new CommitEditorInput(commit);
 		return IDE.openEditor(PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getActivePage(), input, ID, activateOnOpen);
-	}
-
-	/**
-	 * Open commit in editor
-	 *
-	 * @param commit
-	 * @param activateOnOpen <code>true</code> if the newly opened editor should be activated
-	 * @return opened editor part or null if opening fails
-	 * @since 2.1
-	 */
-	public static final IEditorPart openQuiet(RepositoryCommit commit, boolean activateOnOpen) {
-		try {
-			return open(commit, activateOnOpen);
-		} catch (PartInitException e) {
-			Activator.logError(e.getMessage(), e);
-			return null;
-		}
+				.getActiveWorkbenchWindow().getActivePage(), input, ID);
 	}
 
 	/**
@@ -133,7 +92,12 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 * @return opened editor part or null if opening fails
 	 */
 	public static final IEditorPart openQuiet(RepositoryCommit commit) {
-		return openQuiet(commit, true);
+		try {
+			return open(commit);
+		} catch (PartInitException e) {
+			Activator.logError(e.getMessage(), e);
+			return null;
+		}
 	}
 
 	private CommitEditorPage commitPage;
@@ -149,13 +113,12 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	protected void addPages() {
 		try {
-			if (getCommit().isStash())
-				commitPage = new StashEditorPage(this);
-			else
-				commitPage = new CommitEditorPage(this);
+			commitPage = new CommitEditorPage(this);
 			addPage(commitPage);
-			diffPage = new DiffEditorPage(this);
-			addPage(diffPage);
+			if (getCommit().getRevCommit().getParentCount() <= 1) {
+				diffPage = new DiffEditorPage(this);
+				addPage(diffPage);
+			}
 			if (getCommit().getNotes().length > 0) {
 				notePage = new NotesEditorPage(this);
 				addPage(notePage);
@@ -181,10 +144,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	protected void createHeaderContents(IManagedForm headerForm) {
 		RepositoryCommit commit = getCommit();
 		ScrolledForm form = headerForm.getForm();
-		String commitName = commit.getRevCommit().name();
-		String title = getFormattedHeaderTitle(commitName);
-		new HeaderText(form.getForm(), title, commitName);
-		form.setToolTipText(commitName);
+		new HeaderText(form.getForm(), commit.getRevCommit().name());
+		form.setToolTipText(commit.getRevCommit().name());
 		getToolkit().decorateFormHeading(form.getForm());
 
 		IToolBarManager toolbar = form.getToolBarManager();
@@ -227,17 +188,11 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			}
 		};
 		toolbar.add(repositoryLabelControl);
-		if (commit.isStash()) {
-			toolbar.add(createCommandContributionItem(StashApplyHandler.ID));
-			toolbar.add(createCommandContributionItem(StashDropHandler.ID));
-		} else {
-			toolbar.add(createCommandContributionItem(CreateTagHandler.ID));
-			toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
-			toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
-			toolbar.add(createCommandContributionItem(CherryPickHandler.ID));
-			toolbar.add(createCommandContributionItem(RevertHandler.ID));
-			toolbar.add(createCommandContributionItem(ShowInHistoryHandler.ID));
-		}
+		toolbar.add(createCommandContributionItem(CreateTagHandler.ID));
+		toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
+		toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
+		toolbar.add(createCommandContributionItem(CherryPickHandler.ID));
+		toolbar.add(createCommandContributionItem(RevertHandler.ID));
 		addContributions(toolbar);
 		toolbar.update(true);
 		getSite().setSelectionProvider(new ISelectionProvider() {
@@ -260,49 +215,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 				// Ignored
 			}
 		});
-	}
-
-	private String getFormattedHeaderTitle(String commitName) {
-		if (getCommit().isStash()) {
-			int stashIndex = getStashIndex(getCommit().getRepository(),
-					getCommit().getRevCommit().getId());
-			String stashName = MessageFormat.format("stash@'{'{0}'}'", //$NON-NLS-1$
-					Integer.valueOf(stashIndex));
-			return MessageFormat.format(
-					UIText.CommitEditor_TitleHeaderStashedCommit,
-					stashName);
-		} else {
-			return MessageFormat.format(UIText.CommitEditor_TitleHeaderCommit,
-					commitName);
-		}
-	}
-
-	private int getStashIndex(Repository repo, ObjectId id) {
-		int index = 0;
-		try {
-			for (RevCommit commit : Git.wrap(repo).stashList().call())
-				if (commit.getId().equals(id))
-					return index;
-				else
-					index++;
-			throw new IllegalStateException(
-					UIText.CommitEditor_couldNotFindStashCommit);
-		} catch (Exception e) {
-			String message = MessageFormat.format(
-					UIText.CommitEditor_couldNotGetStashIndex, id.name());
-			Activator.logError(message, e);
-			index = -1;
-		}
-		return index;
-	}
-
-	/**
-	 * @see org.eclipse.ui.forms.editor.SharedHeaderFormEditor#setFocus()
-	 * @since 2.0
-	 */
-	@Override
-	public void setFocus() {
-		commitPage.getPartControl().setFocus();
 	}
 
 	private void addContributions(IToolBarManager toolBarManager) {
@@ -384,12 +296,5 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			};
 			job.schedule();
 		}
-	}
-
-	public ShowInContext getShowInContext() {
-		if (commitPage != null && commitPage.isActive())
-			return commitPage.getShowInContext();
-		else
-			return null;
 	}
 }

@@ -13,11 +13,11 @@
 
 package org.eclipse.egit.ui.internal.history.command;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -27,17 +27,17 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.MergeActionHandler;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
@@ -49,29 +49,19 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * Executes the Merge
  */
 public class MergeHandler extends AbstractHistoryCommandHandler {
-
-	@Override
-	public boolean isEnabled() {
-		final Repository repository = getRepository(getPage());
-		if (repository == null)
-			return false;
-		return repository.getRepositoryState().equals(RepositoryState.SAFE);
-	}
-
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		ObjectId commitId = getSelectedCommitId(event);
+		RevCommit commit = (RevCommit) getSelection(getPage()).getFirstElement();
 		final Repository repository = getRepository(event);
 		if (repository == null)
 			return null;
 
-		if (!MergeActionHandler.checkMergeIsPossible(repository, getShell(event)))
+		if (!canMerge(repository))
 			return null;
 
-		List<RefNode> nodes = getRefNodes(commitId, repository,
-				Constants.R_REFS);
+		List<RefNode> nodes = getRefNodes(commit, repository, Constants.R_REFS);
 		String refName;
 		if (nodes.isEmpty())
-			refName = commitId.getName();
+			refName = commit.getName();
 		else if (nodes.size() == 1)
 			refName = nodes.get(0).getObject().getName();
 		else {
@@ -79,17 +69,16 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 					HandlerUtil.getActiveShellChecked(event), nodes,
 					UIText.MergeHandler_SelectBranchTitle,
 					UIText.MergeHandler_SelectBranchMessage, SWT.SINGLE);
-			if (dlg.open() == Window.OK)
+			if (dlg.open() == Window.OK) {
 				refName = dlg.getSelectedNode().getObject().getName();
-			else
+			} else
 				return null;
 		}
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 		final MergeOperation op = new MergeOperation(repository, refName);
-		Job job = new WorkspaceJob(jobname) {
-
+		Job job = new Job(jobname) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					op.execute(monitor);
 				} catch (final CoreException e) {
@@ -104,7 +93,7 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 			@Override
 			public void done(IJobChangeEvent cevent) {
 				IStatus result = cevent.getJob().getResult();
-				if (result.getSeverity() == IStatus.CANCEL)
+				if (result.getSeverity() == IStatus.CANCEL) {
 					Display.getDefault().asyncExec(new Runnable() {
 						public void run() {
 							// don't use getShell(event) here since
@@ -119,22 +108,48 @@ public class MergeHandler extends AbstractHistoryCommandHandler {
 											UIText.MergeAction_MergeCanceledMessage);
 						}
 					});
-				else if (!result.isOK())
+				} else if (!result.isOK()) {
 					Activator.handleError(result.getMessage(), result
 							.getException(), true);
-				else
+				} else {
 					Display.getDefault().asyncExec(new Runnable() {
 						public void run() {
 							Shell shell = PlatformUI.getWorkbench()
 									.getActiveWorkbenchWindow().getShell();
-							MergeResultDialog.getDialog(shell, repository, op
+							new MergeResultDialog(shell, repository, op
 									.getResult()).open();
 						}
 					});
+				}
 			}
 		});
 		job.schedule();
 		return null;
+	}
+
+	/* copy of {@link org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand#canMerge(Repository)}
+	 * @param repository
+	 * @return true of merge is allowed */
+	private boolean canMerge(final Repository repository) {
+		String message = null;
+		Exception ex = null;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || !head.isSymbolic())
+				message = UIText.MergeAction_HeadIsNoBranch;
+			else if (!repository.getRepositoryState().equals(
+					RepositoryState.SAFE))
+				message = NLS.bind(UIText.MergeAction_WrongRepositoryState,
+						repository.getRepositoryState());
+		} catch (IOException e) {
+			message = e.getMessage();
+			ex = e;
+		}
+
+		if (message != null) {
+			Activator.handleError(UIText.MergeAction_CannotMerge, ex, true);
+		}
+		return (message == null);
 	}
 
 	/**

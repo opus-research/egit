@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,20 +12,15 @@ package org.eclipse.egit.ui.test;
 
 import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForView;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -46,27 +41,17 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.service.localization.BundleLocalization;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
 import org.eclipse.ui.IViewReference;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -95,7 +80,7 @@ public class TestUtil {
 	 * in menu items and field labels for keyboard shortcuts) will be filtered
 	 * out (see also {@link #getPluginLocalizedValue(String, boolean)} in order
 	 * to be able to reference these fields using SWTBot).
-	 *
+	 * 
 	 * @param key
 	 *            the key, must not be null
 	 * @return the localized value in the current default {@link Locale}, or
@@ -111,7 +96,7 @@ public class TestUtil {
 	/**
 	 * Allows access to the localized values of the EGit UI Plug-in
 	 * <p>
-	 *
+	 * 
 	 * @param key
 	 *            see {@link #getPluginLocalizedValue(String)}
 	 * @param keepAmpersands
@@ -123,16 +108,17 @@ public class TestUtil {
 	public synchronized String getPluginLocalizedValue(String key,
 			boolean keepAmpersands) throws MissingResourceException {
 		if (myBundle == null) {
+			ServiceTracker localizationTracker;
 
 			BundleContext context = Activator.getDefault().getBundle()
 					.getBundleContext();
 
-			ServiceTracker<BundleLocalization, BundleLocalization> localizationTracker =
-					new ServiceTracker<BundleLocalization, BundleLocalization>(
-					context, BundleLocalization.class, null);
+			localizationTracker = new ServiceTracker(context,
+					BundleLocalization.class.getName(), null);
 			localizationTracker.open();
 
-			BundleLocalization location = localizationTracker.getService();
+			BundleLocalization location = (BundleLocalization) localizationTracker
+					.getService();
 			if (location != null)
 				myBundle = location.getLocalization(Activator.getDefault()
 						.getBundle(), Locale.getDefault().toString());
@@ -176,10 +162,9 @@ public class TestUtil {
 	 */
 	public static void appendFileContent(File file, String content, boolean append)
 			throws IOException {
-		Writer fw = null;
+		FileWriter fw = null;
 		try {
-			fw = new OutputStreamWriter(new FileOutputStream(file, append),
-					"UTF-8");
+			fw = new FileWriter(file, append);
 			fw.append(content);
 		} finally {
 			if (fw != null)
@@ -326,8 +311,8 @@ public class TestUtil {
 	 */
 	public static void disableProxy() {
 		BundleContext context = Activator.getDefault().getBundle().getBundleContext();
-		ServiceReference<IProxyService> serviceReference = context.getServiceReference(IProxyService.class);
-		IProxyService proxyService = context.getService(serviceReference);
+		ServiceReference serviceReference = context.getServiceReference(IProxyService.class.getName());
+		IProxyService proxyService = (IProxyService) context.getService(serviceReference);
 		proxyService.setSystemProxiesEnabled(false);
 		proxyService.setProxiesEnabled(false);
 	}
@@ -387,14 +372,15 @@ public class TestUtil {
 			String path = treeWalk.getPathString();
 			assertTrue(expectedfiles.containsKey(path));
 			ObjectId objectId = treeWalk.getObjectId(0);
-			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
+			byte[] expectedContent = expectedfiles.get(path).getBytes();
 			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
 					.getBytes();
-			if (!Arrays.equals(repoContent, expectedContent))
+			if (!Arrays.equals(repoContent, expectedContent)) {
 				fail("File " + path + " has repository content "
-						+ new String(repoContent, "UTF-8")
+						+ new String(repoContent)
 						+ " instead of expected content "
-						+ new String(expectedContent, "UTF-8"));
+						+ new String(expectedContent));
+			}
 			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
@@ -412,20 +398,20 @@ public class TestUtil {
 		if ((args.length % 2) > 0)
 			throw new IllegalArgumentException("needs to be pairs");
 		HashMap<String, String> map = new HashMap<String, String>();
-		for (int i = 0; i < args.length; i += 2)
+		for (int i = 0; i < args.length; i += 2) {
 			map.put(args[i], args[i+1]);
+		}
 		return map;
 	}
 
 	/**
 	 * @param projectExplorerTree
-	 * @param projects
+	 * @param project
 	 *            name of a project
 	 * @return the project item pertaining to the project
 	 */
-	public SWTBotTreeItem[] getProjectItems(SWTBotTree projectExplorerTree,
-			String... projects) {
-		List<SWTBotTreeItem> items = new ArrayList<SWTBotTreeItem>();
+	public SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
+			String project) {
 		for (SWTBotTreeItem item : projectExplorerTree.getAllItems()) {
 			String itemText = item.getText();
 			StringTokenizer tok = new StringTokenizer(itemText, " ");
@@ -433,24 +419,20 @@ public class TestUtil {
 			// may be a dirty marker
 			if (name.equals(">"))
 				name = tok.nextToken();
-			for (String project : projects)
-				if (project.equals(name))
-					items.add(item);
+			if (project.equals(name))
+				return item;
 		}
-		return items.isEmpty() ? null : items.toArray(new SWTBotTreeItem[items.size()]);
+		return null;
 	}
 
 	/**
-	 * Retrieves a child node with the given childNodeText. Nodes with dirty
-	 * marker are also found (without specifying > in childNodeText), as well as
-	 * nodes with trailing text.
-	 *
+	 * Retrieves a child node with the given childNodeText.
+	 * Nodes with dirty marker are also found (without specifying > in childNodeText)
 	 * @param node
 	 * @param childNodeText
-	 * @return child node
+	 * @return  child node
 	 */
-	public static SWTBotTreeItem getChildNode(SWTBotTreeItem node,
-			String childNodeText) {
+	public SWTBotTreeItem getChildNode(SWTBotTreeItem node, String childNodeText) {
 		for (SWTBotTreeItem item : node.getItems()) {
 			String itemText = item.getText();
 			StringTokenizer tok = new StringTokenizer(itemText, " ");
@@ -458,8 +440,7 @@ public class TestUtil {
 			// may be a dirty marker
 			if (name.equals(">"))
 				name = tok.nextToken();
-			if (childNodeText.equals(name)
-					|| name.startsWith(childNodeText + " "))
+			if (childNodeText.equals(name))
 				return item;
 		}
 		return null;
@@ -494,8 +475,9 @@ public class TestUtil {
 	public static void waitUntilViewWithGivenIdShows(final String viewId) {
 		waitForView(new BaseMatcher<IViewReference>() {
 			public boolean matches(Object item) {
-				if (item instanceof IViewReference)
+				if (item instanceof IViewReference) {
 					return viewId.equals(((IViewReference) item).getId());
+				}
 				return false;
 			}
 
@@ -520,58 +502,4 @@ public class TestUtil {
 		});
 	}
 
-	public static SWTBotShell botForShellStartingWith(final String titlePrefix) {
-		SWTWorkbenchBot bot = new SWTWorkbenchBot();
-
-		Matcher<Shell> matcher = new TypeSafeMatcher<Shell>() {
-			@Override
-			protected boolean matchesSafely(Shell item) {
-				String title = item.getText();
-				return title != null && title.startsWith(titlePrefix);
-			}
-
-			public void describeTo(Description description) {
-				description.appendText("Shell with title starting with '"
-						+ titlePrefix + "'");
-			}
-		};
-
-		Shell shell = bot.widget(matcher);
-		return new SWTBotShell(shell);
-	}
-
-	public static SWTBotView showView(final String viewId) {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow();
-				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-				try {
-					workbenchPage.showView(viewId);
-				} catch (PartInitException e) {
-					throw new RuntimeException("Showing view with ID " + viewId
-							+ " failed.", e);
-				}
-			}
-		});
-
-		SWTWorkbenchBot bot = new SWTWorkbenchBot();
-		SWTBotView viewbot = bot.viewById(viewId);
-		assertNotNull("View with ID " + viewId + " not found via SWTBot.",
-				viewbot);
-		return viewbot;
-	}
-
-	public static SWTBotView showHistoryView() {
-		return showView("org.eclipse.team.ui.GenericHistoryView");
-	}
-
-	public static SWTBotView showExplorerView() {
-		return showView("org.eclipse.jdt.ui.PackageExplorer");
-	}
-
-	public static SWTBotTree getExplorerTree() {
-		SWTBotView view = showExplorerView();
-		return view.bot().tree();
-	}
 }

@@ -266,7 +266,8 @@ class BranchProjectTracker {
 		else
 			importMonitor = new NullProgressMonitor();
 		try {
-			ProjectUtils.createProjects(records, true, null, importMonitor);
+			ProjectUtils.createProjects(records, true, repository, null,
+					importMonitor);
 		} catch (InvocationTargetException e) {
 			Activator
 					.logError("Error restoring branch-project associations", e); //$NON-NLS-1$

@@ -1,7 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
- * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
- *
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,14 +7,13 @@
  *
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
- *    Tomasz Zarna (IBM) - merge squash, bug 382720
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -27,12 +24,10 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
-import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
@@ -56,12 +51,6 @@ public class MergeOperation implements IEGitOperation {
 	private final String refName;
 
 	private MergeStrategy mergeStrategy;
-
-	private Boolean squash;
-
-	private FastForwardMode fastForwardMode;
-
-	private Boolean commit;
 
 	private MergeResult mergeResult;
 
@@ -88,30 +77,6 @@ public class MergeOperation implements IEGitOperation {
 			this.mergeStrategy = MergeStrategy.get(mergeStrategy);
 	}
 
-	/**
-	 * @param squash true to squash merge commits
-	 */
-	public void setSquash(boolean squash) {
-		this.squash = Boolean.valueOf(squash);
-	}
-
-	/**
-	 * @param ffmode set the fast forward mode
-	 * @since 3.0
-	 */
-	public void setFastForwardMode(FastForwardMode ffmode) {
-		this.fastForwardMode = ffmode;
-	}
-
-	/**
-	 * @param commit
-	 *            set the commit option
-	 * @since 3.1
-	 */
-	public void setCommit(boolean commit) {
-		this.commit = Boolean.valueOf(commit);
-	}
-
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (mergeResult != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
@@ -128,37 +93,42 @@ public class MergeOperation implements IEGitOperation {
 				mymonitor.beginTask(NLS.bind(CoreText.MergeOperation_ProgressMerge, refName), 3);
 				Git git = new Git(repository);
 				mymonitor.worked(1);
-				MergeCommand merge = git.merge();
+				MergeCommand merge;
 				try {
 					Ref ref = repository.getRef(refName);
 					if (ref != null)
-						merge.include(ref);
+						merge = git.merge().include(ref);
 					else
-						merge.include(ObjectId.fromString(refName));
+						merge = git.merge().include(ObjectId.fromString(refName));
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
-				if (fastForwardMode != null)
-					merge.setFastForward(fastForwardMode);
-				if (commit != null)
-					merge.setCommit(commit.booleanValue());
-				if (squash != null)
-					merge.setSquash(squash.booleanValue());
 				if (mergeStrategy != null) {
 					merge.setStrategy(mergeStrategy);
 				}
 				try {
 					mergeResult = merge.call();
 					mymonitor.worked(1);
-					if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
+					if (MergeResult.MergeStatus.FAILED.equals(mergeResult.getMergeStatus()))
+						throw new TeamException(mergeResult.toString());
+					else if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
 						throw new TeamException(new Status(IStatus.INFO, Activator.getPluginId(), mergeResult.toString()));
 				} catch (NoHeadException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedNoHead, e);
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
 				} catch (CheckoutConflictException e) {
-					mergeResult = new MergeResult(e.getConflictingPaths());
-					return;
+					StringBuilder builder = new StringBuilder();
+					for (String f : e.getConflictingPaths()) {
+						builder.append("\n"); //$NON-NLS-1$
+						builder.append(f);
+					}
+					throw new TeamException(
+								new Status(
+									IStatus.INFO,
+									Activator.getPluginId(),
+									MessageFormat.format(CoreText.MergeOperation_CheckoutConflict,
+									builder.toString())));
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {
@@ -169,8 +139,7 @@ public class MergeOperation implements IEGitOperation {
 			}
 		};
 		// lock workspace to protect working tree changes
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
 	/**
@@ -182,6 +151,8 @@ public class MergeOperation implements IEGitOperation {
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repository);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
+
+
 }

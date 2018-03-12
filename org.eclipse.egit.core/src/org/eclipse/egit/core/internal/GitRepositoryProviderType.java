@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2013 Chris Aniszczyk and others.
+ * Copyright (c) 2011 Chris Aniszczyk and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -30,34 +30,23 @@ import org.eclipse.team.core.subscribers.Subscriber;
  */
 public class GitRepositoryProviderType extends RepositoryProviderType {
 
-	private final Subscriber subscriber;
-
-	/**
-	 * Creates {@link GitRepositoryProviderType}
-	 */
-	public GitRepositoryProviderType() {
+	public Subscriber getSubscriber() {
 		GitSynchronizeDataSet set = new GitSynchronizeDataSet();
 		try {
 			Repository[] repositories = Activator.getDefault()
 					.getRepositoryCache().getAllRepositories();
-			for (Repository repository : repositories) {
-				if (!repository.isBare()) {
-					GitSynchronizeData data = new GitSynchronizeData(
-							repository, Constants.HEAD, Constants.HEAD, true);
-					set.add(data);
-				}
+			for (int i = 0; i < repositories.length; i++) {
+				GitSynchronizeData data = new GitSynchronizeData(
+						repositories[i], Constants.HEAD, Constants.HEAD, true);
+				set.add(data);
 			}
 		} catch (IOException e) {
 			// do nothing
 		}
 
-		GitResourceVariantTreeSubscriber gitSubscriber = new GitResourceVariantTreeSubscriber(set);
-		gitSubscriber.init(new NullProgressMonitor());
+		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(set);
+		subscriber.init(new NullProgressMonitor());
 
-		subscriber = gitSubscriber;
-	}
-
-	public Subscriber getSubscriber() {
 		return subscriber;
 	}
 

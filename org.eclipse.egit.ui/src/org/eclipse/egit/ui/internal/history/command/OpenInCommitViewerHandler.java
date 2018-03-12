@@ -7,11 +7,10 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Robin Stocker
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
-import java.util.List;
+import java.io.IOException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -20,6 +19,7 @@ import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.ui.PartInitException;
 
 /**
@@ -29,13 +29,21 @@ public class OpenInCommitViewerHandler extends AbstractHistoryCommandHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(event);
-		List<RevCommit> commits = getSelectedCommits(event);
-		for (RevCommit commit : commits) {
-			try {
-				CommitEditor.open(new RepositoryCommit(repository, commit));
-			} catch (PartInitException e) {
-				Activator.showError("Error opening commit viewer", e); //$NON-NLS-1$
-			}
+		if (repository != null) {
+			RevWalk revWalk = new RevWalk(repository);
+			for (Object selected : getSelection(getPage()).toList())
+				try {
+					RevCommit selectedCommit = (RevCommit) selected;
+
+					// Re-parse commit to clear effects of TreeFilter
+					RevCommit reparsedCommit = revWalk.parseCommit(selectedCommit.getId());
+
+					CommitEditor.open(new RepositoryCommit(repository, reparsedCommit));
+				} catch (IOException e) {
+					Activator.showError("Error opening commit viewer", e); //$NON-NLS-1$
+				} catch (PartInitException e) {
+					Activator.showError("Error opening commit viewer", e); //$NON-NLS-1$
+				}
 		}
 		return null;
 	}

@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -61,19 +59,16 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repository = mapping.getRepository();
 			if (repository == null)
 				return;
-
+			repositoryName = DecoratableResourceHelper
+					.getRepositoryName(repository);
+			branch = DecoratableResourceHelper.getShortBranch(repository);
+			branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
 			switch (resource.getType()) {
 			case IResource.FILE:
 				extractResourceProperties();
 				break;
 			case IResource.PROJECT:
-				// We only need this very expensive info for project decoration
-				repositoryName = DecoratableResourceHelper
-						.getRepositoryName(repository);
-				branch = DecoratableResourceHelper.getShortBranch(repository);
-				branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
 				tracked = true;
-				//$FALL-THROUGH$
 			case IResource.FOLDER:
 				extractContainerProperties();
 				break;
@@ -88,18 +83,12 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		}
 	}
 
-	@Override
-	public String toString() {
-		return "DecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + staged + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
-	}
-
 	private void extractResourceProperties() {
 		String repoRelativePath = makeRepoRelative(resource);
 
 		// ignored
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
-		ignored = ignoredFiles.contains(repoRelativePath)
-				|| containsPrefixPath(ignoredFiles, repoRelativePath);
+		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
 		Set<String> untracked = indexDiffData.getUntracked();
 		tracked = !untracked.contains(repoRelativePath) && !ignored;
 
@@ -129,8 +118,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
 		Set<String> untrackedFolders = indexDiffData.getUntrackedFolders();
-		ignored = containsPrefixPath(ignoredFiles, repoRelativePath)
-				|| !hasContainerAnyFiles(resource);
+		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
 
 		if (ignored)
 			tracked = false;
@@ -154,34 +142,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		// locally modified / untracked
 		Set<String> modified = indexDiffData.getModified();
 		Set<String> untracked = indexDiffData.getUntracked();
-		Set<String> missing = indexDiffData.getMissing();
 		dirty = containsPrefix(modified, repoRelativePath)
-				|| containsPrefix(untracked, repoRelativePath)
-				|| containsPrefix(missing, repoRelativePath);
-	}
-
-	private static boolean hasContainerAnyFiles(IResource resource) {
-		if (resource instanceof IContainer) {
-			IContainer container = (IContainer) resource;
-			try {
-				return anyFile(container.members());
-			} catch (CoreException e) {
-				// if can't get any info, treat as with file
-				return true;
-			}
-		}
-		throw new IllegalArgumentException("Expected a container resource."); //$NON-NLS-1$
-	}
-
-	private static boolean anyFile(IResource[] members) {
-		for (IResource member : members) {
-			if (member.getType() == IResource.FILE)
-				return true;
-			else if (member.getType() == IResource.FOLDER)
-				if (hasContainerAnyFiles(member))
-					return true;
-		}
-		return false;
+				|| containsPrefix(untracked, repoRelativePath);
 	}
 
 	private String makeRepoRelative(IResource res) {
@@ -202,15 +164,9 @@ class DecoratableResourceAdapter extends DecoratableResource {
 	}
 
 	private boolean containsPrefixPath(Set<String> collection, String path) {
-		for (String entry : collection) {
-			String entryPath;
-			if (entry.endsWith("/")) //$NON-NLS-1$
-				entryPath = entry;
-			else
-				entryPath = entry + "/"; //$NON-NLS-1$
-			if (path.startsWith(entryPath))
+		for (String entry : collection)
+			if (path.startsWith(entry))
 				return true;
-		}
 		return false;
 	}
 

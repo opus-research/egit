@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +22,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -45,49 +43,6 @@ public class TestUtils {
 
 	public final static String COMMITTER = "The Commiter <The.committer@some.com>";
 
-	private final static File rootDir = customTestDirectory();
-
-	/**
-	 * Allow to set a custom directory for running tests
-	 *
-	 * @return custom directory defined by system property
-	 *         {@code egit.test.tmpdir} or {@code ~/egit.test.tmpdir} if this
-	 *         property isn't defined
-	 */
-	private static File customTestDirectory() {
-		final String p = System.getProperty("egit.test.tmpdir"); //$NON-NLS-1$
-		File testDir = null;
-		boolean isDefault = true;
-		if (p == null || p.length() == 0)
-			testDir = new File(FS.DETECTED.userHome(), "egit.test.tmpdir"); //$NON-NLS-1$
-		else {
-			isDefault = false;
-			testDir = new File(p).getAbsoluteFile();
-		}
-		System.out.println("egit.test.tmpdir" //$NON-NLS-1$
-				+ (isDefault ? "[default]: " : ": ") //$NON-NLS-1$ $NON-NLS-2$
-				+ testDir.getAbsolutePath());
-		return testDir;
-	}
-
-	private File baseTempDir;
-
-	public TestUtils() {
-		// ensure that concurrent test runs don't use the same directory
-		baseTempDir = new File(rootDir, UUID.randomUUID().toString()
-				.replace("-", ""));
-	}
-
-	/**
-	 * Return the base directory in which temporary directories are created.
-	 * Current implementation returns a "temporary" folder in the user home.
-	 *
-	 * @return a "temporary" folder in the user home that may not exist.
-	 */
-	public File getBaseTempDir() {
-		return baseTempDir;
-	}
-
 	/**
 	 * Create a "temporary" directory
 	 *
@@ -98,10 +53,11 @@ public class TestUtils {
 	 * @throws IOException
 	 */
 	public File createTempDir(String name) throws IOException {
-		File result = new File(getBaseTempDir(), name);
+		File userHome = FS.DETECTED.userHome();
+		File rootDir = new File(userHome, "EGitCoreTestTempDir");
+		File result = new File(rootDir, name);
 		if (result.exists())
 			FileUtils.delete(result, FileUtils.RECURSIVE | FileUtils.RETRY);
-		FileUtils.mkdirs(result, true);
 		return result;
 	}
 
@@ -111,6 +67,8 @@ public class TestUtils {
 	 * @throws IOException
 	 */
 	public void deleteTempDirs() throws IOException {
+		File userHome = FS.DETECTED.userHome();
+		File rootDir = new File(userHome, "EGitCoreTestTempDir");
 		if (rootDir.exists())
 			FileUtils.delete(rootDir, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
@@ -146,7 +104,7 @@ public class TestUtils {
 	 *            the contents
 	 * @return the file
 	 * @throws CoreException
-	 *             if the file cannot be created
+	 *             if the file can not be created
 	 * @throws UnsupportedEncodingException
 	 */
 	public IFile addFileToProject(IProject project, String path, String content) throws CoreException, UnsupportedEncodingException {
@@ -184,23 +142,10 @@ public class TestUtils {
 	}
 
 	/**
-	 * Create a project in the base directory of temp dirs
-	 *
-	 * @param projectName
-	 *            project name
-	 * @return the project with a location pointing to the local file system
-	 * @throws Exception
-	 */
-	public IProject createProjectInLocalFileSystem(
-			String projectName) throws Exception {
-		return createProjectInLocalFileSystem(getBaseTempDir(), projectName);
-	}
-
-	/**
 	 * Create a project in the local file system
 	 *
 	 * @param parentFile
-	 *            the parent directory
+	 *            the parent
 	 * @param projectName
 	 *            project name
 	 * @return the project with a location pointing to the local file system
@@ -278,14 +223,14 @@ public class TestUtils {
 			String path = treeWalk.getPathString();
 			assertTrue(expectedfiles.containsKey(path));
 			ObjectId objectId = treeWalk.getObjectId(0);
-			byte[] expectedContent = expectedfiles.get(path).getBytes("UTF-8");
+			byte[] expectedContent = expectedfiles.get(path).getBytes();
 			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
 					.getBytes();
 			if (!Arrays.equals(repoContent, expectedContent)) {
 				fail("File " + path + " has repository content "
-						+ new String(repoContent, "UTF-8")
+						+ new String(repoContent)
 						+ " instead of expected content "
-						+ new String(expectedContent, "UTF-8"));
+						+ new String(expectedContent));
 			}
 			expectedfiles.remove(path);
 		}
@@ -308,6 +253,10 @@ public class TestUtils {
 			map.put(args[i], args[i+1]);
 		}
 		return map;
+	}
+
+	File getWorkspaceSupplement() throws IOException {
+		return createTempDir("wssupplement");
 	}
 
 }

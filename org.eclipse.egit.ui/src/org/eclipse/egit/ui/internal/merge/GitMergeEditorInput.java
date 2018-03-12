@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, 2011 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,10 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.CompareEditorInput;
@@ -25,24 +22,20 @@ import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.compare.structuremergeviewer.IDiffContainer;
 import org.eclipse.compare.structuremergeviewer.IDiffElement;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
-import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.revision.EditableRevision;
-import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.revision.LocalFileRevision;
-import org.eclipse.egit.ui.internal.revision.LocationEditableRevision;
-import org.eclipse.egit.ui.internal.revision.ResourceEditableRevision;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput.EmptyTypedElement;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.FileEditableRevision;
+import org.eclipse.egit.ui.internal.LocalFileRevision;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.dircache.DirCacheEntry;
@@ -85,20 +78,20 @@ public class GitMergeEditorInput extends CompareEditorInput {
 
 	private final boolean useWorkspace;
 
-	private final IPath[] locations;
+	private final IResource[] resources;
 
 	/**
 	 * @param useWorkspace
 	 *            if <code>true</code>, use the workspace content (i.e. the
 	 *            Git-merged version) as "left" content, otherwise use HEAD
 	 *            (i.e. the previous, non-merged version)
-	 * @param locations
+	 * @param resources
 	 *            as selected by the user
 	 */
-	public GitMergeEditorInput(boolean useWorkspace, IPath... locations) {
+	public GitMergeEditorInput(boolean useWorkspace, IResource... resources) {
 		super(new CompareConfiguration());
 		this.useWorkspace = useWorkspace;
-		this.locations = locations;
+		this.resources = resources;
 		CompareConfiguration config = getCompareConfiguration();
 		config.setLeftEditable(true);
 	}
@@ -112,17 +105,23 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			monitor.beginTask(
 					UIText.GitMergeEditorInput_CheckingResourcesTaskName,
 					IProgressMonitor.UNKNOWN);
+			List<String> filterPaths = new ArrayList<String>();
+			Repository repo = null;
+			for (IResource resource : resources) {
+				RepositoryMapping map = RepositoryMapping.getMapping(resource
+						.getProject());
+				if (repo != null && repo != map.getRepository())
+					throw new InvocationTargetException(
+							new IllegalStateException(
+									UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
+				filterPaths.add(map.getRepoRelativePath(resource));
+				repo = map.getRepository();
+			}
 
-			Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
-					.splitPathsByRepository(Arrays.asList(locations));
-			if (pathsByRepository.size() != 1) {
+			if (repo == null)
 				throw new InvocationTargetException(
 						new IllegalStateException(
-								UIText.RepositoryAction_multiRepoSelection));
-			}
-			Repository repo = pathsByRepository.keySet().iterator().next();
-			List<String> filterPaths = new ArrayList<String>(
-					pathsByRepository.get(repo));
+								UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
 
 			if (monitor.isCanceled())
 				throw new InterruptedException();
@@ -194,17 +193,17 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			// set the labels
 			CompareConfiguration config = getCompareConfiguration();
 			config.setRightLabel(NLS.bind(LABELPATTERN, rightCommit
-					.getShortMessage(), CompareUtils.truncatedRevision(rightCommit.name())));
+					.getShortMessage(), rightCommit.name()));
 
 			if (!useWorkspace)
 				config.setLeftLabel(NLS.bind(LABELPATTERN, headCommit
-						.getShortMessage(), CompareUtils.truncatedRevision(headCommit.name())));
+						.getShortMessage(), headCommit.name()));
 			else
 				config.setLeftLabel(UIText.GitMergeEditorInput_WorkspaceHeader);
 
 			if (ancestorCommit != null)
 				config.setAncestorLabel(NLS.bind(LABELPATTERN, ancestorCommit
-						.getShortMessage(), CompareUtils.truncatedRevision(ancestorCommit.name())));
+						.getShortMessage(), ancestorCommit.name()));
 
 			// set title and icon
 			setTitle(NLS.bind(UIText.GitMergeEditorInput_MergeEditorTitle,
@@ -215,7 +214,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 
 			// build the nodes
 			try {
-				return buildDiffContainer(repo, headCommit,
+				return buildDiffContainer(repo, rightCommit, headCommit,
 						ancestorCommit, filterPaths, rw, monitor);
 			} catch (IOException e) {
 				throw new InvocationTargetException(e);
@@ -241,7 +240,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 	}
 
 	private IDiffContainer buildDiffContainer(Repository repository,
-			RevCommit headCommit,
+			RevCommit rightCommit, RevCommit headCommit,
 			RevCommit ancestorCommit, List<String> filterPaths, RevWalk rw,
 			IProgressMonitor monitor) throws IOException, InterruptedException {
 
@@ -311,13 +310,10 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					continue;
 
 				ITypedElement right;
-				if (conflicting) {
-					GitFileRevision revision = GitFileRevision.inIndex(
-							repository, gitPath, DirCacheEntry.STAGE_3);
-					String encoding = CompareCoreUtils.getResourceEncoding(
-							repository, gitPath);
-					right = new FileRevisionTypedElement(revision, encoding);
-				} else
+				if (conflicting)
+					right = CompareUtils.getFileRevisionTypedElement(gitPath,
+							rightCommit, repository);
+				else
 					right = CompareUtils.getFileRevisionTypedElement(gitPath,
 							headCommit, repository);
 
@@ -329,32 +325,24 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				// if the file is not conflicting (as it was auto-merged)
 				// we will show the auto-merged (local) version
 
-				Path repositoryPath = new Path(repository.getWorkTree()
-						.getAbsolutePath());
-				IPath location = repositoryPath
-						.append(fit.getEntryPathString());
-				IFile file = ResourceUtil.getFileForLocation(location);
-				if (!conflicting || useWorkspace) {
-					if (file != null)
-						rev = new LocalFileRevision(file);
-					else
-						rev = new WorkingTreeFileRevision(location.toFile());
-				} else {
-					rev = GitFileRevision.inIndex(repository, gitPath,
-							DirCacheEntry.STAGE_2);
-				}
+				IPath locationPath = new Path(fit.getEntryFile().getPath());
+				final IFile file = ResourcesPlugin.getWorkspace().getRoot()
+						.getFileForLocation(locationPath);
+				if (file == null)
+					// TODO in the future, we should be able to show a version
+					// for a non-workspace file as well
+					continue;
+				if (!conflicting || useWorkspace)
+					rev = new LocalFileRevision(file);
+				else
+					rev = GitFileRevision.inCommit(repository, headCommit,
+							gitPath, null);
 
 				IRunnableContext runnableContext = getContainer();
 				if (runnableContext == null)
 					runnableContext = PlatformUI.getWorkbench().getProgressService();
 
-				EditableRevision leftEditable;
-				if (file != null)
-					leftEditable = new ResourceEditableRevision(rev, file,
-							runnableContext);
-				else
-					leftEditable = new LocationEditableRevision(rev, location,
-							runnableContext);
+				FileEditableRevision leftEditable = new FileEditableRevision(rev, file, runnableContext);
 				// make sure we don't need a round trip later
 				try {
 					leftEditable.cacheContents(monitor);
@@ -368,8 +356,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				else if (modified)
 					kind = Differencer.PSEUDO_CONFLICT;
 
-				IDiffContainer fileParent = getFileParent(result,
-						repositoryPath, file, location);
+				DiffNode fileParent = getFileParent(result, file);
 
 				ITypedElement anc;
 				if (ancestorCommit != null)
@@ -390,29 +377,12 @@ public class GitMergeEditorInput extends CompareEditorInput {
 		}
 	}
 
-	private IDiffContainer getFileParent(IDiffContainer root,
-			IPath repositoryPath, IFile file, IPath location) {
-		int projectSegment = -1;
-		String projectName = null;
-		if (file != null) {
-			IProject project = file.getProject();
-			IPath projectLocation = project.getLocation();
-			if (projectLocation != null) {
-				IPath projectPath = project.getLocation().makeRelativeTo(
-						repositoryPath);
-				projectSegment = projectPath.segmentCount() - 1;
-				projectName = project.getName();
-			}
-		}
-
-		IPath path = location.makeRelativeTo(repositoryPath);
-		IDiffContainer child = root;
-		for (int i = 0; i < path.segmentCount() - 1; i++) {
-			if (i == projectSegment)
-				child = getOrCreateChild(child, projectName, true);
-			else
-				child = getOrCreateChild(child, path.segment(i), false);
-		}
+	private DiffNode getFileParent(IDiffContainer root, IFile file) {
+		String projectName = file.getProject().getName();
+		DiffNode child = getOrCreateChild(root, projectName, true);
+		IPath path = file.getProjectRelativePath();
+		for (int i = 0; i < path.segmentCount() - 1; i++)
+			child = getOrCreateChild(child, path.segment(i), false);
 		return child;
 	}
 

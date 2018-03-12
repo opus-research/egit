@@ -22,11 +22,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Constants;
@@ -37,8 +37,6 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * Show versions/open.
@@ -56,8 +54,6 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 		Object input = getPage().getInputInternal().getSingleFile();
 		if (input == null)
 			return null;
-		IWorkbenchPage workBenchPage = HandlerUtil
-				.getActiveWorkbenchWindowChecked(event).getActivePage();
 		boolean errorOccurred = false;
 		List<ObjectId> ids = new ArrayList<ObjectId>();
 		String gitPath = null;
@@ -69,11 +65,10 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 			Iterator<?> it = selection.iterator();
 			while (it.hasNext()) {
 				RevCommit commit = (RevCommit) it.next();
-				String commitPath = getRenamedPath(gitPath, commit);
 				IFileRevision rev = null;
 				try {
-					rev = CompareUtils.getFileRevision(commitPath, commit,
-							map.getRepository(), null);
+					rev = CompareUtils.getFileRevision(gitPath, commit, map
+							.getRepository(), null);
 				} catch (IOException e) {
 					Activator.logError(NLS.bind(
 							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
@@ -83,18 +78,18 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 				if (rev != null) {
 					if (compareMode) {
 						ITypedElement right = CompareUtils
-								.getFileRevisionTypedElement(commitPath,
-										commit, map.getRepository());
+								.getFileRevisionTypedElement(gitPath, commit,
+										map.getRepository());
 						final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 								SaveableCompareEditorInput
 										.createFileElement(resource), right,
 								null);
 						try {
-							CompareUtils.openInCompare(workBenchPage, in);
+							openInCompare(event, in);
 						} catch (Exception e) {
 							errorOccurred = true;
 						}
-					} else
+					} else {
 						try {
 							EgitUiEditorUtils.openEditor(getPart(event)
 									.getSite().getPage(), rev,
@@ -104,8 +99,10 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 									UIText.GitHistoryPage_openFailed, e);
 							errorOccurred = true;
 						}
-				} else
+					}
+				} else {
 					ids.add(commit.getId());
+				}
 			}
 		}
 		if (input instanceof File) {
@@ -115,19 +112,18 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 			Iterator<?> it = selection.iterator();
 			while (it.hasNext()) {
 				RevCommit commit = (RevCommit) it.next();
-				String commitPath = getRenamedPath(gitPath, commit);
 				IFileRevision rev = null;
 				try {
-					rev = CompareUtils.getFileRevision(commitPath, commit,
-							repo, null);
+					rev = CompareUtils.getFileRevision(gitPath, commit, repo,
+							null);
 				} catch (IOException e) {
 					Activator.logError(NLS.bind(
-							UIText.GitHistoryPage_errorLookingUpPath,
-							commitPath, commit.getId()), e);
+							UIText.GitHistoryPage_errorLookingUpPath, gitPath,
+							commit.getId()), e);
 					errorOccurred = true;
 				}
 				if (rev != null) {
-					if (compareMode)
+					if (compareMode) {
 						try {
 							ITypedElement left = CompareUtils
 									.getFileRevisionTypedElement(gitPath,
@@ -135,15 +131,15 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 													.resolve(Constants.HEAD)),
 											repo);
 							ITypedElement right = CompareUtils
-									.getFileRevisionTypedElement(commitPath,
+									.getFileRevisionTypedElement(gitPath,
 											commit, repo);
 							final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 									left, right, null);
-							CompareUtils.openInCompare(workBenchPage, in);
+							openInCompare(event, in);
 						} catch (IOException e) {
 							errorOccurred = true;
 						}
-					else
+					} else {
 						try {
 							EgitUiEditorUtils.openEditor(getPart(event)
 									.getSite().getPage(), rev,
@@ -153,16 +149,19 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 									UIText.GitHistoryPage_openFailed, e);
 							errorOccurred = true;
 						}
-				} else
+					}
+				} else {
 					ids.add(commit.getId());
+				}
 			}
 		}
 		if (errorOccurred)
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);
 		if (ids.size() > 0) {
 			StringBuilder idList = new StringBuilder(""); //$NON-NLS-1$
-			for (ObjectId objectId : ids)
+			for (ObjectId objectId : ids) {
 				idList.append(objectId.getName()).append(' ');
+			}
 			MessageDialog.openError(getPart(event).getSite().getShell(),
 					UIText.GitHistoryPage_fileNotFound, NLS.bind(
 							UIText.GitHistoryPage_notContainedInCommits,

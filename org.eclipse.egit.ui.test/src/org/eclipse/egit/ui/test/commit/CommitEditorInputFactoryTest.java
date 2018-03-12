@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2013 GitHub Inc and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,14 +7,12 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Andreas Hermann <a.v.hermann@gmail.com> - Test for stash commit flag
  *******************************************************************************/
 package org.eclipse.egit.ui.test.commit;
 
-import static org.eclipse.egit.ui.test.commit.RepositoryCommitMatcher.isSameCommit;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
@@ -29,7 +27,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.ui.XMLMemento;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -37,14 +35,12 @@ import org.junit.Test;
  */
 public class CommitEditorInputFactoryTest extends LocalRepositoryTestCase {
 
-	private Repository repository;
+	private static Repository repository;
 
-	private RevCommit commit;
+	private static RevCommit commit;
 
-	private XMLMemento memento;
-
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
 		File repoFile = createProjectAndCommitToRepository();
 		assertNotNull(repoFile);
 		repository = Activator.getDefault().getRepositoryCache()
@@ -58,37 +54,23 @@ public class CommitEditorInputFactoryTest extends LocalRepositoryTestCase {
 		} finally {
 			walk.release();
 		}
-		memento = XMLMemento.createWriteRoot("test");
 	}
 
 	@Test
-	public void shouldPersistAndRestoreCommit() {
-		RepositoryCommit repositoryCommit = new RepositoryCommit(
-				repository, commit);
-
-		new CommitEditorInput(repositoryCommit).saveState(memento);
-		IAdaptable restored = new CommitEditorInputFactory()
-				.createElement(memento);
-
-		assertNotNull(restored);
-		assertThat(restored, instanceOf(CommitEditorInput.class));
-		assertThat(repositoryCommit,
-				isSameCommit(((CommitEditorInput) restored).getCommit()));
+	public void testPersistable() {
+		CommitEditorInput input = new CommitEditorInput(new RepositoryCommit(
+				repository, commit));
+		XMLMemento memento = XMLMemento.createWriteRoot("test");
+		input.getPersistable().saveState(memento);
+		CommitEditorInputFactory factory = new CommitEditorInputFactory();
+		IAdaptable created = factory.createElement(memento);
+		assertNotNull(created);
+		assertTrue(created instanceof CommitEditorInput);
+		CommitEditorInput createdInput = (CommitEditorInput) created;
+		assertEquals(input.getCommit().getRevCommit().name(), createdInput
+				.getCommit().getRevCommit().name());
+		assertEquals(input.getCommit().getRepository().getDirectory(),
+				createdInput.getCommit().getRepository().getDirectory());
 	}
 
-	@Test
-	public void shouldPersistAndRestoreStashCommit() {
-		RepositoryCommit stashCommit = new RepositoryCommit(
-				repository, commit);
-		stashCommit.setStash(true);
-
-		new CommitEditorInput(stashCommit).saveState(memento);
-		IAdaptable restored = new CommitEditorInputFactory()
-				.createElement(memento);
-
-		assertNotNull(restored);
-		assertThat(restored, instanceOf(CommitEditorInput.class));
-		assertThat(stashCommit,
-				isSameCommit(((CommitEditorInput) restored).getCommit()));
-	}
 }

@@ -4,7 +4,6 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +16,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -34,7 +31,6 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -112,9 +108,11 @@ class CloneDestinationPage extends WizardPage {
 
 	@Override
 	public void setVisible(final boolean visible) {
-		if (visible)
-			if (this.availableRefs.isEmpty())
+		if (visible) {
+			if (this.availableRefs.isEmpty()) {
 				initialBranch.getCombo().setEnabled(false);
+			}
+		}
 		super.setVisible(visible);
 		if (visible)
 			directoryText.setFocus();
@@ -310,7 +308,7 @@ class CloneDestinationPage extends WizardPage {
 	 * @return remote name
 	 */
 	public String getRemote() {
-		return remoteText.getText().trim();
+		return remoteText.getText();
 	}
 
 	/**
@@ -364,16 +362,8 @@ class CloneDestinationPage extends WizardPage {
 			setPageComplete(false);
 			return;
 		}
-		String remoteName = getRemote();
-		if (remoteName.length() == 0) {
+		if (remoteText.getText().length() == 0) {
 			setErrorMessage(UIText.CloneDestinationPage_errorRemoteNameRequired);
-			setPageComplete(false);
-			return;
-		}
-		if (!Repository.isValidRefName(Constants.R_REMOTES + remoteName)) {
-			setErrorMessage(NLS.bind(
-					UIText.CloneDestinationPage_errorInvalidRemoteName,
-					remoteName));
 			setPageComplete(false);
 			return;
 		}
@@ -429,13 +419,9 @@ class CloneDestinationPage extends WizardPage {
 			// update repo-related selection only if it changed
 			final String n = validatedRepoSelection.getURI().getHumanishName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
-			String defaultRepoDir = UIUtils.getDefaultRepositoryDir();
-			File parentDir;
-			if (defaultRepoDir.length() > 0)
-				parentDir = new File(defaultRepoDir);
-			else
-				parentDir = ResourcesPlugin.getWorkspace().getRoot()
-						.getRawLocation().toFile();
+			String destinationDir = Activator.getDefault().getPreferenceStore()
+					.getString(UIPreferences.DEFAULT_REPO_DIR);
+			File parentDir = new File(destinationDir);
 			directoryText.setText(new File(parentDir, n).getAbsolutePath());
 		}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,8 +15,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
 
 /**
  *
@@ -25,7 +23,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 
 	private boolean containsFolderLevelSynchronizationRequest = false;
 
-	private final Set<GitSynchronizeData> gsdSet;
+	private final Set<GitSynchronizeData> gsd;
 
 	private final Map<String, GitSynchronizeData> projectMapping;
 
@@ -46,7 +44,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public GitSynchronizeDataSet(boolean forceFetch) {
 		this.forceFetch = forceFetch;
-		gsdSet = new HashSet<GitSynchronizeData>();
+		gsd = new HashSet<GitSynchronizeData>();
 		projectMapping = new HashMap<String, GitSynchronizeData>();
 	}
 
@@ -64,9 +62,9 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 * @param data
 	 */
 	public void add(GitSynchronizeData data) {
-		gsdSet.add(data);
-		if (data.getIncludedResources() != null
-				&& data.getIncludedResources().size() > 0)
+		gsd.add(data);
+		if (data.getIncludedPaths() != null
+				&& data.getIncludedPaths().size() > 0)
 			containsFolderLevelSynchronizationRequest = true;
 
 		for (IProject proj : data.getProjects()) {
@@ -96,7 +94,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 *         set
 	 */
 	public int size() {
-		return gsdSet.size();
+		return gsd.size();
 	}
 
 	/**
@@ -116,7 +114,7 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	}
 
 	public Iterator<GitSynchronizeData> iterator() {
-		return gsdSet.iterator();
+		return gsd.iterator();
 	}
 
 	/**
@@ -124,42 +122,12 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 	 */
 	public IProject[] getAllProjects() {
 		Set<IProject> resource = new HashSet<IProject>();
-		for (GitSynchronizeData data : gsdSet) {
+		for (GitSynchronizeData data : gsd) {
 			resource.addAll(data.getProjects());
 		}
 		return resource.toArray(new IProject[resource.size()]);
 	}
 
-	/**
-	 * @param res
-	 * @return whether the given resource should be included in the
-	 *         synchronization.
-	 */
-	public boolean shouldBeIncluded(IResource res) {
-		final IProject project = res.getProject();
-		if (project == null)
-			return false;
-
-		final GitSynchronizeData syncData = getData(project);
-		if (syncData == null)
-			return false;
-
-		final Set<IResource> includedResources = syncData
-				.getIncludedResources();
-		if (includedResources == null)
-			return true;
-
-		IPath path = res.getLocation();
-		if (path != null) {
-			for (IResource resource : includedResources) {
-				IPath inclResourceLocation = resource.getLocation();
-				if (inclResourceLocation != null
-						&& inclResourceLocation.isPrefixOf(path))
-					return true;
-			}
-		}
-		return false;
-	}
 
 	/**
 	 * @return {@code true} when fetch action should be forced before
@@ -169,25 +137,11 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 		return forceFetch;
 	}
 
-
-	/**
-	 * Disposes all nested resources
-	 */
-	public void dispose() {
-		if (projectMapping != null)
-			projectMapping.clear();
-
-		if (gsdSet != null)
-			for (GitSynchronizeData gsd : gsdSet)
-				gsd.dispose();
-
-	}
-
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 
-		for (GitSynchronizeData data : gsdSet) {
+		for (GitSynchronizeData data : gsd) {
 			builder.append(data.getRepository().getWorkTree());
 			builder.append(" "); //$NON-NLS-1$
 		}

@@ -22,7 +22,7 @@ import org.eclipse.core.variables.IDynamicVariable;
 import org.eclipse.core.variables.IDynamicVariableResolver;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -62,6 +62,8 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 
 	private String getGitRepoRelativePath(String argument) throws CoreException {
 		IResource res = getResource(argument);
+		if (res == null)
+			return ""; //$NON-NLS-1$
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
 		if (mapping != null) {
 			String repoRelativePath = mapping.getRepoRelativePath(res);
@@ -75,6 +77,8 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 
 	private String getGitDir(String argument) throws CoreException {
 		IResource res = getResource(argument);
+		if (res == null)
+			return ""; //$NON-NLS-1$
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
 		if (mapping != null)
 			return mapping.getRepository().getDirectory().getAbsolutePath();
@@ -84,6 +88,8 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 
 	private String getGitWorkTree(String argument) throws CoreException {
 		IResource res = getResource(argument);
+		if (res == null)
+			return ""; //$NON-NLS-1$
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
 		if (mapping != null)
 			return mapping.getWorkTree().getAbsolutePath();
@@ -93,6 +99,8 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 
 	private String getGitBranch(String argument) throws CoreException {
 		IResource res = getResource(argument);
+		if (res == null)
+			return ""; //$NON-NLS-1$
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
 		if (mapping != null)
 			try {
@@ -105,14 +113,11 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 	}
 
 	/**
-	 * Returns the currently selected or specified resource
+	 * Returns the currently selected  or specified resource
+	 * @param argument named resource or null for selected
 	 *
-	 * @param argument
-	 *            named resource or null for selected
-	 * 
-	 * @return the currently selected <code>IResource</code>.
+	 * @return the currently selected <code>IResource</code>, or <code>null</code> if none.
 	 * @throws CoreException
-	 *             thrown if no resource is selected
 	 */
 	private IResource getResource(String argument) throws CoreException {
 		IResource res;
