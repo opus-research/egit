@@ -41,12 +41,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -68,6 +64,7 @@ import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.WorkspaceModifyOperation;
+import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.dialogs.WorkingSetGroup;
 import org.eclipse.ui.statushandlers.StatusManager;
@@ -84,7 +81,7 @@ public class GitProjectsImportPage extends WizardPage {
 	 */
 	public static final String METADATA_FOLDER = ".metadata"; //$NON-NLS-1$
 
-	private CachedCheckboxTreeViewer projectsList;
+	private TreeViewer projectsList;
 
 	private ProjectRecord[] selectedProjects = new ProjectRecord[0];
 
@@ -134,8 +131,8 @@ public class GitProjectsImportPage extends WizardPage {
 	private void createWorkingSetGroup(Composite workArea) {
 		// TODO: replace hardcoded ids once bug 245106 is fixed
 		String[] workingSetTypes = new String[] {
-				"org.eclipse.ui.resourceWorkingSetPage", //$NON-NLS-1$
-				"org.eclipse.jdt.ui.JavaWorkingSetPage" //$NON-NLS-1$
+			"org.eclipse.ui.resourceWorkingSetPage", //$NON-NLS-1$
+			"org.eclipse.jdt.ui.JavaWorkingSetPage" //$NON-NLS-1$
 		};
 		workingSetGroup = new WorkingSetGroup(workArea, null, workingSetTypes);
 	}
@@ -169,30 +166,36 @@ public class GitProjectsImportPage extends WizardPage {
 
 				return super.isElementVisible(viewer, element);
 			}
+
+			@Override
+			public void setPattern(String patternString) {
+				super.setPattern(patternString);
+				// TODO: is there a better way to react on changes in the tree?
+				// disable select all button when tree becomes empty due to
+				// filtering
+				Display.getDefault().asyncExec(new Runnable() {
+					public void run() {
+						enableSelectAllButtons();
+					}
+				});
+
+			}
+
 		};
-
-		FilteredCheckboxTree filteredTree = new FilteredCheckboxTree(
-				listComposite, null, SWT.NONE, filter);
-
+		// we have to use the old constructor in order to be 3.4 compatible
+		// TODO once we drop 3.4 support, we should change to the new constructor
+		FilteredTree filteredTree = new FilteredTree(listComposite, SWT.CHECK
+				| SWT.BORDER, filter);
 		filteredTree.setInitialText(UIText.WizardProjectsImportPage_filterText);
-		projectsList = filteredTree.getCheckboxTreeViewer();
+		projectsList = filteredTree.getViewer();
 		GridData listData = new GridData(GridData.GRAB_HORIZONTAL
 				| GridData.GRAB_VERTICAL | GridData.FILL_BOTH);
 		projectsList.getControl().setLayoutData(listData);
-		projectsList.addCheckStateListener(new ICheckStateListener() {
-
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				enableSelectAllButtons();
-			}
-		});
-
-		// a bug in the CachedCheckboxTreeView requires us to not return null
-		final Object[] children = new Object[0];
 
 		projectsList.setContentProvider(new ITreeContentProvider() {
 
 			public Object[] getChildren(Object parentElement) {
-				return children;
+				return null;
 			}
 
 			public Object[] getElements(Object inputElement) {
@@ -254,9 +257,9 @@ public class GitProjectsImportPage extends WizardPage {
 		selectAll.setText(UIText.WizardProjectsImportPage_selectAll);
 		selectAll.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				for (TreeItem item : projectsList.getTree().getItems())
-					projectsList.setChecked(item.getData(), true);
-				enableSelectAllButtons();
+				// only the root has children
+				for (final TreeItem item : projectsList.getTree().getItems())
+					item.setChecked(true);
 				setPageComplete(true);
 			}
 		});
@@ -267,10 +270,9 @@ public class GitProjectsImportPage extends WizardPage {
 		deselectAll.setText(UIText.WizardProjectsImportPage_deselectAll);
 		deselectAll.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent e) {
-				for (TreeItem item : projectsList.getTree().getItems())
-					projectsList.setChecked(item.getData(), false);
+				for (final TreeItem item : projectsList.getTree().getItems())
+					item.setChecked(false);
 				projectsList.setInput(this); // filter away selected projects
-				enableSelectAllButtons();
 				setPageComplete(false);
 			}
 		});
@@ -353,8 +355,7 @@ public class GitProjectsImportPage extends WizardPage {
 						selectedProjects = new ProjectRecord[files.size()];
 						int index = 0;
 						monitor.worked(50);
-						monitor
-								.subTask(UIText.WizardProjectsImportPage_ProcessingMessage);
+						monitor.subTask(UIText.WizardProjectsImportPage_ProcessingMessage);
 						while (filesIterator.hasNext()) {
 							File file = filesIterator.next();
 							selectedProjects[index] = new ProjectRecord(file);
@@ -362,12 +363,7 @@ public class GitProjectsImportPage extends WizardPage {
 						}
 
 						if (files.isEmpty())
-							// run in UI thread
-							Display.getDefault().syncExec(new Runnable() {
-								public void run() {
-									setErrorMessage(UIText.GitProjectsImportPage_NoProjectsMessage);
-								}
-							});
+							setErrorMessage(UIText.GitProjectsImportPage_NoProjectsMessage);
 					} else {
 						monitor.worked(60);
 					}
@@ -393,10 +389,13 @@ public class GitProjectsImportPage extends WizardPage {
 	}
 
 	private void enableSelectAllButtons() {
-		int itemCount = projectsList.getTree().getItemCount();
-		int selectionCount = projectsList.getCheckedLeafCount();
-		selectAll.setEnabled(itemCount > selectionCount && itemCount > 0);
-		deselectAll.setEnabled(selectionCount > 0);
+		if (projectsList.getTree().getItemCount() > 0) {
+			selectAll.setEnabled(true);
+			deselectAll.setEnabled(true);
+		} else {
+			selectAll.setEnabled(false);
+			deselectAll.setEnabled(false);
+		}
 	}
 
 	/**
@@ -404,17 +403,15 @@ public class GitProjectsImportPage extends WizardPage {
 	 *
 	 * @param files
 	 * @param directory
-	 * @param visistedDirs
+	 * @param directoriesVisited
 	 *            Set of canonical paths of directories, used as recursion guard
 	 * @param monitor
 	 *            The monitor to report to
 	 * @return boolean <code>true</code> if the operation was completed.
 	 */
 	private boolean collectProjectFilesFromDirectory(Collection<File> files,
-			File directory, Set<String> visistedDirs,
+			File directory, Set<String> directoriesVisited,
 			IProgressMonitor monitor) {
-
-		Set<String> directoriesVisited;
 
 		if (monitor.isCanceled()) {
 			return false;
@@ -427,7 +424,7 @@ public class GitProjectsImportPage extends WizardPage {
 			return false;
 
 		// Initialize recursion guard for recursive symbolic links
-		if (visistedDirs == null) {
+		if (directoriesVisited == null) {
 			directoriesVisited = new HashSet<String>();
 			try {
 				directoriesVisited.add(directory.getCanonicalPath());
@@ -436,8 +433,6 @@ public class GitProjectsImportPage extends WizardPage {
 						new Status(IStatus.ERROR, Activator.getPluginId(),
 								exception.getLocalizedMessage(), exception));
 			}
-		} else {
-			directoriesVisited = visistedDirs;
 		}
 
 		// first look for project description files
@@ -518,12 +513,10 @@ public class GitProjectsImportPage extends WizardPage {
 	}
 
 	private void addProjectsToWorkingSet(Set<ProjectRecord> selected) {
-		IWorkingSetManager workingSetManager = PlatformUI.getWorkbench()
-				.getWorkingSetManager();
+		IWorkingSetManager workingSetManager = PlatformUI.getWorkbench().getWorkingSetManager();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		for (ProjectRecord projectRecord : selected) {
-			IWorkingSet[] selectedWorkingSets = workingSetGroup
-					.getSelectedWorkingSets();
+			IWorkingSet[] selectedWorkingSets = workingSetGroup.getSelectedWorkingSets();
 			String projectName = projectRecord.getProjectName();
 			IProject project = root.getProject(projectName);
 			workingSetManager.addToWorkingSets(project, selectedWorkingSets);
@@ -646,8 +639,9 @@ public class GitProjectsImportPage extends WizardPage {
 	 */
 	private Set<ProjectRecord> getCheckedProjects() {
 		HashSet<ProjectRecord> ret = new HashSet<ProjectRecord>();
-		for (Object selected : projectsList.getCheckedElements())
-			ret.add((ProjectRecord) selected);
+		for (TreeItem item : projectsList.getTree().getItems())
+			if (item.getChecked())
+				ret.add((ProjectRecord) item.getData());
 
 		return ret;
 	}
