@@ -221,11 +221,8 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 			case REPO:
 				Repository repository = (Repository) node.getObject();
 				File directory = repository.getDirectory();
-				StyledString string = new StyledString();
-				if (!repository.isBare())
-					string.append(directory.getParentFile().getName());
-				else
-					string.append(directory.getName());
+				StyledString string = new StyledString(directory
+						.getParentFile().getName());
 				string
 						.append(
 								" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
