@@ -85,17 +85,14 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 		}
 
 		CredentialItem.Username userItem = null;
-		CredentialItem passwordItem = null;
+		CredentialItem.Password passwordItem = null;
 		boolean isSpecial = false;
 
 		for (CredentialItem item : items) {
 			if (item instanceof CredentialItem.Username)
 				userItem = (CredentialItem.Username) item;
 			else if (item instanceof CredentialItem.Password)
-				passwordItem = item;
-			else if (item instanceof CredentialItem.StringType
-					&& item.getPromptText().equals("Password: ")) //$NON-NLS-1$
-				passwordItem = item;
+				passwordItem = (CredentialItem.Password) item;
 			else
 				isSpecial = true;
 		}
@@ -115,10 +112,7 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 			if (userItem != null)
 				userItem.setValue(credentials.getUser());
 			if (passwordItem != null)
-				if (passwordItem instanceof CredentialItem.Password)
-					((CredentialItem.Password)passwordItem).setValue(credentials.getPassword().toCharArray());
-				else
-					((CredentialItem.StringType)passwordItem).setValue(credentials.getPassword());
+				passwordItem.setValue(credentials.getPassword().toCharArray());
 			return true;
 		}
 
