@@ -15,9 +15,7 @@ package org.eclipse.egit.ui.internal.rebase;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
@@ -56,7 +54,6 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.layout.TreeColumnLayout;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
@@ -64,9 +61,7 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ColumnPixelData;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
-import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -102,7 +97,6 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
@@ -134,8 +128,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	TreeViewer planTreeViewer;
 
-	private PlanLayout planLayout;
-
 	private RebaseInteractivePlan currentPlan;
 
 	private Repository currentRepository;
@@ -165,11 +157,8 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private GitDateFormatter dateFormatter = getNewDateFormatter();
 
-	/**
-	 * These columns are dynamically resized to fit their contents. The values
-	 * are the weights.
-	 */
-	private Map<TreeViewerColumn, Integer> dynamicColumns = new HashMap<>();
+	/** these columns are dynamically resized to fit their contents */
+	private TreeViewerColumn[] dynamicColumns;
 
 	private List<PlanContextMenuAction> contextMenuItems;
 
@@ -249,7 +238,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	public void dispose() {
 		removeListeners();
 		resources.dispose();
-		dynamicColumns.clear();
 		super.dispose();
 	}
 
@@ -289,10 +277,7 @@ public class RebaseInteractiveView extends ViewPart implements
 				ExpandableComposite.TITLE_BAR);
 		planTreeViewer = createPlanTreeViewer(rebasePlanSection, toolkit);
 
-		planLayout = new PlanLayout();
-		planTreeViewer.getTree().getParent().setLayout(planLayout);
-
-		createColumns(planLayout);
+		createColumns();
 		createStepActionToolBar(rebasePlanSection, toolkit);
 		createPopupMenu(planTreeViewer);
 
@@ -637,7 +622,9 @@ public class RebaseInteractiveView extends ViewPart implements
 		}
 	}
 
-	private void createColumns(TreeColumnLayout layout) {
+	// TODO: How to set column width to fit the treeViewer (maximize to not
+	// show empty space)
+	private void createColumns() {
 		String[] headings = { UIText.RebaseInteractiveView_HeadingStatus,
 				UIText.RebaseInteractiveView_HeadingStep,
 				UIText.RebaseInteractiveView_HeadingAction,
@@ -651,9 +638,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		ColumnViewerToolTipSupport.enableFor(planTreeViewer,
 				ToolTip.NO_RECREATE);
 
-		TreeViewerColumn infoColumn = createColumn(headings[0]);
-		layout.setColumnData(infoColumn.getColumn(),
-				new ColumnPixelData(70));
+		TreeViewerColumn infoColumn = createColumn(headings[0], 70);
 		infoColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 
 			@Override
@@ -697,9 +682,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn stepColumn = createColumn(headings[1]);
-		layout.setColumnData(stepColumn.getColumn(),
-				new ColumnPixelData(55));
+		TreeViewerColumn stepColumn = createColumn(headings[1], 55);
 		stepColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -736,9 +719,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		planTree.setSortColumn(stepColumn.getColumn());
 		planTree.setSortDirection(direction);
 
-		TreeViewerColumn actionColumn = createColumn(headings[2]);
-		layout.setColumnData(actionColumn.getColumn(),
-				new ColumnPixelData(90));
+		TreeViewerColumn actionColumn = createColumn(headings[2], 90);
 		actionColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 
 			@Override
@@ -790,9 +771,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitIDColumn = createColumn(headings[3]);
-		layout.setColumnData(commitIDColumn.getColumn(),
-				new ColumnPixelData(70));
+		TreeViewerColumn commitIDColumn = createColumn(headings[3], 70);
 		commitIDColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -804,10 +783,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitMessageColumn = createColumn(headings[4]);
-		dynamicColumns.put(commitMessageColumn, Integer.valueOf(200));
-		layout.setColumnData(commitMessageColumn.getColumn(),
-				new ColumnWeightData(200, 200));
+		TreeViewerColumn commitMessageColumn = createColumn(headings[4], 200);
 		commitMessageColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -820,10 +796,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					}
 				});
 
-		TreeViewerColumn authorColumn = createColumn(headings[5]);
-		dynamicColumns.put(authorColumn, Integer.valueOf(120));
-		layout.setColumnData(authorColumn.getColumn(),
-				new ColumnWeightData(120, 120));
+		TreeViewerColumn authorColumn = createColumn(headings[5], 120);
 		authorColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -835,10 +808,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn authoredDateColumn = createColumn(headings[6]);
-		dynamicColumns.put(authoredDateColumn, Integer.valueOf(80));
-		layout.setColumnData(authoredDateColumn.getColumn(),
-				new ColumnWeightData(80, 80));
+		TreeViewerColumn authoredDateColumn = createColumn(headings[6], 80);
 		authoredDateColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -851,10 +821,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					}
 				});
 
-		TreeViewerColumn committerColumn = createColumn(headings[7]);
-		dynamicColumns.put(committerColumn, Integer.valueOf(120));
-		layout.setColumnData(committerColumn.getColumn(),
-				new ColumnWeightData(120, 120));
+		TreeViewerColumn committerColumn = createColumn(headings[7], 120);
 		committerColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -866,10 +833,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitDateColumn = createColumn(headings[8]);
-		dynamicColumns.put(commitDateColumn, Integer.valueOf(80));
-		layout.setColumnData(commitDateColumn.getColumn(),
-				new ColumnWeightData(80, 80));
+		TreeViewerColumn commitDateColumn = createColumn(headings[8], 80);
 		commitDateColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -881,12 +845,17 @@ public class RebaseInteractiveView extends ViewPart implements
 						return super.getText(element);
 					}
 				});
+		dynamicColumns = new TreeViewerColumn[] { commitMessageColumn,
+				authorColumn, authoredDateColumn, committerColumn,
+				commitDateColumn };
 	}
 
-	private TreeViewerColumn createColumn(String text) {
+	private TreeViewerColumn createColumn(String text, int width) {
 		TreeViewerColumn column = new TreeViewerColumn(planTreeViewer, SWT.NONE);
 		column.getColumn().setText(text);
 		column.getColumn().setMoveable(false);
+		column.getColumn().setResizable(true);
+		column.getColumn().setWidth(width);
 		return column;
 	}
 
@@ -965,19 +934,8 @@ public class RebaseInteractiveView extends ViewPart implements
 		if (planTreeViewer != null) {
 			planTreeViewer.refresh(true);
 			// make column widths match the contents
-			for (TreeViewerColumn col : dynamicColumns.keySet()) {
+			for (TreeViewerColumn col : dynamicColumns)
 				col.getColumn().pack();
-			}
-			// Re-distribute the space again, now that we know the true minimum
-			// widths.
-			for (Map.Entry<TreeViewerColumn, Integer> entry : dynamicColumns
-					.entrySet()) {
-				TreeColumn column = entry.getKey().getColumn();
-				int weight = entry.getValue().intValue();
-				planLayout.setColumnData(column,
-						new ColumnWeightData(weight, column.getWidth()));
-			}
-			planLayout.layout(planTreeViewer.getTree().getParent(), true);
 		}
 
 		startItem.setEnabled(false);
@@ -1109,13 +1067,5 @@ public class RebaseInteractiveView extends ViewPart implements
 			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
 			int oldIndex, int newIndex) {
 		planTreeViewer.refresh(true);
-	}
-
-	private static class PlanLayout extends TreeColumnLayout {
-		@Override
-		protected void layout(Composite composite, boolean flushCache) {
-			// Just to get access to this in the enclosing class.
-			super.layout(composite, flushCache);
-		}
 	}
 }
