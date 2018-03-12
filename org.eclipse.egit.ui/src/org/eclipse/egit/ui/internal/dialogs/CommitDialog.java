@@ -996,7 +996,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 		commitMessageComponent = new CommitMessageComponent(repository,
 				listener);
-		commitMessageComponent.enableListeners(false);
+		commitMessageComponent.enableListers(false);
 		commitMessageComponent.setDefaults();
 		commitMessageComponent.attachControls(commitText, authorText,
 				committerText);
@@ -1029,7 +1029,7 @@ public class CommitDialog extends TitleAreaDialog {
 		});
 
 		commitMessageComponent.updateUI();
-		commitMessageComponent.enableListeners(true);
+		commitMessageComponent.enableListers(true);
 
 		return messageAndPersonArea;
 	}
