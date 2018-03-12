@@ -11,15 +11,11 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
@@ -55,61 +51,27 @@ public class ConfigureRemoteWizard extends Wizard {
 
 	@Override
 	public IWizardPage getNextPage(IWizardPage page) {
+
 		if (page == configureFetchUriPage) {
-			try {
-				getContainer().run(false, false, new IRunnableWithProgress() {
-
-					public void run(IProgressMonitor monitor)
-							throws InvocationTargetException,
-							InterruptedException {
-						String taskName = NLS.bind(
-								UIText.NewRemoteWizard_CheckingUriTaskName,
-								configureFetchUriPage.getUri()
-										.toPrivateString());
-						monitor.beginTask(taskName, IProgressMonitor.UNKNOWN);
-						configureFetchSpecPage.setConfigName(myRemoteName);
-						configureFetchSpecPage
-								.setSelection(new RepositorySelection(
-										configureFetchUriPage.getUri(), null));
-					}
-				});
-			} catch (InvocationTargetException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			} catch (InterruptedException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
-
+			configureFetchSpecPage.setConfigName(myRemoteName);
+			configureFetchSpecPage.setSelection(new RepositorySelection(
+					configureFetchUriPage.getUri(), null));
 		}
 
 		if (page == configurePushUriPage) {
-			try {
-				getContainer().run(false, false, new IRunnableWithProgress() {
-
-					public void run(IProgressMonitor monitor)
-							throws InvocationTargetException,
-							InterruptedException {
-						String taskName = NLS.bind(
-								UIText.NewRemoteWizard_CheckingUriTaskName,
-								configurePushUriPage.getAllUris().get(0)
-										.toPrivateString());
-						monitor.beginTask(taskName, IProgressMonitor.UNKNOWN);
-						// use the first URI
-						configurePushSpecPage.setConfigName(myRemoteName);
-						configurePushSpecPage
-								.setSelection(new RepositorySelection(
-										configurePushUriPage.getAllUris()
-												.get(0), null));
-
-					}
-				});
-			} catch (InvocationTargetException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			} catch (InterruptedException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
+			// use the first URI
+			configurePushSpecPage.setConfigName(myRemoteName);
+			configurePushSpecPage.setSelection(new RepositorySelection(
+					configurePushUriPage.getUris().get(0), null));
 		}
 
 		return super.getNextPage(page);
+	}
+
+	@Override
+	public boolean canFinish() {
+
+		return super.canFinish();
 	}
 
 	/**
@@ -120,7 +82,7 @@ public class ConfigureRemoteWizard extends Wizard {
 	 */
 	public ConfigureRemoteWizard(Repository repository, String remoteName,
 			boolean push) {
-		super.setNeedsProgressMonitor(true);
+
 		myConfiguration = repository.getConfig();
 		myRemoteName = remoteName;
 		pushMode = push;
@@ -161,6 +123,7 @@ public class ConfigureRemoteWizard extends Wizard {
 
 		setWindowTitle(NLS.bind(
 				UIText.ConfigureRemoteWizard_WizardTitle_Change, myRemoteName));
+
 	}
 
 	/**
@@ -173,6 +136,7 @@ public class ConfigureRemoteWizard extends Wizard {
 
 	@Override
 	public boolean performFinish() {
+
 		if (pushMode) {
 			while (!myRemoteConfiguration.getPushURIs().isEmpty())
 				myRemoteConfiguration.removePushURI(myRemoteConfiguration
@@ -191,7 +155,7 @@ public class ConfigureRemoteWizard extends Wizard {
 			myRemoteConfiguration.setTagOpt(configureFetchSpecPage.getTagOpt());
 		}
 
-		myRemoteConfiguration.update(myConfiguration);
+    	myRemoteConfiguration.update(myConfiguration);
 
 		try {
 			myConfiguration.save();
@@ -201,4 +165,5 @@ public class ConfigureRemoteWizard extends Wizard {
 			return false;
 		}
 	}
+
 }

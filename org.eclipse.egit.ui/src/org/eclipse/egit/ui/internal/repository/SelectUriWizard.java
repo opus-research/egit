@@ -10,15 +10,15 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.transport.URIish;
 
 /**
- * Wizard to select a URI
+ * Wizard to select Uri
  */
 public class SelectUriWizard extends Wizard {
+
 	private URIish uri;
 
 	/**
@@ -26,7 +26,6 @@ public class SelectUriWizard extends Wizard {
 	 */
 	public SelectUriWizard(boolean sourceSelection) {
 		addPage(new RepositorySelectionPage(sourceSelection, null));
-		setWindowTitle(UIText.SelectUriWiazrd_Title);
 	}
 
 	/**
@@ -35,7 +34,6 @@ public class SelectUriWizard extends Wizard {
 	 */
 	public SelectUriWizard(boolean sourceSelection, String presetUri) {
 		addPage(new RepositorySelectionPage(sourceSelection, presetUri));
-		setWindowTitle(UIText.SelectUriWiazrd_Title);
 	}
 
 	/**
@@ -50,4 +48,5 @@ public class SelectUriWizard extends Wizard {
 		uri = ((RepositorySelectionPage) getPages()[0]).getSelection().getURI();
 		return uri != null;
 	}
+
 }
