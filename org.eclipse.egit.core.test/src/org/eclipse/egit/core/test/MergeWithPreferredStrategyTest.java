@@ -51,7 +51,6 @@ public class MergeWithPreferredStrategyTest extends GitTestCase {
 	 * MergeStrategy that will be used by any operation that needs a merge will
 	 * be the {@link MergeStrategy#OURS}.
 	 */
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -81,7 +80,6 @@ public class MergeWithPreferredStrategyTest extends GitTestCase {
 	/**
 	 * Removes any preference about preferred merge strategy after any test.
 	 */
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		super.tearDown();
