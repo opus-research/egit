@@ -28,10 +28,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.CloneOperation;
@@ -143,11 +140,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
 		if (!repoRoot.exists())
 			FileUtils.mkdir(repoRoot, true);
-		// suppress auto-ignoring to avoid interference
-		IEclipsePreferences corePrefs = InstanceScope.INSTANCE
-				.getNode(org.eclipse.egit.core.Activator.getPluginId());
-		corePrefs.putBoolean(
-				GitCorePreferences.core_autoIgnoreDerivedResources, false);
 		// make sure the default directory for Repos is not the user home
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
