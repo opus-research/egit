@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
@@ -43,27 +42,25 @@ public class ProjectUtils {
 	 *            the workings sets to add the created projects to, may be null
 	 *            or empty
 	 * @param monitor
-	 * @throws InvocationTargetException
-	 * @throws InterruptedException
+	 * @throws CoreException
+	 * @throws OperationCanceledException
 	 */
 	public static void createProjects(
 			final Set<ProjectRecord> projectsToCreate,
 			final Repository repository,
 			final IWorkingSet[] selectedWorkingSets, IProgressMonitor monitor)
-			throws InvocationTargetException, InterruptedException {
+			throws CoreException, OperationCanceledException {
 		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				IWorkingSetManager workingSetManager = PlatformUI
 						.getWorkbench().getWorkingSetManager();
 				try {
 					actMonitor.beginTask("", projectsToCreate.size()); //$NON-NLS-1$
-					if (actMonitor.isCanceled()) {
+					if (actMonitor.isCanceled())
 						throw new OperationCanceledException();
-					}
 					for (ProjectRecord projectRecord : projectsToCreate) {
-						if (actMonitor.isCanceled()) {
+						if (actMonitor.isCanceled())
 							throw new OperationCanceledException();
-						}
 						actMonitor.setTaskName(projectRecord.getProjectLabel());
 						IProject project = createExistingProject(projectRecord,
 								new SubProgressMonitor(actMonitor, 1));
@@ -82,13 +79,7 @@ public class ProjectUtils {
 				}
 			}
 		};
-		try {
-			ResourcesPlugin.getWorkspace().run(wsr, monitor);
-		} catch (OperationCanceledException e) {
-			throw new InterruptedException();
-		} catch (CoreException e) {
-			throw new InvocationTargetException(e);
-		}
+		ResourcesPlugin.getWorkspace().run(wsr, monitor);
 	}
 
 	private static IProject createExistingProject(final ProjectRecord record,
@@ -104,14 +95,12 @@ public class ProjectUtils {
 					.getAbsolutePath());
 
 			// If it is under the root use the default location
-			if (Platform.getLocation().isPrefixOf(locationPath)) {
+			if (Platform.getLocation().isPrefixOf(locationPath))
 				record.getProjectDescription().setLocation(null);
-			} else {
+			else
 				record.getProjectDescription().setLocation(locationPath);
-			}
-		} else {
+		} else
 			record.getProjectDescription().setName(projectName);
-		}
 
 		try {
 			monitor.beginTask(
