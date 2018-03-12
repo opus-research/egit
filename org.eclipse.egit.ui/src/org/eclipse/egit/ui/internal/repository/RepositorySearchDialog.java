@@ -30,7 +30,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
@@ -43,6 +42,7 @@ import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IColorProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.util.FS;
@@ -136,8 +136,18 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 
 	}
 
-	private final class RepositoryLabelProvider extends GitLabelProvider implements
+	private final class RepositoryLabelProvider extends LabelProvider implements
 			IColorProvider {
+
+		@Override
+		public Image getImage(Object element) {
+			return fImageCache.createImage(UIIcons.REPOSITORY);
+		}
+
+		@Override
+		public String getText(Object element) {
+			return element.toString();
+		}
 
 		public Color getBackground(Object element) {
 			return null;
@@ -148,6 +158,10 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 				return getShell().getDisplay().getSystemColor(SWT.COLOR_GRAY);
 
 			return null;
+		}
+
+		public void dispose() {
+			fImageCache.dispose();
 		}
 
 	}
