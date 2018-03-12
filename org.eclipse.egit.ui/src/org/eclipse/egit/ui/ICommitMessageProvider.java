@@ -10,7 +10,6 @@
 package org.eclipse.egit.ui;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 
 /**
@@ -23,17 +22,9 @@ import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 public interface ICommitMessageProvider {
 
 	/**
-	 * @param projects
-	 * @param preselectedResources
+	 * @param resources
 	 * @return the message the CommitDialog should use as default message or
-	 *         <code>null</code> if this provider cannot provide a commit
-	 *         message
+	 * <code>null</code> if this provider cannot provide a commit message
 	 */
-	public String getMessage(IResource[] projects,
-			IResource[] preselectedResources);
-
-	/**
-	 * @param commit
-	 */
-	public void performTaskAfterCommit(RepositoryCommit commit);
+	public String getMessage(IResource[] resources);
 }
