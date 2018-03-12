@@ -12,22 +12,22 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.egit.core.op.AddToIndexOperation;
-import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.swt.widgets.Display;
 
 /**
  * An action to add files to a Git index.
  *
  * @see AddToIndexOperation
  */
-public class AddToIndexAction extends AbstractResourceOperationAction {
+public class AddToIndexAction extends AbstractOperationAction {
 	private AddToIndexOperation operation = null;
 
-	protected IEGitOperation createOperation(final List<IResource> sel) {
+	protected IWorkspaceRunnable createOperation(final IAction act,
+			final List sel) {
 		if (sel.isEmpty()) {
 			return null;
 		} else {
@@ -41,17 +41,11 @@ public class AddToIndexAction extends AbstractResourceOperationAction {
 		Collection<IFile> notAddedFiles = operation.getNotAddedFiles();
 		if (notAddedFiles.size()==0)
 			return;
-		final String title = UIText.AddToIndexAction_addingFilesFailed;
+		String title = UIText.AddToIndexAction_addingFilesFailed;
 		String message = UIText.AddToIndexAction_indexesWithUnmergedEntries;
 		message += "\n\n";  //$NON-NLS-1$
 		message += getFileList(notAddedFiles);
-		final String fMessage = message;
-		Display.getDefault().asyncExec(new Runnable() {
-			public void run() {
-				MessageDialog.openWarning(wp.getSite().getShell(), title, fMessage);
-			}
-		});
-
+		MessageDialog.openWarning(wp.getSite().getShell(), title, message);
 	}
 
 	private static String getFileList(Collection<IFile> notAddedFiles) {
@@ -61,11 +55,6 @@ public class AddToIndexAction extends AbstractResourceOperationAction {
 			result += "\n"; //$NON-NLS-1$
 		}
 		return result;
-	}
-
-	@Override
-	protected String getJobName() {
-		return UIText.AddToIndexAction_addingFiles;
 	}
 
 

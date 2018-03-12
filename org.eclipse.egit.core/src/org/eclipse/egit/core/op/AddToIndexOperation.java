@@ -17,12 +17,11 @@ import java.util.IdentityHashMap;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -32,8 +31,8 @@ import org.eclipse.jgit.lib.GitIndex.Entry;
 
 /**
  */
-public class AddToIndexOperation implements IEGitOperation {
-	private final Collection<IResource> rsrcList;
+public class AddToIndexOperation implements IWorkspaceRunnable {
+	private final Collection rsrcList;
 	private final Collection<IFile> notAddedFiles;
 
 	private final IdentityHashMap<RepositoryMapping, Object> mappings;
@@ -45,16 +44,20 @@ public class AddToIndexOperation implements IEGitOperation {
 	 *            collection of {@link IResource}s which should be added to the
 	 *            relevant Git repositories.
 	 */
-	public AddToIndexOperation(final Collection<IResource> rsrcs) {
+	public AddToIndexOperation(final Collection rsrcs) {
 		rsrcList = rsrcs;
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 		notAddedFiles = new ArrayList<IFile>();
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * org.eclipse.core.resources.IWorkspaceRunnable#run(org.eclipse.core.runtime
+	 * .IProgressMonitor)
 	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
 			monitor = new NullProgressMonitor();
@@ -78,22 +81,15 @@ public class AddToIndexOperation implements IEGitOperation {
 
 			}
 		} catch (RuntimeException e) {
-			throw new CoreException(Activator.error(CoreText.AddToIndexOperation_failed, e));
+			throw Activator.error(CoreText.AddToIndexOperation_failed, e);
 		} catch (IOException e) {
-			throw new CoreException(Activator.error(CoreText.AddToIndexOperation_failed, e));
+			throw Activator.error(CoreText.AddToIndexOperation_failed, e);
 		} finally {
 			for (final RepositoryMapping rm : mappings.keySet())
 				rm.fireRepositoryChanged();
 			mappings.clear();
 			monitor.done();
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		return new MultiRule(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	/**

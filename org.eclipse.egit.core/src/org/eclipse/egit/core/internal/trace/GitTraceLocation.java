@@ -10,11 +10,9 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.trace;
 
-import org.eclipse.core.runtime.ILog;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.osgi.service.debug.DebugOptions;
+import org.eclipse.osgi.service.debug.DebugTrace;
 
 /**
  * EGit Trace locations
@@ -22,7 +20,9 @@ import org.eclipse.osgi.service.debug.DebugOptions;
  */
 public enum GitTraceLocation implements ITraceLocation {
 	/** Core */
-	CORE("/debug/core"); //$NON-NLS-1$
+	CORE("/debug/core"), //$NON-NLS-1$
+	/** UI */
+	UI("/debug/ui"); //$NON-NLS-1$
 
 	/**
 	 * Initialize the locations
@@ -30,15 +30,13 @@ public enum GitTraceLocation implements ITraceLocation {
 	 * @param options
 	 * @param pluginIsDebugging
 	 */
-	public static void initializeFromOptions(DebugOptions options,
-			boolean pluginIsDebugging) {
+	public static void initializeFromOptions(DebugOptions options, boolean pluginIsDebugging) {
 
 		// we evaluate the plug-in switch
 		if (pluginIsDebugging) {
-			myTrace = new DebugTraceImpl();
+			myTrace = options.newDebugTrace(Activator.getPluginId());
 			for (GitTraceLocation loc : values()) {
-				boolean active = options.getBooleanOption(loc.getFullPath(),
-						false);
+				boolean active = options.getBooleanOption(loc.getFullPath(), false);
 				loc.setActive(active);
 			}
 		} else {
@@ -51,11 +49,9 @@ public enum GitTraceLocation implements ITraceLocation {
 	}
 
 	private final String location;
-
 	private final String fullPath;
 
 	private boolean active = false;
-
 	private static DebugTrace myTrace;
 
 	private GitTraceLocation(String path) {
@@ -104,33 +100,4 @@ public enum GitTraceLocation implements ITraceLocation {
 		this.active = active;
 	}
 
-	private static final class DebugTraceImpl implements DebugTrace {
-
-		private ILog myLog;
-
-		public void trace(String location, String message) {
-			getLog().log(
-					new Status(IStatus.INFO, Activator.getPluginId(), message));
-
-		}
-
-		public void trace(String location, String message, Throwable error) {
-
-			getLog().log(
-					new Status(IStatus.INFO, Activator.getPluginId(), message));
-			if (error != null)
-				getLog().log(
-						new Status(IStatus.INFO, Activator.getPluginId(), error
-								.getMessage()));
-
-		}
-
-		private ILog getLog() {
-			if (myLog == null) {
-				myLog = Activator.getDefault().getLog();
-			}
-			return myLog;
-		}
-
-	}
 }

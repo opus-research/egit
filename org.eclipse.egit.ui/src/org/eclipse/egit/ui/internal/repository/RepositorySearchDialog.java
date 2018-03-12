@@ -28,6 +28,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -122,7 +123,7 @@ public class RepositorySearchDialog extends Dialog {
 	 * @param parentShell
 	 * @param existingDirs
 	 */
-	public RepositorySearchDialog(Shell parentShell,
+	protected RepositorySearchDialog(Shell parentShell,
 			Collection<String> existingDirs) {
 		super(parentShell);
 		this.existingRepositoryDirs.addAll(existingDirs);
@@ -140,7 +141,8 @@ public class RepositorySearchDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText(UIText.RepositorySearchDialog_searchRepositories);
+		newShell
+				.setText(UIText.RepositorySearchDialog_SearchRepositoriesHeader);
 	}
 
 	@Override
@@ -164,7 +166,7 @@ public class RepositorySearchDialog extends Dialog {
 		main.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		Label dirLabel = new Label(main, SWT.NONE);
-		dirLabel.setText(UIText.RepositorySearchDialog_directory);
+		dirLabel.setText(UIText.RepositorySearchDialog_DirectoryLabel);
 		final Text dir = new Text(main, SWT.BORDER);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).grab(true, false).span(2, 1).hint(300,
 				SWT.DEFAULT).applyTo(dir);
@@ -177,7 +179,7 @@ public class RepositorySearchDialog extends Dialog {
 		Button browse = new Button(main, SWT.PUSH);
 		browse.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false,
 				1, 1));
-		browse.setText(UIText.RepositorySearchDialog_browse);
+		browse.setText(UIText.RepositorySearchDialog_BrowseButton);
 		browse.addSelectionListener(new SelectionAdapter() {
 
 			@Override
@@ -227,7 +229,7 @@ public class RepositorySearchDialog extends Dialog {
 		Button search = new Button(main, SWT.PUSH);
 		search.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false,
 				1, 1));
-		search.setText(UIText.RepositorySearchDialog_search);
+		search.setText(UIText.RepositorySearchDialog_SearchButton);
 
 		tv = CheckboxTableViewer.newCheckList(main, SWT.BORDER);
 		tab = tv.getTable();
@@ -314,9 +316,9 @@ public class RepositorySearchDialog extends Dialog {
 						pd.run(true, true, action);
 
 					} catch (InvocationTargetException e1) {
-						org.eclipse.egit.ui.Activator.handleError(
-								UIText.RepositorySearchDialog_errorOccurred,
-								e1, true);
+						MessageDialog.openError(getShell(),
+								UIText.RepositorySearchDialog_ErrorHeader, e1
+										.getCause().getMessage());
 					} catch (InterruptedException e1) {
 						// ignore
 					}

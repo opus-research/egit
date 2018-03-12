@@ -14,8 +14,8 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.ui.internal.sharing.SharingWizard;
-import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.team.internal.ui.wizards.ConfigureProjectWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.handlers.HandlerUtil;
 
@@ -44,8 +44,7 @@ public class ShareSingleProjectCommand extends AbstractHandler {
 		final SharingWizard wizard = new SharingWizard();
 		wizard.init(workbench, projectToShare);
 		final Shell shell = HandlerUtil.getActiveShell(event);
-		WizardDialog wizardDialog = new WizardDialog(shell, wizard);
-		wizardDialog.open();
+		ConfigureProjectWizard.openWizard(shell, wizard);
 		return null;
 	}
 
