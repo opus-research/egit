@@ -102,9 +102,8 @@ class CommitFileDiffViewer extends TableViewer {
 			IWorkbenchWindow window = PlatformUI.getWorkbench()
 					.getActiveWorkbenchWindow();
 			IWorkbenchPage page = window.getActivePage();
-			IFileRevision rev = CompareUtils.getFileRevision(d.path,
-					d.change.equals("D")? d.commit.getParent(0) : d.commit, //$NON-NLS-1$
-					db, d.change.equals("D")? d.blobs[0] : d.blobs[1]); //$NON-NLS-1$
+			IFileRevision rev = CompareUtils.getFileRevision(d.path, d.commit,
+					db, d.blobs[0]);
 			if (rev != null)
 				EgitUiEditorUtils.openEditor(page, rev,
 						new NullProgressMonitor());
