@@ -145,12 +145,11 @@ class GitDocument extends Document implements RefsChangedListener {
 
 			tw = TreeWalk.forPath(repository, gitPath, treeId);
 			if (tw == null) {
-				if (GitTraceLocation.QUICKDIFF.isActive())
-					GitTraceLocation
-							.getTrace()
-							.trace(
-									GitTraceLocation.QUICKDIFF.getLocation(),
-									"(GitDocument) resource " + resource + " not found in " + treeId + " in " + repository + ", baseline=" + baseline); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				setResolved(null, null, null, ""); //$NON-NLS-1$
+				String msg = NLS
+						.bind(UIText.GitDocument_errorLoadTree, new Object[] {
+								treeId.getName(), baseline, resource, repository });
+				Activator.logError(msg, new Throwable());
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				return;
 			}
