@@ -1179,11 +1179,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
 			public void run() {
-				if (cacheEntry != null) {
-					schedule(
-							cacheEntry.createRefreshResourcesAndIndexDiffJob(),
-							false);
-				}
+				if(cacheEntry != null)
+					cacheEntry.refreshResourcesAndIndexDiff();
 			}
 		};
 		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
@@ -1449,7 +1446,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 
 		case CONFLICTING:
-			runCommand(ActionCommands.COMPARE_WITH_HEAD_ACTION, selection);
+			runCommand(ActionCommands.MERGE_TOOL_ACTION, selection);
 			break;
 
 		case MISSING:
