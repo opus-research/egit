@@ -330,7 +330,7 @@ public class IndexDiffCacheEntry {
 					return;
 				}
 
-				if (gitIgnoreChanged[0] || indexDiffData == null)
+				if (gitIgnoreChanged[0])
 					scheduleReloadJob();
 				else if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
