@@ -852,6 +852,24 @@
          </activeWhen>
       </handler>
       <handler
+            commandId="org.eclipse.egit.ui.internal.reflog.CheckoutCommand">
+         <class
+               class="org.eclipse.egit.ui.internal.reflog.command.CheckoutHandler">
+         </class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <adapt
+                        type="org.eclipse.jgit.storage.file.ReflogEntry">
+                  </adapt>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
             commandId="org.eclipse.egit.ui.team.Commit">
          <class
                class="org.eclipse.egit.ui.internal.actions.CommitActionHandler">
@@ -3448,7 +3466,15 @@
             commandId="org.eclipse.egit.ui.commit.CreateBranch"
             icon="icons/obj16/new_branch_obj.gif">
       </image>
-       <image
+      <image
+            commandId="org.eclipse.egit.ui.history.CherryPick"
+            icon="icons/obj16/cherry-pick.png">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.commit.CherryPick"
+            icon="icons/obj16/cherry-pick.png">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.commit.Checkout"
             icon="icons/obj16/checkout.gif">
       </image>
@@ -3976,7 +4002,6 @@
             name="%CheckoutCommand.name">
       </command>
       <command
-            defaultHandler="org.eclipse.egit.ui.internal.reflog.command.CheckoutHandler"
             id="org.eclipse.egit.ui.internal.reflog.CheckoutCommand"
             name="%CheckoutCommand.name">
       </command>
@@ -3988,6 +4013,11 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
             id="org.eclipse.egit.ui.history.CherryPick"
+            name="%CherryPickCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.commit.command.CherryPickHandler"
+            id="org.eclipse.egit.ui.commit.CherryPick"
             name="%CherryPickCommand.name">
       </command>
       <command
