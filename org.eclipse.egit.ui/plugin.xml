@@ -3830,16 +3830,17 @@
                   </reference>
                </visibleWhen>
             </command>
-            <dynamic
-                  class="org.eclipse.egit.ui.internal.actions.PushMenu"
-                  id="org.eclipse.egit.ui.popup.Push">
+            <command
+                  commandId="org.eclipse.egit.ui.team.PushBranch"
+                  label="%PushBranchAction.label"
+                  style="push">
                <visibleWhen
                      checkEnabled="false">
                   <reference
                         definitionId="org.eclipse.egit.ui.gitProject">
                   </reference>
                </visibleWhen>
-            </dynamic>
+            </command>
             <separator
                   name="org.eclipse.egit.ui.remoteSeparator"
                   visible="true">
