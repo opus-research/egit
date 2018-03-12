@@ -1084,6 +1084,9 @@ public class UIText extends NLS {
 	public static String ConfigureUriPage_Remove_button;
 
 	/** */
+	public static String CommitDialog_ValueHelp_Message;
+
+	/** */
 	public static String CommitMessageViewer_author;
 
 	/** */
@@ -1934,12 +1937,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
-
-	/** */
-	public static String UIUtils_PressShortcutMessage;
-
-	/** */
-	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
 	public static String Untrack_untrack;
