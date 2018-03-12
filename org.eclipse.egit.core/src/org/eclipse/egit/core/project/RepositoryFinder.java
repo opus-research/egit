@@ -198,13 +198,9 @@ public class RepositoryFinder {
 
 	private void register(final IContainer c, final File gitdir) {
 		File f = gitdir.getAbsoluteFile();
-		if (gitdirs.contains(f)) {
+		if (gitdirs.contains(f))
 			return;
-		}
 		gitdirs.add(f);
-		RepositoryMapping mapping = RepositoryMapping.create(c, f);
-		if (mapping != null) {
-			results.add(mapping);
-		}
+		results.add(new RepositoryMapping(c, f));
 	}
 }

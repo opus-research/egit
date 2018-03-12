@@ -52,7 +52,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
@@ -1733,7 +1732,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				setupFileViewer(walk, db, paths);
 				setupCommentViewer(db);
 
-				loadInitialHistory(walk);
+				loadHistory(INITIAL_ITEM, walk);
 			} else
 				// needed for context menu and double click
 				graph.setHistoryPageInput(input);
@@ -2108,9 +2107,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	@Override
 	public void loadItem(int item) {
-		if (job != null && job.loadMoreItemsThreshold() < item) {
-			loadHistory(item);
-		}
+		if (job == null || job.loadMoreItemsThreshold() < item)
+			loadHistory(item, null);
 	}
 
 	@Override
@@ -2126,37 +2124,21 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	/**
-	 * Load initial history items
-	 *
-	 * @param walk
-	 *            the revwalk, non null
-	 */
-	private void loadInitialHistory(@NonNull RevWalk walk) {
-		job = new GenerateHistoryJob(this, graph.getControl(), walk, resources);
-		job.setRule(this);
-		job.setLoadHint(INITIAL_ITEM);
-		if (trace)
-			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.HISTORYVIEW.getLocation(),
-					"Scheduling initial GenerateHistoryJob"); //$NON-NLS-1$
-		schedule(job);
-	}
-
-	/**
 	 * Load history items incrementally
-	 *
-	 * @param itemToLoad
-	 *            hint for index of item that should be loaded
+	 * @param itemToLoad hint for index of item that should be loaded
+	 * @param walk the revwalk, used only if itemToLoad ==  INITIAL_ITEM
 	 */
-	private void loadHistory(final int itemToLoad) {
-		if (job == null) {
-			return;
+	private void loadHistory(final int itemToLoad, RevWalk walk) {
+		if (itemToLoad == INITIAL_ITEM) {
+			job = new GenerateHistoryJob(this, graph.getControl(), walk,
+					resources);
+			job.setRule(this);
 		}
 		job.setLoadHint(itemToLoad);
 		if (trace)
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
-					"Scheduling incremental GenerateHistoryJob"); //$NON-NLS-1$
+					"Scheduling GenerateHistoryJob"); //$NON-NLS-1$
 		schedule(job);
 	}
 
