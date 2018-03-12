@@ -687,12 +687,6 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage;
 
 	/** */
-	public static String RebaseHelper_NestedRebaseWarningTitle;
-
-	/** */
-	public static String RebaseHelper_WarningNestedRebaseRejected;
-
-	/** */
 	public static String RebaseResultDialog_Aborted;
 
 	/** */
