@@ -1018,9 +1018,6 @@ public class UIText extends NLS {
 	public static String CompareTreeView_WorkspaceVersionText;
 
 	/** */
-	public static String CompareTreeView_ShowIn_label;
-
-	/** */
 	public static String CompareUtils_errorGettingEncoding;
 
 	/** */
@@ -1565,9 +1562,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPage_titlePush;
-
-	/***/
-	public static String RefSpecPage_titlePusxh;
 
 	/** */
 	public static String RefSpecPage_annotatedTagsGroup;
@@ -3496,6 +3490,9 @@ public class UIText extends NLS {
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
+	public static String UIUtils_ShowInMenuLabel;
+
+	/** */
 	public static String UnmergedBranchDialog_Message;
 
 	/** */
@@ -3713,9 +3710,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_ShowInMenuLabel;
-
-	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
@@ -3816,6 +3810,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
+
+	/** */
+	public static String LocalNonWorkspaceTypedElement_errorWritingContents;
 
 	/** */
 	public static String LoginDialog_changeCredentials;
