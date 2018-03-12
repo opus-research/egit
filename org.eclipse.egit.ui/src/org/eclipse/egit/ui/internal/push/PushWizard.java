@@ -213,7 +213,7 @@ public class PushWizard extends Wizard {
 		if (repoSelection.isConfigSelected())
 			destination = repoSelection.getConfigName();
 		else
-			destination = repoSelection.getURI(true).toString();
+			destination = repoSelection.getURI().toString();
 		return destination;
 	}
 

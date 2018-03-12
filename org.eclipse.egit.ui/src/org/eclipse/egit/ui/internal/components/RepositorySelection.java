@@ -50,49 +50,13 @@ public class RepositorySelection {
 	}
 
 	/**
-	 * Return the selected URI.
-	 * <p>
-	 * If pushMode is <code>true</code> and a remote configuration was selected,
-	 * this will try to return a push URI from that configuration, otherwise a
-	 * URI; if no configuration was selected, the URI entered in the URI field
-	 * will be returned.<br>
-	 * If pushMode is <code>false</code> and a remote configuration was
-	 * selected, this will try to return a URI from that configuration,
-	 * otherwise <code>null</code> will be returned; if no configuration was
-	 * selected, the URI entered in the URI field will be returned
-	 *
-	 * @param pushMode
-	 *            the push mode
-	 * @return the selected URI, or <code>null</code> if there is no valid
-	 *         selection
-	 */
-	public URIish getURI(boolean pushMode) {
-		if (isConfigSelected())
-			if (pushMode) {
-				if (config.getPushURIs().size() > 0)
-					return config.getPushURIs().get(0);
-				else if (config.getURIs().size() > 0)
-					return config.getURIs().get(0);
-				else
-					return null;
-			} else {
-				if (config.getURIs().size() > 0)
-					return config.getURIs().get(0);
-				else if (config.getPushURIs().size() > 0)
-					return config.getPushURIs().get(0);
-				else
-					return null;
-			}
-		return uri;
-	}
-
-	/**
-	 * @return the selected URI, <code>null</code> if a configuration was
-	 *         selected
+	 * @return the selected URI (if specified by user as valid custom URI) or
+	 *         first URI from selected configuration (if specified by user as
+	 *         May be null if there is no valid selection.
 	 */
 	public URIish getURI() {
 		if (isConfigSelected())
-			return null;
+			return config.getURIs().get(0);
 		return uri;
 	}
 
