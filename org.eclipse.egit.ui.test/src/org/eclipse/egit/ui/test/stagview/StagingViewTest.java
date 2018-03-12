@@ -29,6 +29,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,7 +46,7 @@ public class StagingViewTest extends LocalRepositoryTestCase {
 	private SWTBotTree repoViewTree;
 
 	@Before
-	public void setup() throws Exception {
+	public void before() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		repository = lookupRepository(repositoryFile);
 		TestUtil.configureTestCommitterAsUser(repository);
@@ -53,6 +54,11 @@ public class StagingViewTest extends LocalRepositoryTestCase {
 				.addConfiguredRepository(repositoryFile);
 		repositoriesView = TestUtil.showView(RepositoriesView.VIEW_ID);
 		repoViewTree = repositoriesView.bot().tree();
+	}
+
+	@After
+	public void after() {
+		Activator.getDefault().getRepositoryUtil().removeDir(repositoryFile);
 	}
 
 	@Test
