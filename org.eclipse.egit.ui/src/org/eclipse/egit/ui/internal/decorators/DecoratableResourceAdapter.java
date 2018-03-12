@@ -208,7 +208,8 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			assumeValid = true;
 		} else {
 			if (workspaceIterator != null
-					&& workspaceIterator.isModified(indexEntry, true, fileMode))
+					&& workspaceIterator.isModified(indexEntry, true, fileMode,
+							repository.getFS()))
 				dirty = true;
 		}
 	}
