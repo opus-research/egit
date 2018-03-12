@@ -36,6 +36,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+@SuppressWarnings("restriction")
 public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 
 	protected static final int NUMBER_RANDOM_COMMITS = 100;
@@ -106,7 +107,7 @@ public abstract class GitCloneWizardTestBase extends LocalRepositoryTestCase {
 			ExtStorageModule storageModule = (ExtStorageModule) module;
 			tmp.append(storageModule.moduleID).append(",");
 		}
-		IEclipsePreferences node = new ConfigurationScope().getNode("org.eclipse.equinox.security");
+		IEclipsePreferences node = ConfigurationScope.INSTANCE.getNode("org.eclipse.equinox.security");
 		node.put(IStorageConstants.DISABLED_PROVIDERS_KEY, tmp.toString());
 	}
 
