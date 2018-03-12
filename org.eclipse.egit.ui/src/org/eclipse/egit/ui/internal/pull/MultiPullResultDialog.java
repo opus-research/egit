@@ -14,7 +14,6 @@
 package org.eclipse.egit.ui.internal.pull;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,7 +40,6 @@ import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -243,7 +241,6 @@ public class MultiPullResultDialog extends Dialog {
 			int yOffset = 0;
 			int yDelta = -trim.y - 3;
 
-			final LinkedList<PullResultDialog> dialogs= new LinkedList<PullResultDialog>();
 			IStructuredSelection sel = (IStructuredSelection) tv.getSelection();
 			for (Entry<Repository, Object> item : (List<Entry<Repository, Object>>) sel
 					.toList()) {
@@ -254,7 +251,7 @@ public class MultiPullResultDialog extends Dialog {
 					xOffset += xDelta;
 					yOffset += yDelta;
 
-					final PullResultDialog dialog = new PullResultDialog(shell,
+					PullResultDialog dialog = new PullResultDialog(shell,
 							item.getKey(), (PullResult) item.getValue()) {
 						private Point initialLocation;
 
@@ -274,36 +271,20 @@ public class MultiPullResultDialog extends Dialog {
 							if (resultShell != null
 									&& !resultShell.isDisposed()) {
 								Point location = resultShell.getLocation();
-								if (location.equals(initialLocation)) {
-									resultShell.setVisible(false);
+								if (location.equals(initialLocation))
 									resultShell.setLocation(location.x - x,
 											location.y - y);
-								}
 							}
 							boolean result = super.close();
 
 							// activate next result dialog (not the multi-result dialog):
-
-							// This doesn't work due to https://bugs.eclipse.org/388667 :
-//							Shell[] subShells = shell.getShells();
-//							if (subShells.length > 0) {
-//								subShells[subShells.length - 1].setActive();
-//							}
-
-							dialogs.remove(this);
-							if (dialogs.size() > 0) {
-								dialogs.getLast().getShell().setActive();
+							Shell[] subShells = shell.getShells();
+							if (subShells.length > 0) {
+								subShells[subShells.length - 1].setActive();
 							}
 							return result;
 						}
 					};
-					dialog.create();
-					dialog.getShell().addShellListener(new ShellAdapter() {
-						public void shellActivated(org.eclipse.swt.events.ShellEvent e) {
-							dialogs.remove(dialog);
-							dialogs.add(dialog);
-						}
-					});
 					dialog.open();
 				}
 			}
