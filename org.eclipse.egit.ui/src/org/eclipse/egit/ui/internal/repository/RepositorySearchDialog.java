@@ -43,7 +43,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.RepositoryCache;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -363,7 +362,7 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 			}
 
 			if (child.isDirectory()
-					&& RepositoryCache.FileKey.isGitRepository(child, FS.DETECTED)) {
+					&& RepositoryCache.FileKey.isGitRepository(child)) {
 				try {
 					strings.add(child.getCanonicalPath());
 				} catch (IOException e) {
