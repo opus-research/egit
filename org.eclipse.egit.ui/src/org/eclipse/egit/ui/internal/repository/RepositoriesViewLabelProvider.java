@@ -91,7 +91,8 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 			}
 			return refName;
 		case WORKINGDIR:
-			if (node.getRepository().isBare())
+			if (node.getRepository().getConfig().getBoolean(
+					"core", "bare", false)) //$NON-NLS-1$ //$NON-NLS-2$
 				return UIText.RepositoriesView_WorkingDir_treenode
 						+ " - " //$NON-NLS-1$
 						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
