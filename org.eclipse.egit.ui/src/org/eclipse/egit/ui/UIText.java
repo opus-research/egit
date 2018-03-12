@@ -592,9 +592,6 @@ public class UIText extends NLS {
 	public static String ProjectsPreferencePage_AutoShareProjects;
 
 	/** */
-	public static String ProjectsPreferencePage_RestoreBranchProjects;
-
-	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -2591,12 +2588,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip;
-
-	/** */
-	public static String DecoratorPreferencesPage_computeRecursiveLimit;
-
-	/** */
-	public static String DecoratorPreferencesPage_computeRecursiveLimitTooltip;
 
 	/** */
 	public static String DecoratorPreferencesPage_description;
