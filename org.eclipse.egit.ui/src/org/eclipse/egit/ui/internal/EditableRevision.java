@@ -114,14 +114,6 @@ public class EditableRevision extends FileRevisionTypedElement implements
 		super(fileRevision);
 	}
 
-	/**
-	 * @param fileRevision
-	 * @param encoding the file encoding
-	 */
-	public EditableRevision(IFileRevision fileRevision, String encoding) {
-		super(fileRevision, encoding);
-	}
-
 	public boolean isEditable() {
 		return true;
 	}

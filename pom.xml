@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,7 +62,7 @@
   </licenses>
 
   <properties>
-    <egit-version>1.1.0-SNAPSHOT</egit-version>
+    <egit-version>1.0.0-SNAPSHOT</egit-version>
     <tycho-version>0.12.0</tycho-version>
     <mockito-version>1.8.4</mockito-version>
     <junit-version>4.8.1</junit-version>
@@ -143,15 +143,12 @@
     <module>org.eclipse.egit.mylyn.ui</module>
     <module>org.eclipse.egit.mylyn-feature</module>
 
-    <module>org.eclipse.egit.psf-feature</module>
-
     <module>org.eclipse.egit.doc</module>
     <module>org.eclipse.egit-feature</module>
     <module>org.eclipse.egit-updatesite</module>
 
     <module>org.eclipse.egit.core.test</module>
     <module>org.eclipse.egit.ui.test</module>
-    <module>org.eclipse.egit.mylyn.ui.test</module>
 
     <module>org.eclipse.egit.source-feature</module>
    </modules>
@@ -159,7 +156,7 @@
   <pluginRepositories>
     <pluginRepository>
       <id>maven.eclipse.org</id>
-      <url>http://maven.eclipse.org/nexus/content/groups/public/</url>
+      <url>http://maven.eclipse.org/nexus/content/repositories/milestone-indigo</url>
     </pluginRepository>
   </pluginRepositories>
 
@@ -296,8 +293,8 @@
         </plugin>
         <plugin>
           <groupId>org.eclipse.dash.maven</groupId>
-          <artifactId>eclipse-signing-maven-plugin</artifactId>
-          <version>1.0.2</version>
+          <artifactId>eclipse-maven-signing-plugin</artifactId>
+          <version>1.0.1</version>
         </plugin>
       </plugins>
     </pluginManagement>

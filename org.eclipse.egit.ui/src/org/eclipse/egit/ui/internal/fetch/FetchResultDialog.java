@@ -11,16 +11,14 @@ package org.eclipse.egit.ui.internal.fetch;
 
 import org.eclipse.egit.core.op.FetchOperationResult;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
-import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -135,26 +133,18 @@ public class FetchResultDialog extends TitleAreaDialog {
 					sourceString));
 		}
 
-		createFetchResultTable(composite);
-
-		applyDialogFont(composite);
-		return composite;
-	}
-
-	/**
-	 * Create fetch result table under given parent composite
-	 *
-	 * @param parent
-	 * @return main result table control
-	 */
-	public Control createFetchResultTable(Composite parent) {
-		final FetchResultTable table = new FetchResultTable(parent);
+		final FetchResultTable table = new FetchResultTable(composite);
 		if (result.getFetchResult() != null)
 			table.setData(localDb, result.getFetchResult());
 		final Control tableControl = table.getControl();
-		GridDataFactory.fillDefaults().grab(true, true).hint(600, 300)
-				.applyTo(tableControl);
-		return table.getControl();
+		final GridData tableLayout = new GridData(SWT.FILL, SWT.FILL, true,
+				true);
+		tableLayout.widthHint = 600;
+		tableLayout.heightHint = 300;
+		tableControl.setLayoutData(tableLayout);
+
+		applyDialogFont(composite);
+		return composite;
 	}
 
 	@Override
@@ -169,9 +159,5 @@ public class FetchResultDialog extends TitleAreaDialog {
 	 */
 	public void showConfigureButton(boolean show) {
 		this.hideConfigure = !show;
-	}
-
-	protected IDialogSettings getDialogBoundsSettings() {
-		return UIUtils.getDialogBoundSettings(getClass());
 	}
 }

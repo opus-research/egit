@@ -173,7 +173,7 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		IResourceVariant resourceVariant = remoteTree
 				.getResourceVariant(mainJava);
 		assertNotNull(resourceVariant);
-		assertTrue(resourceVariant instanceof GitRemoteResource);
+		assertTrue(resourceVariant instanceof GitResourceVariant);
 		assertEquals(fileId.getName(), resourceVariant.getContentIdentifier());
 	}
 
@@ -207,7 +207,7 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		IResourceVariant resourceVariant = baseTree
 				.getResourceVariant(resource);
 		assertNotNull(resourceVariant);
-		assertTrue(resourceVariant instanceof GitRemoteResource);
+		assertTrue(resourceVariant instanceof GitResourceVariant);
 		return resourceVariant;
 	}
 
