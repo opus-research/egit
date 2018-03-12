@@ -305,7 +305,7 @@ public class GitProjectData {
 						dotGit.setTeamPrivateMember(true);
 					}
 				} catch (IOException err) {
-					throw new CoreException(Activator.error(CoreText.Error_CanonicalFile, err));
+					throw Activator.error(CoreText.Error_CanonicalFile, err);
 				}
 			}
 		}
@@ -389,15 +389,15 @@ public class GitProjectData {
 				}
 			}
 		} catch (IOException ioe) {
-			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
-					dat), ioe));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), ioe);
 		}
 
 		dat.delete();
 		if (!tmp.renameTo(dat)) {
 			tmp.delete();
-			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
-					dat), null));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), null);
 		}
 	}
 

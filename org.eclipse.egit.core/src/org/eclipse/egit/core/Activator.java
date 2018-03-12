@@ -9,22 +9,21 @@
  *******************************************************************************/
 package org.eclipse.egit.core;
 
-import java.util.Hashtable;
-
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.osgi.service.debug.DebugOptions;
-import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * The plugin class for the org.eclipse.egit.core plugin. This
  * is a singleton class.
  */
-public class Activator extends Plugin implements DebugOptionsListener {
+public class Activator extends Plugin {
 	private static Activator plugin;
 
 	/**
@@ -42,14 +41,16 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	}
 
 	/**
-	 * Utility to create an error status for this plug-in.
+	 * Utility method to help throwing errors in the Egit plugin. This method
+	 * does not actually throw the exception, but just creates an instance.
 	 *
 	 * @param message User comprehensible message
 	 * @param thr cause
-	 * @return an initialized error status
+	 * @return an Initialized {@link CoreException}
 	 */
-	public static IStatus error(final String message, final Throwable thr) {
-		return new Status(IStatus.ERROR, getPluginId(), 0,	message, thr);
+	public static CoreException error(final String message, final Throwable thr) {
+		return new CoreException(new Status(IStatus.ERROR, getPluginId(), 0,
+				message, thr));
 	}
 
 	/**
@@ -70,12 +71,17 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	}
 
 	public void start(final BundleContext context) throws Exception {
+
 		super.start(context);
-        // register this as DebugOptions listener
-		Hashtable<String, String> props = new Hashtable<String, String>(4);
-		// we want to get notified about our own DebugOptions
-		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle().getSymbolicName());
-		context.registerService(DebugOptionsListener.class.getName(), this, props);
+
+		if (isDebugging()) {
+			ServiceTracker debugTracker = new ServiceTracker(context,
+					DebugOptions.class.getName(), null);
+			debugTracker.open();
+
+			DebugOptions opts = (DebugOptions) debugTracker.getService();
+			GitTraceLocation.initializeFromOptions(opts, true);
+		}
 
 		GitProjectData.reconfigureWindowCache();
 		GitProjectData.attachToWorkspace(true);
@@ -87,7 +93,4 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		plugin = null;
 	}
 
-	public void optionsChanged(DebugOptions options) {
-		GitTraceLocation.initializeFromOptions(options, isDebugging());
-	}
 }
