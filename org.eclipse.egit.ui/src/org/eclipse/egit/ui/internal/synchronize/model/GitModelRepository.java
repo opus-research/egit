@@ -43,8 +43,6 @@ public class GitModelRepository extends GitModelObject {
 
 	private final IProject[] projects;
 
-	private final boolean includeLocal;
-
 	private GitModelObject[] childrens;
 
 	private IPath location;
@@ -59,7 +57,6 @@ public class GitModelRepository extends GitModelObject {
 			throws MissingObjectException, IOException {
 		super(null);
 		repo = data.getRepository();
-		includeLocal = data.shouldIncludeLocal();
 		Set<IProject> projectSet = data.getProjects();
 		projects = projectSet.toArray(new IProject[projectSet.size()]);
 
@@ -148,9 +145,6 @@ public class GitModelRepository extends GitModelObject {
 				else if (nextCommit.has(remoteFlag))
 					result.add(new GitModelCommit(this, nextCommit, LEFT));
 			}
-
-			if (includeLocal)
-				result.add(new GitModelCache(this, dstCommit));
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}

@@ -15,7 +15,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
@@ -77,8 +76,7 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider impl
 				return workbenchLabelProvider.getImage(adapter);
 			}
 
-			if (element instanceof GitModelCommit
-					|| element instanceof GitModelCache)
+			if (element instanceof GitModelCommit)
 				return fImageCache.createImage(UIIcons.CHANGESET);
 
 			if (element instanceof GitModelRepository)
