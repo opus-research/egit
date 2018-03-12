@@ -369,7 +369,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			synchronized (lock) {
 				if (currentThreadIx < globalThreadIndex)
 					return;
-				stagingView.refreshViewersPreservingExpandedElements();
+				stagingView.refreshViewers();
 			}
 		}
 
@@ -1203,7 +1203,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				final boolean enable = isChecked();
 				getLabelProvider(stagedViewer).setFileNameMode(enable);
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
-				refreshViewersPreservingExpandedElements();
+				refreshViewers();
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
 			}
@@ -1217,8 +1217,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		listPresentationAction = new Action(UIText.StagingView_List,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.LIST;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1235,8 +1233,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		treePresentationAction = new Action(UIText.StagingView_Tree,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.TREE;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1253,8 +1249,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		compactTreePresentationAction = new Action(UIText.StagingView_CompactTree,
 				IAction.AS_RADIO_BUTTON) {
 			public void run() {
-				if (!isChecked())
-					return;
 				presentation = Presentation.COMPACT_TREE;
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_PRESENTATION,
@@ -1549,37 +1543,21 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	/**
-	 * Refresh the unstaged and staged viewers without preserving expanded
-	 * elements
+	 * Refresh the unstaged and staged viewers
 	 */
 	public void refreshViewers() {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				refreshViewersInternal();
-			}
-		});
-	}
-
-	/**
-	 * Refresh the unstaged and staged viewers, preserving expanded elements
-	 */
-	public void refreshViewersPreservingExpandedElements() {
 		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				Object[] unstagedExpanded = unstagedViewer
 						.getExpandedElements();
 				Object[] stagedExpanded = stagedViewer.getExpandedElements();
-				refreshViewersInternal();
+				unstagedViewer.refresh();
+				stagedViewer.refresh();
+				updateSectionText();
 				unstagedViewer.setExpandedElements(unstagedExpanded);
 				stagedViewer.setExpandedElements(stagedExpanded);
 			}
 		});
-	}
-
-	private void refreshViewersInternal() {
-		unstagedViewer.refresh();
-		stagedViewer.refresh();
-		updateSectionText();
 	}
 
 	private IContributionItem createShowInMenu() {
