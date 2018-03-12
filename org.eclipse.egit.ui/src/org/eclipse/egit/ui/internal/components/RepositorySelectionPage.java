@@ -405,7 +405,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		return selection.equals(s);
 	}
 
-	@Override
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		panel.setLayout(new GridLayout());
@@ -473,7 +472,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			uriButton = new Button(parent, SWT.RADIO);
 			uriButton.setText(UIText.RepositorySelectionPage_uriChoice + ":"); //$NON-NLS-1$
 			uriButton.addSelectionListener(new SelectionAdapter() {
-				@Override
 				public void widgetSelected(SelectionEvent e) {
 					// occurs either on selection or unselection event
 					updateRemoteAndURIPanels();
@@ -510,7 +508,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		uriText.setLayoutData(createFieldGridData());
 		uriText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				updateFields(uriText.getText());
 			}
@@ -565,7 +562,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		hostText = new Text(g, SWT.BORDER);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(hostText);
 		hostText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setHost(nullString(hostText.getText())));
 			}
@@ -575,7 +571,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		pathText = new Text(g, SWT.BORDER);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(pathText);
 		pathText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setPath(nullString(pathText.getText())));
 			}
@@ -591,7 +586,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		userText = new Text(g, SWT.BORDER);
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				Protocol protocol = getProtocol();
 				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
@@ -604,7 +598,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
 		passText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setPass(null));
 				password = passText.getText();
@@ -616,12 +609,10 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 				.setText(UIText.RepositorySelectionPage_storeInSecureStore);
 		storeCheckbox.setSelection(storeInSecureStore);
 		storeCheckbox.addSelectionListener(new SelectionListener() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				storeInSecureStore = storeCheckbox.getSelection();
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				storeInSecureStore = storeCheckbox.getSelection();
 			}
@@ -639,7 +630,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		for (Protocol p : Protocol.values())
 			scheme.add(p.getDefaultScheme());
 		scheme.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				final int idx = scheme.getSelectionIndex();
 				if (idx < 0) {
@@ -658,7 +648,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		portText.addVerifyListener(new VerifyListener() {
 			final Pattern p = Pattern.compile("^(?:[1-9][0-9]*)?$"); //$NON-NLS-1$
 
-			@Override
 			public void verifyText(final VerifyEvent e) {
 				final String v = portText.getText();
 				e.doit = p.matcher(
@@ -667,7 +656,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			}
 		});
 		portText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				final String val = nullString(portText.getText());
 				if (val == null)
@@ -1053,7 +1041,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		return Activator.getDefault().getPreferenceStore();
 	}
 
-	@Override
 	public GitRepositoryInfo getGitRepositoryInfo() {
 		GitRepositoryInfo info = new GitRepositoryInfo(uri.toString());
 		info.setCredentials(user, password);

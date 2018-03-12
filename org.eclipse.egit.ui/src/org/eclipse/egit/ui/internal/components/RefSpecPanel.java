@@ -331,7 +331,6 @@ public class RefSpecPanel {
 		createTableGroup();
 
 		addRefSpecTableListener(new SelectionChangeListener() {
-			@Override
 			public void selectionChanged() {
 				validateSpecs();
 			}
@@ -628,7 +627,6 @@ public class RefSpecPanel {
 		errorTextColor = new Color(panel.getDisplay(), 255, 0, 0);
 
 		panel.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				imageRegistry.dispose();
 				errorBackgroundColor.dispose();
@@ -679,7 +677,6 @@ public class RefSpecPanel {
 		creationSrcDecoration = createAssistedDecoratedCombo(creationPanel,
 				getRefsProposalProvider(pushSpecs),
 				new IContentProposalListener() {
-					@Override
 					public void proposalAccepted(IContentProposal proposal) {
 						tryAutoCompleteSrcToDst();
 					}
@@ -688,7 +685,6 @@ public class RefSpecPanel {
 		creationSrcCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
 				false));
 		creationSrcCombo.addTraverseListener(new TraverseListener() {
-			@Override
 			public void keyTraversed(TraverseEvent e) {
 				// SWT.TRAVERSE_RETURN may be also reasonable here, but
 				// it can be confused with RETURN for content proposal
@@ -713,7 +709,6 @@ public class RefSpecPanel {
 		creationDstDecoration = createAssistedDecoratedCombo(creationPanel,
 				getRefsProposalProvider(!pushSpecs),
 				new IContentProposalListener() {
-					@Override
 					public void proposalAccepted(IContentProposal proposal) {
 						tryAutoCompleteDstToSrc();
 					}
@@ -722,7 +717,6 @@ public class RefSpecPanel {
 		creationDstCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
 				false));
 		creationDstCombo.addTraverseListener(new TraverseListener() {
-			@Override
 			public void keyTraversed(TraverseEvent e) {
 				// SWT.TRAVERSE_RETURN may be also reasonable here, but
 				// it can be confused with RETURN for content proposal
@@ -746,7 +740,6 @@ public class RefSpecPanel {
 
 		validateCreationPanel();
 		final ModifyListener validator = new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				validateCreationPanel();
 			}
@@ -796,7 +789,6 @@ public class RefSpecPanel {
 		validateDeleteCreationPanel();
 
 		deleteRefCombo.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				validateDeleteCreationPanel();
 			}
@@ -856,7 +848,6 @@ public class RefSpecPanel {
 		updateAddPredefinedButton(addTagsButton, Transport.REFSPEC_TAGS);
 
 		addRefSpecTableListener(new SelectionChangeListener() {
-			@Override
 			public void selectionChanged() {
 				updateAddPredefinedButton(addConfiguredButton,
 						predefinedConfigured);
@@ -919,14 +910,12 @@ public class RefSpecPanel {
 		tableViewer.setInput(specs);
 
 		tableViewer.setComparer(new IElementComparer() {
-			@Override
 			public boolean equals(Object a, Object b) {
 				// need that as viewers are not designed to support 2 equals
 				// object, while we have RefSpec#equals implemented
 				return a == b;
 			}
 
-			@Override
 			public int hashCode(Object element) {
 				return element.hashCode();
 			}
@@ -1011,7 +1000,6 @@ public class RefSpecPanel {
 					setRefSpec(oldSpec, newSpec);
 					tableViewer.getControl().getDisplay().asyncExec(
 							new Runnable() {
-								@Override
 								public void run() {
 									tableViewer.editElement(newSpec,
 											srcColumnIndex);
@@ -1338,7 +1326,6 @@ public class RefSpecPanel {
 		updateRemoveAllSpecButton();
 
 		addRefSpecTableListener(new SelectionChangeListener() {
-			@Override
 			public void selectionChanged() {
 				updateForceUpdateAllButton();
 				updateRemoveAllSpecButton();
@@ -1801,7 +1788,6 @@ public class RefSpecPanel {
 			this.proposals = proposals;
 		}
 
-		@Override
 		public IContentProposal[] getProposals(final String contents,
 				int position) {
 			final List<RefContentProposal> result = new ArrayList<RefContentProposal>();
