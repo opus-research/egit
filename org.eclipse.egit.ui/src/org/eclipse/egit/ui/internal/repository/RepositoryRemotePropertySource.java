@@ -94,7 +94,7 @@ public class RepositoryRemotePropertySource implements IPropertySource {
 				(String) id);
 		if (list != null && list.length > 1) {
 			// let's show this as "[some/uri][another/uri]"
-			StringBuilder sb = new StringBuilder();
+			StringBuffer sb = new StringBuffer();
 			for (String s : list) {
 				sb.append('[');
 				sb.append(s);
