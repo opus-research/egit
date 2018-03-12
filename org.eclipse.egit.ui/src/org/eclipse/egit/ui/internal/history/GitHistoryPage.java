@@ -900,9 +900,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				} finally {
 					walk.dispose();
 				}
-
-				if (input.getSingleFile() != null)
-					fileViewer.selectFirstInterestingElement();
 			}
 		});
 		commentViewer
