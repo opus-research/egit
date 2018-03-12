@@ -50,12 +50,10 @@ public class GitProvider extends RepositoryProvider {
 		super();
 	}
 
-	@Override
 	public String getID() {
 		return ID;
 	}
 
-	@Override
 	public void configureProject() throws CoreException {
 		GitProjectData projectData = getData();
 		if (projectData != null) {
@@ -63,7 +61,6 @@ public class GitProvider extends RepositoryProvider {
 		}
 	}
 
-	@Override
 	public void deconfigure() throws CoreException {
 		try {
 			GitProjectData.delete(getProject());
@@ -73,7 +70,6 @@ public class GitProvider extends RepositoryProvider {
 		}
 	}
 
-	@Override
 	public boolean canHandleLinkedResources() {
 		return true;
 	}
@@ -83,7 +79,6 @@ public class GitProvider extends RepositoryProvider {
 		return true;
 	}
 
-	@Override
 	public synchronized IMoveDeleteHook getMoveDeleteHook() {
 		if (hook == null) {
 			GitProjectData _data = getData();
@@ -105,7 +100,6 @@ public class GitProvider extends RepositoryProvider {
 		return data;
 	}
 
-	@Override
 	public synchronized IFileHistoryProvider getFileHistoryProvider() {
 		if (historyProvider == null) {
 			historyProvider = new GitFileHistoryProvider();

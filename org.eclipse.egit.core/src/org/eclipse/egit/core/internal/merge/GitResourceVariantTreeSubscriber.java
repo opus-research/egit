@@ -123,7 +123,6 @@ public class GitResourceVariantTreeSubscriber extends
 			this.oursTree = oursTree;
 		}
 
-		@Override
 		public boolean compare(IResource local, IResourceVariant remote) {
 			try {
 				final IResourceVariant oursVariant = oursTree
@@ -140,12 +139,10 @@ public class GitResourceVariantTreeSubscriber extends
 			}
 		}
 
-		@Override
 		public boolean compare(IResourceVariant base, IResourceVariant remote) {
 			return Arrays.equals(base.asBytes(), remote.asBytes());
 		}
 
-		@Override
 		public boolean isThreeWay() {
 			return true;
 		}

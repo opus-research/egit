@@ -47,7 +47,6 @@ public class DisconnectProviderOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -79,7 +78,6 @@ public class DisconnectProviderOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
 	 */
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return new MultiRule(projectList.toArray(new IProject[projectList.size()]));
 	}

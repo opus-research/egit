@@ -28,7 +28,6 @@ class GitRemoteFile extends GitRemoteResource {
 		this.repo = repo;
 	}
 
-	@Override
 	public boolean isContainer() {
 		return false;
 	}

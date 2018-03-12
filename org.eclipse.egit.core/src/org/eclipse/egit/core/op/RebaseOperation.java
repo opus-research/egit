@@ -126,7 +126,6 @@ public class RebaseOperation implements IEGitOperation {
 		this.handler = handler;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (result != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
@@ -138,7 +137,6 @@ public class RebaseOperation implements IEGitOperation {
 			monitor = m;
 		final IProject[] validProjects = ProjectUtil.getValidOpenProjects(repository);
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				RebaseCommand cmd = new Git(repository).rebase()
 						.setProgressMonitor(
@@ -185,7 +183,6 @@ public class RebaseOperation implements IEGitOperation {
 		return true;
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

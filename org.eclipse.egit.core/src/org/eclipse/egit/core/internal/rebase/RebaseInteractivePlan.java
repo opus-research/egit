@@ -174,7 +174,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	/**
 	 * Reparse plan when {@code IndexDiff} changed
 	 */
-	@Override
 	public void indexDiffChanged(Repository repo, IndexDiffData indexDiffData) {
 		if (RebaseInteractivePlan.this.repository == repo)
 			reparsePlan();
@@ -185,7 +184,6 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 	 *
 	 * @param event
 	 */
-	@Override
 	public void onRefsChanged(RefsChangedEvent event) {
 		Repository repo = event.getRepository();
 		if (this.repository == repo)
@@ -961,26 +959,22 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 			modCount++;
 		}
 
-		@Override
 		public T get(int index) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			return rel.getList().get(rel.getRelativeIndex());
 		}
 
-		@Override
 		public T remove(int index) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			modCount++;
 			return rel.getList().remove(rel.getRelativeIndex());
 		}
 
-		@Override
 		public T set(int index, T element) {
 			RelativeIndex<T> rel = mapAbsolutIndex(index);
 			return rel.getList().set(rel.getRelativeIndex(), element);
 		}
 
-		@Override
 		public int size() {
 			return firstList.size() + secondList.size();
 		}

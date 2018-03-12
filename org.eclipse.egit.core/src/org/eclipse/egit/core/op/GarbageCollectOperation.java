@@ -37,7 +37,6 @@ public class GarbageCollectOperation implements IEGitOperation {
 	/**
 	 * Execute garbage collection
 	 */
-	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		Git git = new Git(repository);
 		EclipseGitProgressTransformer pm = new EclipseGitProgressTransformer(
@@ -50,7 +49,6 @@ public class GarbageCollectOperation implements IEGitOperation {
 		}
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

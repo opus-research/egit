@@ -54,7 +54,6 @@ public class ContainerTreeIteratorResourceFilterTest extends GitTestCase {
 
 	private Repository repository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
