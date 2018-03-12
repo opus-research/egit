@@ -429,8 +429,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		String message = commitMessage;
 		if (message == null)
 			message = newContent;
-		// TODO: remove after replacing GitIndex in CommitOperation
-		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
 				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
 				TestUtil.TESTCOMMITTER, message);
