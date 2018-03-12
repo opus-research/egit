@@ -7,46 +7,37 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.history;
+package org.eclipse.egit.core;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.core.runtime.IAdaptable;
 
-/** Input for the {@link GitHistoryPage} */
-class HistoryPageInput {
+/** A list of IResource, adaptable to the first item. */
+public class ResourceList implements IAdaptable {
 	private final IResource[] list;
 
-	private final Repository repo;
-
 	/**
+	 * Create a new list of resources.
+	 *
 	 * @param items
 	 *            the items to contain in this list.
 	 */
-	public HistoryPageInput(final IResource[] items) {
+	public ResourceList(final IResource[] items) {
 		list = items;
-		repo = null;
 	}
 
 	/**
-	 * @param repository
-	 *            the {@link Repository} provided to our constructor
-	 */
-	public HistoryPageInput(final Repository repository) {
-		repo = repository;
-		list = null;
-	}
-
-	/**
-	 * @return the list provided to our constructor
+	 * Get the items stored in this list.
+	 *
+	 * @return the list provided to our constructor.
 	 */
 	public IResource[] getItems() {
 		return list;
 	}
 
-	/**
-	 * @return the Repository
-	 */
-	public Repository getRepository() {
-		return repo;
+	public Object getAdapter(final Class adapter) {
+		if (adapter == IResource.class && list != null && list.length > 0)
+			return list[0];
+		return null;
 	}
 }
