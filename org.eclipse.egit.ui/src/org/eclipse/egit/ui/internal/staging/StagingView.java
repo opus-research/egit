@@ -40,6 +40,7 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.CommitOperation;
+import org.eclipse.egit.core.op.DeleteResourcesOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -60,9 +61,9 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.operations.DeleteResourcesOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -106,6 +107,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.custom.VerifyKeyListener;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSourceAdapter;
 import org.eclipse.swt.dnd.DragSourceEvent;
@@ -117,6 +119,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -133,6 +136,7 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.DeleteResourceAction;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
@@ -541,6 +545,20 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.attachControls(commitMessageText, authorText,
 				committerText);
 
+		// allow to commit with ctrl-enter
+		commitMessageText.getTextWidget().addVerifyKeyListener(new VerifyKeyListener() {
+			public void verifyKey(VerifyEvent event) {
+				if (UIUtils.isSubmitKeyEvent(event)) {
+					event.doit = false;
+					commit();
+				} else if (event.keyCode == SWT.TAB
+						&& (event.stateMask & SWT.SHIFT) == 0) {
+					event.doit = false;
+					authorText.setFocus();
+				}
+			}
+		});
+
 		ModifyListener modifyListener = new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateMessage();
@@ -657,6 +675,11 @@ public class StagingView extends ViewPart {
 				IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				commit();
+			}
+
+			@Override
+			public String getToolTipText() {
+				return MessageFormat.format(UIText.StagingView_CommitToolTip, UIUtils.SUBMIT_KEY_STROKE.format());
 			}
 		};
 		commitAction.setImageDescriptor(UIIcons.COMMIT);
@@ -854,7 +877,14 @@ public class StagingView extends ViewPart {
 					else
 						menuMgr.add(createItem(ActionCommands.REPLACE_WITH_HEAD_ACTION, tableViewer));
 				if (addDelete) {
-					menuMgr.add(new DeleteAction(selection));
+					if (selectionIncludesNonWorkspaceResources) {
+						menuMgr.add(new DeleteAction(selection));
+					} else {
+						DeleteResourceAction deleteResourceAction = new DeleteResourceAction(getSite());
+						deleteResourceAction.selectionChanged(selection);
+						ActionContributionItem item = new ActionContributionItem(deleteResourceAction);
+						menuMgr.add(item);
+					}
 				}
 				if (addLaunchMergeTool)
 					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
@@ -897,8 +927,20 @@ public class StagingView extends ViewPart {
 
 		@Override
 		public void run() {
-			DeleteResourcesOperationUI operation = new DeleteResourcesOperationUI(getSelectedResources(), getSite());
-			operation.run();
+			boolean performAction = MessageDialog.openConfirm(form.getShell(),
+					UIText.DeleteResourcesAction_confirmActionTitle,
+					UIText.DeleteResourcesAction_confirmActionMessage);
+			if (!performAction)
+				return;
+
+			List<IResource> resources = getSelectedResources();
+			DeleteResourcesOperation operation = new DeleteResourcesOperation(resources);
+
+			try {
+				operation.execute(null);
+			} catch (CoreException e) {
+				Activator.handleError(UIText.StagingView_deleteFailed, e, true);
+			}
 		}
 
 		private List<IResource> getSelectedResources() {
@@ -1422,8 +1464,7 @@ public class StagingView extends ViewPart {
 	}
 
 	private void commit() {
-		if (stagedTableViewer.getTable().getItemCount() == 0
-				&& !amendPreviousCommitAction.isChecked()) {
+		if (!isCommitWithoutFilesAllowed()) {
 			MessageDialog.openError(getSite().getShell(),
 					UIText.StagingView_committingNotPossible,
 					UIText.StagingView_noStagedFiles);
@@ -1431,11 +1472,14 @@ public class StagingView extends ViewPart {
 		}
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
-		final Repository repository = currentRepository;
+
+		if (!UIUtils.saveAllEditors(currentRepository))
+			return;
+
 		String commitMessage = commitMessageComponent.getCommitMessage();
 		CommitOperation commitOperation = null;
 		try {
-			commitOperation = new CommitOperation(repository,
+			commitOperation = new CommitOperation(currentRepository,
 					commitMessageComponent.getAuthor(),
 					commitMessageComponent.getCommitter(),
 					commitMessage);
@@ -1451,6 +1495,16 @@ public class StagingView extends ViewPart {
 		CommitMessageHistory.saveCommitHistory(commitMessage);
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
+	}
+
+	private boolean isCommitWithoutFilesAllowed() {
+		if (stagedTableViewer.getTable().getItemCount() > 0)
+			return true;
+
+		if (amendPreviousCommitAction.isChecked())
+			return true;
+
+		return CommitHelper.isCommitWithoutFilesAllowed(currentRepository);
 	}
 
 	@Override
