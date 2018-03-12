@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -47,43 +46,33 @@ public class DialogsPreferencePage extends FieldEditorPreferencePage implements
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
 
-		Group confirmDialogsGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		Group confirmGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(confirmDialogsGroup);
-		confirmDialogsGroup
+				.applyTo(confirmGroup);
+		confirmGroup
 				.setText(UIText.DialogsPreferencePage_HideConfirmationGroupHeader);
 
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(confirmDialogsGroup);
+				.applyTo(confirmGroup);
 		addField(new BooleanFieldEditor(
 				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
 				UIText.DialogsPreferencePage_ShowInitialConfigCheckbox,
-				confirmDialogsGroup));
+				confirmGroup));
 
 		addField(new BooleanFieldEditor(UIPreferences.SHOW_REBASE_CONFIRM,
-				UIText.DialogsPreferencePage_RebaseCheckbox, confirmDialogsGroup));
+				UIText.DialogsPreferencePage_RebaseCheckbox, confirmGroup));
 		addField(new BooleanFieldEditor(
 				UIPreferences.SHOW_DETACHED_HEAD_WARNING,
-				UIText.DialogsPreferencePage_DetachedHeadCombo, confirmDialogsGroup));
+				UIText.DialogsPreferencePage_DetachedHeadCombo, confirmGroup));
+		addField(new BooleanFieldEditor(UIPreferences.SHOW_HOME_DIR_WARNING,
+				UIText.DialogsPreferencePage_HomeDirWarning, confirmGroup));
+		addField(new BooleanFieldEditor(UIPreferences.SHOW_GIT_PREFIX_WARNING,
+				UIText.DialogsPreferencePage_GitPrefixWarning, confirmGroup));
 		addField(new BooleanFieldEditor(
 				UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG,
 				UIText.DialogsPreferencePage_ShowCloneFailedDialog,
-				confirmDialogsGroup));
-		updateMargins(confirmDialogsGroup);
-
-		Group warningsGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(warningsGroup);
-		warningsGroup
-				.setText(UIText.DialogsPreferencePage_HideWarningGroupHeader);
-
-		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(warningsGroup);
-		addField(new BooleanFieldEditor(UIPreferences.SHOW_HOME_DIR_WARNING,
-				UIText.DialogsPreferencePage_HomeDirWarning, warningsGroup));
-		addField(new BooleanFieldEditor(UIPreferences.SHOW_GIT_PREFIX_WARNING,
-				UIText.DialogsPreferencePage_GitPrefixWarning, warningsGroup));
-		updateMargins(warningsGroup);
+				confirmGroup));
+		updateMargins(confirmGroup);
 	}
 
 	private void updateMargins(Group group) {
