@@ -16,7 +16,6 @@ import java.util.Map.Entry;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
-import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.jface.dialogs.Dialog;
@@ -24,9 +23,12 @@ import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
@@ -45,11 +47,14 @@ import org.eclipse.swt.widgets.Text;
  * If the base is a branch, the source branch can be selected using a drop down.
  */
 class CreateBranchPage extends WizardPage {
+
+	private final boolean commitMode;
+
 	private final Repository myRepository;
 
 	private final IInputValidator myValidator;
 
-	private final String myBaseRef;
+	private final Ref myBaseBranch;
 
 	private final RevCommit myBaseCommit;
 
@@ -66,13 +71,14 @@ class CreateBranchPage extends WizardPage {
 	 *
 	 * @param repo
 	 *            the repository
-	 * @param baseRef
-	 *            the branch or tag to base the new branch on, may be null
+	 * @param baseBranch
+	 *            the branch to base the new branch on, may be null
 	 */
-	public CreateBranchPage(Repository repo, Ref baseRef) {
+	public CreateBranchPage(Repository repo, Ref baseBranch) {
 		super(CreateBranchPage.class.getName());
+		commitMode = false;
 		this.myRepository = repo;
-		this.myBaseRef = baseRef.getName();
+		this.myBaseBranch = baseBranch;
 		this.myBaseCommit = null;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
 				myRepository, Constants.R_HEADS, true);
@@ -92,8 +98,9 @@ class CreateBranchPage extends WizardPage {
 	 */
 	public CreateBranchPage(Repository repo, RevCommit baseCommit) {
 		super(CreateBranchPage.class.getName());
+		commitMode = true;
 		this.myRepository = repo;
-		this.myBaseRef = null;
+		this.myBaseBranch = null;
 		this.myBaseCommit = baseCommit;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
 				myRepository, Constants.R_HEADS, true);
@@ -106,7 +113,7 @@ class CreateBranchPage extends WizardPage {
 		main.setLayout(new GridLayout(3, false));
 
 		Label sourceLabel = new Label(main, SWT.NONE);
-		if (this.myBaseCommit != null) {
+		if (commitMode) {
 			sourceLabel.setText(UIText.CreateBranchPage_SourceCommitLabel);
 			sourceLabel
 					.setToolTipText(UIText.CreateBranchPage_SourceCommitTooltip);
@@ -121,7 +128,7 @@ class CreateBranchPage extends WizardPage {
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(
 				this.branchCombo);
 
-		if (this.myBaseCommit != null) {
+		if (commitMode) {
 			this.branchCombo.add(myBaseCommit.name());
 			this.branchCombo.setText(myBaseCommit.name());
 			this.branchCombo.setEnabled(false);
@@ -154,8 +161,8 @@ class CreateBranchPage extends WizardPage {
 				}
 			});
 			// select the current branch in the drop down
-			if (myBaseRef != null) {
-				this.branchCombo.setText(myBaseRef);
+			if (myBaseBranch != null) {
+				this.branchCombo.setText(myBaseBranch.getName());
 			}
 		}
 
@@ -193,13 +200,13 @@ class CreateBranchPage extends WizardPage {
 		Dialog.applyDialogFont(main);
 		setControl(main);
 		nameText.setFocus();
-		if (myBaseRef != null
-				&& (myBaseRef.startsWith(Constants.R_REMOTES) || myBaseRef
-						.startsWith(Constants.R_TAGS))) {
+		if (myBaseBranch != null
+				&& (myBaseBranch.getName().startsWith(Constants.R_REMOTES) || myBaseBranch
+						.getName().startsWith(Constants.R_TAGS))) {
 			// additional convenience: the last part of the name is suggested
 			// as name for the local branch
-			nameText.setText(myBaseRef
-					.substring(myBaseRef.lastIndexOf('/') + 1));
+			nameText.setText(myBaseBranch.getName().substring(
+					myBaseBranch.getName().lastIndexOf('/') + 1));
 			checkPage();
 		} else {
 			// in any case, we will have to enter the name
@@ -235,7 +242,18 @@ class CreateBranchPage extends WizardPage {
 	}
 
 	private String getBranchName() {
-		return nameText.getText();
+		return Constants.R_HEADS + nameText.getText();
+	}
+
+	private String getSourceBranchName() {
+		if (commitMode)
+			return myBaseCommit.name();
+		if (this.branchCombo != null)
+			return this.branchCombo.getText();
+		else if (myBaseBranch != null)
+			return myBaseBranch.getName();
+		else
+			return null;
 	}
 
 	/**
@@ -250,24 +268,25 @@ class CreateBranchPage extends WizardPage {
 
 		String newRefName = getBranchName();
 
-		final CreateLocalBranchOperation cbop;
-
-		if (myBaseCommit != null)
-			cbop = new CreateLocalBranchOperation(myRepository, newRefName,
-					myBaseCommit);
+		RefUpdate updateRef = myRepository.updateRef(newRefName);
+		ObjectId startAt;
+		if (commitMode)
+			startAt = myBaseCommit.getId();
 		else
-			cbop = new CreateLocalBranchOperation(myRepository, newRefName,
-					myRepository.getRef(this.branchCombo.getText()));
+			startAt = new RevWalk(myRepository).parseCommit(myRepository
+					.resolve(getSourceBranchName()));
 
-		cbop.execute(monitor);
+		updateRef.setNewObjectId(startAt);
+		updateRef.setRefLogMessage(
+				"branch: Created from " + getSourceBranchName(), false); //$NON-NLS-1$
+		updateRef.update();
 
 		if (checkout.getSelection()) {
 			if (monitor.isCanceled())
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
 					IProgressMonitor.UNKNOWN);
-			new BranchOperation(myRepository, Constants.R_HEADS + newRefName)
-					.execute(monitor);
+			new BranchOperation(myRepository, getBranchName()).execute(monitor);
 		}
 	}
 }
