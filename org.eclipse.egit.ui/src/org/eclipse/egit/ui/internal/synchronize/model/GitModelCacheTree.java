@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,8 +11,13 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 import static org.eclipse.compare.structuremergeviewer.Differencer.CHANGE;
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.FileModelFactory;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache.FileModelFactory;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -22,6 +27,10 @@ import org.eclipse.jgit.lib.Repository;
 public class GitModelCacheTree extends GitModelTree {
 
 	private final FileModelFactory factory;
+
+	private final Map<String, GitModelObject> cacheTreeMap;
+
+	private final Repository repo;
 
 	/**
 	 * @param parent
@@ -35,7 +44,16 @@ public class GitModelCacheTree extends GitModelTree {
 	public GitModelCacheTree(GitModelObjectContainer parent, Repository repo,
 			IPath fullPath, FileModelFactory factory) {
 		super(parent, fullPath, RIGHT | CHANGE);
+		this.repo = repo;
 		this.factory = factory;
+		cacheTreeMap = new HashMap<String, GitModelObject>();
+	}
+
+	@Override
+	public GitModelObject[] getChildren() {
+		Collection<GitModelObject> values = cacheTreeMap.values();
+
+		return values.toArray(new GitModelObject[values.size()]);
 	}
 
 	@Override
@@ -72,6 +90,28 @@ public class GitModelCacheTree extends GitModelTree {
 	 */
 	public boolean isWorkingTree() {
 		return factory.isWorkingTree();
+	}
+
+	void addChild(Change change, String nestedPath) {
+		String pathKey;
+		int firstSlash = nestedPath.indexOf("/"); //$NON-NLS-1$
+		if (firstSlash > -1)
+			pathKey = nestedPath.substring(0, firstSlash);
+		else
+			pathKey = nestedPath;
+
+		IPath fullPath = getLocation().append(pathKey);
+		if (nestedPath.contains("/")) { //$NON-NLS-1$
+			GitModelCacheTree cacheEntry = (GitModelCacheTree) cacheTreeMap
+					.get(pathKey);
+			if (cacheEntry == null) {
+				cacheEntry = new GitModelCacheTree(this, repo, fullPath, factory);
+				cacheTreeMap.put(pathKey, cacheEntry);
+			}
+			cacheEntry.addChild(change, nestedPath.substring(firstSlash + 1));
+		} else
+			cacheTreeMap.put(pathKey,
+					factory.createFileModel(this, repo, change, fullPath));
 	}
 
 }

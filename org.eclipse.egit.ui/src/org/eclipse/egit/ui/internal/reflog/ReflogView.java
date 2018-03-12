@@ -8,7 +8,6 @@
  * Contributors:
  *   Chris Aniszczyk <caniszczyk@gmail.com> - initial implementation
  *   EclipseSource - Filtered Viewer
- *   Robin Stocker <robin@nibor.org> - Show In support
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.reflog;
 
@@ -20,9 +19,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.reflog.ReflogViewContentProvider.ReflogInput;
@@ -58,7 +57,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.internal.storage.file.ReflogEntry;
+import org.eclipse.jgit.storage.file.ReflogEntry;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -88,15 +87,13 @@ import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ImageHyperlink;
-import org.eclipse.ui.part.IShowInTarget;
-import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 
 /**
  * A view that shows reflog entries. The View includes a quick filter that
  * searches on both the commit hashes and commit messages.
  */
-public class ReflogView extends ViewPart implements RefsChangedListener, IShowInTarget {
+public class ReflogView extends ViewPart implements RefsChangedListener {
 
 	/**
 	 * View id
@@ -473,27 +470,12 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		return null;
 	}
 
-	public boolean show(ShowInContext context) {
-		ISelection selection = context.getSelection();
-		if (selection instanceof IStructuredSelection) {
-			IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-			for (Object element : structuredSelection.toList()) {
-				if (element instanceof RepositoryTreeNode) {
-					RepositoryTreeNode node = (RepositoryTreeNode) element;
-					showReflogFor(node.getRepository());
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 	/**
 	 * Defines the repository for the reflog to show.
 	 *
 	 * @param repository
 	 */
-	private void showReflogFor(Repository repository) {
+	public void showReflogFor(Repository repository) {
 		showReflogFor(repository, Constants.HEAD);
 	}
 

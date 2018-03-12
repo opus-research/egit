@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2009, Alex Blewitt <alex.blewitt@gmail.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,10 @@ import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -35,11 +33,15 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -58,26 +60,11 @@ public class IgnoreOperation implements IEGitOperation {
 	 * construct an IgnoreOperation
 	 *
 	 * @param paths
-	 * @since 2.2
 	 */
 	public IgnoreOperation(Collection<IPath> paths) {
 		this.paths = paths;
 		gitignoreOutsideWSChanged = false;
 		schedulingRule = calcSchedulingRule();
-	}
-
-	/**
-	 * @param resources
-	 * @deprecated use {@link #IgnoreOperation(Collection)}
-	 */
-	@Deprecated
-	public IgnoreOperation(IResource[] resources) {
-		paths = new ArrayList<IPath>(resources.length);
-		for (IResource resource : resources) {
-			IPath location = resource.getLocation();
-			if (location != null)
-				paths.add(location);
-		}
 	}
 
 	public void execute(IProgressMonitor monitor) throws CoreException {
@@ -92,7 +79,7 @@ public class IgnoreOperation implements IEGitOperation {
 				// NB This does the same thing in
 				// DecoratableResourceAdapter, but neither currently
 				// consult .gitignore
-				if (!RepositoryUtil.isIgnored(path))
+				if (!isIgnored(path))
 					addIgnore(monitor, path);
 				monitor.worked(1);
 			}
@@ -103,6 +90,25 @@ public class IgnoreOperation implements IEGitOperation {
 			throw new CoreException(Activator.error(
 					CoreText.IgnoreOperation_error, e));
 		}
+	}
+
+	private boolean isIgnored(IPath path) throws IOException {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+		Repository repository = mapping.getRepository();
+		String repoRelativePath = mapping.getRepoRelativePath(path);
+		TreeWalk walk = new TreeWalk(repository);
+		walk.addTree(new FileTreeIterator(repository));
+		walk.setFilter(PathFilter.create(repoRelativePath));
+		while (walk.next()) {
+			WorkingTreeIterator workingTreeIterator = walk.getTree(0,
+					WorkingTreeIterator.class);
+			if (walk.getPathString().equals(repoRelativePath)) {
+				return workingTreeIterator.isEntryIgnored();
+			}
+			if (workingTreeIterator.getEntryFileMode().equals(FileMode.TREE))
+				walk.enterSubtree();
+		}
+		return false;
 	}
 
 	/**

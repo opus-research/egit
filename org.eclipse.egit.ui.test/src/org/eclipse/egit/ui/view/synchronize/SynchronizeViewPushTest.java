@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,13 +15,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.egit.core.op.FetchOperation;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -64,6 +64,7 @@ public class SynchronizeViewPushTest extends AbstractSynchronizeViewTest {
 
 		String trackingBranch = Constants.R_REMOTES + "origin/master";
 		launchSynchronization(Constants.HEAD, trackingBranch, false);
+		setGitChangeSetPresentationModel();
 
 		SWTBotView viewBot = bot.viewByTitle("Synchronize");
 		SWTBotToolbarButton pushButton = viewBot.toolbarButton(UIText.GitActionContributor_Push);

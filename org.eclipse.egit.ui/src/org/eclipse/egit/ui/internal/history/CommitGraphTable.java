@@ -34,10 +34,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -62,7 +62,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -765,16 +764,9 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (hasMultipleRefNodes()) {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel2));
-				} else {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel));
-				}
-
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.CHECKOUT,
+						UIText.GitHistoryPage_CheckoutMenuLabel));
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.PUSH_COMMIT,
 						UIText.GitHistoryPage_pushCommit));
@@ -869,25 +861,6 @@ class CommitGraphTable {
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
 			popupMgr.add(new Separator());
-		}
-
-		private boolean hasMultipleRefNodes() {
-			try {
-				Map<String, Ref> branches = input.getRepository()
-						.getRefDatabase().getRefs(Constants.R_HEADS);
-				int count = 0;
-				for (Ref branch : branches.values()) {
-					if (branch.getLeaf().getObjectId()
-							.equals(((RevCommit) ((IStructuredSelection) selectionProvider
-									.getSelection()).getFirstElement()).getId()))
-						count++;
-				}
-				return (count > 1);
-
-			} catch (IOException e) {
-				// ignore here
-			}
-			return false;
 		}
 
 		private CommandContributionItem getCommandContributionItem(

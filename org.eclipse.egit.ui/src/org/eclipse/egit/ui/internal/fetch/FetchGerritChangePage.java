@@ -19,21 +19,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
-import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
@@ -45,12 +42,7 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.api.CheckoutCommand;
-import org.eclipse.jgit.api.CheckoutResult;
-import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.CheckoutConflictException;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
@@ -64,8 +56,6 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.dnd.Clipboard;
-import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -77,7 +67,6 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 /**
@@ -149,21 +138,6 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	public void createControl(Composite parent) {
-		Clipboard clipboard = new Clipboard(parent.getDisplay());
-		String clipText = (String) clipboard.getContents(TextTransfer
-				.getInstance());
-		String defaultUri = null;
-		String defaultCommand = null;
-		String defaultChange = null;
-		if (clipText != null) {
-			final String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
-			Matcher matcher = Pattern.compile(pattern).matcher(clipText);
-			if (matcher.matches()) {
-				defaultUri = matcher.group(1);
-				defaultChange = matcher.group(2);
-				defaultCommand = matcher.group(3);
-			}
-		}
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
@@ -180,8 +154,6 @@ public class FetchGerritChangePage extends WizardPage {
 		new Label(main, SWT.NONE)
 				.setText(UIText.FetchGerritChangePage_ChangeLabel);
 		refText = new Text(main, SWT.BORDER);
-		if (defaultChange != null)
-			refText.setText(defaultChange);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(refText);
 		addRefContentProposalToText(refText);
 
@@ -195,6 +167,7 @@ public class FetchGerritChangePage extends WizardPage {
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(createBranch);
 		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
+		createBranch.setSelection(true);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -260,11 +233,6 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
-		if ("checkout".equals(defaultCommand)) //$NON-NLS-1$
-			checkout.setSelection(true);
-		else
-			createBranch.setSelection(true);
-
 		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
 				.exclude(true).applyTo(warningAdditionalRefNotActive);
@@ -312,14 +280,11 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 		for (String aUri : uris)
 			uriCombo.add(aUri);
-		if (defaultUri != null)
-			uriCombo.setText(defaultUri);
-		else
-			selectLastUsedUri();
+		selectLastUsedUri();
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
-		checkPage();
+		setPageComplete(false);
 	}
 
 
@@ -464,6 +429,7 @@ public class FetchGerritChangePage extends WizardPage {
 									});
 						}
 					});
+
 		}
 		return changeRefs;
 	}
@@ -480,7 +446,6 @@ public class FetchGerritChangePage extends WizardPage {
 					.getSelection()) && activateAdditionalRefs.getSelection();
 			final String textForTag = tagText.getText();
 			final String textForBranch = branchText.getText();
-
 			getWizard().getContainer().run(true, true,
 					new IRunnableWithProgress() {
 						public void run(IProgressMonitor monitor)
@@ -494,22 +459,74 @@ public class FetchGerritChangePage extends WizardPage {
 							monitor.beginTask(
 									UIText.FetchGerritChangePage_GetChangeTaskName,
 									totalWork);
-
+							List<RefSpec> specs = new ArrayList<RefSpec>(1);
+							specs.add(spec);
+							int timeout = Activator
+									.getDefault()
+									.getPreferenceStore()
+									.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+							FetchResult fetchRes;
 							try {
-								RevCommit commit = fetchChange(uri, spec,
-										monitor);
+								String taskName = NLS
+										.bind(UIText.FetchGerritChangePage_FetchingTaskName,
+												spec.getSource());
+								monitor.setTaskName(taskName);
+								fetchRes = new FetchOperationUI(repository,
+										new URIish(uri), specs, timeout, false)
+										.execute(monitor);
+
+								monitor.worked(1);
+								RevCommit commit = new RevWalk(repository)
+										.parseCommit(fetchRes.getAdvertisedRef(
+												spec.getSource()).getObjectId());
 
 								if (doCreateTag) {
-									createTag(spec, textForTag, commit, monitor);
+									monitor.setTaskName(UIText.FetchGerritChangePage_CreatingTagTaskName);
+									final TagBuilder tag = new TagBuilder();
+									PersonIdent personIdent = new PersonIdent(
+											repository);
+
+									tag.setTag(textForTag);
+									tag.setTagger(personIdent);
+									tag.setMessage(NLS
+											.bind(UIText.FetchGerritChangePage_GeneratedTagMessage,
+													spec.getSource()));
+									tag.setObjectId(commit);
+									new TagOperation(repository, tag, false)
+											.execute(monitor);
+									monitor.worked(1);
 								}
 								if (doCreateBranch) {
-									createBranch(textForBranch, commit, monitor);
+									monitor.setTaskName(UIText.FetchGerritChangePage_CreatingBranchTaskName);
+									CreateLocalBranchOperation bop = new CreateLocalBranchOperation(
+											repository, textForBranch, commit);
+									bop.execute(monitor);
+									new Git(repository).checkout()
+											.setName(textForBranch).call();
+									monitor.worked(1);
 								}
 								if (doCheckout || doCreateTag) {
-									checkout(commit, monitor);
+									monitor.setTaskName(UIText.FetchGerritChangePage_CheckingOutTaskName);
+									BranchOperationUI.checkout(repository, commit.name())
+											.run(monitor);
+
+									monitor.worked(1);
 								}
 								if (doActivateAdditionalRefs) {
-									activateAdditionalRefs();
+									// do this in the UI thread as it results in a
+									// refresh() on the history page
+									getContainer().getShell().getDisplay()
+											.asyncExec(new Runnable() {
+
+												public void run() {
+													Activator
+															.getDefault()
+															.getPreferenceStore()
+															.setValue(
+																	UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS,
+																	true);
+												}
+											});
 								}
 								storeLastUsedUri(uri);
 							} catch (RuntimeException e) {
@@ -529,92 +546,6 @@ public class FetchGerritChangePage extends WizardPage {
 			// just return
 		}
 		return true;
-	}
-
-	private RevCommit fetchChange(String uri, RefSpec spec,
-			IProgressMonitor monitor) throws CoreException, URISyntaxException,
-			IOException {
-		int timeout = Activator.getDefault().getPreferenceStore()
-				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-
-		List<RefSpec> specs = new ArrayList<RefSpec>(1);
-		specs.add(spec);
-
-		String taskName = NLS
-				.bind(UIText.FetchGerritChangePage_FetchingTaskName,
-						spec.getSource());
-		monitor.setTaskName(taskName);
-		FetchResult fetchRes = new FetchOperationUI(repository,
-				new URIish(uri), specs, timeout, false).execute(monitor);
-
-		monitor.worked(1);
-		return new RevWalk(repository).parseCommit(fetchRes.getAdvertisedRef(
-				spec.getSource()).getObjectId());
-	}
-
-	private void createTag(final RefSpec spec, final String textForTag,
-			RevCommit commit, IProgressMonitor monitor) throws CoreException {
-		monitor.setTaskName(UIText.FetchGerritChangePage_CreatingTagTaskName);
-		final TagBuilder tag = new TagBuilder();
-		PersonIdent personIdent = new PersonIdent(repository);
-
-		tag.setTag(textForTag);
-		tag.setTagger(personIdent);
-		tag.setMessage(NLS.bind(
-				UIText.FetchGerritChangePage_GeneratedTagMessage,
-				spec.getSource()));
-		tag.setObjectId(commit);
-		new TagOperation(repository, tag, false).execute(monitor);
-		monitor.worked(1);
-	}
-
-	private void createBranch(final String textForBranch, RevCommit commit,
-			IProgressMonitor monitor) throws CoreException, GitAPIException {
-		monitor.setTaskName(UIText.FetchGerritChangePage_CreatingBranchTaskName);
-		CreateLocalBranchOperation bop = new CreateLocalBranchOperation(
-				repository, textForBranch, commit);
-		bop.execute(monitor);
-		CheckoutCommand co = new Git(repository).checkout();
-		try {
-			co.setName(textForBranch).call();
-		} catch (CheckoutConflictException e) {
-			final CheckoutResult result = co.getResult();
-
-			if (result.getStatus() == Status.CONFLICTS) {
-				final Shell shell = getWizard().getContainer().getShell();
-
-				shell.getDisplay().asyncExec(new Runnable() {
-					public void run() {
-						new CheckoutConflictDialog(shell, repository, result
-								.getConflictList()).open();
-					}
-				});
-			}
-		}
-		monitor.worked(1);
-	}
-
-	private void checkout(RevCommit commit, IProgressMonitor monitor)
-			throws CoreException {
-		monitor.setTaskName(UIText.FetchGerritChangePage_CheckingOutTaskName);
-		BranchOperationUI.checkout(repository, commit.name()).run(monitor);
-
-		monitor.worked(1);
-	}
-
-	private void activateAdditionalRefs() {
-		// do this in the UI thread as it results in a
-		// refresh() on the history page
-		getContainer().getShell().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				Activator
-						.getDefault()
-						.getPreferenceStore()
-						.setValue(
-								UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS,
-								true);
-			}
-		});
 	}
 
 	private void addRefContentProposalToText(final Text textField) {
@@ -638,8 +569,9 @@ public class FetchGerritChangePage extends WizardPage {
 				String patternString = contents;
 				// ignore spaces in the beginning
 				while (patternString.length() > 0
-						&& patternString.charAt(0) == ' ')
+						&& patternString.charAt(0) == ' ') {
 					patternString = patternString.substring(1);
+				}
 
 				// we quote the string as it may contain spaces
 				// and other stuff colliding with the Pattern
@@ -648,8 +580,9 @@ public class FetchGerritChangePage extends WizardPage {
 				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
 
 				// make sure we add a (logical) * at the end
-				if (!patternString.endsWith(".*")) //$NON-NLS-1$
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
 					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
 
 				// let's compile a case-insensitive pattern (assumes ASCII only)
 				Pattern pattern;

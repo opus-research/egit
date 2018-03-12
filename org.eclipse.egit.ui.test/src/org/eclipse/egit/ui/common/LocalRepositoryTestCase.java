@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,16 +22,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.op.CloneOperation;
@@ -49,7 +47,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -143,12 +141,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		File repoRoot = new File(testDirectory, "RepositoryRoot");
 		if (!repoRoot.exists())
 			FileUtils.mkdir(repoRoot, true);
-		// suppress auto-ignoring and auto-sharing to avoid interference
-		IEclipsePreferences corePrefs = InstanceScope.INSTANCE
-				.getNode(org.eclipse.egit.core.Activator.getPluginId());
-		corePrefs.putBoolean(
-				GitCorePreferences.core_autoIgnoreDerivedResources, false);
-		corePrefs.putBoolean(GitCorePreferences.core_autoShareProjects, false);
 		// make sure the default directory for Repos is not the user home
 		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
@@ -174,7 +166,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		Activator.getDefault().getRepositoryCache().clear();
 	}
 
-	protected static void shutDownRepositories() {
+	private static void shutDownRepositories() {
 		RepositoryCache cache = Activator.getDefault().getRepositoryCache();
 		for(Repository repository:cache.getAllRepositories())
 			repository.close();
@@ -188,9 +180,10 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				prj.delete(false, false, null);
 			else if (prj.getName().equals(PROJ2)) {
 				// delete the .project on disk
-				File dotProject = prj.getLocation().append(".project").toFile();
+				FileUtils.delete(EFS.getStore(
+						prj.getFile(".project").getLocationURI()).toLocalFile(
+						EFS.NONE, null), FileUtils.RETRY);
 				prj.delete(false, false, null);
-				FileUtils.delete(dotProject, FileUtils.RETRY);
 			}
 
 	}

@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2013, Dariusz Luksza <dariusz.luksza@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,9 +15,11 @@ import java.io.File;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
+
+import org.eclipse.debug.ui.StringVariableSelectionDialog;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
@@ -45,8 +46,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	private final static int GROUP_SPAN = 3;
 
 	private final static String[][] MERGE_MODE_NAMES_AND_VALUES = new String[3][2];
-
-	private final static boolean HAS_DEBUG_UI = hasDebugUiBundle();
 
 	static {
 		MERGE_MODE_NAMES_AND_VALUES[0][0] = UIText.GitPreferenceRoot_MergeMode_0_Label;
@@ -132,18 +131,12 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 
 				super.createControl(parent);
 
-				if (HAS_DEBUG_UI)
-					addVariablesButton(parent);
-			}
-
-			private void addVariablesButton(Composite parent) {
 				Button variableButton = new Button(parent, SWT.PUSH);
 				variableButton.setText(UIText.GitPreferenceRoot_DefaultRepoFolderVariableButton);
 
 				variableButton.addSelectionListener(new SelectionAdapter() {
 					public void widgetSelected(SelectionEvent e) {
-						org.eclipse.debug.ui.StringVariableSelectionDialog dialog = new org.eclipse.debug.ui.StringVariableSelectionDialog(
-								getShell());
+						StringVariableSelectionDialog dialog = new StringVariableSelectionDialog(getShell());
 						int returnCode = dialog.open();
 						if (returnCode == Window.OK)
 							setStringValue(dialog.getVariableExpression());
@@ -221,14 +214,5 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		GridLayout layout = (GridLayout) group.getLayout();
 		layout.marginWidth = 5;
 		layout.marginHeight = 5;
-	}
-
-	private static final boolean hasDebugUiBundle() {
-		try {
-			return Class
-					.forName("org.eclipse.debug.ui.StringVariableSelectionDialog") != null; //$NON-NLS-1$
-		} catch (ClassNotFoundException e) {
-			return false;
-		}
 	}
 }
