@@ -146,7 +146,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		IFile file = project.createFile("sub/ignore", new byte[] {});
 		testRepository.addToIndex(project.project);
 		testRepository.createInitialCommit("testRemoveIgnoredFile\n\nfirst commit\n");
-		IndexDiffCacheEntry entry = prepareCacheEntry();
+		prepareCacheEntry();
 
 		IndexDiffData data1 = waitForListenerCalled();
 		assertThat(data1.getIgnoredNotInIndex(), hasItem("Project-1/sub/ignore"));
@@ -155,18 +155,16 @@ public class IndexDiffCacheTest extends GitTestCase {
 		// it's not a prefix path of it)
 		project.createFile("sub/ignorenot", new byte[] {});
 
-		entry.refresh(); // need explicit as files are ignored.
 		IndexDiffData data2 = waitForListenerCalled();
 		assertThat(data2.getIgnoredNotInIndex(), hasItem("Project-1/sub/ignore"));
 
 		file.delete(false, null);
 
-		entry.refresh(); // need explicit as files are ignored.
 		IndexDiffData data3 = waitForListenerCalled();
 		assertThat(data3.getIgnoredNotInIndex(), not(hasItem("Project-1/sub/ignore")));
 	}
 
-	private IndexDiffCacheEntry prepareCacheEntry() {
+	private void prepareCacheEntry() {
 		IndexDiffCache indexDiffCache = Activator.getDefault()
 				.getIndexDiffCache();
 		// This call should trigger an indexDiffChanged event
@@ -182,7 +180,6 @@ public class IndexDiffCacheTest extends GitTestCase {
 				indexDiffDataResult.set(indexDiffData);
 			}
 		});
-		return cacheEntry;
 	}
 
 	private IndexDiffData waitForListenerCalled() throws InterruptedException {
