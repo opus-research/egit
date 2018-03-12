@@ -64,7 +64,7 @@ public class FilteredCheckboxTree extends FilteredTree {
 	 * @param filter pattern filter to use in the filter control
 	 */
 	public FilteredCheckboxTree(Composite parent, FormToolkit toolkit, int treeStyle, PatternFilter filter) {
-		super(parent, treeStyle, filter);
+		super(parent, true);
 		fToolkit = toolkit;
 		init(treeStyle, filter);
 	}
@@ -129,13 +129,10 @@ public class FilteredCheckboxTree extends FilteredTree {
 		return checkboxViewer;
 	}
 
-	/**
-	 * Overrides org.eclipse.ui.dialogs.FilteredTree#getRefreshJobDelay() in
-	 * Eclipse 3.5 and newer. No effect in eclipse 3.4
-	 *
-	 * @return refresh delay
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.ui.dialogs.FilteredTree#getRefreshJobDelay()
 	 */
-	//	TODO: remove this javadoc when support for 3.4 is dropped
 	protected long getRefreshJobDelay() {
 		return FILTER_DELAY;
 	}
