@@ -34,7 +34,7 @@ import org.eclipse.osgi.util.NLS;
 /**
  * git flow hotfix finish
  */
-public class HotfixFinishHandler extends AbstractGitFlowHandler {
+public class HotfixFinishHandler extends AbstractFinishHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -60,8 +60,8 @@ public class HotfixFinishHandler extends AbstractGitFlowHandler {
 			if (handleConflictsOnMaster(gfRepo)) {
 				return null;
 			}
-			MultiStatus status = createMergeConflictInfo(develop, hotfixBranch, mergeResult);
-			ErrorDialog.openError(null, UIText.HotfixFinishHandler_Conflicts, null, status);
+			MultiStatus warning = createConflictWarning(develop, hotfixBranch, mergeResult);
+			ErrorDialog.openError(null, UIText.HotfixFinishHandler_Conflicts, null, warning);
 		} catch (WrongGitFlowStateException | CoreException | IOException
 				| OperationCanceledException | InterruptedException e) {
 			return error(e.getMessage(), e);
