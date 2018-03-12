@@ -3416,9 +3416,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_CompareMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel;
-
-	/** */
 	public static String CommitFileDiffViewer_FileDoesNotExist;
 
 	/** */
