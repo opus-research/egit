@@ -124,7 +124,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 				"origin/master").select();
 		mergeDialog.bot().button(UIText.MergeTargetSelectionDialog_ButtonMerge)
 				.click();
-		bot.shell(UIText.MergeResultDialog_mergeResult).close();
+		bot.shell(UIText.MergeAction_MergeResultTitle).close();
 		newContent = getTestFileContent();
 		assertFalse(oldContent.equals(newContent));
 	}
