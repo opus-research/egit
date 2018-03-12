@@ -3707,9 +3707,6 @@ public class UIText extends NLS {
 	public static String SimpleConfigurePushDialog_CopyRefSpecButton;
 
 	/** */
-	public static String SimpleConfigurePushDialog_DefaultPushNoRefspec;
-
-	/** */
 	public static String SimpleConfigurePushDialog_DeletePushUriButton;
 
 	/** */
@@ -3756,6 +3753,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SimpleConfigurePushDialog_PasteRefSpecButton;
+
+	/** */
+	public static String SimpleConfigurePushDialog_PushAllBranchesMessage;
 
 	/** */
 	public static String SimpleConfigurePushDialog_PushUrisLabel;
