@@ -36,10 +36,10 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jgit.events.IndexChangedEvent;
-import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.lib.IndexChangedEvent;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jsch.core.IJSchService;
 import org.eclipse.osgi.service.debug.DebugOptions;
@@ -154,7 +154,6 @@ public class Activator extends AbstractUIPlugin {
 
 	private RCS rcs;
 	private RIRefresh refreshJob;
-	private ListenerHandle refreshJobHandle;
 
 	/**
 	 * Constructor for the egit ui plugin singleton
@@ -184,7 +183,7 @@ public class Activator extends AbstractUIPlugin {
 
 	private void setupRepoIndexRefresh() {
 		refreshJob = new RIRefresh();
-		refreshJobHandle = Repository.getGlobalListenerList().addIndexChangedListener(refreshJob);
+		Repository.addAnyRepositoryChangedListener(refreshJob);
 	}
 
 	/**
@@ -220,7 +219,7 @@ public class Activator extends AbstractUIPlugin {
 			listener.propertyChange(event);
 	}
 
-	static class RIRefresh extends Job implements IndexChangedListener {
+	static class RIRefresh extends Job implements RepositoryListener {
 
 		RIRefresh() {
 			super(UIText.Activator_refreshJobName);
@@ -257,7 +256,7 @@ public class Activator extends AbstractUIPlugin {
 			return Status.OK_STATUS;
 		}
 
-		public void onIndexChanged(IndexChangedEvent e) {
+		public void indexChanged(IndexChangedEvent e) {
 			// Check the workspace setting "refresh automatically" setting first
 			boolean autoRefresh = new InstanceScope().getNode(
 					ResourcesPlugin.getPlugin().getBundle().getSymbolicName())
@@ -279,6 +278,11 @@ public class Activator extends AbstractUIPlugin {
 			if (projectsToScan.size() > 0)
 				schedule();
 		}
+
+		public void refsChanged(RefsChangedEvent e) {
+			// Do not react here
+		}
+
 	}
 
 	static class RCS extends Job {
@@ -366,10 +370,6 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public void stop(final BundleContext context) throws Exception {
-		if (refreshJobHandle != null) {
-			refreshJobHandle.remove();
-			refreshJobHandle = null;
-		}
 
 		if (GitTraceLocation.UI.isActive())
 			GitTraceLocation.getTrace().trace(

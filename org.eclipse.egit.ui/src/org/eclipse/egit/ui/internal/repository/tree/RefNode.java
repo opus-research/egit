@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.repository.tree;
 
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Represents the "Reference" node
@@ -29,7 +28,7 @@ public class RefNode extends RepositoryTreeNode<Ref> {
 	 * @param ref
 	 *            the reference
 	 */
-	public RefNode(RepositoryTreeNode parent, FileRepository repository, Ref ref) {
+	public RefNode(RepositoryTreeNode parent, Repository repository, Ref ref) {
 		super(parent, RepositoryTreeNodeType.REF, repository, ref);
 	}
 

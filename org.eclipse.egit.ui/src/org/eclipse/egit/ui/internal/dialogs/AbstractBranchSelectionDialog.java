@@ -40,7 +40,6 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
@@ -58,7 +57,7 @@ import org.eclipse.ui.dialogs.PatternFilter;
 public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 
 	/** The {@link Repository} used in the constructor */
-	protected final FileRepository repo;
+	protected final Repository repo;
 
 	/** The tree */
 	protected TreeViewer branchTree;
@@ -83,7 +82,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	 *            the {@link Repository}
 	 */
 	public AbstractBranchSelectionDialog(Shell parentShell,
-			FileRepository repository) {
+			Repository repository) {
 		this(parentShell, repository, null);
 	}
 
@@ -97,7 +96,7 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	 *            the name of the {@link Ref} to mark initially
 	 */
 	public AbstractBranchSelectionDialog(Shell parentShell,
-			FileRepository repository, String refToMark) {
+			Repository repository, String refToMark) {
 		super(parentShell);
 		this.repo = repository;
 		localBranches = new LocalBranchesNode(null, this.repo);

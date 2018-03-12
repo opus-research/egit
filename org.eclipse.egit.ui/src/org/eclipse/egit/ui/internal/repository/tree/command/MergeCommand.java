@@ -35,7 +35,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 
@@ -48,7 +47,7 @@ public class MergeCommand extends
 
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 
-		final FileRepository repository = node.getRepository();
+		final Repository repository = node.getRepository();
 
 		if (!canMerge(repository))
 			return null;

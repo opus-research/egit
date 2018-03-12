@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.storage;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -19,9 +20,9 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 
@@ -52,13 +53,15 @@ class BlobStorage implements IStorage {
 
 	private InputStream open() throws IOException, CoreException,
 			IncorrectObjectTypeException {
-		try {
-			return db.open(blobId, Constants.OBJ_BLOB).openStream();
-		} catch (MissingObjectException notFound) {
+		final ObjectLoader reader = db.openBlob(blobId);
+		if (reader == null)
 			throw new CoreException(Activator.error(NLS.bind(
 					CoreText.BlobStorage_blobNotFound, blobId.name(), path),
 					null));
-		}
+		final byte[] data = reader.getBytes();
+		if (reader.getType() != Constants.OBJ_BLOB)
+			throw new IncorrectObjectTypeException(blobId, Constants.TYPE_BLOB);
+		return new ByteArrayInputStream(data);
 	}
 
 	public IPath getFullPath() {

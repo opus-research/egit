@@ -16,7 +16,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,7 @@ public class BlobStorageTest extends GitTestCase {
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
-		repository = new FileRepository(gitDir);
+		repository = new Repository(gitDir);
 		repository.create();
 	}
 
@@ -92,9 +91,7 @@ public class BlobStorageTest extends GitTestCase {
 			createFileCorruptShort(repository, project.getProject(), "file", "datjhjhjhjhjhjhjjkujioedfughjuop986rdfghjhiu7867586redtfguy675r6tfguhyo76r7tfa");
 			BlobStorage blobStorage = new BlobStorage(repository, "file", ObjectId.fromString("526ef34fc76ab0c35ccee343bda1a626efbd4134"));
 			assertEquals("file", blobStorage.getName());
-			while (blobStorage.getContents().read() != -1) {
-				// just read
-			}
+			blobStorage.getContents();
 			fail("We should not be able to read this blob");
 		} catch (CoreException e) {
 			assertEquals("IO error reading Git blob 526ef34fc76ab0c35ccee343bda1a626efbd4134 with path file", e.getMessage());

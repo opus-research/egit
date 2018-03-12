@@ -26,7 +26,6 @@ import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -206,7 +205,7 @@ class FileDiff {
 	private String getProjectRelaticePath(Repository db, String repoPath) {
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot root = workspace.getRoot();
-		IPath absolutePath = new Path(db.getWorkTree().getAbsolutePath()).append(repoPath);
+		IPath absolutePath = new Path(db.getWorkDir().getAbsolutePath()).append(repoPath);
 		IResource resource = root.getFileForLocation(absolutePath);
 		return resource.getProjectRelativePath().toString();
 	}
@@ -214,7 +213,7 @@ class FileDiff {
 	private RawText getRawText(ObjectId id, Repository db) throws IOException {
 		if (id.equals(ObjectId.zeroId()))
 			return new RawText(new byte[] { });
-		return new RawText(db.open(id, Constants.OBJ_BLOB).getCachedBytes());
+		return new RawText(db.openBlob(id).getCachedBytes());
 	}
 
 	final RevCommit commit;

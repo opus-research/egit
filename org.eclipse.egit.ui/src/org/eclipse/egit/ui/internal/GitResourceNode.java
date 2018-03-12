@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -19,11 +20,12 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.compare.structuremergeviewer.IStructureComparator;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.lib.Constants;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.jgit.lib.FileTreeEntry;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.swt.graphics.Image;
 
 /**
  * A resource node is for letting Eclipse access data in the git repo in a hierarchical
@@ -69,8 +71,10 @@ public class GitResourceNode extends BufferedContent implements IStructureCompar
 	protected InputStream createStream() throws CoreException {
 		if (entry instanceof FileTreeEntry) {
 			try {
-				return entry.getRepository().open(entry.getId(),
-						Constants.OBJ_BLOB).openStream();
+				ObjectId id = entry.getId();
+				ObjectLoader reader = entry.getRepository().openBlob(id);
+				byte[] bytes = reader.getBytes();
+				return new ByteArrayInputStream(bytes);
 			} catch (IOException e) {
 				// TODO: eclipse error handling
 				if (GitTraceLocation.UI.isActive())
