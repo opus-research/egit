@@ -22,7 +22,6 @@ import org.eclipse.egit.ui.internal.provisional.wizards.RepositoryServerInfo;
 
 public class TestRepositoryServerProvider implements IRepositoryServerProvider {
 
-	@Override
 	public Collection<RepositoryServerInfo> getRepositoryServerInfos() {
 		List<RepositoryServerInfo> info = new ArrayList<RepositoryServerInfo>();
 		try {

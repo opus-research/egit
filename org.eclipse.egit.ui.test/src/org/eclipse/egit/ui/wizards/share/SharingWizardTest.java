@@ -29,9 +29,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.DisconnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.common.ExistingOrNewPage;
 import org.eclipse.egit.ui.common.ExistingOrNewPage.Row;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
@@ -41,6 +42,8 @@ import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -87,8 +90,7 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		SystemReader.setInstance(null);
 	}
 
-	private static String createProject(String projectName)
-			throws CoreException {
+	private static String createProject(String projectName) {
 		bot.menu("File").menu("New").menu("Project...").click();
 		SWTBotShell createProjectDialogShell = bot.shell("New Project");
 		bot.tree().getTreeItem("General").expand().getNode("Project").select();
@@ -99,8 +101,6 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		String path = bot.textWithLabel("Location:").getText();
 		bot.button("Finish").click();
 		bot.waitUntil(Conditions.shellCloses(createProjectDialogShell), 10000);
-		ResourcesPlugin.getWorkspace().getRoot()
-				.refreshLocal(IResource.DEPTH_INFINITE, null);
 		return path;
 	}
 
@@ -133,7 +133,7 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				if (!(gitDirParent.toString() + File.separator)
 						.startsWith(workspacePath.toString() + File.separator))
 					if (!(gitDirParent.toString() + File.separator)
-							.startsWith(getTestDirectory().getAbsolutePath()
+							.startsWith(getTestDirectory().getCanonicalPath()
 									.toString() + File.separator))
 						fail("Attempting cleanup of directory neither in workspace nor test directory"
 								+ canonicalFile);
@@ -194,9 +194,10 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	public void shareProjectWithAlreadyCreatedRepos() throws Exception {
+	public void shareProjectWithAlreadyCreatedRepos() throws IOException,
+			InterruptedException, JGitInternalException, GitAPIException {
 		Repository repo1 = FileRepositoryBuilder.create(new File(
-				new File(createProject(projectName1)).getParent(), ".git"));
+				createProject(projectName1), "../.git"));
 		repo1.create();
 		repo1.close();
 		Repository repo2 = FileRepositoryBuilder.create(new File(
@@ -241,10 +242,10 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		existingOrNewPage.assertEnabling(false, false, true);
 		bot.button("Finish").click();
 		Thread.sleep(1000);
-		assertEquals(repo1.getDirectory().getAbsolutePath(), RepositoryMapping
+		assertEquals(repo1.getDirectory().getCanonicalPath(), RepositoryMapping
 				.getMapping(workspace.getRoot().getProject(projectName1))
 				.getRepository().getDirectory().toString());
-		assertEquals(repo2.getDirectory().getAbsolutePath(), RepositoryMapping
+		assertEquals(repo2.getDirectory().getCanonicalPath(), RepositoryMapping
 				.getMapping(workspace.getRoot().getProject(projectName2))
 				.getRepository().getDirectory().toString());
 	}
@@ -261,7 +262,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				projectName1, projectName2);
 		SWTBotShell createRepoDialog = existingOrNewPage
 				.clickCreateRepository();
-		String repoDir = RepositoryUtil.getDefaultRepositoryDir();
+		String repoDir = Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.DEFAULT_REPO_DIR);
 		File repoFolder = new File(repoDir, repoName);
 		createRepoDialog.bot()
 				.textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)

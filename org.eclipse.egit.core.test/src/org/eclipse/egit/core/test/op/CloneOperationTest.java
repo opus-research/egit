@@ -130,7 +130,6 @@ public class CloneOperationTest extends DualRepositoryTestCase {
 		final File[] repoDir = new File[1];
 		clop.addPostCloneTask(new PostCloneTask() {
 
-			@Override
 			public void execute(Repository repository, IProgressMonitor monitor)
 					throws CoreException {
 				repoDir[0] = repository.getDirectory();

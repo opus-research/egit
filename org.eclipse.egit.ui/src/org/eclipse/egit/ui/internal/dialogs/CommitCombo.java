@@ -60,7 +60,6 @@ public class CommitCombo extends Composite {
 	private class CommitContentProposalProvider implements
 			IContentProposalProvider {
 
-		@Override
 		public IContentProposal[] getProposals(String contents, int position) {
 			List<IContentProposal> list = new ArrayList<IContentProposal>();
 			Pattern pattern = Pattern.compile(contents,
@@ -80,22 +79,18 @@ public class CommitCombo extends Composite {
 		 */
 		private IContentProposal makeContentProposal(final String proposal) {
 			return new IContentProposal() {
-				@Override
 				public String getContent() {
 					return proposal;
 				}
 
-				@Override
 				public String getDescription() {
 					return null;
 				}
 
-				@Override
 				public String getLabel() {
 					return null;
 				}
 
-				@Override
 				public int getCursorPosition() {
 					return proposal.length();
 				}

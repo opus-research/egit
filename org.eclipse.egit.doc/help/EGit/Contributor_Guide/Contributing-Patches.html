@@ -28,7 +28,7 @@
 				<td style="width: 60%" align="center"></td>
 				<td style="width: 20%" align="right" valign="top">Gerrit Code Review Cheatsheet</td>
 			</tr>
-		</table><hr class="navigation-separator"/>
+		</table><hr/>
 		<h1 id="Contributing_Patches">Contributing Patches</h1>
 		<h2 id="Using_Gerrit_at_Eclipse">Using Gerrit at Eclipse</h2>
 		<p>EGit and JGit projects are using 
@@ -275,18 +275,15 @@ git config remote.review.push HEAD:refs/for/master
 			in any way, that is a bug and should be reported and fixed. Java isn't slow, but there is a
 			lot of slow Java code.</p>
 		<h3 id="Braces_for_one-line_statements">Braces for one-line statements</h3>
-		<p>Before 3.7.0 both in JGit and EGit, the preferred coding style was to leave off braces around statements with one line (with some exceptions to this rule), e.g.:</p>
+		<p>Both in JGit and EGit, the preferred coding style is to leave off braces around statements with one line, e.g.:</p>
 		<pre>if (condition)
     doSomething();
 </pre>
-		<p>Starting with 3.7.0 braces are mandatory independently on the number of lines, without exceptions. The old code will remain as is, but the new changes should use the style below:</p>
-		<pre>if (condition) {
-    doSomething();
-}
-</pre>
-		<p>The main reason to the change was to simplify the review process, coding guidelines and to make them more consistent with Eclipse code formatter, see 
-			<a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=457592" target="egit_external">bug 457592</a>.
-		</p>
+		<p>Some exceptions to this rule:</p>
+		<ul>
+			<li>Don't leave off braces when the inner element is a try block</li>
+			<li>Don't leave off braces when the inner element is a long or deeply-nested if/else block</li>
+		</ul>
 		<h3 id="Removing_trailing_whitespace">Removing trailing whitespace</h3>
 		<p>In JGit and EGit we have enabled the save action "Remove trailing white spaces on all lines" for Java sources. This works except for empty comment lines, see 
 			<a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=414421" target="egit_external">bug 414421</a>.
@@ -323,7 +320,7 @@ git config remote.review.push HEAD:refs/for/master
 					</li>
 					<li>A 
 						<i>Gerrit Change-Id</i> footer is required for all changes pushed to Gerrit (to enable pushing new patchsets for the same change), it should be added in the format shown below. Use the 
-						<a href="Gerrit-Code-Review-Cheatsheet.html#Install_the_commit-msg_hook_in_your_repository" title="EGit/Contributor_Guide#Install_the_commit-msg_hook_in_your_repository">Gerrit commit message hook or EGit</a> to add the 
+						<a href="Install_the_commit-msg_hook_in_your_repository" title="EGit/Contributor_Guide#Install_the_commit-msg_hook_in_your_repository">Gerrit commit message hook or EGit</a> to add the 
 						<i>Change-Id</i>.
 					</li>
 					<li>A "Signed-off-by" can be added at the end of the commit message (see example below). Note: at the moment this is not required but may be used to list all who modified (amended, rebased, cherry-picked) this change.</li>
@@ -371,8 +368,11 @@ Copyright (C) YEAR Your Name &lt;you@example.org&gt;
 		</p>
 		<ul>
 			<li>Run all existing tests. It does not take very long.</li>
-			<li>Pay attention to the Java and Eclipse SDK baselines. EGit requires only Java 7 and Eclipse 3.8.2. You cannot use API's that are newer.</li>
+			<li>Pay attention to the Java and Eclipse SDK baselines. EGit requires only Java5 and Eclipse 3.5. You cannot use API's that are newer. We often see breakages because Java 6 API's are used.</li>
 		</ul>
+		<p>Note: In order to test in Eclipse 3.5 (Galileo), consider building EGit with the <code>platform-galileo</code> maven profile (see the 
+			<a href="Builds.html#Maven_Build_Sequence">Maven Build Sequence</a> for more details).
+		</p>
 		<h2 id="Sending_patches_by_mail">Sending patches by mail</h2>
 		<p>Although sending patches by mail is the approved way of interacting with, and asking feedback from, the Git project, please don't send patches via 
 			<a href="http://www.kernel.org/pub//software/scm/git/docs/git-send-email.html" target="egit_external">git send-email</a>. Instead, please use 
@@ -385,7 +385,7 @@ Copyright (C) YEAR Your Name &lt;you@example.org&gt;
 		</p>
 		<p>
 			<br/>
-		</p><hr class="navigation-separator"/>
+		</p><hr/>
 		<table class="navigation" style="width: 100%;" border="0" summary="navigation">
 			<tr>
 				<td style="width: 20%" align="left">

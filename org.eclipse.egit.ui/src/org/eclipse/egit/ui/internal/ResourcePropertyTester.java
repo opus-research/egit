@@ -17,10 +17,9 @@ import java.util.List;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -64,7 +63,6 @@ import org.eclipse.jgit.transport.RemoteConfig;
  */
 public class ResourcePropertyTester extends PropertyTester {
 
-	@Override
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
 		boolean value = internalTest(receiver, property);
@@ -86,7 +84,8 @@ public class ResourcePropertyTester extends PropertyTester {
 			return type == IResource.FOLDER || type == IResource.PROJECT;
 		}
 
-		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
+		RepositoryMapping mapping = RepositoryMapping.getMapping(res
+				.getProject());
 		if (mapping != null) {
 			Repository repository = mapping.getRepository();
 			return testRepositoryState(repository, property);
@@ -115,8 +114,6 @@ public class ResourcePropertyTester extends PropertyTester {
 					return true;
 				case REBASING_REBASING:
 					return true;
-				case REBASING_MERGE:
-					return true;
 				default:
 					return false;
 				}
@@ -124,8 +121,6 @@ public class ResourcePropertyTester extends PropertyTester {
 			if ("canContinueRebase".equals(property)) //$NON-NLS-1$
 				switch (state) {
 				case REBASING_INTERACTIVE:
-					return true;
-				case REBASING_MERGE:
 					return true;
 				default:
 					return false;
@@ -157,8 +152,7 @@ public class ResourcePropertyTester extends PropertyTester {
 	 * @param repository
 	 * @return {@code true} if repository has been configured for Gerrit
 	 */
-	public static boolean hasGerritConfiguration(
-			@NonNull Repository repository) {
+	public static boolean hasGerritConfiguration(Repository repository) {
 		Config config = repository.getConfig();
 		if (GerritUtil.getCreateChangeId(config))
 			return true;

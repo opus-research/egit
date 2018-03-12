@@ -15,9 +15,9 @@ import java.io.File;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * A node in the Git Repositories view tree
@@ -27,9 +27,9 @@ import org.eclipse.jgit.lib.Repository;
  */
 public abstract class RepositoryTreeNode<T> extends PlatformObject implements Comparable<RepositoryTreeNode> {
 
-	private Repository myRepository;
+	private final Repository myRepository;
 
-	private T myObject;
+	private final T myObject;
 
 	private final RepositoryTreeNodeType myType;
 
@@ -80,29 +80,7 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 	 * @return the path of the file, folder or repository
 	 */
 	public IPath getPath() {
-		Repository repository = getRepository();
-		if (repository == null) {
-			return null;
-		}
 		return new Path(getRepository().getWorkTree().getAbsolutePath());
-	}
-
-	/**
-	 * Removes the references to the repository and to the object. <strong>Call
-	 * only after this node has been removed from the view!</strong>
-	 * <p>
-	 * The CommonViewer framework keeps on to a hard reference to the last
-	 * selection, even if that no longer will appear in the view. Moreover, the
-	 * WorkbenchSourceProvider may also hold such a reference to the
-	 * RepositoryNode(s). This will preclude for some time the garbage
-	 * collection and eventual removal of the Repository instance
-	 * (RepositoryCache relies on WeakReference semantics). Therefore, this
-	 * operation provides a means to clear the reference to the Repository in a
-	 * now otherwise unreferenced RepositoryNode.
-	 */
-	public void clear() {
-		myRepository = null;
-		myObject = null;
 	}
 
 	/**
@@ -242,35 +220,20 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		} else if (!myParent.equals(other.myParent))
 			return false;
 		if (myRepository == null) {
-			if (other.myRepository != null) {
+			if (other.myRepository != null)
 				return false;
-			}
-		} else {
-			if (other.myRepository == null) {
-				return false;
-			}
-			if (!myRepository.getDirectory()
-					.equals(other.myRepository.getDirectory())) {
-				return false;
-			}
-		}
+		} else if (!myRepository.getDirectory().equals(
+				other.myRepository.getDirectory()))
+			return false;
 		if (myObject == null) {
-			if (other.myObject != null) {
+			if (other.myObject != null)
 				return false;
-			}
-		} else {
-			if (other.myObject == null) {
-				return false;
-			}
-			if (!checkObjectsEqual(other.myObject)) {
-				return false;
-			}
-		}
+		} else if (!checkObjectsEqual(other.myObject))
+			return false;
 
 		return true;
 	}
 
-	@Override
 	public int compareTo(RepositoryTreeNode otherNode) {
 		int typeDiff = this.myType.ordinal() - otherNode.getType().ordinal();
 		if (typeDiff != 0)
@@ -289,8 +252,8 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		case REMOTETRACKING:
 			// fall through
 		case BRANCHHIERARCHY:
-			return CommonUtils.STRING_ASCENDING_COMPARATOR.compare(
-					myObject.toString(), otherNode.getObject().toString());
+			return myObject.toString().compareTo(
+					otherNode.getObject().toString());
 		case REMOTES:
 			// fall through
 		case ADDITIONALREFS:
@@ -311,40 +274,38 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		case PUSH:
 			// fall through
 		case REMOTE:
-			return CommonUtils.STRING_ASCENDING_COMPARATOR
-					.compare((String) myObject, (String) otherNode.getObject());
+			return ((String) myObject)
+					.compareTo((String) otherNode.getObject());
 		case FILE:
 			// fall through
 		case FOLDER:
-			return CommonUtils.STRING_ASCENDING_COMPARATOR
-					.compare(((File) myObject).getName(),
+			return ((File) myObject).getName().compareTo(
 					((File) otherNode.getObject()).getName());
 		case STASHED_COMMIT:
-			// ok for positive indexes < ~2 billion
-			return ((StashedCommitNode) this).getIndex()
-					- ((StashedCommitNode) otherNode).getIndex();
+			return ((RevCommit) myObject).compareTo(((RevCommit) otherNode
+					.getObject()));
 		case TAG:
 			// fall through
 		case ADDITIONALREF:
 			// fall through
 		case REF:
-			return CommonUtils.REF_ASCENDING_COMPARATOR.compare((Ref) myObject,
-					(Ref) otherNode.getObject());
+			return ((Ref) myObject).getName().compareTo(
+					((Ref) otherNode.getObject()).getName());
 		case REPO:
-			int nameCompare = CommonUtils.STRING_ASCENDING_COMPARATOR.compare(
-					getDirectoryContainingRepo((Repository) myObject).getName(),
-					getDirectoryContainingRepo(
-							(Repository) otherNode.getObject())
+			int nameCompare = getDirectoryContainingRepo((Repository) myObject)
+					.getName()
+					.compareTo(
+							getDirectoryContainingRepo((Repository) otherNode.getObject())
 									.getName());
 			if (nameCompare != 0)
 				return nameCompare;
 			// if the name is not unique, let's look at the whole path
-			return CommonUtils.STRING_ASCENDING_COMPARATOR.compare(
-					getDirectoryContainingRepo((Repository) myObject)
-							.getParentFile().getPath(),
-					getDirectoryContainingRepo(
-							(Repository) otherNode.getObject()).getParentFile()
-									.getPath());
+			return getDirectoryContainingRepo((Repository) myObject)
+					.getParentFile()
+					.getPath()
+					.compareTo(
+							getDirectoryContainingRepo((Repository) otherNode.getObject())
+									.getParentFile().getPath());
 		}
 		return 0;
 	}
@@ -407,16 +368,9 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		return false;
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
-		if (Repository.class == adapter && myRepository != null) {
+		if (Repository.class == adapter && myRepository != null)
 			return myRepository;
-		}
-		if (myObject != null) {
-			if (adapter.isInstance(myObject)) {
-				return myObject;
-			}
-		}
 		return super.getAdapter(adapter);
 	}
 

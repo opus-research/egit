@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2014, 2015 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2014 Robin Stocker <robin@nibor.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,13 +31,14 @@ import org.eclipse.ui.IWorkingSet;
  */
 public class SelectionPropertyTester extends PropertyTester {
 
-	@Override
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
 		Collection<?> collection = (Collection<?>) receiver;
 		if (collection.isEmpty())
 			return false;
-		if ("projectsSingleRepository".equals(property)) { //$NON-NLS-1$
+		if ("projectSingleRepository".equals(property)) { //$NON-NLS-1$
+			if (collection.size() != 1)
+				return false;
 
 			Repository repository = getRepositoryOfProjects(collection, true);
 			return testRepositoryProperties(repository, args);
@@ -68,19 +69,11 @@ public class SelectionPropertyTester extends PropertyTester {
 			Object firstElement = selection.getFirstElement();
 			IResource resource = AdapterUtils.adapt(firstElement,
 					IResource.class);
-			if ((resource != null) && (resource instanceof IFile
-					|| resource instanceof IFolder)) {
+			if (resource instanceof IFile || resource instanceof IFolder) {
 				RepositoryMapping m = RepositoryMapping.getMapping(resource);
-				if (m != null) {
+				if (m != null)
 					return testRepositoryProperties(m.getRepository(), args);
-				}
 			}
-		} else if ("resourcesAllInRepository".equals(property)) { //$NON-NLS-1$
-			IStructuredSelection selection = getStructuredSelection(collection);
-
-			IResource[] resources = SelectionUtils
-					.getSelectedResources(selection);
-			return haveRepositories(resources);
 		}
 		return false;
 	}
@@ -159,22 +152,6 @@ public class SelectionPropertyTester extends PropertyTester {
 				repo = r;
 		}
 		return repo;
-	}
-
-	/**
-	 * @param resources
-	 *            the resources
-	 * @return {@code true} when all {@code resources} map to a repository,
-	 *         {@code false} otherwise.
-	 */
-	private static boolean haveRepositories(IResource[] resources) {
-		for (IResource resource : resources) {
-			Repository r = getRepositoryOfMapping(resource);
-			if (r == null) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	private static Repository getRepositoryOfProject(Object object) {

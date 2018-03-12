@@ -1,27 +1,21 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Philipp Thun <philipp.thun@sap.com> and others
+ * Copyright (C) 2011, Philipp Thun <philipp.thun@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Factored out ResourceState
- *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.decorators;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.internal.resources.ResourceState;
 
 /**
  * Basic implementation of <code>IDecoratableResource</code>
  *
  * @see IDecoratableResource
  */
-public class DecoratableResource extends ResourceState
-		implements IDecoratableResource {
+public class DecoratableResource implements IDecoratableResource {
 
 	/**
 	 * Resource to be decorated
@@ -34,11 +28,6 @@ public class DecoratableResource extends ResourceState
 	protected String repositoryName = null;
 
 	/**
-	 * Head commit of the repository of the resource
-	 */
-	protected String commitMessage = null;
-
-	/**
 	 * Current branch of the resource
 	 */
 	protected String branch = null;
@@ -49,9 +38,35 @@ public class DecoratableResource extends ResourceState
 	protected String branchStatus = null;
 
 	/**
-	 * is resource a repository container ?
+	 * Flag indicating whether or not the resource is tracked
 	 */
-	protected boolean isRepositoryContainer = false;
+	protected boolean tracked = false;
+
+	/**
+	 * Flag indicating whether or not the resource is ignored
+	 */
+	protected boolean ignored = false;
+
+	/**
+	 * Flag indicating whether or not the resource has changes that are not
+	 * staged
+	 */
+	protected boolean dirty = false;
+
+	/**
+	 * Staged state of the resource
+	 */
+	protected Staged staged = Staged.NOT_STAGED;
+
+	/**
+	 * Flag indicating whether or not the resource has merge conflicts
+	 */
+	protected boolean conflicts = false;
+
+	/**
+	 * Flag indicating whether or not the resource is assumed valid
+	 */
+	protected boolean assumeValid = false;
 
 	/**
 	 * Constructs a new decoratable resource
@@ -66,47 +81,47 @@ public class DecoratableResource extends ResourceState
 		this.resource = resource;
 	}
 
-	/**
-	 * @param isContainer
-	 *            set to true if the resource is a repository container
-	 */
-	protected void setIsRepositoryContainer(boolean isContainer) {
-		isRepositoryContainer = isContainer;
-	}
-
-	@Override
 	public int getType() {
 		return resource != null ? resource.getType() : 0;
 	}
 
-	@Override
 	public String getName() {
 		return resource != null ? resource.getName() : null;
 	}
 
-	@Override
 	public String getRepositoryName() {
 		return repositoryName;
 	}
 
-	@Override
-	public String getCommitMessage() {
-		return commitMessage;
-	}
-
-	@Override
 	public String getBranch() {
 		return branch;
 	}
 
-	@Override
 	public String getBranchStatus() {
 		return branchStatus;
 	}
 
-	@Override
-	public boolean isRepositoryContainer() {
-		return isRepositoryContainer;
+	public boolean isTracked() {
+		return tracked;
 	}
 
+	public boolean isIgnored() {
+		return ignored;
+	}
+
+	public boolean isDirty() {
+		return dirty;
+	}
+
+	public Staged staged() {
+		return staged;
+	}
+
+	public boolean hasConflicts() {
+		return conflicts;
+	}
+
+	public boolean isAssumeValid() {
+		return assumeValid;
+	}
 }

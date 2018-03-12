@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 IBM Corporation and others.
+ * Copyright (c) 2010 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,12 +22,11 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -49,7 +48,6 @@ public class GitSynchronizeWizard extends Wizard {
 	 */
 	public GitSynchronizeWizard() {
 		setWindowTitle(UIText.GitSynchronizeWizard_synchronize);
-		setDefaultPageImageDescriptor(UIIcons.WIZBAN_SYNCHRONIZE);
 	}
 
 	@Override
@@ -99,22 +97,18 @@ public class GitSynchronizeWizard extends Wizard {
 
 			File workTree = repo.getWorkTree();
 			for (Object o : sel.toArray()) {
-				if (o == null) {
+				if (!(o instanceof IAdaptable))
 					continue;
-				}
 
-				IResource res = AdapterUtils.adapt(o, IResource.class);
-				if (res == null) {
+				IResource res = (IResource) ((IAdaptable) o)
+						.getAdapter(IResource.class);
+				if (res == null)
 					continue;
-				}
 
 				int type = res.getType();
 				if (type == IResource.FOLDER) {
-					RepositoryMapping mapping = RepositoryMapping.getMapping(res);
-					if (mapping == null) {
-						continue;
-					}
-					Repository selRepo = mapping.getRepository();
+					Repository selRepo = RepositoryMapping.getMapping(res)
+							.getRepository();
 					if (workTree.equals(selRepo.getWorkTree()))
 						result.add(res);
 				}

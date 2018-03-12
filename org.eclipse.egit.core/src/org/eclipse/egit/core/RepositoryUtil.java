@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2014 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -24,22 +24,13 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.core.variables.IStringVariableManager;
-import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.CheckoutEntry;
 import org.eclipse.jgit.lib.Constants;
@@ -65,22 +56,8 @@ import org.osgi.service.prefs.BackingStoreException;
  */
 public class RepositoryUtil {
 
-	/**
-	 * The preferences to store the absolute paths of all repositories shown in
-	 * the Git Repositories view
-	 *
-	 * @deprecated maintained to ensure compatibility for old EGit versions
-	 */
+	/** The preferences to store the directories known to the Git Repositories view */
 	public static final String PREFS_DIRECTORIES = "GitRepositoriesView.GitDirectories"; //$NON-NLS-1$
-
-	/**
-	 * The preferences to store paths of all repositories shown in the Git
-	 * Repositories view. For repositories located in the Eclipse workspace
-	 * store the relative path to the workspace root to enable moving and
-	 * copying the workspace. For repositories outside the Eclipse workspace
-	 * store their absolute path.
-	 */
-	public static final String PREFS_DIRECTORIES_REL = "GitRepositoriesView.GitDirectories.relative"; //$NON-NLS-1$
 
 	private final Map<String, Map<String, String>> commitMappingCache = new HashMap<String, Map<String, String>>();
 
@@ -89,14 +66,11 @@ public class RepositoryUtil {
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
-	private final java.nio.file.Path workspacePath;
-
 	/**
 	 * Clients should obtain an instance from {@link Activator}
 	 */
 	RepositoryUtil() {
-		workspacePath = ResourcesPlugin.getWorkspace().getRoot().getLocation()
-				.toFile().toPath();
+		// nothing
 	}
 
 	/**
@@ -105,63 +79,6 @@ public class RepositoryUtil {
 	void dispose() {
 		commitMappingCache.clear();
 		repositoryNameCache.clear();
-	}
-
-	/**
-	 * @return The default repository directory as configured in the
-	 *         preferences, with variables substituted. Returns workspace
-	 *         location if there was an error during substitution.
-	 */
-	@NonNull
-	public static String getDefaultRepositoryDir() {
-		String key = GitCorePreferences.core_defaultRepositoryDir;
-		String dir = migrateRepoRootPreference();
-		IEclipsePreferences p = InstanceScope.INSTANCE
-				.getNode(Activator.getPluginId());
-		if (dir == null) {
-			dir = p.get(key, getDefaultDefaultRepositoryDir());
-		} else {
-			p.put(key, dir);
-		}
-		IStringVariableManager manager = VariablesPlugin.getDefault()
-				.getStringVariableManager();
-		String result;
-		try {
-			result = manager.performStringSubstitution(dir);
-		} catch (CoreException e) {
-			result = ""; //$NON-NLS-1$
-		}
-		if (result == null || result.isEmpty()) {
-			result = ResourcesPlugin.getWorkspace().getRoot().getRawLocation()
-					.toOSString();
-		}
-		return result;
-	}
-
-	@NonNull
-	static String getDefaultDefaultRepositoryDir() {
-		return new File(FS.DETECTED.userHome(), "git").getPath(); //$NON-NLS-1$
-	}
-
-	/**
-	 * Prior to 4.1 the preference was hosted in the UI plugin. So if this one
-	 * exists, we remove it from there and return. Otherwise null is returned.
-	 *
-	 * @return previously existing UI preference or null
-	 */
-	@Nullable
-	private static String migrateRepoRootPreference() {
-		IEclipsePreferences p = InstanceScope.INSTANCE
-				.getNode("org.eclipse.egit.ui"); //$NON-NLS-1$
-		String deprecatedUiKey = "default_repository_dir"; //$NON-NLS-1$
-		String value = p.get(deprecatedUiKey, null);
-		if (value != null && value.isEmpty()) {
-			value = null;
-		}
-		if (value != null) {
-			p.remove(deprecatedUiKey);
-		}
-		return value;
 	}
 
 	/**
@@ -210,18 +127,15 @@ public class RepositoryUtil {
 							if (checkoutEntry != null) {
 								Ref ref = repository.getRef(checkoutEntry.getToBranch());
 								if (ref != null) {
-									ObjectId objectId = ref.getObjectId();
-									if (objectId != null && objectId.getName()
-											.equals(commitId)) {
+									if (ref.getObjectId().getName()
+											.equals(commitId))
 										return checkoutEntry.getToBranch();
-									}
 									ref = repository.peel(ref);
 								}
 								if (ref != null) {
 									ObjectId id = ref.getPeeledObjectId();
-									if (id != null && id.getName().equals(commitId)) {
+									if (id != null && id.getName().equals(commitId))
 										return checkoutEntry.getToBranch();
-									}
 								}
 							}
 						}
@@ -247,7 +161,8 @@ public class RepositoryUtil {
 			}
 
 			Map<String, Date> tagMap = new HashMap<String, Date>();
-			try (RevWalk rw = new RevWalk(repository)) {
+			try {
+				RevWalk rw = new RevWalk(repository);
 				Map<String, Ref> tags = repository.getRefDatabase().getRefs(
 						Constants.R_TAGS);
 				for (Ref tagRef : tags.values()) {
@@ -311,9 +226,7 @@ public class RepositoryUtil {
 					Map<String, Ref> remoteBranches = repository
 							.getRefDatabase().getRefs(Constants.R_HEADS);
 					for (Ref branch : remoteBranches.values()) {
-						ObjectId objectId = branch.getObjectId();
-						if (objectId != null
-								&& objectId.name().equals(commitId)) {
+						if (branch.getObjectId().name().equals(commitId)) {
 							branchNames.add(branch.getName());
 						}
 					}
@@ -335,9 +248,7 @@ public class RepositoryUtil {
 					Map<String, Ref> remoteBranches = repository
 							.getRefDatabase().getRefs(Constants.R_REMOTES);
 					for (Ref branch : remoteBranches.values()) {
-						ObjectId objectId = branch.getObjectId();
-						if (objectId != null
-								&& objectId.name().equals(commitId)) {
+						if (branch.getObjectId().name().equals(commitId)) {
 							branchNames.add(branch.getName());
 						}
 					}
@@ -376,7 +287,7 @@ public class RepositoryUtil {
 			return ""; //$NON-NLS-1$
 
 		synchronized (repositoryNameCache) {
-			final String path = dir.getPath();
+			final String path = dir.getPath().toString();
 			String name = repositoryNameCache.get(path);
 			if (name != null)
 				return name;
@@ -393,62 +304,17 @@ public class RepositoryUtil {
 		return prefs;
 	}
 
-	/**
-	 * Get the set of absolute path strings of all configured repositories.
-	 *
-	 * @return set of absolute paths of all configured repositories' .git
-	 *         directories
-	 *
-	 * @since 4.2
-	 */
-	@NonNull
-	public Set<String> getRepositories() {
-		String dirString;
-		Set<String> dirs;
+	private Set<String> getRepositories() {
+		String dirs;
 		synchronized (prefs) {
-			dirString = prefs.get(PREFS_DIRECTORIES_REL, ""); //$NON-NLS-1$
-			if (dirString.equals("")) { //$NON-NLS-1$
-				dirs = migrateAbolutePaths();
-			} else {
-				dirs = toDirSet(dirString);
-			}
+			dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
 		}
-		return dirs;
-	}
-
-	/**
-	 * Migrate set of absolute paths created by an older version of EGit to the
-	 * new format using relative paths for repositories located under the
-	 * Eclipse workspace
-	 *
-	 * @return set of absolute paths of all configured git repositories
-	 */
-	private Set<String> migrateAbolutePaths() {
-		String dirString;
-		Set<String> dirs;
-		dirString = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
-		dirs = toDirSet(dirString);
-		// save migrated list
-		saveDirs(dirs);
-		return dirs;
-	}
-
-	/**
-	 * @param dirs
-	 *            String with repository directories separated by path separator
-	 * @return set of absolute paths of repository directories, relative paths
-	 *         are resolved against the workspace root
-	 */
-	private Set<String> toDirSet(String dirs) {
-		if (dirs == null || dirs.isEmpty()) {
+		if (dirs == null || dirs.length() == 0)
 			return Collections.emptySet();
-		}
 		Set<String> configuredStrings = new HashSet<String>();
 		StringTokenizer tok = new StringTokenizer(dirs, File.pathSeparator);
-		while (tok.hasMoreTokens()) {
-			configuredStrings
-					.add(workspacePath.resolve(tok.nextToken()).toString());
-		}
+		while (tok.hasMoreTokens())
+			configuredStrings.add(tok.nextToken());
 		return configuredStrings;
 	}
 
@@ -460,6 +326,14 @@ public class RepositoryUtil {
 		final List<String> repos = new ArrayList<String>(getRepositories());
 		Collections.sort(repos);
 		return repos;
+	}
+
+	private String getPath(File repositoryDir) {
+		try {
+			return repositoryDir.getCanonicalPath();
+		} catch (IOException e) {
+			return repositoryDir.getAbsolutePath();
+		}
 	}
 
 	/**
@@ -479,7 +353,7 @@ public class RepositoryUtil {
 						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
 						repositoryDir));
 
-			String dirString = repositoryDir.getAbsolutePath();
+			String dirString = getPath(repositoryDir);
 
 			List<String> dirStrings = getConfiguredRepositories();
 			if (dirStrings.contains(dirString)) {
@@ -500,10 +374,12 @@ public class RepositoryUtil {
 	 */
 	public boolean removeDir(File file) {
 		synchronized (prefs) {
-			String dirString = file.getAbsolutePath();
+
+			String dir = getPath(file);
+
 			Set<String> dirStrings = new HashSet<String>();
 			dirStrings.addAll(getConfiguredRepositories());
-			if (dirStrings.remove(dirString)) {
+			if (dirStrings.remove(dir)) {
 				saveDirs(dirStrings);
 				return true;
 			}
@@ -512,42 +388,19 @@ public class RepositoryUtil {
 	}
 
 	private void saveDirs(Set<String> gitDirStrings) {
-		StringBuilder sbRelative = new StringBuilder();
-		StringBuilder sbAbsolute = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 		for (String gitDirString : gitDirStrings) {
-			sbRelative.append(relativizeToWorkspace(gitDirString));
-			sbRelative.append(File.pathSeparatorChar);
-			sbAbsolute.append(gitDirString);
-			sbAbsolute.append(File.pathSeparatorChar);
+			sb.append(gitDirString);
+			sb.append(File.pathSeparatorChar);
 		}
 
-		prefs.put(PREFS_DIRECTORIES_REL, sbRelative.toString());
-		// redundantly store absolute paths to ensure compatibility with older
-		// EGit versions
-		prefs.put(PREFS_DIRECTORIES, sbAbsolute.toString());
+		prefs.put(PREFS_DIRECTORIES, sb.toString());
 		try {
 			prefs.flush();
 		} catch (BackingStoreException e) {
 			IStatus error = new Status(IStatus.ERROR, Activator.getPluginId(),
 					e.getMessage(), e);
 			Activator.getDefault().getLog().log(error);
-		}
-	}
-
-	/**
-	 * @param pathString
-	 *            an absolute path String
-	 * @return if the given {@code pathString} is under the workspace root the
-	 *         relative path of {@code pathString} relative to the workspace
-	 *         root, otherwise the absolute path {@code pathString}. This
-	 *         enables moving or copying the workspace.
-	 */
-	private String relativizeToWorkspace(String pathString) {
-		java.nio.file.Path p = java.nio.file.Paths.get(pathString);
-		if (p.startsWith(workspacePath)) {
-			return workspacePath.relativize(p).toString();
-		} else {
-			return pathString;
 		}
 	}
 
@@ -559,7 +412,7 @@ public class RepositoryUtil {
 	 * @return true if contains repository, false otherwise
 	 */
 	public boolean contains(final Repository repository) {
-		return contains(repository.getDirectory().getAbsolutePath());
+		return contains(getPath(repository.getDirectory()));
 	}
 
 	/**
@@ -583,25 +436,18 @@ public class RepositoryUtil {
 	 */
 	public String getShortBranch(Repository repository) throws IOException {
 		Ref head = repository.getRef(Constants.HEAD);
-		if (head == null) {
+		if (head == null || head.getObjectId() == null)
 			return CoreText.RepositoryUtil_noHead;
-		}
-		ObjectId objectId = head.getObjectId();
-		if (objectId == null) {
-			return CoreText.RepositoryUtil_noHead;
-		}
 
-		if (head.isSymbolic()) {
+		if (head.isSymbolic())
 			return repository.getBranch();
-		}
 
-		String id = objectId.name();
+		String id = head.getObjectId().name();
 		String ref = mapCommitToRef(repository, id, false);
-		if (ref != null) {
+		if (ref != null)
 			return Repository.shortenRefName(ref) + ' ' + id.substring(0, 7);
-		} else {
+		else
 			return id.substring(0, 7);
-		}
 	}
 
 	/**
@@ -615,112 +461,59 @@ public class RepositoryUtil {
 	 * @since 2.2
 	 */
 	public RevCommit parseHeadCommit(Repository repository) {
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = null;
+		try {
 			Ref head = repository.getRef(Constants.HEAD);
 			if (head == null || head.getObjectId() == null)
 				return null;
 
+			walk = new RevWalk(repository);
 			RevCommit commit = walk.parseCommit(head.getObjectId());
 			return commit;
 		} catch (IOException e) {
 			return null;
+		} finally {
+			if (walk != null)
+				walk.release();
 		}
 	}
 
 	/**
-	 * Checks if existing resource with given path is to be ignored.
-	 * <p>
-	 * <b>Note:</b>The check makes sense only for files which exists in the
-	 * working directory. This method returns false for paths to not existing
-	 * files or directories.
+	 * Checks if resource with given path is to be ignored.
 	 *
 	 * @param path
-	 *            Path to be checked, file or directory must exist on the disk
-	 * @return true if the path is either not inside git repository or exists
-	 *         and matches an ignore rule
+	 *            Path to be checked
+	 * @return true if the path matches an ignore rule or no repository mapping
+	 *         could be found, false otherwise
 	 * @throws IOException
 	 * @since 2.3
 	 */
 	public static boolean isIgnored(IPath path) throws IOException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
-		if (mapping == null) {
+		if (mapping == null)
 			return true; // Linked resources may not be mapped
-		}
 		Repository repository = mapping.getRepository();
 		WorkingTreeIterator treeIterator = IteratorService
 				.createInitialIterator(repository);
-		if (treeIterator == null) {
+		if (treeIterator == null)
 			return true;
-		}
 		String repoRelativePath = mapping.getRepoRelativePath(path);
-		if (repoRelativePath == null || repoRelativePath.isEmpty()) {
-			return true;
-		}
-		try (TreeWalk walk = new TreeWalk(repository)) {
+		TreeWalk walk = new TreeWalk(repository);
+		try {
 			walk.addTree(treeIterator);
 			walk.setFilter(PathFilter.create(repoRelativePath));
 			while (walk.next()) {
 				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
 						WorkingTreeIterator.class);
-				if (walk.getPathString().equals(repoRelativePath)) {
+				if (walk.getPathString().equals(repoRelativePath))
 					return workingTreeIterator.isEntryIgnored();
-				}
 				if (workingTreeIterator.getEntryFileMode()
-						.equals(FileMode.TREE)) {
+						.equals(FileMode.TREE))
 					walk.enterSubtree();
-				}
 			}
+		} finally {
+			walk.release();
 		}
-		return false;
-	}
-
-	/**
-	 * Checks if the existing resource with given path can be automatically
-	 * added to the .gitignore file.
-	 *
-	 * @param path
-	 *            Path to be checked, file or directory must exist on the disk
-	 * @return true if the file or directory at given path exists, is inside
-	 *         known git repository and does not match any existing ignore rule,
-	 *         false otherwise
-	 * @throws IOException
-	 * @since 4.1.0
-	 */
-	public static boolean canBeAutoIgnored(IPath path) throws IOException {
-		Repository repository = Activator.getDefault().getRepositoryCache()
-				.getRepository(path);
-		if (repository == null || repository.isBare()) {
-			return false;
-		}
-		WorkingTreeIterator treeIterator = IteratorService
-				.createInitialIterator(repository);
-		if (treeIterator == null) {
-			return false;
-		}
-		String repoRelativePath = path
-				.makeRelativeTo(
-						new Path(repository.getWorkTree().getAbsolutePath()))
-				.toString();
-		if (repoRelativePath.length() == 0
-				|| repoRelativePath.equals(path.toString())) {
-			return false;
-		}
-		try (TreeWalk walk = new TreeWalk(repository)) {
-			walk.addTree(treeIterator);
-			walk.setFilter(PathFilter.create(repoRelativePath));
-			while (walk.next()) {
-				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
-						WorkingTreeIterator.class);
-				if (walk.getPathString().equals(repoRelativePath)) {
-					return !workingTreeIterator.isEntryIgnored();
-				}
-				if (workingTreeIterator.getEntryFileMode()
-						.equals(FileMode.TREE)) {
-					walk.enterSubtree();
-				}
-			}
-		}
-		// path not found in tree, we should not automatically ignore it
 		return false;
 	}
 
@@ -740,21 +533,5 @@ public class RepositoryUtil {
 			Activator.logError(e.getMessage(), e);
 		}
 		return false;
-	}
-
-	/**
-	 * Determines whether the given {@link Repository} has any changes by
-	 * checking the {@link IndexDiffCacheEntry} of the repository.
-	 *
-	 * @param repository
-	 *            to check
-	 * @return {@code true} if the repository has any changes, {@code false}
-	 *         otherwise
-	 */
-	public static boolean hasChanges(@NonNull Repository repository) {
-		IndexDiffCacheEntry entry = Activator.getDefault().getIndexDiffCache()
-				.getIndexDiffCacheEntry(repository);
-		IndexDiffData data = entry != null ? entry.getIndexDiff() : null;
-		return data != null && data.hasChanges();
 	}
 }

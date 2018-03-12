@@ -46,9 +46,6 @@ import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IInputValidator;
-import org.eclipse.jface.dialogs.IPageChangeProvider;
-import org.eclipse.jface.dialogs.IPageChangedListener;
-import org.eclipse.jface.dialogs.PageChangedEvent;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
@@ -57,7 +54,6 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.window.Window;
-import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CheckoutResult;
@@ -84,14 +80,11 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.VerifyEvent;
-import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -174,7 +167,6 @@ public class FetchGerritChangePage extends WizardPage {
 				Constants.R_TAGS, true);
 	}
 
-	@Override
 	protected IDialogSettings getDialogSettings() {
 		IDialogSettings s = Activator.getDefault().getDialogSettings();
 		IDialogSettings section = s
@@ -184,7 +176,6 @@ public class FetchGerritChangePage extends WizardPage {
 		return section;
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Clipboard clipboard = new Clipboard(parent.getDisplay());
 		String clipText = (String) clipboard.getContents(TextTransfer
@@ -192,16 +183,13 @@ public class FetchGerritChangePage extends WizardPage {
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;
-		String candidateChange = null;
 		if (clipText != null) {
-			String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
+			final String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
 			Matcher matcher = Pattern.compile(pattern).matcher(clipText);
 			if (matcher.matches()) {
 				defaultUri = matcher.group(1);
 				defaultChange = matcher.group(2);
 				defaultCommand = matcher.group(3);
-			} else {
-				candidateChange = determineChangeFromString(clipText.trim());
 			}
 		}
 		Composite main = new Composite(parent, SWT.NONE);
@@ -220,15 +208,10 @@ public class FetchGerritChangePage extends WizardPage {
 		new Label(main, SWT.NONE)
 				.setText(UIText.FetchGerritChangePage_ChangeLabel);
 		refText = new Text(main, SWT.BORDER);
+		if (defaultChange != null)
+			refText.setText(defaultChange);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(refText);
-		final ExplicitContentProposalAdapter contentProposer = addRefContentProposalToText(
-				refText);
-		refText.addVerifyListener(new VerifyListener() {
-			@Override
-			public void verifyText(VerifyEvent event) {
-				event.text = event.text.trim();
-			}
-		});
+		addRefContentProposalToText(refText);
 
 		final Group checkoutGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		checkoutGroup.setLayout(new GridLayout(3, false));
@@ -262,7 +245,6 @@ public class FetchGerritChangePage extends WizardPage {
 		branchText = new Text(checkoutGroup, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
 		branchText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -309,7 +291,6 @@ public class FetchGerritChangePage extends WizardPage {
 		GridDataFactory.fillDefaults().exclude(true).grab(true, false)
 				.applyTo(tagText);
 		tagText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -356,7 +337,6 @@ public class FetchGerritChangePage extends WizardPage {
 				.setToolTipText(UIText.FetchGerritChangePage_ActivateAdditionalRefsTooltip);
 
 		refText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				Change change = Change.fromRef(refText.getText());
 				if (change != null) {
@@ -372,11 +352,7 @@ public class FetchGerritChangePage extends WizardPage {
 				checkPage();
 			}
 		});
-		if (defaultChange != null) {
-			refText.setText(defaultChange);
-		} else if (candidateChange != null) {
-			refText.setText(candidateChange);
-		}
+
 		runInBackgroud = new Button(main, SWT.CHECK);
 		GridDataFactory.fillDefaults().span(2, 1).align(SWT.BEGINNING, SWT.END)
 				.grab(true, true)
@@ -408,88 +384,7 @@ public class FetchGerritChangePage extends WizardPage {
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
 		setControl(main);
-		if (candidateChange != null) {
-			// Launch content assist when the page is displayed
-			final IWizardContainer container = getContainer();
-			if (container instanceof IPageChangeProvider) {
-				((IPageChangeProvider) container)
-						.addPageChangedListener(new IPageChangedListener() {
-							@Override
-							public void pageChanged(PageChangedEvent event) {
-								if (event
-										.getSelectedPage() == FetchGerritChangePage.this) {
-									// Only the first time: remove myself
-									event.getPageChangeProvider()
-											.removePageChangedListener(this);
-									getControl().getDisplay()
-											.asyncExec(new Runnable() {
-										@Override
-										public void run() {
-											Control control = getControl();
-											if (control != null
-													&& !control.isDisposed()) {
-												contentProposer
-														.openProposalPopup();
-											}
-										}
-									});
-								}
-							}
-						});
-			}
-		}
 		checkPage();
-	}
-
-	/**
-	 * Tries to determine a Gerrit change number from an input string.
-	 *
-	 * @param input
-	 *            string to derive a change number from
-	 * @return the change number as a string, or {@code null} if none could be
-	 *         determined.
-	 */
-	protected static String determineChangeFromString(String input) {
-		if (input == null) {
-			return null;
-		}
-		Pattern pattern = Pattern.compile(
-				"(?:https?://\\S+?/|/)?([1-9][0-9]*)(?:/([1-9][0-9]*)(?:/([1-9][0-9]*)(?:..\\d+)?)?)?(?:/\\S*)?"); //$NON-NLS-1$
-		Matcher matcher = pattern.matcher(input);
-		if (matcher.matches()) {
-			String first = matcher.group(1);
-			String second = matcher.group(2);
-			String third = matcher.group(3);
-			if (second != null && !second.isEmpty()) {
-				if (third != null && !third.isEmpty()) {
-					return second;
-				} else if (input.startsWith("http")) { //$NON-NLS-1$
-					// A URL ending with two digits: take the first.
-					return first;
-				} else {
-					// Take the numerically larger. Might be a fragment like
-					// /10/65510 as in refs/changes/10/65510/6, or /65510/6 as
-					// in https://git.eclipse.org/r/#/c/65510/6. This is a
-					// heuristic, it might go wrong on a Gerrit where there are
-					// not many changes (yet), and one of them has many patch
-					// sets.
-					try {
-						if (Integer.parseInt(first) > Integer
-								.parseInt(second)) {
-							return first;
-						} else {
-							return second;
-						}
-					} catch (NumberFormatException e) {
-						// Numerical overflow?
-						return null;
-					}
-				}
-			} else {
-				return first;
-			}
-		}
-		return null;
 	}
 
 	private void storeLastUsedUri(String uri) {
@@ -589,9 +484,8 @@ public class FetchGerritChangePage extends WizardPage {
 			throws InvocationTargetException, InterruptedException {
 		if (changeRefs == null) {
 			final String uriText = uriCombo.getText();
-			getContainer().run(true, true,
+			getWizard().getContainer().run(true, true,
 					new IRunnableWithProgress() {
-						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -617,7 +511,6 @@ public class FetchGerritChangePage extends WizardPage {
 							}
 							Collections.sort(changeRefs,
 									new Comparator<Change>() {
-										@Override
 										public int compare(Change o1, Change o2) {
 											// change number descending
 											int changeDiff = o2.changeNumber
@@ -659,16 +552,10 @@ public class FetchGerritChangePage extends WizardPage {
 
 				@Override
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
-					try {
-						internalDoFetch(spec, uri, doCheckout, doCreateTag,
-								doCreateBranch, doCheckoutNewBranch,
-								doActivateAdditionalRefs, textForTag,
-								textForBranch, monitor);
-					} catch (CoreException ce) {
-						return ce.getStatus();
-					} catch (Exception e) {
-						return Activator.createErrorStatus(e.getLocalizedMessage(), e);
-					}
+					internalDoFetch(spec, uri, doCheckout, doCreateTag,
+							doCreateBranch, doCheckoutNewBranch,
+							doActivateAdditionalRefs,
+							textForTag, textForBranch, monitor);
 					return org.eclipse.core.runtime.Status.OK_STATUS;
 				}
 
@@ -686,7 +573,6 @@ public class FetchGerritChangePage extends WizardPage {
 			try {
 			getWizard().getContainer().run(true, true,
 					new IRunnableWithProgress() {
-						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -718,10 +604,9 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private void internalDoFetch(RefSpec spec, String uri, boolean doCheckout,
 			boolean doCreateTag, boolean doCreateBranch,
-			boolean doCheckoutNewBranch, boolean doActivateAdditionalRefs,
-			String textForTag, String textForBranch, IProgressMonitor monitor)
-					throws IOException, CoreException, URISyntaxException,
-					GitAPIException {
+			boolean doCheckoutNewBranch,
+			boolean doActivateAdditionalRefs, String textForTag,
+			String textForBranch, IProgressMonitor monitor) {
 
 		int totalWork = 1;
 		if (doCheckout)
@@ -750,6 +635,8 @@ public class FetchGerritChangePage extends WizardPage {
 
 			storeLastUsedUri(uri);
 
+		} catch (Exception e) {
+			Activator.handleError(e.getMessage(), e, true);
 		} finally {
 			monitor.done();
 		}
@@ -772,10 +659,8 @@ public class FetchGerritChangePage extends WizardPage {
 				new URIish(uri), specs, timeout, false).execute(monitor);
 
 		monitor.worked(1);
-		try (RevWalk rw = new RevWalk(repository)) {
-			return rw.parseCommit(
-					fetchRes.getAdvertisedRef(spec.getSource()).getObjectId());
-		}
+		return new RevWalk(repository).parseCommit(fetchRes.getAdvertisedRef(
+				spec.getSource()).getObjectId());
 	}
 
 	private void createTag(final RefSpec spec, final String textForTag,
@@ -813,7 +698,6 @@ public class FetchGerritChangePage extends WizardPage {
 					final Shell shell = getWizard().getContainer().getShell();
 
 					shell.getDisplay().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							new CheckoutConflictDialog(shell, repository,
 									result.getConflictList()).open();
@@ -837,7 +721,6 @@ public class FetchGerritChangePage extends WizardPage {
 		// do this in the UI thread as it results in a
 		// refresh() on the history page
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Activator
 						.getDefault()
@@ -849,8 +732,7 @@ public class FetchGerritChangePage extends WizardPage {
 		});
 	}
 
-	private ExplicitContentProposalAdapter addRefContentProposalToText(
-			final Text textField) {
+	private void addRefContentProposalToText(final Text textField) {
 		KeyStroke stroke = UIUtils
 				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
 		if (stroke != null)
@@ -859,7 +741,6 @@ public class FetchGerritChangePage extends WizardPage {
 					stroke.format()));
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
@@ -894,7 +775,7 @@ public class FetchGerritChangePage extends WizardPage {
 				try {
 					proposals = getRefsForContentAssist();
 				} catch (InvocationTargetException e) {
-					Activator.handleError(e.getMessage(), e, true);
+					Activator.handleError(e.getMessage(), e, false);
 					return null;
 				} catch (InterruptedException e) {
 					return null;
@@ -917,28 +798,10 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		};
 
-		ExplicitContentProposalAdapter adapter = new ExplicitContentProposalAdapter(
-				textField, cp, stroke);
+		ContentProposalAdapter adapter = new ContentProposalAdapter(textField,
+				new TextContentAdapter(), cp, stroke, null);
 		// set the acceptance style to always replace the complete content
 		adapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
-		return adapter;
-	}
-
-	private static class ExplicitContentProposalAdapter
-			extends ContentProposalAdapter {
-
-		public ExplicitContentProposalAdapter(Control control,
-				IContentProposalProvider proposalProvider,
-				KeyStroke keyStroke) {
-			super(control, new TextContentAdapter(), proposalProvider,
-					keyStroke, null);
-		}
-
-		@Override
-		public void openProposalPopup() {
-			// Make this method accessible
-			super.openProposalPopup();
-		}
 	}
 
 	private final static class Change {
@@ -1003,24 +866,20 @@ public class FetchGerritChangePage extends WizardPage {
 			myChange = change;
 		}
 
-		@Override
 		public String getContent() {
 			return myChange.getRefName();
 		}
 
-		@Override
 		public int getCursorPosition() {
 			return 0;
 		}
 
-		@Override
 		public String getDescription() {
 			return NLS.bind(
 					UIText.FetchGerritChangePage_ContentAssistDescription,
 					myChange.getPatchSetNumber(), myChange.getChangeNumber());
 		}
 
-		@Override
 		public String getLabel() {
 			return NLS
 					.bind("{0} - {1}", myChange.getChangeNumber(), myChange.getPatchSetNumber()); //$NON-NLS-1$

@@ -17,7 +17,6 @@ import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.egit.ui.internal.ResourcePropertyTester;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
@@ -29,7 +28,6 @@ import org.eclipse.jgit.transport.RemoteConfig;
  */
 public class RepositoriesViewPropertyTester extends PropertyTester {
 
-	@Override
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
 		boolean value = internalTest(receiver, property);
@@ -48,22 +46,14 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 			return false;
 		RepositoryTreeNode node = (RepositoryTreeNode) receiver;
 
-		Repository repository = node.getRepository();
-		if (repository == null) {
-			return false;
-		}
+		if (property.equals("isBare")) //$NON-NLS-1$
+			return node.getRepository().isBare();
 
-		if (property.equals("isBare")) { //$NON-NLS-1$
-			return repository.isBare();
-		}
+		if (property.equals("containsHead")) //$NON-NLS-1$
+			return containsHead(node);
 
-		if (property.equals("containsHead")) {//$NON-NLS-1$
-			return containsHead(repository);
-		}
-
-		if (ResourcePropertyTester.testRepositoryState(repository, property)) {
+		if (ResourcePropertyTester.testRepositoryState(node.getRepository(), property))
 			return true;
-		}
 
 		if (property.equals("isRefCheckedOut")) { //$NON-NLS-1$
 			if (!(node.getObject() instanceof Ref))
@@ -71,19 +61,19 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 			Ref ref = (Ref) node.getObject();
 			try {
 				if (ref.getName().startsWith(Constants.R_REFS)) {
-					return ref.getName().equals(repository.getFullBranch());
-				} else if (ref.getName().equals(Constants.HEAD)) {
+					return ref.getName().equals(
+							node.getRepository().getFullBranch());
+				} else if (ref.getName().equals(Constants.HEAD))
 					return true;
-				} else {
+				else {
 					String leafname = ref.getLeaf().getName();
 					if (leafname.startsWith(Constants.R_REFS)
-							&& leafname.equals(repository.getFullBranch())) {
+							&& leafname.equals(node.getRepository()
+									.getFullBranch()))
 						return true;
-					} else {
-						ObjectId objectId = ref.getLeaf().getObjectId();
-						return objectId != null && objectId
-								.equals(repository.resolve(Constants.HEAD));
-					}
+					else
+						ref.getLeaf().getObjectId().equals(
+								node.getRepository().resolve(Constants.HEAD));
 				}
 			} catch (IOException e) {
 				return false;
@@ -101,8 +91,8 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 
 				RemoteConfig rconfig;
 				try {
-					rconfig = new RemoteConfig(repository.getConfig(),
-							configName);
+					rconfig = new RemoteConfig(
+							node.getRepository().getConfig(), configName);
 				} catch (URISyntaxException e2) {
 					return false;
 				}
@@ -117,8 +107,8 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 
 				RemoteConfig rconfig;
 				try {
-					rconfig = new RemoteConfig(repository.getConfig(),
-							configName);
+					rconfig = new RemoteConfig(
+							node.getRepository().getConfig(), configName);
 				} catch (URISyntaxException e2) {
 					return false;
 				}
@@ -129,13 +119,15 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 			}
 		}
 		if (property.equals("canStash")) { //$NON-NLS-1$
-			return repository.getRepositoryState().canCommit();
+			Repository rep = node.getRepository();
+			return rep.getRepositoryState().canCommit();
 		}
 		if (property.equals("canMerge")) { //$NON-NLS-1$
-			if (repository.getRepositoryState() != RepositoryState.SAFE)
+			Repository rep = node.getRepository();
+			if (rep.getRepositoryState() != RepositoryState.SAFE)
 				return false;
 			try {
-				String branch = repository.getFullBranch();
+				String branch = rep.getFullBranch();
 				if (branch == null)
 					return false; // fail gracefully...
 				return branch.startsWith(Constants.R_HEADS);
@@ -152,9 +144,9 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		return false;
 	}
 
-	private boolean containsHead(Repository repository) {
+	private boolean containsHead(RepositoryTreeNode node) {
 		try {
-			return repository.resolve(Constants.HEAD) != null;
+			return node.getRepository().resolve(Constants.HEAD) != null;
 		} catch (IOException e) {
 			return false;
 		}

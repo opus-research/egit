@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2015 Benjamin Muskalla and others.
+ * Copyright (c) 2011, 2013 Benjamin Muskalla and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,7 +11,7 @@
 package org.eclipse.egit.ui.internal;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.ui.internal.clone.ProjectRecord;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
@@ -54,20 +54,17 @@ public class GitLabelProvider extends LabelProvider implements
 
 	@Override
 	public Image getImage(Object element) {
-		if (element instanceof Repository) {
+		if (element instanceof Repository)
 			return RepositoryTreeNodeType.REPO.getIcon();
-		}
 
-		if (element instanceof RefNode) {
+		if (element instanceof RefNode)
 			return getRefIcon(((RefNode) element).getObject());
-		}
 
-		if (element instanceof Ref) {
+		if (element instanceof Ref)
 			return getRefIcon((Ref) element);
-		}
 
 		if (element instanceof GitModelBlob || element instanceof GitModelTree) {
-			Object adapter = AdapterUtils.adapt(element, IResource.class);
+			Object adapter = ((IAdaptable) element).getAdapter(IResource.class);
 			return getWorkbenchLabelProvider().getImage(adapter);
 		}
 
@@ -87,7 +84,6 @@ public class GitLabelProvider extends LabelProvider implements
 		return super.getImage(element);
 	}
 
-	@Override
 	public StyledString getStyledText(Object element) {
 		return GitLabels.getStyledLabelExtendedSafe(element);
 	}

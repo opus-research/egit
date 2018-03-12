@@ -28,7 +28,7 @@
 				<td style="width: 60%" align="center"></td>
 				<td style="width: 20%" align="right" valign="top">Reference</td>
 			</tr>
-		</table><hr class="navigation-separator"/>
+		</table><hr/>
 		<h1 id="Tasks">Tasks</h1>
 		<h2 id="Creating_Repositories">Creating Repositories</h2>
 		<h3 id="Considerations_for_Git_Repositories_to_be_used_in_Eclipse">Considerations for Git Repositories to be used in Eclipse</h3>
@@ -87,7 +87,7 @@
 			<a href="http://wiki.eclipse.org/EGit/User_Guide/Sharing#Adding_a_project_to_version_control" title="EGit/User Guide/Sharing#Adding_a_project_to_version_control" target="egit_external">Adding a project to version control</a>).
 		</p>
 		<p>You can also create a new empty Git Repository from the Git Repositories View (see 
-			<a href="#Creating_a_Repository" title="EGit/User_Guide#Creating_a_Repository">Creating a Repository</a>).
+			<a href="Creating_a_Repository" title="EGit/User_Guide#Creating_a_Repository">Creating a Repository</a>).
 		</p>
 		<h3 id="Creating_a_Git_Repository_for_multiple_Projects">Creating a Git Repository for multiple Projects</h3>
 		<p>You may create multiple projects under a common directory and then create a common repository for all projects in one go:</p>
@@ -129,7 +129,7 @@
 		<h4 id="Cloning_a_Repository">Cloning a Repository</h4>
 		<p>The first option is used if you start with a remote repository. The clone operation will copy that repository to your local file system. To start the Clone Wizard click 
 			<b>Clone...</b>. The Clone Wizard is described in more detail in 
-			<a href="#Cloning_Remote_Repositories" title="EGit/User Guide#Cloning_Remote_Repositories">Cloning Remote Repositories</a>. Upon successful completion of the clone operation, the newly cloned repository appears in the list automatically.
+			<a href="Cloning_Remote_Repositories" title="EGit/User Guide#Cloning_Remote_Repositories">Cloning Remote Repositories</a>. Upon successful completion of the clone operation, the newly cloned repository appears in the list automatically.
 		</p>
 		<h4 id="Adding_a_Repository">Adding a Repository</h4>
 		<p>The second option is useful if you already have a repository in your local file system, for example because you have cloned it earlier, you created it from scratch or you copied it from somewhere else. Click 
@@ -186,7 +186,7 @@
 			<b>File &gt; Import... &gt; Git &gt; Projects from Git &gt; Next &gt; Clone URI &gt; Next</b>
 		</p>
 		<p>or from the "Git Repositories View" (described in 
-			<a href="#Managing_Repositories" title="EGit/User_Guide#Managing_Repositories">Managing Repositories</a>) using the 
+			<a href="Managing_Repositories" title="EGit/User_Guide#Managing_Repositories">Managing Repositories</a>) using the 
 			<b>Clone a Git Repository</b> toolbar button or view menu.
 		</p>
 		<h4 id="Repository_Selection">Repository Selection</h4>
@@ -437,11 +437,17 @@
 				<b>adfdbfd2</b></tt> will be pushed.
 			</li>
 			<li>For refs which do not yet exist in the destination repository <tt>
-				<b>[new branch]</b></tt> or <tt>
-				<b>[new tag]</b></tt> is displayed.
+				<b>
+					<a href="new">branch</a>
+				</b></tt> or <tt>
+				<b>
+					<a href="new">tag</a>
+				</b></tt> is displayed.
 			</li>
 			<li>For refs which will be delete <tt>
-				<b>[deleted]</b></tt> is shown.
+				<b>
+					<a href="deleted">deleted</a>
+				</b></tt> is shown.
 			</li>
 		</ul>
 		<p>
@@ -597,11 +603,17 @@
 		<ul>
 			<li>For ref updates the list commits which have been fetched will be shown.</li>
 			<li>For refs which didn't exist before in the local repository <tt>
-				<b>[new branch]</b></tt> or <tt>
-				<b>[new tag]</b></tt> is displayed.
+				<b>
+					<a href="new">branch</a>
+				</b></tt> or <tt>
+				<b>
+					<a href="new">tag</a>
+				</b></tt> is displayed.
 			</li>
 			<li>For refs which have been deleted <tt>
-				<b>[deleted]</b></tt> is shown.
+				<b>
+					<a href="deleted">deleted</a>
+				</b></tt> is shown.
 			</li>
 		</ul>
 		<p>
@@ -701,48 +713,21 @@
 		<p>
 			<img border="0" src="images/Egit-3.1-GerritDownloadCommand.png"/>
 		</p>
-		<h2 id="Working_with_Gitflow">Working with Gitflow</h2>
-		<p>If you are using Gitflow (
-			<a href="http://nvie.com/posts/a-successful-git-branching-model/" target="egit_external">http://nvie.com/posts/a-successful-git-branching-model/</a>), EGit allows you to work with Gitflow operations, managing feature, release and hotfix branches.
-		</p>
-		<h3 id="Enabling_Gitflow_for_a_repository">Enabling Gitflow for a repository</h3>
-		<p>Gitflow operations will not appear unless the selected repository is configured for Gitflow. To do that, open the context menu on a repository in the Git Repositories view and select 
-			<b>Init Git Flow</b>.
-
-			<img border="0" src="images/Egit-4.0-git_flow_init-repository_node_right_click.png"/>
-		</p>
-		<p>You can skip this step if your repository was already configured for Gitflow by another client.</p>
-		<h3 id="Starting_a_feature.2Frelease.2Fhotfix">Starting a feature/release/hotfix</h3>
-		<p>Right-click on a repository, select 
-			<b>Git Flow</b>, and select the appropriate start command.
-		</p>
-		<p>
-			<img border="0" src="images/Egit-4.0-git_flow-repository_node_right_click.png"/>
-
-			<img border="0" src="images/Egit-4.0-git_flow_submenu-repository_node_right_click.png"/>
-		</p>
-		<p>A dialog will appear that lets you enter a name for the Gitflow branch, adding the correct prefix automatically.</p>
-		<h3 id="Starting_release_from_a_commit_other_than_HEAD">Starting release from a commit other than HEAD</h3>
-		<p>Go to the EGit History view, and right-click the commit you want to start the release from.
-			In the context menu, go to 
-			<b>Git Flow</b>, and select 
-			<b>Start release from commit &lt;sha1&gt;</b>.
-
-			<img border="0" src="images/Egit-4.0-git_flow_start_release_from_history_view_context_menu.png"/>
-		</p>
 		<h2 id="Inspecting_the_state_of_the_Repository">Inspecting the state of the Repository</h2>
 		<h3 id="Label_Decorations">Label Decorations</h3>
-		<p>Label decorations show Git-specific information about resources under Git version control. They appear in all views showing model objects, like Package Explorer, Project Explorer, Navigator, and Hierarchy View.</p>
+		<p>Label decorations show Git specific information on resources under Git version control. They appear in all views showing model objects, like Package Explorer, Project Explorer, Navigator, Hierarchy View.</p>
 		<p>The Git label decorations can be switched on globally in the Preference Menu (
 			<b>Window &gt; Preferences</b>) under 
-			<b>General &gt; Appearance &gt; Label Decorations</b>, and more detailed settings can be modified in Preferences under 
+			<b>General &gt; Appearance &gt; Label Decorations</b>.
+		</p>
+		<p>More detailed settings can be done in the Preferences under 
 			<b>Team &gt; Git &gt; Label Decorations</b>.
 		</p>
 		<p>There are two different types of label decorations: text decorations and icon decorations.</p>
 		<h4 id="Text_Decorations">Text Decorations</h4>
 		<p>Text decorations appear on the left or right side of the text label. They can be configured on the Preferences dialog under 
-			<b>Team &gt; Git &gt; Label Decorations</b> on the 
-			<b>Text Decorations</b> tab. For example, the default for a dirty resource is a <tt>
+			<b>Team &gt; Git &gt; Label Decorations</b> on the tab 
+			<b>Text Decorations</b>. For example, the default for a dirty resource is a <tt>
 			<b>&gt;</b></tt> on the left side of its name.
 		</p>
 		<p>These are the default settings:</p>
@@ -751,7 +736,7 @@
 		</p>
 		<p>For files and folders there are the variables <tt>"name"</tt>, <tt>"dirty"</tt> and <tt>"staged"</tt>. <tt>"Dirty"</tt> and <tt>"staged"</tt> are flags; if they are true, the text after the colon is displayed.</p>
 		<p>For projects there are the additional variables <tt>"repository"</tt>, <tt>"branch"</tt> and <tt>"branch_status"</tt>. The <tt>"repository"</tt> variable displays the name of the repository.</p>
-		<p>The <tt>"branch"</tt> variable displays the name of the currently checked out branch. If no branch is checked out, the decoration shows the shortened name of the commit (first seven characters followed by ellipsis). If tags and/or remote branches are pointing to this commit, a "best guess" heuristic is applied to also show this information: tags take precedence over remote branches, and if several tags apply, the newest one is displayed. If there are several remote branches or tags that have no modification date, then alphabetic sorting is applied and the last one is shown. Example: the checked out commit <tt>
+		<p>The <tt>"branch"</tt> variable displays the name of the currently checked out branch. If no branch is checked out, the decoration shows the shortened name of the commit (first seven characters followed by ellipsis). If tags and/or remote branches are pointing to this commit, a "best guess" heuristic is applied to also show this information: tags take precedence over remote branches, if several tags apply, the newest one is displayed; if there are several remote branches or tags have no modification date, then alphabetic sorting is applied and the last one is shown. Example: the checked out commit <tt>
 			<b>e49f576...</b></tt> refers to tag <tt>
 			<b>v.0.7.1</b></tt> of repository <tt>
 			<b>egit</b></tt>:
@@ -771,7 +756,7 @@
 			<li>↑N↓M – The local branch and the remote-tracking branch have diverged (the two above apply both).</li>
 			<li>– Empty if the local branch and the remote-tracking branch have the same state.</li>
 		</ul>
-		<p>The status variable can be used with a leading space like this: <tt>{ branch_status}</tt>. This results in the space being added only when the status is not empty.</p>
+		<p>The status variable can be used with a leading space like this: <tt>{ branch_status}</tt>. This results in the space only being added when the status is not empty.</p>
 		<h4 id="Icon_Decorations">Icon Decorations</h4>
 		<p>Icon decorations appear on the lower right corner of the icon displayed in front of the label. They can be configured on the Preferences dialog under 
 			<b>Team &gt; Git &gt; Label Decorations</b> on the tab 
@@ -1042,8 +1027,7 @@
 			<img border="0" src="images/Egit-1.2-commit-dialog-path-assist.png"/>
 		</p>
 		<p>The commit message editor supports content assist for file names shown in Files section of the commit dialog, which can be activated pressing Ctrl+Space.</p>
-		<p><div id="Footer_Tags"></div>
-
+		<p>
 			<b>Footer Tags</b>
 
 			<br/>
@@ -1110,9 +1094,6 @@ Signed-off-by: William Shakespeare &lt;will.from@the.past&gt;
 		</p>
 		<p>Then open the Staging View or Commit Dialog again and select the 
 			<b>Amend Previous Commit</b> icon in the toolbar.
-		</p>
-		<p>
-			<img border="0" src="images/EGit_Amend_Commit_Button.png"/>
 		</p>
 		<p>The commit message of your previous commit (the one you want to replace) is then filled into the "Commit Message" field. This gives you the chance not only to correct errors in the content of the version-controlled files but to also correct errors (e.g. typos) in the commit message describing your change.</p>
 		<p>As an alternative to amending you could just commit the corrected version as a subsequent commit. But the first commit containing the typo is of no use to anybody and in order not to clutter the history of your project with unneeded commits you should amend the commit.</p>
@@ -2507,7 +2488,7 @@ Sein oder nicht sein
 		</ul>
 		<h3 id="Checking_out_a_commit">Checking out a commit</h3>
 		<p>This checks out the commit displayed in the commit viewer. The commit will be checked out and 
-			<a href="#.22Detached.22_HEAD">HEAD will become detached</a>.
+			<a href="#&quot;Detached&quot;_HEAD">HEAD will become detached</a>.
 		</p>
 		<h3 id="Cherry_picking_a_commit">Cherry picking a commit</h3>
 		<p>Applies the change introduced by the commit displayed in the commit viewer on top of the currently checked out commit or branch.</p>
@@ -2659,7 +2640,7 @@ Sein oder nicht sein
 			<li>Path to the project to import (folder which contains <tt>.project</tt>), relative to the repository</li>
 		</ol>
 		<p>Each project has one entry. So for multiple projects in the same repository, create such an entry for each project with the same repository URL. The import is smart enough to only clone each repository once.</p>
-		<p>If the repository contains a project at the root, use <tt>.</tt> as the project path.</p><hr class="navigation-separator"/>
+		<p>If the repository contains a project at the root, use <tt>.</tt> as the project path.</p><hr/>
 		<table class="navigation" style="width: 100%;" border="0" summary="navigation">
 			<tr>
 				<td style="width: 20%" align="left">

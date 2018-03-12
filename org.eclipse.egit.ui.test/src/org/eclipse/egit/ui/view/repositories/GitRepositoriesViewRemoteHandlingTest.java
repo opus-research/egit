@@ -193,7 +193,6 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 				UIText.RefSpecDialog_DestinationPushLabel).widget;
 		shell.display.syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				text.setFocus();
 				text.notifyListeners(SWT.Modify, new Event());
@@ -310,7 +309,6 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 				UIText.RefSpecDialog_DestinationPushLabel).widget;
 		shell.display.syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				// focus for update of other fields
 				text2.setFocus();

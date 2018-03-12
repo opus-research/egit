@@ -11,12 +11,6 @@
  * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * Copyright (C) 2014, Red Hat Inc.
- * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
- * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
- * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
- * Copyright (C) 2015, Laurent Delaigue <laurent.delaigue@obeo.fr>
- * Copyright (C) 2015, Denis Zygann <d.zygann@web.de>
- * Copyright (C) 2016, Lars Vogel <Lars.Vogel@vogella.com
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -49,9 +43,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
-
-	/** */
-	public static String AbstractHistoryCommitHandler_cantGetBranches;
 
 	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
@@ -396,6 +387,9 @@ public class UIText extends NLS {
 	public static String GitDocument_errorLoadTree;
 
 	/** */
+	public static String GitDocument_errorRefreshQuickdiff;
+
+	/** */
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
@@ -681,15 +675,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_useLogicalModel;
 
 	/** */
-	public static String GitPreferenceRoot_preferreMergeStrategy_group;
-
-	/** */
-	public static String GitPreferenceRoot_preferreMergeStrategy_label;
-
-	/** */
-	public static String GitPreferenceRoot_defaultMergeStrategyLabel;
-
-	/** */
 	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
 
 	/** */
@@ -738,6 +723,9 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
 
 	/** */
+	public static String RebaseCurrentRefCommand_RebaseCanceledTitle;
+
+	/** */
 	public static String RebaseCurrentRefCommand_RebasingCurrentJobName;
 
 	/** */
@@ -753,49 +741,31 @@ public class UIText extends NLS {
 	public static String RebaseInteractiveStepActionToolBarProvider_SkipText;
 
 	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_SkipDesc;
-
-	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_EditText;
-
-	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_EditDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_FixupText;
 
 	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_FixupDesc;
-
-	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_MoveDownText;
-
-	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_MoveDownDesc;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_MoveUpText;
 
 	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_MoveUpDesc;
-
-	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_PickText;
 
 	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_PickDesc;
+	public static String RebaseInteractiveStepActionToolBarProvider_RedoText;
 
 	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_RewordText;
 
 	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_RewordDesc;
-
-	/** */
 	public static String RebaseInteractiveStepActionToolBarProvider_SquashText;
 
 	/** */
-	public static String RebaseInteractiveStepActionToolBarProvider_SquashDesc;
+	public static String RebaseInteractiveStepActionToolBarProvider_UndoText;
 
 	/** */
 	public static String RebaseInteractiveView_HeadingStep;
@@ -882,6 +852,12 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_InteractivePrepared;
 
 	/** */
+	public static String RebaseResultDialog_JobNameAbortRebase;
+
+	/** */
+	public static String RebaseResultDialog_JobNameSkipCommit;
+
+	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
@@ -933,16 +909,10 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StatusNothingToCommit;
 
 	/** */
-	public static String RebaseResultDialog_StatusInteractivePrepared;
-
-	/** */
 	public static String RebaseResultDialog_StatusOK;
 
 	/** */
 	public static String RebaseResultDialog_StatusStopped;
-
-	/** */
-	public static String RebaseResultDialog_StatusEdit;
 
 	/** */
 	public static String RebaseResultDialog_StatusUpToDate;
@@ -1003,21 +973,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_CalculatingOursTheirsCommitsError;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_OursWithCommitLabel;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_OursWithoutCommitLabel;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_TheirsWithCommitLabel;
-
-	/** */
-	public static String ReplaceWithOursTheirsMenu_TheirsWithoutCommitLabel;
 
 	/** */
 	public static String ReplaceWithPreviousActionHandler_NoParentCommitDialogMessage;
@@ -1176,30 +1131,6 @@ public class UIText extends NLS {
 	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedMessage;
-
-	/** */
-	public static String CherryPickHandler_NoCherryPickPerformedTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsMessage;
-
-	/** */
-	public static String CherryPickHandler_CherryPickConflictsTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickFailedMessage;
-
-	/** */
-	public static String CherryPickHandler_CouldNotDeleteFile;
-
-	/** */
-	public static String CherryPickHandler_ErrorMsgTemplate;
-
-	/** */
-	public static String CherryPickHandler_IndexDirty;
-
-	/** */
 	public static String CherryPickHandler_JobName;
 
 	/** */
@@ -1207,12 +1138,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_ConfirmTitle;
-
-	/** */
-	public static String CherryPickHandler_unknown;
-
-	/** */
-	public static String CherryPickHandler_WorktreeDirty;
 
 	/** */
 	public static String CherryPickOperation_InternalError;
@@ -1279,9 +1204,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareUtils_errorGettingHeadCommit;
-
-	/** */
-	public static String CompareUtils_wrongResourceArgument;
 
 	/** */
 	public static String MergeHandler_SelectBranchMessage;
@@ -1926,9 +1848,6 @@ public class UIText extends NLS {
 	public static String ResourceHistory_ShowTagSequence;
 
 	/** */
-	public static String ResourceHistory_ShowBranchSequence;
-
-	/** */
 	public static String ResourceHistory_toggleRelativeDate;
 
 	/** */
@@ -2016,9 +1935,6 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_MaxBranchLength;
 
 	/** */
-	public static String HistoryPreferencePage_MaxDiffLines;
-
-	/** */
 	public static String HistoryPreferencePage_MaxTagLength;
 
 	/** */
@@ -2038,24 +1954,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPreferencePage_toggleEmailAddresses;
-
-	/** */
-	public static String PullWizardPage_PageName;
-
-	/** */
-	public static String PullWizardPage_PageTitle;
-
-	/** */
-	public static String PullWizardPage_PageMessage;
-
-	/** */
-	public static String PullWizardPage_referenceLabel;
-
-	/** */
-	public static String PullWizardPage_referenceTooltip;
-
-	/** */
-	public static String PullWizardPage_ChooseReference;
 
 	/** */
 	public static String PullOperationUI_ConnectionProblem;
@@ -2106,6 +2004,9 @@ public class UIText extends NLS {
 	public static String PushBranchPage_CannotAccessCommitDescription;
 
 	/** */
+	public static String PushBranchPage_LocalBranchLabel;
+
+	/** */
 	public static String PushBranchPage_Source;
 
 	/** */
@@ -2149,6 +2050,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushBranchWizard_WindowTitle;
+
+	/** */
+	public static String PushCommand_pushBranchTitle;
+
+	/** */
+	public static String PushCommand_pushTagTitle;
 
 	/** */
 	public static String PushCommitHandler_pushCommitTitle;
@@ -2358,10 +2265,7 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
-	public static String CommitDialog_IgnoreErrors;
-
-	/** */
-	public static String CommitDialog_MessageErrors;
+	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
 	public static String ConfigurationChecker_checkConfiguration;
@@ -2370,10 +2274,22 @@ public class UIText extends NLS {
 	public static String ConfigurationChecker_homeNotSet;
 
 	/** */
+	public static String ConfigurationEditorComponent_BrowseForPrefix;
+
+	/** */
+	public static String ConfigurationEditorComponent_CannotChangeGitPrefixError;
+
+	/** */
 	public static String ConfigurationEditorComponent_ConfigLocationLabel;
 
 	/** */
 	public static String ConfigurationEditorComponent_EmptyStringNotAllowed;
+
+	/** */
+	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorMessage;
+
+	/** */
+	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorTitle;
 
 	/** */
 	public static String ConfigurationEditorComponent_KeyColumnHeader;
@@ -2413,6 +2329,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_RemoveSubsectionTitle;
+
+	/** */
+	public static String ConfigurationEditorComponent_SelectGitInstallation;
 
 	/** */
 	public static String ConfigurationEditorComponent_ValueColumnHeader;
@@ -2469,12 +2388,6 @@ public class UIText extends NLS {
 	public static String CommitMessageComponent_AmendingCommitInRemoteBranch;
 
 	/** */
-	public static String CommitMessageComponent_MessageSecondLineNotEmpty;
-
-	/** */
-	public static String CommitMessageEditorDialog_EditCommitMessageTitle;
-
-	/** */
 	public static String CommitMessageViewer_author;
 
 	/** */
@@ -2514,6 +2427,12 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
+	public static String CompareWithHeadActionHandler_NoHeadTitle;
+
+	/** */
+	public static String CompareWithHeadActionHandler_NoHeadMessage;
+
+	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
@@ -2523,16 +2442,10 @@ public class UIText extends NLS {
 	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
 
 	/** */
+	public static String CompareWithPreviousActionHandler_TaskGeneratingInput;
+
+	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
-
-	/** */
-	public static String CompareIndexWithHeadActionHandler_nothingToDoTitle;
-
-	/** */
-	public static String CompareIndexWithHeadActionHandler_fileNotStaged;
-
-	/** */
-	public static String CompareUtils_jobName;
 
 	/** */
 	public static String CompareUtils_errorCommonAncestor;
@@ -2659,9 +2572,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushResultDialog_label;
-
-	/** */
-	public static String PushResultDialog_label_failed;
 
 	/** */
 	public static String PushResultDialog_title;
@@ -3063,9 +2973,6 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_RunningLaunchTitle;
 
 	/** */
-	public static String BranchOperationUI_SearchLaunchConfiguration;
-
-	/** */
 	public static String BranchRenameDialog_Message;
 
 	/** */
@@ -3165,9 +3072,6 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_hardWrapMessageTooltip;
 
 	/** */
-	public static String CommittingPreferencePage_warnAboutCommitMessageSecondLine;
-
-	/** */
 	public static String CommittingPreferencePage_footers;
 
 	/** */
@@ -3186,109 +3090,7 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_signedOffByTooltip;
 
 	/** */
-	public static String CommittingPreferencePage_CheckBeforeCommitting;
-
-	/** */
-	public static String CommittingPreferencePage_WarnBeforeCommitting;
-
-	/** */
-	public static String CommittingPreferencePage_WarnBeforeCommittingTitle;
-
-	/** */
-	public static String CommittingPreferencePage_WarnBlock_Errors;
-
-	/** */
-	public static String CommittingPreferencePage_WarnBlock_WarningsAndErrors;
-
-	/** */
-	public static String CommittingPreferencePage_BlockCommit;
-
-	/** */
-	public static String CommittingPreferencePage_BlockCommitCombo;
-
-	/** */
-	public static String DateFormatPreferencePage_title;
-
-	/** */
-	public static String DateFormatPreferencePage_formatChooser_label;
-
-	/** */
-	public static String DateFormatPreferencePage_formatInput_label;
-
-	/** */
-	public static String DateFormatPreferencePage_invalidDateFormat_message;
-
-	/** */
-	public static String DateFormatPreferencePage_datePreview_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitDefault_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitLocal_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitRelative_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitIso_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitRfc_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitShort_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitLocale_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceGitLocaleLocal_label;
-
-	/** */
-	public static String DateFormatPreferencePage_choiceCustom_label;
-
-	/** */
-	public static String DateFormatPreferencePage_gitRelative_format_text;
-
-	/** */
-	public static String DateFormatPreferencePage_gitLocale_format_text;
-
-	/** */
-	public static String DateFormatPreferencePage_gitLocaleLocal_format_text;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitDefault_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitLocal_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitRelative_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitIso_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitRfc_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitShort_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitLocale_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpGitLocaleLocal_label;
-
-	/** */
-	public static String DateFormatPreferencePage_helpCustom_label;
-
-	/** */
 	public static String Decorator_exceptionMessage;
-
-	/** */
-	public static String Decorator_exceptionMessageCommon;
 
 	/** */
 	public static String DecoratorPreferencesPage_addVariablesTitle;
@@ -3324,9 +3126,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_projectFormatLabel;
 
 	/** */
-	public static String DecoratorPreferencesPage_submoduleFormatLabel;
-
-	/** */
 	public static String DecoratorPreferencesPage_generalTabFolder;
 
 	/** */
@@ -3337,9 +3136,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingBranchStatus;
-
-	/** */
-	public static String DecoratorPreferencesPage_bindingCommitMessage;
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingDirtyFlag;
@@ -3358,6 +3154,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingChangeSetShortMessage;
+
+	/** */
+	public static String DecoratorPreferencesPage_dateFormat;
+
+	/** */
+	public static String DecoratorPreferencesPage_dateFormatPreview;
+
+	/** */
+	public static String DecoratorPreferencesPage_wrongDateFormat;
 
 	/** */
 	public static String DecoratorPreferencesPage_selectVariablesToAdd;
@@ -3393,7 +3198,7 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_iconsShowConflicts;
 
 	/** */
-	public static String DecoratorPreferencesPage_iconsShowAssumeUnchanged;
+	public static String DecoratorPreferencesPage_iconsShowAssumeValid;
 
 	/** */
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
@@ -3507,6 +3312,9 @@ public class UIText extends NLS {
 	public static String RepositoriesView_DeleteRepoDeterminProjectsMessage;
 
 	/** */
+	public static String RepositoriesView_Error_WindowTitle;
+
+	/** */
 	public static String RepositoriesView_ErrorHeader;
 
 	/** */
@@ -3540,9 +3348,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_WorkingDir_treenode;
 
 	/** */
-	public static String RepositoriesViewActionProvider_OpenWithMenu;
-
-	/** */
 	public static String RepositoriesViewContentProvider_ExceptionNodeText;
 
 	/** */
@@ -3574,6 +3379,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_HomeDirWarning;
+
+	/** */
+	public static String DialogsPreferencePage_GitPrefixWarning;
 
 	/** */
 	public static String DialogsPreferencePage_RebaseCheckbox;
@@ -3808,6 +3616,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitImportWizard_WizardTitle;
+
+	/** */
+	public static String GitScopeOperation_couldNotDetermineState;
 
 	/** */
 	public static String GitScopeOperation_GitScopeManager;
@@ -4162,6 +3973,12 @@ public class UIText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.internal.uitext"; //$NON-NLS-1$
 
 	/** */
+	public static String CommitAction_ErrorReadingMergeMsg;
+
+	/** */
+	public static String CommitAction_MergeHeadErrorTitle;
+
+	/** */
 	public static String CommitActionHandler_calculatingChanges;
 
 	/** */
@@ -4262,7 +4079,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String Header_contextMenu_copy_SHA1;
-
 	/** */
 
 	public static String Header_copy_SHA1_error_title;
@@ -4296,9 +4112,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
-
-	/** */
-	public static String CommitFileDiffViewer_ShowInHistoryLabel;
 
 	/** */
 	public static String CommitGraphTable_CommitId;
@@ -4397,16 +4210,10 @@ public class UIText extends NLS {
 	public static String ImportProjectsSelectionInRepositoryRequired;
 
 	/** */
-	public static String ImportChangedProjectsCommand_ImportingChangedProjects;
-
-	/** */
 	public static String InteractiveRebaseView_abortItem_text;
 
 	/** */
 	public static String InteractiveRebaseView_continueItem_text;
-
-	/** */
-	public static String InteractiveRebaseView_LinkSelection;
 
 	/** */
 	public static String InteractiveRebaseView_refreshItem_text;
@@ -4865,6 +4672,9 @@ public class UIText extends NLS {
 	public static String SquashHandler_JobName;
 
 	/** */
+	public static String SquashHandler_MessageFromCommitX;
+
+	/** */
 	public static String SwitchToMenu_NewBranchMenuLabel;
 
 	/** */
@@ -4908,9 +4718,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitHelper_couldNotFindMergeMsg;
-
-	/** */
-	public static String CommitJob_AbortedByHook;
 
 	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
@@ -5081,12 +4888,6 @@ public class UIText extends NLS {
 	public static String GitVariableResolver_VariableReferencesNonExistentResource;
 
 	/** */
-	public static String GitTemplateVariableResolver_GitConfigDescription;
-
-	/** */
-	public static String StagingView_CompareWithIndexMenuLabel;
-
-	/** */
 	public static String StagingView_UnstagedChanges;
 
 	/** */
@@ -5141,13 +4942,7 @@ public class UIText extends NLS {
 	public static String StagingView_noStagedFiles;
 
 	/** */
-	public static String StagingView_BareRepoSelection;
-
-	/** */
 	public static String StagingView_NoSelectionTitle;
-
-	/** */
-	public static String StagingView_CompareMode;
 
 	/** */
 	public static String StagingView_OpenNewCommits;
@@ -5171,12 +4966,6 @@ public class UIText extends NLS {
 	public static String StagingView_Refresh;
 
 	/** */
-	public static String StagingView_GetRepo;
-
-	/** */
-	public static String StagingView_ReplaceWith;
-
-	/** */
 	public static String StagingView_LinkSelection;
 
 	/** */
@@ -5187,9 +4976,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_UnstageItemMenuLabel;
-
-	/** */
-	public static String StagingView_UnstagedSort;
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
@@ -5219,19 +5005,7 @@ public class UIText extends NLS {
 	public static String StagingView_MergeTool;
 
 	/** */
-	public static String StagingView_AddJob;
-
-	/** */
-	public static String StagingView_RemoveJob;
-
-	/** */
-	public static String StagingView_ResetJob;
-
-	/** */
-	public static String StagingView_IgnoreErrors;
-
-	/** */
-	public static String StagingView_MessageErrors;
+	public static String StagingViewContentProvider_SubmoduleError;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;
@@ -5396,6 +5170,9 @@ public class UIText extends NLS {
 	public static String EditHandler_ErrorCheckingIfCommitIsOnCurrentBranch;
 
 	/** */
+	public static String EditHandler_InternalError;
+
+	/** */
 	public static String EditHandler_OpenStagingAndRebaseInteractiveViews;
 
 	/** */
@@ -5454,15 +5231,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushMenu_PushBranch;
-
-	/** */
-	public static String DiffStyleRangeFormatter_diffTruncated;
-
-	/** */
-	public static String StagingViewPreferencePage_title;
-
-	/** */
-	public static String StagingViewPreferencePage_maxLimitListMode;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

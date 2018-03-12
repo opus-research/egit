@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2012 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -17,7 +17,6 @@ import java.text.MessageFormat;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
@@ -149,7 +148,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	/**
 	 * @see org.eclipse.ui.forms.editor.FormEditor#addPages()
 	 */
-	@Override
 	protected void addPages() {
 		try {
 			if (getCommit().isStash())
@@ -181,7 +179,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	/**
 	 * @see org.eclipse.ui.forms.editor.SharedHeaderFormEditor#createHeaderContents(org.eclipse.ui.forms.IManagedForm)
 	 */
-	@Override
 	protected void createHeaderContents(IManagedForm headerForm) {
 		RepositoryCommit commit = getCommit();
 		ScrolledForm form = headerForm.getForm();
@@ -246,23 +243,19 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		toolbar.update(true);
 		getSite().setSelectionProvider(new ISelectionProvider() {
 
-			@Override
 			public void setSelection(ISelection selection) {
 				// Ignored
 			}
 
-			@Override
 			public void removeSelectionChangedListener(
 					ISelectionChangedListener listener) {
 				// Ignored
 			}
 
-			@Override
 			public ISelection getSelection() {
 				return new StructuredSelection(getCommit());
 			}
 
-			@Override
 			public void addSelectionChangedListener(
 					ISelectionChangedListener listener) {
 				// Ignored
@@ -331,11 +324,9 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	/**
 	 * @see org.eclipse.ui.part.MultiPageEditorPart#getAdapter(java.lang.Class)
 	 */
-	@Override
 	public Object getAdapter(Class adapter) {
-		if (RepositoryCommit.class == adapter) {
-			return AdapterUtils.adapt(getEditorInput(), adapter);
-		}
+		if (RepositoryCommit.class == adapter)
+			return getEditorInput().getAdapter(adapter);
 
 		return super.getAdapter(adapter);
 	}
@@ -344,10 +335,9 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 * @see org.eclipse.ui.forms.editor.FormEditor#init(org.eclipse.ui.IEditorSite,
 	 *      org.eclipse.ui.IEditorInput)
 	 */
-	@Override
 	public void init(IEditorSite site, IEditorInput input)
 			throws PartInitException {
-		if (AdapterUtils.adapt(input, RepositoryCommit.class) == null)
+		if (input.getAdapter(RepositoryCommit.class) == null)
 			throw new PartInitException(
 					"Input could not be adapted to commit object"); //$NON-NLS-1$
 		super.init(site, input);
@@ -355,7 +345,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		setTitleToolTip(input.getToolTipText());
 	}
 
-	@Override
 	public void dispose() {
 		refListenerHandle.remove();
 		super.dispose();
@@ -364,7 +353,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	/**
 	 * @see org.eclipse.ui.part.EditorPart#doSave(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	@Override
 	public void doSave(IProgressMonitor monitor) {
 		// Save not supported
 	}
@@ -372,7 +360,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	/**
 	 * @see org.eclipse.ui.part.EditorPart#doSaveAs()
 	 */
-	@Override
 	public void doSaveAs() {
 		// Save as not supported
 	}
@@ -380,18 +367,15 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	/**
 	 * @see org.eclipse.ui.part.EditorPart#isSaveAsAllowed()
 	 */
-	@Override
 	public boolean isSaveAsAllowed() {
 		return false;
 	}
 
-	@Override
 	public void onRefsChanged(RefsChangedEvent event) {
 		if (getCommit().getRepository().getDirectory()
 				.equals(event.getRepository().getDirectory())) {
 			UIJob job = new UIJob("Refreshing editor") { //$NON-NLS-1$
 
-				@Override
 				public IStatus runInUIThread(IProgressMonitor monitor) {
 					if (!getContainer().isDisposed())
 						commitPage.refresh();
@@ -402,7 +386,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		}
 	}
 
-	@Override
 	public ShowInContext getShowInContext() {
 		if (commitPage != null && commitPage.isActive())
 			return commitPage.getShowInContext();

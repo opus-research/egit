@@ -115,7 +115,6 @@ public class GitSynchronizeDataSet implements Iterable<GitSynchronizeData> {
 		return projectMapping.get(project.getName());
 	}
 
-	@Override
 	public Iterator<GitSynchronizeData> iterator() {
 		return gsdSet.iterator();
 	}

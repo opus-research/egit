@@ -39,7 +39,6 @@ public class GitRepositoriesViewTestUtils {
 		final AtomicReference<RepositoriesViewLabelProvider> providerRef = new AtomicReference<RepositoriesViewLabelProvider>();
 		Display.getDefault().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				providerRef.set(new RepositoriesViewLabelProvider());
 			}

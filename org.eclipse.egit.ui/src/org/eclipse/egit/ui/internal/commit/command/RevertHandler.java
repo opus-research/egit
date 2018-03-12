@@ -30,7 +30,6 @@ import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.dialogs.RevertFailureDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -47,7 +46,6 @@ public class RevertHandler extends CommitCommandHandler {
 	 */
 	public static final String ID = "org.eclipse.egit.ui.commit.Revert"; //$NON-NLS-1$
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		List<RepositoryCommit> repoCommits = getCommits(event);
 		Repository repo = repoCommits.get(0).getRepository();
@@ -102,12 +100,9 @@ public class RevertHandler extends CommitCommandHandler {
 	}
 
 	private boolean contains(List<Ref> refs, RevCommit commit) {
-		for (Ref ref : refs) {
-			ObjectId objectId = ref.getObjectId();
-			if (objectId != null && objectId.equals(commit.getId())) {
+		for (Ref ref : refs)
+			if (ref.getObjectId().equals(commit.getId()))
 				return true;
-			}
-		}
 		return false;
 	}
 
@@ -124,7 +119,6 @@ public class RevertHandler extends CommitCommandHandler {
 	private static void showFailureDialog(final Shell shell,
 			final RevCommit commit, final MergeResult result) {
 		shell.getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				RevertFailureDialog.show(shell, commit, result);
 			}
@@ -139,7 +133,6 @@ public class RevertHandler extends CommitCommandHandler {
 	 */
 	private static void showRevertedDialog(final Shell shell) {
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				MessageDialog.openWarning(shell,
 						UIText.RevertHandler_NoRevertTitle,

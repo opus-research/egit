@@ -7,77 +7,76 @@
  * Copyright (C) 2008, Tor Arne Vestbø <torarnv@gmail.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.decorators;
 
-import java.io.IOException;
+import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.resources.IResourceState;
-import org.eclipse.egit.ui.internal.resources.ResourceStateFactory;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 class DecoratableResourceAdapter extends DecoratableResource {
 
-	public DecoratableResourceAdapter(@NonNull IndexDiffData indexDiffData,
-			@NonNull IResource resourceToWrap)
+	private final RepositoryMapping mapping;
+
+	private final Repository repository;
+
+	private final boolean trace;
+
+	private IndexDiffData indexDiffData;
+
+	public DecoratableResourceAdapter(IndexDiffData indexDiffData, IResource resourceToWrap)
 			throws IOException {
 		super(resourceToWrap);
-		boolean trace = GitTraceLocation.DECORATION.isActive();
+		this.indexDiffData = indexDiffData;
+		trace = GitTraceLocation.DECORATION.isActive();
 		long start = 0;
 		if (trace) {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.DECORATION.getLocation(),
-					"Decorate " + resourceToWrap.getFullPath()); //$NON-NLS-1$
+					"Decorate " + resource.getFullPath()); //$NON-NLS-1$
 			start = System.currentTimeMillis();
 		}
 		try {
-			RepositoryMapping mapping = RepositoryMapping
-					.getMapping(resourceToWrap);
+			mapping = RepositoryMapping.getMapping(resource);
 			if (mapping == null) {
+				repository = null;
 				return;
 			}
-			Repository repository = mapping.getRepository();
-			if (repository == null) {
+			repository = mapping.getRepository();
+			if (repository == null)
 				return;
-			}
-			setIsRepositoryContainer(resourceToWrap.equals(mapping.getContainer()));
-			IResourceState baseState = ResourceStateFactory.getInstance()
-					.get(indexDiffData, resourceToWrap);
-			setTracked(baseState.isTracked());
-			setIgnored(baseState.isIgnored());
-			setDirty(baseState.isDirty());
-			setConflicts(baseState.hasConflicts());
-			setAssumeUnchanged(baseState.isAssumeUnchanged());
-			setStagingState(baseState.getStagingState());
-			if (isRepositoryContainer()) {
-				// We only need this very expensive info for for decorating
-				// projects and folders that are submodule or nested repository
-				// roots
+
+			switch (resource.getType()) {
+			case IResource.FILE:
+				extractResourceProperties();
+				break;
+			case IResource.PROJECT:
+				// We only need this very expensive info for project decoration
 				repositoryName = DecoratableResourceHelper
 						.getRepositoryName(repository);
 				branch = DecoratableResourceHelper.getShortBranch(repository);
 				branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
-				RevCommit headCommit = DecoratableResourceHelper
-						.getHeadCommit(repository);
-				if (headCommit != null) {
-					commitMessage = headCommit.getShortMessage();
-				}
+				tracked = true;
+				//$FALL-THROUGH$
+			case IResource.FOLDER:
+				extractContainerProperties();
+				break;
 			}
 		} finally {
 			if (trace)
@@ -91,13 +90,128 @@ class DecoratableResourceAdapter extends DecoratableResource {
 
 	@Override
 	public String toString() {
-		return "DecoratableResourceAdapter[" + getName() //$NON-NLS-1$
-				+ (isTracked() ? ", tracked" : "") //$NON-NLS-1$ //$NON-NLS-2$
-				+ (isIgnored() ? ", ignored" : "") //$NON-NLS-1$ //$NON-NLS-2$
-				+ (isDirty() ? ", dirty" : "") //$NON-NLS-1$//$NON-NLS-2$
-				+ (hasConflicts() ? ",conflicts" : "")//$NON-NLS-1$//$NON-NLS-2$
-				+ ", staged=" + getStagingState() //$NON-NLS-1$
-				+ "]"; //$NON-NLS-1$
+		return "DecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + staged + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
+	}
+
+	private void extractResourceProperties() {
+		String repoRelativePath = makeRepoRelative(resource);
+
+		// ignored
+		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
+		ignored = ignoredFiles.contains(repoRelativePath)
+				|| containsPrefixPath(ignoredFiles, repoRelativePath);
+		Set<String> untracked = indexDiffData.getUntracked();
+		tracked = !untracked.contains(repoRelativePath) && !ignored;
+
+		Set<String> added = indexDiffData.getAdded();
+		Set<String> removed = indexDiffData.getRemoved();
+		Set<String> changed = indexDiffData.getChanged();
+		if (added.contains(repoRelativePath)) // added
+			staged = Staged.ADDED;
+		else if (removed.contains(repoRelativePath)) // removed
+			staged = Staged.REMOVED;
+		else if (changed.contains(repoRelativePath)) // changed and added into index
+			staged = Staged.MODIFIED;
+		else
+			staged = Staged.NOT_STAGED;
+
+		// conflicting
+		Set<String> conflicting = indexDiffData.getConflicting();
+		conflicts = conflicting.contains(repoRelativePath);
+
+		// locally modified
+		Set<String> modified = indexDiffData.getModified();
+		dirty = modified.contains(repoRelativePath);
+	}
+
+	private void extractContainerProperties() {
+		String repoRelativePath = makeRepoRelative(resource) + "/"; //$NON-NLS-1$
+
+		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
+		Set<String> untrackedFolders = indexDiffData.getUntrackedFolders();
+		ignored = containsPrefixPath(ignoredFiles, repoRelativePath)
+				|| !hasContainerAnyFiles(resource);
+
+		if (ignored)
+			tracked = false;
+		else
+			tracked = !containsPrefixPath(untrackedFolders, repoRelativePath);
+
+		// containers are marked as staged whenever file was added, removed or
+		// changed
+		Set<String> changed = new HashSet<String>(indexDiffData.getChanged());
+		changed.addAll(indexDiffData.getAdded());
+		changed.addAll(indexDiffData.getRemoved());
+		if (containsPrefix(changed, repoRelativePath))
+			staged = Staged.MODIFIED;
+		else
+			staged = Staged.NOT_STAGED;
+
+		// conflicting
+		Set<String> conflicting = indexDiffData.getConflicting();
+		conflicts = containsPrefix(conflicting, repoRelativePath);
+
+		// locally modified / untracked
+		Set<String> modified = indexDiffData.getModified();
+		Set<String> untracked = indexDiffData.getUntracked();
+		Set<String> missing = indexDiffData.getMissing();
+		dirty = containsPrefix(modified, repoRelativePath)
+				|| containsPrefix(untracked, repoRelativePath)
+				|| containsPrefix(missing, repoRelativePath);
+	}
+
+	private static boolean hasContainerAnyFiles(IResource resource) {
+		if (resource instanceof IContainer) {
+			IContainer container = (IContainer) resource;
+			try {
+				return anyFile(container.members());
+			} catch (CoreException e) {
+				// if can't get any info, treat as with file
+				return true;
+			}
+		}
+		throw new IllegalArgumentException("Expected a container resource."); //$NON-NLS-1$
+	}
+
+	private static boolean anyFile(IResource[] members) {
+		for (IResource member : members) {
+			if (member.getType() == IResource.FILE)
+				return true;
+			else if (member.getType() == IResource.FOLDER)
+				if (hasContainerAnyFiles(member))
+					return true;
+		}
+		return false;
+	}
+
+	private String makeRepoRelative(IResource res) {
+		return stripWorkDir(repository.getWorkTree(), res.getLocation()
+				.toFile());
+	}
+
+	private boolean containsPrefix(Set<String> collection, String prefix) {
+		// when prefix is empty we are handling repository root, therefore we
+		// should return true whenever collection isn't empty
+		if (prefix.length() == 1 && !collection.isEmpty())
+			return true;
+
+		for (String path : collection)
+			if (path.startsWith(prefix))
+				return true;
+		return false;
+	}
+
+	private boolean containsPrefixPath(Set<String> collection, String path) {
+		for (String entry : collection) {
+			String entryPath;
+			if (entry.endsWith("/")) //$NON-NLS-1$
+				entryPath = entry;
+			else
+				entryPath = entry + "/"; //$NON-NLS-1$
+			if (path.startsWith(entryPath))
+				return true;
+		}
+		return false;
 	}
 
 }

@@ -10,15 +10,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
@@ -28,7 +25,6 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,7 +49,7 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		clickOnDisconnect();
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
 				IResource.DEPTH_INFINITE, null);
-		TestUtil.waitForJobs(500, 5000);
+		waitInUI();
 		mapping = RepositoryMapping.getMapping(project);
 		assertNull(mapping);
 		SWTBotShell connectDialog = openConnectDialog();
@@ -65,41 +61,9 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		connectDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
 				IResource.DEPTH_INFINITE, null);
-		TestUtil.waitForJobs(500, 5000);
+		waitInUI();
 		mapping = RepositoryMapping.getMapping(project);
-		if (mapping == null) {
-			TestUtil.waitForJobs(500, 5000);
-		}
 		assertNotNull(mapping);
-	}
-
-	@Test
-	public void testDecorations() throws Exception {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(PROJ1);
-		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-		assertNotNull(mapping);
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
-		TestUtil.navigateTo(projectExplorerTree,
-				new Path(FILE1_PATH).segments());
-		touch("File modified");
-		clickOnDisconnect();
-		TestUtil.waitForJobs(500, 5000);
-		TestUtil.waitForDecorations();
-		assertFalse("Project should not have git decorations",
-				getProjectItem(projectExplorerTree, PROJ1).getText()
-						.contains("["));
-		SWTBotShell connectDialog = openConnectDialog();
-		connectDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		TestUtil.waitForJobs(500, 5000);
-		TestUtil.waitForDecorations();
-		assertTrue("Project should have git decorations",
-				getProjectItem(projectExplorerTree, PROJ1).getText()
-						.contains("[FirstRepository"));
-		SWTBotTreeItem fileNode = TestUtil.navigateTo(projectExplorerTree,
-				new Path(FILE1_PATH).segments());
-		assertTrue("File should have git decorations",
-				fileNode.getText().startsWith(">"));
 	}
 
 	private void clickOnDisconnect() throws Exception {
