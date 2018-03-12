@@ -83,15 +83,7 @@ public abstract class AbstractRebaseHistoryCommandHandler extends
 	protected abstract RebaseOperation createRebaseOperation(
 			Repository repository, Ref ref);
 
-	/**
-	 * @param commit
-	 * @param repository
-	 * @param currentBranch
-	 * @return ref pointing to the given commit, prefers tracking branch if
-	 *         multiple refs are available
-	 */
-	protected Ref getRef(PlotCommit commit, Repository repository,
-			String currentBranch) {
+	private Ref getRef(PlotCommit commit, Repository repository, String currentBranch) {
 		int count = commit.getRefCount();
 		if (count == 0)
 			return new ObjectIdRef.Unpeeled(Storage.LOOSE, commit.getName(), commit);
@@ -118,13 +110,7 @@ public abstract class AbstractRebaseHistoryCommandHandler extends
 		}
 	}
 
-	/**
-	 * @param repository
-	 * @return the short name of the current branch that HEAD points to.
-	 * @throws ExecutionException
-	 */
-	protected String getCurrentBranch(Repository repository)
-			throws ExecutionException {
+	private String getCurrentBranch(Repository repository) throws ExecutionException {
 		try {
 			return repository.getBranch();
 		} catch (IOException e) {
