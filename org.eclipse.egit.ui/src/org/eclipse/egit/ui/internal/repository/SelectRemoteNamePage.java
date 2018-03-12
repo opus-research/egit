@@ -26,9 +26,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 /**
- * Select a name for a remote and whether to configure fetch, push, or both
+ *
  */
 public class SelectRemoteNamePage extends WizardPage {
+
 	Text remoteName;
 
 	Button configureFetch;
@@ -36,7 +37,7 @@ public class SelectRemoteNamePage extends WizardPage {
 	Button configurePush;
 
 	/**
-	 * Constructs this page
+	 *
 	 */
 	SelectRemoteNamePage() {
 		super(SelectRemoteNamePage.class.getName());
@@ -45,6 +46,9 @@ public class SelectRemoteNamePage extends WizardPage {
 	}
 
 	public void createControl(Composite parent) {
+
+		setMessage(UIText.SelectRemoteNamePage_SelectRemoteNameMessage);
+
 		Composite main = new Composite(parent, SWT.NONE);
 
 		main.setLayout(new GridLayout(2, false));
@@ -55,6 +59,7 @@ public class SelectRemoteNamePage extends WizardPage {
 		remoteName = new Text(main, SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(remoteName);
 		remoteName.addModifyListener(new ModifyListener() {
+
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -64,10 +69,12 @@ public class SelectRemoteNamePage extends WizardPage {
 		configureFetch
 				.setText(UIText.SelectRemoteNamePage_ConfigureFetch_button);
 		configureFetch.addSelectionListener(new SelectionAdapter() {
+
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				checkPage();
 			}
+
 		});
 
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(configureFetch);
@@ -75,16 +82,19 @@ public class SelectRemoteNamePage extends WizardPage {
 		configurePush = new Button(main, SWT.CHECK);
 		configurePush.setText(UIText.SelectRemoteNamePage_ConfigurePush_button);
 		configurePush.addSelectionListener(new SelectionAdapter() {
+
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				checkPage();
 			}
+
 		});
 		GridDataFactory.fillDefaults().span(2, 1).applyTo(configurePush);
 
 		Dialog.applyDialogFont(main);
 		setControl(main);
 		setPageComplete(false);
+
 	}
 
 	private void checkPage() {

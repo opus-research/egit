@@ -28,6 +28,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -102,7 +103,6 @@ public class TagActionTest extends LocalRepositoryTestCase {
 		tagDialog.bot().textWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText("Here's the message text");
 		tagDialog.bot().button(IDialogConstants.OK_LABEL).click();
-		waitInUI();
 		assertTrue(lookupRepository(repositoryFile).getTags().keySet()
 				.contains("AnotherTag"));
 	}
@@ -114,7 +114,9 @@ public class TagActionTest extends LocalRepositoryTestCase {
 		String menuString = util.getPluginLocalizedValue("TagAction_label");
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
 				menuString);
-		SWTBotShell dialog = bot.shell(UIText.CreateTagDialog_NewTag);
+		String branchName = lookupRepository(repositoryFile).getBranch();
+		SWTBotShell dialog = bot.shell(NLS.bind(
+				UIText.CreateTagDialog_questionNewTagTitle, branchName));
 		return dialog;
 	}
 
