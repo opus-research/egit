@@ -55,6 +55,9 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected static final GitRepositoriesViewTestUtils myRepoViewUtil = new GitRepositoriesViewTestUtils();
 
+	// the "Git Repositories View" bot
+	private SWTBotView viewbot;
+
 	/**
 	 * remove all configured repositories from the view
 	 */
@@ -88,9 +91,12 @@ public abstract class GitRepositoriesViewTestBase extends
 	}
 
 	protected SWTBotView getOrOpenView() throws Exception {
-		SWTBotView view = TestUtil.showView(RepositoriesView.VIEW_ID);
+		if (viewbot == null) {
+			viewbot = TestUtil.showView(RepositoriesView.VIEW_ID);
+		} else
+			viewbot.setFocus();
 		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
-		return view;
+		return viewbot;
 	}
 
 	protected void assertHasRepo(File repositoryDir) throws Exception {
