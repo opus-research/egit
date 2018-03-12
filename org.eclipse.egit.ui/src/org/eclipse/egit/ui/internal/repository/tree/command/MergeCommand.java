@@ -8,8 +8,6 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Mathias Kinzler (SAP AG) - move to command framework
- *    Dariusz Luksza (dariusz@luksza.org - set action disabled when HEAD cannot
- *    										be resolved
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -136,11 +134,6 @@ public class MergeCommand extends
 		job.schedule();
 
 		return null;
-	}
-
-	@Override
-	public void setEnabled(Object evaluationContext) {
-		enableWhenRepositoryHaveHead(evaluationContext);
 	}
 
 	private boolean canMerge(final Repository repository) {
