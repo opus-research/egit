@@ -72,12 +72,12 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	/**
 	 * Map from ref name to its label coordinates
 	 */
-	private final Map<String, Point> labelCoordinates = new HashMap<>();
+	private final Map<String, Point> labelCoordinates = new HashMap<String, Point>();
 
 	/**
 	 * Set of ref names that are shown as an ellipsis
 	 */
-	private final Set<String> ellipsisTags = new HashSet<>();
+	private final Set<String> ellipsisTags = new HashSet<String>();
 
 	private int textHeight;
 

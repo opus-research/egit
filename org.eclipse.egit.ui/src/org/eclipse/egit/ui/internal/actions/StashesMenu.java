@@ -54,7 +54,7 @@ public class StashesMenu extends CompoundContributionItem implements
 	protected IContributionItem[] getContributionItems() {
 		Repository repository = getRepository();
 
-		List<IContributionItem> items = new ArrayList<>();
+		List<IContributionItem> items = new ArrayList<IContributionItem>();
 
 		items.add(createStashChangesItem(repository));
 		items.add(new Separator());

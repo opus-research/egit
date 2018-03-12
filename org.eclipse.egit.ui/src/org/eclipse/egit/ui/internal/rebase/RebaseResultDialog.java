@@ -87,7 +87,7 @@ public class RebaseResultDialog extends MessageDialog {
 
 	private final Repository repo;
 
-	private final Set<String> conflictPaths = new HashSet<>();
+	private final Set<String> conflictPaths = new HashSet<String>();
 
 	private Button toggleButton;
 
@@ -568,7 +568,7 @@ public class RebaseResultDialog extends MessageDialog {
 						}
 					}
 				}
-				List<IPath> locationList = new ArrayList<>();
+				List<IPath> locationList = new ArrayList<IPath>();
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
 					IPath location = repoWorkdirPath.append(repoPath);

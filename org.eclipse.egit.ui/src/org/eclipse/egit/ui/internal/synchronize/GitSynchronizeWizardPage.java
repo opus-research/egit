@@ -102,7 +102,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 			Repository repo = repositoryMapping.getRepository();
 			Set<IProject> projects = resources.get(repo);
 			if (projects == null) {
-				projects = new HashSet<>();
+				projects = new HashSet<IProject>();
 				resources.put(repo, projects);
 			}
 			projects.add(project);
@@ -347,7 +347,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 	}
 
 	Set<IProject> getSelectedProjects() {
-		Set<IProject> projects = new HashSet<>();
+		Set<IProject> projects = new HashSet<IProject>();
 		for (Repository repo : selectedBranches.keySet())
 			projects.addAll(resources.get(repo));
 

@@ -70,7 +70,7 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 
 	private FilteredCheckboxTree fTree;
 
-	private List<T> selected = new ArrayList<>();
+	private List<T> selected = new ArrayList<T>();
 
 	private final int style;
 

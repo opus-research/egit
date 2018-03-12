@@ -121,7 +121,7 @@ public class RevertFailureDialog extends MessageDialog {
 
 		private RevertFailure(MergeFailureReason reason) {
 			this.reason = reason;
-			this.paths = new ArrayList<>();
+			this.paths = new ArrayList<Path>();
 		}
 
 		private RevertFailure add(String path) {

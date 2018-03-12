@@ -121,7 +121,7 @@ public class FileDiff extends WorkbenchAdapter {
 			final RevCommit[] parents,
 			final TreeFilter... markTreeFilters) throws MissingObjectException,
 			IncorrectObjectTypeException, CorruptObjectException, IOException {
-		final ArrayList<FileDiff> r = new ArrayList<>();
+		final ArrayList<FileDiff> r = new ArrayList<FileDiff>();
 
 		if (parents.length > 0) {
 			walk.reset(trees(commit, parents));

@@ -46,7 +46,7 @@ public class RebasePlanIndexer {
 	 */
 	public RebasePlanIndexer(RebaseInteractivePlan plan) {
 		this.plan = plan;
-		this.filteredPlan = new ArrayList<>();
+		this.filteredPlan = new ArrayList<PlanElement>();
 
 		listener = new RebasePlanChangeListener();
 		plan.addRebaseInteractivePlanChangeListener(listener);

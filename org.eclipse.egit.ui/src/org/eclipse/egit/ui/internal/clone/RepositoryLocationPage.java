@@ -53,7 +53,7 @@ public class RepositoryLocationPage extends WizardPage {
 	public RepositoryLocationPage(List<CloneSourceProvider> cloneSourceProvider) {
 		super(RepositoryLocationPage.class.getName());
 		this.repositoryImports = cloneSourceProvider;
-		resolvedWizardPages = new HashMap<>();
+		resolvedWizardPages = new HashMap<CloneSourceProvider, WizardPage>();
 		setTitle(UIText.RepositoryLocationPage_title);
 		setMessage(UIText.RepositoryLocationPage_info);
 	}

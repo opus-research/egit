@@ -119,8 +119,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 	@SuppressWarnings("unchecked")
 	public Object[] getElements(Object inputElement) {
 
-		List<RepositoryTreeNode> nodes = new ArrayList<>();
-		List<String> directories = new ArrayList<>();
+		List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
+		List<String> directories = new ArrayList<String>();
 		RepositoryUtil repositoryUtil = Activator.getDefault()
 				.getRepositoryUtil();
 
@@ -177,7 +177,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		switch (node.getType()) {
 
 		case BRANCHES: {
-			List<RepositoryTreeNode> nodes = new ArrayList<>();
+			List<RepositoryTreeNode> nodes = new ArrayList<RepositoryTreeNode>();
 			nodes.add(new LocalNode(node, repo));
 			nodes.add(new RemoteTrackingNode(node, repo));
 			return nodes.toArray();
@@ -187,7 +187,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			if (branchHierarchyMode) {
 				BranchHierarchyNode hierNode = new BranchHierarchyNode(node,
 						repo, new Path(Constants.R_HEADS));
-				List<RepositoryTreeNode> children = new ArrayList<>();
+				List<RepositoryTreeNode> children = new ArrayList<RepositoryTreeNode>();
 				try {
 					for (IPath path : hierNode.getChildPaths()) {
 						children.add(new BranchHierarchyNode(node, node
@@ -220,7 +220,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			if (branchHierarchyMode) {
 				BranchHierarchyNode hierNode = new BranchHierarchyNode(node,
 						repo, new Path(Constants.R_REMOTES));
-				List<RepositoryTreeNode> children = new ArrayList<>();
+				List<RepositoryTreeNode> children = new ArrayList<RepositoryTreeNode>();
 				try {
 					for (IPath path : hierNode.getChildPaths()) {
 						children.add(new BranchHierarchyNode(node, node
@@ -252,7 +252,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		case BRANCHHIERARCHY: {
 			BranchHierarchyNode hierNode = (BranchHierarchyNode) node;
-			List<RepositoryTreeNode> children = new ArrayList<>();
+			List<RepositoryTreeNode> children = new ArrayList<RepositoryTreeNode>();
 			try {
 				for (IPath path : hierNode.getChildPaths()) {
 					children.add(new BranchHierarchyNode(node, node
@@ -289,7 +289,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case REMOTES: {
-			List<RepositoryTreeNode<String>> remotes = new ArrayList<>();
+			List<RepositoryTreeNode<String>> remotes = new ArrayList<RepositoryTreeNode<String>>();
 
 			Repository rep = node.getRepository();
 
@@ -305,7 +305,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		case REPO: {
 
-			List<RepositoryTreeNode<? extends Object>> nodeList = new ArrayList<>();
+			List<RepositoryTreeNode<? extends Object>> nodeList = new ArrayList<RepositoryTreeNode<? extends Object>>();
 			nodeList.add(new BranchesNode(node, repo));
 			nodeList.add(new TagsNode(node, repo));
 			nodeList.add(new AdditionalRefsNode(node, repo));
@@ -322,7 +322,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case WORKINGDIR: {
-			List<RepositoryTreeNode<File>> children = new ArrayList<>();
+			List<RepositoryTreeNode<File>> children = new ArrayList<RepositoryTreeNode<File>>();
 
 			if (node.getRepository().isBare())
 				return children.toArray();
@@ -357,7 +357,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case FOLDER: {
-			List<RepositoryTreeNode<File>> children = new ArrayList<>();
+			List<RepositoryTreeNode<File>> children = new ArrayList<RepositoryTreeNode<File>>();
 
 			File parent = ((File) node.getObject());
 
@@ -392,7 +392,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		case REMOTE: {
 
-			List<RepositoryTreeNode<String>> children = new ArrayList<>();
+			List<RepositoryTreeNode<String>> children = new ArrayList<RepositoryTreeNode<String>>();
 
 			String remoteName = (String) node.getObject();
 			RemoteConfig rc;
@@ -432,7 +432,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		}
 
 		case SUBMODULES:
-			List<RepositoryNode> children = new ArrayList<>();
+			List<RepositoryNode> children = new ArrayList<RepositoryNode>();
 			try {
 				SubmoduleWalk walk = SubmoduleWalk.forIndex(node
 						.getRepository());
@@ -455,7 +455,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			}
 			return children.toArray();
 		case STASH:
-			List<StashedCommitNode> stashNodes = new ArrayList<>();
+			List<StashedCommitNode> stashNodes = new ArrayList<StashedCommitNode>();
 			int index = 0;
 			try {
 				for (RevCommit commit : Git.wrap(repo).stashList().call())
