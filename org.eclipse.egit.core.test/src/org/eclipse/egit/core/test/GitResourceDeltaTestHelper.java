@@ -12,6 +12,7 @@
 package org.eclipse.egit.core.test;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.util.Collection;
@@ -136,5 +137,6 @@ public class GitResourceDeltaTestHelper {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		for (String file : expected)
 			assertThat(changedResources, hasItem(root.findMember(file)));
+		assertEquals(expected.length, changedResources.size());
 	}
 }
