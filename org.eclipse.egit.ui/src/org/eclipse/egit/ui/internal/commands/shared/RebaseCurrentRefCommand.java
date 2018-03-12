@@ -19,10 +19,10 @@ import java.io.IOException;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
+import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -36,16 +36,12 @@ import org.eclipse.osgi.util.NLS;
  * Implements "Rebase" to the currently checked out {@link Ref}
  */
 public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
-
 	/** */
 	public RebaseCurrentRefCommand() {
-		super(UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
-				UIText.RebaseCurrentRefCommand_RebaseCanceledMessage);
+		super(null, null, null);
 	}
 
-	@Override
-	public RebaseOperation createRebaseOperation(ExecutionEvent event)
-			throws ExecutionException {
+	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Ref ref;
 		ISelection currentSelection = getCurrentSelectionChecked(event);
 		if (currentSelection instanceof IStructuredSelection) {
@@ -79,12 +75,11 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 				return null;
 		}
 
-		// set the jobname
-		jobname = NLS.bind(
+		String jobname = NLS.bind(
 				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
 				Repository.shortenRefName(currentFullBranch), ref.getName());
-
-		return new RebaseOperation(repository, ref);
+		RebaseHelper.runRebaseJob(repository, jobname, ref);
+		return null;
 	}
 
 	@Override
@@ -93,7 +88,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
 			Object selection = getSelection(ctx);
 			if (selection instanceof ISelection) {
-				Repository repo = extractRepository((ISelection) selection,	getActiveEditorInput(ctx));
+				Repository repo = getRepository((ISelection) selection, getActiveEditorInput(ctx));
 				if (repo != null) {
 					boolean enabled = isEnabledForState(repo,
 							repo.getRepositoryState());

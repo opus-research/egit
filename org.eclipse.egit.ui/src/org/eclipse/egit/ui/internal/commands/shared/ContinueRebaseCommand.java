@@ -10,9 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 
@@ -24,13 +21,7 @@ public class ContinueRebaseCommand extends AbstractRebaseCommandHandler {
 	 * Default constructor
 	 */
 	public ContinueRebaseCommand() {
-		super(UIText.ContinueRebaseCommand_JobName,
+		super(Operation.CONTINUE, UIText.ContinueRebaseCommand_JobName,
 				UIText.ContinueRebaseCommand_CancelDialogMessage);
-	}
-
-	@Override
-	public RebaseOperation createRebaseOperation(ExecutionEvent event)
-			throws ExecutionException {
-		return new RebaseOperation(getRepository(event), Operation.CONTINUE);
 	}
 }
