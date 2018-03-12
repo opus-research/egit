@@ -5,6 +5,7 @@
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -69,19 +70,17 @@ public class ProjectUtil {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
-		final File parentFile = repository.getWorkTree();
+		final Path repositoryPath = new Path(
+				repository.getWorkTree().getAbsolutePath());
 		for (IProject p : projects) {
 			IPath projectLocation = p.getLocation();
-			if (!p.isOpen() || projectLocation == null)
+			if (!p.isOpen() || projectLocation == null
+					|| !repositoryPath.isPrefixOf(projectLocation))
 				continue;
-			String projectFilePath = projectLocation.append(
-					IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
-			File projectFile = new File(projectFilePath);
-			if (projectFile.exists()) {
-				final File file = p.getLocation().toFile();
-				if (file.getAbsolutePath().startsWith(
-						parentFile.getAbsolutePath()))
-					result.add(p);
+			IPath projectFilePath = projectLocation
+					.append(IProjectDescription.DESCRIPTION_FILE_NAME);
+			if (projectFilePath.toFile().exists()) {
+				result.add(p);
 			}
 		}
 		return result.toArray(new IProject[result.size()]);
@@ -276,22 +275,21 @@ public class ProjectUtil {
 
 	/**
 	 * The method retrieves all accessible projects related to the given
-	 * repository
+	 * repository.
 	 *
 	 * @param repository
-	 * @return list of projects
+	 *            to get the projects of
+	 * @return list of projects, with nested projects first.
 	 */
 	public static IProject[] getProjects(Repository repository) {
 		List<IProject> result = new ArrayList<IProject>();
-		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
-		for (IProject project : projects)
-			if (project.isAccessible()) {
-				RepositoryMapping mapping = RepositoryMapping
-						.getMapping(project);
-				if (mapping != null && mapping.getRepository() == repository)
-					result.add(project);
+		for (IProject project : getProjectsUnderPath(
+				new Path(repository.getWorkTree().getAbsolutePath()))) {
+			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+			if (mapping != null) {
+				result.add(project);
 			}
+		}
 		return result.toArray(new IProject[result.size()]);
 	}
 
@@ -394,7 +392,7 @@ public class ProjectUtil {
 	}
 
 	/**
-	 * Find projects located under the given path
+	 * Find projects located under the given path.
 	 *
 	 * @param path
 	 *            absolute path under which to look for projects

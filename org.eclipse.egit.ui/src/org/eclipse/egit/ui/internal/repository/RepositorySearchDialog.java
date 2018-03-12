@@ -402,39 +402,35 @@ public class RepositorySearchDialog extends WizardPage {
 			});
 	}
 
-	private void findGitDirsRecursive(File root, Set<File> strings,
-			IProgressMonitor monitor, boolean lookForNestedRepositories) {
+	private void findGitDirsRecursive(File root, Set<File> gitDirs,
+			IProgressMonitor monitor, int depth) {
 
 		if (!root.exists() || !root.isDirectory()) {
 			return;
 		}
-		File[] children = root.listFiles();
-		// simply ignore null
-		if (children == null)
-			return;
 
-		for (File child : children) {
-			if (monitor.isCanceled())
-				return;
-			if (!child.isDirectory())
-				continue;
+		// check the root first
+		File resolved = FileKey.resolve(root, FS.DETECTED);
+		if (resolved != null) {
+			gitDirs.add(resolved.getAbsoluteFile());
+			monitor.setTaskName(NLS.bind(
+					UIText.RepositorySearchDialog_RepositoriesFound_message,
+					Integer.valueOf(gitDirs.size())));
+		}
 
-			if (FileKey.isGitRepository(child, FS.DETECTED)) {
-				strings.add(child.getAbsoluteFile());
-				monitor.setTaskName(NLS
-						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
-								Integer.valueOf(strings.size())));
-			} else if (FileKey.isGitRepository(new File(child,
-					Constants.DOT_GIT), FS.DETECTED)) {
-				strings.add(
-						new File(child, Constants.DOT_GIT).getAbsoluteFile());
-				monitor.setTaskName(NLS
-						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
-								Integer.valueOf(strings.size())));
-			} else if (lookForNestedRepositories) {
-				monitor.subTask(child.getPath());
-				findGitDirsRecursive(child, strings, monitor,
-						lookForNestedRepositories);
+		// check depth and if we are not in private git folder ".git" itself
+		if ((depth != 0) && !root.equals(resolved)) {
+			File[] children = root.listFiles();
+			for (File child : children) {
+				if (monitor.isCanceled()) {
+					return;
+				}
+				// skip files and .git subfolders in root
+				if (child.isDirectory()
+						&& !Constants.DOT_GIT.equals(child.getName())) {
+					monitor.subTask(child.getPath());
+					findGitDirsRecursive(child, gitDirs, monitor, depth - 1);
+				}
 			}
 		}
 	}
@@ -475,7 +471,7 @@ public class RepositorySearchDialog extends WizardPage {
 						IProgressMonitor.UNKNOWN);
 				try {
 					findGitDirsRecursive(file, directories, monitor,
-							lookForNested);
+							lookForNested ? -1 : 1);
 				} catch (Exception ex) {
 					throw new InvocationTargetException(ex);
 				}
