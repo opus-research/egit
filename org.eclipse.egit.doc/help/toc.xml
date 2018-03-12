@@ -93,6 +93,7 @@
 				<topic href="help/EGit/User_Guide/Tasks.html#Pulling_New_Changes_from_Upstream_Branch" label="Pulling New Changes from Upstream Branch"></topic>
 			</topic>
 			<topic href="help/EGit/User_Guide/Tasks.html#Working_with_Gerrit" label="Working with Gerrit">
+				<topic href="help/EGit/User_Guide/Tasks.html#Enabling_Gerrit_for_a_repository" label="Enabling Gerrit for a repository"></topic>
 				<topic href="help/EGit/User_Guide/Tasks.html#Pushing_a_change_to_a_Gerrit_Code_Review_Server" label="Pushing a change to a Gerrit Code Review Server"></topic>
 				<topic href="help/EGit/User_Guide/Tasks.html#Fetching_a_change_from_a_Gerrit_Code_Review_Server" label="Fetching a change from a Gerrit Code Review Server"></topic>
 			</topic>
@@ -177,6 +178,7 @@
 					<topic href="help/EGit/User_Guide/Tasks.html#Starting_merge_from_the_History_View" label="Starting merge from the History View"></topic>
 					<topic href="help/EGit/User_Guide/Tasks.html#Starting_merge_from_the_Team_menu" label="Starting merge from the Team menu"></topic>
 					<topic href="help/EGit/User_Guide/Tasks.html#Starting_merge_from_the_Git_Repositories_View" label="Starting merge from the Git Repositories View"></topic>
+					<topic href="help/EGit/User_Guide/Tasks.html#Merge_options" label="Merge options"></topic>
 					<topic href="help/EGit/User_Guide/Tasks.html#Possible_merge_results" label="Possible merge results">
 						<topic href="help/EGit/User_Guide/Tasks.html#Merge_Result_dialog" label="Merge Result dialog"></topic>
 					</topic>
@@ -432,27 +434,27 @@
 		</topic>
 		<topic href="help/JGit/User_Guide/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
-	<topic href="help/EGit/New_and_Noteworthy/3.2/3.2.html" label="EGit 3.2 New and Noteworthy">
-		<topic href="help/EGit/New_and_Noteworthy/3.2/3.2.html" label="EGit">
-			<topic href="help/EGit/New_and_Noteworthy/3.2/3.2.html#Features" label="Features"></topic>
-			<topic href="help/EGit/New_and_Noteworthy/3.2/3.2.html#Usability_Improvements" label="Usability Improvements"></topic>
-			<topic href="help/EGit/New_and_Noteworthy/3.2/3.2.html#Performance_Improvements" label="Performance Improvements"></topic>
+	<topic href="help/EGit/New_and_Noteworthy/3.4/3.4.html" label="EGit 3.4 New and Noteworthy">
+		<topic href="help/EGit/New_and_Noteworthy/3.4/3.4.html" label="EGit">
+			<topic href="help/EGit/New_and_Noteworthy/3.4/3.4.html#Features" label="Features"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/3.4/3.4.html#Usability_Improvements" label="Usability Improvements"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/3.4/3.4.html#Performance_Improvements" label="Performance Improvements"></topic>
+			<topic href="help/EGit/New_and_Noteworthy/3.4/3.4.html#Build_and_Release_Engineering" label="Build and Release Engineering"></topic>
 		</topic>
-		<topic href="help/EGit/New_and_Noteworthy/3.2/GitHub-Connector-Features.html" label="GitHub Connector Features"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/3.2/Build-and-Release-Engineering.html" label="Build and Release Engineering"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/3.2/Bug-Fixes.html" label="Bug Fixes"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/3.2/Contributors.html" label="Contributors"></topic>
-		<topic href="help/EGit/New_and_Noteworthy/3.2/Updating-This-Document.html" label="Updating This Document"></topic>
+		<topic href="help/EGit/New_and_Noteworthy/3.4/Bug-Fixes.html" label="Bug Fixes"></topic>
+		<topic href="help/EGit/New_and_Noteworthy/3.4/Contributors.html" label="Contributors"></topic>
+		<topic href="help/EGit/New_and_Noteworthy/3.4/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
-	<topic href="help/JGit/New_and_Noteworthy/3.2/3.2.html" label="JGit 3.2 New and Noteworthy">
-		<topic href="help/JGit/New_and_Noteworthy/3.2/3.2.html" label="Features">
-			<topic href="help/JGit/New_and_Noteworthy/3.2/3.2.html#Commands" label="Commands"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/3.2/3.2.html#Command_Line" label="Command Line"></topic>
-			<topic href="help/JGit/New_and_Noteworthy/3.2/3.2.html#Build_and_Release_Engineering" label="Build and Release Engineering"></topic>
+	<topic href="help/JGit/New_and_Noteworthy/3.4/3.4.html" label="JGit 3.4 New and Noteworthy">
+		<topic href="help/JGit/New_and_Noteworthy/3.4/3.4.html" label="JGit">
+			<topic href="help/JGit/New_and_Noteworthy/3.4/3.4.html#Features" label="Features"></topic>
+			<topic href="help/JGit/New_and_Noteworthy/3.4/3.4.html#Command_Line" label="Command Line"></topic>
+			<topic href="help/JGit/New_and_Noteworthy/3.4/3.4.html#Performance_Improvements" label="Performance Improvements"></topic>
+			<topic href="help/JGit/New_and_Noteworthy/3.4/3.4.html#Build_and_Release_Engineering" label="Build and Release Engineering"></topic>
 		</topic>
-		<topic href="help/JGit/New_and_Noteworthy/3.2/Bug-Fixes.html" label="Bug Fixes"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/3.2/Contributors.html" label="Contributors"></topic>
-		<topic href="help/JGit/New_and_Noteworthy/3.2/Updating-This-Document.html" label="Updating This Document"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/3.4/Bug-Fixes.html" label="Bug Fixes"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/3.4/Contributors.html" label="Contributors"></topic>
+		<topic href="help/JGit/New_and_Noteworthy/3.4/Updating-This-Document.html" label="Updating This Document"></topic>
 	</topic>
 	<topic href="help/EGit/Git_For_Eclipse_Users/Git-For-Eclipse-Users.html" label="Git for Eclipse Users">
 		<topic href="help/EGit/Git_For_Eclipse_Users/Git-For-Eclipse-Users.html" label="Centralised version control systems"></topic>

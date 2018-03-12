@@ -24,6 +24,7 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -268,7 +269,7 @@ public class SpellcheckableMessageArea extends Composite {
 
 		AnnotationModel annotationModel = new AnnotationModel();
 		sourceViewer = new SourceViewer(this, null, null, true, SWT.MULTI
-				| SWT.V_SCROLL | SWT.H_SCROLL);
+				| SWT.V_SCROLL | SWT.WRAP);
 		getTextWidget().setAlwaysShowScrollBars(false);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
@@ -363,10 +364,10 @@ public class SpellcheckableMessageArea extends Composite {
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
 
-		for (StyleRange styleRange : UIUtils
+		StyleRange[] styleRanges = UIUtils
 				.getHyperlinkDetectorStyleRanges(sourceViewer,
-						configuration.getHyperlinkDetectors(sourceViewer)))
-			sourceViewer.getTextWidget().setStyleRange(styleRange);
+						configuration.getHyperlinkDetectors(sourceViewer));
+		sourceViewer.getTextWidget().setStyleRanges(styleRanges);
 
 		configureContextMenu();
 
@@ -730,12 +731,12 @@ public class SpellcheckableMessageArea extends Composite {
 				public void textChanged(TextEvent event) {
 					textWidget.setStyleRanges(
 							new StyleRange[0]);
-					for (StyleRange styleRange : UIUtils
+					StyleRange[] styleRanges = UIUtils
 							.getHyperlinkDetectorStyleRanges(
 									sourceViewer,
 									configuration
-											.getHyperlinkDetectors(sourceViewer)))
-						textWidget.setStyleRange(styleRange);
+											.getHyperlinkDetectors(sourceViewer));
+					textWidget.setStyleRanges(styleRanges);
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
@@ -831,8 +832,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 *         found.
 	 */
 	protected IHandlerService getHandlerService() {
-		return (IHandlerService) PlatformUI.getWorkbench().getService(
-				IHandlerService.class);
+		return CommonUtils.getService(PlatformUI.getWorkbench(), IHandlerService.class);
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {

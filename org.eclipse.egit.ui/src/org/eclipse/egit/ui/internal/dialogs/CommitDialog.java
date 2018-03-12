@@ -40,19 +40,21 @@ import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
+import org.eclipse.egit.ui.internal.components.CachedCheckboxTreeViewer;
+import org.eclipse.egit.ui.internal.components.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
+import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
@@ -101,9 +103,12 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
@@ -114,6 +119,9 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.dialogs.PreferencesUtil;
@@ -577,9 +585,39 @@ public class CommitDialog extends TitleAreaDialog {
 	@Override
 	protected Control createHelpControl(Composite parent) {
 		toolkit.adapt(parent, false, false);
-		Control help = super.createHelpControl(parent);
-		toolkit.adapt(help, false, false);
-		return help;
+		Link link = new Link(parent, SWT.WRAP | SWT.NO_FOCUS);
+		((GridLayout) parent.getLayout()).numColumns++;
+		link.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
+		link.setText(UIText.CommitDialog_OpenStagingViewLink);
+		link.setToolTipText(UIText.CommitDialog_OpenStagingViewToolTip);
+		link.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				openStagingViewLinkClicked();
+			}
+		});
+
+		toolkit.adapt(link, false, false);
+		return link;
+	}
+
+	private void openStagingViewLinkClicked() {
+		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow();
+		IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
+		try {
+			StagingView view = (StagingView) workbenchPage
+					.showView(StagingView.VIEW_ID);
+			view.reload(repository);
+			String message = commitMessageComponent.getCommitMessage();
+			if (message != null && message.length() > 0)
+				view.setCommitMessage(message);
+			setReturnCode(CANCEL);
+			close();
+		} catch (PartInitException e) {
+			Activator.handleError(UIText.CommitDialog_OpenStagingViewError, e,
+					true);
+		}
 	}
 
 	@Override
@@ -1120,6 +1158,16 @@ public class CommitDialog extends TitleAreaDialog {
 					manager.add(createCompareAction(commitItem));
 				}
 
+				boolean hasUnselected = false;
+				for (Object element : selection.toList()) {
+					if (!filesViewer.getChecked(element)) {
+						hasUnselected = true;
+						break;
+					}
+				}
+
+				if (hasUnselected)
+					manager.add(createSelectAction(selection));
 				manager.add(createAddAction(selection));
 			}
 		};
@@ -1157,6 +1205,16 @@ public class CommitDialog extends TitleAreaDialog {
 					}
 				}
 				filesViewer.refresh(true);
+			}
+		};
+	}
+
+	private IAction createSelectAction(final IStructuredSelection selection) {
+		return new Action(UIText.CommitDialog_SelectForCommit) {
+			@Override
+			public void run() {
+				for (Object item : selection.toList())
+					filesViewer.setChecked(item, true);
 			}
 		};
 	}

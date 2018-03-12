@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.util;
 
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,8 +37,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.RepositoryProvider;
@@ -119,6 +116,24 @@ public class ResourceUtil {
 			String repoRelativePath) {
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
 		return getFileForLocation(path);
+	}
+
+	/**
+	 * Get the {@link IContainer} corresponding to the arguments, using
+	 * {@link IWorkspaceRoot#getContainerForLocation(org.eclipse.core.runtime.IPath)}
+	 * .
+	 *
+	 * @param repository
+	 *            the repository
+	 * @param repoRelativePath
+	 *            the repository-relative path of the container to search for
+	 * @return the IContainer corresponding to this path, or null
+	 */
+	public static IContainer getContainerForLocation(Repository repository,
+			String repoRelativePath) {
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
+		return root.getContainerForLocation(path);
 	}
 
 	/**
@@ -276,45 +291,5 @@ public class ResourceUtil {
 			}
 		}
 		return mappings.toArray(new ResourceMapping[mappings.size()]);
-	}
-
-	/**
-	 * Save local history.
-	 *
-	 * @param repository
-	 */
-	public static void saveLocalHistory(Repository repository) {
-		IndexDiffCacheEntry indexDiffCacheEntry = org.eclipse.egit.core.Activator
-				.getDefault().getIndexDiffCache()
-				.getIndexDiffCacheEntry(repository);
-		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
-		if (indexDiffData != null) {
-			Collection<IResource> changedResources = indexDiffData
-					.getChangedResources();
-			if (changedResources != null) {
-				for (IResource changedResource : changedResources) {
-					if (changedResource instanceof IFile
-							&& changedResource.exists()) {
-						try {
-							ResourceUtil.saveLocalHistory(changedResource);
-						} catch (CoreException e) {
-							// Ignore error. Failure to save local history must
-							// not
-							// interfere with operation.
-						}
-					}
-				}
-			}
-		}
-	}
-
-	private static void saveLocalHistory(IResource resource)
-			throws CoreException {
-		if (!resource.isSynchronized(IResource.DEPTH_ZERO))
-			resource.refreshLocal(IResource.DEPTH_ZERO, null);
-		// Dummy update to force save for local history.
-		((IFile) resource).appendContents(
-				new ByteArrayInputStream(new byte[0]), IResource.KEEP_HISTORY,
-				null);
 	}
 }

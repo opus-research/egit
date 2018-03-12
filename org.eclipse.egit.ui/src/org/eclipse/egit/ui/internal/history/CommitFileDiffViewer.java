@@ -34,10 +34,10 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
-import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.blame.BlameOperation;
+import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -101,7 +101,9 @@ public class CommitFileDiffViewer extends TableViewer {
 
 	private IAction copy;
 
-	private IAction open;
+	private IAction openThisVersion;
+
+	private IAction openPreviousVersion;
 
 	private IAction blame;
 
@@ -142,8 +144,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		this.site = site;
 		final Table rawTable = getTable();
 
-		rawTable.setLinesVisible(true);
-
 		Color fg = rawTable.getForeground();
 		Color bg = rawTable.getBackground();
 		RGB dimmedForegroundRgb = ColorUtil.blend(fg.getRGB(), bg.getRGB(), 60);
@@ -171,8 +171,12 @@ public class CommitFileDiffViewer extends TableViewer {
 												.getShell(),
 										UIText.CommitFileDiffViewer_CanNotOpenCompareEditorTitle,
 										UIText.CommitFileDiffViewer_MergeCommitMultiAncestorMessage);
-				} else
-					openFileInEditor(d);
+				} else {
+					if (d.getChange() == ChangeType.DELETE)
+						openPreviousVersionInEditor(d);
+					else
+						openThisVersionInEditor(d);
+				}
 			}
 		});
 
@@ -193,15 +197,28 @@ public class CommitFileDiffViewer extends TableViewer {
 		Control c = getControl();
 		c.setMenu(mgr.createContextMenu(c));
 
-		open = new Action(UIText.CommitFileDiffViewer_OpenInEditorMenuLabel) {
+		openThisVersion = new Action(UIText.CommitFileDiffViewer_OpenInEditorMenuLabel) {
 			@Override
 			public void run() {
 				final ISelection s = getSelection();
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
-				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();)
-					openFileInEditor(it.next());
+				for (Object element : iss.toList())
+					openThisVersionInEditor((FileDiff) element);
+			}
+		};
+
+		openPreviousVersion = new Action(
+				UIText.CommitFileDiffViewer_OpenPreviousInEditorMenuLabel) {
+			@Override
+			public void run() {
+				final ISelection s = getSelection();
+				if (s.isEmpty() || !(s instanceof IStructuredSelection))
+					return;
+				final IStructuredSelection iss = (IStructuredSelection) s;
+				for (Object element : iss.toList())
+					openPreviousVersionInEditor((FileDiff) element);
 			}
 		};
 
@@ -228,7 +245,7 @@ public class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
-					String relativePath = it.next().getNewPath();
+					String relativePath = it.next().getPath();
 					String path = new Path(getRepository().getWorkTree()
 							.getAbsolutePath()).append(relativePath)
 							.toOSString();
@@ -271,7 +288,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		};
 
 		mgr.add(openWorkingTreeVersion);
-		mgr.add(open);
+		mgr.add(openThisVersion);
+		mgr.add(openPreviousVersion);
 		mgr.add(compare);
 		mgr.add(compareWorkingTreeVersion);
 		mgr.add(blame);
@@ -316,32 +334,43 @@ public class CommitFileDiffViewer extends TableViewer {
 		boolean allSelected = !sel.isEmpty()
 				&& sel.size() == getTable().getItemCount();
 		boolean submoduleSelected = false;
-		for (Object item : sel.toArray())
-			if (((FileDiff) item).isSubmodule()) {
+		boolean addSelected = false;
+		boolean deleteSelected = false;
+		for (Object item : sel.toList()) {
+			FileDiff fileDiff = (FileDiff) item;
+			if (fileDiff.isSubmodule())
 				submoduleSelected = true;
-				break;
-			}
+
+			if (fileDiff.getChange() == ChangeType.ADD)
+				addSelected = true;
+			else if (fileDiff.getChange() == ChangeType.DELETE)
+				deleteSelected = true;
+		}
 
 		selectAll.setEnabled(!allSelected);
 		copy.setEnabled(!sel.isEmpty());
 
 		if (!submoduleSelected) {
 			boolean oneOrMoreSelected = !sel.isEmpty();
-			open.setEnabled(oneOrMoreSelected);
-			openWorkingTreeVersion.setEnabled(oneOrMoreSelected);
+			openThisVersion.setEnabled(oneOrMoreSelected && !deleteSelected);
+			openPreviousVersion.setEnabled(oneOrMoreSelected && !addSelected);
 			compare.setEnabled(sel.size() == 1);
 			blame.setEnabled(oneOrMoreSelected);
 			if (sel.size() == 1) {
 				FileDiff diff = (FileDiff) sel.getFirstElement();
 				String path = new Path(getRepository().getWorkTree()
-						.getAbsolutePath()).append(diff.getNewPath())
-						.toOSString();
-				compareWorkingTreeVersion.setEnabled(new File(path).exists()
-						&& !submoduleSelected);
-			} else
+						.getAbsolutePath()).append(diff.getPath())
+							.toOSString();
+				boolean workTreeFileExists = new File(path).exists();
+				compareWorkingTreeVersion.setEnabled(workTreeFileExists);
+				openWorkingTreeVersion.setEnabled(workTreeFileExists);
+			} else {
 				compareWorkingTreeVersion.setEnabled(false);
+				openWorkingTreeVersion.setEnabled(oneOrMoreSelected);
+			}
 		} else {
-			open.setEnabled(false);
+			openThisVersion.setEnabled(false);
+			openPreviousVersion.setEnabled(false);
 			openWorkingTreeVersion.setEnabled(false);
 			compare.setEnabled(false);
 			blame.setEnabled(false);
@@ -431,23 +460,32 @@ public class CommitFileDiffViewer extends TableViewer {
 		EgitUiEditorUtils.openEditor(file, page);
 	}
 
-	private void openFileInEditor(FileDiff d) {
+	private void openThisVersionInEditor(FileDiff d) {
+		ObjectId[] blobs = d.getBlobs();
+		ObjectId blob = blobs[blobs.length - 1];
+		openInEditor(d.getNewPath(), d.getCommit(), blob);
+	}
+
+	private void openPreviousVersionInEditor(FileDiff d) {
+		RevCommit commit = d.getCommit().getParent(0);
+		ObjectId blob = d.getBlobs()[0];
+		openInEditor(d.getOldPath(), commit, blob);
+	}
+
+	private void openInEditor(String path, RevCommit commit, ObjectId blob) {
 		try {
-			IWorkbenchWindow window = PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow();
-			IWorkbenchPage page = window.getActivePage();
-			IFileRevision rev = CompareUtils.getFileRevision(d.getNewPath(), d
-					.getChange().equals(ChangeType.DELETE) ? d.getCommit()
-					.getParent(0) : d.getCommit(), getRepository(), d
-					.getChange().equals(ChangeType.DELETE) ? d.getBlobs()[0]
-					: d.getBlobs()[d.getBlobs().length - 1]);
-			if (rev != null)
+			IFileRevision rev = CompareUtils.getFileRevision(path, commit,
+					getRepository(), blob);
+			if (rev != null) {
+				IWorkbenchWindow window = PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow();
+				IWorkbenchPage page = window.getActivePage();
 				EgitUiEditorUtils.openEditor(page, rev,
 						new NullProgressMonitor());
-			else {
+			} else {
 				String message = NLS.bind(
-						UIText.CommitFileDiffViewer_notContainedInCommit, d
-.getNewPath(), d.getCommit().getId().getName());
+						UIText.CommitFileDiffViewer_notContainedInCommit, path,
+						commit.getName());
 				Activator.showError(message, null);
 			}
 		} catch (IOException e) {
@@ -525,7 +563,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			try {
 				if (file != null) {
 					IResource[] resources = new IResource[] { file, };
-					CompareUtils.compare(resources, getRepository(),
+					CompareUtils.compare(resources, getRepository(), np, op,
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {
@@ -561,7 +599,7 @@ public class CommitFileDiffViewer extends TableViewer {
 	}
 
 	void showWorkingDirectoryFileDiff(final FileDiff d) {
-		final String p = d.getNewPath();
+		final String p = d.getPath();
 		final RevCommit commit = d.getCommit();
 
 		if (commit == null) {
