@@ -31,8 +31,6 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class GitSynchronizeWizard extends Wizard {
 
-	private IProject[] selectProjects;
-
 	private GitSynchronizeWizardPage page;
 
 	/**
@@ -43,19 +41,9 @@ public class GitSynchronizeWizard extends Wizard {
 		setWindowTitle(UIText.GitSynchronizeWizard_synchronize);
 	}
 
-	/**
-	 * Set list of selected projects in wizard.
-	 *
-	 * @param projects
-	 */
-	public void selectProjects(IProject ... projects) {
-		this.selectProjects = projects;
-	}
-
 	@Override
 	public void addPages() {
 		page = new GitSynchronizeWizardPage();
-		page.selectProjects(selectProjects);
 		addPage(page);
 	}
 
