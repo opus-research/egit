@@ -121,7 +121,7 @@ abstract class GitResourceVariant implements IResourceVariant {
 	}
 
 	public boolean exists() {
-		return true;
+		return objectId != null && !objectId.equals(ObjectId.zeroId());
 	}
 
 }
