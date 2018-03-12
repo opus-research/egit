@@ -32,7 +32,7 @@ public class UntrackActionHandler extends RepositoryActionHandler {
 		if (resources.length == 0)
 			return null;
 		JobUtil.scheduleUserJob(new UntrackOperation(Arrays.asList(resources)),
-				UIText.Untrack_untrack, JobFamilies.UNTRACK, false);
+				UIText.Untrack_untrack, JobFamilies.UNTRACK);
 		return null;
 	}
 }

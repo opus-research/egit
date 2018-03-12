@@ -286,7 +286,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 							projects);
 					JobUtil.scheduleUserJob(op,
 							CoreText.Activator_AutoShareJobName,
-							JobFamilies.AUTO_SHARE, false);
+							JobFamilies.AUTO_SHARE);
 				}
 
 			} catch (CoreException e) {
@@ -422,7 +422,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 				if (toBeIgnored.size() > 0)
 					JobUtil.scheduleUserJob(new IgnoreOperation(toBeIgnored),
 							CoreText.Activator_autoIgnoreDerivedResources,
-							JobFamilies.AUTO_IGNORE, false);
+							JobFamilies.AUTO_IGNORE);
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 				return;
