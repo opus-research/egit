@@ -30,7 +30,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -192,12 +191,9 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 				string
 						.append(
 								" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				String branch = repository.getBranch();
-				if (repository.getRepositoryState() != RepositoryState.SAFE)
-					branch += " - " + repository.getRepositoryState().getDescription(); //$NON-NLS-1$
 				string
 						.append(
-								" [" + branch + "]", StyledString.DECORATIONS_STYLER); //$NON-NLS-1$//$NON-NLS-2$
+								" [" + repository.getBranch() + "]", StyledString.DECORATIONS_STYLER); //$NON-NLS-1$//$NON-NLS-2$
 				return string;
 			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
