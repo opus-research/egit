@@ -15,6 +15,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
@@ -138,8 +139,15 @@ public class GitCreatePatchWizard extends Wizard {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor) {
-					StringBuilder sb = new StringBuilder();
-					DiffFormatter diffFmt = new DiffFormatter();
+					final StringBuilder sb = new StringBuilder();
+					DiffFormatter diffFmt = new DiffFormatter(new OutputStream() {
+
+						@Override
+						public void write(int c) throws IOException {
+							sb.append((char) c);
+
+						}
+					});
 					try {
 						if (isGit)
 							writeGitPatch(sb, diffFmt);
@@ -247,7 +255,7 @@ public class GitCreatePatchWizard extends Wizard {
 	private String getProjectRelaticePath(FileDiff diff) {
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot root = workspace.getRoot();
-		IPath absolutePath = new Path(db.getWorkDir().getAbsolutePath())
+		IPath absolutePath = new Path(db.getWorkTree().getAbsolutePath())
 				.append(diff.path);
 		IResource resource = root.getFileForLocation(absolutePath);
 		return resource.getProjectRelativePath().toString();
@@ -382,7 +390,7 @@ public class GitCreatePatchWizard extends Wizard {
 				name = name.substring(0, name.length() - 1);
 			name = name.concat(".patch"); //$NON-NLS-1$
 
-			String defaultPath = db.getWorkDir().getAbsolutePath();
+			String defaultPath = db.getWorkTree().getAbsolutePath();
 
 			return (new File(defaultPath, name)).getPath();
 		}

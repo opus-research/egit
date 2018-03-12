@@ -383,6 +383,11 @@ public class CreateTagDialog extends Dialog {
 					arg0.doit = false;
 					tagMessageText.traverse(SWT.TRAVERSE_TAB_NEXT);
 				}
+			}
+		});
+
+		tagMessageText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
 				validateInput();
 			}
 		});

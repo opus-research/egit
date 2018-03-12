@@ -33,7 +33,7 @@ import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryConfig;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
@@ -92,7 +92,15 @@ public class PushWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
-		confirmPage = new ConfirmationPage(localDb);
+		confirmPage = new ConfirmationPage(localDb) {
+			@Override
+			public void setVisible(boolean visible) {
+				if (visible)
+					setSelection(repoPage.getSelection(), refSpecPage
+							.getRefSpecs());
+				super.setVisible(visible);
+			}
+		};
 		// TODO use/create another cool icon
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
@@ -143,7 +151,7 @@ public class PushWizard extends Wizard {
 	private void saveRefSpecs() {
 		final RemoteConfig rc = repoPage.getSelection().getConfig();
 		rc.setPushRefSpecs(refSpecPage.getRefSpecs());
-		final RepositoryConfig config = localDb.getConfig();
+		final StoredConfig config = localDb.getConfig();
 		rc.update(config);
 		try {
 			config.save();
@@ -184,7 +192,7 @@ public class PushWizard extends Wizard {
 				}
 
 				spec = new PushOperationSpecification();
-				for (final URIish uri : repoPage.getSelection().getPushURIs())
+				for (final URIish uri : repoPage.getSelection().getAllURIs())
 					spec.addURIRefUpdates(uri, ConfirmationPage
 							.copyUpdates(updates));
 			}
