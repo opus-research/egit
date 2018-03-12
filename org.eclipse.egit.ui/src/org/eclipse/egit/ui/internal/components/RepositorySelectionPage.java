@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.egit.core.securestorage.EGitCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
@@ -108,10 +107,6 @@ public class RepositorySelectionPage extends WizardPage {
 	private Button uriButton;
 
 	private IPreviousValueProposalHandler uriProposalHandler;
-
-	private String user;
-
-	private String password;
 
 	/**
 	 * Transport protocol abstraction
@@ -544,19 +539,12 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setUser(nullString(userText.getText())));
-				user = userText.getText();
 			}
 		});
 
 		newLabel(g, UIText.RepositorySelectionPage_promptPassword + ":"); //$NON-NLS-1$
 		passText = new Text(g, SWT.BORDER | SWT.PASSWORD);
 		passText.setLayoutData(createFieldGridData());
-		passText.addModifyListener(new ModifyListener() {
-			public void modifyText(final ModifyEvent e) {
-				setURI(uri.setPass(null));
-				password = passText.getText();
-			}
-		});
 		return g;
 	}
 
@@ -866,16 +854,6 @@ public class RepositorySelectionPage extends WizardPage {
 	 */
 	public void saveUriInPrefs() {
 		uriProposalHandler.updateProposals();
-	}
-
-	/**
-	 * @return credentials
-	 */
-	public EGitCredentials getCredentials() {
-		if ((user == null || user.length() == 0)
-				&& (password == null || password.length() == 0))
-			return null;
-		return new EGitCredentials(user, password);
 	}
 
 	private void setEnabledRecursively(final Control control,

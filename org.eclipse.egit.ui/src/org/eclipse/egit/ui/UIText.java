@@ -22,6 +22,15 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_filterText;
 
 	/** */
+	public static String AbortRebaseCommand_CancelDialogMessage;
+
+	/** */
+	public static String AbortRebaseCommand_CancelDialogTitle;
+
+	/** */
+	public static String AbortRebaseCommand_JobName;
+
+	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
@@ -160,9 +169,6 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
-	public static String EGitCredentialsProvider_errorReadingCredentials;
-
-	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
 
 	/** */
@@ -209,9 +215,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCloneWizard_errorCannotCreate;
-
-	/** */
-	public static String GitCloneWizard_writeToSecureStoreFailed;
 
 	/** */
 	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
@@ -281,6 +284,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_CompareModeMenuLabel;
+
+	/** */
+	public static String GitHistoryPage_ReuseCompareEditorMenuLabel;
 
 	/** */
 	public static String GitHistoryPage_CompareWithCurrentHeadMenu;
@@ -446,6 +452,57 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitProjectsImportPage_NoProjectsMessage;
+
+	/** */
+	public static String RebaseCurrentRefCommand_AbortedDialogMessage;
+
+	/** */
+	public static String RebaseCurrentRefCommand_AbortedDialogTitle;
+
+	/** */
+	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
+
+	/** */
+	public static String RebaseCurrentRefCommand_RebaseCanceledTitle;
+
+	/** */
+	public static String RebaseCurrentRefCommand_RebasingCurrentJobName;
+
+	/** */
+	public static String RebaseResultDialog_CommitIdLabel;
+
+	/** */
+	public static String RebaseResultDialog_CommitMessageLabel;
+
+	/** */
+	public static String RebaseResultDialog_DetailsGroup;
+
+	/** */
+	public static String RebaseResultDialog_DialogTitle;
+
+	/** */
+	public static String RebaseResultDialog_DiffCalculationErrorDisplay;
+
+	/** */
+	public static String RebaseResultDialog_DiffCalculationErrorMessage;
+
+	/** */
+	public static String RebaseResultDialog_DiffDetailsLabel;
+
+	/** */
+	public static String RebaseResultDialog_StatusLabel;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_DialogMessage;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_DialogTitle;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_RebaseButton;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_RebaseTitle;
 
 	/** */
 	public static String RepositoryPropertySource_EditConfigButton;
@@ -2448,18 +2505,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LocalFileRevision_currentVersionTag;
-
-	/** */
-	public static String LoginDialog_login;
-
-	/** */
-	public static String LoginDialog_password;
-
-	/** */
-	public static String LoginDialog_repository;
-
-	/** */
-	public static String LoginDialog_user;
 
 	/** */
 	public static String NewRemoteWizard_CheckingUriTaskName;
