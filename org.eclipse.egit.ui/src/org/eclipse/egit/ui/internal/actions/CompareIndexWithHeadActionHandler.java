@@ -166,11 +166,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 		if (location == null || location.toFile().isDirectory()) {
 			return false;
 		}
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		if (mapping == null) {
-			return false;
-		}
-		String resRelPath = mapping.getRepoRelativePath(location);
+		String resRelPath = RepositoryMapping.getMapping(location).getRepoRelativePath(location);
 
 		// This action at the moment only works for files anyway
 		if (resRelPath == null || resRelPath.length() == 0) {

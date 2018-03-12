@@ -556,9 +556,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				for (IResource resource : resources) {
 					String relPath = repositoryMapping
 							.getRepoRelativePath(resource);
-					if (relPath != null && relPath.length() > 0) {
+					if (relPath.length() > 0)
 						orFilters.add(PathFilter.create(relPath));
-					}
 				}
 				if (checkIgnored) {
 					if (orFilters.size() > 1) {

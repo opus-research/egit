@@ -469,17 +469,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		List<PreviousCommit> result = new ArrayList<PreviousCommit>();
 		Repository repository = getRepository();
 		IResource resource = getSelectedResources()[0];
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
-		if (mapping == null) {
-			return result;
-		}
-		String path = mapping.getRepoRelativePath(resource);
-		if (path == null) {
-			return result;
-		}
-		try (RevWalk rw = new RevWalk(repository)) {
-			rw.sort(RevSort.COMMIT_TIME_DESC, true);
-			rw.sort(RevSort.BOUNDARY, true);
+		String path = RepositoryMapping.getMapping(resource.getProject())
+				.getRepoRelativePath(resource);
+		RevWalk rw = new RevWalk(repository);
+		rw.sort(RevSort.COMMIT_TIME_DESC, true);
+		rw.sort(RevSort.BOUNDARY, true);
+		try {
 			if (path.length() > 0) {
 				DiffConfig diffConfig = repository.getConfig().get(
 						DiffConfig.KEY);
@@ -507,6 +502,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				}
 				previousCommit = rw.next();
 			}
+		} finally {
 			rw.dispose();
 		}
 		return result;

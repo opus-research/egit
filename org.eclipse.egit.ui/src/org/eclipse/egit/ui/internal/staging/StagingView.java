@@ -2374,7 +2374,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 
 		final boolean repositoryChanged = currentRepository != repository;
-		currentRepository = repository;
 
 		asyncExec(new Runnable() {
 
@@ -2411,7 +2410,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 							});
 				}
-				final StagingViewUpdate update = new StagingViewUpdate(repository, indexDiff, null);
+				final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 				Object[] unstagedExpanded = unstagedViewer
 						.getExpandedElements();
 				Object[] stagedExpanded = stagedViewer
@@ -2427,7 +2426,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				updateRebaseButtonVisibility(repository.getRepositoryState()
 						.isRebasing());
 
-				enableCommitWidgets(indexDiffAvailable && noConflicts);
 
 				boolean commitEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().canCommit()
@@ -2435,8 +2433,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				commitButton.setEnabled(commitEnabled);
 
 				boolean commitAndPushEnabled = commitEnabled
-						&& !repository.getRepositoryState().isRebasing()
-						&& !repository.getRemoteNames().isEmpty();
+						&& !repository.getRepositoryState().isRebasing();
 				commitAndPushButton.setEnabled(commitAndPushEnabled);
 
 				boolean rebaseContinueEnabled = indexDiffAvailable
@@ -2446,14 +2443,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 				form.setText(GitLabels.getStyledLabelSafe(repository).toString());
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
+				enableCommitWidgets(indexDiffAvailable && noConflicts);
 				updateSectionText();
 			}
 		});
 	}
 
 	private IndexDiffData doReload(final Repository repository) {
-		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator.getDefault()
-				.getIndexDiffCache().getIndexDiffCacheEntry(repository);
+		currentRepository = repository;
+
+		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator.getDefault().getIndexDiffCache().getIndexDiffCacheEntry(currentRepository);
 
 		if(cacheEntry != null && cacheEntry != entry)
 			cacheEntry.removeIndexDiffChangedListener(myIndexDiffListener);
