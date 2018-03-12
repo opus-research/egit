@@ -38,7 +38,6 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
@@ -68,8 +67,7 @@ import org.eclipse.ui.PlatformUI;
  * interface {@link ICommitMessageComponentNotifications} about required changes
  * of the toggle selections.
  */
-public class CommitMessageComponent implements IMessageProvider {
-
+public class CommitMessageComponent {
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
@@ -123,10 +121,6 @@ public class CommitMessageComponent implements IMessageProvider {
 	private ObjectId headCommitId;
 
 	private boolean listersEnabled;
-
-	private String statusMessage;
-
-	private int statusType;
 
 	/**
 	 * @param repository
@@ -337,49 +331,27 @@ public class CommitMessageComponent implements IMessageProvider {
 	}
 
 	/**
-	 * Validate the different UI components that determine whether a commit
-	 * operation should be enabled or disabled.
-	 * <p>
-	 * {@link #getMessage()} and {@link #getMessageType()} should be called
-	 * after calling this method to get the specifics of whether a commit
-	 * operation can complete or not.
+	 * Get an informational message about the state of the commit message
+	 * component input. This method checks the current state of the widgets and
+	 * must always be called from the UI-thread.
 	 *
-	 * @return this component
+	 * @return information message or null if none
 	 */
-	public CommitMessageComponent validate() {
+	public String getMessage() {
 		String authorValue = authorText.getText();
 		if (authorValue.length() == 0
-				|| RawParseUtils.parsePersonIdent(authorValue) == null) {
-			statusMessage = UIText.CommitMessageComponent_MessageInvalidAuthor;
-			statusType = ERROR;
-			return this;
-		}
+				|| RawParseUtils.parsePersonIdent(authorValue) == null)
+			return UIText.CommitMessageComponent_MessageInvalidAuthor;
 
 		String committerValue = committerText.getText();
 		if (committerValue.length() == 0
-				|| RawParseUtils.parsePersonIdent(committerValue) == null) {
-			statusMessage = UIText.CommitMessageComponent_MessageInvalidCommitter;
-			statusType = ERROR;
-			return this;
-		}
+				|| RawParseUtils.parsePersonIdent(committerValue) == null)
+			return UIText.CommitMessageComponent_MessageInvalidCommitter;
 
-		if (amending && amendingCommitInRemoteBranch) {
-			statusMessage = UIText.CommitMessageComponent_AmendingCommitInRemoteBranch;
-			statusType = WARNING;
-			return this;
-		}
+		if (amending && amendingCommitInRemoteBranch)
+			return UIText.CommitMessageComponent_AmendingCommitInRemoteBranch;
 
-		statusMessage = null;
-		statusType = NONE;
-		return this;
-	}
-
-	public String getMessage() {
-		return statusMessage;
-	}
-
-	public int getMessageType() {
-		return statusType;
+		return null;
 	}
 
 	/**
@@ -798,4 +770,5 @@ public class CommitMessageComponent implements IMessageProvider {
 	public ObjectId getHeadCommit() {
 		return headCommitId;
 	}
+
 }
