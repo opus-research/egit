@@ -30,6 +30,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Git cache representation in EGit Change Set
@@ -45,6 +46,12 @@ public class GitModelCache extends GitModelObjectContainer {
 	private static final int BASE_NTH = 0;
 
 	private static final int REMOTE_NTH = 1;
+
+	/**
+	 * list of paths that needs to be included, {@code null} when all paths
+	 * should be included
+	 */
+	protected final TreeFilter pathFilter;
 
 	/**
 	 * This interface enables creating proper instance of {@link GitModelBlob}
@@ -72,6 +79,14 @@ public class GitModelCache extends GitModelObjectContainer {
 		GitModelBlob createFileModel(GitModelObjectContainer parent,
 				RevCommit commit, ObjectId repoId, ObjectId cacheId, IPath location)
 				throws IOException;
+
+		/**
+		 * Distinguish working tree from changed/staged tree
+		 *
+		 * @return {@code true} when this tree is working tree, {@code false}
+		 *         when it is a cached tree
+		 */
+		boolean isWorkingTree();
 	}
 
 	/**
@@ -81,11 +96,14 @@ public class GitModelCache extends GitModelObjectContainer {
 	 *            parent object
 	 * @param baseCommit
 	 *            last {@link RevCommit} in repository
+	 * @param pathFilter
+	 *            list of paths that needs to be included, {@code null} when all
+	 *            paths should be included
 	 * @throws IOException
 	 */
-	public GitModelCache(GitModelObject parent, RevCommit baseCommit)
+	public GitModelCache(GitModelObject parent, RevCommit baseCommit, TreeFilter pathFilter)
 			throws IOException {
-		this(parent, baseCommit, new FileModelFactory() {
+		this(parent, baseCommit, pathFilter, new FileModelFactory() {
 
 			public GitModelBlob createFileModel(
 					GitModelObjectContainer modelParent, RevCommit commit,
@@ -94,19 +112,40 @@ public class GitModelCache extends GitModelObjectContainer {
 				return new GitModelCacheFile(modelParent, commit, repoId,
 						cacheId, location);
 			}
+
+			public boolean isWorkingTree() {
+				return false;
+			}
 		});
+
+	}
+
+	/**
+	 * Constructor used by JUnits
+	 *
+	 * @param parent
+	 * @param baseCommit
+	 * @throws IOException
+	 */
+	GitModelCache(GitModelObject parent, RevCommit baseCommit)
+			throws IOException {
+		this(parent, baseCommit, null);
 	}
 
 	/**
 	 * @param parent
 	 * @param baseCommit
+	 * @param pathFilter
+	 *            list of paths that needs to be included, {@code null} when all
+	 *            paths should be included
 	 * @param fileFactory
 	 * @throws IOException
 	 */
 	protected GitModelCache(GitModelObject parent, RevCommit baseCommit,
-			FileModelFactory fileFactory) throws IOException {
+			TreeFilter pathFilter, FileModelFactory fileFactory) throws IOException {
 		super(parent, baseCommit, RIGHT);
 		this.fileFactory = fileFactory;
+		this.pathFilter = pathFilter;
 		cacheTreeMap = new HashMap<String, GitModelCacheTree>();
 		location = new Path(getRepository().getWorkTree().toString());
 	}
@@ -179,6 +218,9 @@ public class GitModelCache extends GitModelObjectContainer {
 		ObjectId headId = repo.getRef(Constants.HEAD).getObjectId();
 		tw.addTree(new RevWalk(repo).parseTree(headId));
 		tw.addTree(new DirCacheIterator(index));
+
+		if (pathFilter != null)
+			tw.setFilter(pathFilter);
 
 		return tw;
 	}

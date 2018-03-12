@@ -22,20 +22,23 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.SWTUtils;
+import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchCommitCommand;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.resource.LocalResourceManager;
+import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
@@ -49,7 +52,7 @@ import org.eclipse.ui.commands.ICommandService;
 /**
  * Label Provider for the Git Repositories View
  */
-public class RepositoriesViewLabelProvider extends LabelProvider implements
+public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		IStyledLabelProvider, IStateListener {
 
 	/**
@@ -57,10 +60,10 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 	 */
 	private Map<Image, Image> decoratedImages = new HashMap<Image, Image>();
 
-	private Image tagImage = UIIcons.TAG.createImage();
+	private ResourceManager resourceManager = new LocalResourceManager(
+			JFaceResources.getResources());
 
-	private Image lightweightTagImage = SWTUtils.getDecoratedImage(tagImage,
-			UIIcons.OVR_LIGHTTAG);
+	private Image annotatedTagImage = UIIcons.TAG_ANNOTATED.createImage();
 
 	private final State verboseBranchModeState;
 
@@ -86,7 +89,8 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 	@Override
 	public Image getImage(Object element) {
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
-		if (node.getType() == RepositoryTreeNodeType.TAG) {
+		RepositoryTreeNodeType type = node.getType();
+		if (type == RepositoryTreeNodeType.TAG) {
 			// determine if we have a lightweight tag and
 			// use the corresponding icon
 			RevObject any;
@@ -103,14 +107,19 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 				Activator.logError(e.getMessage(), e);
 				return null;
 			}
-			if (any instanceof RevCommit)
-				// lightweight tag
-				return decorateImage(lightweightTagImage, element);
-			else
-				// annotated or signed tag
-				return decorateImage(node.getType().getIcon(), element);
-		} else
-			return decorateImage(node.getType().getIcon(), element);
+			if (any instanceof RevTag)
+				return decorateImage(annotatedTagImage, element);
+		} else if (type == RepositoryTreeNodeType.FILE) {
+			Object object = node.getObject();
+			if (object instanceof File) {
+				ImageDescriptor descriptor = PlatformUI.getWorkbench()
+						.getEditorRegistry()
+						.getImageDescriptor(((File) object).getName());
+				return decorateImage((Image) resourceManager.get(descriptor),
+						element);
+			}
+		}
+		return decorateImage(node.getType().getIcon(), element);
 	}
 
 	@Override
@@ -130,9 +139,9 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 		for (Image image : decoratedImages.values()) {
 			image.dispose();
 		}
+		resourceManager.dispose();
 		decoratedImages.clear();
-		tagImage.dispose();
-		lightweightTagImage.dispose();
+		annotatedTagImage.dispose();
 		super.dispose();
 	}
 
@@ -169,9 +178,12 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 					if (id == null)
 						return image;
 					RevWalk rw = new RevWalk(node.getRepository());
-					RevTag tag = rw.parseTag(id);
-					compareString = tag.getObject().name();
-
+					try {
+						compareString = rw.parseTag(id).getObject().name();
+					} catch (IncorrectObjectTypeException e) {
+						// Ref is a lightweight tag, not an annotated tag
+						compareString = id.name();
+					}
 				} else if (refName.startsWith(Constants.R_REMOTES)) {
 					// remote branch: HEAD would be on the commit id to which
 					// the branch is pointing
@@ -259,22 +271,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 			switch (node.getType()) {
 			case REPO:
 				Repository repository = (Repository) node.getObject();
-				File directory = repository.getDirectory();
-				StyledString string = new StyledString();
-				if (!repository.isBare())
-					string.append(directory.getParentFile().getName());
-				else
-					string.append(directory.getName());
-				string
-						.append(
-								" - " + directory.getAbsolutePath(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				String branch = repository.getBranch();
-				if (repository.getRepositoryState() != RepositoryState.SAFE)
-					branch += " - " + repository.getRepositoryState().getDescription(); //$NON-NLS-1$
-				string
-						.append(
-								" [" + branch + "]", StyledString.DECORATIONS_STYLER); //$NON-NLS-1$//$NON-NLS-2$
-				return string;
+				return getStyledTextFor(repository);
 			case ADDITIONALREF:
 				Ref ref = (Ref) node.getObject();
 				// shorten the name
@@ -367,12 +364,8 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 	private String getSimpleText(RepositoryTreeNode node) {
 		switch (node.getType()) {
 		case REPO:
-			File directory = ((Repository) node.getObject()).getDirectory();
-			StringBuilder sb = new StringBuilder();
-			sb.append(directory.getParentFile().getName());
-			sb.append(" - "); //$NON-NLS-1$
-			sb.append(directory.getAbsolutePath());
-			return sb.toString();
+			Repository repository = (Repository) node.getObject();
+			return super.getText(repository);
 		case FILE:
 			// fall through
 		case FOLDER:

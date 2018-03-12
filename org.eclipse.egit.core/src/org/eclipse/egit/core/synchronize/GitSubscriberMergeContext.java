@@ -10,12 +10,18 @@ package org.eclipse.egit.core.synchronize;
 
 import java.io.IOException;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryChangeListener;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -34,6 +40,8 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 	private final RepositoryChangeListener repoChangeListener;
 
+	private final IResourceChangeListener resourceChangeListener;
+
 	/**
 	 * @param subscriber
 	 * @param manager
@@ -50,15 +58,31 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 				update(subscriber, which);
 			}
 		};
+		resourceChangeListener = new IResourceChangeListener() {
+
+			public void resourceChanged(IResourceChangeEvent event) {
+				if (event.getDelta() == null)
+					return;
+
+				for (IResourceDelta delta : event.getDelta().getAffectedChildren()) {
+					RepositoryMapping repo = RepositoryMapping.getMapping(delta.getResource());
+					if (repo != null)
+						update(subscriber, repo);
+				}
+			}
+		};
 		GitProjectData.addRepositoryChangeListener(repoChangeListener);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(resourceChangeListener);
 
 		initialize();
 	}
 
 	public void markAsMerged(IDiff node, boolean inSyncHint,
 			IProgressMonitor monitor) throws CoreException {
-		// TODO Auto-generated method stub
-
+		IResource resource = getDiffTree().getResource(node);
+		AddToIndexOperation operation = new AddToIndexOperation(
+				new IResource[] { resource });
+		operation.execute(monitor);
 	}
 
 	public void reject(IDiff diff, IProgressMonitor monitor)
@@ -84,6 +108,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 	@Override
 	public void dispose() {
 		GitProjectData.removeRepositoryChangeListener(repoChangeListener);
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
 		super.dispose();
 	}
 

@@ -45,6 +45,7 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -102,7 +103,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		top.execute(null);
 		touchAndSubmit(null);
 
-		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
+		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
+				.createLabelProvider();
 		LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
 				null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
@@ -446,7 +448,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 		Repository repo = lookupRepository(repositoryFile);
 
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.CheckoutDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		if (ObjectId.isId(repo.getBranch())) {
 			String mapped = Activator.getDefault().getRepositoryUtil()
@@ -465,7 +467,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertEquals("Wrong selection count", 1, tc.rowCount());
 		assertEquals("Wrong item selected", newBranch[1], tc.get(0, 0));
 
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.CheckoutDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 	}
 
