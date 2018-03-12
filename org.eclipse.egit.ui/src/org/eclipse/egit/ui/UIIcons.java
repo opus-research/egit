@@ -45,6 +45,9 @@ public class UIIcons {
 	/** Decoration for lightweight tags **/
 	public final static ImageDescriptor OVR_LIGHTTAG;
 
+	/** Decoration for warning **/
+	public final static ImageDescriptor OVR_ERROR;
+
 	/** Find icon */
 	public final static ImageDescriptor ELCL16_FIND;
 	/** Compare / View icon */
@@ -191,6 +194,9 @@ public class UIIcons {
 	/** Commit icon */
 	public final static ImageDescriptor COMMIT;
 
+	/** Rebase icon */
+	public final static ImageDescriptor REBASE;
+
 	/** base URL */
 	public final static URL base;
 
@@ -259,6 +265,8 @@ public class UIIcons {
 		NOTE = map("obj16/note.png"); //$NON-NLS-1$
 		ANNOTATE = map("etool16/annotate.gif"); //$NON-NLS-1$
 		COMMIT = map("obj16/commit.gif"); //$NON-NLS-1$
+		REBASE = map("obj16/rebase.gif"); //$NON-NLS-1$
+		OVR_ERROR = map("ovr/error.png"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {
