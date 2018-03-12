@@ -207,7 +207,7 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 		}
 
 		if (multiMode) {
-			if (fTree == null || fTree.isDisposed()) {
+			if (fTree != null && fTree.isDisposed()) {
 				return;
 			}
 			ok.setEnabled(
