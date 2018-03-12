@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.eclipse.core.expressions.PropertyTester;
+import org.eclipse.egit.ui.internal.ResourcePropertyTester;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -29,7 +30,7 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
-		boolean value = internalTest(receiver, property, args, expectedValue);
+		boolean value = internalTest(receiver, property);
 		boolean trace = GitTraceLocation.PROPERTIESTESTER.isActive();
 		if (trace)
 			GitTraceLocation
@@ -39,8 +40,7 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		return value;
 	}
 
-	private boolean internalTest(Object receiver, String property, Object[] args,
-			Object expectedValue) {
+	private boolean internalTest(Object receiver, String property) {
 
 		if (!(receiver instanceof RepositoryTreeNode))
 			return false;
@@ -52,8 +52,8 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		if (property.equals("containsHead")) //$NON-NLS-1$
 			return containsHead(node);
 
-		if (property.equals("isSafe")) //$NON-NLS-1$
-			return node.getRepository().getRepositoryState() == RepositoryState.SAFE;
+		if (ResourcePropertyTester.testRepositoryState(node.getRepository(), property))
+			return true;
 
 		if (property.equals("isRefCheckedOut")) { //$NON-NLS-1$
 			if (!(node.getObject() instanceof Ref))
