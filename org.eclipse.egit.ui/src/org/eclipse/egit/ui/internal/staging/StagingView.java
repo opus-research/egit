@@ -848,12 +848,7 @@ public class StagingView extends ViewPart {
 				case UNTRACKED:
 				default:
 					menuMgr.add(createItem(ActionCommands.DISCARD_CHANGES_ACTION, tableViewer));	// replace with index
-					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
-						@Override
-						public void run() {
-							stage((IStructuredSelection) tableViewer.getSelection());
-						}
-					});
+					menuMgr.add(createItem(ActionCommands.ADD_TO_INDEX, tableViewer));
 				}
 			}
 		});
