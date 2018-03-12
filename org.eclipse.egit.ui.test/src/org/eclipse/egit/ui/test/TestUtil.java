@@ -10,8 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
-import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForView;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -25,20 +23,12 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.commit.CommitHelper;
-import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.service.localization.BundleLocalization;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -49,9 +39,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
-import org.eclipse.ui.IViewReference;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -64,10 +51,6 @@ public class TestUtil {
 	public final static String TESTAUTHOR = "Test Author <test.author@test.com>";
 
 	public final static String TESTCOMMITTER = "Test Committer <test.committer@test.com>";
-
-	public final static String TESTCOMMITTER_NAME = "Test Committer";
-
-	public final static String TESTCOMMITTER_EMAIL = "test.committer@test.com";
 
 	private final static char AMPERSAND = '&';
 
@@ -402,104 +385,6 @@ public class TestUtil {
 			map.put(args[i], args[i+1]);
 		}
 		return map;
-	}
-
-	/**
-	 * @param projectExplorerTree
-	 * @param project
-	 *            name of a project
-	 * @return the project item pertaining to the project
-	 */
-	public SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
-			String project) {
-		for (SWTBotTreeItem item : projectExplorerTree.getAllItems()) {
-			String itemText = item.getText();
-			StringTokenizer tok = new StringTokenizer(itemText, " ");
-			String name = tok.nextToken();
-			// may be a dirty marker
-			if (name.equals(">"))
-				name = tok.nextToken();
-			if (project.equals(name))
-				return item;
-		}
-		return null;
-	}
-
-	/**
-	 * Retrieves a child node with the given childNodeText.
-	 * Nodes with dirty marker are also found (without specifying > in childNodeText)
-	 * @param node
-	 * @param childNodeText
-	 * @return  child node
-	 */
-	public SWTBotTreeItem getChildNode(SWTBotTreeItem node, String childNodeText) {
-		for (SWTBotTreeItem item : node.getItems()) {
-			String itemText = item.getText();
-			StringTokenizer tok = new StringTokenizer(itemText, " ");
-			String name = tok.nextToken();
-			// may be a dirty marker
-			if (name.equals(">"))
-				name = tok.nextToken();
-			if (childNodeText.equals(name))
-				return item;
-		}
-		return null;
-	}
-
-
-	public static RevCommit getHeadCommit(Repository repository)
-			throws Exception {
-		RevCommit headCommit = null;
-		ObjectId parentId = repository.resolve(Constants.HEAD);
-		if (parentId != null)
-			headCommit = new RevWalk(repository).parseCommit(parentId);
-		return headCommit;
-	}
-
-	public static void checkHeadCommit(Repository repository, String author,
-			String committer, String message) throws Exception {
-		CommitInfo commitInfo = CommitHelper.getHeadCommitInfo(repository);
-		assertEquals(author, commitInfo.getAuthor());
-		assertEquals(committer, commitInfo.getCommitter());
-		assertEquals(message, commitInfo.getCommitMessage());
-	}
-
-	public static void configureTestCommitterAsUser(Repository repository) {
-		StoredConfig config = repository.getConfig();
-		config.setString(ConfigConstants.CONFIG_USER_SECTION, null,
-				ConfigConstants.CONFIG_KEY_NAME, TestUtil.TESTCOMMITTER_NAME);
-		config.setString(ConfigConstants.CONFIG_USER_SECTION, null,
-				ConfigConstants.CONFIG_KEY_EMAIL, TestUtil.TESTCOMMITTER_EMAIL);
-	}
-
-	public static void waitUntilViewWithGivenIdShows(final String viewId) {
-		waitForView(new BaseMatcher<IViewReference>() {
-			public boolean matches(Object item) {
-				if (item instanceof IViewReference) {
-					return viewId.equals(((IViewReference) item).getId());
-				}
-				return false;
-			}
-
-			public void describeTo(Description description) {
-				description.appendText("Wait for view with ID=" + viewId);
-			}
-		});
-	}
-
-	public static void waitUntilViewWithGivenTitleShows(final String viewTitle) {
-		waitForView(new BaseMatcher<IViewReference>() {
-			public boolean matches(Object item) {
-				if (item instanceof IViewReference)
-					return viewTitle.equals(((IViewReference) item).getTitle());
-
-				return false;
-			}
-
-			public void describeTo(Description description) {
-				description.appendText("Wait for view with title " + viewTitle);
-			}
-		});
 	}
 
 }

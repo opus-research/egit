@@ -10,6 +10,7 @@ package org.eclipse.egit.ui.internal.synchronize;
 
 import java.net.URISyntaxException;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -20,7 +21,7 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.fetch.FetchOperationUI;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
@@ -72,8 +73,7 @@ class SynchronizeFetchJob extends Job {
 
 			try {
 				fetchOperationUI.execute(subMonitor);
-				gsd.updateRevs();
-			} catch (Exception e) {
+			} catch (CoreException e) {
 				showInformationDialog(remoteName);
 				Activator.logError(e.getMessage(), e);
 			}
@@ -81,7 +81,6 @@ class SynchronizeFetchJob extends Job {
 			monitor.worked(1);
 		}
 
-		monitor.done();
 		return Status.OK_STATUS;
 	}
 

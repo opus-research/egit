@@ -79,11 +79,6 @@ public class JobFamilies {
 	public final static Object ASSUME_NOASSUME_UNCHANGED = new Object();
 
 	/**
-	 * Clean
-	 */
-	public final static Object CLEAN = new Object();
-
-	/**
 	 * Untrack
 	 */
 	public final static Object UNTRACK = new Object();
@@ -93,63 +88,4 @@ public class JobFamilies {
 	 */
 	public final static Object DISCONNECT = new Object();
 
-	/**
-	 * Staging View refresh
-	 */
-	public static final Object STAGING_VIEW_REFRESH = new Object();
-
-	/**
-	 * Add to index job
-	 */
-	public static final Object ADD_TO_INDEX = new Object();
-
-	/**
-	 * Remove from index job
-	 */
-	public static final Object REMOVE_FROM_INDEX = new Object();
-
-	/**
-	 * Cherry pick commit job
-	 */
-	public static final Object CHERRY_PICK = new Object();
-
-	/**
-	 * Revert commit job
-	 */
-	public static final Object REVERT_COMMIT = new Object();
-
-	/**
-	 * Clone repository job
-	 */
-	public static final Object CLONE = new Object();
-
-	/**
-	 * Fetch data from git job
-	 */
-	public static final Object SYNCHRONIZE_READ_DATA = new Object();
-
-	/**
-	 * Show annotations git job
-	 */
-	public static final Object BLAME = new Object();
-
-	/**
-	 * Submodule add git job
-	 */
-	public static final Object SUBMODULE_ADD = new Object();
-
-	/**
-	 * Submodule sync git job
-	 */
-	public static final Object SUBMODULE_SYNC = new Object();
-
-	/**
-	 * Submodule update git job
-	 */
-	public static final Object SUBMODULE_UPDATE = new Object();
-
-	/**
-	 * Stash git job
-	 */
-	public static final Object STASH = new Object();
 }

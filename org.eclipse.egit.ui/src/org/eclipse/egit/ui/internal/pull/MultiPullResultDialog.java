@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.pull;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -31,6 +31,7 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.lib.Repository;
@@ -60,7 +61,7 @@ public class MultiPullResultDialog extends Dialog {
 	private static final int DETAIL_BUTTON = 99;
 
 	// the value is either a PullResult or an IStatus
-	private final Map<Repository, Object> results = new LinkedHashMap<Repository, Object>();
+	private final Map<Repository, Object> results = new HashMap<Repository, Object>();
 
 	private TableViewer tv;
 
@@ -73,6 +74,7 @@ public class MultiPullResultDialog extends Dialog {
 		public Image getColumnImage(Object element, int columnIndex) {
 			if (columnIndex != 3)
 				return null;
+			boolean error = false;
 			Entry<Repository, Object> item = (Entry<Repository, Object>) element;
 			Object resultOrError = item.getValue();
 			if (resultOrError instanceof IStatus)
@@ -80,8 +82,31 @@ public class MultiPullResultDialog extends Dialog {
 						ISharedImages.IMG_ELCL_STOP);
 
 			PullResult res = (PullResult) item.getValue();
-			boolean success = res.isSuccessful();
-			if (!success)
+			MergeResult mres = res.getMergeResult();
+			if (mres != null) {
+				switch (mres.getMergeStatus()) {
+				case ALREADY_UP_TO_DATE:
+				case FAST_FORWARD:
+				case MERGED:
+					break;
+				default:
+					error = true;
+					break;
+				}
+			}
+			RebaseResult rres = res.getRebaseResult();
+			if (rres != null) {
+				switch (rres.getStatus()) {
+				case ABORTED:
+				case FAILED:
+				case STOPPED:
+					break;
+				default:
+					error = true;
+					break;
+				}
+			}
+			if (error)
 				return PlatformUI.getWorkbench().getSharedImages().getImage(
 						ISharedImages.IMG_ELCL_STOP);
 			return null;
@@ -132,11 +157,7 @@ public class MultiPullResultDialog extends Dialog {
 					IStatus status = (IStatus) item.getValue();
 					return status.getMessage();
 				}
-				PullResult res = (PullResult) item.getValue();
-				if (res.isSuccessful())
-					return UIText.MultiPullResultDialog_OkStatus;
-				else
-					return UIText.MultiPullResultDialog_FailedStatus;
+				return UIText.MultiPullResultDialog_OkStatus;
 			default:
 				return null;
 			}
@@ -152,8 +173,7 @@ public class MultiPullResultDialog extends Dialog {
 	protected MultiPullResultDialog(Shell parentShell,
 			Map<Repository, Object> results) {
 		super(parentShell);
-		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.SHELL_TRIM);
-		setBlockOnOpen(false);
+		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.results.putAll(results);
 	}
 

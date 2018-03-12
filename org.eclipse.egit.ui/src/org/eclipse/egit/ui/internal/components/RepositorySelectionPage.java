@@ -26,11 +26,8 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
-import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -66,7 +63,7 @@ import org.eclipse.ui.PlatformUI;
  * Wizard page that allows the user entering the location of a remote repository
  * by specifying URL manually or selecting a preconfigured remote repository.
  */
-public class RepositorySelectionPage extends WizardPage implements IRepositorySearchResult {
+public class RepositorySelectionPage extends WizardPage {
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
@@ -122,7 +119,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 	private String password = EMPTY_STRING;
 
-	private boolean storeInSecureStore;
+	private boolean storeInSecureStore = true;
 
 	private String helpContext = null;
 
@@ -334,7 +331,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 					URIish u = new URIish(text);
 					if (canHandleProtocol(u)) {
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
-								|| text.endsWith(Constants.DOT_GIT_EXT))
+								|| text.endsWith(Constants.DOT_GIT))
 							preset = text;
 					}
 				}
@@ -357,9 +354,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			setTitle(UIText.RepositorySelectionPage_destinationSelectionTitle);
 			setDescription(UIText.RepositorySelectionPage_destinationSelectionDescription);
 		}
-
-		storeInSecureStore = getPreferenceStore().getBoolean(
-				UIPreferences.CLONE_WIZARD_STORE_SECURESTORE);
 	}
 
 	/**
@@ -376,14 +370,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	public RepositorySelectionPage(final boolean sourceSelection,
 			String presetUri) {
 		this(sourceSelection, null, presetUri);
-	}
-
-	/**
-	 * No args constructor; needed because the page is provided by the extension
-	 * point {@code org.eclipse.egit.ui.cloneSourceProvider}
-	 */
-	public RepositorySelectionPage() {
-		this(true, null);
 	}
 
 	/**
@@ -1006,17 +992,4 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		}
 		checkPage();
 	}
-
-	private IPreferenceStore getPreferenceStore() {
-		return Activator.getDefault().getPreferenceStore();
-	}
-
-	public GitRepositoryInfo getGitRepositoryInfo() {
-		GitRepositoryInfo info = new GitRepositoryInfo(uri.toString());
-		info.setCredentials(user, password);
-		info.setShouldSaveCredentialsInSecureStore(true);
-		uriProposalHandler.updateProposals();
-		return info;
-	}
-
 }

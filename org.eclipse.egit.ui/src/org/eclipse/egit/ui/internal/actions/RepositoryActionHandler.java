@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,8 +15,8 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -45,7 +44,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -81,7 +79,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	private IProject[] getProjectsForSelectedResources(
 			IStructuredSelection selection) {
-		Set<IProject> ret = new LinkedHashSet<IProject>();
+		Set<IProject> ret = new HashSet<IProject>();
 		for (IResource resource : (IResource[]) getSelectedAdaptables(
 				selection, IResource.class))
 			ret.add(resource.getProject());
@@ -91,7 +89,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	private Set<IProject> extractProjectsFromMappings(IStructuredSelection selection) {
-		Set<IProject> ret = new LinkedHashSet<IProject>();
+		Set<IProject> ret = new HashSet<IProject>();
 		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
 				selection, ResourceMapping.class)) {
 			IProject[] projects = mapping.getProjects();
@@ -122,7 +120,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @return the repositories that projects map to iff all projects are mapped
 	 */
 	protected Repository[] getRepositoriesFor(final IProject[] projects) {
-		Set<Repository> ret = new LinkedHashSet<Repository>();
+		Set<Repository> ret = new HashSet<Repository>();
 		for (IProject project : projects) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(project);
@@ -169,7 +167,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	private IProject[] getProjectsInRepositoryOfSelectedResources(
 			IStructuredSelection selection) {
-		Set<IProject> ret = new LinkedHashSet<IProject>();
+		Set<IProject> ret = new HashSet<IProject>();
 		Repository[] repositories = getRepositoriesFor(getProjectsForSelectedResources(selection));
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
@@ -229,9 +227,9 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private Repository getRepository(boolean warn,
 			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
-		for (IResource resource : getSelectedResources(selection)) {
+		for (IProject project : getProjectsForSelectedResources(selection)) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(resource);
+					.getMapping(project);
 			if (mapping == null)
 				mapping = repositoryMapping;
 			if (repositoryMapping == null)
@@ -297,13 +295,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		if (selection == null)
 			selection = HandlerUtil.getCurrentSelectionChecked(event);
 		if (selection instanceof TextSelection) {
-			IEditorInput editorInput = (IEditorInput) HandlerUtil
-					.getVariable(event, ISources.ACTIVE_EDITOR_INPUT_NAME);
-			IResource resource = ResourceUtil.getResource(editorInput);
-			if (resource != null)
-				return new StructuredSelection(resource);
-
-			resource = ResourceUtil.getFile(editorInput);
+			IResource resource = ResourceUtil.getResource(HandlerUtil
+					.getVariable(event, ISources.ACTIVE_EDITOR_INPUT_NAME));
 			if (resource != null)
 				return new StructuredSelection(resource);
 		}
@@ -455,7 +448,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @return the resources in the selection
 	 */
 	private IResource[] getSelectedResources(IStructuredSelection selection) {
-		Set<IResource> result = new LinkedHashSet<IResource>();
+		Set<IResource> result = new HashSet<IResource>();
 		for (Object o : selection.toList()) {
 			IResource resource = (IResource) getAdapter(o, IResource.class);
 			if (resource != null)

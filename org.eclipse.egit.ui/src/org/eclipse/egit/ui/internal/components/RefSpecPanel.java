@@ -142,11 +142,10 @@ public class RefSpecPanel {
 	private static boolean isValidRefExpression(final String s) {
 		if (RefSpec.isWildcard(s)) {
 			// replace wildcard with some legal name just for checking
-			return isValidRefExpression(s.substring(0, s.length() - 1) + 'X');
+			return Repository
+					.isValidRefName(s.substring(0, s.length() - 1) + 'X');
 		} else
-			return Repository.isValidRefName(s)
-					|| Repository.isValidRefName(Constants.R_HEADS + s)
-					|| Repository.isValidRefName(Constants.R_TAGS + s);
+			return Repository.isValidRefName(s);
 	}
 
 	private static RefSpec setRefSpecSource(final RefSpec spec, final String src) {
@@ -808,7 +807,7 @@ public class RefSpecPanel {
 		addConfiguredButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER,
 				true, false));
 		addConfiguredButton.setText(NLS.bind(
-				UIText.RefSpecPanel_predefinedConfigured, typeStringTitle()));
+				UIText.RefSpecPanel_predefinedConfigured, typeString()));
 		addConfiguredButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1358,13 +1357,9 @@ public class RefSpecPanel {
 
 		// dst is empty, src is ref or wildcard, so we can rewrite it as user
 		// would perhaps
-		if (pushSpecs) {
-			String newDst = src;
-			newDst = deletePrefixes(src,
-					Constants.R_TAGS.substring(Constants.R_REFS.length()),
-					Constants.R_HEADS.substring(Constants.R_REFS.length()));
-			creationDstCombo.setText(newDst);
-		} else {
+		if (pushSpecs)
+			creationDstCombo.setText(src);
+		else {
 			for (final RefSpec spec : predefinedConfigured) {
 				if (spec.matchSource(src)) {
 					final String newDst = spec.expandFromSource(src)
@@ -1374,20 +1369,11 @@ public class RefSpecPanel {
 				}
 			}
 			if (remoteConfig != null && src.startsWith(Constants.R_HEADS)) {
-				final String newDst = Constants.R_REMOTES
-						+ remoteConfig.getName() + '/'
+				final String newDst = Constants.R_REMOTES + remoteConfig + '/'
 						+ src.substring(Constants.R_HEADS.length());
 				creationDstCombo.setText(newDst);
 			}
 		}
-	}
-
-	private String deletePrefixes(String ref, String... prefixes) {
-		for (String prefix : prefixes)
-			if (ref.startsWith(prefix))
-				return ref.substring(prefix.length());
-
-		return ref;
 	}
 
 	private void tryAutoCompleteDstToSrc() {
@@ -1687,11 +1673,6 @@ public class RefSpecPanel {
 	private String typeString() {
 		return (pushSpecs ? UIText.RefSpecPanel_push
 				: UIText.RefSpecPanel_fetch);
-	}
-
-	private String typeStringTitle() {
-		return (pushSpecs ? UIText.RefSpecPanel_pushTitle
-				: UIText.RefSpecPanel_fetchTitle);
 	}
 
 	private void addPredefinedRefSpecs(final RefSpec predefined) {

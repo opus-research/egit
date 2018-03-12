@@ -25,9 +25,9 @@ import java.util.Observer;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
@@ -67,10 +67,14 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
@@ -115,42 +119,42 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 	static {
 		final PreviewResource project = new PreviewResource(
-				"Project", IResource.PROJECT, "repository" + '|' + RepositoryState.MERGING.getDescription(), "master", "↑2 ↓1", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				"Project", IResource.PROJECT, "repository" + '|' + RepositoryState.MERGING.getDescription(), "master", true, false, true, Staged.NOT_STAGED, false, false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		final ArrayList<PreviewResource> children = new ArrayList<PreviewResource>();
 
 		children
 				.add(new PreviewResource(
-						"folder", IResource.FOLDER, "repository", null, null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"folder", IResource.FOLDER, "repository", null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"tracked.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"tracked.txt", IResource.FILE, "repository", null, true, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"untracked.txt", IResource.FILE, "repository", null, null, false, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"untracked.txt", IResource.FILE, "repository", null, false, false, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"ignored.txt", IResource.FILE, "repository", null, null, false, true, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"ignored.txt", IResource.FILE, "repository", null, false, true, false, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"dirty.txt", IResource.FILE, "repository", null, null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"dirty.txt", IResource.FILE, "repository", null, true, false, true, Staged.NOT_STAGED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"staged.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"staged.txt", IResource.FILE, "repository", null, true, false, false, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"partially-staged.txt", IResource.FILE, "repository", null, null, true, false, true, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"partially-staged.txt", IResource.FILE, "repository", null, true, false, true, Staged.MODIFIED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"added.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.ADDED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"added.txt", IResource.FILE, "repository", null, true, false, false, Staged.ADDED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"removed.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.REMOVED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"removed.txt", IResource.FILE, "repository", null, true, false, false, Staged.REMOVED, false, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"conflict.txt", IResource.FILE, "repository", null, null, true, false, true, Staged.NOT_STAGED, true, false)); //$NON-NLS-1$ //$NON-NLS-2$
+						"conflict.txt", IResource.FILE, "repository", null, true, false, true, Staged.NOT_STAGED, true, false)); //$NON-NLS-1$ //$NON-NLS-2$
 		children
 				.add(new PreviewResource(
-						"assume-valid.txt", IResource.FILE, "repository", null, null, true, false, false, Staged.NOT_STAGED, false, true)); //$NON-NLS-1$ //$NON-NLS-2$
+						"assume-valid.txt", IResource.FILE, "repository", null, true, false, false, Staged.NOT_STAGED, false, true)); //$NON-NLS-1$ //$NON-NLS-2$
 		project.children = children;
 		PREVIEW_FILESYSTEM_ROOT = Collections.singleton(project);
 
@@ -173,9 +177,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 				UIText.GitDecoratorPreferencePage_bindingRepositoryNameFlag);
 		PROJECT_BINDINGS.put(DecorationHelper.BINDING_BRANCH_NAME,
 				UIText.DecoratorPreferencesPage_bindingBranchName);
-		PROJECT_BINDINGS.put(DecorationHelper.BINDING_BRANCH_STATUS,
-				UIText.DecoratorPreferencesPage_bindingBranchStatus);
-
 
 		CHANGESET_LABEL_BINDINGS = new HashMap<String, String>();
 		CHANGESET_LABEL_BINDINGS.put(removeBraces(GitChangeSetLabelProvider.BINDING_CHANGESET_AUTHOR),
@@ -293,6 +294,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private Button recomputeAncestorDecorations;
 
+		private Scale containerRecurseLimit;
+
 		public GeneralTab(TabFolder parent) {
 			Composite composite = SWTUtils.createHVFillComposite(parent,
 					SWTUtils.MARGINS_DEFAULT, 1);
@@ -304,7 +307,14 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			recomputeAncestorDecorations
 					.setToolTipText(UIText.DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip);
 
+			SWTUtils.createLabel(composite,
+					UIText.DecoratorPreferencesPage_computeRecursiveLimit);
+			containerRecurseLimit = createLabeledScaleControl(composite);
+			containerRecurseLimit
+					.setToolTipText(UIText.DecoratorPreferencesPage_computeRecursiveLimitTooltip);
+
 			recomputeAncestorDecorations.addSelectionListener(this);
+			containerRecurseLimit.addSelectionListener(this);
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
 			tabItem.setText(UIText.DecoratorPreferencesPage_generalTabFolder);
@@ -314,17 +324,23 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		public void initializeValues(IPreferenceStore store) {
 			recomputeAncestorDecorations.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
+			containerRecurseLimit.setSelection(store
+					.getInt(UIPreferences.DECORATOR_RECURSIVE_LIMIT));
 		}
 
 		public void performDefaults(IPreferenceStore store) {
 			recomputeAncestorDecorations
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
+			containerRecurseLimit.setSelection(store
+					.getDefaultInt(UIPreferences.DECORATOR_RECURSIVE_LIMIT));
 		}
 
 		public void performOk(IPreferenceStore store) {
 			store.setValue(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS,
 					recomputeAncestorDecorations.getSelection());
+			store.setValue(UIPreferences.DECORATOR_RECURSIVE_LIMIT,
+					containerRecurseLimit.getSelection());
 		}
 
 		public void widgetSelected(SelectionEvent e) {
@@ -336,6 +352,51 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			// Not interesting for us
 		}
 
+		private Scale createLabeledScaleControl(Composite parent) {
+
+			final int[] values = new int[] { 0, 1, 2, 3, 5, 10, 15, 20, 50,
+					100, Integer.MAX_VALUE };
+
+			Composite composite = SWTUtils.createHVFillComposite(parent,
+					SWTUtils.MARGINS_DEFAULT);
+
+			Composite labels = SWTUtils.createHVFillComposite(composite,
+					SWTUtils.MARGINS_NONE, values.length);
+			GridLayout labelsLayout = (GridLayout) labels.getLayout();
+			labelsLayout.makeColumnsEqualWidth = true;
+			labelsLayout.horizontalSpacing = 0;
+			labels.setLayoutData(SWTUtils.createGridData(-1, -1, SWT.FILL,
+					SWT.FILL, false, false));
+
+			for (int i = 0; i < values.length; ++i) {
+				Label label = SWTUtils.createLabel(labels, "" + values[i]); //$NON-NLS-1$
+				if (i == 0) {
+					label.setAlignment(SWT.LEFT);
+					label.setText("Off"); //$NON-NLS-1$
+				} else if (i == values.length - 1) {
+					label.setAlignment(SWT.RIGHT);
+					label.setText("Inf."); //$NON-NLS-1$
+				} else {
+					label.setAlignment(SWT.CENTER);
+				}
+			}
+
+			final Scale scale = new Scale(composite, SWT.HORIZONTAL);
+			scale.setLayoutData(SWTUtils.createHFillGridData());
+			scale.setMaximum(values.length - 1);
+			scale.setMinimum(0);
+			scale.setIncrement(1);
+			scale.setPageIncrement(1);
+
+			scale.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event event) {
+					// Workaround for GTK treating the slider as stepless
+					scale.setSelection(scale.getSelection());
+				}
+			});
+
+			return scale;
+		}
 	}
 
 	/**
@@ -411,7 +472,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private final Label dateFormatPreview;
 
-		private final Date exampleDate = new Date();
+		private final Date exapmleDate = new Date();
 
 		private boolean formatValid;
 
@@ -449,7 +510,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			SimpleDateFormat sdf;
 			try {
 				sdf = new SimpleDateFormat(dateFormat.getText());
-				dateFormatPreview.setText(sdf.format(exampleDate));
+				dateFormatPreview.setText(sdf.format(exapmleDate));
 				formatValid = true;
 			} catch (Exception ex) {
 				dateFormatPreview.setText(UIText.DecoratorPreferencesPage_wrongDateFormat);
@@ -807,27 +868,27 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		public ChangeSetPreview(Composite composite) {
 			super(composite);
 			fViewer.setContentProvider(this);
-			fViewer.setLabelProvider(new GitLabelProvider() {
+			fViewer.setLabelProvider(new LabelProvider() {
 
 				@Override
 				public Image getImage(Object element) {
-					if (element instanceof GitModelCommitMockup)
-						return getChangesetIcon();
+					if (element instanceof GitModelCommitMokeup)
+						return fImageCache.createImage(UIIcons.CHANGESET);
 
 					return super.getImage(element);
 				}
 
 				public String getText(Object element) {
-					if (element instanceof GitModelCommitMockup) {
+					if (element instanceof GitModelCommitMokeup) {
 						String format = store.getString(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT);
 						String dateFormat = store.getString(UIPreferences.DATE_FORMAT);
-						return ((GitModelCommitMockup)element).getMokeupText(format, dateFormat);
+						return ((GitModelCommitMokeup)element).getMokeupText(format, dateFormat);
 					}
 					return super.getText(element);
 				}
 			});
 			fViewer.setContentProvider(this);
-			fViewer.setInput(new GitModelCommitMockup());
+			fViewer.setInput(new GitModelCommitMokeup());
 		}
 
 		public Object[] getChildren(Object parentElement) {
@@ -974,7 +1035,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static class GitModelCommitMockup {
+	private static class GitModelCommitMokeup {
 
 		private static final String message = "Commit message text"; //$NON-NLS-1$
 		private static final String author = "Author Name"; //$NON-NLS-1$
@@ -1001,8 +1062,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private final String branch;
 
-		private final String branchStatus;
-
 		private final int type;
 
 		private Collection children;
@@ -1020,13 +1079,12 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		private boolean assumeValid;
 
 		public PreviewResource(String name, int type, String repositoryName, String branch,
-				String branchStatus, boolean tracked, boolean ignored, boolean dirty, Staged staged,
+				boolean tracked, boolean ignored, boolean dirty, Staged staged,
 				boolean conflicts, boolean assumeValid) {
 
 			this.name = name;
 			this.repositoryName = repositoryName;
 			this.branch = branch;
-			this.branchStatus = branchStatus;
 			this.type = type;
 			this.children = Collections.EMPTY_LIST;
 			this.tracked = tracked;
@@ -1051,10 +1109,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		public String getBranch() {
 			return branch;
-		}
-
-		public String getBranchStatus() {
-			return branchStatus;
 		}
 
 		public boolean isTracked() {

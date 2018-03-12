@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.widgetIsEnabled;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -24,12 +23,9 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.operation.ModalContext;
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.util.FS;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
@@ -37,7 +33,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.TableCollection;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -52,8 +47,6 @@ import org.junit.runner.RunWith;
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class GitRepositoriesViewRepoHandlingTest extends
 		GitRepositoriesViewTestBase {
-
-	private static final String REMOVE_REPOSITORY_CONTEXT_MENU_LABEL = "RepoViewRemove.label";
 
 	private static File repositoryFile;
 
@@ -100,8 +93,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		clearView();
 		refreshAndWait();
 		final Exception[] exceptions = new Exception[1];
-		final SWTBotLabel label = getOrOpenView().bot().label(
-				UIText.RepositoriesView_messsageEmpty);
+		final SWTBotTree tree = getOrOpenView().bot().tree();
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
@@ -111,8 +103,8 @@ public class GitRepositoriesViewRepoHandlingTest extends
 					clip.setContents(new Object[] { repositoryFile.getPath() },
 							new Transfer[] { TextTransfer.getInstance() });
 
-					ContextMenuHelper.clickContextMenu(label,
-							myUtil.getPluginLocalizedValue("PastePathCommand"));
+					ContextMenuHelper.clickContextMenu(tree, myUtil
+							.getPluginLocalizedValue("PastePathCommand"));
 				} catch (Exception e) {
 					exceptions[0] = e;
 				} finally {
@@ -139,7 +131,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		refreshAndWait();
 		assertEmpty();
 	}
@@ -158,7 +150,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
 		shell.activate();
@@ -183,7 +175,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
 		shell.activate();
@@ -207,7 +199,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
+				.getPluginLocalizedValue("RemoveRepositoryCommand"));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
 		shell.activate();
@@ -283,7 +275,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
 				.setText(getTestDirectory().getPath());
 		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
-		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		shell.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
 		assertHasRepo(repositoryFile);
 	}
@@ -299,14 +291,12 @@ public class GitRepositoriesViewRepoHandlingTest extends
 								.getPluginLocalizedValue("RepoViewCloneRepository.tooltip"))
 				.click();
 		SWTBotShell shell = bot.shell(UIText.GitCloneWizard_title).activate();
-		shell.bot().tree().select("URI");
-
-		shell.bot().button("Next >").click();		// for some reason, textWithLabel doesn't seem to work
+		// for some reason, textWithLabel doesn't seem to work
 		shell.bot()
 				.textInGroup(UIText.RepositorySelectionPage_groupLocation, 0)
 				.setText(repositoryFile.getPath());
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		bot.waitUntil(widgetIsEnabled(shell.bot().tree()), 60000);
+		waitInUI();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		waitInUI();
 		// for some reason textWithLabel doesn't work; 0 is path text
@@ -360,49 +350,6 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		repoFile = newPath.append("NewBareRepository").toFile();
 		myRepoViewUtil.getRootItem(getOrOpenView().bot().tree(), repoFile);
 		assertTrue(myRepoViewUtil.lookupRepository(repoFile).isBare());
-	}
-
-	@Test
-	public void testSearchDirectoryWithBareRepos() throws Exception {
-		deleteAllProjects();
-		clearView();
-		refreshAndWait();
-		assertEmpty();
-		getOrOpenView()
-				.toolbarButton(
-						myUtil.getPluginLocalizedValue("RepoViewAddRepository.tooltip"))
-				.click();
-
-		FileUtils.delete(getTestDirectory(), FileUtils.RECURSIVE
-				| FileUtils.RETRY | FileUtils.SKIP_MISSING);
-
-		Git.init().setBare(true)
-				.setDirectory(new File(getTestDirectory(), "BareRepository1"))
-				.call();
-
-		Git.init().setBare(true)
-				.setDirectory(new File(getTestDirectory(), "BareRepository2"))
-				.call();
-
-		SWTBotShell shell = bot.shell(
-				UIText.RepositorySearchDialog_AddGitRepositories).activate();
-
-		shell.bot().checkBox(UIText.RepositorySearchDialog_DeepSearch_button)
-				.deselect();
-
-		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
-				.setText(getTestDirectory().getPath());
-
-		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
-
-		int max = 5000;
-		int slept = 0;
-		while (ModalContext.getModalLevel() > 0 && slept < max) {
-			Thread.sleep(100);
-			slept += 100;
-		}
-
-		assertEquals(2, shell.bot().tree().rowCount());
 	}
 
 	private void assertHasClonedRepo() throws Exception {
