@@ -15,10 +15,8 @@ import java.util.List;
 
 import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.synchronize.GitSubscriberMergeContext;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
@@ -81,8 +79,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 				ModelSynchronizeParticipant.P_VISIBLE_MODEL_PROVIDER,
 				GitChangeSetModelProvider.ID);
 		super.initializeConfiguration(configuration);
-
-		configuration.addActionContribution(new GitActionContributor());
 	}
 
 	@Override
@@ -118,17 +114,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 	@Override
 	public boolean hasCompareInputFor(Object object) {
-		if (object instanceof GitModelBlob || object instanceof IFile)
-			return true;
-		// in Java Workspace model Java source files are passed as type
-		// CompilationUnit which can be adapted to IResource
-		if (object instanceof IAdaptable) {
-			IResource res = (IResource) ((IAdaptable) object)
-					.getAdapter(IResource.class);
-			if (res != null && res.getType() == IResource.FILE)
-				return true;
-		}
-		return false;
+		return object instanceof GitModelBlob;
 	}
 
 	@Override
