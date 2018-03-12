@@ -1201,6 +1201,12 @@ public class UIText extends NLS {
 	public static String RefContentProposal_unknownObject;
 
 	/** */
+	public static String ReflogView_CommitterColumnHeader;
+
+	/** */
+	public static String ReflogView_CommitterMe;
+
+	/** */
 	public static String ReflogView_DateColumnHeader;
 
 	/** */
