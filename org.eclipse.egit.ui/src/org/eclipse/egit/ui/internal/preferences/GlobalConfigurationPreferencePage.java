@@ -13,18 +13,13 @@ package org.eclipse.egit.ui.internal.preferences;
 import java.io.IOException;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.TabFolder;
-import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
@@ -35,29 +30,16 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
  */
 public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		IWorkbenchPreferencePage {
-	/** The ID of this page */
-	public static final String ID = "org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"; //$NON-NLS-1$
-
 	private FileBasedConfig userConfig;
 
-	private FileBasedConfig sysConfig;
+	private boolean isDirty;
 
-	private boolean userIsDirty;
-
-	private boolean sysIsDirty;
-
-	private ConfigurationEditorComponent userConfigEditor;
-
-	private ConfigurationEditorComponent sysConfigEditor;
+	private ConfigurationEditorComponent editor;
 
 	@Override
 	protected Control createContents(Composite parent) {
 
-		Composite composite = SWTUtils.createHVFillComposite(parent,
-				SWTUtils.MARGINS_NONE);
-		TabFolder tabFolder = new TabFolder(composite, SWT.NONE);
-		tabFolder.setLayoutData(SWTUtils.createHVFillGridData());
-		userConfigEditor = new ConfigurationEditorComponent(tabFolder, userConfig, true) {
+		editor = new ConfigurationEditorComponent(parent, userConfig, true) {
 			@Override
 			protected void setErrorMessage(String message) {
 				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
@@ -65,32 +47,12 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 
 			@Override
 			protected void setDirty(boolean dirty) {
-				userIsDirty = dirty;
+				isDirty = dirty;
 				updateApplyButton();
 			}
 		};
-		sysConfigEditor = new ConfigurationEditorComponent(tabFolder, sysConfig, true) {
-			@Override
-			protected void setErrorMessage(String message) {
-				GlobalConfigurationPreferencePage.this.setErrorMessage(message);
-			}
-
-			@Override
-			protected void setDirty(boolean dirty) {
-				sysIsDirty = dirty;
-				updateApplyButton();
-			}
-		};
-		Control result = userConfigEditor.createContents();
+		Control result = editor.createContents();
 		Dialog.applyDialogFont(result);
-		TabItem userTabItem = new TabItem(tabFolder, SWT.FILL);
-		userTabItem.setControl(result);
-		userTabItem.setText(UIText.GlobalConfigurationPreferencePage_userSettingTabTitle);
-		result = sysConfigEditor.createContents();
-		Dialog.applyDialogFont(result);
-		TabItem sysTabItem = new TabItem(tabFolder, SWT.FILL);
-		sysTabItem.setControl(result);
-		sysTabItem.setText(UIText.GlobalConfigurationPreferencePage_systemSettingTabTitle);
 		return result;
 	}
 
@@ -104,36 +66,26 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 	@Override
 	protected void updateApplyButton() {
 		if (getApplyButton() != null)
-			getApplyButton().setEnabled(userIsDirty || sysIsDirty);
+			getApplyButton().setEnabled(isDirty);
 	}
 
 	@Override
 	public boolean performOk() {
-		boolean ok = true;
-		if (userIsDirty) {
+		if (isDirty)
 			try {
-				userConfigEditor.save();
+				editor.save();
+				return super.performOk();
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
-				ok = false;
+				return false;
 			}
-		}
-		if (sysIsDirty) {
-			try {
-				sysConfigEditor.save();
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-				ok = false;
-			}
-		}
-		return ok;
+		return super.performOk();
 	}
 
 	@Override
 	protected void performDefaults() {
 		try {
-			userConfigEditor.restore();
-			sysConfigEditor.restore();
+			editor.restore();
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		}
@@ -141,9 +93,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 	}
 
 	public void init(IWorkbench workbench) {
-		if (sysConfig == null)
-			sysConfig = SystemReader.getInstance().openSystemConfig(null, FS.DETECTED);
 		if (userConfig == null)
-			userConfig = SystemReader.getInstance().openUserConfig(null, FS.DETECTED); // no inherit here!
+			userConfig = SystemReader.getInstance().openUserConfig(FS.DETECTED);
 	}
 }
