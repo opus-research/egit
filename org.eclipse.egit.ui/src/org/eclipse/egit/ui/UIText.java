@@ -400,9 +400,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorParsingHead;
 
 	/** */
-	public static String GitHistoryPage_errorReadingAdditionalRefs;
-
-	/** */
 	public static String GitHistoryPage_errorSettingStartPoints;
 
 	/** */
@@ -503,12 +500,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
-
-	/** */
-	public static String GitPreferenceRoot_BlameGroupHeader;
-
-	/** */
-	public static String GitPreferenceRoot_BlameIgnoreWhitespaceLabel;
 
 	/** */
 	public static String GitPreferenceRoot_fetchBeforeSynchronization;
@@ -788,24 +779,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_CherryPickConflictsTitle;
-
-	/** */
-	public static String CherryPickHandler_CherryPickFailedMessage;
-
-	/** */
-	public static String CherryPickHandler_CouldNotDeleteFile;
-
-	/** */
-	public static String CherryPickHandler_ErrorMsgTemplate;
-
-	/** */
-	public static String CherryPickHandler_IndexDirty;
-
-	/** */
-	public static String CherryPickHandler_unknown;
-
-	/** */
-	public static String CherryPickHandler_WorktreeDirty;
 
 	/** */
 	public static String CherryPickOperation_Failed;
@@ -3767,15 +3740,6 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
-	public static String GitVariableResolver_InternalError;
-
-	/** */
-	public static String GitVariableResolver_NoSelectedResource;
-
-	/** */
-	public static String GitVariableResolver_VariableReferencesNonExistentResource;
-
-	/** */
 	public static String DecoratableResourceHelper_noHead;
 
 	/** */
@@ -3839,9 +3803,6 @@ public class UIText extends NLS {
 	public static String StagingView_exceptionMessage;
 
 	/** */
-	public static String StagingView_UnstageItemMenuLabel;
-
-	/** */
 	public static String SynchronizeWithMenu_custom;
 
 	/** */
@@ -3858,18 +3819,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeFetchJob_FetchFailedMessage;
-
-	/** */
-	public static String EGitCredentialsProvider_question;
-
-	/** */
-	public static String EGitCredentialsProvider_information;
-
-	/** */
-	public static String CustomPromptDialog_provide_information_for;
-
-	/** */
-	public static String CustomPromptDialog_information_about;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
