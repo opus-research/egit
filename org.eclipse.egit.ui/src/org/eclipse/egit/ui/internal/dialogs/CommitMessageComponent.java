@@ -40,9 +40,9 @@ import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
+import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -395,6 +395,8 @@ public class CommitMessageComponent {
 	 */
 	public void enableListeners(boolean enable) {
 		this.listenersEnabled = enable;
+		if (enable)
+			listener.statusUpdated();
 	}
 
 	/**
@@ -490,6 +492,13 @@ public class CommitMessageComponent {
 	private void addListeners() {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
+		authorText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				if (!listenersEnabled)
+					return;
+				listener.statusUpdated();
+			}
+		});
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
@@ -506,6 +515,7 @@ public class CommitMessageComponent {
 							oldSignOff, newSignOff));
 					oldCommitter = newCommitter;
 				}
+				listener.statusUpdated();
 			}
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
@@ -516,6 +526,7 @@ public class CommitMessageComponent {
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
+				listener.statusUpdated();
 			}
 		});
 	}
@@ -525,9 +536,8 @@ public class CommitMessageComponent {
 	 */
 	public void setDefaults() {
 		if (repository != null)
-			createChangeId = repository.getConfig().getBoolean(
-					ConfigConstants.CONFIG_GERRIT_SECTION,
-					ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
+			createChangeId = GerritUtil.getCreateChangeId(repository
+					.getConfig());
 		signedOff = org.eclipse.egit.ui.Activator.getDefault()
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
