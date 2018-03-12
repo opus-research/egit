@@ -934,12 +934,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
 				return false;
 			}
-			Repository db = input.getRepository();
-			if (resolveHead(db, true) == null) {
-				this.name = ""; //$NON-NLS-1$
-				setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
-				return false;
-			}
 
 			final IResource[] inResources = input.getItems();
 			final File[] inFiles = input.getFileList();
@@ -1191,7 +1185,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 			cancelRefreshJob();
 			Repository db = input.getRepository();
-			AnyObjectId headId = resolveHead(db, false);
+			AnyObjectId headId = resolveHead(db);
 
 			List<String> paths = buildFilterPaths(input.getItems(), input
 					.getFileList(), db);
@@ -1221,7 +1215,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 	}
 
-	private AnyObjectId resolveHead(Repository db, boolean acceptNull) {
+	private AnyObjectId resolveHead(Repository db) {
 		AnyObjectId headId;
 		try {
 			headId = db.resolve(Constants.HEAD);
@@ -1229,9 +1223,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)), e);
+							.getRepositoryName(db)));
 		}
-		if (headId == null && !acceptNull)
+		if (headId == null)
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorParsingHead, Activator
 							.getDefault().getRepositoryUtil()
