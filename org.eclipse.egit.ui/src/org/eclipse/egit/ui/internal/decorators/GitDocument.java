@@ -72,15 +72,13 @@ class GitDocument extends Document implements RefsChangedListener {
 					GitTraceLocation.QUICKDIFF.getLocation(),
 					"(GitDocument) create: " + resource); //$NON-NLS-1$
 		GitDocument ret = null;
-		if (RepositoryProvider.getProvider(resource.getProject(),
-				GitProvider.ID) != null) {
+		if (RepositoryProvider.getProvider(resource.getProject()) instanceof GitProvider) {
 			ret = new GitDocument(resource);
 			ret.populate();
 			final Repository repository = ret.getRepository();
-			if (repository != null) {
+			if (repository != null)
 				ret.myRefsChangedHandle = repository.getListenerList()
 						.addRefsChangedListener(ret);
-			}
 		}
 		return ret;
 	}
@@ -264,7 +262,6 @@ class GitDocument extends Document implements RefsChangedListener {
 		disposed = true;
 	}
 
-	@Override
 	public void onRefsChanged(final RefsChangedEvent event) {
 		cancelReloadJob();
 

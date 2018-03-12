@@ -90,7 +90,6 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 			myDirectory = null;
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 
 		initializeDialogUnits(parent);
@@ -111,7 +110,6 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 		else
 			projectText.addModifyListener(new ModifyListener() {
 
-				@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -172,7 +170,6 @@ public class GitCreateGeneralProjectPage extends WizardPage {
 			// make sure there is not already a .project file
 			if (myDirectory.list(new FilenameFilter() {
 
-				@Override
 				public boolean accept(File dir, String name) {
 					if (name.equals(".project")) //$NON-NLS-1$
 						return true;

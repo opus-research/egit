@@ -121,7 +121,6 @@ public class NewRepositoryWizard extends Wizard implements INewWizard {
 				JobFamilies.AUTO_SHARE);
 	}
 
-	@Override
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		// nothing to initialize
 	}

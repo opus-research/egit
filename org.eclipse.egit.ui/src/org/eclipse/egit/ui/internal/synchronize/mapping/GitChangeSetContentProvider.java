@@ -126,7 +126,6 @@ public class GitChangeSetContentProvider extends SynchronizationContentProvider 
 		super.refresh();
 	}
 
-	@Override
 	protected boolean isVisible(ISynchronizationContext context, Object object) {
 		if (object instanceof GitModelRepository
 				|| object instanceof GitModelCommit
