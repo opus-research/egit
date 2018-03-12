@@ -36,66 +36,11 @@ import org.eclipse.osgi.util.NLS;
  * Implements "Rebase" to the currently checked out {@link Ref}
  */
 public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
-	/**
-	 * @param jobName
-	 */
-	protected RebaseCurrentRefCommand(String jobName) {
-		super(jobName, UIText.RebaseCurrentRefCommand_RebaseCanceledMessage);
-	}
 
 	/** */
 	public RebaseCurrentRefCommand() {
 		super(UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
 				UIText.RebaseCurrentRefCommand_RebaseCanceledMessage);
-	}
-
-	@Override
-	public void setEnabled(Object evaluationContext) {
-		if (evaluationContext instanceof IEvaluationContext) {
-			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Object selection = getSelection(ctx);
-			if (selection instanceof ISelection) {
-				Repository repo = getRepository((ISelection) selection, getActiveEditorInput(ctx));
-				if (repo != null) {
-					boolean enabled = isEnabledForState(repo,
-							repo.getRepositoryState());
-					setBaseEnabled(enabled);
-				} else
-					setBaseEnabled(false);
-				return;
-			}
-		}
-		setBaseEnabled(true);
-	}
-
-	/**
-	 * @param repo
-	 * @param state
-	 * @return whether this command is enabled for the repository state
-	 */
-	public static boolean isEnabledForState(Repository repo,
-			RepositoryState state) {
-		return state == RepositoryState.SAFE && hasHead(repo);
-	}
-
-	private static boolean hasHead(Repository repo) {
-		try {
-			Ref headRef = repo.getRef(Constants.HEAD);
-			return headRef != null && headRef.getObjectId() != null;
-		} catch (IOException e) {
-			return false;
-		}
-	}
-
-	private String getFullBranch(Repository repository)
-			throws ExecutionException {
-		try {
-			return repository.getFullBranch();
-		} catch (IOException e) {
-			throw new ExecutionException(
-					UIText.RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage,
-					e);
-		}
 	}
 
 	@Override
@@ -137,8 +82,57 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 		// set the jobname
 		jobname = NLS.bind(
 				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
-				Repository.shortenRefName(currentFullBranch), ref);
+				Repository.shortenRefName(currentFullBranch), ref.getName());
 
 		return new RebaseOperation(repository, ref);
+	}
+
+	@Override
+	public void setEnabled(Object evaluationContext) {
+		if (evaluationContext instanceof IEvaluationContext) {
+			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
+			Object selection = getSelection(ctx);
+			if (selection instanceof ISelection) {
+				Repository repo = getRepository((ISelection) selection,	getActiveEditorInput(ctx));
+				if (repo != null) {
+					boolean enabled = isEnabledForState(repo,
+							repo.getRepositoryState());
+					setBaseEnabled(enabled);
+				} else
+					setBaseEnabled(false);
+				return;
+			}
+		}
+		setBaseEnabled(true);
+	}
+
+	/**
+	 * @param repo
+	 * @param state
+	 * @return whether this command is enabled for the repository state
+	 */
+	public static boolean isEnabledForState(Repository repo,
+			RepositoryState state) {
+		return state == RepositoryState.SAFE && hasHead(repo);
+	}
+
+	private static boolean hasHead(Repository repo) {
+		try {
+			Ref headRef = repo.getRef(Constants.HEAD);
+			return headRef != null && headRef.getObjectId() != null;
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
+	private String getFullBranch(Repository repository)
+			throws ExecutionException {
+		try {
+			return repository.getFullBranch();
+		} catch (IOException e) {
+			throw new ExecutionException(
+					UIText.RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage,
+					e);
+		}
 	}
 }
