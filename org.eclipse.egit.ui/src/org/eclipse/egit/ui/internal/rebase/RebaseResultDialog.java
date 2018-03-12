@@ -68,7 +68,6 @@ public class RebaseResultDialog extends Dialog {
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(resultText);
 
 		if (result.getStatus() == Status.STOPPED) {
-
 			String diff;
 			Group commitGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 			GridDataFactory.fillDefaults().span(2, 1).grab(true, true).applyTo(

@@ -68,9 +68,8 @@ public class RebaseCurrentRefCommand extends
 				} catch (IOException e) {
 					throw new ExecutionException(e.getMessage(), e);
 				}
-			} else {
+			} else
 				return null;
-			}
 		}
 
 		String jobname = NLS.bind(
@@ -82,7 +81,7 @@ public class RebaseCurrentRefCommand extends
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					rebase.execute(monitor);
-					// for the time being, we will abort immediately once we
+					// TODO for the time being, we will abort immediately once we
 					// have found a conflict
 					RebaseResult result = rebase.getResult();
 					if (result.getStatus() == org.eclipse.jgit.api.RebaseResult.Status.STOPPED) {
@@ -90,7 +89,6 @@ public class RebaseCurrentRefCommand extends
 						new RebaseOperation(repository, Operation.ABORT)
 								.execute(monitor);
 					}
-
 				} catch (final CoreException e) {
 					return e.getStatus();
 				}
