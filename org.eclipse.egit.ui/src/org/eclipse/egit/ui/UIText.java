@@ -1264,9 +1264,6 @@ public class UIText extends NLS {
 	public static String ConfirmationPage_title;
 
 	/** */
-	public static String CreateBranchHandler_CreatePromptMessage;
-
-	/** */
 	public static String CreateBranchPage_BranchAlreadyExistsMessage;
 
 	/** */
@@ -1630,7 +1627,13 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_iconsShowAssumeValid;
 
 	/** */
-	public static String IgnoreActionHandler_addToGitignore;
+	public static String IgnoreAction_jobName;
+
+	/** */
+	public static String IgnoreAction_taskName;
+
+	/** */
+	public static String IgnoreAction_error;
 
 	/** */
 	public static String RepositoriesView_ActionCanceled_Message;
@@ -2197,9 +2200,6 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_clearButtonTooltip;
 
 	/** */
-	public static String CreateTagDialog_CreateTagOnCommitTitle;
-
-	/** */
 	public static String CommitCombo_showSuggestedCommits;
 
 	/**
@@ -2211,33 +2211,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitAction_commit;
-
-	/** */
-	public static String CommitAction_ErrorReadingMergeMsg;
-
-	/** */
-	public static String CommitAction_MergeHeadErrorMessage;
-
-	/** */
-	public static String CommitAction_MergeHeadErrorTitle;
-
-	/** */
-	public static String CommitAction_messagepart1;
-
-	/** */
-	public static String CommitAction_messagepart2;
-
-	/** */
-	public static String CommitAction_messagepart3;
-
-	/** */
-	public static String CommitAction_messagepart4;
-
-	/** */
-	public static String CommitAction_messagepart5;
-
-	/** */
-	public static String CommitAction_messagepart6;
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;
