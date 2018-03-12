@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,40 +8,46 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.egit.ui.internal.synchronize.model.GitModelCacheTree;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
 
-class GitTreeTraversal extends ResourceTraversal {
+/**
+ * Allows traverse {@link GitModelCacheTree} objects.
+ */
+class GitCacheTreeTraveral extends ResourceTraversal {
 
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
 
-	public GitTreeTraversal(GitModelTree modelTree) {
-		super(getResourcesImpl(modelTree.getChildren()), IResource.DEPTH_INFINITE,
-				IResource.NONE);
+	public GitCacheTreeTraveral(GitModelCacheTree cacheTree) {
+		super(getResources(cacheTree),
+				IResource.DEPTH_INFINITE, IResource.NONE);
 	}
 
-	private static IResource[] getResourcesImpl(GitModelObject[] children) {
-		IResource[] result = new IResource[children.length];
+	private static IResource[] getResources(GitModelCacheTree cacheTree) {
+		List<IResource> result = new ArrayList<IResource>();
 
-		for (int i = 0; i < children.length; i++) {
-			IResource resource = null;
-			IPath childPath = children[i].getLocation();
-			if (children[i].isContainer())
-				resource = ROOT.getContainerForLocation(childPath);
+		for (GitModelObject object : cacheTree.getChildren()) {
+			IPath location = object.getLocation();
+
+			IResource resource;
+			if (object.isContainer())
+				resource = ROOT.getContainerForLocation(location);
 			else
-				resource = ROOT.getFileForLocation(childPath);
+				resource = ROOT.getFileForLocation(location);
 
 			if (resource != null)
-				result[i] = resource;
+				result.add(resource);
 		}
 
-		return result;
-
+		return result.toArray(new IResource[result.size()]);
 	}
 
 }
