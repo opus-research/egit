@@ -457,21 +457,21 @@ public class CommitFileDiffViewer extends TableViewer {
 			IWorkbenchPage page = window.getActivePage();
 			RevCommit commit = d.getChange().equals(ChangeType.DELETE) ? d
 					.getCommit().getParent(0) : d.getCommit();
-			String path = d.getPath();
-			IFileRevision rev = CompareUtils.getFileRevision(path, commit,
-					getRepository(),
+			IFileRevision rev = CompareUtils.getFileRevision(d.getNewPath(),
+					commit, getRepository(),
 					d.getChange().equals(ChangeType.DELETE) ? d.getBlobs()[0]
 							: d.getBlobs()[d.getBlobs().length - 1]);
 			if (rev != null) {
 				BlameOperation op = new BlameOperation(getRepository(),
-						rev.getStorage(new NullProgressMonitor()), path,
+						rev.getStorage(new NullProgressMonitor()),
+						d.getNewPath(),
 						commit, window.getShell(), page);
 				JobUtil.scheduleUserJob(op, UIText.ShowBlameHandler_JobName,
 						JobFamilies.BLAME);
 			} else {
 				String message = NLS.bind(
 						UIText.CommitFileDiffViewer_notContainedInCommit,
-						path, d.getCommit().getId().getName());
+						d.getNewPath(), d.getCommit().getId().getName());
 				Activator.showError(message, null);
 			}
 		} catch (IOException e) {
@@ -637,6 +637,22 @@ public class CommitFileDiffViewer extends TableViewer {
 	 */
 	void setInterestingPaths(Set<String> interestingPaths) {
 		((FileDiffContentProvider) getContentProvider()).setInterestingPaths(interestingPaths);
+	}
+
+	void selectFirstInterestingElement() {
+		IStructuredContentProvider contentProvider = ((IStructuredContentProvider) getContentProvider());
+		Object[] elements = contentProvider.getElements(getInput());
+		for (final Object element : elements) {
+			if (element instanceof FileDiff) {
+				FileDiff fileDiff = (FileDiff) element;
+				boolean marked = fileDiff
+						.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX);
+				if (marked) {
+					setSelection(new StructuredSelection(fileDiff));
+					return;
+				}
+			}
+		}
 	}
 
 	private void revealFirstInterestingElement() {
