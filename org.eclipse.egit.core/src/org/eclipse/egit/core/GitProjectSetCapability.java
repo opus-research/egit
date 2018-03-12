@@ -6,28 +6,30 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *     Manuel Doninger <manuel.doninger@googlemail.com>
  *******************************************************************************/
 package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -50,7 +52,57 @@ import org.eclipse.team.core.TeamException;
  */
 public final class GitProjectSetCapability extends ProjectSetCapability {
 
+	private static final String SEPARATOR = ","; //$NON-NLS-1$
 	private static final String VERSION = "1.0"; //$NON-NLS-1$
+
+	private static final class ProjectReferenceComparator implements
+			Comparator<ProjectReference>, Serializable {
+		private static final long serialVersionUID = 1L;
+
+		public int compare(ProjectReference o1, ProjectReference o2) {
+			final boolean reposEqual = o1.repository.equals(o2.repository);
+			final boolean branchesEqual = o1.branch
+					.equals(o2.branch);
+			final boolean projectDirsEqual = o1.projectDir
+					.equals(o2.projectDir);
+			return reposEqual && branchesEqual && projectDirsEqual ? 0 : 1;
+		}
+	}
+
+	private static final class ProjectReference {
+
+		private static final String DEFAULT_BRANCH = Constants.MASTER;
+
+		/**
+		 * a relative path (from the repository root) to a project
+		 */
+		String projectDir;
+
+		/**
+		 * <code>repository</code> parameter
+		 */
+		URIish repository;
+
+		/**
+		 * the remote branch that will be checked out, see <code>--branch</code>
+		 * option
+		 */
+		String branch = DEFAULT_BRANCH;
+
+		@SuppressWarnings("boxing")
+		ProjectReference(final String reference) throws URISyntaxException, IllegalArgumentException {
+			final String[] tokens = reference.split(Pattern.quote(SEPARATOR));
+			if (tokens.length != 4)
+				throw new IllegalArgumentException(NLS.bind(
+						CoreText.GitProjectSetCapability_InvalidTokensCount, new Object[] {
+								4, tokens.length, tokens }));
+
+			this.repository = new URIish(tokens[1]);
+			if (!"".equals(tokens[2])) //$NON-NLS-1$
+				this.branch = tokens[2];
+			this.projectDir = tokens[3];
+		}
+	}
 
 	@Override
 	public String[] asReference(IProject[] projects,
@@ -89,11 +141,11 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(VERSION);
-		sb.append(ProjectReference.SEPARATOR);
+		sb.append(SEPARATOR);
 		sb.append(url);
-		sb.append(ProjectReference.SEPARATOR);
+		sb.append(SEPARATOR);
 		sb.append(branch);
-		sb.append(ProjectReference.SEPARATOR);
+		sb.append(SEPARATOR);
 		sb.append(projectPath);
 
 		return sb.toString();
@@ -103,96 +155,115 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 	public IProject[] addToWorkspace(final String[] referenceStrings,
 			final ProjectSetSerializationContext context,
 			final IProgressMonitor monitor) throws TeamException {
-		final Map<URIish, Map<String, Set<ProjectReference>>> repositories =
-				new LinkedHashMap<URIish, Map<String, Set<ProjectReference>>>();
-		for (final String reference : referenceStrings) {
-			try {
-				final ProjectReference projectReference = new ProjectReference(
-						reference);
-				Map<String, Set<ProjectReference>> repositoryBranches = repositories
-						.get(projectReference.getRepository());
-				if (repositoryBranches == null) {
-					repositoryBranches = new LinkedHashMap<String, Set<ProjectReference>>();
-					repositories.put(projectReference.getRepository(),
-							repositoryBranches);
-				}
-				Set<ProjectReference> projectReferences = repositoryBranches.get(projectReference.getBranch());
-				if (projectReferences == null) {
-					projectReferences = new LinkedHashSet<ProjectReference>();
-					repositoryBranches.put(projectReference.getBranch(), projectReferences);
-				}
-
-				projectReferences.add(projectReference);
-			} catch (final IllegalArgumentException e) {
-				throw new TeamException(reference, e);
-			} catch (final URISyntaxException e) {
-				throw new TeamException(reference, e);
-			}
-		}
 		final ArrayList<IProject> importedProjects = new ArrayList<IProject>();
-		for (final Map.Entry<URIish, Map<String, Set<ProjectReference>>> entry : repositories.entrySet()) {
-			final URIish gitUrl = entry.getKey();
-			final Map<String, Set<ProjectReference>> branches = entry.getValue();
 
-			for (final Map.Entry<String, Set<ProjectReference>> branchEntry : branches.entrySet()) {
-				final String branch = branchEntry.getKey();
-				final Set<ProjectReference> projects = branchEntry.getValue();
+		try{
+			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
 
-				try {
-					final IPath workDir = getWorkingDir(gitUrl, branch,
-							branches.keySet());
-					if (workDir.toFile().exists()) {
-						final Collection<String> projectNames = new LinkedList<String>();
-						for (final ProjectReference projectReference : projects)
-							projectNames.add(projectReference.getProjectDir());
-						throw new TeamException(NLS.bind(
-								CoreText.GitProjectSetCapability_CloneToExistingDirectory,
-								new Object[] { workDir, projectNames, gitUrl }));
+				public void run(IProgressMonitor wsOpMonitor) throws CoreException {
+					final Map<URIish, Map<String, Set<ProjectReference>>> repositories =
+						new LinkedHashMap<URIish, Map<String, Set<ProjectReference>>>();
+					for (final String reference : referenceStrings) {
+						try {
+							final ProjectReference projectReference = new ProjectReference(
+									reference);
+							Map<String, Set<ProjectReference>> repositoryBranches = repositories
+									.get(projectReference.repository);
+							if (repositoryBranches == null) {
+								repositoryBranches = new HashMap<String, Set<ProjectReference>>();
+								repositories.put(projectReference.repository,
+										repositoryBranches);
+							}
+							Set<ProjectReference> projectReferences = repositoryBranches.get(projectReference.branch);
+							if (projectReferences == null) {
+								projectReferences = new TreeSet<ProjectReference>(new ProjectReferenceComparator());
+								repositoryBranches.put(projectReference.branch, projectReferences);
+							}
+
+							projectReferences.add(projectReference);
+						} catch (final IllegalArgumentException e) {
+							throw new TeamException(reference, e);
+						} catch (final URISyntaxException e) {
+							throw new TeamException(reference, e);
+						}
+					}
+					for (final Map.Entry<URIish, Map<String, Set<ProjectReference>>> entry : repositories.entrySet()) {
+						final URIish gitUrl = entry.getKey();
+						final Map<String, Set<ProjectReference>> branches = entry.getValue();
+
+						for (final Map.Entry<String, Set<ProjectReference>> branchEntry : branches.entrySet()) {
+							final String branch = branchEntry.getKey();
+							final Set<ProjectReference> projects = branchEntry.getValue();
+
+							try {
+								final IPath workDir = getWorkingDir(gitUrl, branch,
+										branches.keySet());
+								if (workDir.toFile().exists()) {
+									final Collection<String> projectNames = new LinkedList<String>();
+									for (final ProjectReference projectReference : projects)
+										projectNames.add(projectReference.projectDir);
+									throw new TeamException(NLS.bind(
+											CoreText.GitProjectSetCapability_CloneToExistingDirectory,
+											new Object[] { workDir, projectNames, gitUrl }));
+								}
+
+								int timeout = 60;
+								String refName = Constants.R_HEADS + branch;
+								final CloneOperation cloneOperation = new CloneOperation(
+										gitUrl, true, null, workDir.toFile(), refName,
+										Constants.DEFAULT_REMOTE_NAME, timeout);
+								cloneOperation.run(wsOpMonitor);
+
+								final File repositoryPath = workDir.append(Constants.DOT_GIT_EXT).toFile();
+
+								Activator.getDefault().getRepositoryUtil().addConfiguredRepository(repositoryPath);
+
+								// import projects from the current repository to workspace
+								final IWorkspace workspace = ResourcesPlugin.getWorkspace();
+								final IWorkspaceRoot root = workspace.getRoot();
+								for (final ProjectReference projectToImport : projects) {
+									final IPath projectDir = workDir
+											.append(projectToImport.projectDir);
+									final IProjectDescription projectDescription = workspace
+											.loadProjectDescription(projectDir
+													.append(IProjectDescription.DESCRIPTION_FILE_NAME));
+									final IProject project = root
+											.getProject(projectDescription.getName());
+									project.create(projectDescription, wsOpMonitor);
+									importedProjects.add(project);
+
+									project.open(wsOpMonitor);
+									final ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
+											project, repositoryPath);
+									connectProviderOperation.execute(wsOpMonitor);
+								}
+							} catch (final InvocationTargetException e) {
+								throwTeamException(e);
+							} catch (final CoreException e) {
+								throw TeamException.asTeamException(e);
+							} catch (final InterruptedException e) {
+								// was canceled by user
+								importedProjects.clear();
+							}
+						}
 					}
 
-					int timeout = 60;
-					String refName = Constants.R_HEADS + branch;
-					final CloneOperation cloneOperation = new CloneOperation(
-							gitUrl, true, null, workDir.toFile(), refName,
-							Constants.DEFAULT_REMOTE_NAME, timeout);
-					cloneOperation.run(monitor);
-
-					final File repositoryPath = workDir.append(Constants.DOT_GIT_EXT).toFile();
-
-					Activator.getDefault().getRepositoryUtil().addConfiguredRepository(repositoryPath);
-
-					// import projects from the current repository to workspace
-					final IWorkspace workspace = ResourcesPlugin.getWorkspace();
-					final IWorkspaceRoot root = workspace.getRoot();
-					for (final ProjectReference projectToImport : projects) {
-						final IPath projectDir = workDir
-								.append(projectToImport.getProjectDir());
-						final IProjectDescription projectDescription = workspace
-								.loadProjectDescription(projectDir
-										.append(IProjectDescription.DESCRIPTION_FILE_NAME));
-						final IProject project = root
-								.getProject(projectDescription.getName());
-						project.create(projectDescription, monitor);
-						importedProjects.add(project);
-
-						project.open(monitor);
-						final ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
-								project, repositoryPath);
-						connectProviderOperation.execute(monitor);
-					}
-				} catch (final InvocationTargetException e) {
-					throw TeamException.asTeamException(e);
-				} catch (final CoreException e) {
-					throw TeamException.asTeamException(e);
-				} catch (final InterruptedException e) {
-					// was canceled by user
-					return new IProject[0];
 				}
-			}
+			}, ResourcesPlugin.getWorkspace().getRoot(), IWorkspace.AVOID_UPDATE, monitor);
+		} catch (CoreException e) {
+			throw TeamException.asTeamException(e);
 		}
 		final IProject[] result = importedProjects
 				.toArray(new IProject[importedProjects.size()]);
 		return result;
+	}
+
+	private TeamException throwTeamException(Throwable th) throws TeamException{
+		Throwable current = th;
+		while(current.getCause()!=null){
+			current = current.getCause();
+		}
+		throw new TeamException(current.getMessage(), current);
 	}
 
 	/**

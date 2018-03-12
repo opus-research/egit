@@ -22,10 +22,12 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
+import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
+import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -86,45 +88,45 @@ public class SwitchToMenu extends ContributionItem implements
 		Object selected = ((IStructuredSelection) sel).getFirstElement();
 		if (selected instanceof IAdaptable)
 			selected = ((IAdaptable) selected).getAdapter(IProject.class);
-		if (!(selected instanceof IProject))
-			return;
-		RepositoryMapping mapping = RepositoryMapping
-				.getMapping((IProject) selected);
-		if (mapping == null)
-			return;
-		final Repository repository = mapping.getRepository();
-		if (repository == null)
-			return;
 
+		Repository repository = null;
+		if (selected instanceof RepositoryNode)
+			repository = ((RepositoryNode) selected).getRepository();
+		else if (selected instanceof BranchesNode)
+			repository = ((BranchesNode) selected).getRepository();
+		else if (selected instanceof LocalNode)
+			repository = ((LocalNode) selected).getRepository();
+		else if ((selected instanceof IProject)) {
+			RepositoryMapping mapping = RepositoryMapping
+					.getMapping((IProject) selected);
+			if (mapping != null)
+				repository = mapping.getRepository();
+		}
+
+		if (repository != null)
+			createDynamicMenu(menu, repository);
+	}
+
+	private void createDynamicMenu(Menu menu, final Repository repository) {
 		MenuItem newBranch = new MenuItem(menu, SWT.PUSH);
 		newBranch.setText(UIText.SwitchToMenu_NewBranchMenuLabel);
 		newBranch.setImage(newBranchImage);
 		newBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				String sourceRef = repository.getConfig().getString(
-						ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
-						ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
-				try {
-					if (repository.getRef(sourceRef) != null)
-						BranchOperationUI.createWithRef(repository, sourceRef).start();
-					else
-						BranchOperationUI.create(repository).start();
-				} catch (IOException e1) {
-					BranchOperationUI.create(repository).start();
-				}
+				BranchOperationUI.create(repository).start();
 			}
 		});
 		new MenuItem(menu, SWT.SEPARATOR);
 		try {
-			String currentBranch = mapping.getRepository().getFullBranch();
-			Map<String, Ref> localBranches = mapping.getRepository().getRefDatabase().getRefs(
+			String currentBranch = repository.getFullBranch();
+			Map<String, Ref> localBranches = repository.getRefDatabase().getRefs(
 					Constants.R_HEADS);
 			TreeMap<String, Ref> sortedRefs = new TreeMap<String, Ref>();
 
 			// Add the MAX_NUM_MENU_ENTRIES most recently used branches first
 			List<ReflogEntry> reflogEntries = new ReflogReader(
-					mapping.getRepository(), Constants.HEAD)
+					repository, Constants.HEAD)
 					.getReverseEntries();
 			for (ReflogEntry entry : reflogEntries) {
 				CheckoutEntry checkout = entry.parseCheckout();
@@ -151,13 +153,17 @@ public class SwitchToMenu extends ContributionItem implements
 				localBranches.remove(shortName);
 			}
 
-			if (itemCount < MAX_NUM_MENU_ENTRIES && itemCount > 0 && sortedRefs.size() > 0) {
+			if (itemCount < MAX_NUM_MENU_ENTRIES) {
+				// A separator between recently used branches and local branches is
+				// nice but only if we have both recently used branches and other
+				// local branches
+				if (itemCount > 0 && localBranches.size() > 0)
+					new MenuItem(menu, SWT.SEPARATOR);
+
 				// Now add more other branches if we have only a few branch switches
 				// Sort the remaining local branches
 				sortedRefs.clear();
 				sortedRefs.putAll(localBranches);
-				// A separator between recently used branches and other branches is nice
-				new MenuItem(menu, SWT.SEPARATOR);
 				for (final Entry<String, Ref> entry : sortedRefs.entrySet()) {
 					itemCount++;
 					// protect ourselves against a huge sub-menu
@@ -165,10 +171,10 @@ public class SwitchToMenu extends ContributionItem implements
 						break;
 					final String fullName = entry.getValue().getName();
 					final String shortName = entry.getKey();
-					createMenuItem(menu, repository, fullName, shortName, shortName);
+					createMenuItem(menu, repository, currentBranch, fullName, shortName);
 				}
 			}
-			if (localBranches.size() > 0)
+			if (itemCount > 0)
 				new MenuItem(menu, SWT.SEPARATOR);
 			MenuItem others = new MenuItem(menu, SWT.PUSH);
 			others.setText(UIText.SwitchToMenu_OtherMenuLabel);
