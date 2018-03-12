@@ -16,7 +16,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.egit.ui.common.EGitTestCase;
 import org.eclipse.egit.ui.internal.UIText;
@@ -238,41 +237,13 @@ public class GlobalConfigurationPageTest {
 		// ok: two dots
 		assertTrue(addDialog.bot().button(IDialogConstants.OK_LABEL)
 				.isEnabled());
-	}
-
-	@Test
-	public void testSubsectionWithDot() throws Exception {
-		preferencePage.bot()
-				.button(UIText.ConfigurationEditorComponent_AddButton).click();
-		SWTBotShell addDialog = bot
-				.shell(UIText.AddConfigEntryDialog_AddConfigTitle);
-		addDialog.activate();
-
-		// subsection containing a dot
-		addDialog
-				.bot()
-				.textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
+		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
 				.setText(
 						TESTSECTION + "." + TESTSUBSECTION + "." + TESTNAME
 								+ "." + TESTNAME);
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_ValueLabel)
-				.setText("true");
-		assertTrue(addDialog.bot().button(IDialogConstants.OK_LABEL)
+		// too many dots
+		assertTrue(!addDialog.bot().button(IDialogConstants.OK_LABEL)
 				.isEnabled());
-
-		// close the dialog
-		addDialog.bot().button(IDialogConstants.OK_LABEL).click();
-		// close the editor
-		preferencePage.bot().button(IDialogConstants.OK_LABEL).click();
-
-		config.load();
-		assertTrue("Missing section", config.getSections()
-				.contains(TESTSECTION));
-		Set<String> subsections = config.getSubsections(TESTSECTION);
-		assertTrue("Missing subsection",
-				subsections.contains(TESTSUBSECTION + "." + TESTNAME));
-		assertEquals("Wrong value", "true", config.getString(TESTSECTION,
-				TESTSUBSECTION + "." + TESTNAME, TESTNAME));
 		addDialog.close();
 	}
 
