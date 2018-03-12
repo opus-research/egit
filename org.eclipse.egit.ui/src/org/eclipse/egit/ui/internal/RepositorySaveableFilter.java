@@ -8,9 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.runtime.IPath;
@@ -29,8 +26,6 @@ public class RepositorySaveableFilter extends SaveFilter {
 
 	private final IPath workDir;
 
-	private final List<Saveable> saveCandidates = new ArrayList<Saveable>();
-
 	/**
 	 * @param repository
 	 *            to check
@@ -43,9 +38,7 @@ public class RepositorySaveableFilter extends SaveFilter {
 	public boolean select(Saveable saveable, IWorkbenchPart[] containingParts) {
 		boolean selected = super.select(saveable, containingParts);
 		if (!selected)
-			selected = isTextFileBufferInWorkDir(saveable);
-		if (selected)
-			saveCandidates.add(saveable);
+			return isTextFileBufferInWorkDir(saveable);
 		return selected;
 	}
 
@@ -62,17 +55,5 @@ public class RepositorySaveableFilter extends SaveFilter {
 
 	private boolean isInWorkDir(IPath location) {
 		return location != null && workDir.isPrefixOf(location);
-	}
-
-	/**
-	 * @return true if any of the Savables that successfully passed
-	 *         {@link #select(Saveable, IWorkbenchPart[])} have been actually
-	 *         saved (are not dirty anymore)
-	 */
-	public boolean isAnythingSaved() {
-		for (Saveable savable : saveCandidates)
-			if (!savable.isDirty())
-				return true;
-		return false;
 	}
 }
