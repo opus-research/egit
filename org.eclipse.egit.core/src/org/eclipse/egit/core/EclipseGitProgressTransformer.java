@@ -58,9 +58,8 @@ public class EclipseGitProgressTransformer implements ProgressMonitor {
 			return;
 
 		final int cmp = lastWorked + work;
-		if (totalWork == UNKNOWN && cmp > 0) {
-			if (lastWorked != cmp)
-				task.subTask(msg + ", " + cmp); //$NON-NLS-1$
+		if (lastWorked == UNKNOWN && cmp > 0) {
+			task.subTask(msg + ", " + cmp);  //$NON-NLS-1$
 		} else if (totalWork <= 0) {
 			// Do nothing to update the task.
 		} else if (cmp * 100 / totalWork != lastWorked * 100 / totalWork) {
