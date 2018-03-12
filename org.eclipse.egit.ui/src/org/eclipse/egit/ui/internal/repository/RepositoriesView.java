@@ -800,9 +800,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 							config.save();
 							scheduleRefresh();
 						} catch (IOException e1) {
-							Activator.handleError(
-									UIText.RepositoriesView_ErrorHeader, e1,
-									true);
+							MessageDialog.openError(getSite().getShell(),
+									UIText.RepositoriesView_ErrorHeader, e1
+											.getMessage());
 						}
 					}
 
@@ -845,9 +845,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 							config.save();
 							scheduleRefresh();
 						} catch (IOException e1) {
-							Activator.handleError(
-									UIText.RepositoriesView_ErrorHeader, e1,
-									true);
+							MessageDialog.openError(getSite().getShell(),
+									UIText.RepositoriesView_ErrorHeader, e1
+											.getMessage());
 						}
 					}
 
@@ -879,9 +879,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 							config.save();
 							scheduleRefresh();
 						} catch (IOException e1) {
-							Activator.handleError(
-									UIText.RepositoriesView_ErrorHeader, e1,
-									true);
+							MessageDialog.openError(getSite().getShell(),
+									UIText.RepositoriesView_ErrorHeader, e1
+											.getMessage());
 						}
 					}
 
