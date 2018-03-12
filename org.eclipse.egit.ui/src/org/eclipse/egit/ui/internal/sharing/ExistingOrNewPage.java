@@ -79,8 +79,6 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.ide.IDE.SharedImages;
 
 /**
  * Wizard page for connecting projects to Git repositories.
@@ -99,7 +97,7 @@ class ExistingOrNewPage extends WizardPage {
 
 	private IPath minumumPath;
 
-	private Label dotGitSegment;
+	private Text dotGitSegment;
 
 	private Composite externalComposite;
 
@@ -218,16 +216,13 @@ class ExistingOrNewPage extends WizardPage {
 			public void widgetSelected(SelectionEvent e) {
 				DirectoryDialog dlg = new DirectoryDialog(getShell());
 				dlg.setFilterPath(selectedRepository.getWorkTree().getPath());
-				String directory = dlg.open();
-				if (directory != null) {
-					setRelativePath(directory);
-					updateControls();
-				}
+				setRelativePath(dlg.open());
+				updateControls();
 			}
 		});
 
 		Table projectMoveTable = new Table(externalComposite, SWT.MULTI
-				| SWT.FULL_SELECTION | SWT.CHECK | SWT.BORDER);
+				| SWT.FULL_SELECTION | SWT.CHECK);
 		projectMoveViewer = new CheckboxTableViewer(projectMoveTable);
 		GridDataFactory.fillDefaults().span(3, 1).grab(true, true)
 				.applyTo(projectMoveTable);
@@ -235,7 +230,7 @@ class ExistingOrNewPage extends WizardPage {
 		TableColumn tc;
 		tc = new TableColumn(projectMoveTable, SWT.NONE);
 		tc.setText(UIText.ExistingOrNewPage_ProjectNameColumnHeader);
-		tc.setWidth(100);
+		tc.setWidth(150);
 
 		tc = new TableColumn(projectMoveTable, SWT.NONE);
 		tc.setText(UIText.ExistingOrNewPage_CurrentLocationColumnHeader);
@@ -309,12 +304,11 @@ class ExistingOrNewPage extends WizardPage {
 		c1.setText(UIText.ExistingOrNewPage_HeaderProject);
 		c1.setWidth(100);
 		TreeColumn c2 = new TreeColumn(tree, SWT.NONE);
-		c2.setText(UIText.ExistingOrNewPage_HeaderLocation);
+		c2.setText(UIText.ExistingOrNewPage_HeaderPath);
 		c2.setWidth(400);
 		TreeColumn c3 = new TreeColumn(tree, SWT.NONE);
 		c3.setText(UIText.ExistingOrNewPage_HeaderRepository);
 		c3.setWidth(200);
-		boolean allProjectsInExistingRepos = true;
 		for (IProject project : myWizard.projects) {
 			RepositoryFinder repositoryFinder = new RepositoryFinder(project);
 			try {
@@ -325,15 +319,14 @@ class ExistingOrNewPage extends WizardPage {
 				if (m == null) {
 					// no mapping found, enable repository creation
 					TreeItem treeItem = new TreeItem(tree, SWT.NONE);
-					updateProjectTreeItem(treeItem, project);
+					treeItem.setText(0, project.getName());
 					treeItem.setText(1, project.getLocation().toOSString());
 					treeItem.setText(2, ""); //$NON-NLS-1$
 					treeItem.setData(new ProjectAndRepo(project, "")); //$NON-NLS-1$
-					allProjectsInExistingRepos = false;
 				} else if (!mi.hasNext()) {
 					// exactly one mapping found
 					TreeItem treeItem = new TreeItem(tree, SWT.NONE);
-					updateProjectTreeItem(treeItem, project);
+					treeItem.setText(0, project.getName());
 					treeItem.setText(1, project.getLocation().toOSString());
 					fillTreeItemWithGitDirectory(m, treeItem, false);
 					treeItem.setData(new ProjectAndRepo(project, treeItem
@@ -343,25 +336,24 @@ class ExistingOrNewPage extends WizardPage {
 
 				else {
 					TreeItem treeItem = new TreeItem(tree, SWT.NONE);
-					updateProjectTreeItem(treeItem, project);
+					treeItem.setText(0, project.getName());
 					treeItem.setText(1, project.getLocation().toOSString());
 					treeItem.setData(new ProjectAndRepo(null, null));
 
 					TreeItem treeItem2 = new TreeItem(treeItem, SWT.NONE);
-					updateProjectTreeItem(treeItem2, project);
+					treeItem2.setText(0, project.getName());
 					fillTreeItemWithGitDirectory(m, treeItem2, true);
 					treeItem2.setData(new ProjectAndRepo(project, treeItem2
 							.getText(2)));
 					while (mi.hasNext()) { // fill in additional mappings
 						m = mi.next();
 						treeItem2 = new TreeItem(treeItem, SWT.NONE);
-						updateProjectTreeItem(treeItem2, project);
+						treeItem2.setText(0, project.getName());
 						fillTreeItemWithGitDirectory(m, treeItem2, true);
 						treeItem2.setData(new ProjectAndRepo(m.getContainer()
 								.getProject(), treeItem2.getText(2)));
 					}
 					treeItem.setExpanded(true);
-					allProjectsInExistingRepos = false;
 				}
 			} catch (CoreException e) {
 				TreeItem treeItem2 = new TreeItem(tree, SWT.BOLD | SWT.ITALIC);
@@ -430,8 +422,9 @@ class ExistingOrNewPage extends WizardPage {
 						.segmentCount());
 			}
 		});
-		dotGitSegment = new Label(parentRepoComposite, SWT.NONE);
+		dotGitSegment = new Text(parentRepoComposite, SWT.NONE);
 		dotGitSegment.setEnabled(false);
+		dotGitSegment.setEditable(false);
 		dotGitSegment.setText(File.separatorChar + Constants.DOT_GIT);
 		dotGitSegment.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.LEFT, SWT.CENTER).create());
@@ -445,19 +438,6 @@ class ExistingOrNewPage extends WizardPage {
 
 		Dialog.applyDialogFont(main);
 		setControl(main);
-
-		if (allProjectsInExistingRepos) {
-			internalMode = true;
-			internalModeButton.setSelection(true);
-			updateControls();
-		}
-	}
-
-	private void updateProjectTreeItem(TreeItem item, IProject project) {
-		item.setImage(0,
-				PlatformUI.getWorkbench().getSharedImages()
-						.getImage(SharedImages.IMG_OBJ_PROJECT));
-		item.setText(0, project.getName());
 	}
 
 	protected void setRelativePath(String directory) {
@@ -566,7 +546,7 @@ class ExistingOrNewPage extends WizardPage {
 				targetPath = targetPath.append(relPath.getText());
 				moveProjectsLabelProvider.targetFolder = targetPath;
 				projectMoveViewer.refresh(true);
-				browseRepository.setEnabled(true);
+				browseRepository.setEnabled(this.selectedRepository != null);
 				for (Object checked : projectMoveViewer.getCheckedElements()) {
 					IProject prj = (IProject) checked;
 					IPath projectMoveTarget = targetPath.append(prj.getName());

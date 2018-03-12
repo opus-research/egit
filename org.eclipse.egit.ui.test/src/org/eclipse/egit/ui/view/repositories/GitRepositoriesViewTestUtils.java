@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,59 +13,37 @@ package org.eclipse.egit.ui.view.repositories;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
-import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
 import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemotesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
+import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefsNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 
 public class GitRepositoriesViewTestUtils {
 
-	/**
-	 * Create a new instance of {@link RepositoriesViewLabelProvider}
-	 *
-	 * @return label provider
-	 */
-	public static RepositoriesViewLabelProvider createLabelProvider() {
-		final AtomicReference<RepositoriesViewLabelProvider> providerRef = new AtomicReference<RepositoriesViewLabelProvider>();
-		Display.getDefault().syncExec(new Runnable() {
-
-			public void run() {
-				providerRef.set(new RepositoriesViewLabelProvider());
-			}
-
-		});
-		return providerRef.get();
-	}
-
 	protected static final TestUtil myUtil = new TestUtil();
+	// the human-readable view name
+	protected final static String viewName = myUtil
+			.getPluginLocalizedValue("GitRepositoriesView_name");
+	// the human readable Git category
+	private final static String gitCategory = myUtil
+			.getPluginLocalizedValue("GitCategory_name");
 
-	private final RepositoriesViewLabelProvider labelProvider;
-
-	/**
-	 * Create repositories view test utilities
-	 */
-	public GitRepositoriesViewTestUtils() {
-		labelProvider = createLabelProvider();
-	}
+	private final RepositoriesViewLabelProvider labelProvider = new RepositoriesViewLabelProvider();
 
 	public SWTBotTreeItem getLocalBranchesItem(SWTBotTree tree, File repo)
 			throws Exception {
@@ -169,19 +147,12 @@ public class GitRepositoriesViewTestUtils {
 
 	public SWTBotView openRepositoriesView(SWTWorkbenchBot bot)
 			throws Exception {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-				try {
-					workbenchPage.showView(RepositoriesView.VIEW_ID);
-				} catch (PartInitException e) {
-					throw new RuntimeException("Showing repositories view failed", e);
-				}
-			}
-		});
-
-		SWTBotView viewbot = bot.viewById(RepositoriesView.VIEW_ID);
+		bot.menu("Window").menu("Show View").menu("Other...").click();
+		SWTBotShell shell = bot.shell("Show View").activate();
+		shell.bot().tree().expandNode(gitCategory).getNode(viewName).select();
+		shell.bot().button(IDialogConstants.OK_LABEL).click();
+		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
+		SWTBotView viewbot = bot.viewByTitle(viewName);
 		assertNotNull("Repositories View should not be null", viewbot);
 		return viewbot;
 	}

@@ -69,25 +69,7 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	}
 
 	public void run(IAction action) {
-		if (!shouldRunAction())
-			return;
-
-        ExecutionEvent event = createExecutionEvent();
-
-		try {
-			this.handler.execute(event);
-		} catch (ExecutionException e) {
-			Activator.handleError(e.getMessage(), e, true);
-		}
-	}
-
-	/**
-	 * Creates {@link ExecutionEvent} based on current selection
-	 *
-	 * @return {@link ExecutionEvent} with current selection
-	 */
-	protected ExecutionEvent createExecutionEvent() {
-		IServiceLocator locator = getServiceLocator();
+        IServiceLocator locator = getServiceLocator();
 		ICommandService srv = (ICommandService) locator
 				.getService(ICommandService.class);
 		IHandlerService hsrv = (IHandlerService) locator
@@ -95,10 +77,16 @@ public abstract class RepositoryAction extends AbstractHandler implements
 		Command command = srv.getCommand(commandId);
 
 		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
-		if (event.getApplicationContext() instanceof IEvaluationContext)
+		if (event.getApplicationContext() instanceof IEvaluationContext) {
 			((IEvaluationContext) event.getApplicationContext()).addVariable(
 					ISources.ACTIVE_CURRENT_SELECTION_NAME, mySelection);
-		return event;
+		}
+
+		try {
+			this.handler.execute(event);
+		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, true);
+		}
 	}
 
 	private IServiceLocator getServiceLocator() {
@@ -115,9 +103,6 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	}
 
 	public final Object execute(ExecutionEvent event) throws ExecutionException {
-		if (!shouldRunAction())
-			return null;
-
 		ICommandService srv = (ICommandService) getServiceLocator()
 				.getService(ICommandService.class);
 		Command command = srv.getCommand(commandId);
@@ -142,16 +127,5 @@ public abstract class RepositoryAction extends AbstractHandler implements
 
 	public void init(IWorkbenchWindow window) {
 		this.serviceLocator = window;
-	}
-
-	/**
-	 * By default always return true. Allow implementers to decide whether
-	 * the action should be run or not
-	 *
-	 * @return {@code true} when action should be executed, {@code false}
-	 *         otherwise
-	 */
-	protected boolean shouldRunAction() {
-		return true;
 	}
 }

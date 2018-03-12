@@ -8,36 +8,23 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.ADDED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CHANGED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CONFLICTING;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.PARTIALLY_MODIFIED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.UNTRACKED;
-
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.staging.StagingView.StagingViewUpdate;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.submodule.SubmoduleWalk;
 
 /**
  * ContentProvider for staged and unstaged table nodes
  */
 public class StagingViewContentProvider implements
 		IStructuredContentProvider {
-	private StagingEntry[] content = new StagingEntry[0];
+	private StagingEntry[] content;
 	private boolean isWorkspace;
 
 	StagingViewContentProvider(boolean workspace) {
@@ -48,72 +35,53 @@ public class StagingViewContentProvider implements
 		return content;
 	}
 
-	StagingEntry[] getStagingEntries() {
-		return content;
-	}
-
 	public void inputChanged(Viewer viewer, Object oldInput,
 			Object newInput) {
-		if (!(newInput instanceof StagingViewUpdate))
-			return;
+		if (newInput != null && newInput instanceof StagingViewUpdate) {
+			StagingViewUpdate update = (StagingViewUpdate)newInput;
 
-		StagingViewUpdate update = (StagingViewUpdate) newInput;
+			if (update.repository == null || update.indexDiff == null)
+				return;
 
-		if (update.repository == null || update.indexDiff == null) {
-			content = new StagingEntry[0];
-			return;
+			Set<StagingEntry> nodes = new TreeSet<StagingEntry>(new Comparator<StagingEntry>() {
+				public int compare(StagingEntry o1, StagingEntry o2) {
+					return o1.getPath().compareTo(o2.getPath());
+				}
+			});
+
+			if (update.changedResources != null && update.changedResources.size() != 0) {
+				nodes.addAll(Arrays.asList(content));
+				for (String res : update.changedResources)
+					for (StagingEntry entry : content)
+						if (entry.getPath().equals(res))
+							nodes.remove(entry);
+			}
+
+			final IndexDiff indexDiff = update.indexDiff;
+			final Repository repository = update.repository;
+			if (isWorkspace) {
+				for (String file : indexDiff.getMissing())
+					nodes.add(new StagingEntry(repository, StagingEntry.State.MISSING, file));
+				for (String file : indexDiff.getModified()) {
+					if (indexDiff.getChanged().contains(file))
+						nodes.add(new StagingEntry(repository, StagingEntry.State.PARTIALLY_MODIFIED, file));
+					else
+						nodes.add(new StagingEntry(repository, StagingEntry.State.MODIFIED, file));
+				}
+				for (String file : indexDiff.getUntracked())
+					nodes.add(new StagingEntry(repository, StagingEntry.State.UNTRACKED, file));
+				for (String file : indexDiff.getConflicting())
+					nodes.add(new StagingEntry(repository, StagingEntry.State.CONFLICTING, file));
+			} else {
+				for (String file : indexDiff.getAdded())
+					nodes.add(new StagingEntry(repository, StagingEntry.State.ADDED, file));
+				for (String file : indexDiff.getChanged())
+					nodes.add(new StagingEntry(repository, StagingEntry.State.CHANGED, file));
+				for (String file : indexDiff.getRemoved())
+					nodes.add(new StagingEntry(repository, StagingEntry.State.REMOVED, file));
+			}
+			content = nodes.toArray(new StagingEntry[nodes.size()]);
 		}
-
-		Set<StagingEntry> nodes = new TreeSet<StagingEntry>(
-				new Comparator<StagingEntry>() {
-					public int compare(StagingEntry o1, StagingEntry o2) {
-						return o1.getPath().compareTo(o2.getPath());
-					}
-				});
-
-		if (update.changedResources != null
-				&& !update.changedResources.isEmpty()) {
-			nodes.addAll(Arrays.asList(content));
-			for (String res : update.changedResources)
-				for (StagingEntry entry : content)
-					if (entry.getPath().equals(res))
-						nodes.remove(entry);
-		}
-
-		final IndexDiffData indexDiff = update.indexDiff;
-		final Repository repository = update.repository;
-		if (isWorkspace) {
-			for (String file : indexDiff.getMissing())
-				nodes.add(new StagingEntry(repository, MISSING, file));
-			for (String file : indexDiff.getModified())
-				if (indexDiff.getChanged().contains(file))
-					nodes.add(new StagingEntry(repository, PARTIALLY_MODIFIED,
-							file));
-				else
-					nodes.add(new StagingEntry(repository, MODIFIED, file));
-			for (String file : indexDiff.getUntracked())
-				nodes.add(new StagingEntry(repository, UNTRACKED, file));
-			for (String file : indexDiff.getConflicting())
-				nodes.add(new StagingEntry(repository, CONFLICTING, file));
-		} else {
-			for (String file : indexDiff.getAdded())
-				nodes.add(new StagingEntry(repository, ADDED, file));
-			for (String file : indexDiff.getChanged())
-				nodes.add(new StagingEntry(repository, CHANGED, file));
-			for (String file : indexDiff.getRemoved())
-				nodes.add(new StagingEntry(repository, REMOVED, file));
-		}
-
-		try {
-		SubmoduleWalk walk = SubmoduleWalk.forIndex(repository);
-		while(walk.next())
-			for (StagingEntry entry : nodes)
-				entry.setSubmodule(entry.getPath().equals(walk.getPath()));
-		} catch(IOException e) {
-			Activator.error(UIText.StagingViewContentProvider_SubmoduleError, e);
-		}
-
-		content = nodes.toArray(new StagingEntry[nodes.size()]);
 	}
 
 	public void dispose() {

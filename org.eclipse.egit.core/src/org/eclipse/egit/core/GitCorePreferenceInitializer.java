@@ -18,13 +18,11 @@ public class GitCorePreferenceInitializer extends AbstractPreferenceInitializer 
 	private static final int MB = 1024 * 1024;
 
 	public void initializeDefaultPreferences() {
-		final IEclipsePreferences p  = DefaultScope.INSTANCE.getNode(Activator.getPluginId());
+		final IEclipsePreferences p  = new DefaultScope().getNode(Activator.getPluginId());
 
 		p.putInt(GitCorePreferences.core_packedGitWindowSize, 8 * 1024);
 		p.putInt(GitCorePreferences.core_packedGitLimit, 10 * MB);
 		p.putBoolean(GitCorePreferences.core_packedGitMMAP, false);
 		p.putInt(GitCorePreferences.core_deltaBaseCacheLimit, 10 * MB);
-		p.putInt(GitCorePreferences.core_streamFileThreshold, 50 * MB);
-		p.putBoolean(GitCorePreferences.core_autoShareProjects, false);
 	}
 }

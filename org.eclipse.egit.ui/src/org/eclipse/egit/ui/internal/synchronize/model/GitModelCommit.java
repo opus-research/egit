@@ -8,104 +8,76 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
-import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Commit;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 
 /**
  * Git commit object representation in Git ChangeSet
  */
 public class GitModelCommit extends GitModelObjectContainer implements
-		HasProjects {
+		ISynchronizationCompareInput {
 
-	private final Commit commit;
-
-	private final Repository repo;
-
-	private final IProject[] projects;
-
-	private final Map<String, GitModelObject> cachedTreeMap = new HashMap<String, GitModelObject>();
+	/**
+	 * Common ancestor commit for wrapped commit object
+	 */
+	protected final RevCommit ancestorCommit;
 
 	/**
 	 * @param parent
-	 *            parent object
-	 * @param repo
-	 *            repository associated with this object
+	 *            instance of repository model object that is parent for this
+	 *            commit
 	 * @param commit
 	 *            instance of commit that will be associated with this model
 	 *            object
-	 * @param projects
-	 *            list of changed projects
+	 * @param direction
+	 * @throws IOException
 	 */
-	public GitModelCommit(GitModelRepository parent, Repository repo,
-			Commit commit, IProject[] projects) {
-		super(parent);
-		this.repo = repo;
-		this.commit = commit;
-		this.projects = projects;
+	public GitModelCommit(GitModelRepository parent, RevCommit commit,
+			int direction) throws IOException {
+		super(parent, commit, direction);
+
+		this.ancestorCommit = calculateAncestor(commit);
+	}
+
+	/**
+	 * Constructor for child classes.
+	 *
+	 * @param parent
+	 *            instance of repository model object that is parent for this
+	 *            commit
+	 * @param commit
+	 *            instance of commit that will be associated with this model
+	 *            object
+	 * @param ancestorCommit
+	 *            common ancestor commit for object that is wrapped
+	 * @param direction
+	 *            use {@link Differencer#LEFT} and {@link Differencer#RIGHT} to
+	 *            determinate commit direction (is it incoming or outgoing)
+	 * @throws IOException
+	 */
+	protected GitModelCommit(GitModelObject parent, RevCommit commit,
+			RevCommit ancestorCommit, int direction) throws IOException {
+		super(parent, commit, direction);
+
+		this.ancestorCommit = ancestorCommit;
 	}
 
 	@Override
 	public IPath getLocation() {
-		return new Path(repo.getWorkTree().getAbsolutePath());
-	}
-
-	public IProject[] getProjects() {
-		return projects;
-	}
-
-	@Override
-	public int getKind() {
-		return commit.getDirection() | Differencer.CHANGE;
-	}
-
-	@Override
-	public int repositoryHashCode() {
-		return repo.getWorkTree().hashCode();
-	}
-
-	@Override
-	public String getName() {
-		return commit.getShortMessage();
-	}
-
-	@Override
-	public GitModelObject[] getChildren() {
-		List<GitModelObject> result = new ArrayList<GitModelObject>();
-
-		if (commit.getChildren() != null) // prevent from NPE in empty commits
-			for (Entry<String, Change> cacheEntry : commit.getChildren().entrySet()) {
-				GitModelObject nested = addChild(cacheEntry.getValue(), cacheEntry.getKey());
-				if (nested != null)
-					result.add(nested);
-			}
-
-		return result.toArray(new GitModelObject[result.size()]);
-	}
-
-	/**
-	 * @return cached commit object
-	 */
-	public Commit getCachedCommitObj() {
-		return commit;
-	}
-
-	@Override
-	public void dispose() {
-		for (GitModelObject value : cachedTreeMap.values())
-			value.dispose();
-
-		cachedTreeMap.clear();
+		return new Path(getRepository().getWorkTree().toString());
 	}
 
 	@Override
@@ -113,57 +85,67 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelCommit && !(obj instanceof GitModelTree)
+				&& !(obj instanceof GitModelBlob)) {
+			GitModelCommit objCommit = (GitModelCommit) obj;
 
-		if (obj.getClass() != getClass())
-			return false;
+			return objCommit.getBaseCommit().equals(baseCommit)
+					&& objCommit.getParent().equals(getParent());
+		}
 
-		GitModelCommit objCommit = (GitModelCommit) obj;
-
-		return objCommit.commit.getId().equals(commit.getId());
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return commit.hashCode();
+		return baseCommit.hashCode() ^ getParent().hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return "ModelCommit[" + commit.getId() + "]"; //$NON-NLS-1$//$NON-NLS-2$
+		return "ModelCommit[" + baseCommit.getId() + "]"; //$NON-NLS-1$//$NON-NLS-2$
 	}
 
-	private GitModelObject addChild(Change change, String nestedPath) {
-		GitModelObject firstObject = null;
-		IPath tmpLocation = getLocation();
-		String[] segments = nestedPath.split("/"); //$NON-NLS-1$
-		GitModelObjectContainer tmpPartent = this;
-		Map<String, GitModelObject> tmpCache = cachedTreeMap;
+	@Override
+	protected GitModelObject[] getChildrenImpl() {
+		TreeWalk tw = createTreeWalk();
+		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
-		for (int i = 0; i < segments.length; i++) {
-			String segment = segments[i];
-			tmpLocation = tmpLocation.append(segment);
-			if (i < segments.length - 1) {
-				GitModelTree tree = (GitModelTree) tmpCache.get(segment);
-				if (tree == null) {
-					tree = new GitModelTree(tmpPartent, tmpLocation, change.getKind());
-					tmpCache.put(segment, tree);
-				}
-				tmpPartent = tree;
-				tmpCache = tree.cachedTreeMap;
-				if (i == 0)
-					firstObject = tmpPartent;
-			} else { // handle last segment, it should be a file name
-				GitModelBlob blob = new GitModelBlob(tmpPartent, repo, change,
-						tmpLocation);
-				tmpCache.put(segment, blob);
-				if (i == 0)
-					firstObject = blob;
+		try {
+			RevTree actualTree = baseCommit.getTree();
+
+			int baseNth = tw.addTree(actualTree);
+			int remoteNth = -1;
+			if (remoteCommit != null)
+				remoteNth = tw.addTree(remoteCommit.getTree());
+			int ancestorNth = tw.addTree(ancestorCommit.getTree());
+
+			while (tw.next()) {
+				GitModelObject obj = getModelObject(tw, ancestorCommit, ancestorNth,
+						remoteNth, baseNth);
+				if (obj != null)
+					result.add(obj);
 			}
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
 		}
 
-		return firstObject;
+		return result.toArray(new GitModelObject[result.size()]);
+	}
+
+	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
+		RevWalk rw = new RevWalk(getRepository());
+		rw.setRevFilter(RevFilter.MERGE_BASE);
+
+		for (RevCommit parent : actual.getParents()) {
+			RevCommit parentCommit = rw.parseCommit(parent.getId());
+			rw.markStart(parentCommit);
+		}
+
+		rw.markStart(rw.parseCommit(actual.getId()));
+
+		RevCommit result = rw.next();
+		return result != null ? result : rw.parseCommit(ObjectId.zeroId());
 	}
 
 }

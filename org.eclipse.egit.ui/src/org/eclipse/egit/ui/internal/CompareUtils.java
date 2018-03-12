@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2012 SAP AG and others.
+ * Copyright (c) 2010, SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,69 +9,48 @@
  * Contributors:
  *    Dariusz Luksza - add getFileCachedRevisionTypedElement(String, Repository)
  *    Stefan Lay (SAP AG) - initial implementation
- *    Yann Simon <yann.simon.fr@gmail.com> - implementation of getHeadTypedElement
- *    Robin Stocker <robin@nibor.org>
- *    Laurent Goubet <laurent.goubet@obeo.fr>
- *    Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
-import org.eclipse.compare.IContentChangeListener;
-import org.eclipse.compare.IContentChangeNotifier;
 import org.eclipse.compare.ITypedElement;
-import org.eclipse.compare.structuremergeviewer.DiffNode;
-import org.eclipse.compare.structuremergeviewer.Differencer;
-import org.eclipse.compare.structuremergeviewer.IStructureComparator;
+import org.eclipse.core.resources.IEncodedStorage;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceMappingContext;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.RevUtils;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
-import org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectInserter;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
@@ -135,7 +114,7 @@ public class CompareUtils {
 			IFileRevision nextFile = getFileRevision(gitPath, commit, db,
 							blobId);
 				if (nextFile != null) {
-					String encoding = CompareCoreUtils.getResourceEncoding(db, gitPath);
+					String encoding = getResourceEncoding(db, gitPath);
 					right = new FileRevisionTypedElement(nextFile, encoding);
 				}
 		} catch (IOException e) {
@@ -179,36 +158,7 @@ public class CompareUtils {
 		return null;
 	}
 
-
 	/**
-	 * Creates a {@link ITypedElement} for the commit which is the common ancestor of
-	 * the provided commits.
-	 * @param gitPath
-	 *            path within the ancestor commit's tree of the file.
-	 * @param commit1
-	 * @param commit2
-	 * @param db
-	 *            the repository this commit was loaded out of.
-	 * @return an instance of {@link ITypedElement} which can be used in
-	 *         {@link CompareEditorInput}
-	 */
-	public static ITypedElement getFileRevisionTypedElementForCommonAncestor(
-			final String gitPath, ObjectId commit1, ObjectId commit2,
-			Repository db) {
-		ITypedElement ancestor = null;
-		RevCommit commonAncestor = null;
-		try {
-			commonAncestor = RevUtils.getCommonAncestor(db, commit1, commit2);
-		} catch (IOException e) {
-			Activator.logError(NLS.bind(UIText.CompareUtils_errorCommonAncestor,
-					commit1.getName(), commit2.getName()), e);
-		}
-		if (commonAncestor != null)
-			ancestor = CompareUtils
-				.getFileRevisionTypedElement(gitPath, commonAncestor, db);
-		return ancestor;
-	}
-/**
 	 * @param element
 	 * @param adapterType
 	 * @return the adapted element, or null
@@ -226,6 +176,55 @@ public class CompareUtils {
 			return ci.substring(0, 7) + "..."; //$NON-NLS-1$
 		else
 			return ci;
+	}
+
+	/**
+	 * Determine the encoding used by Eclipse for the resource which belongs to
+	 * repoPath in the eclipse workspace or null if no resource is found
+	 *
+	 * @param db
+	 *            the repository
+	 * @param repoPath
+	 *            the path in the git repository
+	 * @return the encoding used in eclipse for the resource or null if
+	 *
+	 */
+	public static String getResourceEncoding(Repository db, String repoPath) {
+		if (db.isBare())
+			return null;
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = workspace.getRoot();
+		IPath absolutePath = new Path(db.getWorkTree().getAbsolutePath())
+				.append(repoPath);
+		IResource resource = root.getFileForLocation(absolutePath);
+		if (resource == null)
+			return null;
+
+		return getResourceEncoding(resource);
+	}
+
+	/**
+	 * Determine the encoding used by eclipse for the resource.
+	 *
+	 * @param resource
+	 *            must be an instance of IEncodedStorage
+	 * @return the encoding used in Eclipse for the resource if found or null
+	 */
+	public static String getResourceEncoding(IResource resource) {
+		// Get the encoding for the current version. As a matter of
+		// principle one might want to use the eclipse settings for the
+		// version we are retrieving as that may be defined by the
+		// project settings, but there is no historic API for this.
+		String charset;
+		IEncodedStorage encodedStorage = ((IEncodedStorage) resource);
+		try {
+			charset = encodedStorage.getCharset();
+			if (charset == null)
+				charset = resource.getParent().getDefaultCharset();
+		} catch (CoreException e) {
+			charset = Constants.CHARACTER_ENCODING;
+		}
+		return charset;
 	}
 
 	/**
@@ -320,7 +319,7 @@ public class CompareUtils {
 	 */
 	public static class ReuseCompareEditorAction extends Action implements
 			IPreferenceChangeListener, IWorkbenchAction {
-		IEclipsePreferences node = InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN);
+		IEclipsePreferences node = new InstanceScope().getNode(TEAM_UI_PLUGIN);
 
 		/**
 		 * Default constructor
@@ -347,15 +346,44 @@ public class CompareUtils {
 	}
 
 	private static boolean isReuseOpenEditor() {
-		boolean defaultReuse = DefaultScope.INSTANCE.getNode(TEAM_UI_PLUGIN)
+		boolean defaultReuse = new DefaultScope().getNode(TEAM_UI_PLUGIN)
 				.getBoolean(REUSE_COMPARE_EDITOR_PREFID, false);
-		return InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).getBoolean(
+		return new InstanceScope().getNode(TEAM_UI_PLUGIN).getBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, defaultReuse);
 	}
 
 	private static void setReuseOpenEditor(boolean value) {
-		InstanceScope.INSTANCE.getNode(TEAM_UI_PLUGIN).putBoolean(
+		new InstanceScope().getNode(TEAM_UI_PLUGIN).putBoolean(
 				REUSE_COMPARE_EDITOR_PREFID, value);
+	}
+
+	/**
+	 * Creates {@link ITypedElement} of file that was cached
+	 *
+	 * @param gitPath
+	 * @param db
+	 * @return {@link ITypedElement} instance for given cached file or
+	 *         {@code null} if file isn't cached
+	 */
+	public static ITypedElement getFileCachedRevisionTypedElement(String gitPath,
+			Repository db) {
+		try {
+			DirCache dc = db.lockDirCache();
+			DirCacheEntry entry = dc.getEntry(gitPath);
+			dc.unlock();
+
+			// check if file is staged
+			if (entry != null) {
+				return new FileRevisionTypedElement(GitFileRevision.inIndex(db, gitPath));
+			}
+		} catch (IOException e) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					gitPath), e);
+		}
+
+		return new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
+				.bind(UIText.CompareWithIndexAction_FileNotInIndex,
+						gitPath.substring(gitPath.lastIndexOf("/") + 1))); //$NON-NLS-1$
 	}
 
 	/**
@@ -367,12 +395,13 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
+		RevCommit headCommit = getHeadCommit(repository);
+		if (headCommit == null)
+			return;
 		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
 				file);
-		ITypedElement base = getHeadTypedElement(repository, path);
-		if (base == null)
-			return;
-
+		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
+				headCommit, repository);
 		IFileRevision nextFile = new WorkspaceFileRevision(file);
 		String encoding = null;
 		try {
@@ -396,9 +425,11 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkingTree(Repository repository,
 			String path) {
-		ITypedElement base = getHeadTypedElement(repository, path);
-		if (base == null)
+		RevCommit headCommit = getHeadCommit(repository);
+		if (headCommit == null)
 			return;
+		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
+				headCommit, repository);
 		IFileRevision nextFile;
 		nextFile = new WorkingTreeFileRevision(new File(
 				repository.getWorkTree(), path));
@@ -409,332 +440,22 @@ public class CompareUtils {
 		CompareUI.openCompareDialog(input);
 	}
 
-	/**
-	 * Get a typed element for the file as contained in HEAD. Tries to return
-	 * the last commit that modified the file in order to have more useful
-	 * author information.
-	 * <p>
-	 * Returns an empty typed element if there is not yet a head (initial import
-	 * case).
-	 * <p>
-	 * If there is an error getting the HEAD commit, it is handled and null
-	 * returned.
-	 *
-	 * @param repository
-	 * @param repoRelativePath
-	 * @return typed element, or null if there was an error getting the HEAD
-	 *         commit
-	 */
-	public static ITypedElement getHeadTypedElement(Repository repository, String repoRelativePath) {
+	private static RevCommit getHeadCommit(Repository repository) {
+		RevCommit headCommit;
 		try {
-			Ref head = repository.getRef(Constants.HEAD);
-			if (head == null || head.getObjectId() == null)
-				// Initial import, not yet a HEAD commit
-				return new EmptyTypedElement(""); //$NON-NLS-1$
-
-			RevCommit latestFileCommit;
-			RevWalk rw = new RevWalk(repository);
-			try {
-				RevCommit headCommit = rw.parseCommit(head.getObjectId());
-				rw.markStart(headCommit);
-				rw.setTreeFilter(AndTreeFilter.create(
-						PathFilter.create(repoRelativePath),
-						TreeFilter.ANY_DIFF));
-				latestFileCommit = rw.next();
-				// Fall back to HEAD
-				if (latestFileCommit == null)
-					latestFileCommit = headCommit;
-			} finally {
-				rw.release();
+			ObjectId objectId = repository.resolve(Constants.HEAD);
+			if (objectId == null) {
+				Activator.handleError(
+						UIText.CompareUtils_errorGettingHeadCommit, null, true);
+				return null;
 			}
-
-			return CompareUtils.getFileRevisionTypedElement(repoRelativePath, latestFileCommit, repository);
+			headCommit = new RevWalk(repository).parseCommit(objectId);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CompareUtils_errorGettingHeadCommit,
 					e, true);
 			return null;
 		}
+		return headCommit;
 	}
 
-	/**
-	 * Get a typed element for the file in the index.
-	 *
-	 * @param baseFile
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getIndexTypedElement(final IFile baseFile)
-			throws IOException {
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
-		final Repository repository = mapping.getRepository();
-		final String gitPath = mapping.getRepoRelativePath(baseFile);
-		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
-		return getIndexTypedElement(repository, gitPath, encoding);
-	}
-
-	/**
-	 * Get a typed element for the repository and repository-relative path in the index.
-	 *
-	 * @param repository
-	 * @param repoRelativePath
-	 * @return typed element
-	 * @throws IOException
-	 */
-	public static ITypedElement getIndexTypedElement(
-			final Repository repository, final String repoRelativePath)
-			throws IOException {
-		String encoding = CompareCoreUtils.getResourceEncoding(repository, repoRelativePath);
-		return getIndexTypedElement(repository, repoRelativePath, encoding);
-	}
-
-	private static ITypedElement getIndexTypedElement(
-			final Repository repository, final String gitPath,
-			String encoding) throws IOException {
-		DirCache dc = repository.lockDirCache();
-		final DirCacheEntry entry;
-		try {
-			entry = dc.getEntry(gitPath);
-		} finally {
-			dc.unlock();
-		}
-
-		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
-		final EditableRevision next = new EditableRevision(nextFile, encoding);
-
-		IContentChangeListener listener = new IContentChangeListener() {
-			public void contentChanged(IContentChangeNotifier source) {
-				final byte[] newContent = next.getModifiedContent();
-				DirCache cache = null;
-				try {
-					cache = repository.lockDirCache();
-					DirCacheEditor editor = cache.editor();
-					if (newContent.length == 0)
-						editor.add(new DirCacheEditor.DeletePath(gitPath));
-					else
-						editor.add(new DirCacheEntryEditor(gitPath,
-								repository, entry, newContent));
-					try {
-						editor.commit();
-					} catch (RuntimeException e) {
-						if (e.getCause() instanceof IOException)
-							throw (IOException) e.getCause();
-						else
-							throw e;
-					}
-
-				} catch (IOException e) {
-					Activator.handleError(
-							UIText.CompareWithIndexAction_errorOnAddToIndex, e,
-							true);
-				} finally {
-					if (cache != null)
-						cache.unlock();
-				}
-			}
-		};
-
-		next.addContentChangeListener(listener);
-		return next;
-	}
-
-
-
-	/**
-	 * Extracted from {@link CompareWithCommitActionHandler}
-	 * @param actLeft
-	 * @param actRight
-	 * @return compare input
-	 */
-	public static DiffNode prepareGitCompare(ITypedElement actLeft, ITypedElement actRight) {
-		if (actLeft.getType().equals(ITypedElement.FOLDER_TYPE)) {
-			//			return new MyDiffContainer(null, left,right);
-			DiffNode diffNode = new DiffNode(null,Differencer.CHANGE,null,actLeft,actRight);
-			ITypedElement[] lc = (ITypedElement[])((IStructureComparator)actLeft).getChildren();
-			ITypedElement[] rc = (ITypedElement[])((IStructureComparator)actRight).getChildren();
-			int li=0;
-			int ri=0;
-			while (li<lc.length && ri<rc.length) {
-				ITypedElement ln = lc[li];
-				ITypedElement rn = rc[ri];
-				int compareTo = ln.getName().compareTo(rn.getName());
-				// TODO: Git ordering!
-				if (compareTo == 0) {
-					if (!ln.equals(rn))
-						diffNode.add(prepareGitCompare(ln,rn));
-					++li;
-					++ri;
-				} else if (compareTo < 0) {
-					DiffNode childDiffNode = new DiffNode(Differencer.ADDITION, null, ln, null);
-					diffNode.add(childDiffNode);
-					if (ln.getType().equals(ITypedElement.FOLDER_TYPE)) {
-						ITypedElement[] children = (ITypedElement[])((IStructureComparator)ln).getChildren();
-						if(children != null && children.length > 0) {
-							for (ITypedElement child : children) {
-								childDiffNode.add(addDirectoryFiles(child, Differencer.ADDITION));
-							}
-						}
-					}
-					++li;
-				} else {
-					DiffNode childDiffNode = new DiffNode(Differencer.DELETION, null, null, rn);
-					diffNode.add(childDiffNode);
-					if (rn.getType().equals(ITypedElement.FOLDER_TYPE)) {
-						ITypedElement[] children = (ITypedElement[])((IStructureComparator)rn).getChildren();
-						if(children != null && children.length > 0) {
-							for (ITypedElement child : children) {
-								childDiffNode.add(addDirectoryFiles(child, Differencer.DELETION));
-							}
-						}
-					}
-					++ri;
-				}
-			}
-			while (li<lc.length) {
-				ITypedElement ln = lc[li];
-				DiffNode childDiffNode = new DiffNode(Differencer.ADDITION, null, ln, null);
-				diffNode.add(childDiffNode);
-				if (ln.getType().equals(ITypedElement.FOLDER_TYPE)) {
-					ITypedElement[] children = (ITypedElement[])((IStructureComparator)ln).getChildren();
-					if(children != null && children.length > 0) {
-						for (ITypedElement child : children) {
-							childDiffNode.add(addDirectoryFiles(child, Differencer.ADDITION));
-						}
-					}
-				}
-				++li;
-			}
-			while (ri<rc.length) {
-				ITypedElement rn = rc[ri];
-				DiffNode childDiffNode = new DiffNode(Differencer.DELETION, null, null, rn);
-				diffNode.add(childDiffNode);
-				if (rn.getType().equals(ITypedElement.FOLDER_TYPE)) {
-					ITypedElement[] children = (ITypedElement[])((IStructureComparator)rn).getChildren();
-					if(children != null && children.length > 0) {
-						for (ITypedElement child : children) {
-							childDiffNode.add(addDirectoryFiles(child, Differencer.DELETION));
-						}
-					}
-				}
-				++ri;
-			}
-			return diffNode;
-		} else {
-			return new DiffNode(actLeft, actRight);
-		}
-	}
-
-	/**
-	 * Extracted from {@link CompareWithCommitActionHandler}
-	 * @param elem
-	 * @param diffType
-	 * @return diffnode
-	 */
-	private static DiffNode addDirectoryFiles(ITypedElement elem, int diffType) {
-		ITypedElement l = null;
-		ITypedElement r = null;
-		if (diffType == Differencer.DELETION) {
-			r = elem;
-		} else {
-			l = elem;
-		}
-
-		if (elem.getType().equals(ITypedElement.FOLDER_TYPE)) {
-			DiffNode diffNode = null;
-			diffNode = new DiffNode(null,Differencer.CHANGE,null,l,r);
-			ITypedElement[] children = (ITypedElement[])((IStructureComparator)elem).getChildren();
-			for (ITypedElement child : children) {
-				diffNode.add(addDirectoryFiles(child, diffType));
-			}
-			return diffNode;
-		} else {
-			return new DiffNode(diffType, null, l, r);
-		}
-	}
-
-	private static class DirCacheEntryEditor extends DirCacheEditor.PathEdit {
-
-		private final Repository repo;
-
-		private final DirCacheEntry oldEntry;
-
-		private final byte[] newContent;
-
-		public DirCacheEntryEditor(String path, Repository repo,
-				DirCacheEntry oldEntry, byte[] newContent) {
-			super(path);
-			this.repo = repo;
-			this.oldEntry = oldEntry;
-			this.newContent = newContent;
-		}
-
-		@Override
-		public void apply(DirCacheEntry ent) {
-			ObjectInserter inserter = repo.newObjectInserter();
-			if (oldEntry != null)
-				ent.copyMetaData(oldEntry);
-			else
-				ent.setFileMode(FileMode.REGULAR_FILE);
-
-			ent.setLength(newContent.length);
-			ent.setLastModified(System.currentTimeMillis());
-			InputStream in = new ByteArrayInputStream(newContent);
-			try {
-				ent.setObjectId(inserter.insert(Constants.OBJ_BLOB,
-						newContent.length, in));
-				inserter.flush();
-			} catch (IOException ex) {
-				throw new RuntimeException(ex);
-			} finally {
-				try {
-					in.close();
-				} catch (IOException e) {
-					// ignore here
-				}
-			}
-		}
-	}
-
-	/**
-	 * Indicates if it is OK to open the selected file directly in a compare
-	 * editor.
-	 * <p>
-	 * It is not OK to show the single file if the file is part of a
-	 * logical model element that spans multiple files.
-	 * </p>
-	 *
-	 * @param file
-	 *            file the user is trying to compare
-	 * @return <code>true</code> if the file can be opened directly in a compare
-	 *         editor, <code>false</code> if the synchronize view should be
-	 *         opened instead.
-	 */
-	public static boolean canDirectlyOpenInCompare(IFile file) {
-		/*
-		 * Note : it would be better to use a remote context here in order to
-		 * give the model provider a chance to resolve the remote logical model
-		 * instead of only relying on the local one. However, this might be a
-		 * long operation and would not really provide more context : we're
-		 * trying to determine if the local file can be compared alone, this can
-		 * be done by relying on the local model only.
-		 */
-		final ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
-				file, ResourceMappingContext.LOCAL_CONTEXT);
-
-		for (ResourceMapping mapping : mappings) {
-			try {
-				final ResourceTraversal[] traversals = mapping.getTraversals(
-						ResourceMappingContext.LOCAL_CONTEXT, null);
-				for (ResourceTraversal traversal : traversals) {
-					final IResource[] resources = traversal.getResources();
-					for (IResource resource : resources) {
-						if (!resource.equals(file))
-							return false;
-					}
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		return true;
-	}
 }

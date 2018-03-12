@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.merge;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -28,17 +29,15 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.FileEditableRevision;
-import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
+import org.eclipse.egit.ui.internal.EditableRevision;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
-import org.eclipse.jface.operation.IRunnableContext;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -115,7 +114,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				if (repo != null && repo != map.getRepository())
 					throw new InvocationTargetException(
 							new IllegalStateException(
-									UIText.RepositoryAction_multiRepoSelection));
+									UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
 				filterPaths.add(map.getRepoRelativePath(resource));
 				repo = map.getRepository();
 			}
@@ -123,7 +122,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			if (repo == null)
 				throw new InvocationTargetException(
 						new IllegalStateException(
-								UIText.RepositoryAction_multiRepoSelection));
+								UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
 
 			if (monitor.isCanceled())
 				throw new InterruptedException();
@@ -195,17 +194,17 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			// set the labels
 			CompareConfiguration config = getCompareConfiguration();
 			config.setRightLabel(NLS.bind(LABELPATTERN, rightCommit
-					.getShortMessage(), CompareUtils.truncatedRevision(rightCommit.name())));
+					.getShortMessage(), rightCommit.name()));
 
 			if (!useWorkspace)
 				config.setLeftLabel(NLS.bind(LABELPATTERN, headCommit
-						.getShortMessage(), CompareUtils.truncatedRevision(headCommit.name())));
+						.getShortMessage(), headCommit.name()));
 			else
 				config.setLeftLabel(UIText.GitMergeEditorInput_WorkspaceHeader);
 
 			if (ancestorCommit != null)
 				config.setAncestorLabel(NLS.bind(LABELPATTERN, ancestorCommit
-						.getShortMessage(), CompareUtils.truncatedRevision(ancestorCommit.name())));
+						.getShortMessage(), ancestorCommit.name()));
 
 			// set title and icon
 			setTitle(NLS.bind(UIText.GitMergeEditorInput_MergeEditorTitle,
@@ -267,14 +266,10 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					suffixFilters.add(PathFilter.create(filterPath));
 				TreeFilter otf = OrTreeFilter.create(suffixFilters);
 				tw.setFilter(AndTreeFilter.create(otf, notIgnoredFilter));
-			} else if (filterPaths.size() > 0) {
-				String path = filterPaths.get(0);
-				if (path.length() == 0)
-					tw.setFilter(notIgnoredFilter);
-				else
-					tw.setFilter(AndTreeFilter.create(PathFilter.create(path),
-							notIgnoredFilter));
-			} else
+			} else if (filterPaths.size() > 0)
+				tw.setFilter(AndTreeFilter.create(PathFilter.create(filterPaths
+						.get(0)), notIgnoredFilter));
+			else
 				tw.setFilter(notIgnoredFilter);
 
 			tw.setRecursive(true);
@@ -312,13 +307,10 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					continue;
 
 				ITypedElement right;
-				if (conflicting) {
-					GitFileRevision revision = GitFileRevision.inIndex(
-							repository, gitPath, DirCacheEntry.STAGE_3);
-					String encoding = CompareCoreUtils.getResourceEncoding(
-							repository, gitPath);
-					right = new FileRevisionTypedElement(revision, encoding);
-				} else
+				if (conflicting)
+					right = CompareUtils.getFileRevisionTypedElement(gitPath,
+							rightCommit, repository);
+				else
 					right = CompareUtils.getFileRevisionTypedElement(gitPath,
 							headCommit, repository);
 
@@ -340,14 +332,37 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				if (!conflicting || useWorkspace)
 					rev = new LocalFileRevision(file);
 				else
-					rev = GitFileRevision.inIndex(repository, gitPath,
-							DirCacheEntry.STAGE_2);
+					rev = GitFileRevision.inCommit(repository, headCommit,
+							gitPath, null);
 
-				IRunnableContext runnableContext = getContainer();
-				if (runnableContext == null)
-					runnableContext = PlatformUI.getWorkbench().getProgressService();
-
-				FileEditableRevision leftEditable = new FileEditableRevision(rev, file, runnableContext);
+				EditableRevision leftEditable = new EditableRevision(rev) {
+					@Override
+					public void setContent(final byte[] newContent) {
+						try {
+							run(false, false, new IRunnableWithProgress() {
+								public void run(IProgressMonitor myMonitor)
+										throws InvocationTargetException,
+										InterruptedException {
+									try {
+										file.setContents(
+												new ByteArrayInputStream(
+														newContent), false,
+												true, myMonitor);
+									} catch (CoreException e) {
+										throw new InvocationTargetException(e);
+									}
+								}
+							});
+						} catch (InvocationTargetException e) {
+							Activator
+									.handleError(e.getTargetException()
+											.getMessage(), e
+											.getTargetException(), true);
+						} catch (InterruptedException e) {
+							// ignore here
+						}
+					}
+				};
 				// make sure we don't need a round trip later
 				try {
 					leftEditable.cacheContents(monitor);

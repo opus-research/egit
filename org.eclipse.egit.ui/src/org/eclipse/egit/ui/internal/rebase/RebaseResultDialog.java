@@ -25,15 +25,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.FileChecker;
-import org.eclipse.egit.core.internal.FileChecker.CheckResult;
-import org.eclipse.egit.core.internal.FileChecker.CheckResultEntry;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.egit.ui.internal.merge.GitMergeEditorInput;
 import org.eclipse.egit.ui.internal.merge.MergeModeDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -41,7 +37,6 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.text.TextViewer;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
@@ -71,8 +66,6 @@ import org.eclipse.ui.PlatformUI;
  * Display the result of a rebase.
  */
 public class RebaseResultDialog extends MessageDialog {
-	private static final String SPACE = " "; //$NON-NLS-1$
-
 	private static final Image INFO = PlatformUI.getWorkbench()
 			.getSharedImages().getImage(ISharedImages.IMG_OBJS_INFO_TSK);
 
@@ -104,19 +97,6 @@ public class RebaseResultDialog extends MessageDialog {
 		boolean shouldShow = result.getStatus() == Status.STOPPED
 				|| Activator.getDefault().getPreferenceStore().getBoolean(
 						UIPreferences.SHOW_REBASE_CONFIRM);
-
-		if(result.getStatus() == Status.CONFLICTS) {
-			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				public void run() {
-					Shell shell = PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getShell();
-					new CheckoutConflictDialog(shell, repository, result.getConflicts()).open();
-				}
-			});
-
-			return;
-		}
-
 		if (!shouldShow) {
 			Activator.getDefault().getLog().log(
 					new org.eclipse.core.runtime.Status(IStatus.INFO, Activator
@@ -148,8 +128,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_UpToDate;
 		case FAST_FORWARD:
 			return UIText.RebaseResultDialog_FastForward;
-		case NOTHING_TO_COMMIT:
-			return UIText.RebaseResultDialog_NothingToCommit;
 		default:
 			throw new IllegalStateException(status.name());
 		}
@@ -212,9 +190,10 @@ public class RebaseResultDialog extends MessageDialog {
 			commitMessage.getTextWidget().setText(commit.getFullMessage());
 			commitId.setText(commit.name());
 			dc = repo.lockDirCache();
-			for (int i = 0; i < dc.getEntryCount(); i++)
+			for (int i = 0; i < dc.getEntryCount(); i++) {
 				if (dc.getEntry(i).getStage() > 0)
 					conflictPaths.add(dc.getEntry(i).getPathString());
+			}
 			if (conflictPaths.size() > 0) {
 				message = NLS.bind(UIText.RebaseResultDialog_Conflicting,
 						Integer.valueOf(conflictPaths.size()));
@@ -230,52 +209,19 @@ public class RebaseResultDialog extends MessageDialog {
 				dc.unlock();
 		}
 
-		boolean mergeToolAvailable = true;
-		final CheckResult checkResult;
-		if (!conflictListFailure) {
-			checkResult = FileChecker.checkFiles(repo, conflictPaths);
-			mergeToolAvailable = checkResult.isOk();
-		}
-		else {
-			checkResult = null;
-			mergeToolAvailable = false;
-		}
-
 		if (conflictListFailure) {
 			Label failureLabel = new Label(main, SWT.NONE);
 			failureLabel
 					.setText(UIText.RebaseResultDialog_ConflictListFailureMessage);
 		} else {
-			if (checkResult != null && !checkResult.isOk()) {
-				Label failureLabel = new Label(main, SWT.NONE);
-				failureLabel
-					.setText(getProblemDescription(checkResult));
-			}
 			Label conflictListLabel = new Label(main, SWT.NONE);
 			conflictListLabel
-			.setText(UIText.RebaseResultDialog_DiffDetailsLabel);
+					.setText(UIText.RebaseResultDialog_DiffDetailsLabel);
 			TableViewer conflictList = new TableViewer(main, SWT.BORDER);
 			GridDataFactory.fillDefaults().span(2, 1).grab(true, true).applyTo(
 					conflictList.getTable());
 			conflictList.setContentProvider(ArrayContentProvider.getInstance());
 			conflictList.setInput(conflictPaths);
-			conflictList.setLabelProvider(new LabelProvider() {
-				@Override
-				public String getText(Object element) {
-					String path = (String) element;
-					if (checkResult != null && !checkResult.isOk()) {
-						CheckResultEntry entry = checkResult.getEntry(path);
-						if (entry != null) {
-							if (!entry.inWorkspace)
-								return UIText.RebaseResultDialog_notInWorkspace + SPACE + path;
-							if (!entry.shared)
-								return UIText.RebaseResultDialog_notShared + SPACE + path;
-						}
-					}
-					return super.getText(element);
-				}
-
-			});
 		}
 
 		Group actionGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
@@ -296,15 +242,15 @@ public class RebaseResultDialog extends MessageDialog {
 
 		startMergeButton = new Button(actionGroup, SWT.RADIO);
 		startMergeButton.setText(UIText.RebaseResultDialog_StartMergeRadioText);
-		startMergeButton.setEnabled(mergeToolAvailable);
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				if (startMergeButton.getSelection())
+				if (startMergeButton.getSelection()) {
 					nextSteps
 							.getTextWidget()
 							.setText(
 									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
+				}
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -360,27 +306,12 @@ public class RebaseResultDialog extends MessageDialog {
 
 		});
 
-		if (mergeToolAvailable)
-			startMergeButton.setSelection(true);
-		else
-			doNothingButton.setSelection(true);
+		startMergeButton.setSelection(true);
 
 		commitGroup.pack();
 		applyDialogFont(main);
 
 		return main;
-	}
-
-	private static String getProblemDescription(CheckResult checkResult) {
-		StringBuffer result = new StringBuffer();
-		if (checkResult.containsNonWorkspaceFiles())
-			result.append(UIText.RebaseResultDialog_notInWorkspaceMessage);
-		if (checkResult.containsNotSharedResources()) {
-			if (result.length() > 0)
-				result.append('\n');
-			result.append(UIText.RebaseResultDialog_notSharedMessage);
-		}
-		return result.toString();
 	}
 
 	@Override
@@ -421,13 +352,14 @@ public class RebaseResultDialog extends MessageDialog {
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
 					IPath filePath = repoWorkdirPath.append(repoPath);
-					for (IProject project : validProjects)
+					for (IProject project : validProjects) {
 						if (project.getLocation().isPrefixOf(filePath)) {
 							IResource res = project.getFile(filePath
 									.removeFirstSegments(project.getLocation()
 											.segmentCount()));
 							resourceList.add(res);
 						}
+					}
 				}
 				IResource[] resources = new IResource[resourceList.size()];
 				resourceList.toArray(resources);
@@ -446,7 +378,7 @@ public class RebaseResultDialog extends MessageDialog {
 				}
 				CompareUI.openCompareEditor(input);
 				return;
-			} else if (skipCommitButton.getSelection())
+			} else if (skipCommitButton.getSelection()) {
 				// skip the rebase
 				try {
 					final RebaseOperation op = new RebaseOperation(repo,
@@ -457,7 +389,7 @@ public class RebaseResultDialog extends MessageDialog {
 				} catch (CoreException e) {
 					Activator.handleError(e.getMessage(), e, true);
 				}
-			else if (abortRebaseButton.getSelection())
+			} else if (abortRebaseButton.getSelection()) {
 				// abort the rebase
 				try {
 					final RebaseOperation op = new RebaseOperation(repo,
@@ -468,7 +400,7 @@ public class RebaseResultDialog extends MessageDialog {
 				} catch (CoreException e) {
 					Activator.handleError(e.getMessage(), e, true);
 				}
-			else if (doNothingButton.getSelection()) {
+			} else if (doNothingButton.getSelection()) {
 				// nothing
 			}
 		}

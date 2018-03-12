@@ -19,12 +19,12 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
+import org.eclipse.egit.ui.internal.LocalResourceTypedElement;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 import org.eclipse.team.ui.mapping.SaveableComparison;
 
@@ -66,7 +66,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 	 *
 	 * @param repo
 	 *            repository that is connected with this object
-	 * @param ancestorDataSource
+	 * @param ancestroDataSource
 	 *            data that should be use to obtain common ancestor object data
 	 * @param baseDataSource
 	 *            data that should be use to obtain base object data
@@ -76,7 +76,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 	 *            repository relative path of object
 	 */
 	public GitCompareInput(Repository repo,
-			ComparisonDataSource ancestorDataSource,
+			ComparisonDataSource ancestroDataSource,
 			ComparisonDataSource baseDataSource,
 			ComparisonDataSource remoteDataSource, String gitPath) {
 		this.repo = repo;
@@ -84,9 +84,9 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		this.baseId = baseDataSource.getObjectId();
 		this.remoteId = remoteDataSource.getObjectId();
 		this.baseCommit = baseDataSource.getRevCommit();
-		this.ancestorId = ancestorDataSource.getObjectId();
+		this.ancestorId = ancestroDataSource.getObjectId();
 		this.remoteCommit = remoteDataSource.getRevCommit();
-		this.ancestorCommit = ancestorDataSource.getRevCommit();
+		this.ancestorCommit = ancestroDataSource.getRevCommit();
 		this.name = gitPath.lastIndexOf('/') < 0 ? gitPath : gitPath
 				.substring(gitPath.lastIndexOf('/') + 1);
 	}
@@ -163,11 +163,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		return false;
 	}
 
-	/**
-	 * @param element
-	 * @return compare editor description
-	 */
-	public static String getFileRevisionLabel(ITypedElement element) {
+	private String getFileRevisionLabel(ITypedElement element) {
 		if (element instanceof FileRevisionTypedElement) {
 			FileRevisionTypedElement castElement = (FileRevisionTypedElement) element;
 			if (INDEX.equals(castElement.getContentIdentifier()))

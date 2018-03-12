@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@ import java.io.IOException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -85,13 +84,13 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		// given
 		GitResourceVariantTreeSubscriber grvts = createGitResourceVariantTreeSubscriber(
 				Constants.HEAD, Constants.R_HEADS + Constants.MASTER);
-		grvts.init(new NullProgressMonitor());
+		grvts.getBaseTree();
 		IResourceVariantTree baseTree = grvts.getBaseTree();
 
 		// then
 		IResourceVariant actual = commonAssertionsForBaseTree(baseTree,
 				mainJava);
-		assertEquals(commit.abbreviate(7).name() + "... (J. Git)",
+		assertEquals(commit.abbreviate(7).name() + "...",
 				actual.getContentIdentifier());
 	}
 
@@ -174,7 +173,7 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		IResourceVariant resourceVariant = remoteTree
 				.getResourceVariant(mainJava);
 		assertNotNull(resourceVariant);
-		assertTrue(resourceVariant instanceof GitRemoteResource);
+		assertTrue(resourceVariant instanceof GitResourceVariant);
 		assertEquals(fileId.getName(), resourceVariant.getContentIdentifier());
 	}
 
@@ -208,7 +207,7 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		IResourceVariant resourceVariant = baseTree
 				.getResourceVariant(resource);
 		assertNotNull(resourceVariant);
-		assertTrue(resourceVariant instanceof GitRemoteResource);
+		assertTrue(resourceVariant instanceof GitResourceVariant);
 		return resourceVariant;
 	}
 

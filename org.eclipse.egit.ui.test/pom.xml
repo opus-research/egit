@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-   Copyright (C) 2010-2012 Matthias Sohn <matthias.sohn@sap.com>
+   Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
 
    All rights reserved. This program and the accompanying materials
    are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>2.3.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui.test</artifactId>
@@ -25,8 +25,16 @@
   <name>EGit UI Test Plug-in</name>
 
   <properties>
-    <uitest.vmparams>-Dorg.eclipse.swtbot.search.timeout=30000 -Xmx1024m -XX:MaxPermSize=384m</uitest.vmparams>
+    <local-egit-site>file:/${basedir}/../org.eclipse.egit-updatesite/target/site</local-egit-site>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>local-egit</id>
+      <layout>p2</layout>
+      <url>${local-egit-site}</url>
+    </repository>
+  </repositories>
 
   <profiles>
     <profile>
@@ -49,7 +57,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>${uitest.vmparams} -XstartOnFirstThread</ui.test.vmargs>
+        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m -XstartOnFirstThread</ui.test.vmargs>
       </properties>
     </profile>
     <profile>
@@ -61,7 +69,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>${uitest.vmparams}</ui.test.vmargs>
+        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m</ui.test.vmargs>
       </properties>
     </profile>
   </profiles>
@@ -73,10 +81,8 @@
         <artifactId>tycho-surefire-plugin</artifactId>
         <version>${tycho-version}</version>
         <configuration>
-          <includes>
-            <include>**/AllJUnitTests.java</include>
-            <include>**/AllSWTAndNonSWTTests.java</include>
-          </includes>
+          <testSuite>org.eclipse.egit.ui.test</testSuite>
+          <testClass>org.eclipse.egit.ui.test.AllTests</testClass>
           <useUIHarness>true</useUIHarness>
           <useUIThread>false</useUIThread>
           <product>org.eclipse.sdk.ide</product>
@@ -85,15 +91,13 @@
           <dependencies>
             <dependency>
               <type>p2-installable-unit</type>
-              <groupId>org.eclipse.egit.feature</groupId>
               <artifactId>org.eclipse.egit.feature.group</artifactId>
-              <version>2.3.0</version>
+              <version>1.1.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
-              <groupId>org.eclipse.jgit.feature</groupId>
               <artifactId>org.eclipse.jgit.feature.group</artifactId>
-              <version>2.3.0</version>
+              <version>1.1.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
@@ -108,6 +112,32 @@
            </dependencies>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.7.2</version>
+        <executions>
+          <execution>
+            <phase>test</phase>
+            <configuration>
+              <testClassesDirectory>${project.build.outputDirectory}</testClassesDirectory>
+              <includes>
+                <include>**/AllJUnitTests.java</include>
+              </includes>
+            </configuration>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 </project>

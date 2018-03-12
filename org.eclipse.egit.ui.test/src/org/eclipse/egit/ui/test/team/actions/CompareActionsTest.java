@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,19 +8,17 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Chris Aniszczyk <caniszczyk@gmail.com> - tag API changes
- *    Mathias Kinzler (SAP AG) - compare with previous actions
  *******************************************************************************/
 package org.eclipse.egit.ui.test.team.actions;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
@@ -30,13 +28,9 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.RawParseUtils;
@@ -52,7 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for the Compare With actions
+ * Tests for the Team->Branch action
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class CompareActionsTest extends LocalRepositoryTestCase {
@@ -63,7 +57,6 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	// private static String LOCAL_BRANCHES;
 	//
 	private static String TAGS;
-	private static ObjectId commitOfTag;
 
 	@BeforeClass
 	public static void setup() throws Exception {
@@ -78,13 +71,11 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		tag.setMessage("I'm just a little tag");
 		tag.setObjectId(repo.resolve(repo.getFullBranch()),
 				Constants.OBJ_COMMIT);
-		commitOfTag = tag.getObjectId();
 		TagOperation top = new TagOperation(repo, tag, false);
 		top.execute(null);
 		touchAndSubmit(null);
 
-		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
-				.createLabelProvider();
+		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
 		// LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
 		// null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
@@ -115,9 +106,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				dialogTitle);
 		// use the default (the last commit) -> no changes
 		assertEquals(3, dialog.bot().table().rowCount());
-		dialog.bot().table().select(0);
 		dialog.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.waitUntilViewWithGivenIdShows(CompareTreeView.ID);
 		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
 				.getAllItems().length);
 		// use the second (previous) -> should have a change
@@ -147,40 +136,6 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		dialog.bot().button(UIText.CompareTargetSelectionDialog_CompareButton)
 				.click();
 		waitUntilCompareTreeViewTreeHasNodeCount(1);
-	}
-
-	@Test
-	public void testCompareWithPrevious() throws Exception {
-		String menuLabel = util
-				.getPluginLocalizedValue("CompareWithPreviousAction.label");
-		clickCompareWith(menuLabel);
-		waitUntilCompareTreeViewTreeHasNodeCount(1);
-	}
-
-	@Test
-	public void testCompareWithPreviousWithMerge() throws Exception {
-		Repository repo = lookupRepository(repositoryFile);
-
-		Git git = new Git(repo);
-		ObjectId masterId = repo.resolve("refs/heads/master");
-		Ref newBranch = git.checkout().setCreateBranch(true)
-				.setStartPoint(commitOfTag.name()).setName("toMerge").call();
-		ByteArrayInputStream bis = new ByteArrayInputStream(
-				"Modified".getBytes());
-		ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1)
-				.getFolder(FOLDER).getFile(FILE2)
-				.setContents(bis, false, false, null);
-		bis.close();
-		git.commit().setAll(true).setMessage("To be merged").call();
-		git.merge().include(masterId).call();
-		String menuLabel = util
-				.getPluginLocalizedValue("CompareWithPreviousAction.label");
-		SWTBotShell selectDialog = openCompareWithDialog(menuLabel, UIText.CommitSelectDialog_WindowTitle);
-		assertEquals(2, selectDialog.bot().table().rowCount());
-		selectDialog.close();
-		// cleanup: checkout again master and delete merged branch
-		git.checkout().setName("refs/heads/master").call();
-		git.branchDelete().setBranchNames(newBranch.getName()).setForce(true).call();
 	}
 
 	@Test
@@ -252,30 +207,26 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	}
 
 	private void clickCompareWith(String menuLabel) {
-		SWTBotTree projectExplorerTree = selectProjectItem();
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Compare With",
-				menuLabel);
-	}
-
-	private SWTBotShell openCompareWithDialog(String menuLabel,
-			String dialogTitle) {
-		SWTBotTree projectExplorerTree = selectProjectItem();
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Compare With",
-				menuLabel);
-		SWTBotShell dialog = bot.shell(dialogTitle);
-		return dialog;
-	}
-
-	private SWTBotTree selectProjectItem() {
 		SWTBotTree projectExplorerTree = bot.viewById(
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
-		return projectExplorerTree;
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Compare With",
+				menuLabel);
+	}
+
+	private SWTBotShell openCompareWithDialog(String menuString,
+			String dialogTitle) {
+		SWTBotTree projectExplorerTree = bot.viewById(
+				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		getProjectItem(projectExplorerTree, PROJ1).select();
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Compare With",
+				menuString);
+		SWTBotShell dialog = bot.shell(dialogTitle);
+		return dialog;
 	}
 
 	private void waitUntilCompareTreeViewTreeHasNodeCount(int nodeCount) {
 		SWTBotTree tree = bot.viewById(CompareTreeView.ID).bot().tree();
 		bot.waitUntil(Conditions.treeHasRows(tree, nodeCount), 10000);
 	}
-
 }

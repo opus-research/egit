@@ -53,14 +53,13 @@ public class AddOperationTest extends GitTestCase {
 		IFile file1 = testUtils.addFileToProject(project.getProject(), "a.txt",
 				"some text");
 
-		assertFalse(testRepository.inIndex(file1.getLocation()
-				.toPortableString()));
-
 		resources.add(file1);
 		new AddToIndexOperation(resources).execute(null);
 
 		assertTrue(testRepository.inIndex(file1.getLocation()
 				.toPortableString()));
+		assertTrue(testRepository.getDirCacheEntryLength(file1.getLocation()
+				.toPortableString()) == 9);
 	}
 
 	@Test
@@ -70,11 +69,6 @@ public class AddOperationTest extends GitTestCase {
 		IFile file2 = testUtils.addFileToProject(project.getProject(),
 				"sub/b.txt", "some text");
 
-		assertFalse(testRepository.inIndex(file1.getLocation()
-				.toPortableString()));
-		assertFalse(testRepository.inIndex(file2.getLocation()
-				.toPortableString()));
-
 		resources.add(project.getProject().getFolder("sub"));
 		new AddToIndexOperation(resources).execute(null);
 
@@ -82,6 +76,10 @@ public class AddOperationTest extends GitTestCase {
 				.toPortableString()));
 		assertTrue(testRepository.inIndex(file2.getLocation()
 				.toPortableString()));
+		assertTrue(testRepository.getDirCacheEntryLength(file1.getLocation()
+				.toPortableString()) == 9);
+		assertTrue(testRepository.getDirCacheEntryLength(file2.getLocation()
+				.toPortableString()) == 9);
 	}
 
 	@Test
@@ -159,4 +157,43 @@ public class AddOperationTest extends GitTestCase {
 		 assertEquals(file2.getLocalTimeStamp() / 10,
 				 testRepository.lastModifiedInIndex(file2.getLocation().toPortableString()) / 10);
 	}
+
+	@Test
+	public void testAddFilesInFolderWithDerivedFile() throws Exception {
+		IFile file1 = testUtils.addFileToProject(project.getProject(),
+				"sub/a.txt", "some text");
+		IFile file2 = testUtils.addFileToProject(project.getProject(),
+				"sub/b.txt", "some text");
+		// TODO use setDerived(boolean isDerived, IProgressMonitor monitor)
+		// when minimal supported Eclipse version is 3.6
+		file2.setDerived(true);
+
+		resources.add(project.getProject().getFolder("sub"));
+		new AddToIndexOperation(resources).execute(null);
+
+		assertTrue(testRepository.inIndex(file1.getLocation()
+				.toPortableString()));
+		assertFalse(testRepository.inIndex(file2.getLocation()
+				.toPortableString()));
+	}
+
+	@Test
+	public void testAddWholeProject() throws Exception {
+		IFile file1 = testUtils.addFileToProject(project.getProject(),
+				"sub/a.txt", "some text");
+		IFile file2 = testUtils.addFileToProject(project.getProject(),
+				"sub/b.txt", "some text");
+		// TODO use setDerived(boolean isDerived, IProgressMonitor monitor)
+		// when minimal supported Eclipse version is 3.6
+		file2.setDerived(true);
+
+		resources.add(project.getProject());
+		new AddToIndexOperation(resources).execute(null);
+
+		assertTrue(testRepository.inIndex(file1.getLocation()
+				.toPortableString()));
+		assertFalse(testRepository.inIndex(file2.getLocation()
+				.toPortableString()));
+	}
+
 }

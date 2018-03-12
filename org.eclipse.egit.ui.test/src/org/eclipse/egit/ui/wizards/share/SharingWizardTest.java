@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.wizards.share;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,8 +40,12 @@ import org.eclipse.egit.ui.common.SharingWizard;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.api.errors.NoMessageException;
+import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -57,6 +60,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
 
 @RunWith(SWTBotJunit4ClassRunner.class)
@@ -126,15 +130,10 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				dirs.add(canonicalFile);
 				File workspacePath = ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().getCanonicalFile();
 				File gitDirParent = canonicalFile.getParentFile();
-				if (!(gitDirParent.toString() + File.separator)
-						.startsWith(workspacePath.toString() + File.separator))
-					if (!(gitDirParent.toString() + File.separator)
-							.startsWith(getTestDirectory().getCanonicalPath()
-									.toString() + File.separator))
-						fail("Attempting cleanup of directory neither in workspace nor test directory"
-								+ canonicalFile);
-				new DisconnectProviderOperation(Collections.singleton(project))
-						.execute(null);
+				if (!(gitDirParent.toString()+"/").startsWith(workspacePath.toString()+"/"))
+					if (!(gitDirParent.toString()+"/").startsWith(getTestDirectory().getCanonicalPath().toString()+"/"))
+						fail("Attempting cleanup of directory neither in workspace nor test directory" + canonicalFile);
+				new DisconnectProviderOperation(Collections.singleton(project)).execute(null);
 			}
 			project.close(null);
 			project.delete(true, true, null);
@@ -192,7 +191,9 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void shareProjectWithAlreadyCreatedRepos() throws IOException,
-			InterruptedException, JGitInternalException, GitAPIException {
+			InterruptedException, NoFilepatternException, NoHeadException,
+			NoMessageException, ConcurrentRefUpdateException,
+			JGitInternalException, WrongRepositoryStateException {
 		FileRepository repo1 = new FileRepository(new File(
 				createProject(projectName1), "../.git"));
 		repo1.create();

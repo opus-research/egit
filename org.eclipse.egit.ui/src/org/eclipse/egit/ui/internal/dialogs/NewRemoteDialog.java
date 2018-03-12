@@ -17,7 +17,6 @@ import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -62,11 +61,7 @@ public class NewRemoteDialog extends TitleAreaDialog {
 		super.create();
 		setTitle(UIText.NewRemoteDialog_DialogTitle);
 		setMessage(UIText.NewRemoteDialog_ConfigurationMessage);
-		if (existingRemotes.isEmpty()) {
-			nameText.setText(Constants.DEFAULT_REMOTE_NAME);
-			nameText.selectAll();
-		}
-		checkPage();
+		getButton(OK).setEnabled(false);
 	}
 
 	@Override

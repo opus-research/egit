@@ -15,6 +15,7 @@ import java.text.MessageFormat;
 
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -24,7 +25,8 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
 /**
  * Commit search results label provider class.
  */
-public class CommitResultLabelProvider extends WorkbenchLabelProvider {
+public class CommitResultLabelProvider extends WorkbenchLabelProvider implements
+		IStyledLabelProvider {
 
 	private DateFormat dateFormat = DateFormat.getDateTimeInstance(
 			DateFormat.MEDIUM, DateFormat.SHORT);

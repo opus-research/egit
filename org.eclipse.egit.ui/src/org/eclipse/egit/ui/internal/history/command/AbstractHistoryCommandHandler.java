@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +23,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
@@ -100,11 +97,6 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			}
 
 		}
-
-		Repository repo = AdapterUtils.adapt(input, Repository.class);
-		if (repo != null)
-			return repo;
-
 		throw new ExecutionException(
 				UIText.AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage);
 	}
@@ -155,45 +147,11 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	}
 
 	protected IStructuredSelection getSelection(GitHistoryPage page) {
-		if (page == null)
-			return StructuredSelection.EMPTY;
 		ISelection pageSelection = page.getSelectionProvider().getSelection();
-		if (pageSelection instanceof IStructuredSelection)
+		if (pageSelection instanceof IStructuredSelection) {
 			return (IStructuredSelection) pageSelection;
-		else
-			return StructuredSelection.EMPTY;
-	}
-
-	/**
-	 * Gets the selected commits, re-parsed to have correct parent information
-	 * regardless of how history was walked.
-	 *
-	 * @return the selected commits, or an empty list
-	 * @throws ExecutionException
-	 */
-	protected List<RevCommit> getSelectedCommits() throws ExecutionException {
-		List<RevCommit> commits = new ArrayList<RevCommit>();
-		GitHistoryPage page = getPage();
-		if (page == null)
-			return Collections.emptyList();
-		IStructuredSelection selection = getSelection(page);
-		HistoryPageInput input = page.getInputInternal();
-		if (input == null)
-			return Collections.emptyList();
-		RevWalk walk = new RevWalk(input.getRepository());
-		try {
-			for (Object element : selection.toList()) {
-				RevCommit commit = (RevCommit) element;
-				// Re-parse commit to clear effects of TreeFilter
-				RevCommit reparsed = walk.parseCommit(commit.getId());
-				commits.add(reparsed);
-			}
-		} catch (IOException e) {
-			throw new ExecutionException(e.getMessage(), e);
-		} finally {
-			walk.release();
-		}
-		return commits;
+		} else
+			return new StructuredSelection();
 	}
 
 	/**

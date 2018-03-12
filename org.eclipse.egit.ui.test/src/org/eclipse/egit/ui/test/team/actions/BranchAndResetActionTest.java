@@ -45,8 +45,6 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
-import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -62,7 +60,6 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.TableCollection;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
@@ -105,8 +102,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		top.execute(null);
 		touchAndSubmit(null);
 
-		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
-				.createLabelProvider();
+		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
 		LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
 				null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
@@ -195,8 +191,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		untracked.add(toBeDeleted);
 		// commit to stable
 		CommitOperation op = new CommitOperation(new IFile[] { toBeDeleted },
-				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
-				"Add to stable");
+				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
+				TestUtil.TESTCOMMITTER, "Add to stable");
 		op.execute(null);
 
 		InputStream is = toBeDeleted.getContents();
@@ -214,10 +210,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 				}
 			});
 
-			SWTBotToolbarDropDownButton pathButton = showUndeleted.bot().toolbarDropDownButton();
-			pathButton.menuItem(UIText.NonDeletedFilesTree_FileSystemPathsButton).click();
-			// see http://www.eclipse.org/forums/index.php/t/159133/ why we need this
-			pathButton.pressShortcut(KeyStroke.getInstance("ESC"));
+			showUndeleted.bot().radio(
+					UIText.NonDeletedFilesTree_FileSystemPathsButton).click();
 			// fs path
 			IPath path = new Path(lookupRepository(repositoryFile)
 					.getWorkTree().getPath()).append(PROJ1).append(FOLDER)
@@ -226,17 +220,18 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 			for (int i = 0; i < path.segmentCount(); i++) {
 				boolean found = false;
 				String segment = path.segment(i);
-				for (SWTBotTreeItem item : items)
+				for (SWTBotTreeItem item : items) {
 					if (item.getText().equals(segment)) {
 						found = true;
 						items = item.getItems();
 					}
+				}
 				assertTrue(found);
 			}
-			pathButton.menuItem(UIText.NonDeletedFilesTree_ResourcePathsButton).click();
-			// see http://www.eclipse.org/forums/index.php/t/159133/ why we need this
-			pathButton.pressShortcut(KeyStroke.getInstance("ESC"));
+
 			// resource path
+			showUndeleted.bot().radio(
+					UIText.NonDeletedFilesTree_ResourcePathsButton).click();
 			assertEquals("ToBeDeleted", showUndeleted.bot().tree()
 					.getAllItems()[0].getItems()[0].getItems()[0].getText());
 			Display.getDefault().syncExec(new Runnable() {
@@ -451,7 +446,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 		Repository repo = lookupRepository(repositoryFile);
 
-		dialog.bot().button(UIText.CheckoutDialog_OkCheckout).click();
+		dialog.bot().button(IDialogConstants.OK_LABEL).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		if (ObjectId.isId(repo.getBranch())) {
 			String mapped = Activator.getDefault().getRepositoryUtil()
@@ -470,7 +465,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertEquals("Wrong selection count", 1, tc.rowCount());
 		assertEquals("Wrong item selected", newBranch[1], tc.get(0, 0));
 
-		dialog.bot().button(UIText.CheckoutDialog_OkCheckout).click();
+		dialog.bot().button(IDialogConstants.OK_LABEL).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 	}
 

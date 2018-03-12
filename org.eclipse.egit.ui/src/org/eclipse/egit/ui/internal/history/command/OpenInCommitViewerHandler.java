@@ -7,11 +7,8 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Robin Stocker
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
-
-import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -29,14 +26,14 @@ public class OpenInCommitViewerHandler extends AbstractHistoryCommandHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(event);
-		List<RevCommit> commits = getSelectedCommits();
-		for (RevCommit commit : commits) {
-			try {
-				CommitEditor.open(new RepositoryCommit(repository, commit));
-			} catch (PartInitException e) {
-				Activator.showError("Error opening commit viewer", e); //$NON-NLS-1$
-			}
-		}
+		if (repository != null)
+			for (Object selected : getSelection(getPage()).toList())
+				try {
+					CommitEditor.open(new RepositoryCommit(repository,
+							(RevCommit) selected));
+				} catch (PartInitException e) {
+					Activator.showError("Error opening commit viewer", e); //$NON-NLS-1$
+				}
 		return null;
 	}
 }

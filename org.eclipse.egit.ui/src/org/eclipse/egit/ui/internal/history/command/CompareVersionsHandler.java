@@ -37,9 +37,9 @@ public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
 			RevCommit commit1 = (RevCommit) it.next();
 			RevCommit commit2 = (RevCommit) it.next();
 
-
 			Object input = getPage().getInputInternal().getSingleItem();
-			Repository repo = getRepository(event);
+			Repository repository = getPage().getInputInternal()
+					.getRepository();
 			if (input instanceof IFile) {
 				IFile resource = (IFile) input;
 				final RepositoryMapping map = RepositoryMapping
@@ -52,25 +52,20 @@ public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
 				final ITypedElement next = CompareUtils
 						.getFileRevisionTypedElement(gitPath, commit2, map
 								.getRepository());
-				final ITypedElement ancestor =
-						CompareUtils.getFileRevisionTypedElementForCommonAncestor(
-						gitPath, commit1, commit2, repo);
 				CompareEditorInput in = new GitCompareFileRevisionEditorInput(
-						base, next, ancestor, null);
+						base, next, null);
 				openInCompare(event, in);
 			} else if (input instanceof File) {
 				File fileInput = (File) input;
+				Repository repo = getRepository(event);
 				final String gitPath = getRepoRelativePath(repo, fileInput);
 
 				final ITypedElement base = CompareUtils
 						.getFileRevisionTypedElement(gitPath, commit1, repo);
 				final ITypedElement next = CompareUtils
 						.getFileRevisionTypedElement(gitPath, commit2, repo);
-				final ITypedElement ancestor = CompareUtils.
-						getFileRevisionTypedElementForCommonAncestor(
-						gitPath, commit1, commit2, repo);
 				CompareEditorInput in = new GitCompareFileRevisionEditorInput(
-						base, next, ancestor, null);
+						base, next, null);
 				openInCompare(event, in);
 			} else if (input instanceof IResource) {
 				GitCompareEditorInput compareInput = new GitCompareEditorInput(
@@ -78,7 +73,7 @@ public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
 				openInCompare(event, compareInput);
 			} else if (input == null) {
 				GitCompareEditorInput compareInput = new GitCompareEditorInput(
-						commit1.name(), commit2.name(), repo);
+						commit1.name(), commit2.name(), repository);
 				openInCompare(event, compareInput);
 			}
 		}

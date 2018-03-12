@@ -139,7 +139,7 @@ public class CommitHelper {
 				}
 			}
 		} catch (FileNotFoundException e) {
-			return NLS.bind(UIText.CommitHelper_couldNotFindMergeMsg, Constants.MERGE_MSG);
+			throw new IllegalStateException(e);
 		}
 	}
 
@@ -217,24 +217,6 @@ public class CommitHelper {
 	}
 
 	/**
-	 * @return true if amending is allowed
-	 */
-	public boolean amendAllowed() {
-		return previousCommit != null && repository.getRepositoryState().canAmend();
-	}
-
-	/**
-	 * @param repository
-	 *            to check
-	 * @return true if an empty commit without files is allowed in the
-	 *         current state
-	 */
-	public static boolean isCommitWithoutFilesAllowed(Repository repository) {
-		RepositoryState state = repository.getRepositoryState();
-		return state == RepositoryState.MERGING_RESOLVED;
-	}
-
-	/**
 	 * @param repository
 	 * @return info related to the HEAD commit
 	 */
@@ -247,10 +229,7 @@ public class CommitHelper {
 		PersonIdent authorIdent = headCommit.getAuthorIdent();
 		String author = authorIdent.getName()
 				+ " <" + authorIdent.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
-		PersonIdent committerIdent = headCommit.getCommitterIdent();
-		String committer = committerIdent.getName()
-				+ " <" + committerIdent.getEmailAddress() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
-		return new CommitInfo(headCommit, author, committer, commitMessage);
+		return new CommitInfo(headCommit, author, commitMessage);
 	}
 
 	/**
@@ -260,20 +239,17 @@ public class CommitHelper {
 	public static class CommitInfo {
 		private RevCommit commit;
 		private String author;
-		private String committer;
 		private String commitMessage;
 
 		/**
 		 * @param commit
 		 * @param author
-		 * @param committer
 		 * @param commitMessage
 		 */
-		public CommitInfo(RevCommit commit, String author, String committer, String commitMessage) {
+		public CommitInfo(RevCommit commit, String author, String commitMessage) {
 			super();
 			this.commit = commit;
 			this.author = author;
-			this.committer = committer;
 			this.commitMessage = commitMessage;
 		}
 
@@ -289,13 +265,6 @@ public class CommitHelper {
 		 */
 		public String getAuthor() {
 			return author;
-		}
-
-		/**
-		 * @return committer
-		 */
-		public String getCommitter() {
-			return committer;
 		}
 
 		/**

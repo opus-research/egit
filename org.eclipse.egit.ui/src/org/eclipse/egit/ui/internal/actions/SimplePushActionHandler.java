@@ -38,7 +38,7 @@ public class SimplePushActionHandler extends RepositoryActionHandler {
 
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-		PushOperationUI op = new PushOperationUI(repository, config.getName(), timeout,
+		PushOperationUI op = new PushOperationUI(repository, config, timeout,
 				false);
 		op.start();
 		return null;
@@ -46,9 +46,8 @@ public class SimplePushActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repository = getRepository();
-		return repository != null
+		return getRepository() != null
 				&& SimpleConfigurePushDialog
-						.getConfiguredRemote(repository) != null;
+						.getConfiguredRemote(getRepository()) != null;
 	}
 }
