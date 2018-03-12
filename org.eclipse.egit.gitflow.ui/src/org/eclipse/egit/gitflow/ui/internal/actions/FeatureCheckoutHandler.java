@@ -29,7 +29,7 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.op.FeatureCheckoutOperation;
 import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
-import org.eclipse.egit.gitflow.ui.internal.dialog.AbstractGitFlowBranchSelectionDialog;
+import org.eclipse.egit.gitflow.ui.internal.dialogs.AbstractGitFlowBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.branch.CleanupUncomittedChangesDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.CheckoutResult;
@@ -47,6 +47,10 @@ public class FeatureCheckoutHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
+		if (gfRepo == null) {
+			return error(UIText.Handlers_noGitflowRepositoryFound);
+		}
+
 		Repository repository = gfRepo.getRepository();
 
 		final List<Ref> refs = gfRepo.getFeatureBranches();

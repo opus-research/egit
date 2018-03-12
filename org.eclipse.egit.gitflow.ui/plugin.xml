@@ -482,6 +482,20 @@
 					</or>
 				</iterate>
 			</activeWhen>
+			<enabledWhen>
+				<iterate
+                  ifEmpty="false"
+                  operator="and">
+					<and>
+							<adapt type="org.eclipse.jgit.lib.Repository">
+								<test
+                           forcePluginActivation="true"
+                           property="GitFlowRepository.isInitialized">
+								</test>
+							</adapt>
+					</and>
+				</iterate>
+			</enabledWhen>
 		</handler>
 		<handler
             commandId="org.eclipse.egit.gitflow.ui.command.featureRebase">
@@ -749,4 +763,21 @@
        </menu>
     </menuContribution>
  </extension>
+   <extension point="org.eclipse.ui.decorators">
+      <decorator
+            lightweight="true"
+            adaptable="true"
+            label="%Decorator_name"
+            class="org.eclipse.egit.gitflow.ui.internal.decorators.GitFlowLightweightDecorator"
+            state="true"
+            location="TOP_RIGHT"
+            id="org.eclipse.egit.gitflow.ui.internal.decorators.GitflowLightweightDecorator">
+            <enablement>
+              <objectClass name="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode"/>
+            </enablement>
+         <description>
+            %Decorator_description
+         </description>
+      </decorator>
+   </extension>
 </plugin>

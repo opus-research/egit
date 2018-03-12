@@ -99,8 +99,7 @@ public abstract class GitRepositoriesViewTestBase extends
 		final SWTBotTreeItem[] items = tree.getAllItems();
 		boolean found = false;
 		for (SWTBotTreeItem item : items) {
-			if (item.getText().startsWith(
-					repositoryDir.getParentFile().getName())) {
+			if (item.getText().contains(repositoryDir.getParentFile().getName())) {
 				found = true;
 				break;
 			}
@@ -115,10 +114,11 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected void refreshAndWait() throws Exception {
 		RepositoriesView view = (RepositoriesView) getOrOpenView()
-				.getReference().getPart(false);
+				.getReference().getPart(true);
 		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.REPO_VIEW_REFRESH, 60, TimeUnit.SECONDS);
 		view.refresh();
 		jobJoiner.join();
+		TestUtil.processUIEvents();
 	}
 
 	@SuppressWarnings("boxing")
