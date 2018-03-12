@@ -7,7 +7,6 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -57,6 +56,7 @@ import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
@@ -81,6 +81,7 @@ import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
+import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
@@ -91,6 +92,8 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -300,11 +303,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
 
-	/**
-	 * A constant used for the 'commit and push button' button
-	 */
-	public static final int COMMIT_AND_PUSH_ID = 30;
-
 	FormToolkit toolkit;
 
 	CommitMessageComponent commitMessageComponent;
@@ -328,8 +326,6 @@ public class CommitDialog extends TitleAreaDialog {
 	Section filesSection;
 
 	Button commitButton;
-
-	Button commitAndPushButton;
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
@@ -359,8 +355,6 @@ public class CommitDialog extends TitleAreaDialog {
 	private boolean allowToChangeSelection = true;
 
 	private Repository repository;
-
-	private boolean isPushRequested = false;
 
 	/**
 	 * @param parentShell
@@ -515,33 +509,14 @@ public class CommitDialog extends TitleAreaDialog {
 		return createChangeId;
 	}
 
-	/**
-	 * @return true if push shall be executed
-	 */
-	public boolean isPushRequested() {
-		return isPushRequested;
-	}
-
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		toolkit.adapt(parent, false, false);
-		commitAndPushButton = createButton(parent, COMMIT_AND_PUSH_ID,
-				UIText.CommitDialog_CommitAndPush, false);
 		commitButton = createButton(parent, IDialogConstants.OK_ID,
 				UIText.CommitDialog_Commit, true);
 		createButton(parent, IDialogConstants.CANCEL_ID,
 				IDialogConstants.CANCEL_LABEL, false);
 		updateMessage();
-	}
-
-	protected void buttonPressed(int buttonId) {
-		if (IDialogConstants.OK_ID == buttonId)
-			okPressed();
-		else if (COMMIT_AND_PUSH_ID == buttonId) {
-			isPushRequested = true;
-			okPressed();
-		} else if (IDialogConstants.CANCEL_ID == buttonId)
-			cancelPressed();
 	}
 
 	@Override
@@ -582,8 +557,11 @@ public class CommitDialog extends TitleAreaDialog {
 
 			public void widgetSelected(SelectionEvent e) {
 				String[] pages = new String[] { UIPreferences.PAGE_COMMIT_PREFERENCES };
-				PreferencesUtil.createPreferenceDialogOn(getShell(), pages[0],
-						pages, null).open();
+				PreferenceDialog dialog = PreferencesUtil
+						.createPreferenceDialogOn(getShell(), pages[0], pages,
+								null);
+				if (Window.OK == dialog.open())
+					commitText.reconfigure();
 			}
 
 		});
@@ -674,6 +652,19 @@ public class CommitDialog extends TitleAreaDialog {
 
 		UIUtils.addBulbDecorator(commitText.getTextWidget(),
 				UIText.CommitDialog_ContentAssist);
+
+		// allow to commit with ctrl-enter
+		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent event) {
+				if (UIUtils.isSubmitKeyEvent(event)) {
+					okPressed();
+				} else if (event.keyCode == SWT.TAB
+						&& (event.stateMask & SWT.SHIFT) == 0) {
+					event.doit = false;
+					commitText.traverse(SWT.TRAVERSE_TAB_NEXT);
+				}
+			}
+		});
 
 		Composite personArea = toolkit.createComposite(container);
 		toolkit.paintBordersFor(personArea);
@@ -973,10 +964,8 @@ public class CommitDialog extends TitleAreaDialog {
 		}
 
 		setMessage(message, type);
-		boolean commitEnabled = type == IMessageProvider.WARNING
-				|| type == IMessageProvider.NONE;
-		commitButton.setEnabled(commitEnabled);
-		commitAndPushButton.setEnabled(commitEnabled);
+		commitButton.setEnabled(type == IMessageProvider.WARNING
+				|| type == IMessageProvider.NONE);
 	}
 
 	private boolean isCommitWithoutFilesAllowed() {

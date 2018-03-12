@@ -22,7 +22,6 @@ import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -60,12 +59,9 @@ import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.keys.IBindingService;
 
 /**
  * Some utilities for UI code
@@ -78,7 +74,7 @@ public class UIUtils {
 	private static final char[] VALUE_HELP_ACTIVATIONCHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123457890*@ <>".toCharArray(); //$NON-NLS-1$
 
 	/**
-	 * A keystroke for a "submit" action, see {@link #isSubmitKeyEvent(KeyEvent)}
+	 * the keystroke which provides the submit action, see {@link #isSubmitKeyEvent(KeyEvent)}
 	 */
 	public static final KeyStroke SUBMIT_KEY_STROKE = KeyStroke.getInstance(SWT.MOD1, SWT.CR);
 
@@ -627,15 +623,14 @@ public class UIUtils {
 	}
 
 	/**
-	 * Determine if the key event represents a "submit" action
-	 * (&lt;modifier&gt;+Enter).
+	 * Determine if the key event represents a "submit" action (Ctrl+Enter or
+	 * Command+Enter).
 	 *
 	 * @param event
 	 * @return true, if it means submit, false otherwise
 	 */
 	public static boolean isSubmitKeyEvent(KeyEvent event) {
-		return (event.stateMask & SWT.MODIFIER_MASK) != 0
-				&& event.keyCode == SUBMIT_KEY_STROKE.getNaturalKey();
+		return event.stateMask == SUBMIT_KEY_STROKE.getModifierKeys() && event.keyCode == SUBMIT_KEY_STROKE.getNaturalKey();
 	}
 
 	/**
@@ -652,26 +647,4 @@ public class UIUtils {
 		return workbench.saveAll(window, window, new RepositorySaveableFilter(repository), true);
 	}
 
-	/**
-	 * @param workbenchWindow the workbench window to use for creating the show in menu.
-	 * @return the show in menu
-	 */
-	public static MenuManager createShowInMenu(IWorkbenchWindow workbenchWindow) {
-		MenuManager showInSubMenu = new MenuManager(getShowInMenuLabel());
-		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN.create(workbenchWindow));
-		return showInSubMenu;
-	}
-
-	private static String getShowInMenuLabel() {
-		IBindingService bindingService = (IBindingService) PlatformUI
-				.getWorkbench().getAdapter(IBindingService.class);
-		if (bindingService != null) {
-			String keyBinding = bindingService
-					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
-			if (keyBinding != null)
-				return UIText.UIUtils_ShowInMenuLabel + '\t' + keyBinding;
-		}
-
-		return UIText.UIUtils_ShowInMenuLabel;
-	}
 }

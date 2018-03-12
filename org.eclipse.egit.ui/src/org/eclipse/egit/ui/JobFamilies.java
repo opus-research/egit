@@ -44,11 +44,6 @@ public class JobFamilies {
 	public final static Object REPO_VIEW_REFRESH = new Object();
 
 	/**
-	 * Delete repository job
-	 */
-	public final static Object REPOSITORY_DELETE = new Object();
-
-	/**
 	 * Tag job
 	 */
 	public final static Object TAG = new Object();

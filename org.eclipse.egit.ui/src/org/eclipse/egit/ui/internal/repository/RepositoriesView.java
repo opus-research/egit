@@ -15,17 +15,13 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.commands.Command;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
@@ -37,10 +33,9 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
@@ -481,35 +476,27 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
-	 * @see #showResources(List)
-	 * @param resource
-	 */
-	private void showResource(final IResource resource) {
-		showResources(Arrays.asList(resource));
-	}
-
-	/**
-	 * Opens the tree and marks the working directory files or folders that points
-	 * to a resources if possible
+	 * Opens the tree and marks the working directory file or folder that points
+	 * to a resource if possible
 	 *
-	 * @param resources
-	 *            the resources to show
+	 * @param resource
+	 *            the resource to show
 	 */
-	private void showResources(final List<IResource> resources) {
-		final List<RepositoryTreeNode> nodesToShow = new ArrayList<RepositoryTreeNode>();
+	@SuppressWarnings("unchecked")
+	private void showResource(final IResource resource) {
+		try {
+			IProject project = resource.getProject();
+			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+			if (mapping == null)
+				return;
+			String repoPath = mapping.getRepoRelativePath(resource);
+			if( repoPath == null)
+				return;
 
-		IResource[] r = resources.toArray(new IResource[resources.size()]);
-		Map<Repository, Collection<String>> resourcesByRepo = ResourceUtil.splitResourcesByRepository(r);
-		for (Map.Entry<Repository, Collection<String>> entry : resourcesByRepo.entrySet()) {
-			Repository repository = entry.getKey();
-			try {
-				boolean added = repositoryUtil.addConfiguredRepository(repository.getDirectory());
-				if (added)
-					scheduleRefresh(0);
-			} catch (IllegalArgumentException iae) {
-				Activator.handleError(iae.getMessage(), iae, false);
-				continue;
-			}
+			boolean added = repositoryUtil.addConfiguredRepository(mapping
+					.getRepository().getDirectory());
+			if (added)
+				scheduleRefresh(0);
 
 			if (this.scheduledJob != null)
 				try {
@@ -518,18 +505,48 @@ public class RepositoriesView extends CommonNavigator {
 					Activator.handleError(e.getMessage(), e, false);
 				}
 
-			for (String repoPath : entry.getValue()) {
-				final RepositoryTreeNode node = getNodeForPath(repository, repoPath);
-				if (node != null)
-					nodesToShow.add(node);
+			RepositoryTreeNode currentNode = null;
+			ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
+					.getContentProvider();
+			for (Object repo : cp.getElements(getCommonViewer().getInput())) {
+				RepositoryTreeNode node = (RepositoryTreeNode) repo;
+				// TODO equals implementation of Repository?
+				if (mapping.getRepository().getDirectory().equals(
+						((Repository) node.getObject()).getDirectory())) {
+					for (Object child : cp.getChildren(node)) {
+						RepositoryTreeNode childNode = (RepositoryTreeNode) child;
+						if (childNode.getType() == RepositoryTreeNodeType.WORKINGDIR) {
+							currentNode = childNode;
+							break;
+						}
+					}
+					break;
+				}
 			}
-		}
 
-		Display.getDefault().asyncExec(new Runnable() {
-			public void run() {
-				selectReveal(new StructuredSelection(nodesToShow));
-			}
-		});
+			IPath relPath = new Path(repoPath);
+
+			for (String segment : relPath.segments())
+				for (Object child : cp.getChildren(currentNode)) {
+					RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
+					if (childNode.getObject().getName().equals(segment)) {
+						currentNode = childNode;
+						break;
+					}
+				}
+
+			final RepositoryTreeNode selNode = currentNode;
+
+			Display.getDefault().asyncExec(new Runnable() {
+
+				public void run() {
+					selectReveal(new StructuredSelection(selNode));
+				}
+			});
+
+		} catch (RuntimeException rte) {
+			Activator.handleError(rte.getMessage(), rte, false);
+		}
 	}
 
 	/**
@@ -693,16 +710,16 @@ public class RepositoriesView extends CommonNavigator {
 		ISelection selection = context.getSelection();
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
-			List<IResource> resources = new ArrayList<IResource>();
-			for (Iterator it = ss.iterator(); it.hasNext();) {
-				Object element = it.next();
-				IResource resource = AdapterUtils.adapt(element, IResource.class);
-				if (resource != null)
-					resources.add(resource);
-			}
-			if (!resources.isEmpty()) {
-				showResources(resources);
-				return true;
+			if (ss.size() == 1) {
+				Object element = ss.getFirstElement();
+				if (element instanceof IAdaptable) {
+					IResource resource = (IResource) ((IAdaptable) element)
+							.getAdapter(IResource.class);
+					if (resource != null) {
+						showResource(resource);
+						return true;
+					}
+				}
 			}
 		}
 		if(context.getInput() instanceof IFileEditorInput) {
@@ -728,38 +745,106 @@ public class RepositoriesView extends CommonNavigator {
 		}
 	}
 
-	private RepositoryTreeNode getNodeForPath(Repository repository, String repoRelativePath) {
-		RepositoryTreeNode currentNode = null;
-		ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
-				.getContentProvider();
-		for (Object repo : cp.getElements(getCommonViewer().getInput())) {
-			RepositoryTreeNode node = (RepositoryTreeNode) repo;
-			// TODO equals implementation of Repository?
-			if (repository.getDirectory().equals(
-					((Repository) node.getObject()).getDirectory())) {
-				for (Object child : cp.getChildren(node)) {
-					RepositoryTreeNode childNode = (RepositoryTreeNode) child;
-					if (childNode.getType() == RepositoryTreeNodeType.WORKINGDIR) {
-						currentNode = childNode;
-						break;
-					}
-				}
-				break;
-			}
-		}
+	// TODO delete does not work because of file locks on .pack-files
+	// Shawn Pearce has added the following thoughts:
 
-		IPath relPath = new Path(repoRelativePath);
+	// Hmm. We probably can't active detect file locks on pack files on
+	// Windows, can we?
+	// It would be nice if we could support a delete, but only if the
+	// repository is
+	// reasonably believed to be not-in-use right now.
+	//
+	// Within EGit you might be able to check GitProjectData and its
+	// repositoryCache to
+	// see if the repository is open by this workspace. If it is, then
+	// we know we shouldn't
+	// try to delete it.
+	//
+	// Some coding might look like this:
+	//
+	// MenuItem deleteRepo = new MenuItem(men, SWT.PUSH);
+	// deleteRepo.setText("Delete");
+	// deleteRepo.addSelectionListener(new SelectionAdapter() {
+	//
+	// @Override
+	// public void widgetSelected(SelectionEvent e) {
+	//
+	// boolean confirmed = MessageDialog.openConfirm(getSite()
+	// .getShell(), "Confirm",
+	// "This will delete the repository, continue?");
+	//
+	// if (!confirmed)
+	// return;
+	//
+	// IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+	//
+	// public void run(IProgressMonitor monitor)
+	// throws CoreException {
+	// File workDir = repos.get(0).getRepository()
+	// .getWorkTree();
+	//
+	// File gitDir = repos.get(0).getRepository()
+	// .getDirectory();
+	//
+	// IPath wdPath = new Path(workDir.getAbsolutePath());
+	// for (IProject prj : ResourcesPlugin.getWorkspace()
+	// .getRoot().getProjects()) {
+	// if (wdPath.isPrefixOf(prj.getLocation())) {
+	// prj.delete(false, false, monitor);
+	// }
+	// }
+	//
+	// repos.get(0).getRepository().close();
+	//
+	// boolean deleted = deleteRecursively(gitDir, monitor);
+	// if (!deleted) {
+	// MessageDialog.openError(getSite().getShell(),
+	// "Error",
+	// "Could not delete Git Repository");
+	// }
+	//
+	// deleted = deleteRecursively(workDir, monitor);
+	// if (!deleted) {
+	// MessageDialog
+	// .openError(getSite().getShell(),
+	// "Error",
+	// "Could not delete Git Working Directory");
+	// }
+	//
+	// scheduleRefresh();
+	// }
+	//
+	// private boolean deleteRecursively(File fileToDelete,
+	// IProgressMonitor monitor) {
+	// if (fileToDelete.isDirectory()) {
+	// for (File file : fileToDelete.listFiles()) {
+	// if (!deleteRecursively(file, monitor)) {
+	// return false;
+	// }
+	// }
+	// }
+	// monitor.setTaskName(fileToDelete.getAbsolutePath());
+	// boolean deleted = fileToDelete.delete();
+	// if (!deleted) {
+	// System.err.println("Could not delete "
+	// + fileToDelete.getAbsolutePath());
+	// }
+	// return deleted;
+	// }
+	// };
+	//
+	// try {
+	// ResourcesPlugin.getWorkspace().run(wsr,
+	// ResourcesPlugin.getWorkspace().getRoot(),
+	// IWorkspace.AVOID_UPDATE,
+	// new NullProgressMonitor());
+	// } catch (CoreException e1) {
+	// handle this
+	// e1.printStackTrace();
+	// }
+	//
+	// }
+	//
+	// });
 
-		for (String segment : relPath.segments())
-			for (Object child : cp.getChildren(currentNode)) {
-				@SuppressWarnings("unchecked")
-				RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
-				if (childNode.getObject().getName().equals(segment)) {
-					currentNode = childNode;
-					break;
-				}
-			}
-
-		return currentNode;
-	}
 }

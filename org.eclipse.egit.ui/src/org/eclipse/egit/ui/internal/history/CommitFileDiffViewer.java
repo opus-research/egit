@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, 2012 Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,9 +11,7 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
@@ -24,7 +21,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.job.JobUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
@@ -74,10 +70,7 @@ import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.part.IPageSite;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 
 /**
  * Viewer to display {@link FileDiff} objects in a table.
@@ -264,14 +257,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		mgr.add(compareWorkingTreeVersion);
 		mgr.add(blame);
 
-		MenuManager showInSubMenu = new MenuManager(
-				UIText.CommitFileDiffViewer_ShowInMenuLabel);
-		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN
-				.create(site.getWorkbenchWindow()));
-
-		mgr.add(new Separator());
-		mgr.add(showInSubMenu);
-
 		mgr.add(new Separator());
 		mgr.add(selectAll = createStandardAction(ActionFactory.SELECT_ALL));
 		mgr.add(copy = createStandardAction(ActionFactory.COPY));
@@ -375,22 +360,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		if (oldInput == null && input == null)
 			return;
 		super.inputChanged(input, oldInput);
-	}
-
-	/**
-	 * @return the show in context or null
-	 * @see IShowInSource#getShowInContext()
-	 */
-	public ShowInContext getShowInContext() {
-		IStructuredSelection selection = (IStructuredSelection) getSelection();
-		List<IFile> files = new ArrayList<IFile>();
-		for (Object element : selection.toList()) {
-			FileDiff fileDiff = (FileDiff) element;
-			IFile file = ResourceUtil.getFileForLocation(db, fileDiff.getPath());
-			if (file != null)
-				files.add(file);
-		}
-		return new ShowInContext(null, new StructuredSelection(files));
 	}
 
 	private void openFileInEditor(String filePath) {

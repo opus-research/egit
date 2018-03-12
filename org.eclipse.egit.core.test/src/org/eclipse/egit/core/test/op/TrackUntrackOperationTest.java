@@ -8,7 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test.op;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -94,7 +95,6 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 		assertTrackedState(fileArr, false);
 	}
 
-	@SuppressWarnings("boxing")
 	private void assertTrackedState(IFile[] fileArr, boolean expectedState)
 			throws IOException {
 		DirCache cache = repository1.getRepository().readDirCache();
@@ -102,7 +102,7 @@ public class TrackUntrackOperationTest extends DualRepositoryTestCase {
 			RepositoryMapping rm = RepositoryMapping.getMapping(file);
 			String fileDir = rm.getRepoRelativePath(file);
 			boolean tracked = cache.findEntry(fileDir) > -1;
-			assertEquals("Wrong tracking state", expectedState, tracked);
+			assertTrue("Wrong tracking state", tracked == expectedState);
 		}
 	}
 
