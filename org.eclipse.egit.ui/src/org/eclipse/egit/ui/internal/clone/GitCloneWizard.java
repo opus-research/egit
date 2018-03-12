@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
@@ -172,7 +172,11 @@ public class GitCloneWizard extends Wizard {
 		final Ref ref = cloneDestination.getInitialBranch();
 		final String remoteName = cloneDestination.getRemote();
 
-		if (!workdir.mkdirs() || !workdir.isDirectory()) {
+		boolean created = workdir.exists();
+		if (!created)
+			created = workdir.mkdirs();
+
+		if (!created || !workdir.isDirectory()) {
 			final String errorMessage = NLS.bind(
 					UIText.GitCloneWizard_errorCannotCreate, workdir.getPath());
 			ErrorDialog.openError(getShell(), getWindowTitle(),
@@ -185,7 +189,7 @@ public class GitCloneWizard extends Wizard {
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, ref, remoteName, timeout);
+				selectedBranches, workdir, ref.getName(), remoteName, timeout);
 		UserPasswordCredentials credentials = cloneSource.getCredentials();
 		if (credentials != null)
 			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
