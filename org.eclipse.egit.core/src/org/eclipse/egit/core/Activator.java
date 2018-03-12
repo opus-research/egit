@@ -52,7 +52,6 @@ import org.osgi.framework.BundleContext;
  */
 public class Activator extends Plugin implements DebugOptionsListener {
 	private static Activator plugin;
-	private static String pluginId;
 	private RepositoryCache repositoryCache;
 	private IndexDiffCache indexDiffCache;
 	private RepositoryUtil repositoryUtil;
@@ -70,7 +69,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 	 * @return the name of this plugin
 	 */
 	public static String getPluginId() {
-		return pluginId;
+		return getDefault().getBundle().getSymbolicName();
 	}
 
 	/**
@@ -103,7 +102,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 	private static void setActivator(Activator a) {
 		plugin = a;
-		pluginId = plugin.getBundle().getSymbolicName();
 	}
 
 	public void start(final BundleContext context) throws Exception {
