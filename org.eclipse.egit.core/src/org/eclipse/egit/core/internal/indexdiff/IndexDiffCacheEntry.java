@@ -31,19 +31,15 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
-import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.Team;
 
 /**
@@ -53,8 +49,6 @@ import org.eclipse.team.core.Team;
  *
  */
 public class IndexDiffCacheEntry {
-
-	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
 	private Repository repository;
 
@@ -86,12 +80,6 @@ public class IndexDiffCacheEntry {
 		repository.getListenerList().addIndexChangedListener(
 				new IndexChangedListener() {
 					public void onIndexChanged(IndexChangedEvent event) {
-						scheduleReloadJob();
-					}
-				});
-		repository.getListenerList().addRefsChangedListener(
-				new RefsChangedListener() {
-					public void onRefsChanged(RefsChangedEvent event) {
 						scheduleReloadJob();
 					}
 				});
@@ -145,35 +133,22 @@ public class IndexDiffCacheEntry {
 			protected IStatus run(IProgressMonitor monitor) {
 				lock.lock();
 				try {
-					long startTime = System.currentTimeMillis();
 					IndexDiff result = calcIndexDiff(monitor, getName());
 					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
 					indexDiffData = new IndexDiffData(result);
-					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
-						long time = System.currentTimeMillis() - startTime;
-						StringBuilder message = new StringBuilder(NLS.bind(
-								"Updated IndexDiffData in {0} ms\n", //$NON-NLS-1$
-								new Long(time)));
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
-								message.append(indexDiffData.toString())
-										.toString());
-					}
+					if (GitTraceLocation.INDEXDIFFCACHE.isActive())
+						GitTraceLocation
+								.getTrace()
+								.trace(GitTraceLocation.INDEXDIFFCACHE
+										.getLocation(),
+										"Updated IndexDiffData\n" + indexDiffData.toString()); //$NON-NLS-1$
 					notifyListeners();
 					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
 				}
 			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.INDEX_DIFF_CACHE_UPDATE))
-					return true;
-				return super.belongsTo(family);
-			}
-
 		};
 		reloadJob.schedule();
 	}
@@ -185,37 +160,23 @@ public class IndexDiffCacheEntry {
 			protected IStatus run(IProgressMonitor monitor) {
 				lock.lock();
 				try {
-					long startTime = System.currentTimeMillis();
 					IndexDiffData result = calcIndexDiffData(monitor,
 							getName(), filesToUpdate, fileResourcesToUpdate);
 					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
 					indexDiffData = result;
-					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
-						long time = System.currentTimeMillis() - startTime;
-						StringBuilder message = new StringBuilder(
-								NLS.bind(
-										"Updated IndexDiffData based on resource list (length = {0}) in {1} ms\n", //$NON-NLS-1$
-										new Integer(fileResourcesToUpdate
-												.size()), new Long(time)));
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
-								message.append(indexDiffData.toString())
-								.toString());
-					}
+					if (GitTraceLocation.INDEXDIFFCACHE.isActive())
+						GitTraceLocation
+								.getTrace()
+								.trace(GitTraceLocation.INDEXDIFFCACHE
+										.getLocation(),
+										"Updated IndexDiffData based on resource list \n" + indexDiffData.toString()); //$NON-NLS-1$
 					notifyListeners();
 					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
 				}
 			}
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.INDEX_DIFF_CACHE_UPDATE))
-					return true;
-				return super.belongsTo(family);
-			}
-
 		};
 		job.schedule();
 	}
@@ -323,12 +284,7 @@ public class IndexDiffCacheEntry {
 				}
 
 				if (!filesToUpdate.isEmpty())
-					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
-						scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
-					else
-						// Calculate new IndexDiff if too many resources changed
-						// This happens e.g. when a project is opened
-						scheduleReloadJob();
+					scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
 			}
 
 		};

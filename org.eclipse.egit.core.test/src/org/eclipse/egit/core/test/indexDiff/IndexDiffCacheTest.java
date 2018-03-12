@@ -69,6 +69,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 					IndexDiffData indexDiffData) {
 				listenerCalled.set(true);
 				resultDiff.set(indexDiffData);
+				System.out.println(indexDiffData.toString());
 			}
 		});
 		waitForListenerCalled(listenerCalled);
