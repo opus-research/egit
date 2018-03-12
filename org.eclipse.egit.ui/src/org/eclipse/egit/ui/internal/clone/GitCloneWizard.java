@@ -205,8 +205,7 @@ public class GitCloneWizard extends Wizard {
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, ref != null ? ref.getName() : null,
-				remoteName, timeout);
+				selectedBranches, workdir, ref.getName(), remoteName, timeout);
 		if (gerritConfiguration.configureGerrit())
 			doGerritConfiguration(remoteName, op);
 		UserPasswordCredentials credentials = cloneSource.getCredentials();
