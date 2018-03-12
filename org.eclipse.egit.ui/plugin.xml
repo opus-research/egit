@@ -1098,17 +1098,13 @@
             <visibleWhen
                   checkEnabled="false">
                <and>
+                  <count
+                        value="1">
+                  </count>
                   <iterate>
-                     <and>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <test
-                                 property="GitRepository.isLocalBranch">
-                           </test>
-                        </or>
-                     </and>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -1295,16 +1291,6 @@
                commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
                style="toggle">
          </command>
-         <separator
-               name="org.eclipse.egit.ui.separator1"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-               helpContextId="Hierarchical Branch Representation"
-               style="toggle"
-               tooltip="%RepoViewHierarchicalBranchRepresenation.tooltip">
-         </command>
       </menuContribution>
       <menuContribution
             locationURI="menu:org.eclipse.egit.ui.RepositoriesView">
@@ -1335,15 +1321,6 @@
          <command
                commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
                label="%RepoViewLinkWithSelectionMenu.label"
-               style="toggle">
-         </command>
-         <separator
-               name="org.eclipse.egit.ui.separator2"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-               label="%HierarchyLayout.label"
                style="toggle">
          </command>
       </menuContribution>
@@ -1515,7 +1492,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand"
             id="org.eclipse.egit.ui.RepositoriesViewMerge"
             name="%MergeWithDialogCommand">
       </command>
@@ -1542,16 +1518,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.DeleteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewDelete"
             name="%DeleteRepositoryCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchHierarchyCommand"
-            id="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-            name="%ToggleLayoutCommand.name">
-         <state
-               class="org.eclipse.ui.handlers.RegistryToggleState:false"
-               id="org.eclipse.ui.commands.toggleState">
-         </state>
       </command>
    </extension>
    <extension
@@ -1671,10 +1637,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
             icon="icons/obj16/delete_obj.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesToggleBranchHierarchy"
-            icon="icons/elcl16/hierarchicalLayout.gif">
       </image>
    </extension>
    <extension
@@ -1968,5 +1930,34 @@
             id="org.eclipse.egit.ui.wizardCategory"
             name="%Git">
       </category>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand"
+            commandId="org.eclipse.egit.ui.RepositoriesViewMerge">
+         <activeWhen>
+            <iterate>
+               <or>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                  </instanceof>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                  </instanceof>
+               </or>
+            </iterate></activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.egit.ui.internal.actions.MergeAction"
+            commandId="org.eclipse.egit.ui.RepositoriesViewMerge">
+         <activeWhen>
+            <iterate>
+               <instanceof
+                     value="org.eclipse.core.resources.IProject">
+               </instanceof>
+            </iterate>
+         </activeWhen>
+      </handler>
    </extension>
 </plugin>
