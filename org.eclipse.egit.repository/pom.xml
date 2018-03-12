@@ -133,6 +133,10 @@
             <url>http://download.eclipse.org/webtools/releng/repository</url>
             <layout>p2</layout>
            </repository>
+           <repository>
+            <url>http://download.eclipse.org/releases/mars</url>
+            <layout>p2</layout>
+           </repository>
           </repositories>
          </configuration>
         </execution>
