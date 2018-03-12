@@ -825,10 +825,10 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 						String uriUser = finalURI.getUser();
 						if (uriUser == null) {
 							if (setSafeUser(u) || setSafePassword(p))
-								storeCheckbox.setSelection(true);
+								setStoreInSecureStore(true);
 						} else if (uriUser.length() != 0 && uriUser.equals(u)) {
 							if (setSafePassword(p))
-								storeCheckbox.setSelection(true);
+								setStoreInSecureStore(true);
 						}
 					}
 				}
@@ -853,7 +853,8 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	}
 
 	private boolean setSafePassword(String p) {
-		if (p != null && p.length() != 0) {
+		if ((password == null || password.length() == 0) && p != null
+				&& p.length() != 0) {
 			password = p;
 			passText.setText(p);
 			return true;
@@ -862,12 +863,18 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	}
 
 	private boolean setSafeUser(String u) {
-		if (u != null && u.length() != 0) {
+		if ((user == null || user.length() == 0) && u != null
+				&& u.length() != 0) {
 			user = u;
 			userText.setText(u);
 			return true;
 		}
 		return false;
+	}
+
+	private void setStoreInSecureStore(boolean store) {
+		storeInSecureStore = store;
+		storeCheckbox.setSelection(store);
 	}
 
 	private UserPasswordCredentials getSecureStoreCredentials(
