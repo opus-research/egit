@@ -22,10 +22,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.reflog.ReflogViewContentProvider.ReflogInput;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.action.ControlContribution;
-import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.layout.TreeColumnLayout;
@@ -42,13 +39,10 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
-import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -58,9 +52,8 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -69,20 +62,15 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
-import org.eclipse.ui.forms.IFormColors;
-import org.eclipse.ui.forms.events.HyperlinkAdapter;
-import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
-import org.eclipse.ui.forms.widgets.ImageHyperlink;
 import org.eclipse.ui.part.ViewPart;
 
 /**
- * A view that shows reflog entries. The View includes a quick filter that
- * searches on both the commit hashes and commit messages.
+ * A view that shows reflog entries.  The View includes a quick filter that searches
+ * on both the commit hashes and commit messages.
  */
 public class ReflogView extends ViewPart implements RefsChangedListener {
 
@@ -90,8 +78,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	 * View id
 	 */
 	public static final String VIEW_ID = "org.eclipse.egit.ui.ReflogView"; //$NON-NLS-1$
-
-	private FormToolkit toolkit;
 
 	private Form form;
 
@@ -105,7 +91,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
-		toolkit = new FormToolkit(parent.getDisplay());
+		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				toolkit.dispose();
@@ -116,7 +102,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		Image repoImage = UIIcons.REPOSITORY.createImage();
 		UIUtils.hookDisposal(form, repoImage);
-		final Image branchImage = UIIcons.CHANGESET.createImage();
+		final Image branchImage = UIIcons.BRANCH.createImage();
 		UIUtils.hookDisposal(form, branchImage);
 		form.setImage(repoImage);
 		form.setText(UIText.StagingView_NoSelectionTitle);
@@ -131,8 +117,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		final TreeColumnLayout layout = new TreeColumnLayout();
 
-		FilteredTree filteredTree = new FilteredTree(tableComposite, SWT.NONE
-				| SWT.BORDER, new PatternFilter(), true) {
+		FilteredTree filteredTree = new FilteredTree(tableComposite, SWT.NONE | SWT.BORDER, new PatternFilter(), true) {
 			@Override
 			protected void createControl(Composite composite, int treeStyle) {
 				super.createControl(composite, treeStyle);
@@ -144,12 +129,12 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		refLogTableTreeViewer = filteredTree.getViewer();
 		refLogTableTreeViewer.getTree().setLinesVisible(true);
 		refLogTableTreeViewer.getTree().setHeaderVisible(true);
-		refLogTableTreeViewer
-				.setContentProvider(new ReflogViewContentProvider());
+		refLogTableTreeViewer.setContentProvider(new ReflogViewContentProvider());
 
 		ColumnViewerToolTipSupport.enableFor(refLogTableTreeViewer);
 
-		TreeViewerColumn fromColum = createColumn(layout, "From", 10, SWT.LEFT); //$NON-NLS-1$
+		TreeViewerColumn fromColum = createColumn(layout,
+				UIText.ReflogView_FromColumnHeader, 10, SWT.LEFT);
 		fromColum.setLabelProvider(new ColumnLabelProvider() {
 
 			@Override
@@ -170,7 +155,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 		});
 
-		TreeViewerColumn toColumn = createColumn(layout, "To", 10, SWT.LEFT); //$NON-NLS-1$
+		TreeViewerColumn toColumn = createColumn(layout,
+				UIText.ReflogView_ToColumnHeader, 10, SWT.LEFT);
 		toColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			@Override
@@ -192,7 +178,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		});
 		TreeViewerColumn messageColumn = createColumn(layout,
-				"Message", 50, SWT.LEFT); //$NON-NLS-1$
+				UIText.ReflogView_MessageColumnHeader, 50, SWT.LEFT);
 		messageColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			private ResourceManager resourceManager = new LocalResourceManager(
@@ -207,7 +193,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			public Image getImage(Object element) {
 				String comment = ((ReflogEntry) element).getComment();
 				if (comment.startsWith("commit:")) //$NON-NLS-1$
-					return (Image) resourceManager.get(UIIcons.COMMIT);
+					return (Image) resourceManager.get(UIIcons.CHANGESET);
 				if (comment.startsWith("commit (amend):")) //$NON-NLS-1$
 					return (Image) resourceManager.get(UIIcons.AMEND_COMMIT);
 				if (comment.startsWith("pull :")) //$NON-NLS-1$
@@ -237,7 +223,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 						.getSelection();
 				if (selection.isEmpty())
 					return;
-				Repository repo = getRepository();
+				Repository repo = (Repository) refLogTableTreeViewer.getInput();
 				if (repo == null)
 					return;
 				RevWalk walk = new RevWalk(repo);
@@ -252,7 +238,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 									walk.parseCommit(id)));
 					}
 				} catch (IOException e) {
-					Activator.logError("Error opening commit", e); //$NON-NLS-1$
+					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
 				} finally {
 					walk.release();
 				}
@@ -288,8 +274,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		site.setSelectionProvider(refLogTableTreeViewer);
 
-		addRefsChangedListener = Repository.getGlobalListenerList()
-				.addRefsChangedListener(this);
+		addRefsChangedListener = Repository.getGlobalListenerList().addRefsChangedListener(this);
 	}
 
 	@Override
@@ -303,7 +288,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		ISelectionService service = (ISelectionService) getSite().getService(
 				ISelectionService.class);
 		service.removePostSelectionListener(selectionChangedListener);
-		if (addRefsChangedListener != null)
+		if ( addRefsChangedListener != null)
 			addRefsChangedListener.remove();
 	}
 
@@ -312,13 +297,13 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			StructuredSelection ssel = (StructuredSelection) selection;
 			if (ssel.size() != 1)
 				return;
-			Repository selectedRepo = null;
+			Repository repository = null;
 			if (ssel.getFirstElement() instanceof IResource) {
 				IResource resource = (IResource) ssel.getFirstElement();
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource.getProject());
-				if (mapping != null)
-					selectedRepo = mapping.getRepository();
+				if ( mapping != null )
+					repository = mapping.getRepository();
 			}
 			if (ssel.getFirstElement() instanceof IAdaptable) {
 				IResource adapted = (IResource) ((IAdaptable) ssel
@@ -327,64 +312,16 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(adapted);
 					if (mapping != null)
-						selectedRepo = mapping.getRepository();
+						repository = mapping.getRepository();
 				}
 			} else if (ssel.getFirstElement() instanceof RepositoryTreeNode) {
 				RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel
 						.getFirstElement();
-				selectedRepo = repoNode.getRepository();
+				repository = repoNode.getRepository();
 			}
 
-			showReflogFor(selectedRepo);
+			showReflogFor(repository);
 		}
-	}
-
-	private void updateRefLink(final String name) {
-		IToolBarManager toolbar = form.getToolBarManager();
-		toolbar.removeAll();
-
-		ControlContribution refLabelControl = new ControlContribution(
-				"refLabel") { //$NON-NLS-1$
-			@Override
-			protected Control createControl(Composite cParent) {
-				Composite composite = toolkit.createComposite(cParent);
-				composite.setLayout(new RowLayout());
-				composite.setBackground(null);
-
-				final ImageHyperlink refLink = new ImageHyperlink(composite,
-						SWT.NONE);
-				Image image = UIIcons.BRANCH.createImage();
-				UIUtils.hookDisposal(refLink, image);
-				refLink.setImage(image);
-				refLink.setFont(JFaceResources.getBannerFont());
-				refLink.setForeground(toolkit.getColors().getColor(
-						IFormColors.TITLE));
-				refLink.addHyperlinkListener(new HyperlinkAdapter() {
-					@Override
-					public void linkActivated(HyperlinkEvent event) {
-						Repository repository = getRepository();
-						if (repository == null)
-							return;
-						RefSelectionDialog dialog = new RefSelectionDialog(
-								refLink.getShell(), repository);
-						if (Window.OK == dialog.open())
-							showReflogFor(repository, dialog.getRefName());
-					}
-				});
-				refLink.setText(Repository.shortenRefName(name));
-
-				return composite;
-			}
-		};
-		toolbar.add(refLabelControl);
-		toolbar.update(true);
-	}
-
-	private Repository getRepository() {
-		Object input = refLogTableTreeViewer.getInput();
-		if (input instanceof ReflogInput)
-			return ((ReflogInput) input).getRepository();
-		return null;
 	}
 
 	/**
@@ -393,27 +330,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	 * @param repository
 	 */
 	public void showReflogFor(Repository repository) {
-		String refName = Constants.R_HEADS + Constants.MASTER;
-		try {
-			Ref ref = repository.getRef(Constants.HEAD);
-			if (ref != null && ref.isSymbolic())
-				refName = ref.getTarget().getName();
-		} catch (IOException e) {
-			Activator.logError("Error getting HEAD reference", e); //$NON-NLS-1$
-		}
-		showReflogFor(repository, refName);
-	}
-
-	/**
-	 * Defines the repository for the reflog to show.
-	 *
-	 * @param repository
-	 * @param ref
-	 */
-	private void showReflogFor(Repository repository, String ref) {
-		if (repository != null && ref != null) {
-			refLogTableTreeViewer.setInput(new ReflogInput(repository, ref));
-			updateRefLink(ref);
+		if (repository != null) {
+			refLogTableTreeViewer.setInput(repository);
 			form.setText(getRepositoryName(repository));
 		}
 	}
@@ -440,10 +358,11 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	}
 
 	public void onRefsChanged(RefsChangedEvent event) {
-		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
-				refLogTableTreeViewer.refresh();
+				ReflogView.this.refLogTableTreeViewer.refresh();
 			}
 		});
 	}
+
 }
