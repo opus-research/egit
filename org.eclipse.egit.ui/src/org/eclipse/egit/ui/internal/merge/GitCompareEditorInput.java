@@ -33,7 +33,6 @@ import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
@@ -178,16 +177,14 @@ public class GitCompareEditorInput extends CompareEditorInput {
 			if (resources.length == 0) {
 				Object[] titleParameters = new Object[] {
 						Activator.getDefault().getRepositoryUtil()
-								.getRepositoryName(repository),
-						CompareUtils.truncatedRevision(compareVersion),
-						CompareUtils.truncatedRevision(baseVersion) };
+								.getRepositoryName(repository), compareVersion,
+						baseVersion };
 				setTitle(NLS.bind(UIText.GitCompareEditorInput_EditorTitle,
 						titleParameters));
 			} else if (resources.length == 1) {
 				Object[] titleParameters = new Object[] {
 						resources[0].getFullPath().makeRelative().toString(),
-						CompareUtils.truncatedRevision(compareVersion),
-						CompareUtils.truncatedRevision(baseVersion) };
+						compareVersion, baseVersion };
 				setTitle(NLS.bind(
 						UIText.GitCompareEditorInput_EditorTitleSingleResource,
 						titleParameters));
@@ -195,8 +192,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 				setTitle(NLS
 						.bind(
 								UIText.GitCompareEditorInput_EditorTitleMultipleResources,
-								CompareUtils.truncatedRevision(compareVersion),
-								CompareUtils.truncatedRevision(baseVersion)));
+								compareVersion, baseVersion));
 
 			// build the nodes
 			try {

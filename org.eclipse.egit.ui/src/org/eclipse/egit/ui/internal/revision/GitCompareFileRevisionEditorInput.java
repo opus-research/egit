@@ -35,7 +35,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.storage.IndexFileRevision;
 import org.eclipse.egit.core.internal.storage.OpenWorkspaceVersionEnabled;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIText;
@@ -650,7 +649,8 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			ISaveablesLifecycleListener listener = (ISaveablesLifecycleListener) Utils
 					.getAdapter(part, ISaveablesLifecycleListener.class);
 			if (listener == null)
-				listener = CommonUtils.getService(part.getSite(), ISaveablesLifecycleListener.class);
+				listener = (ISaveablesLifecycleListener) part.getSite()
+						.getService(ISaveablesLifecycleListener.class);
 			return listener;
 		}
 
