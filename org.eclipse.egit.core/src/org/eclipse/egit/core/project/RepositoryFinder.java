@@ -14,8 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
@@ -51,7 +49,6 @@ public class RepositoryFinder {
 	private final IProject proj;
 
 	private final Collection<RepositoryMapping> results = new ArrayList<RepositoryMapping>();
-	private final Set<File> gitdirs = new HashSet<File>();
 
 	/**
 	 * Create a new finder to locate Git repositories for a project.
@@ -141,9 +138,6 @@ public class RepositoryFinder {
 		} catch (IOException ioe) {
 			f = gitdir.getAbsoluteFile();
 		}
-		if (gitdirs.contains(f))
-			return;
-		gitdirs.add(f);
 		results.add(new RepositoryMapping(c, f));
 	}
 }

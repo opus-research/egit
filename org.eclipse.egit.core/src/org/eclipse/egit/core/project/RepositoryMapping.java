@@ -98,10 +98,7 @@ public class RepositoryMapping {
 		}
 	}
 
-	/**
-	 * @return the container path corresponding to git repository
-	 */
-	public IPath getContainerPath() {
+	IPath getContainerPath() {
 		return Path.fromPortableString(containerPath);
 	}
 
