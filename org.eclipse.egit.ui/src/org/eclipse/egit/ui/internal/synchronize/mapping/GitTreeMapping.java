@@ -54,9 +54,6 @@ class GitTreeMapping extends GitObjectMapping {
 	private IResource[] getResources(GitModelBlob modelBlob) {
 		IFile file = root.getFileForLocation(modelBlob.getLocation());
 
-		if (file == null)
-			file = root.getFile(modelBlob.getLocation());
-
 		return new IResource[] { file };
 	}
 
