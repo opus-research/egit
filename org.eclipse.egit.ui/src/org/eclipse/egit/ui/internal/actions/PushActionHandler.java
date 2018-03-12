@@ -43,9 +43,7 @@ public class PushActionHandler extends RepositoryActionHandler {
 									.getMessage(), x));
 			return null;
 		}
-		WizardDialog dlg = new WizardDialog(getShell(event), pushWizard);
-		dlg.setHelpAvailable(false);
-		dlg.open();
+		new WizardDialog(getShell(event), pushWizard).open();
 		return null;
 	}
 
