@@ -275,21 +275,6 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 
 		});
 
-		searchButton = new Button(searchGroup, SWT.PUSH);
-		GridDataFactory.fillDefaults().span(3, 1)
-				.align(SWT.BEGINNING, SWT.FILL).applyTo(searchButton);
-		searchButton.setText(UIText.RepositorySearchDialog_Search);
-		searchButton
-				.setToolTipText(UIText.RepositorySearchDialog_SearchTooltip);
-		searchButton.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				doSearch();
-			}
-		});
-
-
 		Group searchResultGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		searchResultGroup
 				.setText(UIText.RepositorySearchDialog_SearchResultGroup);
@@ -325,6 +310,20 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 		buttonColumn.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.BEGINNING).applyTo(
 				buttonColumn);
+
+		searchButton = new Button(buttonColumn, SWT.PUSH);
+		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).applyTo(
+				searchButton);
+		searchButton.setText(UIText.RepositorySearchDialog_Search);
+		searchButton
+				.setToolTipText(UIText.RepositorySearchDialog_SearchTooltip);
+		searchButton.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				doSearch();
+			}
+		});
 
 		toggleSelectionButton = new Button(buttonColumn, SWT.NONE);
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).applyTo(
@@ -396,7 +395,7 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 						.setTaskName(NLS
 								.bind(
 										UIText.RepositorySearchDialog_RepositoriesFound_message,
-										Integer.valueOf(strings.size())));
+										new Integer(strings.size())));
 				if (!lookForNestedRepositories)
 					return;
 			} else if (child.isDirectory()) {

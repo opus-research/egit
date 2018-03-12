@@ -14,6 +14,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IResource;
@@ -24,7 +25,6 @@ import org.eclipse.egit.core.op.IgnoreOperation;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +48,8 @@ public class IgnoreOperationTest extends GitTestCase {
 		File rootFile = root.getRawLocation().toFile();
 		File ignoreFile = new File(rootFile, Constants.GITIGNORE_FILENAME);
 		if (ignoreFile.exists()) {
-			FileUtils.delete(ignoreFile, FileUtils.RETRY);
+			if (!ignoreFile.delete())
+				throw new IOException(ignoreFile + " in use or undeletable");
 			assert !ignoreFile.exists();
 		}
 		super.tearDown();
@@ -119,7 +120,7 @@ public class IgnoreOperationTest extends GitTestCase {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		File rootFile = root.getRawLocation().toFile();
 		File ignoreFile = new File(rootFile, Constants.GITIGNORE_FILENAME);
-		String content = testUtils.slurpAndClose(ignoreFile.toURI().toURL()
+		String content = testUtils.slurpAndClose(ignoreFile.toURL()
 				.openStream());
 		assertEquals("/" + project.getProject().getName() + "\n", content);
 		assertTrue(operation.isGitignoreOutsideWSChanged());

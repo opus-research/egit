@@ -168,16 +168,11 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	private IWindowListener focusListener;
 
 	/**
-	 * Construct the {@link Activator} egit ui plugin singleton instance
+	 * Constructor for the egit ui plugin singleton
 	 */
 	public Activator() {
-		Activator.setActivator(this);
+		plugin = this;
 	}
-
-	private static void setActivator(Activator a) {
-		plugin = a;
-	}
-
 
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);

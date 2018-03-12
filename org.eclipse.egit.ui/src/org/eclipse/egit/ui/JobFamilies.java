@@ -42,9 +42,4 @@ public class JobFamilies {
 	 * Tag job
 	 */
 	public final static Object TAG = new Object();
-
-	/**
-	 * Reset job
-	 */
-	public static final Object RESET = new Object();
 }

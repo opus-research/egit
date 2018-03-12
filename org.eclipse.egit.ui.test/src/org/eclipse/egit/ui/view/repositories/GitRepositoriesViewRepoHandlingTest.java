@@ -21,7 +21,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
@@ -273,7 +272,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotShell shell = bot.shell(
 				UIText.RepositorySearchDialog_AddGitRepositories).activate();
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
-				.setText(getTestDirectory().getPath());
+				.setText(testDirectory.getPath());
 		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
@@ -303,6 +302,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotText pathText = shell.bot().text(0);
 		pathText.setText(pathText.getText() + "Cloned");
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
+		waitInUI();
 		refreshAndWait();
 		assertHasClonedRepo();
 	}
@@ -320,7 +320,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.click();
 		SWTBotShell shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle)
 				.activate();
-		IPath newPath = new Path(getTestDirectory().getPath())
+		IPath newPath = new Path(testDirectory.getPath())
 				.append("NewRepository");
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
 				.setText(newPath.toOSString());
@@ -337,7 +337,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 								.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
 				.click();
 		shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle).activate();
-		newPath = new Path(getTestDirectory().getPath()).append("bare").append(
+		newPath = new Path(testDirectory.getPath()).append("bare").append(
 				"NewBareRepository");
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
 				.setText(newPath.toOSString());
@@ -351,8 +351,16 @@ public class GitRepositoriesViewRepoHandlingTest extends
 
 	private void assertHasClonedRepo() throws Exception {
 		final SWTBotTree tree = getOrOpenView().bot().tree();
-		String text = repositoryFile.getParentFile().getName() + "Cloned";
-		TestUtil.waitUntilTreeHasNodeWithText(bot, tree, text, 10000);
+		final SWTBotTreeItem[] items = tree.getAllItems();
+		boolean found = false;
+		for (SWTBotTreeItem item : items) {
+			if (item.getText().startsWith(
+					repositoryFile.getParentFile().getName() + "Cloned")) {
+				found = true;
+				break;
+			}
+		}
+		assertTrue("Tree should have item with correct text", found);
 	}
 
 }

@@ -8,9 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize.dto;
 
-import static org.eclipse.core.runtime.Assert.isNotNull;
-import static org.eclipse.egit.core.RevUtils.getCommonAncestor;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -18,7 +15,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
@@ -31,9 +27,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class GitSynchronizeData {
 
-	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
-					.getRoot();
-
 	private final boolean includeLocal;
 
 	private final Repository repo;
@@ -41,8 +34,6 @@ public class GitSynchronizeData {
 	private final RevCommit srcRev;
 
 	private final RevCommit dstRev;
-
-	private final RevCommit commonAncestorRev;
 
 	private final Set<IProject> projects;
 
@@ -61,21 +52,18 @@ public class GitSynchronizeData {
 	 */
 	public GitSynchronizeData(Repository repository, String srcRev,
 			String dstRev, boolean includeLocal) throws IOException {
-		isNotNull(repository);
-		isNotNull(srcRev);
-		isNotNull(dstRev);
 		repo = repository;
 
 		ObjectWalk ow = new ObjectWalk(repo);
 		this.srcRev = ow.parseCommit(repo.resolve(srcRev));
 		this.dstRev = ow.parseCommit(repo.resolve(dstRev));
-		this.commonAncestorRev = getCommonAncestor(repo, this.srcRev, this.dstRev);
 
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
 
 		projects = new HashSet<IProject>();
-		final IProject[] workspaceProjects = ROOT.getProjects();
+		final IProject[] workspaceProjects = ResourcesPlugin.getWorkspace()
+				.getRoot().getProjects();
 		for (IProject project : workspaceProjects) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 			if (mapping != null && mapping.getRepository() == repo)
@@ -126,13 +114,6 @@ public class GitSynchronizeData {
 	 */
 	public boolean shouldIncludeLocal() {
 		return includeLocal;
-	}
-
-	/**
-	 * @return common ancestor commit
-	 */
-	public RevCommit getCommonAncestorRev() {
-		return commonAncestorRev;
 	}
 
 }

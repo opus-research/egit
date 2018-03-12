@@ -27,6 +27,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
@@ -54,6 +56,11 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	protected final RevCommit remoteCommit;
 
 	/**
+	 * Ancestor commit connected with this container
+	 */
+	protected final RevCommit ancestorCommit;
+
+	/**
 	 *
 	 * @param parent instance of parent object
 	 * @param commit commit connected with this container
@@ -64,19 +71,29 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 			int direction) throws IOException {
 		super(parent);
 		kind = direction;
-		baseCommit = commit;
+		remoteCommit = commit;
+		ancestorCommit = calculateAncestor(remoteCommit);
 
-		RevCommit[] parents = baseCommit.getParents();
+		RevCommit[] parents = remoteCommit.getParents();
 		if (parents != null && parents.length > 0)
-			remoteCommit = baseCommit.getParent(0);
+			baseCommit = remoteCommit.getParent(0);
 		else {
-			remoteCommit = null;
+			baseCommit = null;
 		}
 	}
 
 	public Image getImage() {
 		// currently itsn't used
 		return null;
+	}
+
+	/**
+	 * Returns common ancestor for this commit and all it parent's commits.
+	 *
+	 * @return common ancestor commit
+	 */
+	public RevCommit getAncestorCommit() {
+		return ancestorCommit;
 	}
 
 	/**
@@ -117,7 +134,7 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	@Override
 	public String getName() {
 		if (name == null)
-			name = baseCommit.getShortMessage();
+			name = remoteCommit.getShortMessage();
 
 		return name;
 	}
@@ -211,31 +228,42 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 			objBaseId = ObjectId.zeroId();
 
 		ObjectId objRemoteId = tw.getObjectId(actualNth);
-		ObjectId objAncestorId;
-		if (ancestorNth > -1)
-			objAncestorId = tw.getObjectId(ancestorNth);
-		else
-			objAncestorId = ObjectId.zeroId();
+		ObjectId objAncestorId = tw.getObjectId(ancestorNth);
 		int objectType = tw.getFileMode(actualNth).getObjectType();
 
 		if (objectType == Constants.OBJ_BLOB)
-			return new GitModelBlob(this, getBaseCommit(), objAncestorId,
+			return new GitModelBlob(this, getRemoteCommit(), objAncestorId,
 					objBaseId, objRemoteId, objName);
 		else if (objectType == Constants.OBJ_TREE)
-			return new GitModelTree(this, getBaseCommit(), objAncestorId,
+			return new GitModelTree(this, getRemoteCommit(), objAncestorId,
 					objBaseId, objRemoteId, objName);
 
 		return null;
 	}
 
 	private void calculateKind() {
-		ObjectId remote = remoteCommit != null ? remoteCommit.getId() : zeroId();
-		if (remote.equals(zeroId()))
+		ObjectId base = baseCommit != null ? baseCommit.getId() : zeroId();
+		if (base.equals(zeroId()))
 			kind = kind | ADDITION;
-		else if (baseCommit.equals(zeroId()))
+		else if (remoteCommit.equals(zeroId()))
 			kind = kind | DELETION;
 		else
 			kind = kind | CHANGE;
+	}
+
+	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
+		RevWalk rw = new RevWalk(getRepository());
+		rw.setRevFilter(RevFilter.MERGE_BASE);
+
+		for (RevCommit parent : actual.getParents()) {
+			RevCommit parentCommit = rw.parseCommit(parent.getId());
+			rw.markStart(parentCommit);
+		}
+
+		rw.markStart(rw.parseCommit(actual.getId()));
+
+		RevCommit result = rw.next();
+		return result != null ? result : rw.parseCommit(ObjectId.zeroId());
 	}
 
 }

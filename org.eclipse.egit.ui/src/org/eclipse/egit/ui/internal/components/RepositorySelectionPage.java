@@ -57,7 +57,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Wizard page that allows the user entering the location of a remote repository
@@ -118,8 +117,6 @@ public class RepositorySelectionPage extends WizardPage {
 	private String password;
 
 	private boolean storeInSecureStore = true;
-
-	private String helpContext = null;
 
 	/**
 	 * Transport protocol abstraction
@@ -315,7 +312,7 @@ public class RepositorySelectionPage extends WizardPage {
 		this.uri = new URIish();
 		this.sourceSelection = sourceSelection;
 
-		String preset = presetUri;
+		String preset = null;
 		if (presetUri == null) {
 			Clipboard clippy = new Clipboard(Display.getCurrent());
 			String text = (String) clippy.getContents(TextTransfer
@@ -551,9 +548,7 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				Protocol protocol = getProtocol();
-				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
-					setURI(uri.setUser(nullString(userText.getText())));
+				setURI(uri.setUser(nullString(userText.getText())));
 				user = userText.getText();
 			}
 		});
@@ -749,13 +744,10 @@ public class RepositorySelectionPage extends WizardPage {
 			if (uriText.getText().length() == 0) {
 				selectionIncomplete(null);
 				return;
-			} else if (uriText.getText().endsWith(" ")) { //$NON-NLS-1$
-				selectionIncomplete(UIText.RepositorySelectionPage_UriMustNotHaveTrailingSpacesMessage);
-				return;
 			}
 
 			try {
-				final URIish finalURI = new URIish(uriText.getText().trim());
+				final URIish finalURI = new URIish(uriText.getText());
 				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
@@ -872,19 +864,13 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateAuthGroup() {
-		Protocol p = getProtocol();
-		if (p != null) {
+		int idx = scheme.getSelectionIndex();
+		if (idx >= 0) {
+			Protocol p = Protocol.values()[idx];
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
 			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
-	}
-
-	private Protocol getProtocol() {
-		int idx = scheme.getSelectionIndex();
-		if (idx >= 0)
-			return Protocol.values()[idx];
-		return null;
 	}
 
 	@Override
@@ -916,21 +902,6 @@ public class RepositorySelectionPage extends WizardPage {
 	 */
 	public boolean getStoreInSecureStore() {
 		return this.storeInSecureStore;
-	}
-
-	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	private void setEnabledRecursively(final Control control,
