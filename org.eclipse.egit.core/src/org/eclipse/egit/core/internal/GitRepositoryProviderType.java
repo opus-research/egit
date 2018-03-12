@@ -7,21 +7,17 @@
  *
  * Contributors:
  *     Chris Aniszczyk <caniszczyk@gmail.com> - initial API and implementation
- *     Robin Stocker <robin@nibor.org> - ProjectSetCapability
  *******************************************************************************/
 package org.eclipse.egit.core.internal;
 
 import java.io.IOException;
 
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.GitProjectSetCapability;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.team.core.ProjectSetCapability;
 import org.eclipse.team.core.RepositoryProviderType;
 import org.eclipse.team.core.subscribers.Subscriber;
 
@@ -44,14 +40,7 @@ public class GitRepositoryProviderType extends RepositoryProviderType {
 			// do nothing
 		}
 
-		GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(set);
-		subscriber.init(new NullProgressMonitor());
-
-		return subscriber;
+		return new GitResourceVariantTreeSubscriber(set);
 	}
 
-	@Override
-	public ProjectSetCapability getProjectSetCapability() {
-		return new GitProjectSetCapability();
-	}
 }
