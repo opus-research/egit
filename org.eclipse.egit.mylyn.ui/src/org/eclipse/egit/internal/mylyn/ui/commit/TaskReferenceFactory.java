@@ -47,9 +47,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 	@SuppressWarnings({ "rawtypes" })
 	public Class[] getAdapterList() {
-		final Class[] c = new Class[ADAPTER_TYPES.length];
-		System.arraycopy(ADAPTER_TYPES, 0, c, 0, c.length);
-		return c;
+		return ADAPTER_TYPES;
 	}
 
 	@SuppressWarnings("rawtypes")

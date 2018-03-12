@@ -9,12 +9,10 @@
 package org.eclipse.egit.ui.test;
 
 import org.eclipse.egit.ui.httpauth.PushTest;
-import org.eclipse.egit.ui.internal.branch.BranchTests;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageAreaTest;
 import org.eclipse.egit.ui.operations.GitScopeUtilTest;
 import org.eclipse.egit.ui.prefpages.configuration.GlobalConfigurationPageTest;
 import org.eclipse.egit.ui.search.SearchTests;
-import org.eclipse.egit.ui.submodule.SubmoduleTests;
 import org.eclipse.egit.ui.test.commit.CommitTests;
 import org.eclipse.egit.ui.test.history.HistoryViewTest;
 import org.eclipse.egit.ui.test.team.actions.AllTeamActionTests;
@@ -44,9 +42,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		SynchronizeViewWorkspaceModelTest.class,
 		SynchronizeViewGitChangeSetModelTest.class,
 		CommitTests.class,
-		SearchTests.class,
-		BranchTests.class,
-		SubmoduleTests.class })
+		SearchTests.class })
 public class AllLocalTests {
 	// empty class, don't need anything here
 }

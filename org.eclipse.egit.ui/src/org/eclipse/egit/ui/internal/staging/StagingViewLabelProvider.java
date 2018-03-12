@@ -34,8 +34,6 @@ public class StagingViewLabelProvider extends BaseLabelProvider implements
 	private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
 			.getImage(ISharedImages.IMG_OBJ_FILE);
 
-	private final Image SUBMODULE = UIIcons.REPOSITORY.createImage();
-
 	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
 
@@ -68,15 +66,11 @@ public class StagingViewLabelProvider extends BaseLabelProvider implements
 
 	@Override
 	public void dispose() {
-		SUBMODULE.dispose();
 		this.resourceManager.dispose();
 		super.dispose();
 	}
 
 	private Image getEditorImage(StagingEntry diff) {
-		if (diff.isSubmodule())
-			return SUBMODULE;
-
 		Image image = DEFAULT;
 		String name = new Path(diff.getPath()).lastSegment();
 		if (name != null) {
@@ -98,7 +92,7 @@ public class StagingViewLabelProvider extends BaseLabelProvider implements
 		final StagingEntry c = (StagingEntry) element;
 		if (c.getState() == StagingEntry.State.MODIFIED
 				|| c.getState() == StagingEntry.State.PARTIALLY_MODIFIED)
-			styled.append('>', StyledString.DECORATIONS_STYLER).append(' ');
+			styled.append('>').append(' ');
 		if (fileNameMode) {
 			IPath parsed = Path.fromOSString(c.getPath());
 			if (parsed.segmentCount() > 1) {
