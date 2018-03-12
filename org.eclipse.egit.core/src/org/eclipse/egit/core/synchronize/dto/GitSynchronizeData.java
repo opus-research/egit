@@ -11,6 +11,7 @@ package org.eclipse.egit.core.synchronize.dto;
 import static org.eclipse.core.runtime.Assert.isNotNull;
 import static org.eclipse.egit.core.RevUtils.getCommonAncestor;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_BRANCH_SECTION;
+import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_MERGE;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_REMOTE;
 import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
@@ -26,7 +27,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.ObjectWalk;
@@ -231,7 +231,7 @@ public class GitSynchronizeData {
 			int firstSeparator = remoteWithBranchName.indexOf("/"); //$NON-NLS-1$
 
 			String remote = remoteWithBranchName.substring(0, firstSeparator);
-			String name = remoteWithBranchName.substring(firstSeparator,
+			String name = remoteWithBranchName.substring(firstSeparator + 1,
 					remoteWithBranchName.length());
 
 			return new RemoteConfig(remote, R_HEADS + name);
@@ -251,7 +251,7 @@ public class GitSynchronizeData {
 			String remote = repo.getConfig().getString(CONFIG_BRANCH_SECTION,
 					name, CONFIG_KEY_REMOTE);
 			String merge = repo.getConfig().getString(CONFIG_BRANCH_SECTION,
-					name, ConfigConstants.CONFIG_KEY_MERGE);
+					name, CONFIG_KEY_MERGE);
 
 			return new RemoteConfig(remote, merge);
 		}
