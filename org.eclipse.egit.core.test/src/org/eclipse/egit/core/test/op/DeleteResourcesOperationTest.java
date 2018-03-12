@@ -17,15 +17,15 @@ import java.util.Collection;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
-import org.eclipse.egit.core.op.DeletePathsOperation;
+import org.eclipse.egit.core.op.DeleteResourcesOperation;
 import org.eclipse.egit.core.test.DualRepositoryTestCase;
 import org.eclipse.egit.core.test.JobSchedulingAssert;
 import org.eclipse.egit.core.test.TestRepository;
@@ -35,13 +35,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class DeletePathsOperationTest extends DualRepositoryTestCase {
+public class DeleteResourcesOperationTest extends DualRepositoryTestCase {
 
 	File workdir;
 
 	IProject project;
 
-	String projectName = "DeletePathsOperationTest";
+	String projectName = "DeleteResourcesOperationTest";
 
 	@Before
 	public void setUp() throws Exception {
@@ -67,7 +67,7 @@ public class DeletePathsOperationTest extends DualRepositoryTestCase {
 	public void testDeleteResourceOfProject() throws Exception {
 		IResource resource = testUtils.addFileToProject(project, "file.txt", "Hello world 1");
 
-		deletePaths(Arrays.asList(resource.getLocation()));
+		deleteResources(Arrays.asList(resource));
 
 		File file = resource.getFullPath().toFile();
 		assertFalse("File should have been deleted", file.exists());
@@ -78,7 +78,9 @@ public class DeletePathsOperationTest extends DualRepositoryTestCase {
 		File outsideOfProject = new File(workdir, "outside-of-project.txt");
 		outsideOfProject.createNewFile();
 
-		IPath path = new Path(outsideOfProject.getAbsolutePath());
+		Path path = new Path(outsideOfProject.getAbsolutePath());
+		IWorkspaceRoot root = project.getWorkspace().getRoot();
+		IResource resource = root.getFile(path);
 
 		// Make sure the cache has at least be refreshed once, otherwise the
 		// assertion at the end is not effective
@@ -86,7 +88,7 @@ public class DeletePathsOperationTest extends DualRepositoryTestCase {
 
 		JobSchedulingAssert jobSchedulingAssertion = JobSchedulingAssert
 				.forFamily(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-		deletePaths(Arrays.asList(path));
+		deleteResources(Arrays.asList(resource));
 
 		assertFalse("File should have been deleted", outsideOfProject.exists());
 		jobSchedulingAssertion
@@ -101,8 +103,8 @@ public class DeletePathsOperationTest extends DualRepositoryTestCase {
 		Job.getJobManager().join(JobFamilies.INDEX_DIFF_CACHE_UPDATE, null);
 	}
 
-	private void deletePaths(Collection<IPath> paths) throws CoreException {
-		DeletePathsOperation operation = new DeletePathsOperation(paths);
+	private void deleteResources(Collection<IResource> resources) throws CoreException {
+		DeleteResourcesOperation operation = new DeleteResourcesOperation(resources);
 		operation.execute(null);
 	}
 }
