@@ -19,7 +19,6 @@ package org.eclipse.egit.ui.internal;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
@@ -378,15 +377,18 @@ public class CompareUtils {
 			setChecked(CompareUtils.isReuseOpenEditor());
 		}
 
+		@Override
 		public void run() {
 			CompareUtils.setReuseOpenEditor(isChecked());
 		}
 
+		@Override
 		public void dispose() {
 			// stop listening
 			node.removePreferenceChangeListener(this);
 		}
 
+		@Override
 		public void preferenceChange(PreferenceChangeEvent event) {
 			setChecked(isReuseOpenEditor());
 
@@ -501,6 +503,7 @@ public class CompareUtils {
 		// safety check: make sure we open compare editor from UI thread
 		if (Display.getCurrent() == null) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					openCompareEditorRunnable(page, in);
 				}
@@ -610,9 +613,9 @@ public class CompareUtils {
 	 * This can be used to compare a given set of resources between two
 	 * revisions. If only one resource is to be compared, and that resource is
 	 * not part of a more important model (as defined in
-	 * {@link #canDirectlyOpenInCompare(IFile, ResourceMappingContext)}, we'll
-	 * open a comparison editor for that file alone. Otherwise, we'll launch a
-	 * synchronization restrained of the given resources set.
+	 * {@link #canDirectlyOpenInCompare(IFile)}, we'll open a comparison editor
+	 * for that file alone. Otherwise, we'll launch a synchronization restrained
+	 * of the given resources set.
 	 * <p>
 	 * This can also be used to synchronize the whole repository if
 	 * <code>resources</code> is empty.
@@ -644,13 +647,8 @@ public class CompareUtils {
 	public static void compare(IResource[] resources, Repository repository,
 			String leftRev, String rightRev, boolean includeLocal,
 			IWorkbenchPage page) throws IOException {
-		ResourceMappingContext mappingContext = ResourceUtil.prepareContext(
-				repository,
-				leftRev, rightRev, includeLocal);
-		if (resources.length == 1
-				&& resources[0] instanceof IFile
-				&& canDirectlyOpenInCompare((IFile) resources[0],
-						mappingContext)) {
+		if (resources.length == 1 && resources[0] instanceof IFile
+				&& canDirectlyOpenInCompare((IFile) resources[0])) {
 			if (includeLocal)
 				compareWorkspaceWithRef(repository, (IFile) resources[0],
 						rightRev, page);
@@ -664,17 +662,17 @@ public class CompareUtils {
 			}
 		} else
 			GitModelSynchronize.synchronize(resources, repository, leftRev,
-					rightRev, includeLocal, mappingContext);
+					rightRev, includeLocal);
 	}
 
 	/**
 	 * This can be used to compare a given set of resources between two
 	 * revisions. If only one resource is to be compared, and that resource is
 	 * not part of a more important model (as defined in
-	 * {@link #canDirectlyOpenInCompare(IFile, ResourceMappingContext)}, we'll
-	 * open a comparison editor for that file alone, also taking leftPath and
-	 * rightPath into account. Otherwise, we'll launch a synchronization
-	 * restrained of the given resources set.
+	 * {@link #canDirectlyOpenInCompare(IFile)}, we'll open a comparison editor
+	 * for that file alone, also taking leftPath and rightPath into account.
+	 * Otherwise, we'll launch a synchronization restrained of the given
+	 * resources set.
 	 * <p>
 	 * This can also be used to synchronize the whole repository if
 	 * <code>resources</code> is empty.
@@ -712,12 +710,8 @@ public class CompareUtils {
 	public static void compare(IResource[] resources, Repository repository,
 			String leftPath, String rightPath, String leftRev, String rightRev,
 			boolean includeLocal, IWorkbenchPage page) throws IOException {
-		ResourceMappingContext mappingContext = ResourceUtil.prepareContext(
-				repository, leftRev, rightRev, includeLocal);
-		if (resources.length == 1
-				&& resources[0] instanceof IFile
-				&& canDirectlyOpenInCompare((IFile) resources[0],
-						mappingContext)) {
+		if (resources.length == 1 && resources[0] instanceof IFile
+				&& canDirectlyOpenInCompare((IFile) resources[0])) {
 			if (includeLocal)
 				compareWorkspaceWithRef(repository, (IFile) resources[0],
 						rightRev, page);
@@ -727,7 +721,7 @@ public class CompareUtils {
 			}
 		} else
 			GitModelSynchronize.synchronize(resources, repository, leftRev,
-					rightRev, includeLocal, mappingContext);
+					rightRev, includeLocal);
 	}
 
 	/**
@@ -986,6 +980,7 @@ public class CompareUtils {
 		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
+			@Override
 			public void contentChanged(IContentChangeNotifier source) {
 				final byte[] newContent = next.getModifiedContent();
 				setIndexEntryContents(repository, gitPath, newContent);
@@ -1096,45 +1091,43 @@ public class CompareUtils {
 	 * Indicates if it is OK to open the selected file directly in a compare
 	 * editor.
 	 * <p>
-	 * It is not OK to show the single file if the file is part of a logical
-	 * model element that spans multiple files.
+	 * It is not OK to show the single file if the file is part of a
+	 * logical model element that spans multiple files.
 	 * </p>
 	 *
 	 * @param file
 	 *            file the user is trying to compare
-	 * @param context
-	 *            resource mapping context model providers can use to fetch
-	 *            remote data for the resource variants.
 	 * @return <code>true</code> if the file can be opened directly in a compare
 	 *         editor, <code>false</code> if the synchronize view should be
 	 *         opened instead.
 	 */
-	public static boolean canDirectlyOpenInCompare(IFile file,
-			ResourceMappingContext context) {
+	public static boolean canDirectlyOpenInCompare(IFile file) {
 		/*
-		 * Using a local context for the ResourceMapping computation would make
-		 * for a faster test... but we need the model providers to be able to
-		 * load remote information. The local file may very well be a single
-		 * file, but it is possible that the remote side has multiple files to
-		 * take into account for that model. (if part of the logical model has
-		 * been locally deleted, or if some new files have been created on the
-		 * remote side(s).)
+		 * Note : it would be better to use a remote context here in order to
+		 * give the model provider a chance to resolve the remote logical model
+		 * instead of only relying on the local one. However, this might be a
+		 * long operation and would not really provide more context : we're
+		 * trying to determine if the local file can be compared alone, this can
+		 * be done by relying on the local model only.
 		 */
 		// Only builds the logical model if the preference holds true
 		if (Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
+
 			final ResourceMapping[] mappings = ResourceUtil
-					.getResourceMappings(file, context);
+					.getResourceMappings(file,
+							ResourceMappingContext.LOCAL_CONTEXT);
 
 			for (ResourceMapping mapping : mappings) {
 				try {
 					final ResourceTraversal[] traversals = mapping
-							.getTraversals(context, null);
+							.getTraversals(
+									ResourceMappingContext.LOCAL_CONTEXT, null);
 					for (ResourceTraversal traversal : traversals) {
 						final IResource[] resources = traversal.getResources();
-						if (resources.length > 1
-								&& Arrays.asList(resources).contains(file)) {
-							return false;
+						for (IResource resource : resources) {
+							if (!resource.equals(file))
+								return false;
 						}
 					}
 				} catch (CoreException e) {
