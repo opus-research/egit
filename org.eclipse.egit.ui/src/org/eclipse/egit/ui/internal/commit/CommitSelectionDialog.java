@@ -205,13 +205,12 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 				else
 					commitId = repository.resolve(itemsFilter.getPattern());
 				if (commitId != null) {
-					try (RevWalk walk = new RevWalk(repository)) {
-						walk.setRetainBody(true);
-						RevCommit commit = walk.parseCommit(commitId);
-						contentProvider.add(
-								new RepositoryCommit(repository, commit),
-								itemsFilter);
-					}
+					RevWalk walk = new RevWalk(repository);
+					walk.setRetainBody(true);
+					RevCommit commit = walk.parseCommit(commitId);
+					contentProvider.add(
+							new RepositoryCommit(repository, commit),
+							itemsFilter);
 				}
 			} catch (RevisionSyntaxException ignored) {
 				// Ignore and advance

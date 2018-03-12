@@ -667,10 +667,8 @@ public class FetchGerritChangePage extends WizardPage {
 				new URIish(uri), specs, timeout, false).execute(monitor);
 
 		monitor.worked(1);
-		try (RevWalk rw = new RevWalk(repository)) {
-			return rw.parseCommit(
-					fetchRes.getAdvertisedRef(spec.getSource()).getObjectId());
-		}
+		return new RevWalk(repository).parseCommit(fetchRes.getAdvertisedRef(
+				spec.getSource()).getObjectId());
 	}
 
 	private void createTag(final RefSpec spec, final String textForTag,
