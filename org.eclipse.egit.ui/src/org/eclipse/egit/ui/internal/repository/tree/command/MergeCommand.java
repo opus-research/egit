@@ -56,7 +56,7 @@ public class MergeCommand extends
 
 		BasicConfigurationDialog.show(repository);
 
-		if (!canMerge(repository, event))
+		if (!canMerge(repository))
 			return null;
 
 		String targetRef;
@@ -150,8 +150,9 @@ public class MergeCommand extends
 		return selectedRepositoryHasHead();
 	}
 
-	private boolean canMerge(final Repository repository, ExecutionEvent event) {
+	private boolean canMerge(final Repository repository) {
 		String message = null;
+		Exception ex = null;
 		try {
 			Ref head = repository.getRef(Constants.HEAD);
 			if (head == null || !head.isSymbolic())
@@ -161,13 +162,12 @@ public class MergeCommand extends
 				message = NLS.bind(UIText.MergeAction_WrongRepositoryState,
 						repository.getRepositoryState());
 		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
 			message = e.getMessage();
+			ex = e;
 		}
 
 		if (message != null)
-			MessageDialog.openError(getShell(event),
-					UIText.MergeAction_CannotMerge, message);
+			Activator.handleError(UIText.MergeAction_CannotMerge, ex, true);
 		return (message == null);
 	}
 }
