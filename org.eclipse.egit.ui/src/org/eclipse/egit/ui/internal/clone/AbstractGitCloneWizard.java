@@ -86,7 +86,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	protected GerritConfigurationPage gerritConfiguration;
 
 	/**
-	 * the path where a clone has been made to
+	 * the path where a clone has been created in
 	 */
 	protected String alreadyClonedInto;
 
@@ -155,6 +155,9 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	}
 
 	/**
+	 * Do the clone using data which were collected on the pages
+	 * {@code validSource} and {@code cloneDestination}
+	 *
 	 * @param uri
 	 * @param credentials
 	 * @return if clone was successful
@@ -254,9 +257,8 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 	private void configureFetchSpec(CloneOperation op,
 			GitRepositoryInfo gitRepositoryInfo, String remoteName) {
-		for (String fetchRefSpec : gitRepositoryInfo.getFetchRefSpecs()) {
+		for (String fetchRefSpec : gitRepositoryInfo.getFetchRefSpecs())
 			op.addPostCloneTask(new ConfigureFetchAfterCloneTask(remoteName, fetchRefSpec));
-		}
 	}
 
 	private void configurePush(CloneOperation op,

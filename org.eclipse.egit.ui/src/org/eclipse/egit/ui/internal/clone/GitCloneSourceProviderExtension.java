@@ -17,13 +17,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositoryServerProvider;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.wizard.WizardPage;
-import org.osgi.framework.Bundle;
 
 /**
  * Provides access to the extensions of the cloneSourceProvider extension point
@@ -42,9 +38,8 @@ public class GitCloneSourceProviderExtension {
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry
 				.getConfigurationElementsFor(CLONE_SOURCE_PROVIDER_ID);
-		if (config.length > 0) {
+		if (config.length > 0)
 			addCloneSourceProvider(cloneSourceProvider, config, 0);
-		}
 
 		return cloneSourceProvider;
 	}
@@ -52,41 +47,28 @@ public class GitCloneSourceProviderExtension {
 	private static void addCloneSourceProvider(
 			List<CloneSourceProvider> cloneSourceProvider,
 			IConfigurationElement[] config, int index) {
-		try {
-			int myIndex = index;
-			String label = config[myIndex].getAttribute("label"); //$NON-NLS-1$
-			boolean hasFixLocation = Boolean.valueOf(
-					config[myIndex].getAttribute("hasFixLocation")).booleanValue(); //$NON-NLS-1$
-
-
-			String iconPath = config[myIndex].getAttribute("icon"); //$NON-NLS-1$
-			ImageDescriptor icon = null;
-			if (iconPath != null) {
-				Bundle declaringBundle = Platform.getBundle(config[myIndex].getDeclaringExtension().getNamespaceIdentifier());
-				icon = ImageDescriptor.createFromURL(declaringBundle.getResource(iconPath));
-			}
+		int myIndex = index;
+		String label = config[myIndex].getAttribute("label"); //$NON-NLS-1$
+		boolean hasFixLocation = Boolean.valueOf(
+				config[myIndex].getAttribute("hasFixLocation")).booleanValue(); //$NON-NLS-1$
+		myIndex++;
+		IConfigurationElement serverProviderElement = null;
+		if (myIndex < config.length
+				&& config[myIndex].getName().equals("repositoryServerProvider")) { //$NON-NLS-1$
+			serverProviderElement = config[myIndex];
 			myIndex++;
-			IConfigurationElement serverProviderElement = null;
-			if (myIndex < config.length
-					&& config[myIndex].getName().equals("repositoryServerProvider")) { //$NON-NLS-1$
-				serverProviderElement = config[myIndex];
-				myIndex++;
-			}
-			IConfigurationElement pageElement = null;
-			if (myIndex < config.length
-					&& config[myIndex].getName().equals("repositorySearchPage")) { //$NON-NLS-1$
-				pageElement = config[myIndex];
-				myIndex++;
-			}
-			cloneSourceProvider.add(new CloneSourceProvider(label,
-					serverProviderElement, pageElement, hasFixLocation, icon));
-			if (myIndex == config.length)
-				return;
-			addCloneSourceProvider(cloneSourceProvider, config, myIndex);
-		} catch (Exception e) {
-			Activator.logError("Could not create extension provided by " + //$NON-NLS-1$
-					Platform.getBundle(config[index].getDeclaringExtension().getNamespaceIdentifier()), e);
 		}
+		IConfigurationElement pageElement = null;
+		if (myIndex < config.length
+				&& config[myIndex].getName().equals("repositorySearchPage")) { //$NON-NLS-1$
+			pageElement = config[myIndex];
+			myIndex++;
+		}
+		cloneSourceProvider.add(new CloneSourceProvider(label,
+				serverProviderElement, pageElement, hasFixLocation));
+		if (myIndex == config.length)
+			return;
+		addCloneSourceProvider(cloneSourceProvider, config, myIndex);
 	}
 
 	/**
@@ -96,12 +78,10 @@ public class GitCloneSourceProviderExtension {
 	public static class CloneSourceProvider {
 
 		/**
-		 * The constant provider for used for local repositories
+		 * The constant provider used for local repositories
 		 */
 		public static final CloneSourceProvider LOCAL = new CloneSourceProvider(
-				"Local", null, null, true, UIIcons.REPOSITORY); //$NON-NLS-1$
-
-		private static final ImageDescriptor defaultImage = UIIcons.REPOSITORY;
+				"Local", null, null, true); //$NON-NLS-1$
 
 		private final String label;
 
@@ -111,39 +91,28 @@ public class GitCloneSourceProviderExtension {
 
 		private boolean hasFixLocation = false;
 
-		private ImageDescriptor image = UIIcons.REPOSITORY;
-
 		private CloneSourceProvider(String label,
 				IConfigurationElement repositoryServerProviderElement,
 				IConfigurationElement repositorySearchPageElement,
-				boolean hasFixLocation,
-				ImageDescriptor image) {
+				boolean hasFixLocation) {
 			this.label = label;
 			this.repositoryServerProviderElement = repositoryServerProviderElement;
 			this.repositorySearchPageELement = repositorySearchPageElement;
 			this.hasFixLocation = hasFixLocation;
-			this.image = image;
 		}
 
 		/**
 		 * @return label the human readable name of a type of servers which
-		 *         contains repositories
+		 *         contain repositories
 		 */
 		public String getLabel() {
 			return label;
 		}
 
 		/**
-		 * @return the image
-		 */
-		public ImageDescriptor getImage() {
-			return image != null ? image : defaultImage;
-		}
-
-		/**
-		 * @return a class which Provides a list of servers which host git
+		 * @return a class which provides a list of servers which host git
 		 *         repositories. This class is newly created on each invocation
-		 *         of this method. A client is responsible of caching this
+		 *         of this method. Clients are responsible to cache this
 		 *         class.
 		 * @throws CoreException
 		 */
@@ -160,9 +129,10 @@ public class GitCloneSourceProviderExtension {
 		}
 
 		/**
-		 * @return A wizard page which can can return information of a git
+		 * @return A wizard page which can return information of a git
 		 *         repository. This class is newly created on each invocation of
-		 *         this method. A client is responsible of caching this class.
+		 *         this method. Clients are responsible to cache this
+		 *         class.
 		 * @throws CoreException
 		 */
 		public WizardPage getRepositorySearchPage() throws CoreException {

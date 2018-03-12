@@ -61,15 +61,15 @@ public class RepositoryServerInfo {
 	}
 
 	/**
-	 * @param user the user name needed for log in
-	 * @param password  the password needed for log in
+	 * @param user the user name needed to log in
+	 * @param password  the password needed to log in
 	 */
 	public void setCredentials(String user, String password) {
 		credentials = new UserPasswordCredentials(user, password);
 	}
 
 	/**
-	 * @return the credentials needed for log in
+	 * @return the credentials needed to log in
 	 */
 	public UserPasswordCredentials getCredentials() {
 		return credentials;
