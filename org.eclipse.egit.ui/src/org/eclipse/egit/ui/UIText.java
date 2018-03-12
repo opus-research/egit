@@ -142,6 +142,12 @@ public class UIText extends NLS {
 	public static String SelectRemoteNamePage_SelectRemoteNameMessage;
 
 	/** */
+	public static String SelectResetTypePage_PageMessage;
+
+	/** */
+	public static String SelectResetTypePage_PageTitle;
+
+	/** */
 	public static String SetQuickdiffBaselineAction_setQuickdiffBaseline;
 
 	/** */
@@ -826,10 +832,46 @@ public class UIText extends NLS {
 	public static String ResetAction_reset;
 
 	/** */
+	public static String ResetCommand_ResetFailureMessage;
+
+	/** */
+	public static String ResetCommand_WizardTitle;
+
+	/** */
 	public static String ResetQuickdiffBaselineAction_resetQuickdiffBaseline;
 
 	/** */
 	public static String ResetQuickdiffBaselineHeadParentAction_0;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetButton;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetConfirmQuestion;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetQuestion;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTitle;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeGroup;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeHardButton;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeMixedButton;
+
+	/** */
+	public static String ResetTargetSelectionDialog_ResetTypeSoftButton;
+
+	/** */
+	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
+
+	/** */
+	public static String ResetTargetSelectionDialog_WindowTitle;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
@@ -1079,6 +1121,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_StatusUntracked;
+
+	/** */
+	public static String CommitDialog_AddChangeIdLabel;
+
+	/** */
+	public static String CommitDialog_AddChangeIdTooltip;
 
 	/** */
 	public static String ConfigureKeysDialog_AddStandardButton;
@@ -1414,34 +1462,10 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_TitleCheckout;
 
 	/** */
-	public static String BranchSelectionDialog_TitleReset;
-
-	/** */
-	public static String BranchSelectionDialog_OkReset;
-
-	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
 
 	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
-
-	/** */
-	public static String BranchSelectionDialog_ResetType;
-
-	/** */
-	public static String BranchSelectionDialog_ResetTypeSoft;
-
-	/** */
-	public static String BranchSelectionDialog_ResetTypeMixed;
-
-	/** */
-	public static String BranchSelectionDialog_ResetTypeHard;
-
-	/** */
-	public static String BranchSelectionDialog_ReallyResetTitle;
-
-	/** */
-	public static String BranchSelectionDialog_ReallyResetMessage;
 
 	/** */
 	public static String BranchSelectionDialog_QuestionNewBranchTitle;
@@ -1523,15 +1547,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_projectFormatLabel;
-
-	/** */
-	public static String DecoratorPreferencesPage_fileFormatDefault;
-
-	/** */
-	public static String DecoratorPreferencesPage_projectFormatDefault;
-
-	/** */
-	public static String DecoratorPreferencesPage_folderFormatDefault;
 
 	/** */
 	public static String DecoratorPreferencesPage_generalTabFolder;
@@ -2012,6 +2027,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeAction_JobNameMerge;
+
+	/** */
+	public static String MergeAction_MergeCanceledMessage;
+
+	/** */
+	public static String MergeAction_MergeCanceledTitle;
+
+	/** */
+	public static String MergeAction_MergeResultTitle;
 
 	/** */
 	public static String MergeAction_ProblemMerge;

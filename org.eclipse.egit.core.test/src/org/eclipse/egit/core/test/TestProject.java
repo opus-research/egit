@@ -40,6 +40,7 @@ public class TestProject {
 
 	private IPackageFragmentRoot sourceFolder;
 	private String location;
+	private TestUtils testUtils = new TestUtils();
 
 	/**
 	 * @throws CoreException
@@ -49,14 +50,19 @@ public class TestProject {
 		this(false);
 	}
 
+	public TestProject(boolean remove) throws CoreException {
+		this(remove, "Project-1");
+	}
+
 	/**
 	 * @param remove
 	 *            should project be removed if already exists
+	 * @param projectName
 	 * @throws CoreException
 	 */
-	public TestProject(final boolean remove) throws CoreException {
+	public TestProject(final boolean remove, String projectName) throws CoreException {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		project = root.getProject("Project-1");
+		project = root.getProject(projectName);
 		if (remove)
 			project.delete(true, null);
 		project.create(null);
@@ -110,7 +116,7 @@ public class TestProject {
 		if (project.exists())
 			project.delete(true, true, null);
 		else
-			TestUtils.rmrf(new File(location));
+			testUtils.deleteRecursive(new File(location));
 	}
 
 	private IFolder createBinFolder() throws CoreException {
