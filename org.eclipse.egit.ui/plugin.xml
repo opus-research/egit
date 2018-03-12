@@ -2303,6 +2303,13 @@
             properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
+      <propertyTester
+            class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
+            id="org.eclipse.egit.ui.ResourceTester"
+            namespace="GitResource"
+            properties="isShared"
+            type="org.eclipse.core.resources.IResource">
+      </propertyTester>
    </extension>
    <extension
          point="org.eclipse.ui.navigator.linkHelper">
@@ -2383,6 +2390,23 @@
             contentExtensionId="org.eclipse.egit.ui.changeSetContent"
             icon="$nl$/icons/obj16/changelog_obj.gif"
             modelProviderId="org.eclipse.egit.ui.changeSetModel"/>
+   </extension>
+   <extension point="org.eclipse.ui.navigator.viewer">
+       <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
+           <popupMenu
+                allowsPlatformContributions="false"
+                id="org.eclipse.egit.ui.compareSynchronizationMenu">
+             <insertionPoint name="gitActions" separator="true"/>
+             <insertionPoint name="file"/>
+             <insertionPoint name="file-bottom"/>
+             <insertionPoint name="edit" separator="true"/>
+             <insertionPoint name="synchronize"/>
+             <insertionPoint name="navigate" separator="true"/>
+             <insertionPoint name="modelTeam" separator="true"/>
+             <insertionPoint name="sort" separator="true"/>
+			 <insertionPoint name="additions" separator="true"/>
+          </popupMenu>
+       </viewer>
    </extension>
    <extension
          name="%TeamMenuCommandsLabel"
@@ -2752,9 +2776,14 @@
                            value="1">
                      </count>
                      <iterate>
-                        <adapt
-                              type="org.eclipse.core.resources.IProject">
-                        </adapt>
+                        <and>
+                           <adapt
+                                 type="org.eclipse.core.resources.IProject">
+                           </adapt>
+                           <test
+                                 property="GitResource.isShared">
+                           </test>
+                        </and>
                      </iterate>
                   </and>
                </visibleWhen>
