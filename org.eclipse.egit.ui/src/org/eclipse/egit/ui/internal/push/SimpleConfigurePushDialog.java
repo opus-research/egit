@@ -163,7 +163,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			allRemotes = RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig());
 		} catch (URISyntaxException e) {
-			allRemotes = new ArrayList<>();
+			allRemotes = new ArrayList<RemoteConfig>();
 		}
 
 		RemoteConfig configuredConfig = null;
@@ -709,7 +709,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	private void addDefaultOriginWarningIfNeeded(Composite parent) {
 		if (!showBranchInfo)
 			return;
-		List<String> otherBranches = new ArrayList<>();
+		List<String> otherBranches = new ArrayList<String>();
 		String currentBranch;
 		try {
 			currentBranch = repository.getBranch();

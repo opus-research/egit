@@ -184,7 +184,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 		public Object[] getChildren(Object parentElement) {
 			if (parentElement instanceof PluginNode) {
 				PluginNode node = (PluginNode) parentElement;
-				List<OptionNode> result = new ArrayList<>();
+				List<OptionNode> result = new ArrayList<OptionNode>();
 				for (Object key : myOptionsMap.get(node).keySet()) {
 					// hide the main switch
 					if (key.equals(node.getPlugin() + MAINSWITCH))
@@ -230,7 +230,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 
 	private static final int DEFAULT_ID = 88;
 
-	private final Map<PluginNode, Properties> optionsMap = new HashMap<>();
+	private final Map<PluginNode, Properties> optionsMap = new HashMap<PluginNode, Properties>();
 
 	private boolean isDirty;
 
@@ -441,7 +441,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			options.setDebugEnabled(platformSwitch.getSelection());
 			if (platformSwitch.getSelection()) {
 				// if this is off, we won't be able to save anything
-				List<String> checkedKeys = new ArrayList<>();
+				List<String> checkedKeys = new ArrayList<String>();
 				for (Object checked : Arrays.asList(tv.getCheckedElements())) {
 					if (checked instanceof PluginNode)
 						checkedKeys.add(((PluginNode) checked).getPlugin()
@@ -471,7 +471,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 	}
 
 	private void fillOptionsMapFromOptions() {
-		Map<String, String> oldValues = new HashMap<>();
+		Map<String, String> oldValues = new HashMap<String, String>();
 		for (Properties props : optionsMap.values())
 			for (Object keyObject : props.keySet()) {
 				String key = (String) keyObject;
@@ -498,7 +498,7 @@ public class GitTraceConfigurationDialog extends TitleAreaDialog {
 			optionsMap.put(plugin, props);
 		}
 
-		Map<String, String> newValues = new HashMap<>();
+		Map<String, String> newValues = new HashMap<String, String>();
 		for (Properties props : optionsMap.values())
 			for (Object keyObject : props.keySet()) {
 				String key = (String) keyObject;

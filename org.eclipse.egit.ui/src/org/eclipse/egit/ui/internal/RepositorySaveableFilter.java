@@ -30,7 +30,7 @@ public class RepositorySaveableFilter extends SaveFilter {
 
 	private final IPath workDir;
 
-	private final List<Saveable> saveCandidates = new ArrayList<>();
+	private final List<Saveable> saveCandidates = new ArrayList<Saveable>();
 
 	/**
 	 * @param repository

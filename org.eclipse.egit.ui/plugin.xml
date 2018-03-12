@@ -1487,9 +1487,6 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                            </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
-                           </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
                            </test>
@@ -2396,9 +2393,6 @@
                         <or>
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
                            </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
@@ -3582,24 +3576,6 @@
                      <instanceof
                            value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
                      </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
-               label="%OpenInCommitViewerCommand.name"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
-                        </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -5298,10 +5274,6 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.OpenInCommitViewerCommand"
-            icon="icons/obj16/open-commit.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
             icon="icons/obj16/open-commit.gif">
       </image>
       <image

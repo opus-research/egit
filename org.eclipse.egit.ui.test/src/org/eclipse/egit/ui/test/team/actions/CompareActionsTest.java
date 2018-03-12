@@ -162,8 +162,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		// use the tag -> should have a change
 		dialog = openCompareWithDialog(compareWithRefActionLabel, dialogTitle);
-		SWTBotTreeItem tags = TestUtil
-				.expandAndWait(dialog.bot().tree().getTreeItem(TAGS));
+		SWTBotTreeItem tags = dialog.bot().tree().getTreeItem(TAGS).expand();
 		TestUtil.getChildNode(tags, "SomeTag").select();
 
 		jobJoiner = JobJoiner.startListening(
@@ -351,12 +350,12 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		String text = syncItems[0].getText();
 		assertTrue("Received unexpected text: " + text, text.contains(PROJ1));
 
-		TestUtil.expandAndWait(syncItems[0]);
+		syncItems[0].expand();
 		SWTBotTreeItem[] level1Children = syncItems[0].getItems();
 		assertEquals(level1Children.length, 1);
 		assertTrue(level1Children[0].getText().contains(FOLDER));
 
-		TestUtil.expandAndWait(level1Children[0]);
+		level1Children[0].expand();
 		SWTBotTreeItem[] level2Children = level1Children[0].getItems();
 		assertEquals(level2Children.length, 1);
 		assertTrue(level2Children[0].getText().contains(FILE1));

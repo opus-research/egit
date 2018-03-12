@@ -53,7 +53,7 @@ public class RevertHandler extends CommitCommandHandler {
 		Repository repo = repoCommits.get(0).getRepository();
 		final Shell shell = getPart(event).getSite().getShell();
 
-		final List<RevCommit> commits = new ArrayList<>();
+		final List<RevCommit> commits = new ArrayList<RevCommit>();
 		for (RepositoryCommit repoCommit : repoCommits)
 			commits.add(repoCommit.getRevCommit());
 		final RevertCommitOperation op = new RevertCommitOperation(repo,
