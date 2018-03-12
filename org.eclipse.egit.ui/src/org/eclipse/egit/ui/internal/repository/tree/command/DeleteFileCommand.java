@@ -34,7 +34,7 @@ public class DeleteFileCommand extends RepositoriesViewCommandHandler<FileNode> 
 	}
 
 	@Override
-	public boolean isEnabled() {
-		return isWorkingDirSelection();
+	public void setEnabled(Object evaluationContext) {
+		enableWorkingDirCommand(evaluationContext);
 	}
 }
