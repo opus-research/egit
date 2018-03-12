@@ -1039,9 +1039,6 @@ public class UIText extends NLS {
 	public static String CleanRepositoryPage_message;
 
 	/** */
-	public static String CleanRepositoryPage_SelectFilesToClean;
-
-	/** */
 	public static String CleanRepositoryPage_title;
 
 	/** */
