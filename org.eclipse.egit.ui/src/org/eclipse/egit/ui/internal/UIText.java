@@ -5,7 +5,7 @@
  * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * All rights reserved. This program and the accompanying materials
@@ -3192,12 +3192,6 @@ public class UIText extends NLS {
 	public static String GitCompareFileRevisionEditorInput_LocalLabel;
 
 	/** */
-	public static String GitCompareFileRevisionEditorInput_IndexLabel;
-
-	/** */
-	public static String GitCompareFileRevisionEditorInput_IndexEditableLabel;
-
-	/** */
 	public static String GitCompareFileRevisionEditorInput_LocalRevision;
 
 	/** */
@@ -3664,7 +3658,7 @@ public class UIText extends NLS {
 	 * "Find Broken Externalized Strings" tool will not be
 	 * able to find the corresponding bundle file.
 	 */
-	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.internal.uitext"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
 
 	/** */
 	public static String CommitAction_commit;
@@ -4007,9 +4001,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RemoveCommand_ConfirmDeleteBareRepositoryTitle;
-
-	/** */
-	public static String RemoveCommand_RemoveRepositoriesJob;
 
 	/** */
 	public static String RenameBranchDialog_DialogMessage;
@@ -4766,9 +4757,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitModelSynchronizeParticipant_initialScopeName;
-
-	/** */
-	public static String GitModelSynchronizeParticipant_noCachedSourceVariant;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
