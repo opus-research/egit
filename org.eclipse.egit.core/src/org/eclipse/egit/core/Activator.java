@@ -1,9 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2011, 2013 Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
- *
+ * Copyright (C) 2008, 2013 Shawn O. Pearce <spearce@spearce.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -14,13 +10,13 @@ package org.eclipse.egit.core;
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -161,10 +157,25 @@ public class Activator extends Plugin implements DebugOptionsListener {
 					IResource resource = event.getResource();
 					if (resource instanceof IProject) {
 						IProject project = (IProject) resource;
-						if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
-							IResource dotGit = project.findMember(Constants.DOT_GIT);
-							if (dotGit != null && dotGit.getType() == IResource.FOLDER)
-								GitProjectData.reconfigureWindowCache();
+						if (project.isAccessible()) {
+							if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
+								IResource dotGit = project
+										.findMember(Constants.DOT_GIT);
+								if (dotGit != null
+										&& dotGit.getType() == IResource.FOLDER)
+									GitProjectData.reconfigureWindowCache();
+							}
+						} else {
+							// bug 419706: project is closed - use java.io API
+							IPath locationPath = project.getLocation();
+							if (locationPath != null) {
+								File locationDir = locationPath.toFile();
+								File dotGit = new File(locationDir,
+										Constants.DOT_GIT);
+								if (dotGit.exists() && dotGit.isDirectory()) {
+									GitProjectData.reconfigureWindowCache();
+								}
+							}
 						}
 					}
 				}
@@ -307,6 +318,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			if (provider != null)
 				return false;
 			RepositoryFinder f = new RepositoryFinder(project);
+			f.setFindInChildren(false);
 			Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
 			if (mappings.size() != 1)
 				return false;
@@ -371,7 +383,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 				if (d == null || !autoIgnoreDerived())
 					return;
 
-				final List<IPath> toBeIgnored = new ArrayList<IPath>();
+				final Set<IPath> toBeIgnored = new LinkedHashSet<IPath>();
 
 				d.accept(new IResourceDeltaVisitor() {
 

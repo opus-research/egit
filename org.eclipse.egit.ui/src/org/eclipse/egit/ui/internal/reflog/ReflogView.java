@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2012 Chris Aniszczyk <caniszczyk@gmail.com> and others.
+ * Copyright (c) 2011, 2014 Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -23,6 +23,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.reflog.ReflogViewContentProvider.ReflogInput;
@@ -337,12 +338,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		service.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate reflog view
-		ISelection selection = service.getSelection();
-		if (selection != null && !selection.isEmpty()) {
-			IWorkbenchPart part = site.getPage().getActivePart();
-			if (part != null)
-				selectionChangedListener.selectionChanged(part, selection);
-		}
+		UIUtils.notifySelectionChangedWithCurrentSelection(
+				selectionChangedListener, site);
 
 		site.setSelectionProvider(refLogTableTreeViewer);
 
@@ -354,6 +351,10 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		menuManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		Tree tree = refLogTableTreeViewer.getTree();
 		tree.setMenu(menuManager.createContextMenu(tree));
+
+		MenuManager resetManager = ResetMenu.createMenu(getSite());
+		menuManager.add(resetManager);
+
 		getSite().registerContextMenu(POPUP_MENU_ID, menuManager, refLogTableTreeViewer);
 	}
 

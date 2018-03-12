@@ -83,9 +83,21 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		}
 	};
 
-	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() ;
+	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() {
+		public void setVisible(boolean visible) {
+			if (visible)
+				setProjectsList(importWithDirectoriesPage.getPath());
+			super.setVisible(visible);
+		}
+	};
 
-	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage();
+	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage() {
+		public void setVisible(boolean visible) {
+			if (visible)
+				setPath(importWithDirectoriesPage.getPath());
+			super.setVisible(visible);
+		}
+	};
 
 	private Repository existingRepo;
 
@@ -148,16 +160,11 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		} else if (page == importWithDirectoriesPage)
 			switch (importWithDirectoriesPage.getWizardSelection()) {
 			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
-				projectsImportPage.setProjectsList(importWithDirectoriesPage
-						.getPath());
 				return projectsImportPage;
 			case GitSelectWizardPage.NEW_WIZARD:
 				return null;
 			case GitSelectWizardPage.GENERAL_WIZARD:
-				createGeneralProjectPage.setPath(importWithDirectoriesPage
-						.getPath());
 				return createGeneralProjectPage;
-
 			}
 		else if (page == createGeneralProjectPage
 				|| page == projectsImportPage)
@@ -225,7 +232,6 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD: {
 			final Set<ProjectRecord> projectsToCreate = new HashSet<ProjectRecord>();
 			final List<IWorkingSet> workingSets = new ArrayList<IWorkingSet>();
-			final Repository[] repository = new Repository[1];
 			// get the data from the pages in the UI thread
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				public void run() {
@@ -234,11 +240,10 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					IWorkingSet[] workingSetArray = projectsImportPage
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
-					repository[0] = getTargetRepository();
 					projectsImportPage.saveWidgetValues();
 				}
 			});
-			ProjectUtils.createProjects(projectsToCreate, repository[0],
+			ProjectUtils.createProjects(projectsToCreate,
 					workingSets.toArray(new IWorkingSet[workingSets.size()]),
 					monitor);
 			break;

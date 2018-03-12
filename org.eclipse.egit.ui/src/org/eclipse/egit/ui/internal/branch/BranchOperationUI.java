@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,9 +10,17 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.branch;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -20,6 +28,16 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.core.model.ISourceLocator;
+import org.eclipse.debug.core.sourcelookup.ISourceContainer;
+import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
+import org.eclipse.debug.core.sourcelookup.containers.ProjectSourceContainer;
+import org.eclipse.egit.core.RepositoryUtil;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.IEGitOperation.PostExecuteTask;
 import org.eclipse.egit.core.op.IEGitOperation.PreExecuteTask;
@@ -31,14 +49,21 @@ import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutDialog;
 import org.eclipse.egit.ui.internal.dialogs.DeleteBranchDialog;
+import org.eclipse.egit.ui.internal.dialogs.NonDeletedFilesDialog;
 import org.eclipse.egit.ui.internal.dialogs.RenameBranchDialog;
 import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.dialogs.MessageDialogWithToggle;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.jgit.api.CheckoutResult;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
@@ -59,6 +84,16 @@ public class BranchOperationUI {
 	private final Repository repository;
 
 	private String target;
+
+	private String base;
+
+	/**
+	 * In the case of checkout conflicts, a dialog is shown to let the user
+	 * stash, reset or commit. After that, checkout is tried again. The second
+	 * time we do checkout, we don't want to ask any questions we already asked
+	 * the first time, so this will be false then.
+	 */
+	private final boolean showQuestionAboutTarget;
 
 	private final int mode;
 
@@ -94,6 +129,19 @@ public class BranchOperationUI {
 	}
 
 	/**
+	 * Create an operation for creating a local branch with a given base reference
+	 *
+	 * @param repository
+	 * @param baseRef
+	 * @return the {@link BranchOperationUI}
+	 */
+	public static BranchOperationUI createWithRef(Repository repository, String baseRef) {
+		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
+		op.base = baseRef;
+		return op;
+	}
+
+	/**
 	 * Create an operation for checking out a local branch
 	 *
 	 * @param repository
@@ -113,16 +161,43 @@ public class BranchOperationUI {
 	 */
 	public static BranchOperationUI checkout(Repository repository,
 			String target) {
-		return new BranchOperationUI(repository, target);
+		return new BranchOperationUI(repository, target, true);
+	}
+
+	/**
+	 * Create an operation for checking out a branch without showing a question
+	 * dialog about the target.
+	 *
+	 * @param repository
+	 * @param target
+	 *            a valid {@link Ref} name or commit id
+	 * @return the {@link BranchOperationUI}
+	 */
+	public static BranchOperationUI checkoutWithoutQuestion(
+			Repository repository, String target) {
+		return new BranchOperationUI(repository, target, false);
+	}
+
+	/**
+	 * @param refName
+	 *            the full ref name which will be checked out
+	 * @return true if checkout will need additional input from the user before
+	 *         continuing
+	 */
+	public static boolean checkoutWillShowQuestionDialog(String refName) {
+		return shouldShowCheckoutRemoteTrackingDialog(refName);
 	}
 
 	/**
 	 * @param repository
 	 * @param target
+	 * @param showQuestionAboutTarget
 	 */
-	private BranchOperationUI(Repository repository, String target) {
+	private BranchOperationUI(Repository repository, String target,
+			boolean showQuestionAboutTarget) {
 		this.repository = repository;
 		this.target = target;
+		this.showQuestionAboutTarget = showQuestionAboutTarget;
 		this.mode = 0;
 	}
 
@@ -135,6 +210,7 @@ public class BranchOperationUI {
 	private BranchOperationUI(Repository repository, int mode) {
 		this.repository = repository;
 		this.mode = mode;
+		this.showQuestionAboutTarget = true;
 	}
 
 	/**
@@ -148,8 +224,11 @@ public class BranchOperationUI {
 									.getRepositoryState().getDescription()));
 			return;
 		}
-		if (target == null)
-			target = getTargetWithDialog();
+
+		if (shouldCancelBecauseOfRunningLaunches())
+			return;
+
+		askForTargetIfNecessary();
 		if (target == null)
 			return;
 
@@ -163,9 +242,10 @@ public class BranchOperationUI {
 		final BranchOperation bop = new BranchOperation(repository, target,
 				!restore);
 
-		Job job = new Job(jobname) {
+		Job job = new WorkspaceJob(jobname) {
+
 			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				try {
 					if (restore) {
 						final BranchProjectTracker tracker = new BranchProjectTracker(
@@ -220,10 +300,14 @@ public class BranchOperationUI {
 			}
 		};
 		job.setUser(true);
+		// Set scheduling rule to workspace because we may have to re-create
+		// projects using BranchProjectTracker.
+		if (restore)
+			job.setRule(ResourcesPlugin.getWorkspace().getRoot());
 		job.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent cevent) {
-				BranchResultDialog.show(bop.getResult(), repository, target);
+				show(bop.getResult());
 			}
 		});
 		job.schedule();
@@ -249,15 +333,44 @@ public class BranchOperationUI {
 			});
 			return;
 		}
-		if (target == null)
-			target = getTargetWithDialog();
+
+		if (shouldCancelBecauseOfRunningLaunches())
+			return;
+
+		askForTargetIfNecessary();
 		if (target == null)
 			return;
 
 		BranchOperation bop = new BranchOperation(repository, target);
 		bop.execute(monitor);
 
-		BranchResultDialog.show(bop.getResult(), repository, target);
+		show(bop.getResult());
+	}
+
+	private void askForTargetIfNecessary() {
+		if (target == null)
+			target = getTargetWithDialog();
+		if (target != null && showQuestionAboutTarget) {
+			if (shouldShowCheckoutRemoteTrackingDialog(target))
+				target = getTargetWithCheckoutRemoteTrackingDialog();
+		}
+	}
+
+	private static boolean shouldShowCheckoutRemoteTrackingDialog(String refName) {
+		boolean isRemoteTrackingBranch = refName != null
+				&& refName.startsWith(Constants.R_REMOTES);
+		if (isRemoteTrackingBranch) {
+			boolean showDetachedHeadWarning = Activator.getDefault()
+					.getPreferenceStore()
+					.getBoolean(UIPreferences.SHOW_DETACHED_HEAD_WARNING);
+			// If the user has not yet chosen to ignore the warning about
+			// getting into a "detached HEAD" state, then we show them a dialog
+			// whether a remote-tracking branch should be checked out with a
+			// detached HEAD or checking it out as a new local branch.
+			return showDetachedHeadWarning;
+		} else {
+			return false;
+		}
 	}
 
 	private String getTargetWithDialog() {
@@ -269,7 +382,9 @@ public class BranchOperationUI {
 		case MODE_CREATE:
 			CreateBranchWizard wiz;
 			try {
-				wiz = new CreateBranchWizard(repository, repository.getFullBranch());
+				if (base == null)
+					base = repository.getFullBranch();
+				wiz = new CreateBranchWizard(repository, base);
 			} catch (IOException e) {
 				wiz = new CreateBranchWizard(repository);
 			}
@@ -291,7 +406,180 @@ public class BranchOperationUI {
 		return dialog.getRefName();
 	}
 
+	private String getTargetWithCheckoutRemoteTrackingDialog() {
+		String[] buttons = new String[] {
+				UIText.BranchOperationUI_CheckoutRemoteTrackingAsLocal,
+				UIText.BranchOperationUI_CheckoutRemoteTrackingCommit,
+				IDialogConstants.CANCEL_LABEL };
+		MessageDialog questionDialog = new MessageDialog(
+				getShell(),
+				UIText.BranchOperationUI_CheckoutRemoteTrackingTitle,
+				null,
+				UIText.BranchOperationUI_CheckoutRemoteTrackingQuestion,
+				MessageDialog.QUESTION, buttons, 0);
+		int result = questionDialog.open();
+		if (result == 0) {
+			// Check out as new local branch
+			CreateBranchWizard wizard = new CreateBranchWizard(repository,
+					target);
+			WizardDialog createBranchDialog = new WizardDialog(getShell(),
+					wizard);
+			createBranchDialog.open();
+			return null;
+		} else if (result == 1) {
+			// Check out commit
+			return target;
+		} else {
+			// Cancel
+			return null;
+		}
+	}
+
 	private Shell getShell() {
 		return PlatformUI.getWorkbench().getDisplay().getActiveShell();
 	}
+
+	/**
+	 * @param result
+	 *            the result to show
+	 */
+	public void show(final CheckoutResult result) {
+		if (result.getStatus() == CheckoutResult.Status.CONFLICTS) {
+			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					Shell shell = PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getShell();
+					CleanupUncomittedChangesDialog cleanupUncomittedChangesDialog = new CleanupUncomittedChangesDialog(
+							shell,
+							UIText.BranchResultDialog_CheckoutConflictsTitle,
+							NLS.bind(
+									UIText.BranchResultDialog_CheckoutConflictsMessage,
+									Repository.shortenRefName(target)),
+							repository, result.getConflictList());
+					cleanupUncomittedChangesDialog.open();
+					if (cleanupUncomittedChangesDialog.shouldContinue()) {
+						BranchOperationUI op = BranchOperationUI
+								.checkoutWithoutQuestion(repository, target);
+						op.start();
+					}
+				}
+			});
+		} else if (result.getStatus() == CheckoutResult.Status.NONDELETED) {
+			// double-check if the files are still there
+			boolean show = false;
+			List<String> pathList = result.getUndeletedList();
+			for (String path : pathList)
+				if (new File(repository.getWorkTree(), path).exists()) {
+					show = true;
+					break;
+				}
+			if (!show)
+				return;
+			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					Shell shell = PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getShell();
+					new NonDeletedFilesDialog(shell, repository, result
+							.getUndeletedList()).open();
+				}
+			});
+		} else if (result.getStatus() == CheckoutResult.Status.OK) {
+			if (RepositoryUtil.isDetachedHead(repository))
+				showDetachedHeadWarning();
+		}
+	}
+
+	private void showDetachedHeadWarning() {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			public void run() {
+				IPreferenceStore store = Activator.getDefault()
+						.getPreferenceStore();
+
+				if (store.getBoolean(UIPreferences.SHOW_DETACHED_HEAD_WARNING)) {
+					String toggleMessage = UIText.BranchResultDialog_DetachedHeadWarningDontShowAgain;
+					MessageDialogWithToggle.openInformation(PlatformUI
+							.getWorkbench().getActiveWorkbenchWindow()
+							.getShell(),
+							UIText.BranchOperationUI_DetachedHeadTitle,
+							UIText.BranchOperationUI_DetachedHeadMessage,
+							toggleMessage, false, store,
+							UIPreferences.SHOW_DETACHED_HEAD_WARNING);
+				}
+			}
+		});
+	}
+
+	private boolean shouldCancelBecauseOfRunningLaunches() {
+		if (mode == MODE_CHECKOUT)
+			return false;
+		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+		if (!store
+				.getBoolean(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING))
+			return false;
+
+		ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration();
+		if (launchConfiguration != null) {
+			String[] buttons = new String[] {
+					UIText.BranchOperationUI_Continue,
+					IDialogConstants.CANCEL_LABEL };
+			String message = NLS.bind(UIText.BranchOperationUI_RunningLaunchMessage,
+					launchConfiguration.getName());
+			MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
+					getShell(), UIText.BranchOperationUI_RunningLaunchTitle,
+					null, message, MessageDialog.NONE, buttons, 0,
+					UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
+			int result = continueDialog.open();
+			// cancel
+			if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT)
+				return true;
+			boolean dontWarnAgain = continueDialog.getToggleState();
+			if (dontWarnAgain)
+				store.setValue(
+						UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
+						false);
+		}
+		return false;
+	}
+
+	private ILaunchConfiguration getRunningLaunchConfiguration() {
+		Set<IProject> projects = new HashSet<IProject>(
+				Arrays.asList(ProjectUtil.getProjects(repository)));
+
+		ILaunchManager launchManager = DebugPlugin.getDefault()
+				.getLaunchManager();
+		ILaunch[] launches = launchManager.getLaunches();
+		for (ILaunch launch : launches) {
+			if (launch.isTerminated())
+				continue;
+			ISourceLocator locator = launch.getSourceLocator();
+			if (locator instanceof ISourceLookupDirector) {
+				ISourceLookupDirector director = (ISourceLookupDirector) locator;
+				ISourceContainer[] containers = director.getSourceContainers();
+				if (isAnyProjectInSourceContainers(containers, projects))
+					return launch.getLaunchConfiguration();
+			}
+		}
+		return null;
+	}
+
+	private boolean isAnyProjectInSourceContainers(
+			ISourceContainer[] containers, Set<IProject> projects) {
+		for (ISourceContainer container : containers) {
+			if (container instanceof ProjectSourceContainer) {
+				ProjectSourceContainer projectContainer = (ProjectSourceContainer) container;
+				if (projects.contains(projectContainer.getProject()))
+					return true;
+			}
+			try {
+				boolean found = isAnyProjectInSourceContainers(
+						container.getSourceContainers(), projects);
+				if (found)
+					return true;
+			} catch (CoreException e) {
+				// Ignore the child source containers, continue search
+			}
+		}
+		return false;
+	}
+
 }

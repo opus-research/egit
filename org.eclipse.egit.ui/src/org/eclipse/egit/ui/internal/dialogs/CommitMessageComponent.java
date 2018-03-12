@@ -8,6 +8,7 @@
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2014 IBM Corporation (Daniel Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -43,6 +44,8 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
 import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.text.DocumentEvent;
+import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -395,6 +398,8 @@ public class CommitMessageComponent {
 	 */
 	public void enableListeners(boolean enable) {
 		this.listenersEnabled = enable;
+		if (enable)
+			listener.statusUpdated();
 	}
 
 	/**
@@ -490,11 +495,18 @@ public class CommitMessageComponent {
 	private void addListeners() {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
+		authorText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				if (!listenersEnabled || !authorText.isEnabled())
+					return;
+				listener.statusUpdated();
+			}
+		});
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
 			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled)
+				if (!listenersEnabled || !committerText.isEnabled())
 					return;
 				if (signedOff) {
 					// the commit message is signed
@@ -506,16 +518,21 @@ public class CommitMessageComponent {
 							oldSignOff, newSignOff));
 					oldCommitter = newCommitter;
 				}
+				listener.statusUpdated();
 			}
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
-		commitText.getTextWidget().addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled)
+		commitText.getDocument().addDocumentListener(new IDocumentListener() {
+			public void documentChanged(DocumentEvent event) {
+				if (!listenersEnabled || !commitText.isEnabled())
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
+				listener.statusUpdated();
+			}
+			public void documentAboutToBeChanged(DocumentEvent event) {
+				// nothing to do
 			}
 		});
 	}

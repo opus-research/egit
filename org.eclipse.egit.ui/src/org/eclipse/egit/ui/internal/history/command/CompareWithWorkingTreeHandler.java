@@ -16,12 +16,15 @@ import java.io.IOException;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.ui.IWorkbenchPage;
@@ -33,29 +36,28 @@ import org.eclipse.ui.handlers.HandlerUtil;
 public class CompareWithWorkingTreeHandler extends
 		AbstractHistoryCommandHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IStructuredSelection selection = getSelection(getPage());
+		IStructuredSelection selection = getSelection(event);
 		if (selection.isEmpty())
 			return null;
 
 		// Even if there's more than one element, only consider the first
 		RevCommit commit = (RevCommit) selection.getFirstElement();
-		Object input = getPage().getInputInternal().getSingleFile();
+		Object input = getPage(event).getInputInternal().getSingleFile();
 		Repository repository = getRepository(event);
 
 		try {
+			String dstRevCommit = commit.getId().getName();
 			IWorkbenchPage workBenchPage = HandlerUtil
 					.getActiveWorkbenchWindowChecked(event).getActivePage();
 			if (input instanceof IFile) {
-				IFile file = (IFile) input;
-				if (CompareUtils.canDirectlyOpenInCompare(file))
-					CompareUtils.compareWorkspaceWithRef(repository, file,
-							commit.getId().getName(), workBenchPage);
-				else
-					GitModelSynchronize.synchronizeModelWithWorkspace(file,
-							repository, commit.getName());
-			} else
-				CompareUtils.compareLocalWithRef(repository, (File) input,
-						commit.getId().getName(), workBenchPage);
+				IResource[] resources = new IResource[] { (IFile) input, };
+				CompareUtils.compare(resources, repository, Constants.HEAD,
+						dstRevCommit, true, workBenchPage);
+			} else {
+				IPath location = new Path(((File) input).getAbsolutePath());
+				CompareUtils.compare(location, repository, Constants.HEAD,
+						dstRevCommit, true, workBenchPage);
+			}
 		} catch (IOException e) {
 			Activator.handleError(
 					UIText.CompareWithRefAction_errorOnSynchronize, e, true);

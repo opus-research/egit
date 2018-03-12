@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +27,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
@@ -39,6 +39,7 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -213,10 +214,8 @@ class PushToGerritPage extends WizardPage {
 		}
 	}
 
-	void doPush(IProgressMonitor monitor) {
+	void doPush() {
 		try {
-			int timeout = Activator.getDefault().getPreferenceStore()
-					.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			URIish uri = new URIish(uriCombo.getText());
 			Ref currentHead = repository.getRef(Constants.HEAD);
 			RemoteRefUpdate update = new RemoteRefUpdate(repository,
@@ -226,22 +225,35 @@ class PushToGerritPage extends WizardPage {
 			PushOperationSpecification spec = new PushOperationSpecification();
 
 			spec.addURIRefUpdates(uri, Arrays.asList(update));
-			PushOperationUI op = new PushOperationUI(repository, spec, timeout,
+			final PushOperationUI op = new PushOperationUI(repository, spec,
 					false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
-			PushOperationResult result = op.execute(monitor);
+			final PushOperationResult[] result = new PushOperationResult[1];
+			getContainer().run(true, true, new IRunnableWithProgress() {
+				public void run(IProgressMonitor monitor)
+						throws InvocationTargetException, InterruptedException {
+					try {
+						result[0] = op.execute(monitor);
+					} catch (CoreException e) {
+						throw new InvocationTargetException(e);
+					}
+				}
+			});
 			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
-					result, op.getDestinationString());
+					result[0], op.getDestinationString());
 			dlg.showConfigureButton(false);
 			dlg.open();
 			storeLastUsedUri(uriCombo.getText());
 			storeLastUsedBranch(branchText.getText());
-		} catch (CoreException e) {
-			Activator.handleError(e.getMessage(), e, true);
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
+		} catch (InvocationTargetException e) {
+			Throwable cause = e.getCause();
+			Activator.handleError(cause.getMessage(), cause, true);
+		} catch (InterruptedException e) {
+			// cancellation
 		}
 	}
 

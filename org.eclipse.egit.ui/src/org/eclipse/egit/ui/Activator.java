@@ -28,13 +28,13 @@ import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
@@ -224,8 +224,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		setupProxy(context);
 		setupRepoChangeScanner();
 		setupRepoIndexRefresh();
-		if (PlatformUI.isWorkbenchRunning())
-			setupFocusHandling();
+		setupFocusHandling();
 		setupCredentialsProvider();
 		ConfigurationChecker.checkConfiguration();
 	}
@@ -236,8 +235,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 	static boolean isActive() {
 		final AtomicBoolean ret = new AtomicBoolean();
-		if (!PlatformUI.isWorkbenchRunning())
-			return false;
 		final Display display = PlatformUI.getWorkbench().getDisplay();
 		if (display.isDisposed())
 			return false;
@@ -329,7 +326,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * Refresh projects in repositories that we suspect may have resource
 	 * changes.
 	 */
-	static class ResourceRefreshJob extends Job implements IndexChangedListener {
+	static class ResourceRefreshJob extends WorkspaceJob implements
+			IndexChangedListener {
 
 		ResourceRefreshJob() {
 			super(UIText.Activator_refreshJobName);
@@ -339,7 +337,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		private Set<Repository> repositoriesChanged = new HashSet<Repository>();
 
 		@Override
-		protected IStatus run(IProgressMonitor monitor) {
+		public IStatus runInWorkspace(IProgressMonitor monitor) {
 			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
 			monitor.beginTask(UIText.Activator_refreshingProjects, projects.length);
 
@@ -424,7 +422,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * A Job that looks at the repository meta data and triggers a refresh of
 	 * the resources in the affected projects.
 	 */
-	static class RepositoryChangeScanner extends Job {
+	static class RepositoryChangeScanner extends WorkspaceJob {
 		RepositoryChangeScanner() {
 			super(UIText.Activator_repoScanJobName);
 		}
@@ -439,7 +437,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 
 		@Override
-		protected IStatus run(IProgressMonitor monitor) {
+		public IStatus runInWorkspace(IProgressMonitor monitor) {
 			Repository[] repos = org.eclipse.egit.core.Activator.getDefault()
 					.getRepositoryCache().getAllRepositories();
 			if (repos.length == 0)
@@ -500,6 +498,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		rcs.schedule(RepositoryChangeScanner.REPO_SCAN_INTERVAL);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void setupSSH(final BundleContext context) {
 		final ServiceReference ssh;
 

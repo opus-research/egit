@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -19,6 +20,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.variables.IStringVariableManager;
@@ -34,6 +36,7 @@ import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
 import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
@@ -44,12 +47,14 @@ import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -78,14 +83,18 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
+import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchCommandConstants;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.keys.IBindingService;
+import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * Some utilities for UI code
@@ -188,6 +197,16 @@ public class UIUtils {
 	public static Font getItalicFont(final String id) {
 		return PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
 				.getFontRegistry().getItalic(id);
+	}
+
+	/**
+	 * @return the indent of controls that depend on the previous control (e.g.
+	 *         a checkbox that is only enabled when the checkbox above it is
+	 *         checked)
+	 */
+	public static int getControlIndent() {
+		// Eclipse 4.3: Use LayoutConstants.getIndent once we depend on 4.3
+		return 20;
 	}
 
 	/**
@@ -694,9 +713,51 @@ public class UIUtils {
 	 * @see IWorkbench#saveAllEditors(boolean)
 	 */
 	public static boolean saveAllEditors(Repository repository) {
+		return saveAllEditors(repository, null);
+	}
+
+	/**
+	 * Prompt for saving all dirty editors for resources in the working
+	 * directory of the specified repository.
+	 *
+	 * If at least one file was saved, a dialog is displayed, asking the user if
+	 * she wants to cancel the operation. Cancelling allows the user to do
+	 * something with the newly saved files, before possibly restarting the
+	 * operation.
+	 *
+	 * @param repository
+	 * @param cancelConfirmationQuestion
+	 *            A string asking the user if she wants to cancel the operation.
+	 *            May be null to not open a dialog, but rather always continue.
+	 * @return true, if the user opted to continue, false otherwise
+	 * @see IWorkbench#saveAllEditors(boolean)
+	 */
+	public static boolean saveAllEditors(Repository repository,
+			String cancelConfirmationQuestion) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
-		return workbench.saveAll(window, window, new RepositorySaveableFilter(repository), true);
+		RepositorySaveableFilter filter = new RepositorySaveableFilter(
+				repository);
+		boolean success = workbench.saveAll(window, window, filter, true);
+		if (success && cancelConfirmationQuestion != null && filter.isAnythingSaved()){
+			// allow the user to cancel the operation to first do something with
+			// the newly saved files
+			String[] buttons = new String[] { IDialogConstants.YES_LABEL,
+					IDialogConstants.NO_LABEL };
+			MessageDialog dialog = new MessageDialog(window.getShell(),
+					UIText.CancelAfterSaveDialog_Title, null,
+					cancelConfirmationQuestion,
+					MessageDialog.QUESTION, buttons, 0) {
+				protected int getShellStyle() {
+					return (SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL
+							| SWT.SHEET | getDefaultOrientation());
+				}
+			};
+			int choice = dialog.open();
+			if (choice != 1) // user clicked "yes" or closed dialog -> cancel
+				return false;
+		}
+		return success;
 	}
 
 	/**
@@ -719,26 +780,34 @@ public class UIUtils {
 	 */
 	public static StyleRange[] getHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		List<StyleRange> styleRangeList = new ArrayList<StyleRange>();
+		HashSet<StyleRange> styleRangeList = new HashSet<StyleRange>();
 		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
-			for (int i = 0; i < textViewer.getTextWidget().getText().length(); i++) {
-				IRegion region = new Region(i, 0);
-				for (IHyperlinkDetector hyperLinkDetector : hyperlinkDetectors) {
-					IHyperlink[] hyperlinks = hyperLinkDetector
-							.detectHyperlinks(textViewer, region, true);
-					if (hyperlinks != null) {
-						for (IHyperlink hyperlink : hyperlinks) {
-							StyleRange hyperlinkStyleRange = new StyleRange(
-									hyperlink.getHyperlinkRegion().getOffset(),
-									hyperlink.getHyperlinkRegion().getLength(),
-									Display.getDefault().getSystemColor(
-											SWT.COLOR_BLUE), Display
-											.getDefault().getSystemColor(
-													SWT.COLOR_WHITE));
-							hyperlinkStyleRange.underline = true;
-							styleRangeList.add(hyperlinkStyleRange);
+			IDocument doc = textViewer.getDocument();
+			for (int line = 0; line < doc.getNumberOfLines(); line++) {
+				try {
+					IRegion region = doc.getLineInformation(line);
+					for (IHyperlinkDetector hyperLinkDetector : hyperlinkDetectors) {
+						IHyperlink[] hyperlinks = hyperLinkDetector
+								.detectHyperlinks(textViewer, region, true);
+						if (hyperlinks != null) {
+							for (IHyperlink hyperlink : hyperlinks) {
+								StyleRange hyperlinkStyleRange = new StyleRange(
+										hyperlink.getHyperlinkRegion()
+												.getOffset(), hyperlink
+												.getHyperlinkRegion()
+												.getLength(), Display
+												.getDefault().getSystemColor(
+														SWT.COLOR_BLUE),
+										Display.getDefault().getSystemColor(
+												SWT.COLOR_WHITE));
+								hyperlinkStyleRange.underline = true;
+								styleRangeList.add(hyperlinkStyleRange);
+							}
 						}
 					}
+				} catch (BadLocationException e) {
+					Activator.logError(e.getMessage(), e);
+					break;
 				}
 			}
 		}
@@ -804,5 +873,34 @@ public class UIUtils {
 		Point minSize = button.computeSize(SWT.DEFAULT, SWT.DEFAULT, true);
 		data.widthHint = Math.max(widthHint, minSize.x);
 		button.setLayoutData(data);
+	}
+
+	/**
+	 * Locates the current part and selection and fires
+	 * {@link ISelectionListener#selectionChanged(IWorkbenchPart, ISelection)}
+	 * on the passed listener.
+	 *
+	 * @param serviceLocator
+	 * @param selectionListener
+	 */
+	public static void notifySelectionChangedWithCurrentSelection(
+			ISelectionListener selectionListener, IServiceLocator serviceLocator) {
+		IHandlerService handlerService = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
+		IEvaluationContext state = handlerService.getCurrentState();
+		// This seems to be the most reliable way to get the active part, it
+		// also returns a part when it is called while creating a view that is
+		// being shown.Getting the active part through the active workbench
+		// window returned null in that case.
+		Object partObject = state.getVariable(ISources.ACTIVE_PART_NAME);
+		Object selectionObject = state
+				.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
+		if (partObject instanceof IWorkbenchPart
+				&& selectionObject instanceof ISelection) {
+			IWorkbenchPart part = (IWorkbenchPart) partObject;
+			ISelection selection = (ISelection) selectionObject;
+			if (!selection.isEmpty())
+				selectionListener.selectionChanged(part, selection);
+		}
 	}
 }

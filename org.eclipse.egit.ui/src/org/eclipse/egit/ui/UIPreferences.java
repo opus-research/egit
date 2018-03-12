@@ -5,6 +5,7 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2013, Tobias Pfeifer <to.pfeifer@sap.com>
+ * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -152,6 +153,9 @@ public class UIPreferences {
 	/** */
 	public static final String REMOTE_CONNECTION_TIMEOUT = "remote_connection_timeout"; //$NON-NLS-1$
 
+	/** Holds true if the logical model should be used. */
+	public static final String USE_LOGICAL_MODEL = "enable_logical_model"; //$NON-NLS-1$
+
 	/**
 	 * When reading this preference, use
 	 * {@link UIUtils#getDefaultRepositoryDir()} instead (for variable
@@ -172,13 +176,23 @@ public class UIPreferences {
 	/** */
 	public static final String SHOW_DETACHED_HEAD_WARNING = "show_detached_head_warning"; //$NON-NLS-1$
 	/** */
+	public static final String SHOW_CHECKOUT_CONFIRMATION = "show_checkout_confirmation"; //$NON-NLS-1$
+	/** */
+	public static final String SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING = "show_running_launch_on_checkout_warning"; //$NON-NLS-1$
+
+	/** */
 	public static final String TREE_COMPARE_SHOW_EQUALS = "CompareTreeView_ShowEquals"; //$NON-NLS-1$
+	/** */
+	public static final String TREE_COMPARE_COMPARE_MODE = "CompareTreeView_compare_mode"; //$NON-NLS-1$
+
 	/** */
 	public static final String HISTORY_MAX_NUM_COMMITS = "HistoryView_MaxNumberOfCommmits"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_MAX_TAG_LENGTH = "HistoryView_MaxTagLength"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_MAX_BRANCH_LENGTH = "HistoryView_MaxBranchLength"; //$NON-NLS-1$
+	/** */
+	public static final String HISTORY_CUT_AT_START = "HistoryView_CutAtStart"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_SHOW_TAG_SEQUENCE = "HistoryView_ShowTagSequence"; //$NON-NLS-1$
 	/** */

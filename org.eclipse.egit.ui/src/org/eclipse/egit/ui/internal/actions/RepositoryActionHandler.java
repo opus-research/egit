@@ -6,6 +6,7 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, 2013 François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2013 Laurent Goubet <laurent.goubet@obeo.fr>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,32 +38,31 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.text.TextSelection;
+import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
-import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.NullProgressMonitor;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -90,7 +90,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *            the new selection
 	 */
 	public void setSelection(ISelection selection) {
-		mySelection = convertSelection(null, selection);
+		mySelection = convertSelection(selection);
 	}
 
 	/**
@@ -191,21 +191,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * List the projects with selected resources, if all projects are connected
 	 * to a Git repository.
 	 *
-	 * @param event
-	 *
-	 * @return the tracked projects affected by the current resource selection
-	 * @throws ExecutionException
-	 */
-	protected IProject[] getProjectsInRepositoryOfSelectedResources(
-			ExecutionEvent event) throws ExecutionException {
-		IStructuredSelection selection = getSelection(event);
-		return getProjectsInRepositoryOfSelectedResources(selection);
-	}
-
-	/**
-	 * List the projects with selected resources, if all projects are connected
-	 * to a Git repository.
-	 *
 	 * @return the tracked projects affected by the current resource selection
 	 */
 	protected IProject[] getProjectsInRepositoryOfSelectedResources() {
@@ -264,6 +249,14 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected Repository getRepository() {
 		IStructuredSelection selection = getSelection();
+		return getRepository(selection);
+	}
+
+	static Repository getRepository(IEvaluationContext evaluationContext) {
+		return getRepository(getSelection(evaluationContext));
+	}
+
+	private static Repository getRepository(IStructuredSelection selection) {
 		return getRepository(false, selection, null);
 	}
 
@@ -279,7 +272,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *            must be provided if warn = true
 	 * @return repository for current project, or null
 	 */
-	private Repository getRepository(boolean warn,
+	private static Repository getRepository(boolean warn,
 			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
 		for (IPath location : getSelectedLocations(selection)) {
@@ -396,26 +389,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @throws ExecutionException
 	 *             if the selection can't be determined
 	 */
-	protected IStructuredSelection getSelection(ExecutionEvent event)
+	protected static IStructuredSelection getSelection(ExecutionEvent event)
 			throws ExecutionException {
 		if (event == null)
 			throw new IllegalArgumentException("event must not be NULL"); //$NON-NLS-1$
-		Object selection = HandlerUtil.getActiveMenuSelection(event);
-		if (selection == null)
-			selection = HandlerUtil.getCurrentSelectionChecked(event);
-		if (selection instanceof TextSelection) {
-			IEditorInput editorInput = (IEditorInput) HandlerUtil.getVariable(
-					event, ISources.ACTIVE_EDITOR_INPUT_NAME);
-			IResource resource = ResourceUtil.getResource(editorInput);
-			if (resource != null)
-				return new StructuredSelection(resource);
-
-			resource = ResourceUtil.getFile(editorInput);
-			if (resource != null)
-				return new StructuredSelection(resource);
-		}
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
+		Object context = event.getApplicationContext();
+		if (context instanceof IEvaluationContext)
+			return getSelection((IEvaluationContext) context);
 		return StructuredSelection.EMPTY;
 	}
 
@@ -426,36 +406,53 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		// if the selection was set explicitly, use it
 		if (mySelection != null)
 			return mySelection;
-		return convertSelection(evaluationContext, null);
+		return getSelection(evaluationContext);
 	}
 
-	private IStructuredSelection convertSelection(IEvaluationContext aContext,
-			Object aSelection) {
-		IEvaluationContext ctx;
-		if (aContext == null && aSelection == null)
+	private static IStructuredSelection convertSelection(ISelection selection) {
+		if (selection instanceof IStructuredSelection)
+			return (IStructuredSelection) selection;
+		else if (selection instanceof ITextSelection)
+			return getSelectionFromEditorInput(getEvaluationContext());
+		return StructuredSelection.EMPTY;
+	}
+
+	private static IStructuredSelection getSelection(IEvaluationContext context) {
+		if (context == null)
 			return StructuredSelection.EMPTY;
-		else
-			ctx = aContext;
-		Object selection;
-		if (aSelection == null && ctx != null) {
-			selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (!(selection instanceof ISelection))
-				selection = ctx
-						.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
-		} else if (aSelection != null)
-			selection = aSelection;
-		else
-			return StructuredSelection.EMPTY;
-		if (selection instanceof TextSelection) {
-			if (ctx == null)
-				ctx = getEvaluationContext();
-			IResource resource = ResourceUtil.getResource(ctx
-					.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME));
+
+		Object selection = context
+				.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
+		if (!(selection instanceof ISelection))
+			selection = context
+					.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
+
+		if (selection instanceof IStructuredSelection)
+			return (IStructuredSelection) selection;
+		else if (selection instanceof ITextSelection)
+			return getSelectionFromEditorInput(context);
+		return StructuredSelection.EMPTY;
+	}
+
+	private static IStructuredSelection getSelectionFromEditorInput(
+			IEvaluationContext context) {
+		Object object = context.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME);
+		if (!(object instanceof IEditorInput)) {
+			Object editor = context.getVariable(ISources.ACTIVE_EDITOR_NAME);
+			if (editor instanceof IEditorPart)
+				object = ((IEditorPart) editor).getEditorInput();
+		}
+
+		if (object instanceof IEditorInput) {
+			IEditorInput editorInput = (IEditorInput) object;
+			// Note that there is both a getResource(IEditorInput) as well as a
+			// getResource(Object), which don't do the same thing. We explicitly
+			// want the first here.
+			IResource resource = ResourceUtil.getResource(editorInput);
 			if (resource != null)
 				return new StructuredSelection(resource);
 		}
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
+
 		return StructuredSelection.EMPTY;
 	}
 
@@ -463,7 +460,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		this.evaluationContext = (IEvaluationContext) evaluationContext;
 	}
 
-	private IEvaluationContext getEvaluationContext() {
+	private static IEvaluationContext getEvaluationContext() {
 		IEvaluationContext ctx;
 		IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench()
 				.getActiveWorkbenchWindow();
@@ -528,6 +525,14 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	}
 
 	/**
+	 * @return the locations in the selection
+	 */
+	protected IPath[] getSelectedLocations() {
+		IStructuredSelection selection = getSelection();
+		return getSelectedLocations(selection);
+	}
+
+	/**
 	 * @return true if all selected items map to the same repository, false otherwise.
 	 */
 	protected boolean selectionMapsToSingleRepository() {
@@ -550,7 +555,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return result.toArray(new IResource[result.size()]);
 	}
 
-	private IPath[] getSelectedLocations(IStructuredSelection selection) {
+	private static IPath[] getSelectedLocations(IStructuredSelection selection) {
 		Set<IPath> result = new LinkedHashSet<IPath>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
@@ -573,7 +578,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return result.toArray(new IPath[result.size()]);
 	}
 
-	private List<IResource> extractResourcesFromMapping(Object o) {
+	private static List<IResource> extractResourcesFromMapping(Object o) {
 		ResourceMapping mapping = AdapterUtils.adapt(o,
 				ResourceMapping.class);
 		if (mapping != null) {
@@ -685,30 +690,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	protected String getPreviousPath(Repository repository,
 			ObjectReader reader, RevCommit headCommit,
 			RevCommit previousCommit, String path) throws IOException {
-		TreeWalk walk = new TreeWalk(reader);
-		walk.setRecursive(true);
-		walk.addTree(previousCommit.getTree());
-		walk.addTree(headCommit.getTree());
-
-		List<DiffEntry> entries = DiffEntry.scan(walk);
-		if (entries.size() < 2)
+		DiffEntry diffEntry = CompareCoreUtils.getChangeDiffEntry(repository, path,
+				headCommit, previousCommit, reader);
+		if (diffEntry != null)
+			return diffEntry.getOldPath();
+		else
 			return path;
-
-		for (DiffEntry diff : entries)
-			if (diff.getChangeType() == ChangeType.MODIFY
-					&& path.equals(diff.getNewPath()))
-				return path;
-
-		RenameDetector detector = new RenameDetector(repository);
-		detector.addAll(entries);
-		List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
-				NullProgressMonitor.INSTANCE);
-		for (DiffEntry diff : renames)
-			if (diff.getChangeType() == ChangeType.RENAME
-					&& path.equals(diff.getNewPath()))
-				return diff.getOldPath();
-
-		return path;
 	}
 
 	protected List<PreviousCommit> findPreviousCommits() throws IOException {
@@ -718,6 +705,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		String path = RepositoryMapping.getMapping(resource.getProject())
 				.getRepoRelativePath(resource);
 		RevWalk rw = new RevWalk(repository);
+		rw.sort(RevSort.COMMIT_TIME_DESC, true);
+		rw.sort(RevSort.BOUNDARY, true);
 		try {
 			if (path.length() > 0) {
 				DiffConfig diffConfig = repository.getConfig().get(

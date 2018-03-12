@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2014 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,6 +12,7 @@ package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -30,10 +31,8 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.CheckoutEntry;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
@@ -271,29 +270,29 @@ public class RepositoryUtil {
 	/**
 	 * Return a cached UI "name" for a Repository
 	 * <p>
-	 * This uses the name of the parent of the repository's directory.
+	 * This uses the name of the working directory. In case of a bare
+	 * repository, the repository directory name is used.
 	 *
 	 * @param repository
 	 * @return the name
 	 */
 	public String getRepositoryName(final Repository repository) {
-		File gitDir = repository.getDirectory();
-		if (gitDir == null)
+		File dir;
+		// Use working directory name for non-bare repositories
+		if (!repository.isBare())
+			dir = repository.getWorkTree();
+		else
+			dir = repository.getDirectory();
+
+		if (dir == null)
 			return ""; //$NON-NLS-1$
 
-		// Use parent file for non-bare repositories
-		if (!repository.isBare()) {
-			gitDir = gitDir.getParentFile();
-			if (gitDir == null)
-				return ""; //$NON-NLS-1$
-		}
-
 		synchronized (repositoryNameCache) {
-			final String path = gitDir.getPath().toString();
+			final String path = dir.getPath().toString();
 			String name = repositoryNameCache.get(path);
 			if (name != null)
 				return name;
-			name = gitDir.getName();
+			name = dir.getName();
 			repositoryNameCache.put(path, name);
 			return name;
 		}
@@ -351,7 +350,9 @@ public class RepositoryUtil {
 		synchronized (prefs) {
 
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException(MessageFormat.format(
+						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
+						repositoryDir));
 
 			String dirString = getPath(repositoryDir);
 
@@ -514,30 +515,20 @@ public class RepositoryUtil {
 	}
 
 	/**
-	 * Get the fast-forward setting for current branch on the given repository.
+	 * Checks if given repository is in the 'detached HEAD' state.
 	 *
 	 * @param repository
 	 *            the repository to check
-	 * @return the fast-forward mode for the current branch
-	 * @since 3.0
+	 * @return <code>true</code> if the repository is in the 'detached HEAD'
+	 *         state, <code>false</code> if it's not or an error occurred
+	 * @since 3.2
 	 */
-	public FastForwardMode getFastForwardMode(Repository repository) {
-		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
-				.getEnum(ConfigConstants.CONFIG_KEY_MERGE, null,
-						ConfigConstants.CONFIG_KEY_FF,
-						FastForwardMode.Merge.TRUE));
-		ffmode = repository.getConfig().getEnum(
-				ConfigConstants.CONFIG_BRANCH_SECTION,
-				getCurrentBranch(repository),
-				ConfigConstants.CONFIG_KEY_MERGEOPTIONS, ffmode);
-		return ffmode;
-	}
-
-	private String getCurrentBranch(Repository repository) {
+	public static boolean isDetachedHead(Repository repository) {
 		try {
-			return repository.getBranch();
+			return ObjectId.isId(repository.getFullBranch());
 		} catch (IOException e) {
-			return null;
+			Activator.logError(e.getMessage(), e);
 		}
+		return false;
 	}
 }
