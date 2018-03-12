@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
@@ -26,6 +27,7 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -33,11 +35,14 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Resource;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Widget;
+import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
 /**
@@ -430,4 +435,33 @@ public class UIUtils {
 		});
 	}
 
+	/**
+	 * Get editor image for path
+	 *
+	 * @param path
+	 * @return image descriptor
+	 */
+	public static ImageDescriptor getEditorImage(final String path) {
+		if (path != null && path.length() > 0) {
+			final String name = new Path(path).lastSegment();
+			if (name != null)
+				return PlatformUI.getWorkbench().getEditorRegistry()
+						.getImageDescriptor(name);
+		}
+		return PlatformUI.getWorkbench().getSharedImages()
+				.getImageDescriptor(ISharedImages.IMG_OBJ_FILE);
+	}
+
+	/**
+	 * Get size of image descriptor as point.
+	 *
+	 * @param descriptor
+	 * @return size
+	 */
+	public static Point getSize(ImageDescriptor descriptor) {
+		ImageData data = descriptor.getImageData();
+		if (data == null)
+			return new Point(0, 0);
+		return new Point(data.width, data.height);
+	}
 }

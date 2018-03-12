@@ -3309,17 +3309,8 @@
          <enablement>
            <or>
             <instanceof value="org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider"/>
-            <instanceof value="org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob"/>
-            <instanceof value="org.eclipse.egit.ui.internal.synchronize.model.GitModelCacheTree"/>
            </or>
          </enablement>
-	     <dropAssistant
-	             class="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetDropAdapterAssistant"
-	             id="org.eclipse.egit.ui.changeSetDropAssistan">
-	       <possibleDropTargets>
-             <instanceof value="org.eclipse.egit.ui.internal.synchronize.model.GitModelCache"/>
-	       </possibleDropTargets>
-	     </dropAssistant>
 	     <commonSorter
                class="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetSorter"/>
        </navigatorContent>
@@ -3334,7 +3325,7 @@
    <extension point="org.eclipse.ui.navigator.viewer">
        <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
            <popupMenu
-                allowsPlatformContributions="true"
+                allowsPlatformContributions="false"
                 id="org.eclipse.egit.ui.compareSynchronizationMenu">
              <insertionPoint name="gitActions" separator="true"/>
              <insertionPoint name="file"/>
@@ -3676,9 +3667,6 @@
       </context>
    </extension>
    <extension
-         point="org.eclipse.core.expressions.propertyTesters">
-   </extension>
-   <extension
          point="org.eclipse.ui.editors">
       <editor
             class="org.eclipse.egit.ui.internal.commit.CommitEditor"
@@ -3745,26 +3733,42 @@
      <variable
 	   description="%GitVariable_git_dir"
 	   name="git_dir"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable_git_repo_relative_path"
 	   name="git_repo_relative_path"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable__git_work_tree_description"
 	   name="git_work_tree"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable_git_branch_description"
 	   name="git_branch"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
+  </extension>
+  <extension
+        point="org.eclipse.mylyn.tasks.bugs.support">
+        <product featureId="org.eclipse.egit" id="org.eclipse.egit" providerId="org.eclipse"/>
+		<mapping namespace="org.eclipse.egit.ui" productId="org.eclipse.egit">
+			<property name="product" value="EGit"/>
+			<property name="component" value="UI"/>
+		</mapping>
+		<mapping namespace="org.eclipse.egit.core" productId="org.eclipse.egit">
+			<property name="product" value="EGit"/>
+			<property name="component" value="Core"/>
+		</mapping>
+		<mapping namespace="org.eclipse.egit.mylyn" productId="org.eclipse.egit">
+			<property name="product" value="EGit"/>
+			<property name="component" value="Mylyn"/>
+		</mapping>
   </extension>
 </plugin>
