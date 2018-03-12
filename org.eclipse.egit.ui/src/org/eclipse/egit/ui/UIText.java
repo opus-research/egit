@@ -2605,7 +2605,7 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
 
 	/** */
-	public static String RepositoriesView_ClipboardContentNotDirectoryOrURIMessage;
+	public static String RepositoriesView_ClipboardContentNotDirectoryMessage;
 
 	/** */
 	public static String RepositoriesView_ConfirmBranchDeletionMessage;
@@ -3984,6 +3984,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
+
+	/** */
+	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
