@@ -343,48 +343,23 @@ public class ResourceUtil {
 	/**
 	 * Returns a resource handle for this path in the workspace. Note that
 	 * neither the resource nor the result need exist in the workspace : this
-	 * may return inexistent or otherwise non-accessible IResources.
+	 * may return inexistant or otherwise non-accessible IResources.
 	 *
-	 * @param repository
-	 *            The repository within which is tracked this file.
-	 * @param repoRelativePath
-	 *            Repository-relative path of the file we need an handle for.
-	 * @param isFolder
-	 *            <code>true</code> if the file being sought is a folder.
+	 * @param path
+	 *            Path for which we need a resource handle.
 	 * @return The resource handle for the given path in the workspace.
 	 */
-	public static IResource getResourceHandleForLocation(Repository repository,
-			String repoRelativePath, boolean isFolder) {
-		final String workDir = repository.getWorkTree().getAbsolutePath();
-		final IPath path = new Path(workDir + '/' + repoRelativePath);
-		final File file = path.toFile();
-		if (file.exists()) {
-			if (isFolder) {
-				return getContainerForLocation(path);
-			}
-			return getFileForLocation(path);
-		}
+	@NonNull
+	public static IResource getResourceHandleForLocation(@NonNull IPath path) {
+		final IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace()
+				.getRoot();
 
-		// This is a file that no longer exists locally, yet we still need to
-		// determine an IResource for it.
-		// Try and find a Project in the workspace which path is a prefix of the
-		// file we seek and which is mapped to the current repository.
-		final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		for (IProject project : root.getProjects()) {
-			if (RepositoryProvider.getProvider(project, GitProvider.ID) != null) {
-				final IPath projectLocation = project.getLocation();
-				if (projectLocation != null && projectLocation.isPrefixOf(path)) {
-					final IPath projectRelativePath = path
-							.makeRelativeTo(projectLocation);
-					if (isFolder) {
-						return project.getFolder(projectRelativePath);
-					} else {
-						return project.getFile(projectRelativePath);
-					}
-				}
-			}
-		}
-		return null;
+		final IResource resource;
+		if (path.segmentCount() > 1)
+			resource = workspaceRoot.getFile(path);
+		else
+			resource = workspaceRoot.getProject(path.toString());
+		return resource;
 	}
 
 	/**
@@ -555,25 +530,24 @@ public class ResourceUtil {
 		IndexDiffCacheEntry indexDiffCacheEntry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(repository);
+		if (indexDiffCacheEntry == null) {
+			return;
+		}
 		IndexDiffData indexDiffData = indexDiffCacheEntry.getIndexDiff();
 		if (indexDiffData != null) {
 			Collection<IResource> changedResources = indexDiffData
 					.getChangedResources();
-			if (changedResources != null) {
-				for (IResource changedResource : changedResources) {
-					if (changedResource instanceof IFile
-							&& changedResource.exists()) {
-						try {
-							ResourceUtil.saveLocalHistory(changedResource);
-						} catch (CoreException e) {
-							// Ignore error. Failure to save local history must
-							// not interfere with the operation.
-							Activator
-									.logError(
-											MessageFormat
-													.format(CoreText.ResourceUtil_SaveLocalHistoryFailed,
-															changedResource), e);
-						}
+			for (IResource changedResource : changedResources) {
+				if (changedResource instanceof IFile
+						&& changedResource.exists()) {
+					try {
+						ResourceUtil.saveLocalHistory(changedResource);
+					} catch (CoreException e) {
+						// Ignore error. Failure to save local history must
+						// not interfere with the operation.
+						Activator.logError(MessageFormat.format(
+								CoreText.ResourceUtil_SaveLocalHistoryFailed,
+								changedResource), e);
 					}
 				}
 			}

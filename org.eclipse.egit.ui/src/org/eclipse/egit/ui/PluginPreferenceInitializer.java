@@ -4,6 +4,7 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,14 +13,11 @@
  *******************************************************************************/
 package org.eclipse.egit.ui;
 
-import java.io.File;
-
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.history.FindToolbar;
 import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jgit.util.FS;
 
 /**
  * Plugin extension point to initialize the plugin runtime preferences.
@@ -81,7 +79,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 
 		store.setDefault(UIPreferences.REFESH_ON_INDEX_CHANGE, true);
 		store.setDefault(UIPreferences.REFESH_ONLY_WHEN_ACTIVE, true);
-		store.setDefault(UIPreferences.DEFAULT_REPO_DIR, new File(FS.DETECTED.userHome(), "git").getPath()); //$NON-NLS-1$
+
 		store.setDefault(UIPreferences.SHOW_REBASE_CONFIRM, true);
 		store.setDefault(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, true);
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, true);
@@ -106,11 +104,13 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.STAGING_VIEW_PRESENTATION,
 				StagingView.Presentation.LIST.name());
 		store.setDefault(UIPreferences.STAGING_VIEW_FILENAME_MODE, true);
+		store.setDefault(UIPreferences.STAGING_VIEW_COMPARE_MODE, true);
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);
 		store.setDefault(UIPreferences.CHECKOUT_PROJECT_RESTORE, true);
 		store.setDefault(UIPreferences.HISTORY_MAX_TAG_LENGTH, 18);
 		store.setDefault(UIPreferences.HISTORY_MAX_BRANCH_LENGTH, 18);
+		store.setDefault(UIPreferences.HISTORY_MAX_DIFF_LINES, 1000);
 		store.setDefault(UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG, true);
 		store.setDefault(UIPreferences.MERGE_MODE, "2"); //$NON-NLS-1$
 		store.setDefault(UIPreferences.USE_LOGICAL_MODEL, true);

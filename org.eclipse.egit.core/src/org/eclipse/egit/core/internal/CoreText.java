@@ -80,6 +80,15 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
+	public static String ConnectProviderOperation_ConnectErrors;
+
+	/** */
+	public static String ConnectProviderOperation_NoRepositoriesError;
+
+	/** */
+	public static String ConnectProviderOperation_UnexpectedRepositoryError;
+
+	/** */
 	public static String ContainerTreeIterator_DeletedFile;
 
 	/** */
@@ -177,6 +186,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RepositoryFinder_finding;
+
+	/** */
+	public static String RepositoryFinder_ResourceDoesNotExist;
 
 	/** */
 	public static String RepositoryMapping_ExceptionSubmoduleWalk;
@@ -414,18 +426,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String SquashCommitsOperation_squashing;
-
-	/** */
-	public static String RecursiveModelMerger_AdaptError;
-
-	/** */
-	public static String RecursiveModelMerger_RefreshError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationInterrupted;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

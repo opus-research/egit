@@ -19,6 +19,7 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -482,13 +483,9 @@ public class TestRepository {
 	public IFile getIFile(IProject project, File file) throws CoreException {
 		String relativePath = getRepoRelativePath(file.getAbsolutePath());
 
-		// In case the project is not at the root of the repository
-		// we need to remove the whole path before the project name.
-		int index = relativePath.indexOf(project.getName());
-		if (index >= 0) {
-			relativePath = relativePath.substring(index
-					+ project.getName().length());
-		}
+		String quotedProjectName = Pattern.quote(project.getName());
+		relativePath = relativePath.replaceFirst(quotedProjectName, "");
+
 		IFile iFile = project.getFile(relativePath);
 		iFile.refreshLocal(0, null);
 
