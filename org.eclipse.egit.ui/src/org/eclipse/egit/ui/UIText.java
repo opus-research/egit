@@ -178,10 +178,16 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
+	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
+
+	/** */
 	public static String GerritConfigurationPage_configurePushToGerrit;
 
 	/** */
 	public static String GerritConfigurationPage_errorBranchName;
+
+	/** */
+	public static String GerritConfigurationPage_groupFetch;
 
 	/** */
 	public static String GerritConfigurationPage_groupPush;
@@ -556,6 +562,12 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
 
 	/** */
+	public static String GitPreferenceRoot_SecureStoreGroupLabel;
+
+	/** */
+	public static String GitPreferenceRoot_SecureStoreUseByDefault;
+
+	/** */
 	public static String GitPreferenceRoot_SynchronizeView;
 
 	/** */
@@ -785,6 +797,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CheckoutDialog_Message;
+
+	/** */
+	public static String CheckoutDialog_OkCheckout;
 
 	/** */
 	public static String CheckoutDialog_Title;
@@ -1478,6 +1493,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResourceHistory_toggleRelativeDate;
+
+	/** */
+	public static String ResourceHistory_toggleShowNotes;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
@@ -2441,6 +2459,30 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsTitle;
+
+	/** */
+	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
+
+	/** */
+	public static String CheckoutDialog_ErrorCouldNotDeleteRef;
+
+	/** */
+	public static String CheckoutDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String CheckoutDialog_QuestionNewBranchTitle;
+
+	/** */
+	public static String CheckoutDialog_QuestionNewBranchNameMessage;
+
+	/** */
+	public static String CheckoutDialog_NewBranch;
+
+	/** */
+	public static String CheckoutDialog_Rename;
+
+	/** */
+	public static String CheckoutDialog_Delete;
 
 	/** */
 	public static String CommitDialogPreferencePage_title;
