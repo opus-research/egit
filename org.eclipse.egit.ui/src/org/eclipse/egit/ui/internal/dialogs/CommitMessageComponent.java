@@ -675,7 +675,7 @@ public class CommitMessageComponent {
 	}
 
 	private int findOffsetOfChangeIdLine(String message) {
-		return ChangeIdUtil.indexOfChangeId(message, Text.DELIMITER);
+		return message.indexOf(Text.DELIMITER + "Change-Id: I"); //$NON-NLS-1$
 	}
 
 	private void updateChangeIdButton() {
