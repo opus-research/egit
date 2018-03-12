@@ -2803,6 +2803,9 @@ public class UIText extends NLS {
 	public static String RepositoriesViewLabelProvider_RemoteTrackingNodetext;
 
 	/** */
+	public static String RepositoriesViewLabelProvider_SubmodulesNodeText;
+
+	/** */
 	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
 
 	/** */
@@ -2918,6 +2921,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreateGeneralProjectPage_ProjectNameLabel;
+
+	/** */
+	public static String GitCreatePatchAction_cannotCreatePatch;
+
+	/** */
+	public static String GitCreatePatchAction_workingTreeClean;
 
 	/** */
 	public static String GitCreatePatchWizard_Browse;
