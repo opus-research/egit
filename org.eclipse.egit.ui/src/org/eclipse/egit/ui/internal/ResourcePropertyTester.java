@@ -36,9 +36,6 @@ public class ResourcePropertyTester extends PropertyTester {
 					.getProject());
 			return mapping != null
 					&& SAFE == mapping.getRepository().getRepositoryState();
-		} else if ("isContainer".equals(property)) { //$NON-NLS-1$
-			int type = res.getType();
-			return type == IResource.FOLDER || type == IResource.PROJECT;
 		}
 		return false;
 	}

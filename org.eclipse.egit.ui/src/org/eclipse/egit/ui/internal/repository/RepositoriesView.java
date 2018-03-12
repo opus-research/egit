@@ -208,13 +208,6 @@ public class RepositoriesView extends CommonNavigator {
 				.getCommand("org.eclipse.egit.ui.RepositoriesLinkWithSelection"); //$NON-NLS-1$
 		reactOnSelection = (Boolean) command.getState(
 				RegistryToggleState.STATE_ID).getValue();
-
-		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
-				.getService(IWorkbenchSiteProgressService.class);
-		if (service != null) {
-			service.showBusyForFamily(JobFamilies.REPO_VIEW_REFRESH);
-			service.showBusyForFamily(JobFamilies.CLONE);
-		}
 	}
 
 	@Override
@@ -576,10 +569,6 @@ public class RepositoriesView extends CommonNavigator {
 					}
 				}
 			}
-		}
-		if(context.getInput() instanceof IFileEditorInput) {
-			IFileEditorInput input = (IFileEditorInput) context.getInput();
-			showResource(input.getFile());
 		}
 		return false;
 	}

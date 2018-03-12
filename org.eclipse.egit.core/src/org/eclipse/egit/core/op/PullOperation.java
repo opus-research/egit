@@ -32,7 +32,6 @@ import org.eclipse.jgit.api.errors.DetachedHeadException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidConfigurationException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 
@@ -93,11 +92,8 @@ public class PullOperation implements IEGitOperation {
 						results.put(repository,
 								Activator.error(e.getMessage(), e));
 					} catch (JGitInternalException e) {
-						Throwable cause = e.getCause();
-						if (cause == null || !(cause instanceof TransportException))
-							cause = e;
 						results.put(repository,
-								Activator.error(cause.getMessage(), cause));
+								Activator.error(e.getMessage(), e));
 					} finally {
 						mymonitor.worked(1);
 					}

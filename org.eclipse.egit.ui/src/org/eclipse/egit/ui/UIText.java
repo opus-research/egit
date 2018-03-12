@@ -97,9 +97,6 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
-	public static String RemoveFromIndexAction_removingFiles;
-
-	/** */
 	public static String BlameInformationControl_Author;
 
 	/** */
@@ -574,9 +571,6 @@ public class UIText extends NLS {
 	public static String GitProjectPropertyPage_LabelWorkdir;
 
 	/** */
-	public static String GitProjectPropertyPage_UnableToGetCommit;
-
-	/** */
 	public static String GitProjectPropertyPage_ValueEmptyRepository;
 
 	/** */
@@ -821,9 +815,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CherryPickHandler_IndexDirty;
-
-	/** */
-	public static String CherryPickHandler_JobName;
 
 	/** */
 	public static String CherryPickHandler_unknown;
@@ -1136,24 +1127,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefContentProposal_unknownObject;
-
-	/** */
-	public static String ReflogView_ErrorOnOpenCommit;
-
-	/** */
-	public static String ReflogView_FromColumnHeader;
-
-	/** */
-	public static String ReflogView_MessageColumnHeader;
-
-	/** */
-	public static String ReflogView_ToColumnHeader;
-
-	/** */
-	public static String RefSelectionDialog_Messsage;
-
-	/** */
-	public static String RefSelectionDialog_Title;
 
 	/** */
 	public static String RefSpecDialog_AutoSuggestCheckbox;
@@ -1546,9 +1519,6 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_notFound;
 
 	/** */
-	public static String PullOperationUI_ConnectionProblem;
-
-	/** */
 	public static String PullOperationUI_NotTriedMessage;
 
 	/** */
@@ -1556,9 +1526,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PullOperationUI_PullErrorWindowTitle;
-
-	/** */
-	public static String PullOperationUI_PullFailed;
 
 	/** */
 	public static String PullOperationUI_PullingMultipleTaskName;
@@ -1765,16 +1732,10 @@ public class UIText extends NLS {
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
-	public static String CommitDialog_ContentAssist;
-
-	/** */
 	public static String CommitDialog_Files;
 
 	/** */
 	public static String CommitDialog_Message;
-
-	/** */
-	public static String CommitDialog_MessageNoFilesSelected;
 
 	/** */
 	public static String CommitDialog_Path;
@@ -1886,12 +1847,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SpellCheckingMessageArea_selectAll;
-
-	/** */
-	public static String CommitMessageComponent_MessageInvalidAuthor;
-
-	/** */
-	public static String CommitMessageComponent_MessageInvalidCommitter;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -2614,7 +2569,7 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
 
 	/** */
-	public static String RepositoriesView_ClipboardContentNotDirectoryOrURIMessage;
+	public static String RepositoriesView_ClipboardContentNotDirectoryMessage;
 
 	/** */
 	public static String RepositoriesView_ConfirmBranchDeletionMessage;
@@ -2803,9 +2758,6 @@ public class UIText extends NLS {
 	public static String GitCreatePatchWizard_Clipboard;
 
 	/** */
-	public static String GitCreatePatchWizard_ContextMustBePositiveInt;
-
-	/** */
 	public static String GitCreatePatchWizard_CreatePatchTitle;
 
 	/** */
@@ -2842,9 +2794,6 @@ public class UIText extends NLS {
 	public static String GitCreatePatchWizard_FilesystemDirectoryNotExistsError;
 
 	/** */
-	public static String GitCreatePatchWizard_LinesOfContext;
-
-	/** */
 	public static String GitCreateProjectViaWizardWizard_AbortedMessage;
 
 	/** */
@@ -2861,12 +2810,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitImportWizard_WizardTitle;
-
-	/** */
-	public static String GitScopeOperation_couldNotDetermineState;
-
-	/** */
-	public static String GitScopeOperation_GitScopeManager;
 
 	/** */
 	public static String GitSelectRepositoryPage_AddButton;
@@ -2987,9 +2930,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MultiPullResultDialog_OkStatus;
-
-	/** */
-	public static String MultiPullResultDialog_FailedStatus;
 
 	/** */
 	public static String MultiPullResultDialog_OverallStatusColumnHeader;
@@ -3143,12 +3083,6 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_calculatingChanges;
 
 	/** */
-	public static String CommitActionHandler_errorBuildingScope;
-
-	/** */
-	public static String CommitActionHandler_lookingForChanges;
-
-	/** */
 	public static String CommitActionHandler_repository;
 
 	/** */
@@ -3236,12 +3170,6 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_OpenCommitLabel;
 
 	/** */
-	public static String CommitGraphTable_UnableToCreatePatch;
-
-	/** */
-	public static String CommitGraphTable_UnableToWritePatch;
-
-	/** */
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
@@ -3258,9 +3186,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_fetchChangesFromRemote;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
@@ -3456,9 +3381,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
-
-	/** */
-	public static String RevertHandler_JobName;
 
 	/** */
 	public static String RevertHandler_NoRevertTitle;
@@ -3764,9 +3686,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
-	public static String CommitHelper_couldNotFindMergeMsg;
-
-	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -3884,9 +3803,6 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
-	public static String GitLabelProvider_UnableToRetrieveLabel;
-
-	/** */
 	public static String GitVariableResolver_InternalError;
 
 	/** */
@@ -3900,9 +3816,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_UnstagedChanges;
-
-	/** */
-	public static String StagingView_ShowFileNamesFirst;
 
 	/** */
 	public static String StagingView_StagedChanges;
@@ -3945,9 +3858,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_OpenNewCommits;
-
-	/** */
-	public static String StagingView_ColumnLayout;
 
 	/** */
 	public static String StagingView_IndexDiffReload;
@@ -3996,9 +3906,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
-
-	/** */
-	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
