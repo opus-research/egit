@@ -11,9 +11,6 @@ package org.eclipse.egit.ui.common;
 
 import static org.eclipse.swtbot.swt.finder.SWTBotAssert.assertText;
 import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellCloses;
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
 
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -49,16 +46,11 @@ public class WorkingCopyPage {
 		bot.waitUntil(shellCloses(shell), 120000);
 	}
 
-	@SuppressWarnings("boxing")
-	public void assertWorkingCopyExists(String uri) {
-		// get the destination directory from the wizard
+	public void assertWorkingCopyExists() {
 		String dirName = bot.textWithLabel("Directory:").getText();
-		File dir = new File(dirName);
-
-		// wait for the clone to finish
-		waitForCreate();
-		// check if we find the working directory
-		assertEquals(dir.exists() && dir.isDirectory(), true);
+		String message = " " + dirName + " is not an empty directory.";
+		// check if the text box exists
+		bot.text(message);
 	}
 
 	public void setRemoteName(String string) {
