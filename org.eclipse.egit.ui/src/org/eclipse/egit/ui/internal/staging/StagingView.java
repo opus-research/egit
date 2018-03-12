@@ -704,7 +704,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		});
 		unstagedViewer.setComparator(
-				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
+				new UnstagedComparator(getSortCheckState(), getPreferenceStore()
 						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
 		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
@@ -1010,9 +1010,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		stagedViewer.setComparator(
-				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
-						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
 		enableAutoExpand(stagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
@@ -1379,17 +1376,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 			@Override
 			public void run() {
-				StagingEntryComparator comparator = (StagingEntryComparator) unstagedViewer
+				UnstagedComparator comparator = (UnstagedComparator) unstagedViewer
 						.getComparator();
-				comparator.setAlphabeticSort(!isChecked());
-				comparator = (StagingEntryComparator) stagedViewer.getComparator();
-				comparator.setAlphabeticSort(!isChecked());
+				comparator.setAlphabeticSort(isChecked());
 				unstagedViewer.refresh();
-				stagedViewer.refresh();
 			}
 		};
 
-		sortAction.setImageDescriptor(UIIcons.STATE_SORT);
+		sortAction.setImageDescriptor(UIIcons.ALPHABETICALLY_SORT);
 		sortAction.setId(SORT_ITEM_TOOLBAR_ID);
 		sortAction.setChecked(getSortCheckState());
 
@@ -1686,10 +1680,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
 				getContentProvider(stagedViewer).setFileNameMode(enable);
 				getContentProvider(unstagedViewer).setFileNameMode(enable);
-				StagingEntryComparator comparator = (StagingEntryComparator) unstagedViewer
+				UnstagedComparator comparator = (UnstagedComparator) unstagedViewer
 						.getComparator();
-				comparator.setFileNamesFirst(enable);
-				comparator = (StagingEntryComparator) stagedViewer.getComparator();
 				comparator.setFileNamesFirst(enable);
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
@@ -3324,11 +3316,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	/**
-	 * This comparator sorts the {@link StagingEntry}s alphabetically or groups
-	 * them by state. If grouped by state the entries in the same group are also
-	 * ordered alphabetically.
+	 * This comparator sorts the {@link StagingEntry}s in a grouped or in a
+	 * alphabetically order. The grouped order is also in a alphabetically order
+	 * sorted.
 	 */
-	private static class StagingEntryComparator extends ViewerComparator {
+	private static class UnstagedComparator extends ViewerComparator {
 
 		private boolean alphabeticSort;
 
@@ -3336,7 +3328,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		private boolean fileNamesFirst;
 
-		private StagingEntryComparator(boolean alphabeticSort,
+		private UnstagedComparator(boolean alphabeticSort,
 				boolean fileNamesFirst) {
 			this.alphabeticSort = alphabeticSort;
 			this.setFileNamesFirst(fileNamesFirst);
@@ -3415,26 +3407,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		private int getState(StagingEntry entry) {
 			switch (entry.getState()) {
-			case CONFLICTING:
-				return 1;
-			case MODIFIED:
-				return 2;
-			case MODIFIED_AND_ADDED:
-				return 3;
-			case MODIFIED_AND_CHANGED:
-				return 4;
-			case ADDED:
-				return 5;
-			case CHANGED:
-				return 6;
-			case MISSING:
-				return 7;
-			case MISSING_AND_CHANGED:
-				return 8;
-			case REMOVED:
-				return 9;
 			case UNTRACKED:
-				return 10;
+				return 1;
+			case MISSING:
+				return 2;
+			case MODIFIED:
+				return 3;
 			default:
 				return super.category(entry);
 			}
