@@ -9,7 +9,7 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.common;
+package org.eclipse.egit.ui.wizards.share;
 
 import static org.junit.Assert.assertEquals;
 
