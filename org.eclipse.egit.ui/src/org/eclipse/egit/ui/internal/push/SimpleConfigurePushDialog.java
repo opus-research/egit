@@ -673,7 +673,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 				Ref source;
 				try {
 					// TODO better checks for wild-cards and such
-					source = repository.findRef(spec.getSource());
+					source = repository.getRef(spec.getSource());
 				} catch (IOException e1) {
 					source = null;
 				}

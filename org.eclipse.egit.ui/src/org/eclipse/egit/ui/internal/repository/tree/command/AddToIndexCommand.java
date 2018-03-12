@@ -39,21 +39,20 @@ public class AddToIndexCommand extends
 		Repository repository = selectedNodes.get(0).getRepository();
 		IPath workTreePath = new Path(repository.getWorkTree().getAbsolutePath());
 
-		try (Git git = new Git(repository)) {
-			AddCommand addCommand = git.add();
+		AddCommand addCommand = new Git(repository).add();
 
-			Collection<IPath> paths = getSelectedFileAndFolderPaths(event);
-			for (IPath path : paths) {
-				String repoRelativepath;
-				if (path.equals(workTreePath))
-					repoRelativepath = "."; //$NON-NLS-1$
-				else
-					repoRelativepath = path
-							.removeFirstSegments(
-									path.matchingFirstSegments(workTreePath))
-							.setDevice(null).toString();
-				addCommand.addFilepattern(repoRelativepath);
-			}
+		Collection<IPath> paths = getSelectedFileAndFolderPaths(event);
+		for (IPath path : paths) {
+			String repoRelativepath;
+			if (path.equals(workTreePath))
+				repoRelativepath = "."; //$NON-NLS-1$
+			else
+				repoRelativepath = path.removeFirstSegments(
+								path.matchingFirstSegments(workTreePath))
+						.setDevice(null).toString();
+			addCommand.addFilepattern(repoRelativepath);
+		}
+		try {
 			addCommand.call();
 		} catch (GitAPIException e) {
 			Activator.logError(UIText.AddToIndexCommand_addingFilesFailed,

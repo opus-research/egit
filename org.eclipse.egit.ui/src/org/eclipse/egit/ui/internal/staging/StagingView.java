@@ -1185,7 +1185,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT);
 		showControl(ignoreErrors, visible);
-		mainSashForm.layout();
+		ignoreErrors.getParent().layout(true);
 	}
 
 	private int getProblemsSeverity() {
@@ -1275,7 +1275,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		String[] parts = s.split(","); //$NON-NLS-1$
 		int[] ints = new int[parts.length];
 		for (int i = 0; i < parts.length; i++) {
-			ints[i] = Integer.parseInt(parts[i]);
+			ints[i] = Integer.valueOf(parts[i]).intValue();
 		}
 		return ints;
 	}
@@ -1553,7 +1553,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (isDisposed())
 			return;
 		enableCommitWidgets(enabled);
-		commitMessageText.setEnabled(enabled);
 		enableStagingWidgets(enabled);
 	}
 
@@ -1565,9 +1564,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
-		if (isDisposed()) {
+		if (isDisposed())
 			return;
-		}
+
+		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
 		amendPreviousCommitAction.setEnabled(enabled);
@@ -2238,14 +2238,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 			if (files.isEmpty() || repository == null) {
 				return;
 			}
-			try (Git git = new Git(repository)) {
-				CheckoutCommand checkoutCommand = git.checkout();
-				if (headRevision) {
-					checkoutCommand.setStartPoint(Constants.HEAD);
-				}
-				for (String path : files) {
-					checkoutCommand.addPath(path);
-				}
+			CheckoutCommand checkoutCommand = new Git(repository)
+					.checkout();
+			if (headRevision) {
+				checkoutCommand.setStartPoint(Constants.HEAD);
+			}
+			for (String path : files) {
+				checkoutCommand.addPath(path);
+			}
+			try {
 				checkoutCommand.call();
 				if (!inaccessibleFiles.isEmpty()) {
 					IndexDiffCacheEntry indexDiffCacheForRepository = org.eclipse.egit.core.Activator
@@ -2504,7 +2505,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private void stage(IStructuredSelection selection) {
 		StagingViewContentProvider contentProvider = getContentProvider(unstagedViewer);
-		final Repository repository = currentRepository;
+		final Git git = new Git(currentRepository);
 		Iterator iterator = selection.iterator();
 		final List<String> addPaths = new ArrayList<>();
 		final List<String> rmPaths = new ArrayList<>();
@@ -2546,7 +2547,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			Job addJob = new Job(UIText.StagingView_AddJob) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {
-					try (Git git = new Git(repository)) {
+					try {
 						AddCommand add = git.add();
 						for (String addPath : addPaths)
 							add.addFilepattern(addPath);
@@ -2575,7 +2576,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			Job removeJob = new Job(UIText.StagingView_RemoveJob) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {
-					try (Git git = new Git(repository)) {
+					try {
 						RmCommand rm = git.rm().setCached(true);
 						for (String rmPath : rmPaths)
 							rm.addFilepattern(rmPath);
@@ -2631,12 +2632,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (paths.isEmpty())
 			return;
 
-		final Repository repository = currentRepository;
+		final Git git = new Git(currentRepository);
 
 		Job resetJob = new Job(UIText.StagingView_ResetJob) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				try (Git git = new Git(repository)) {
+				try {
 					ResetCommand reset = git.reset();
 					for (String path : paths)
 						reset.addPath(path);
@@ -2969,18 +2970,18 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private boolean hasErrorsOrWarnings() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
-						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore()
+				? (getProblemsSeverity() >= Integer.valueOf(getPreferenceStore()
 						.getString(UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
 				&& !ignoreErrors.getSelection()) : false;
 	}
 
+	@SuppressWarnings("boxing")
 	private boolean isCommitBlocked() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
 						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore().getString(
+								.valueOf(getPreferenceStore().getString(
 										UIPreferences.BLOCK_COMMIT_LEVEL))
 								&& !ignoreErrors.getSelection())
 						: false;

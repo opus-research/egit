@@ -45,21 +45,23 @@ public class ConfigureFetchAfterCloneTask implements PostCloneTask {
 	@Override
 	public void execute(Repository repository, IProgressMonitor monitor)
 			throws CoreException {
-		try (Git git = new Git(repository)) {
-			RemoteConfig configToUse = new RemoteConfig(repository.getConfig(),
-					remoteName);
-			if (fetchRefSpec != null) {
+		try {
+			RemoteConfig configToUse = new RemoteConfig(
+					repository.getConfig(), remoteName);
+			if (fetchRefSpec != null)
 				configToUse.addFetchRefSpec(new RefSpec(fetchRefSpec));
-			}
 			configToUse.update(repository.getConfig());
 			repository.getConfig().save();
-			git.fetch().setRemote(remoteName).call();
+			Git git = new Git(repository);
+			try {
+				git.fetch().setRemote(remoteName).call();
+			} catch (Exception e) {
+				Activator.logError(NLS.bind(CoreText.ConfigureFetchAfterCloneTask_couldNotFetch, fetchRefSpec), e);
+			}
 		} catch (Exception e) {
-			Activator.logError(NLS.bind(
-					CoreText.ConfigureFetchAfterCloneTask_couldNotFetch,
-					fetchRefSpec), e);
 			throw new CoreException(Activator.error(e.getMessage(), e));
 		}
+
 	}
 
 }
