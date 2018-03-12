@@ -84,11 +84,10 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 				closeStream(remoteStream);
 			}
 		} else if (local instanceof IContainer) {
-			if (!remote.isContainer()) {
-				return false;
-			}
-
 			GitResourceVariant gitVariant = (GitResourceVariant) remote;
+			if (!remote.isContainer() || (local.exists() ^ gitVariant.exists()))
+				return false;
+
 			return local.getFullPath().equals(gitVariant.getFullPath());
 		}
 		return false;
@@ -115,10 +114,14 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 			return ((IFile) resource).getContents();
 		else
 			try {
-				if (resource.getType() == IResource.FILE)
-					return ((IFile) resource).getContents();
-				else
-					return new ByteArrayInputStream(null);
+				if (resource.getType() == IResource.FILE) {
+					IFile file = ((IFile) resource);
+					if (!file.isSynchronized(0))
+						file.refreshLocal(0, null);
+
+					return file.getContents();
+				} else
+					return new ByteArrayInputStream(new byte[0]);
 			} catch (TeamException e) {
 				throw new CoreException(e.getStatus());
 			}
