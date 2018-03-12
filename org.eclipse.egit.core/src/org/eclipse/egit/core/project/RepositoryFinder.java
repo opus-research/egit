@@ -3,7 +3,6 @@
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
- * Copyright (C) 2013, Carsten Pfeiffer <carsten.pfeiffer@gebit.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,11 +26,9 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.RepositoryCache.FileKey;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 
 /**
@@ -131,10 +128,8 @@ public class RepositoryFinder {
 				assert fsLoc.isAbsolute();
 				final File ownCfg = configFor(fsLoc);
 				final IResource[] children;
-				final FS fs = FS.detect();
 
-				if (ownCfg.isFile()
-						&& FileKey.isGitRepository(ownCfg.getParentFile(), fs)) {
+				if (ownCfg.isFile()) {
 					register(c, ownCfg.getParentFile());
 				}
 				if (c instanceof IProject) {
@@ -147,9 +142,7 @@ public class RepositoryFinder {
 									"Looking at candidate dir: " //$NON-NLS-1$
 											+ p);
 						final File pCfg = configFor(p);
-						if (pCfg.isFile()
-								&& FileKey.isGitRepository(
-										pCfg.getParentFile(), fs)) {
+						if (pCfg.isFile()) {
 							register(c, pCfg.getParentFile());
 						}
 						if (ceilingDirectories.contains(p.getPath()))
