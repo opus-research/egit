@@ -2946,6 +2946,10 @@
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.LinkWithSelectionCommand"
             id="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
             name="%LinkWithSelectionCommand">
+          <state
+                class="org.eclipse.ui.handlers.RegistryToggleState:false"
+                id="org.eclipse.ui.commands.toggleState">
+          </state>
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -3489,17 +3493,7 @@
             commandId="org.eclipse.egit.ui.team.Commit"
             contextId="org.eclipse.ui.contexts.window"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+M3+C">
-      </key>
-      <key
-            commandId="org.eclipse.egit.ui.team.Ignore"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+M3+I">
-      </key>
-      <key
-            commandId="org.eclipse.egit.ui.team.Merge"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+M3+M">
+            sequence="M1+#">
       </key>
       <key
             commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
