@@ -24,7 +24,6 @@ import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.Commit;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileTreeEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectWriter;
@@ -38,7 +37,7 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 	public void testNoRepository() throws CoreException {
 
 		ConnectProviderOperation operation = new ConnectProviderOperation(
-				project.getProject(), new File("../..", Constants.DOT_GIT));
+				project.getProject(), new File("../../.git"));
 		operation.run(null);
 
 		assertFalse(RepositoryProvider.isShared(project.getProject()));
@@ -48,12 +47,12 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 	public void testNewRepository() throws CoreException, IOException {
 
 		File gitDir = new File(project.getProject().getWorkspace().getRoot()
-				.getRawLocation().toFile(), Constants.DOT_GIT);
+				.getRawLocation().toFile(), ".git");
 		Repository repository = new Repository(gitDir);
 		repository.create();
 		repository.close();
 		ConnectProviderOperation operation = new ConnectProviderOperation(
-				project.getProject(), new File("..", Constants.DOT_GIT));
+				project.getProject(), new File("../.git"));
 		operation.run(null);
 
 		assertTrue(RepositoryProvider.isShared(project.getProject()));
@@ -70,7 +69,7 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 		fileA.create(new ByteArrayInputStream(srcA.getBytes()), false, null);
 
 		File gitDir = new File(project.getProject().getWorkspace().getRoot()
-				.getRawLocation().toFile(), Constants.DOT_GIT);
+				.getRawLocation().toFile(), ".git");
 		Repository thisGit = new Repository(gitDir);
 		thisGit.create();
 		Tree rootTree = new Tree(thisGit);
@@ -95,7 +94,7 @@ public class T0001_ConnectProviderOperationTest extends GitTestCase {
 		assertEquals(RefUpdate.Result.NEW, lck.forceUpdate());
 
 		ConnectProviderOperation operation = new ConnectProviderOperation(
-				project.getProject(), new File("..", Constants.DOT_GIT));
+				project.getProject(), new File("../.git"));
 		operation.run(null);
 
 		final boolean f[] = new boolean[1];
