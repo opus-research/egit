@@ -11,6 +11,7 @@ package org.eclipse.egit.core.synchronize.dto;
 import static org.eclipse.core.runtime.Assert.isNotNull;
 import static org.eclipse.egit.core.RevUtils.getCommonAncestor;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_BRANCH_SECTION;
+import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_MERGE;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_REMOTE;
 import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
@@ -22,13 +23,18 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.ObjectWalk;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Simple data transfer object containing all necessary information for
@@ -39,7 +45,7 @@ public class GitSynchronizeData {
 	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
 					.getRoot();
 
-	private static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + "/.*?/"); //$NON-NLS-1$ //$NON-NLS-2$
+	private static final Pattern BRANCH_NAME_PATTERN = Pattern.compile("^" + R_HEADS + ".*?"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private final boolean includeLocal;
 
@@ -49,15 +55,36 @@ public class GitSynchronizeData {
 
 	private final String dstRemote;
 
-	private final RevCommit srcRevCommit;
+	private final String srcMerge;
 
-	private final RevCommit dstRevCommit;
+	private final String dstMerge;
 
-	private final RevCommit ancestorRevCommit;
+	private RevCommit srcRevCommit;
+
+	private RevCommit dstRevCommit;
+
+	private RevCommit ancestorRevCommit;
 
 	private final Set<IProject> projects;
 
 	private final String repoParentPath;
+
+	private final String srcRev;
+
+	private final String dstRev;
+
+	private TreeFilter pathFilter;
+
+	private Set<IContainer> includedPaths;
+
+	private static class RemoteConfig {
+		final String remote;
+		final String merge;
+		public RemoteConfig(String remote, String merge) {
+			this.remote = remote;
+			this.merge = merge;
+		}
+	}
 
 	/**
 	 * Constructs {@link GitSynchronizeData} object
@@ -76,28 +103,19 @@ public class GitSynchronizeData {
 		isNotNull(srcRev);
 		isNotNull(dstRev);
 		repo = repository;
-
-		srcRemote = extractRemoteName(srcRev);
-		dstRemote = extractRemoteName(dstRev);
-
-		ObjectWalk ow = new ObjectWalk(repo);
-		if (srcRev.length() > 0)
-			this.srcRevCommit = ow.parseCommit(repo.resolve(srcRev));
-		else
-			this.srcRevCommit = null;
-
-		if (dstRev.length() > 0)
-			this.dstRevCommit = ow.parseCommit(repo.resolve(dstRev));
-		else
-			this.dstRevCommit = null;
-
-		if (this.dstRevCommit != null || this.srcRevCommit != null)
-			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
-					this.dstRevCommit);
-		else
-			this.ancestorRevCommit = null;
-
+		this.srcRev = srcRev;
+		this.dstRev = dstRev;
 		this.includeLocal = includeLocal;
+
+		RemoteConfig srcRemoteConfig = extractRemoteName(srcRev);
+		RemoteConfig dstRemoteConfig = extractRemoteName(dstRev);
+
+		srcRemote = srcRemoteConfig.remote;
+		srcMerge = srcRemoteConfig.merge;
+
+		dstRemote = dstRemoteConfig.remote;
+		dstMerge = dstRemoteConfig.merge;
+
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
 
 		projects = new HashSet<IProject>();
@@ -107,7 +125,24 @@ public class GitSynchronizeData {
 			if (mapping != null && mapping.getRepository() == repo)
 				projects.add(project);
 		}
+		updateRevs();
+	}
 
+	/**
+	 * Recalculates source, destination and ancestor Rev commits
+	 *
+	 * @throws IOException
+	 */
+	public void updateRevs() throws IOException {
+		ObjectWalk ow = new ObjectWalk(repo);
+		srcRevCommit = getCommit(srcRev, ow);
+		dstRevCommit = getCommit(dstRev, ow);
+
+		if (this.dstRevCommit != null || this.srcRevCommit != null)
+			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
+					this.dstRevCommit);
+		else
+			this.ancestorRevCommit = null;
 	}
 
 	/**
@@ -123,6 +158,20 @@ public class GitSynchronizeData {
 	 */
 	public String getSrcRemoteName() {
 		return srcRemote;
+	}
+
+	/**
+	 * @return ref specification of destination merge branch
+	 */
+	public String getDstMerge() {
+		return dstMerge;
+	}
+
+	/**
+	 * @return ref specification of source merge branch
+	 */
+	public String getSrcMerge() {
+		return srcMerge;
 	}
 
 	/**
@@ -177,19 +226,75 @@ public class GitSynchronizeData {
 		return ancestorRevCommit;
 	}
 
-	private String extractRemoteName(String rev) {
+	/**
+	 * @param includedPaths
+	 *            list of containers to be synchronized
+	 */
+	public void setIncludedPaths(Set<IContainer> includedPaths) {
+		this.includedPaths = includedPaths;
+		Set<String> paths = new HashSet<String>();
+		RepositoryMapping rm = RepositoryMapping.findRepositoryMapping(repo);
+		for (IContainer container : includedPaths)
+			paths.add(rm.getRepoRelativePath(container));
+
+		if (!paths.isEmpty())
+			pathFilter = PathFilterGroup.createFromStrings(paths);
+	}
+
+	/**
+	 * @return set of included paths or {@code null} when all paths should be
+	 *         included
+	 */
+	public Set<IContainer> getIncludedPaths() {
+		return includedPaths;
+	}
+
+	/**
+	 * @return instance of {@link TreeFilter} when synchronization was launched
+	 *         from nested node (like folder) or {@code null} otherwise
+	 */
+	public TreeFilter getPathFilter() {
+		return pathFilter;
+	}
+
+	private RemoteConfig extractRemoteName(String rev) {
 		if (rev.contains(R_REMOTES)) {
-			String remote = rev.replaceAll(R_REMOTES, ""); //$NON-NLS-1$
-			return remote.substring(0, remote.indexOf("/")); //$NON-NLS-1$
+			String remoteWithBranchName = rev.replaceAll(R_REMOTES, ""); //$NON-NLS-1$
+			int firstSeparator = remoteWithBranchName.indexOf("/"); //$NON-NLS-1$
+
+			String remote = remoteWithBranchName.substring(0, firstSeparator);
+			String name = remoteWithBranchName.substring(firstSeparator + 1,
+					remoteWithBranchName.length());
+
+			return new RemoteConfig(remote, R_HEADS + name);
 		} else {
-			String name = BRANCH_NAME_PATTERN.matcher(rev).replaceAll(""); //$NON-NLS-1$
-			String remoteTracking = repo.getConfig().getString(CONFIG_BRANCH_SECTION,
-					name, CONFIG_KEY_REMOTE);
-			if (remoteTracking != null && remoteTracking.length() > 0)
-				return remoteTracking;
+			String realName;
+			Ref ref;
+			try {
+				ref = repo.getRef(rev);
+			} catch (IOException e) {
+				ref = null;
+			}
+			if (ref != null && ref.isSymbolic())
+				realName = ref.getTarget().getName();
 			else
-				return null;
+				realName = rev;
+			String name = BRANCH_NAME_PATTERN.matcher(realName).replaceAll(""); //$NON-NLS-1$
+			String remote = repo.getConfig().getString(CONFIG_BRANCH_SECTION,
+					name, CONFIG_KEY_REMOTE);
+			String merge = repo.getConfig().getString(CONFIG_BRANCH_SECTION,
+					name, CONFIG_KEY_MERGE);
+
+			return new RemoteConfig(remote, merge);
 		}
+	}
+
+	private RevCommit getCommit(String rev, ObjectWalk ow) throws IOException {
+		if (rev.length() > 0) {
+			ObjectId id = repo.resolve(rev);
+			return id != null ? ow.parseCommit(id) : null;
+		} else
+			return null;
 	}
 
 }

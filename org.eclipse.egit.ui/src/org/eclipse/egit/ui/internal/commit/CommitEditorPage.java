@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.history.CommitFileDiffViewer;
 import org.eclipse.egit.ui.internal.history.FileDiff;
@@ -34,7 +35,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
@@ -176,13 +176,13 @@ public class CommitEditorPage extends FormPage {
 
 		boolean signedOff = isSignedOffBy(person);
 
-		Text userText = toolkit
-				.createText(userArea, MessageFormat.format(
-						author ? UIText.CommitEditorPage_LabelAuthor
-								: UIText.CommitEditorPage_LabelCommitter,
-						person.getName(), person.getEmailAddress(), person
-								.getWhen()));
-		userText.setEditable(false);
+		Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
+		userText.setText(MessageFormat.format(
+				author ? UIText.CommitEditorPage_LabelAuthor
+						: UIText.CommitEditorPage_LabelCommitter, person
+						.getName(), person.getEmailAddress(), person.getWhen()));
+		toolkit.adapt(userText, false, false);
+		userText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
 
 		GridDataFactory.fillDefaults().span(signedOff ? 1 : 2, 1)
 				.applyTo(userText);
@@ -321,7 +321,7 @@ public class CommitEditorPage extends FormPage {
 			message = replaceSignedOffByLine(message, committer);
 
 		SpellcheckableMessageArea textContent = new SpellcheckableMessageArea(
-				messageArea, message, SWT.NONE) {
+				messageArea, message, true, toolkit.getBorderStyle()) {
 
 			@Override
 			protected IAdaptable getDefaultTarget() {
@@ -338,11 +338,11 @@ public class CommitEditorPage extends FormPage {
 			}
 
 		};
-		textContent.setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TEXT_BORDER);
+		if ((toolkit.getBorderStyle() & SWT.BORDER) == 0)
+			textContent.setData(FormToolkit.KEY_DRAW_BORDER,
+					FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 80).grab(true, true)
 				.applyTo(textContent);
-		textContent.getTextWidget().setEditable(false);
 
 		updateSectionClient(messageSection, messageArea, toolkit);
 	}
@@ -357,18 +357,16 @@ public class CommitEditorPage extends FormPage {
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 50)
 				.applyTo(branchViewer.getControl());
 		branchViewer.setSorter(new ViewerSorter());
-		branchViewer.setLabelProvider(new LabelProvider() {
-
-			public Image getImage(Object element) {
-				return CommitEditorPage.this.getImage(UIIcons.BRANCH);
-			}
+		branchViewer.setLabelProvider(new GitLabelProvider() {
 
 			public String getText(Object element) {
-				return Repository.shortenRefName(((Ref) element).getName());
+				return Repository.shortenRefName(super.getText(element));
 			}
 
 		});
 		branchViewer.setContentProvider(ArrayContentProvider.getInstance());
+		branchViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
 
 		fillBranches();
 
@@ -415,10 +413,12 @@ public class CommitEditorPage extends FormPage {
 
 		CommitFileDiffViewer viewer = new CommitFileDiffViewer(filesArea,
 				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
-						| SWT.FULL_SELECTION);
+						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
 		// commit file diff viewer uses a nested composite with a stack layout
 		// and so margins need to be applied to have form toolkit style borders
 		toolkit.paintBordersFor(viewer.getTable().getParent());
+		viewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
 		StackLayout viewerLayout = (StackLayout) viewer.getControl()
 				.getParent().getLayout();
 		viewerLayout.marginHeight = 2;

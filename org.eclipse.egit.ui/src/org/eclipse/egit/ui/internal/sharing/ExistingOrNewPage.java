@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2009, Robin Rosenberg
+ * Copyright (C) 2009, 2011 Robin Rosenberg
  * Copyright (C) 2009, Mykola Nikishov <mn@mn.com.ua>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
@@ -74,6 +74,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
@@ -249,7 +250,20 @@ class ExistingOrNewPage extends WizardPage {
 				updateControls();
 			}
 		});
-		projectMoveViewer.setAllChecked(true);
+		TableItem[] children = projectMoveViewer.getTable().getItems();
+		for (int i = 0; i < children.length; i++) {
+			TableItem item = children[i];
+			IProject data = (IProject) item.getData();
+			RepositoryFinder repositoryFinder = new RepositoryFinder(data);
+			try {
+				Collection<RepositoryMapping> find = repositoryFinder
+						.find(new NullProgressMonitor());
+				if (find.size() != 1)
+					item.setChecked(true);
+			} catch (CoreException e1) {
+				item.setText(2, e1.getMessage());
+			}
+		}
 
 		parentRepoComposite = new Composite(main, SWT.NONE);
 		parentRepoComposite.setLayout(new GridLayout(3, false));
@@ -532,7 +546,7 @@ class ExistingOrNewPage extends WizardPage {
 				targetPath = targetPath.append(relPath.getText());
 				moveProjectsLabelProvider.targetFolder = targetPath;
 				projectMoveViewer.refresh(true);
-				browseRepository.setEnabled(this.selectedRepository != null);
+				browseRepository.setEnabled(true);
 				for (Object checked : projectMoveViewer.getCheckedElements()) {
 					IProject prj = (IProject) checked;
 					IPath projectMoveTarget = targetPath.append(prj.getName());
@@ -608,8 +622,10 @@ class ExistingOrNewPage extends WizardPage {
 			setPageComplete(pageComplete);
 			// provide a warning if Repository is created in workspace
 			for (IProject project : myWizard.projects) {
-				if (ResourcesPlugin.getWorkspace().getRoot().getLocation()
-						.isPrefixOf(project.getLocation())) {
+				if (button.isEnabled()
+						&& ResourcesPlugin.getWorkspace().getRoot()
+								.getLocation()
+								.isPrefixOf(project.getLocation())) {
 					setMessage(
 							UIText.ExistingOrNewPage_RepoCreationInWorkspaceCreationWarning,
 							IMessageProvider.WARNING);
