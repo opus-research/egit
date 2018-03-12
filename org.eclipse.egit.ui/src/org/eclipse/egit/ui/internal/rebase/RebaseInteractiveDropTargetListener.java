@@ -35,7 +35,9 @@ final class RebaseInteractiveDropTargetListener extends ViewerDropAdapter {
 		if (!this.rebaseInteractiveView.isDragAndDropEnabled())
 			return false;
 
-		if (!(data instanceof IStructuredSelection))
+		DropTargetEvent event = getCurrentEvent();
+
+		if (!(event.data instanceof IStructuredSelection))
 			return false;
 
 		final IStructuredSelection structuredSelection = (IStructuredSelection) data;
