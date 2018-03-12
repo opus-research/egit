@@ -65,8 +65,6 @@ public class UIPreferences {
 	public final static String COMMIT_DIALOG_HISTORY_SIZE = "commit_dialog_history_size"; //$NON-NLS-1$
 	/** */
 	public final static String COMMIT_DIALOG_HISTORY_MESSAGES = "commit_dialog_history_messages"; //$NON-NLS-1$
-	/** */
-	public final static String COMMIT_DIALOG_INCLUDE_UNTRACKED = "commit_dialog_include_untracked"; //$NON-NLS-1$
 
 	/** */
 	public final static String THEME_CommitGraphNormalFont = "org.eclipse.egit.ui.CommitGraphNormalFont"; //$NON-NLS-1$
@@ -97,6 +95,8 @@ public class UIPreferences {
 
 	/** */
 	public final static String DECORATOR_RECOMPUTE_ANCESTORS = "decorator_recompute_ancestors"; //$NON-NLS-1$
+	/** */
+	public final static String DECORATOR_RECURSIVE_LIMIT = "decorator_recursive_limit"; //$NON-NLS-1$
 	/** */
 	public final static String DECORATOR_FILETEXT_DECORATION = "decorator_filetext_decoration"; //$NON-NLS-1$
 	/** */
