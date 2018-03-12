@@ -33,18 +33,13 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.text.TextSelection;
+import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
@@ -52,25 +47,16 @@ import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.ide.ResourceUtil;
 
 /**
  * A helper class for Team Actions on Git controlled projects
@@ -89,7 +75,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *            the new selection
 	 */
 	public void setSelection(ISelection selection) {
-		mySelection = convertSelection(null, selection);
+		mySelection = SelectionUtils.getStructuredSelection(selection);
 	}
 
 	/**
@@ -236,8 +222,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	protected Repository getRepository(boolean warn, ExecutionEvent event)
 			throws ExecutionException {
 		IStructuredSelection selection = getSelection(event);
-		Shell shell = getShell(event);
-		return getRepository(warn, selection, shell);
+		if (warn) {
+			Shell shell = getShell(event);
+			return SelectionUtils.getRepositoryOrWarn(selection, shell);
+		} else {
+			return SelectionUtils.getRepository(selection);
+		}
 	}
 
 	/**
@@ -248,71 +238,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected Repository getRepository() {
 		IStructuredSelection selection = getSelection();
-		return getRepository(false, selection, null);
-	}
-
-	/**
-	 * Figure out which repository to use. All selected resources must map to
-	 * the same Git repository.
-	 *
-	 * @param warn
-	 *            Put up a message dialog to warn why a resource was not
-	 *            selected
-	 * @param selection
-	 * @param shell
-	 *            must be provided if warn = true
-	 * @return repository for current project, or null
-	 */
-	private Repository getRepository(boolean warn,
-			IStructuredSelection selection, Shell shell) {
-		RepositoryMapping mapping = null;
-		for (IPath location : getSelectedLocations(selection)) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
-			if (mapping == null)
-				mapping = repositoryMapping;
-			if (repositoryMapping == null)
-				return null;
-			if (mapping.getRepository() != repositoryMapping.getRepository()) {
-				if (warn)
-					MessageDialog.openError(shell,
-							UIText.RepositoryAction_multiRepoSelectionTitle,
-							UIText.RepositoryAction_multiRepoSelection);
-				return null;
-			}
-		}
-		Repository result = null;
-		if (mapping == null)
-			for (Object o : selection.toArray()) {
-				Repository nextRepo = null;
-				if (o instanceof Repository)
-					nextRepo = (Repository) o;
-				else if (o instanceof PlatformObject)
-					nextRepo = (Repository) ((PlatformObject) o)
-							.getAdapter(Repository.class);
-				if (nextRepo != null && result != null
-						&& !result.equals(nextRepo)) {
-					if (warn)
-						MessageDialog
-								.openError(
-										shell,
-										UIText.RepositoryAction_multiRepoSelectionTitle,
-										UIText.RepositoryAction_multiRepoSelection);
-					return null;
-				}
-				result = nextRepo;
-			}
-		else
-			result = mapping.getRepository();
-		if (result == null) {
-			if (warn)
-				MessageDialog.openError(shell,
-						UIText.RepositoryAction_errorFindingRepoTitle,
-						UIText.RepositoryAction_errorFindingRepo);
-			return null;
-		}
-
-		return result;
+		return SelectionUtils.getRepository(selection);
 	}
 
 	/**
@@ -380,26 +306,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @throws ExecutionException
 	 *             if the selection can't be determined
 	 */
-	protected IStructuredSelection getSelection(ExecutionEvent event)
+	protected static IStructuredSelection getSelection(ExecutionEvent event)
 			throws ExecutionException {
 		if (event == null)
 			throw new IllegalArgumentException("event must not be NULL"); //$NON-NLS-1$
-		Object selection = HandlerUtil.getActiveMenuSelection(event);
-		if (selection == null)
-			selection = HandlerUtil.getCurrentSelectionChecked(event);
-		if (selection instanceof TextSelection) {
-			IEditorInput editorInput = (IEditorInput) HandlerUtil.getVariable(
-					event, ISources.ACTIVE_EDITOR_INPUT_NAME);
-			IResource resource = ResourceUtil.getResource(editorInput);
-			if (resource != null)
-				return new StructuredSelection(resource);
-
-			resource = ResourceUtil.getFile(editorInput);
-			if (resource != null)
-				return new StructuredSelection(resource);
-		}
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
+		Object context = event.getApplicationContext();
+		if (context instanceof IEvaluationContext)
+			return SelectionUtils.getSelection((IEvaluationContext) context);
 		return StructuredSelection.EMPTY;
 	}
 
@@ -410,54 +323,11 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		// if the selection was set explicitly, use it
 		if (mySelection != null)
 			return mySelection;
-		return convertSelection(evaluationContext, null);
-	}
-
-	private IStructuredSelection convertSelection(IEvaluationContext aContext,
-			Object aSelection) {
-		IEvaluationContext ctx;
-		if (aContext == null && aSelection == null)
-			return StructuredSelection.EMPTY;
-		else
-			ctx = aContext;
-		Object selection;
-		if (aSelection == null && ctx != null) {
-			selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (!(selection instanceof ISelection))
-				selection = ctx
-						.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
-		} else if (aSelection != null)
-			selection = aSelection;
-		else
-			return StructuredSelection.EMPTY;
-		if (selection instanceof TextSelection) {
-			if (ctx == null)
-				ctx = getEvaluationContext();
-			IResource resource = ResourceUtil.getResource(ctx
-					.getVariable(ISources.ACTIVE_EDITOR_INPUT_NAME));
-			if (resource != null)
-				return new StructuredSelection(resource);
-		}
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
-		return StructuredSelection.EMPTY;
+		return SelectionUtils.getSelection(evaluationContext);
 	}
 
 	public void setEnabled(Object evaluationContext) {
 		this.evaluationContext = (IEvaluationContext) evaluationContext;
-	}
-
-	private IEvaluationContext getEvaluationContext() {
-		IEvaluationContext ctx;
-		IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		// no active window during Eclipse shutdown
-		if (activeWorkbenchWindow == null)
-			return null;
-		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
-				.getService(IHandlerService.class);
-		ctx = hsr.getCurrentState();
-		return ctx;
 	}
 
 	/**
@@ -494,13 +364,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	protected IResource[] getSelectedResources(ExecutionEvent event)
 			throws ExecutionException {
 		IStructuredSelection selection = getSelection(event);
-		return getSelectedResources(selection);
+		return SelectionUtils.getSelectedResources(selection);
 	}
 
 	protected IPath[] getSelectedLocations(ExecutionEvent event)
 			throws ExecutionException {
 		IStructuredSelection selection = getSelection(event);
-		return getSelectedLocations(selection);
+		return SelectionUtils.getSelectedLocations(selection);
 	}
 
 	/**
@@ -508,7 +378,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected IResource[] getSelectedResources() {
 		IStructuredSelection selection = getSelection();
-		return getSelectedResources(selection);
+		return SelectionUtils.getSelectedResources(selection);
 	}
 
 	/**
@@ -516,7 +386,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected IPath[] getSelectedLocations() {
 		IStructuredSelection selection = getSelection();
-		return getSelectedLocations(selection);
+		return SelectionUtils.getSelectedLocations(selection);
 	}
 
 	/**
@@ -524,63 +394,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected boolean selectionMapsToSingleRepository() {
 		return getRepository() != null;
-	}
-
-	/**
-	 * @param selection
-	 * @return the resources in the selection
-	 */
-	private IResource[] getSelectedResources(IStructuredSelection selection) {
-		Set<IResource> result = new LinkedHashSet<IResource>();
-		for (Object o : selection.toList()) {
-			IResource resource = AdapterUtils.adapt(o, IResource.class);
-			if (resource != null)
-				result.add(resource);
-			else
-				result.addAll(extractResourcesFromMapping(o));
-		}
-		return result.toArray(new IResource[result.size()]);
-	}
-
-	private IPath[] getSelectedLocations(IStructuredSelection selection) {
-		Set<IPath> result = new LinkedHashSet<IPath>();
-		for (Object o : selection.toList()) {
-			IResource resource = AdapterUtils.adapt(o, IResource.class);
-			if (resource != null) {
-				IPath location = resource.getLocation();
-				if (location != null)
-					result.add(location);
-			} else {
-				IPath location = AdapterUtils.adapt(o, IPath.class);
-				if (location != null)
-					result.add(location);
-				else
-					for (IResource r : extractResourcesFromMapping(o)) {
-						IPath l = r.getLocation();
-						if (l != null)
-							result.add(l);
-					}
-			}
-		}
-		return result.toArray(new IPath[result.size()]);
-	}
-
-	private List<IResource> extractResourcesFromMapping(Object o) {
-		ResourceMapping mapping = AdapterUtils.adapt(o,
-				ResourceMapping.class);
-		if (mapping != null) {
-			ResourceTraversal[] traversals;
-			try {
-				traversals = mapping.getTraversals(null, null);
-				for (ResourceTraversal traversal : traversals) {
-					IResource[] resources = traversal.getResources();
-					return Arrays.asList(resources);
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		return Collections.emptyList();
 	}
 
 	/**
@@ -612,39 +425,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return HandlerUtil.getActivePartChecked(event);
 	}
 
-	/**
-	 * Checks if merge is possible:
-	 * <ul>
-	 * <li>HEAD must point to a branch</li>
-	 * <li>Repository State must be SAFE</li>
-	 * </ul>
-	 *
-	 * @param repository
-	 * @param event
-	 * @return a boolean indicating if merge is possible
-	 * @throws ExecutionException
-	 */
-	protected boolean canMerge(final Repository repository, ExecutionEvent event)
-			throws ExecutionException {
-		String message = null;
-		try {
-			Ref head = repository.getRef(Constants.HEAD);
-			if (head == null || !head.isSymbolic())
-				message = UIText.MergeAction_HeadIsNoBranch;
-			else if (!repository.getRepositoryState().equals(
-					RepositoryState.SAFE))
-				message = NLS.bind(UIText.MergeAction_WrongRepositoryState,
-						repository.getRepositoryState());
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
-			message = e.getMessage();
-		}
-
-		if (message != null)
-			MessageDialog.openError(getShell(event),
-					UIText.MergeAction_CannotMerge, message);
-		return (message == null);
-	}
 
 	/**
 	 *
