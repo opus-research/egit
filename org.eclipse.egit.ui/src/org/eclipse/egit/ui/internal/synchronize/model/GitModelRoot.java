@@ -47,7 +47,8 @@ public class GitModelRoot {
 				GitSynchronizeData gsd = gsds.iterator().next();
 				GitModelRepository repoModel = new GitModelRepository(gsd);
 
-				return repoModel.getChildren();
+				for (GitModelObject obj : repoModel.getChildren())
+					restult.add(obj);
 			} else
 				for (GitSynchronizeData data : gsds) {
 					GitModelRepository repoModel = new GitModelRepository(data);

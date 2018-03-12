@@ -68,8 +68,6 @@ class BranchProjectTracker {
 
 	private static final String KEY_BRANCH = "branch"; //$NON-NLS-1$
 
-	private static final String REPO_ROOT = "/"; //$NON-NLS-1$
-
 	private final Repository repository;
 
 	/**
@@ -139,8 +137,6 @@ class BranchProjectTracker {
 			String fullPath = path.toOSString();
 			if (fullPath.startsWith(workDir)) {
 				String relative = fullPath.substring(workDir.length());
-				if (relative.length() == 0)
-					relative = REPO_ROOT;
 				IMemento child = memento.createChild(KEY_PROJECT);
 				child.putTextData(relative);
 			}
@@ -244,19 +240,13 @@ class BranchProjectTracker {
 		Set<ProjectRecord> records = new LinkedHashSet<ProjectRecord>();
 		File parent = repository.getWorkTree();
 		for (String path : paths) {
-			File root;
-			if (!REPO_ROOT.equals(path))
-				root = new File(parent, path);
-			else
-				root = parent;
-
+			File root = new File(parent, path);
 			if (!root.isDirectory())
 				continue;
-			File projectDescription = new File(root,
-					IProjectDescription.DESCRIPTION_FILE_NAME);
-			if (!projectDescription.isFile())
+			if (!new File(root, IProjectDescription.DESCRIPTION_FILE_NAME)
+					.exists())
 				continue;
-			records.add(new ProjectRecord(projectDescription));
+			records.add(new ProjectRecord(root));
 		}
 		if (records.isEmpty())
 			return;
