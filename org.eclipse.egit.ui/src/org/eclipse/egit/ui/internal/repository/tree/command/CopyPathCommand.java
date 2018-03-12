@@ -33,8 +33,10 @@ public class CopyPathCommand extends
 			path = node.getRepository().getDirectory().toString();
 			break;
 		case WORKINGDIR:
-			if (node.getRepository().isBare())
+			if (node.getRepository().getConfig().getBoolean(
+					"core", "bare", false)) { //$NON-NLS-1$ //$NON-NLS-2$
 				return null;
+			}
 			path = node.getRepository().getWorkTree().toString();
 			break;
 		case FILE:
