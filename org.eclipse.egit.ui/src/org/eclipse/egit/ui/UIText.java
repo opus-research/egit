@@ -1264,9 +1264,6 @@ public class UIText extends NLS {
 	public static String ConfirmationPage_title;
 
 	/** */
-	public static String CreateBranchHandler_CreatePromptMessage;
-
-	/** */
 	public static String CreateBranchPage_BranchAlreadyExistsMessage;
 
 	/** */
@@ -2201,12 +2198,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateTagDialog_clearButtonTooltip;
-
-	/** */
-	public static String CreateTagDialog_CreateTagOnCommitTitle;
-
-	/** */
-	public static String CreateTagHandler_JobName;
 
 	/** */
 	public static String CommitCombo_showSuggestedCommits;

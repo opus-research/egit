@@ -24,6 +24,7 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
+import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
@@ -63,17 +64,11 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	protected IStructuredSelection getSelection() {
 		// TODO Synchronize CommitOperation overwrites this, can we get rid
 		// of it?
-		ISelection selection;
-
-		IHandlerService hsr = (IHandlerService) PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getService(IHandlerService.class);
-		IEvaluationContext ctx = hsr.createContextSnapshot(true);
-		selection = (ISelection) ctx
-				.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
-		return new StructuredSelection();
+		ISelectionService srv = (ISelectionService) PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow().getService(ISelectionService.class);
+		if (srv == null)
+			return new StructuredSelection();
+		return (IStructuredSelection) srv.getSelection();
 	}
 
 	public void setActivePart(IAction action, IWorkbenchPart targetPart) {
