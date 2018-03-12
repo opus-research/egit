@@ -27,11 +27,9 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Color;
 
 /**
- * Diff style range formatter class. This class builds up a list of
- * {@link DiffStyleRange} instances as a {@link FileDiff} is being written to an
- * {@link IDocument}.
- *
- * @author Kevin Sawicki (kevin@github.com)
+ * Diff style range formatter class that builds up a list of
+ * {@link DiffStyleRange} instances as each {@link FileDiff} is being written to
+ * an {@link IDocument}.
  */
 public class DiffStyleRangeFormatter extends DiffFormatter {
 

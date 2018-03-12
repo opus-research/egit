@@ -41,10 +41,8 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 import org.eclipse.ui.themes.IThemeManager;
 
 /**
- * Viewer to display one or more file differences using standard editor colors
- * and fonts preferences.
- *
- * @author Kevin Sawicki (kevin@github.com)
+ * Source viewer to display one or more file differences using standard editor
+ * colors and fonts preferences.
  */
 public class DiffViewer extends SourceViewer {
 
