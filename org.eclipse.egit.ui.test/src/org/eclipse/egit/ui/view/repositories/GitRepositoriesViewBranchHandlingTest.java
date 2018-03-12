@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -124,19 +124,19 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		localItem.getNode(0).select();
 		assertCheckoutNotAvailable(view);
 		localItem.getNode(1).select();
-		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
+		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 
 		assertCheckoutNotAvailable(view);
 
 		localItem.getNode(0).select();
-		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
+		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		localItem.getNode(1).select();
 		refreshAndWait();
-		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
+		ContextMenuHelper.clickContextMenu(bot.tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		refreshAndWait();
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
@@ -275,7 +275,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 			assertEquals("Wrong number of remote children", 2, children.size());
 
 			item.getNode("origin/stable").select();
-			ContextMenuHelper.clickContextMenuSync(tree, myUtil
+			ContextMenuHelper.clickContextMenu(tree, myUtil
 					.getPluginLocalizedValue("CheckoutCommand"));
 			TestUtil.joinJobs(JobFamilies.CHECKOUT);
 			refreshAndWait();
@@ -407,7 +407,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				.bot().tree(), clonedRepositoryFile);
 		localItem.expand().getNode("configTest").select();
 
-		ContextMenuHelper.clickContextMenuSync(view.bot().tree(),
+		ContextMenuHelper.clickContextMenu(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ShowIn"),
 				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
 
