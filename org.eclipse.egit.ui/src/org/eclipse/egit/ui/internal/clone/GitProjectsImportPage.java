@@ -353,51 +353,50 @@ public class GitProjectsImportPage extends WizardPage {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 
-				public void run(IProgressMonitor monitor)
-						throws InterruptedException {
+				public void run(IProgressMonitor monitor) {
+
 					monitor.beginTask(
 							UIText.WizardProjectsImportPage_SearchingMessage,
 							100);
-					try {
-						selectedProjects = new ProjectRecord[0];
-						Collection<File> files = new ArrayList<File>();
-						monitor.worked(10);
-						if (directory.isDirectory()) {
-							collectProjectFilesFromDirectory(files, directory,
-									null, monitor);
-							Iterator<File> filesIterator = files.iterator();
-							selectedProjects = new ProjectRecord[files.size()];
-							int index = 0;
-							monitor.worked(50);
-							monitor
-									.subTask(UIText.WizardProjectsImportPage_ProcessingMessage);
-							while (filesIterator.hasNext()) {
-								File file = filesIterator.next();
-								selectedProjects[index] = new ProjectRecord(
-										file);
-								index++;
-							}
+					selectedProjects = new ProjectRecord[0];
+					Collection<File> files = new ArrayList<File>();
+					monitor.worked(10);
+					if (directory.isDirectory()) {
 
-							if (files.isEmpty())
-								// run in UI thread
-								Display.getDefault().syncExec(new Runnable() {
-									public void run() {
-										setErrorMessage(UIText.GitProjectsImportPage_NoProjectsMessage);
-									}
-								});
-						} else {
-							monitor.worked(60);
+						if (!collectProjectFilesFromDirectory(files, directory,
+								null, monitor)) {
+							return;
 						}
-					} finally {
-						monitor.done();
+						Iterator<File> filesIterator = files.iterator();
+						selectedProjects = new ProjectRecord[files.size()];
+						int index = 0;
+						monitor.worked(50);
+						monitor
+								.subTask(UIText.WizardProjectsImportPage_ProcessingMessage);
+						while (filesIterator.hasNext()) {
+							File file = filesIterator.next();
+							selectedProjects[index] = new ProjectRecord(file);
+							index++;
+						}
+
+						if (files.isEmpty())
+							// run in UI thread
+							Display.getDefault().syncExec(new Runnable() {
+								public void run() {
+									setErrorMessage(UIText.GitProjectsImportPage_NoProjectsMessage);
+								}
+							});
+					} else {
+						monitor.worked(60);
 					}
+					monitor.done();
 				}
+
 			});
 		} catch (InvocationTargetException e) {
 			Activator.logError(e.getMessage(), e);
 		} catch (InterruptedException e) {
-			// make sure we run this again when the page is re-opened
-			lastModified = -1l;
+			// Nothing to do if the user interrupts.
 		}
 
 		projectsList.refresh(true);
@@ -427,23 +426,23 @@ public class GitProjectsImportPage extends WizardPage {
 	 *            Set of canonical paths of directories, used as recursion guard
 	 * @param monitor
 	 *            The monitor to report to
-	 * @throws InterruptedException
-	 *             if the user canceled the monitor
+	 * @return boolean <code>true</code> if the operation was completed.
 	 */
-	private void collectProjectFilesFromDirectory(Collection<File> files,
-			File directory, Set<String> visistedDirs, IProgressMonitor monitor)
-			throws InterruptedException {
+	private boolean collectProjectFilesFromDirectory(Collection<File> files,
+			File directory, Set<String> visistedDirs,
+			IProgressMonitor monitor) {
 
 		Set<String> directoriesVisited;
 
-		if (monitor.isCanceled())
-			throw new InterruptedException();
+		if (monitor.isCanceled()) {
+			return false;
+		}
 		monitor.subTask(NLS.bind(
 				UIText.WizardProjectsImportPage_CheckingMessage, directory
 						.getPath()));
 		File[] contents = directory.listFiles();
 		if (contents == null)
-			return;
+			return false;
 
 		// Initialize recursion guard for recursive symbolic links
 		if (visistedDirs == null) {
@@ -467,7 +466,7 @@ public class GitProjectsImportPage extends WizardPage {
 				files.add(file);
 				// don't search sub-directories since we can't have nested
 				// projects
-				return;
+				return true;
 			}
 		}
 		// no project description found, so recurse into sub-directories
@@ -492,6 +491,7 @@ public class GitProjectsImportPage extends WizardPage {
 				}
 			}
 		}
+		return true;
 	}
 
 	/**
