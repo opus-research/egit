@@ -267,20 +267,16 @@ public class ReflogView extends ViewPart {
 				if (adapted != null) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(adapted);
-					if (mapping != null) {
-						repository = mapping.getRepository();
-					}
+					repository = mapping.getRepository();
 				}
 			} else if (ssel.getFirstElement() instanceof RepositoryTreeNode) {
 				RepositoryTreeNode repoNode = (RepositoryTreeNode) ssel
 						.getFirstElement();
 				repository = repoNode.getRepository();
 			}
-			reflogTableViewer.setInput(repository);
 			if (repository != null) {
+				reflogTableViewer.setInput(repository);
 				form.setText(getRepositoryName(repository));
-			} else {
-				form.setText(UIText.StagingView_NoSelectionTitle);
 			}
 		}
 	}
