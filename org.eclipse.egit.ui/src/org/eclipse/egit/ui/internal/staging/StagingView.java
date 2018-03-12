@@ -1007,16 +1007,17 @@ public class StagingView extends ViewPart {
 
 				final IndexDiffData indexDiff = doReload(repository);
 
-				boolean indexDiffAvailable = indexDiff !=  null;
+				if(indexDiff ==  null)
+					return;
 
 				final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 				unstagedTableViewer.setInput(update);
 				stagedTableViewer.setInput(update);
-				enableCommitWidgets(indexDiffAvailable);
-				commitAction.setEnabled(indexDiffAvailable && repository.getRepositoryState()
+				enableCommitWidgets(true);
+				commitAction.setEnabled(repository.getRepositoryState()
 						.canCommit());
 				form.setText(StagingView.getRepositoryName(repository));
-				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
+				updateCommitMessageComponent(repositoryChanged);
 				updateSectionText();
 			}
 		});
@@ -1042,7 +1043,7 @@ public class StagingView extends ViewPart {
 		signedOffByAction.setChecked(false);
 	}
 
-	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
+	void updateCommitMessageComponent(boolean repositoryChanged) {
 		CommitHelper helper = new CommitHelper(currentRepository);
 		CommitMessageComponentState oldState = null;
 		if (repositoryChanged) {
@@ -1066,7 +1067,7 @@ public class StagingView extends ViewPart {
 				loadInitialState(helper);
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(indexDiffAvailable && helper.amendAllowed());
+		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
 	}
 
 	private void loadExistingState(CommitHelper helper,
