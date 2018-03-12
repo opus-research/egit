@@ -19,8 +19,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.ObjectWalk;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * Simple data transfer object containing all necessary information for
@@ -32,9 +30,9 @@ public class GitSynchronizeData {
 
 	private final Repository repo;
 
-	private final RevCommit srcRev;
+	private final Ref srcRev;
 
-	private final RevCommit dstRev;
+	private final Ref dstRev;
 
 	private final Set<IProject> projects;
 
@@ -54,17 +52,8 @@ public class GitSynchronizeData {
 	public GitSynchronizeData(Repository repository, String srcRev,
 			String dstRev, boolean includeLocal) throws IOException {
 		repo = repository;
-
-		Ref srcRef = repo.getRef(srcRev);
-		Ref dstRef = repo.getRef(dstRev);
-		ObjectWalk ow = new ObjectWalk(repo);
-		ow.markStart(ow.parseCommit(srcRef.getObjectId()));
-		this.srcRev = ow.next();
-
-		ow.reset();
-		ow.markStart(ow.parseCommit(dstRef.getObjectId()));
-		this.dstRev = ow.next();
-
+		this.srcRev = repo.getRef(srcRev);
+		this.dstRev = repo.getRef(dstRev);
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
 
@@ -89,14 +78,14 @@ public class GitSynchronizeData {
 	/**
 	 * @return synchronize source rev name
 	 */
-	public RevCommit getSrcRevCommit() {
+	public Ref getSrcRev() {
 		return srcRev;
 	}
 
 	/**
 	 * @return synchronize destination rev name
 	 */
-	public RevCommit getDstRevCommit() {
+	public Ref getDstRev() {
 		return dstRev;
 	}
 

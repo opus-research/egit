@@ -27,6 +27,7 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.ObjectWalk;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevCommitList;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -61,8 +62,13 @@ public class GitModelRepository extends GitModelObject {
 		Set<IProject> projectSet = data.getProjects();
 		projects = projectSet.toArray(new IProject[projectSet.size()]);
 
-		srcRev = data.getSrcRevCommit();
-		dstRev = data.getDstRevCommit();
+		ObjectWalk ow = new ObjectWalk(repo);
+		ow.markStart(ow.parseAny(data.getSrcRev().getObjectId()));
+		srcRev = ow.next();
+
+		ow.reset();
+		ow.markStart(ow.parseAny(data.getDstRev().getObjectId()));
+		dstRev = ow.next();
 	}
 
 	@Override
