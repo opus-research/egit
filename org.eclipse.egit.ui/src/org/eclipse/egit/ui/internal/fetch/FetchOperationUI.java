@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.fetch;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -110,12 +109,10 @@ public class FetchOperationUI {
 	 * completion
 	 */
 	public void start() {
-		Job job = new WorkspaceJob(NLS.bind(
-				UIText.FetchOperationUI_FetchJobName,
+		Job job = new Job(NLS.bind(UIText.FetchOperationUI_FetchJobName,
 				sourceString)) {
-
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					execute(monitor);
 				} catch (CoreException e) {
