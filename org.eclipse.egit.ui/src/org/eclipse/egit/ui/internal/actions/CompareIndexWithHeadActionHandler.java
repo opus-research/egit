@@ -82,9 +82,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 			return false;
 
 		IResource resource = (IResource) getAdapter(selection.getFirstElement(), IResource.class);
-		// action is only working on files. Avoid calculation
-		// of unnecessary expensive IndexDiff on a folder
-		if (resource == null || !(resource instanceof IFile))
+		if (resource == null)
 			return false;
 
 		Repository repository = getRepository();

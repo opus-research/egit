@@ -223,8 +223,6 @@ public class SynchronizeWithMenu extends ContributionItem implements
 				return !(rw.parseAny(tag.getObject()) instanceof RevCommit);
 			} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
-			} finally {
-				rw.dispose();
 			}
 		}
 
