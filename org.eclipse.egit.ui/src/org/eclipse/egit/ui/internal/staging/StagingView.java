@@ -239,7 +239,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Form form;
 
-	private SashForm horizontalSashForm;
+	private SashForm mainSashForm;
 
 	private Section stagedSection;
 
@@ -638,15 +638,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 			@Override
 			public void controlResized(ControlEvent e) {
 				org.eclipse.swt.graphics.Rectangle b = parent.getBounds();
-				int oldOrientation = horizontalSashForm.getOrientation();
+				int oldOrientation = mainSashForm.getOrientation();
 				if ((oldOrientation == SWT.HORIZONTAL)
 						&& (b.height > b.width)) {
-					horizontalSashForm.setOrientation(SWT.VERTICAL);
-					horizontalSashForm.setWeights(defaultWeights);
+					mainSashForm.setOrientation(SWT.VERTICAL);
+					mainSashForm.setWeights(defaultWeights);
 				} else if ((oldOrientation == SWT.VERTICAL)
 						&& (b.height <= b.width)) {
-					horizontalSashForm.setOrientation(SWT.HORIZONTAL);
-					horizontalSashForm.setWeights(defaultWeights);
+					mainSashForm.setOrientation(SWT.HORIZONTAL);
+					mainSashForm.setWeights(defaultWeights);
 				}
 			}
 
@@ -661,14 +661,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		toolkit.decorateFormHeading(form);
 		GridLayoutFactory.swtDefaults().applyTo(form.getBody());
 
-		horizontalSashForm = new SashForm(form.getBody(), SWT.HORIZONTAL);
-		saveSashFormWeightsOnDisposal(horizontalSashForm,
+		mainSashForm = new SashForm(form.getBody(), SWT.HORIZONTAL);
+		saveSashFormWeightsOnDisposal(mainSashForm,
 				HORIZONTAL_SASH_FORM_WEIGHT);
-		toolkit.adapt(horizontalSashForm, true, true);
+		toolkit.adapt(mainSashForm, true, true);
 		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(horizontalSashForm);
+				.applyTo(mainSashForm);
 
-		stagingSashForm = new SashForm(horizontalSashForm,
+		stagingSashForm = new SashForm(mainSashForm,
 				getStagingFormOrientation());
 		saveSashFormWeightsOnDisposal(stagingSashForm,
 				STAGING_SASH_FORM_WEIGHT);
@@ -735,7 +735,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
-		Composite rebaseAndCommitComposite = toolkit.createComposite(horizontalSashForm);
+		Composite rebaseAndCommitComposite = toolkit.createComposite(mainSashForm);
 		rebaseAndCommitComposite.setLayout(GridLayoutFactory.fillDefaults().create());
 
 		rebaseSection = toolkit.createSection(rebaseAndCommitComposite,
@@ -1255,7 +1255,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void restoreSashFormWeights() {
-		restoreSashFormWeights(horizontalSashForm,
+		restoreSashFormWeights(mainSashForm,
 				HORIZONTAL_SASH_FORM_WEIGHT);
 		restoreSashFormWeights(stagingSashForm,
 				STAGING_SASH_FORM_WEIGHT);
@@ -3302,13 +3302,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	@Override
 	public void setFocus() {
-		Tree tree = unstagedViewer.getTree();
-		if (tree.getItemCount() > 0) {
-			tree.setSelection(tree.getItems());
-			unstagedViewer.getControl().setFocus();
-			return;
-		}
-		commitMessageText.setFocus();
+		unstagedViewer.getControl().setFocus();
 	}
 
 	@Override
