@@ -49,7 +49,7 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		clickOnDisconnect();
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
 				IResource.DEPTH_INFINITE, null);
-		TestUtil.waitForJobs(500, 5000);
+		waitInUI();
 		mapping = RepositoryMapping.getMapping(project);
 		assertNull(mapping);
 		SWTBotShell connectDialog = openConnectDialog();
@@ -61,11 +61,8 @@ public class DisconnectConnectTest extends LocalRepositoryTestCase {
 		connectDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
 				IResource.DEPTH_INFINITE, null);
-		TestUtil.waitForJobs(500, 5000);
+		waitInUI();
 		mapping = RepositoryMapping.getMapping(project);
-		if (mapping == null) {
-			TestUtil.waitForJobs(500, 5000);
-		}
 		assertNotNull(mapping);
 	}
 

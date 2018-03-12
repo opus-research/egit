@@ -24,14 +24,12 @@
 						checkEnabled="false">
 					<and>
 						<reference definitionId="org.eclipse.egit.gitflow.ui.commandEnabled" />
-						<with variable="org.eclipse.egit.ui.currentRepository">
-							<not>
-								<test
-										forcePluginActivation="true"
-										property="GitFlowRepository.isInitialized">
-								</test>
-							</not>
-						</with>
+						<not>
+							<test
+									forcePluginActivation="true"
+									property="GitFlowRepository.isInitialized">
+							</test>
+						</not>
 					</and>
 				</visibleWhen>
 			</command>
@@ -43,12 +41,10 @@
 					label="%TeamGitFlowMenu.name">
 				<visibleWhen
 						checkEnabled="false">
-					<with variable="org.eclipse.egit.ui.currentRepository">
-						<test
-								forcePluginActivation="true"
-								property="GitFlowRepository.isInitialized">
-						</test>
-					</with>
+					<test
+							forcePluginActivation="true"
+							property="GitFlowRepository.isInitialized">
+					</test>
 				</visibleWhen>
 				<command
 						commandId="org.eclipse.egit.gitflow.ui.command.featureStart"
@@ -201,12 +197,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isInitialized">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isInitialized">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -220,12 +214,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isFeature">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isFeature">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -239,12 +231,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isInitialized">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isInitialized">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -258,12 +248,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isRelease">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isRelease">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -273,18 +261,16 @@
 			</class>
 
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<and>
-						<test
-								forcePluginActivation="true"
-								property="GitFlowRepository.isFeature">
-						</test>
-						<test
-								forcePluginActivation="true"
-								property="GitFlowRepository.hasDefaultRemote">
-						</test>
-					</and>
-				</with>
+				<and>
+					<test
+							forcePluginActivation="true"
+							property="GitFlowRepository.isFeature">
+					</test>
+					<test
+							forcePluginActivation="true"
+							property="GitFlowRepository.hasDefaultRemote">
+					</test>
+				</and>
 			</enabledWhen>
 			<activeWhen>
 				<reference
@@ -299,7 +285,7 @@
 			</class>
 
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
+				<and>
 					<test
 							forcePluginActivation="true"
 							property="GitFlowRepository.isRelease">
@@ -308,7 +294,7 @@
 							forcePluginActivation="true"
 							property="GitFlowRepository.hasDefaultRemote">
 					</test>
-				</with>
+				</and>
 			</enabledWhen>
 			<activeWhen>
 				<reference
@@ -323,7 +309,7 @@
 			</class>
 
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
+				<and>
 					<test
 							forcePluginActivation="true"
 							property="GitFlowRepository.isHotfix">
@@ -332,7 +318,7 @@
 							forcePluginActivation="true"
 							property="GitFlowRepository.hasDefaultRemote">
 					</test>
-				</with>
+				</and>
 			</enabledWhen>
 			<activeWhen>
 				<reference
@@ -351,12 +337,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.hasDefaultRemote">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.hasDefaultRemote">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -370,12 +354,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isInitialized">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isInitialized">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -389,12 +371,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isFeature">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isFeature">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -408,12 +388,10 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isInitialized">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isInitialized">
+				</test>
 			</enabledWhen>
 		</handler>
 		<handler
@@ -427,23 +405,21 @@
 				</reference>
 			</activeWhen>
 			<enabledWhen>
-				<with variable="org.eclipse.egit.ui.currentRepository">
-					<test
-							forcePluginActivation="true"
-							property="GitFlowRepository.isHotfix">
-					</test>
-				</with>
+				<test
+						forcePluginActivation="true"
+						property="GitFlowRepository.isHotfix">
+				</test>
 			</enabledWhen>
 		</handler>
 	</extension>
 	<extension
 			point="org.eclipse.core.expressions.propertyTesters">
 		<propertyTester
-				class="org.eclipse.egit.gitflow.ui.internal.properties.RepositoryPropertyTester"
+				class="org.eclipse.egit.gitflow.ui.internal.selection.SelectionPropertyTester"
 				id="org.eclipse.egit.gitflow.ui.propertyTester"
 				namespace="GitFlowRepository"
 				properties="isFeature,isRelease,isHotfix,isDevelop,isMaster,isInitialized,hasDefaultRemote"
-				type="org.eclipse.jgit.lib.Repository">
+				type="java.util.Collection">
 		</propertyTester>
 	</extension>
 
@@ -508,12 +484,10 @@
 						checkEnabled="false">
 					<and>
 						<reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
-						<with variable="org.eclipse.egit.ui.currentRepository">
-							<test
-									forcePluginActivation="true"
-									property="GitFlowRepository.isInitialized">
-							</test>
-						</with>
+						<test
+								forcePluginActivation="true"
+								property="GitFlowRepository.isInitialized">
+						</test>
 					</and>
 				</visibleWhen>
 				<command
@@ -597,14 +571,12 @@
 						checkEnabled="false">
 					<and>
 						<reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
-						<with variable="org.eclipse.egit.ui.currentRepository">
-							<not>
-								<test
-										forcePluginActivation="true"
-										property="GitFlowRepository.isInitialized">
-								</test>
-							</not>
-						</with>
+						<not>
+							<test
+									forcePluginActivation="true"
+									property="GitFlowRepository.isInitialized">
+							</test>
+						</not>
 					</and>
 				</visibleWhen>
 			</command>
