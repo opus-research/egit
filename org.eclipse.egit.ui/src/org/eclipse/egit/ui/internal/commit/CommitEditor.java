@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2012 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -18,7 +18,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
@@ -307,7 +306,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	}
 
 	private void addContributions(IToolBarManager toolBarManager) {
-		IMenuService menuService = CommonUtils.getService(getSite(), IMenuService.class);
+		IMenuService menuService = (IMenuService) getSite().getService(
+				IMenuService.class);
 		if (menuService != null
 				&& toolBarManager instanceof ContributionManager) {
 			ContributionManager contributionManager = (ContributionManager) toolBarManager;
@@ -326,7 +326,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	public Object getAdapter(Class adapter) {
 		if (RepositoryCommit.class == adapter)
-			return CommonUtils.getAdapter(getEditorInput(), adapter);
+			return getEditorInput().getAdapter(adapter);
 
 		return super.getAdapter(adapter);
 	}
@@ -337,7 +337,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	public void init(IEditorSite site, IEditorInput input)
 			throws PartInitException {
-		if (CommonUtils.getAdapter(input, RepositoryCommit.class) == null)
+		if (input.getAdapter(RepositoryCommit.class) == null)
 			throw new PartInitException(
 					"Input could not be adapted to commit object"); //$NON-NLS-1$
 		super.init(site, input);

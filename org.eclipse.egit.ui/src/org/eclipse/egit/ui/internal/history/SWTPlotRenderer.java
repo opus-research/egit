@@ -24,6 +24,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
@@ -81,6 +82,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private int textHeight;
 
+	private boolean enableAntialias = true;
+
 	private final ResourceManager resources;
 
 	GC g;
@@ -113,6 +116,13 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	void paint(final Event event, Ref actHeadRef) {
 		g = event.gc;
+
+		if (this.enableAntialias)
+			try {
+				g.setAntialias(SWT.ON);
+			} catch (SWTException e) {
+				this.enableAntialias = false;
+			}
 
 		this.headRef = actHeadRef;
 		cellX = event.x;
@@ -165,7 +175,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	protected void drawText(final String msg, final int x, final int y) {
 		final Point textsz = g.textExtent(msg);
-		final int texty = (y - textsz.y) / 2;
+		final int texty = (y * 2 - textsz.y) / 2;
 		g.setForeground(cellFG);
 		g.setBackground(cellBG);
 		g.drawString(msg, cellX + x, cellY + texty, true);
@@ -252,7 +262,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		Point textsz = g.stringExtent(txt);
 		int arc = textsz.y / 2;
 		final int texty = (y * 2 - textsz.y) / 2;
-		final int outerWidth = textsz.x + 7;
 
 		// Draw backgrounds
 		g.setLineWidth(1);
@@ -266,7 +275,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 				textsz.y - 2, arc - 1, arc - 1);
 
 		g.setForeground(resources.createColor(labelOuter));
-		g.drawRoundRectangle(cellX + x, cellY + texty - 1, outerWidth,
+		g.drawRoundRectangle(cellX + x, cellY + texty - 1, textsz.x + 7,
 				textsz.y + 1, arc, arc);
 
 		g.setForeground(sys_black);
@@ -277,7 +286,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		if (isHead)
 			g.setFont(oldFont);
 
-		labelCoordinates.put(name, new Point(x, x + outerWidth));
+		labelCoordinates.put(name, new Point(x, x + textsz.x));
 		return 10 + textsz.x;
 	}
 

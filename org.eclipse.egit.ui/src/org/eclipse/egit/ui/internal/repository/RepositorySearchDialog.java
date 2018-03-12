@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -100,8 +101,6 @@ public class RepositorySearchDialog extends WizardPage {
 
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
-
-	private boolean isUserModifiedTreeSelection;
 
 	private static final class ContentProvider implements ITreeContentProvider {
 
@@ -197,6 +196,7 @@ public class RepositorySearchDialog extends WizardPage {
 	@Override
 	public void dispose() {
 		fResult = getCheckedItems();
+		fResult.addAll(getCheckedItems());
 		super.dispose();
 	}
 
@@ -298,16 +298,11 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public boolean isElementVisible(Viewer viewer, Object element) {
-				boolean elementVisible = super
-						.isElementVisible(viewer, element);
-				// Only user selected elements are not searched.
-				if (getCheckedItems().contains(element)) {
-					if (!isUserModifiedTreeSelection)
-						fTreeViewer.setChecked(element, elementVisible);
-					else
-						return true;
-				}
-				return elementVisible;
+
+				if (getCheckedItems().contains(element))
+					return true;
+
+				return super.isElementVisible(viewer, element);
 			}
 		};
 
@@ -317,7 +312,6 @@ public class RepositorySearchDialog extends WizardPage {
 		fTreeViewer.addCheckStateListener(new ICheckStateListener() {
 
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				isUserModifiedTreeSelection = true;
 				enableOk();
 			}
 		});
@@ -407,14 +401,22 @@ public class RepositorySearchDialog extends WizardPage {
 				continue;
 
 			if (FileKey.isGitRepository(child, FS.DETECTED)) {
-				strings.add(child.getAbsolutePath());
+				try {
+					strings.add(child.getCanonicalPath());
+				} catch (IOException e) {
+					// ignore here
+				}
 				monitor.setTaskName(NLS
 						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
 								Integer.valueOf(strings.size())));
 			} else if (FileKey.isGitRepository(new File(child,
 					Constants.DOT_GIT), FS.DETECTED)) {
-				strings.add(new File(child, Constants.DOT_GIT)
-						.getAbsolutePath());
+				try {
+					strings.add(new File(child, Constants.DOT_GIT)
+							.getCanonicalPath());
+				} catch (IOException e) {
+					// ignore here
+				}
 				monitor.setTaskName(NLS
 						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
 								Integer.valueOf(strings.size())));
@@ -443,14 +445,16 @@ public class RepositorySearchDialog extends WizardPage {
 		if(!file.exists())
 			return;
 
-		prefs.put(PREF_PATH, file.getAbsolutePath());
 		try {
-			prefs.flush();
-		} catch (BackingStoreException e1) {
-			// ignore here
+			prefs.put(PREF_PATH, file.getCanonicalPath());
+			try {
+				prefs.flush();
+			} catch (BackingStoreException e1) {
+				// ignore here
+			}
+		} catch (IOException e2) {
+			// ignore
 		}
-
-		final TreeSet<String> validDirs = new TreeSet<String>(getCheckedItems());
 
 		IRunnableWithProgress action = new IRunnableWithProgress() {
 
@@ -485,6 +489,8 @@ public class RepositorySearchDialog extends WizardPage {
 
 		int foundOld = 0;
 
+		final TreeSet<String> validDirs = new TreeSet<String>();
+
 		for (String foundDir : directories) {
 			if (!fExistingDirectories.contains(foundDir)) {
 				validDirs.add(foundDir);
@@ -508,7 +514,6 @@ public class RepositorySearchDialog extends WizardPage {
 		fTreeViewer.setInput(validDirs);
 		// this sets all to selected
 		fTreeViewer.setAllChecked(true);
-		isUserModifiedTreeSelection = false;
 		enableOk();
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,38 +28,29 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
-import org.eclipse.egit.ui.internal.GitLabels;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
-import org.eclipse.egit.ui.internal.actions.ReplaceWithOursTheirsMenu;
 import org.eclipse.egit.ui.internal.commands.shared.AbortRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
 import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
@@ -76,6 +67,7 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
+import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -166,13 +158,10 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.IPartListener2;
-import org.eclipse.ui.IPartService;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
@@ -187,7 +176,6 @@ import org.eclipse.ui.operations.UndoRedoActionGroup;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
-import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /**
  * A GitX style staging view with embedded commit dialog.
@@ -229,11 +217,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private boolean reactOnSelection = true;
 
-	private boolean isViewHidden;
-
 	private ISelectionListener selectionChangedListener;
-
-	private IPartListener2 partListener;
 
 	private ToolBarManager unstagedToolBarManager;
 
@@ -335,94 +319,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 					return;
 				}
 			}
-		}
-	}
-
-	private final class PartListener implements IPartListener2 {
-		StructuredSelection lastSelection;
-
-		public void partVisible(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, false);
-		}
-
-		public void partOpened(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, false);
-		}
-
-		public void partHidden(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, true);
-		}
-
-		public void partClosed(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, true);
-		}
-
-		public void partActivated(IWorkbenchPartReference partRef) {
-			if (isMe(partRef)) {
-				if (lastSelection != null) {
-					// view activated: synchronize with last active part
-					// selection
-					reactOnSelection(lastSelection);
-					lastSelection = null;
-				}
-				return;
-			}
-			IWorkbenchPart part = partRef.getPart(false);
-			StructuredSelection sel = null;
-			if (part instanceof IEditorPart) {
-				IResource resource = getResource((IEditorPart) part);
-				if (resource != null) {
-					sel = new StructuredSelection(resource);
-				}
-			} else {
-				ISelection selection = partRef.getPage().getSelection();
-				if (selection instanceof StructuredSelection) {
-					sel = (StructuredSelection) selection;
-				}
-			}
-			if (isViewHidden) {
-				// remember last selection in the part so that we can
-				// synchronize on it as soon as we will be visible
-				lastSelection = sel;
-			} else {
-				lastSelection = null;
-				if (sel != null) {
-					reactOnSelection(sel);
-				}
-			}
-
-		}
-
-		private IResource getResource(IEditorPart part) {
-			IEditorInput input = part.getEditorInput();
-			if (input instanceof IFileEditorInput) {
-				return ((IFileEditorInput) input).getFile();
-			} else {
-				return CommonUtils.getAdapter(input, IResource.class);
-			}
-		}
-
-		private void updateHiddenState(IWorkbenchPartReference partRef,
-				boolean hidden) {
-			if (isMe(partRef)) {
-				isViewHidden = hidden;
-			}
-		}
-
-		private boolean isMe(IWorkbenchPartReference partRef) {
-			return partRef.getPart(false) == StagingView.this;
-		}
-
-		public void partDeactivated(IWorkbenchPartReference partRef) {
-			//
-		}
-
-		public void partBroughtToTop(IWorkbenchPartReference partRef) {
-			//
-		}
-
-		public void partInputChanged(IWorkbenchPartReference partRef) {
-			//
 		}
 	}
 
@@ -541,8 +437,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private LocalResourceManager resources = new LocalResourceManager(
 			JFaceResources.getResources());
 
-	private boolean disposed;
-
 	private Image getImage(ImageDescriptor descriptor) {
 		return (Image) this.resources.get(descriptor);
 	}
@@ -555,8 +449,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
-				if (commitMessageComponent.isAmending()
-						|| userEnteredCommitMessage())
+				if (userEnteredCommmitMessage())
 					saveCommitMessageComponentState();
 				else
 					deleteCommitMessageComponentState();
@@ -601,8 +494,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(unstagedViewer.getControl());
 		unstagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
+		unstagedViewer.getTree().setLinesVisible(true);
 		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
-		unstagedViewer.setContentProvider(createStagingContentProvider(true));
+		unstagedViewer.setContentProvider(new StagingViewContentProvider(this,
+				true));
 		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
 				| DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
@@ -774,7 +669,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 			@Override
 			protected IHandlerService getHandlerService() {
-				return CommonUtils.getService(getSite(), IHandlerService.class);
+				return (IHandlerService) getSite().getService(IHandlerService.class);
 			}
 		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
@@ -864,8 +759,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.applyTo(stagedViewer.getControl());
 		stagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
+		stagedViewer.getTree().setLinesVisible(true);
 		stagedViewer.setLabelProvider(createLabelProvider(stagedViewer));
-		stagedViewer.setContentProvider(createStagingContentProvider(false));
+		stagedViewer.setContentProvider(new StagingViewContentProvider(this,
+				false));
 		stagedViewer.addDragSupport(
 				DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
@@ -901,17 +798,19 @@ public class StagingView extends ViewPart implements IShowInSource {
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
-				if (part == getSite().getPart()) {
+				if (!reactOnSelection || part == getSite().getPart())
 					return;
-				}
-				// don't accept text selection, only structural one
-				if (selection instanceof StructuredSelection) {
-					reactOnSelection((StructuredSelection) selection);
-				}
+
+				// this may happen if we switch between editors
+				if (part instanceof IEditorPart) {
+					IEditorInput input = ((IEditorPart) part).getEditorInput();
+					if (input instanceof IFileEditorInput)
+						reactOnSelection(new StructuredSelection(
+								((IFileEditorInput) input).getFile()));
+				} else
+					reactOnSelection(selection);
 			}
 		};
-
-		partListener = new PartListener();
 
 		IPreferenceStore preferenceStore = getPreferenceStore();
 		if (preferenceStore.contains(UIPreferences.STAGING_VIEW_SYNC_SELECTION))
@@ -976,10 +875,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
-		ISelectionService srv = CommonUtils.getService(site, ISelectionService.class);
+		ISelectionService srv = (ISelectionService) site
+				.getService(ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
-		CommonUtils.getService(site, IPartService.class).addPartListener(
-				partListener);
 
 		// Use current selection to populate staging view
 		UIUtils.notifySelectionChangedWithCurrentSelection(
@@ -1002,14 +900,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		};
 		unstagedViewer.addFilter(filter);
 		stagedViewer.addFilter(filter);
-
-		IWorkbenchSiteProgressService service = CommonUtils.getService(
-				getSite(), IWorkbenchSiteProgressService.class);
-		if (service != null && reactOnSelection)
-			// If we are linked, each time IndexDiffUpdateJob starts, indicate
-			// that the view is busy (e.g. reload() will trigger this job in
-			// background!).
-			service.showBusyForFamily(org.eclipse.egit.core.JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 	}
 
 	private void executeRebaseOperation(AbstractRebaseCommandHandler command) {
@@ -1190,24 +1080,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			return SWT.VERTICAL;
 	}
 
-	private void enableAllWidgets(boolean enabled) {
-		if (isDisposed())
-			return;
-		enableCommitWidgets(enabled);
-		enableStagingWidgets(enabled);
-	}
-
-	private void enableStagingWidgets(boolean enabled) {
-		if (isDisposed())
-			return;
-		unstagedViewer.getControl().setEnabled(enabled);
-		stagedViewer.getControl().setEnabled(enabled);
-	}
-
 	private void enableCommitWidgets(boolean enabled) {
-		if (isDisposed())
-			return;
-
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
@@ -1216,6 +1089,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 		addChangeIdAction.setEnabled(enabled);
 		commitButton.setEnabled(enabled);
 		commitAndPushButton.setEnabled(enabled);
+
+		if (!enabled) {
+			commitMessageText.setText(""); //$NON-NLS-1$
+			committerText.setText(""); //$NON-NLS-1$
+			authorText.setText(""); //$NON-NLS-1$
+		}
 	}
 
 	private void enableAuthorText(boolean enabled) {
@@ -1275,11 +1154,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
 			public void run() {
-				if (cacheEntry != null) {
-					schedule(
-							cacheEntry.createRefreshResourcesAndIndexDiffJob(),
-							false);
-				}
+				if(cacheEntry != null)
+					cacheEntry.refreshResourcesAndIndexDiff();
 			}
 		};
 		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
@@ -1331,8 +1207,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				final boolean enable = isChecked();
 				getLabelProvider(stagedViewer).setFileNameMode(enable);
 				getLabelProvider(unstagedViewer).setFileNameMode(enable);
-				getContentProvider(stagedViewer).setFileNameMode(enable);
-				getContentProvider(unstagedViewer).setFileNameMode(enable);
 				refreshViewersPreservingExpandedElements();
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
@@ -1431,7 +1305,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		// For the normal resource undo/redo actions to be active, so that files
 		// deleted via the "Delete" action in the staging view can be restored.
-		IUndoContext workspaceContext = CommonUtils.getAdapter(ResourcesPlugin.getWorkspace(), IUndoContext.class);
+		IUndoContext workspaceContext = (IUndoContext) ResourcesPlugin.getWorkspace().getAdapter(IUndoContext.class);
 		undoRedoActionGroup = new UndoRedoActionGroup(getViewSite(), workspaceContext, true);
 		undoRedoActionGroup.fillActionBars(actionBars);
 
@@ -1454,6 +1328,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private TreeViewer createTree(Composite composite) {
 		Tree tree = toolkit.createTree(composite, SWT.FULL_SELECTION
 				| SWT.MULTI);
+		tree.setLinesVisible(true);
 		TreeViewer treeViewer = new TreeViewer(tree);
 		return treeViewer;
 	}
@@ -1466,15 +1341,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		ProblemLabelDecorator decorator = new ProblemLabelDecorator(treeViewer);
 		return new TreeDecoratingLabelProvider(baseProvider, decorator);
-	}
-
-	private StagingViewContentProvider createStagingContentProvider(
-			boolean unstaged) {
-		StagingViewContentProvider provider = new StagingViewContentProvider(
-				this, unstaged);
-		provider.setFileNameMode(getPreferenceStore().getBoolean(
-				UIPreferences.STAGING_VIEW_FILENAME_MODE));
-		return provider;
 	}
 
 	private IPreferenceStore getPreferenceStore() {
@@ -1544,15 +1410,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 			runCommand(ActionCommands.COMPARE_INDEX_WITH_HEAD_ACTION, selection);
 			break;
 
-		case CONFLICTING:
-			runCommand(ActionCommands.MERGE_TOOL_ACTION, selection);
-			break;
-
 		case MISSING:
 		case MISSING_AND_CHANGED:
 		case MODIFIED:
-		case MODIFIED_AND_CHANGED:
-		case MODIFIED_AND_ADDED:
+		case PARTIALLY_MODIFIED:
+		case CONFLICTING:
 		case UNTRACKED:
 		default:
 			// compare with index
@@ -1608,8 +1470,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 							openSelectionInEditor(fileSelection);
 						}
 					};
-					openWorkingTreeVersion.setEnabled(!submoduleSelected
-							&& anyElementExistsInWorkspace(fileSelection));
+					openWorkingTreeVersion.setEnabled(!submoduleSelected);
 					menuMgr.add(openWorkingTreeVersion);
 				}
 
@@ -1622,8 +1483,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				boolean addDelete = availableActions.contains(StagingEntry.Action.DELETE);
 				boolean addIgnore = availableActions.contains(StagingEntry.Action.IGNORE);
 				boolean addLaunchMergeTool = availableActions.contains(StagingEntry.Action.LAUNCH_MERGE_TOOL);
-				boolean addReplaceWithOursTheirsMenu = availableActions
-						.contains(StagingEntry.Action.REPLACE_WITH_OURS_THEIRS_MENU);
 
 				if (addStage)
 					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
@@ -1668,30 +1527,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 					menuMgr.add(createItem(UIText.StagingView_MergeTool,
 							ActionCommands.MERGE_TOOL_ACTION,
 							fileSelection));
-				if (addReplaceWithOursTheirsMenu) {
-					MenuManager replaceWithMenu = new MenuManager(
-							UIText.StagingView_ReplaceWith);
-					ReplaceWithOursTheirsMenu oursTheirsMenu = new ReplaceWithOursTheirsMenu();
-					oursTheirsMenu.initialize(getSite());
-					replaceWithMenu.add(oursTheirsMenu);
-					menuMgr.add(replaceWithMenu);
-				}
 				menuMgr.add(new Separator());
 				menuMgr.add(createShowInMenu());
 			}
 		});
 
-	}
-
-	private boolean anyElementExistsInWorkspace(IStructuredSelection s) {
-		for (Object element : s.toList()) {
-			if (element instanceof StagingEntry) {
-				StagingEntry entry = (StagingEntry) element;
-				if (entry.getFile() != null && entry.getFile().exists())
-					return true;
-			}
-		}
-		return false;
 	}
 
 	/**
@@ -1717,7 +1557,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * elements
 	 */
 	public void refreshViewers() {
-		syncExec(new Runnable() {
+		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				refreshViewersInternal();
 			}
@@ -1728,7 +1568,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 * Refresh the unstaged and staged viewers, preserving expanded elements
 	 */
 	public void refreshViewersPreservingExpandedElements() {
-		syncExec(new Runnable() {
+		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				Object[] unstagedExpanded = unstagedViewer
 						.getExpandedElements();
@@ -1951,82 +1791,40 @@ public class StagingView extends ViewPart implements IShowInSource {
 		};
 	}
 
-	private boolean shouldUpdateSelection() {
-		return !isDisposed() && !isViewHidden && reactOnSelection;
-	}
-
-	private void reactOnSelection(StructuredSelection selection) {
-		if (selection.size() != 1 || !shouldUpdateSelection()) {
-			return;
-		}
-		Object firstElement = selection.getFirstElement();
-		if (firstElement instanceof RepositoryTreeNode) {
-			RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
-			if (currentRepository != repoNode.getRepository()) {
+	private void reactOnSelection(ISelection selection) {
+		if (selection instanceof StructuredSelection) {
+			StructuredSelection ssel = (StructuredSelection) selection;
+			if (ssel.size() != 1)
+				return;
+			Object firstElement = ssel.getFirstElement();
+			if (firstElement instanceof IResource)
+				showResource((IResource) firstElement);
+			else if (firstElement instanceof RepositoryTreeNode) {
+				RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
 				reload(repoNode.getRepository());
+			} else if (firstElement instanceof IAdaptable) {
+				IResource adapted = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
+				if (adapted != null)
+					showResource(adapted);
 			}
-		} else {
-			IResource resource = CommonUtils.getAdapterForObject(firstElement,
-					IResource.class);
-			showResource(resource);
 		}
 	}
 
 	private void showResource(final IResource resource) {
-		if (resource == null || !resource.isAccessible()) {
-			return;
-		}
-		Job.getJobManager().cancel(JobFamilies.UPDATE_SELECTION);
-		Job job = new Job(UIText.StagingView_GetRepo) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				Repository newRep = getRepositoryOrNestedSubmoduleRepository(resource);
-				if (newRep != null && newRep != currentRepository) {
-					if (monitor.isCanceled()) {
-						return Status.CANCEL_STATUS;
-					}
-					reload(newRep);
-				}
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				return JobFamilies.UPDATE_SELECTION == family;
-			}
-
-			@Override
-			public boolean shouldRun() {
-				return shouldUpdateSelection();
-			}
-		};
-		job.setSystem(true);
-		schedule(job, false);
-	}
-
-	private static Repository getRepositoryOrNestedSubmoduleRepository(
-			IResource resource) {
 		IProject project = resource.getProject();
 		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-		if (mapping == null) {
-			return null;
-		}
-		Repository repo = mapping.getSubmoduleRepository(resource);
-		if (repo == null) {
-			repo = mapping.getRepository();
-		}
-		return repo;
+		if (mapping == null)
+			return;
+		if (mapping.getRepository() != currentRepository)
+			reload(mapping.getRepository());
 	}
 
 	private void stage(IStructuredSelection selection) {
 		StagingViewContentProvider contentProvider = getContentProvider(unstagedViewer);
-		final Git git = new Git(currentRepository);
+		Git git = new Git(currentRepository);
 		Iterator iterator = selection.iterator();
-		final List<String> addPaths = new ArrayList<String>();
-		final List<String> rmPaths = new ArrayList<String>();
+		List<String> addPaths = new ArrayList<String>();
+		List<String> rmPaths = new ArrayList<String>();
 		resetPathsToExpand();
 		while (iterator.hasNext()) {
 			Object element = iterator.next();
@@ -2046,8 +1844,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IResource resource = AdapterUtils.adapt(element, IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-					// doesn't do anything if the current repository is a
-					// submodule of the mapped repo
 					if (mapping != null && mapping.getRepository() == currentRepository) {
 						String path = mapping.getRepoRelativePath(resource);
 						// If resource corresponds to root of working directory
@@ -2060,64 +1856,34 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		}
 
-		// start long running operations
-		if (!addPaths.isEmpty()) {
-			Job addJob = new Job(UIText.StagingView_AddJob) {
-				@Override
-				protected IStatus run(IProgressMonitor monitor) {
-					try {
-						AddCommand add = git.add();
-						for (String addPath : addPaths)
-							add.addFilepattern(addPath);
-						add.call();
-					} catch (NoFilepatternException e1) {
-						// cannot happen
-					} catch (JGitInternalException e1) {
-						Activator.handleError(e1.getCause().getMessage(),
-								e1.getCause(), true);
-					} catch (Exception e1) {
-						Activator.handleError(e1.getMessage(), e1, true);
-					}
-					return Status.OK_STATUS;
-				}
-
-				@Override
-				public boolean belongsTo(Object family) {
-					return family == JobFamilies.ADD_TO_INDEX;
-				}
-			};
-
-			schedule(addJob, true);
-		}
-
-		if (!rmPaths.isEmpty()) {
-			Job removeJob = new Job(UIText.StagingView_RemoveJob) {
-				@Override
-				protected IStatus run(IProgressMonitor monitor) {
-					try {
-						RmCommand rm = git.rm().setCached(true);
-						for (String rmPath : rmPaths)
-							rm.addFilepattern(rmPath);
-						rm.call();
-					} catch (NoFilepatternException e) {
-						// cannot happen
-					} catch (JGitInternalException e) {
-						Activator.handleError(e.getCause().getMessage(),
-								e.getCause(), true);
-					} catch (Exception e) {
-						Activator.handleError(e.getMessage(), e, true);
-					}
-					return Status.OK_STATUS;
-				}
-
-				@Override
-				public boolean belongsTo(Object family) {
-					return family == JobFamilies.REMOVE_FROM_INDEX;
-				}
-			};
-
-			schedule(removeJob, true);
-		}
+		if (!addPaths.isEmpty())
+			try {
+				AddCommand add = git.add();
+				for (String addPath : addPaths)
+					add.addFilepattern(addPath);
+				add.call();
+			} catch (NoFilepatternException e1) {
+				// cannot happen
+			} catch (JGitInternalException e1) {
+				Activator.handleError(e1.getCause().getMessage(),
+						e1.getCause(), true);
+			} catch (Exception e1) {
+				Activator.handleError(e1.getMessage(), e1, true);
+			}
+		if (!rmPaths.isEmpty())
+			try {
+				RmCommand rm = git.rm().setCached(true);
+				for (String rmPath : rmPaths)
+					rm.addFilepattern(rmPath);
+				rm.call();
+			} catch (NoFilepatternException e) {
+				// cannot happen
+			} catch (JGitInternalException e) {
+				Activator.handleError(e.getCause().getMessage(), e.getCause(),
+						true);
+			} catch (Exception e) {
+				Activator.handleError(e.getMessage(), e, true);
+			}
 	}
 
 	private void selectEntryForStaging(StagingEntry entry,
@@ -2130,8 +1896,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			break;
 		case CONFLICTING:
 		case MODIFIED:
-		case MODIFIED_AND_CHANGED:
-		case MODIFIED_AND_ADDED:
+		case PARTIALLY_MODIFIED:
 		case UNTRACKED:
 			addPaths.add(entry.getPath());
 			break;
@@ -2146,32 +1911,19 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (selection.isEmpty())
 			return;
 
-		final List<String> paths = processUnstageSelection(selection);
+		List<String> paths = processUnstageSelection(selection);
 		if (paths.isEmpty())
 			return;
 
-		final Git git = new Git(currentRepository);
-
-		Job resetJob = new Job(UIText.StagingView_ResetJob) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				try {
-					ResetCommand reset = git.reset();
-					for (String path : paths)
-						reset.addPath(path);
-					reset.call();
-				} catch (GitAPIException e) {
-					Activator.handleError(e.getMessage(), e, true);
-				}
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				return family == JobFamilies.RESET;
-			}
-		};
-		schedule(resetJob, true);
+		try {
+			Git git = new Git(currentRepository);
+			ResetCommand reset = git.reset();
+			for (String path : paths)
+				reset.addPath(path);
+			reset.call();
+		} catch (GitAPIException e) {
+			Activator.handleError(e.getMessage(), e, true);
+		}
 	}
 
 	private List<String> processUnstageSelection(IStructuredSelection selection) {
@@ -2261,10 +2013,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 *            {@code}true if rebase is in progress
 	 */
 	protected void updateRebaseButtonVisibility(final boolean isRebasing) {
-		asyncExec(new Runnable() {
+		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
-				if (isDisposed())
-					return;
 				showControl(rebaseSection, isRebasing);
 				rebaseSection.getParent().layout(true);
 			}
@@ -2282,33 +2032,23 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 *            if the current commit should be amended
 	 */
 	public void setAmending(boolean isAmending) {
-		if (isDisposed())
-			return;
 		if (amendPreviousCommitAction.isChecked() != isAmending) {
 			amendPreviousCommitAction.setChecked(isAmending);
 			amendPreviousCommitAction.run();
 		}
+
 	}
 
 	/**
-	 * @param message
-	 *            commit message to set for current repository
-	 */
-	public void setCommitMessage(String message) {
-		commitMessageText.setText(message);
-	}
-
-	/**
-	 * Reload the staging view asynchronously
+	 * Reload the staging view
 	 *
 	 * @param repository
 	 */
 	public void reload(final Repository repository) {
-		if (isDisposed()) {
+		if (form.isDisposed())
 			return;
-		}
 		if (repository == null) {
-			asyncExec(new Runnable() {
+			syncExec(new Runnable() {
 				public void run() {
 					clearRepository();
 				}
@@ -2316,29 +2056,19 @@ public class StagingView extends ViewPart implements IShowInSource {
 			return;
 		}
 
-		if (!isValidRepo(repository)) {
+		if (!isValidRepo(repository))
 			return;
-		}
 
 		final boolean repositoryChanged = currentRepository != repository;
 
-		asyncExec(new Runnable() {
+		syncExec(new Runnable() {
 
 			public void run() {
-				if (isDisposed()) {
+				if (form.isDisposed())
 					return;
-				}
 
 				final IndexDiffData indexDiff = doReload(repository);
-				boolean indexDiffAvailable;
-				boolean noConflicts;
-				if (indexDiff == null) {
-					indexDiffAvailable = false;
-					noConflicts = true;
-				} else {
-					indexDiffAvailable = true;
-					noConflicts = indexDiff.getConflicting().isEmpty();
-				}
+				boolean indexDiffAvailable = (indexDiff != null);
 
 				if (repositoryChanged) {
 					// Reset paths, they're from the old repository
@@ -2371,10 +2101,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 				updateRebaseButtonVisibility(repository.getRepositoryState()
 						.isRebasing());
 
-
 				boolean commitEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().canCommit()
-						&& noConflicts;
+						&& indexDiff.getConflicting().isEmpty();
 				commitButton.setEnabled(commitEnabled);
 
 				boolean commitAndPushEnabled = commitEnabled
@@ -2383,12 +2112,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 				boolean rebaseContinueEnabled = indexDiffAvailable
 						&& repository.getRepositoryState().isRebasing()
-						&& noConflicts;
+						&& indexDiff.getConflicting().isEmpty();
 				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
 
-				form.setText(GitLabels.getStyledLabelSafe(repository).toString());
+				form.setText(StagingView.getRepositoryName(repository));
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable && noConflicts);
+				enableCommitWidgets(indexDiffAvailable
+						&& indexDiff.getConflicting().isEmpty());
 				updateSectionText();
 			}
 		});
@@ -2458,8 +2188,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		if (repositoryChanged)
-			if (commitMessageComponent.isAmending()
-					|| userEnteredCommitMessage())
+			if (userEnteredCommmitMessage())
 				saveCommitMessageComponentState();
 			else
 				deleteCommitMessageComponentState();
@@ -2477,17 +2206,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadInitialState(helper);
 			else
 				loadExistingState(helper, oldState);
-		} else { // repository did not change
-			if (!commitMessageComponent.getHeadCommit().equals(
-					helper.getPreviousCommit())) {
-				if (!commitMessageComponent.isAmending()
-						&& userEnteredCommitMessage())
+		} else // repository did not change
+			if (userEnteredCommmitMessage()) {
+				if (!commitMessageComponent.getHeadCommit().equals(
+						helper.getPreviousCommit()))
 					addHeadChangedWarning(commitMessageComponent
 							.getCommitMessage());
-				else
-					loadInitialState(helper);
-			}
-		}
+			} else
+				loadInitialState(helper);
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
@@ -2549,7 +2275,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		commitMessageComponent.enableListeners(true);
 	}
 
-	private boolean userEnteredCommitMessage() {
+	private boolean userEnteredCommmitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
 		String message = commitMessageComponent.getCommitMessage().replace(
@@ -2603,6 +2329,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 		return CommitMessageComponentStateManager.loadState(currentRepository);
 	}
 
+	private static String getRepositoryName(Repository repository) {
+		String repoName = Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repository);
+		RepositoryState state = repository.getRepositoryState();
+		if (state != RepositoryState.SAFE)
+			return repoName + '|' + state.getDescription();
+		else
+			return repoName;
+	}
+
 	private Collection<String> getStagedFileNames() {
 		StagingViewContentProvider stagedContentProvider = getContentProvider(stagedViewer);
 		StagingEntry[] entries = stagedContentProvider.getStagingEntries();
@@ -2640,50 +2376,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
 		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
-		final Job commitJob = new CommitJob(currentRepository, commitOperation)
+		Job commitJob = new CommitJob(currentRepository, commitOperation)
 			.setOpenCommitEditor(openNewCommitsAction.isChecked())
 			.setPushUpstream(pushUpstream);
-
-		// don't allow to do anything as long as commit is in progress
-		enableAllWidgets(false);
-		commitJob.addJobChangeListener(new JobChangeAdapter() {
-			@Override
-			public void done(IJobChangeEvent event) {
-				asyncExec(new Runnable() {
-					public void run() {
-						enableAllWidgets(true);
-						if (commitJob.getResult().isOK()) {
-							commitMessageText.setText(EMPTY_STRING);
-						}
-					}
-				});
-			}
-		});
-
-		schedule(commitJob, true);
-
+		commitJob.schedule();
 		CommitMessageHistory.saveCommitHistory(commitMessage);
 		clearCommitMessageToggles();
-	}
-
-	/**
-	 * Schedule given job in context of the current view. The view will indicate
-	 * progress as long as job is running.
-	 *
-	 * @param job
-	 *            non null
-	 * @param useRepositoryRule
-	 *            true to use current repository rule for the given job, false
-	 *            to not enforce any rule on the job
-	 */
-	private void schedule(Job job, boolean useRepositoryRule) {
-		if (useRepositoryRule)
-			job.setRule(RuleUtil.getRule(currentRepository));
-		IWorkbenchSiteProgressService service = CommonUtils.getService(getSite(), IWorkbenchSiteProgressService.class);
-		if (service != null)
-			service.schedule(job, 0, true);
-		else
-			job.schedule();
+		commitMessageText.setText(EMPTY_STRING);
 	}
 
 	private boolean isCommitWithoutFilesAllowed() {
@@ -2705,38 +2404,25 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void dispose() {
 		super.dispose();
 
-		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
+		ISelectionService srv = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
-		CommonUtils.getService(getSite(), IPartService.class)
-				.removePartListener(partListener);
 
-		if (cacheEntry != null) {
+		if(cacheEntry != null)
 			cacheEntry.removeIndexDiffChangedListener(myIndexDiffListener);
-		}
 
-		if (undoRedoActionGroup != null) {
+		if (undoRedoActionGroup != null)
 			undoRedoActionGroup.dispose();
-		}
 
 		InstanceScope.INSTANCE.getNode(
 				org.eclipse.egit.core.Activator.getPluginId())
 				.removePreferenceChangeListener(prefListener);
-		if (refsChangedListener != null) {
+		if (refsChangedListener != null)
 			refsChangedListener.remove();
-		}
-		disposed = true;
 	}
 
-	private boolean isDisposed() {
-		return disposed;
-	}
-
-	private static void syncExec(Runnable runnable) {
+	private void syncExec(Runnable runnable) {
 		PlatformUI.getWorkbench().getDisplay().syncExec(runnable);
-	}
-
-	private void asyncExec(Runnable runnable) {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
 	}
 
 }

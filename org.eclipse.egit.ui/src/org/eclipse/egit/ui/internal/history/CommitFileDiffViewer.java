@@ -144,6 +144,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		this.site = site;
 		final Table rawTable = getTable();
 
+		rawTable.setLinesVisible(true);
+
 		Color fg = rawTable.getForeground();
 		Color bg = rawTable.getBackground();
 		RGB dimmedForegroundRgb = ColorUtil.blend(fg.getRGB(), bg.getRGB(), 60);
@@ -563,7 +565,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			try {
 				if (file != null) {
 					IResource[] resources = new IResource[] { file, };
-					CompareUtils.compare(resources, getRepository(), np, op,
+					CompareUtils.compare(resources, getRepository(),
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {

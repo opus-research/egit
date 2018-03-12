@@ -267,9 +267,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 			if (compareMode) {
 				left = getTypedElement(fileNode, fileNode.leftRevision,
-						getBaseVersionText());
+						getBaseVersion());
 				right = getTypedElement(fileNode, fileNode.rightRevision,
-						getCompareVersionText());
+						getCompareVersion());
 
 				GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
 						left, right, PlatformUI.getWorkbench()
@@ -303,18 +303,18 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		}
 	}
 
-	private String getBaseVersionText() {
+	private String getBaseVersion() {
 		// null in case of Workspace compare
 		if (baseVersion == null)
 			return UIText.CompareTreeView_WorkspaceVersionText;
-		return CompareUtils.truncatedRevision(baseVersion);
+		return baseVersion;
 	}
 
-	private String getCompareVersionText() {
+	private String getCompareVersion() {
 		if (compareVersion.equals(INDEX_VERSION))
 			return UIText.CompareTreeView_IndexVersionText;
 		else
-			return CompareUtils.truncatedRevision(compareVersion);
+			return compareVersion;
 	}
 
 	@Override
@@ -427,14 +427,17 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				throw new IllegalStateException();
 			if (baseVersion == null)
 				setContentDescription(NLS
-						.bind(UIText.CompareTreeView_ComparingWorkspaceVersionDescription,
-								name, getCompareVersionText()));
+						.bind(
+								UIText.CompareTreeView_ComparingWorkspaceVersionDescription,
+								name, getCompareVersion()));
 			else
-				setContentDescription(NLS.bind(
-						UIText.CompareTreeView_ComparingTwoVersionDescription,
-						new String[] { name,
-								CompareUtils.truncatedRevision(baseVersion),
-								getCompareVersionText() }));
+				setContentDescription(NLS
+						.bind(
+								UIText.CompareTreeView_ComparingTwoVersionDescription,
+								new String[] {
+										baseVersion,
+										name,
+										getCompareVersion() }));
 		}
 	}
 
@@ -468,7 +471,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			return;
 		final RevCommit baseCommit;
 		final RevCommit compareCommit;
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			ObjectId commitId = repo.resolve(compareVersion);
 			compareCommit = commitId != null ? rw.parseCommit(commitId) : null;
 			if (baseVersion == null)
@@ -480,6 +484,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
 			return;
+		} finally {
+			rw.release();
 		}
 		showBusy(true);
 		try {
@@ -528,7 +534,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		fileNodes.clear();
 		containerNodes.clear();
 		boolean checkIgnored = false;
-		try (TreeWalk tw = new TreeWalk(repository)) {
+		TreeWalk tw = new TreeWalk(repository);
+		try {
 			int baseTreeIndex;
 			if (baseCommit == null) {
 				checkIgnored = true;
@@ -685,6 +692,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				}
 			}
 		} finally {
+			tw.release();
 			monitor.done();
 		}
 	}

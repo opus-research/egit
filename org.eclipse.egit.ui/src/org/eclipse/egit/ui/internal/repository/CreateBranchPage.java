@@ -53,7 +53,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.TraverseEvent;
 import org.eclipse.swt.events.TraverseListener;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -143,7 +142,7 @@ class CreateBranchPage extends WizardPage {
 			this.myBaseRef = null;
 		this.myBaseCommit = null;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
-				myRepository, Constants.R_HEADS, false);
+				myRepository, Constants.R_HEADS, true);
 		if (baseRef != null)
 			this.upstreamConfig = UpstreamConfig.getDefault(repo, baseRef.getName());
 		else
@@ -168,7 +167,7 @@ class CreateBranchPage extends WizardPage {
 		this.myBaseRef = null;
 		this.myBaseCommit = baseCommit;
 		this.myValidator = ValidationUtils.getRefNameInputValidator(
-				myRepository, Constants.R_HEADS, false);
+				myRepository, Constants.R_HEADS, true);
 		this.upstreamConfig = UpstreamConfig.NONE;
 		setTitle(UIText.CreateBranchPage_Title);
 		setMessage(UIText.CreateBranchPage_ChooseNameMessage);
@@ -335,7 +334,6 @@ class CreateBranchPage extends WizardPage {
 				gd.exclude = !showUpstreamConfig;
 				container.setVisible(showUpstreamConfig);
 				container.getParent().layout(true);
-				ensurePreferredHeight(getShell());
 			}
 
 			boolean basedOnLocalBranch = sourceRefName
@@ -343,9 +341,15 @@ class CreateBranchPage extends WizardPage {
 			if (basedOnLocalBranch && upstreamConfig != UpstreamConfig.NONE)
 				setMessage(UIText.CreateBranchPage_LocalBranchWarningMessage,
 						IMessageProvider.INFORMATION);
+			else
+				setMessage(null);
 
 			if (sourceRefName.length() == 0) {
 				setErrorMessage(UIText.CreateBranchPage_MissingSourceMessage);
+				return;
+			}
+			if (nameText.getText().length() == 0) {
+				setErrorMessage(UIText.CreateBranchPage_ChooseNameMessage);
 				return;
 			}
 			String message = this.myValidator.isValid(nameText.getText());
@@ -356,8 +360,7 @@ class CreateBranchPage extends WizardPage {
 
 			setErrorMessage(null);
 		} finally {
-			setPageComplete(getErrorMessage() == null
-					&& nameText.getText().length() > 0);
+			setPageComplete(getErrorMessage() == null);
 		}
 	}
 
@@ -365,23 +368,17 @@ class CreateBranchPage extends WizardPage {
 		return nameText.getText();
 	}
 
-	public boolean checkoutNewBranch() {
-		return checkout.getSelection();
-	}
-
 	/**
-	 * @param newRefName
-	 * @param checkoutNewBranch
 	 * @param monitor
 	 * @throws CoreException
 	 * @throws IOException
 	 */
-	public void createBranch(String newRefName, boolean checkoutNewBranch,
-			IProgressMonitor monitor)
-			throws CoreException,
+	public void createBranch(IProgressMonitor monitor) throws CoreException,
 			IOException {
 		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
 				IProgressMonitor.UNKNOWN);
+
+		String newRefName = getBranchName();
 
 		final CreateLocalBranchOperation cbop;
 
@@ -396,7 +393,7 @@ class CreateBranchPage extends WizardPage {
 
 		cbop.execute(monitor);
 
-		if (checkoutNewBranch) {
+		if (checkout.getSelection()) {
 			if (monitor.isCanceled())
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
@@ -449,13 +446,6 @@ class CreateBranchPage extends WizardPage {
 				}
 			});
 		return ref.get();
-	}
-
-	private static void ensurePreferredHeight(Shell shell) {
-		int preferredHeight = shell.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
-		Point size = shell.getSize();
-		if (size.y < preferredHeight)
-			shell.setSize(size.x, preferredHeight);
 	}
 
 	private static class SourceSelectionDialog extends

@@ -48,12 +48,7 @@ import org.eclipse.team.core.mapping.ResourceMappingMerger;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.junit.Before;
 
-/**
- * Provides shared utility methods for unit tests working on logical models. The
- * model provider used for tests, {@link SampleModelProvider}, links all
- * "*.sample" files from a common directory into a single logical model.
- */
-public abstract class ModelTestCase extends GitTestCase {
+public class ModelTestCase extends GitTestCase {
 	protected static final String SAMPLE_FILE_EXTENSION = SampleModelProvider.SAMPLE_FILE_EXTENSION;
 
 	@Before
@@ -67,11 +62,13 @@ public abstract class ModelTestCase extends GitTestCase {
 	}
 
 	protected RevCommit setContentsAndCommit(TestRepository testRepository,
-			IFile targetFile, String newContents, String commitMessage)
-			throws Exception {
+			String repoRelativePath, IFile targetFile, String newContents,
+			String commitMessage) throws Exception {
 		targetFile.setContents(
 				new ByteArrayInputStream(newContents.getBytes()),
 				IResource.FORCE, new NullProgressMonitor());
+		new Git(testRepository.getRepository()).add()
+				.addFilepattern(repoRelativePath).call();
 		testRepository.addToIndex(targetFile);
 		return testRepository.commit(commitMessage);
 	}

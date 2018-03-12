@@ -84,6 +84,7 @@ class PushResultTable {
 		ColumnViewerToolTipSupport.enableFor(treeViewer);
 		final Tree table = treeViewer.getTree();
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(table);
+		table.setLinesVisible(true);
 
 		deleteImage = UIIcons.ELCL16_DELETE.createImage();
 		UIUtils.hookDisposal(root, deleteImage);
@@ -91,7 +92,7 @@ class PushResultTable {
 		root.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				if (reader != null)
-					reader.close();
+					reader.release();
 			}
 		});
 

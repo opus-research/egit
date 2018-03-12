@@ -3,8 +3,6 @@
  * Copyright (C) 2011, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2013, Michael Keppler <michael.keppler@gmx.de>
- * Copyright (C) 2014, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,8 +20,6 @@ import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.CommandException;
 import org.eclipse.core.expressions.EvaluationContext;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Ref;
@@ -31,7 +27,6 @@ import org.eclipse.ui.ISources;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * Class containing all common utils
@@ -123,14 +118,14 @@ public class CommonUtils {
 	 */
 	public static boolean runCommand(String commandId,
 			IStructuredSelection selection) {
-		ICommandService commandService = CommonUtils.getService(PlatformUI
-				.getWorkbench(), ICommandService.class);
+		ICommandService commandService = (ICommandService) PlatformUI
+				.getWorkbench().getService(ICommandService.class);
 		Command cmd = commandService.getCommand(commandId);
 		if (!cmd.isDefined())
 			return false;
 
-		IHandlerService handlerService = CommonUtils.getService(PlatformUI
-				.getWorkbench(), IHandlerService.class);
+		IHandlerService handlerService = (IHandlerService) PlatformUI
+				.getWorkbench().getService(IHandlerService.class);
 		EvaluationContext c = null;
 		if (selection != null) {
 			c = new EvaluationContext(
@@ -152,69 +147,6 @@ public class CommonUtils {
 		}
 		return false;
 	}
-
-	/**
-	 * Retrieves the service corresponding to the given API.
-	 * <p>
-	 * Workaround for "Unnecessary cast" errors, see bug 441615. Can be removed
-	 * when EGit depends on Eclipse 4.5 or higher.
-	 *
-	 * @param locator
-	 *            the service locator, must not be null
-	 * @param api
-	 *            the interface the service implements, must not be null
-	 * @return the service, or null if no such service could be found
-	 * @see IServiceLocator#getService(Class)
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T getService(IServiceLocator locator, Class<T> api) {
-		Object service = locator.getService(api);
-		return (T) service;
-	}
-
-	/**
-	 * @param element
-	 * @param adapterType
-	 * @return the adapted element, or null
-	 */
-	public static <T> T getAdapterForObject(Object element, Class<T> adapterType) {
-		if (adapterType.isInstance(element)) {
-			return adapterType.cast(element);
-		}
-		if (element instanceof IAdaptable) {
-			Object adapted = ((IAdaptable) element).getAdapter(adapterType);
-			if (adapterType.isInstance(adapted)) {
-				return adapterType.cast(adapted);
-			}
-		}
-		Object adapted = Platform.getAdapterManager().getAdapter(element,
-				adapterType);
-		if (adapterType.isInstance(adapted)) {
-			return adapterType.cast(adapted);
-		}
-		return null;
-	}
-	
-	/**
-	 * Returns the adapter corresponding to the given adapter class.
-	 * <p>
-	 * Workaround for "Unnecessary cast" errors, see bug 460685. Can be removed
-	 * when EGit depends on Eclipse 4.5 or higher.
-	 *
-	 * @param adaptable
-	 *            the adaptable
-	 * @param adapterClass
-	 *            the adapter class to look up
-	 * @return a object of the given class, or <code>null</code> if this object
-	 *         does not have an adapter for the given class
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T getAdapter(IAdaptable adaptable,
-			Class<T> adapterClass) {
-		Object adapter = adaptable.getAdapter(adapterClass);
-		return (T) adapter;
-	}
-	
 
 	private static LinkedList<String> splitIntoDigitAndNonDigitParts(
 			String input) {

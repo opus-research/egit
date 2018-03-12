@@ -185,7 +185,7 @@ class GenerateHistoryJob extends Job {
 	}
 
 	private void dispose() {
-		walk.close();
+		walk.release();
 		Display.getDefault().asyncExec(new Runnable() {
 
 			public void run() {
@@ -196,7 +196,7 @@ class GenerateHistoryJob extends Job {
 
 	@Override
 	public boolean belongsTo(Object family) {
-		if (JobFamilies.GENERATE_HISTORY.equals(family))
+		if (family.equals(JobFamilies.GENERATE_HISTORY))
 			return true;
 		return super.belongsTo(family);
 	}

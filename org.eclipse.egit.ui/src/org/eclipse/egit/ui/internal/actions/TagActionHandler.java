@@ -109,7 +109,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.TAG.equals(family))
+				if (family.equals(JobFamilies.TAG))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -138,11 +138,14 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 	private RevObject getTagTarget(Repository repo, ObjectId objectId)
 			throws IOException {
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = new RevWalk(repo);
+		try {
 			if (objectId == null)
 				return rw.parseAny(repo.resolve(Constants.HEAD));
 			else
 				return rw.parseAny(objectId);
+		} finally {
+			rw.release();
 		}
 	}
 }

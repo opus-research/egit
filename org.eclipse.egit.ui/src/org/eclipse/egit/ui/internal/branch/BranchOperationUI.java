@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.branch;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +24,6 @@ import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
@@ -57,8 +55,6 @@ import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
-import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -68,7 +64,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
@@ -98,7 +93,7 @@ public class BranchOperationUI {
 	 * time we do checkout, we don't want to ask any questions we already asked
 	 * the first time, so this will be false then.
 	 */
-	private final boolean showQuestionsBeforeCheckout;
+	private final boolean showQuestionAboutTarget;
 
 	private final int mode;
 
@@ -196,13 +191,13 @@ public class BranchOperationUI {
 	/**
 	 * @param repository
 	 * @param target
-	 * @param showQuestionsBeforeCheckout
+	 * @param showQuestionAboutTarget
 	 */
 	private BranchOperationUI(Repository repository, String target,
-			boolean showQuestionsBeforeCheckout) {
+			boolean showQuestionAboutTarget) {
 		this.repository = repository;
 		this.target = target;
-		this.showQuestionsBeforeCheckout = showQuestionsBeforeCheckout;
+		this.showQuestionAboutTarget = showQuestionAboutTarget;
 		this.mode = 0;
 	}
 
@@ -215,7 +210,7 @@ public class BranchOperationUI {
 	private BranchOperationUI(Repository repository, int mode) {
 		this.repository = repository;
 		this.mode = mode;
-		this.showQuestionsBeforeCheckout = true;
+		this.showQuestionAboutTarget = true;
 	}
 
 	/**
@@ -230,7 +225,7 @@ public class BranchOperationUI {
 			return;
 		}
 
-		if (shouldCancelBecauseOfRunningLaunches(new NullProgressMonitor()))
+		if (shouldCancelBecauseOfRunningLaunches())
 			return;
 
 		askForTargetIfNecessary();
@@ -299,7 +294,7 @@ public class BranchOperationUI {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.CHECKOUT.equals(family))
+				if (family.equals(JobFamilies.CHECKOUT))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -339,7 +334,7 @@ public class BranchOperationUI {
 			return;
 		}
 
-		if (shouldCancelBecauseOfRunningLaunches(monitor))
+		if (shouldCancelBecauseOfRunningLaunches())
 			return;
 
 		askForTargetIfNecessary();
@@ -355,7 +350,7 @@ public class BranchOperationUI {
 	private void askForTargetIfNecessary() {
 		if (target == null)
 			target = getTargetWithDialog();
-		if (target != null && showQuestionsBeforeCheckout) {
+		if (target != null && showQuestionAboutTarget) {
 			if (shouldShowCheckoutRemoteTrackingDialog(target))
 				target = getTargetWithCheckoutRemoteTrackingDialog();
 		}
@@ -379,16 +374,6 @@ public class BranchOperationUI {
 	}
 
 	private String getTargetWithDialog() {
-		final String[] dialogResult = new String[1];
-		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			public void run() {
-				dialogResult[0] = getTargetWithDialogInUI();
-			}
-		});
-		return dialogResult[0];
-	}
-
-	private String getTargetWithDialogInUI() {
 		AbstractBranchSelectionDialog dialog;
 		switch (mode) {
 		case MODE_CHECKOUT:
@@ -422,16 +407,6 @@ public class BranchOperationUI {
 	}
 
 	private String getTargetWithCheckoutRemoteTrackingDialog() {
-		final String[] dialogResult = new String[1];
-		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			public void run() {
-				dialogResult[0] = getTargetWithCheckoutRemoteTrackingDialogInUI();
-			}
-		});
-		return dialogResult[0];
-	}
-
-	private String getTargetWithCheckoutRemoteTrackingDialogInUI() {
 		String[] buttons = new String[] {
 				UIText.BranchOperationUI_CheckoutRemoteTrackingAsLocal,
 				UIText.BranchOperationUI_CheckoutRemoteTrackingCommit,
@@ -534,96 +509,57 @@ public class BranchOperationUI {
 		});
 	}
 
-	private boolean shouldCancelBecauseOfRunningLaunches(
-			IProgressMonitor monitor) {
+	private boolean shouldCancelBecauseOfRunningLaunches() {
 		if (mode == MODE_CHECKOUT)
 			return false;
-		if (!showQuestionsBeforeCheckout)
-			return false;
-		final IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
 		if (!store
 				.getBoolean(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING))
 			return false;
 
-		final ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration(monitor);
+		ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration();
 		if (launchConfiguration != null) {
-			final boolean[] dialogResult = new boolean[1];
-			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				public void run() {
-					dialogResult[0] = showContinueDialogInUI(store,
-							launchConfiguration);
-				}
-			});
-			return dialogResult[0];
+			String[] buttons = new String[] {
+					UIText.BranchOperationUI_Continue,
+					IDialogConstants.CANCEL_LABEL };
+			String message = NLS.bind(UIText.BranchOperationUI_RunningLaunchMessage,
+					launchConfiguration.getName());
+			MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
+					getShell(), UIText.BranchOperationUI_RunningLaunchTitle,
+					null, message, MessageDialog.NONE, buttons, 0,
+					UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
+			int result = continueDialog.open();
+			// cancel
+			if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT)
+				return true;
+			boolean dontWarnAgain = continueDialog.getToggleState();
+			if (dontWarnAgain)
+				store.setValue(
+						UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
+						false);
 		}
 		return false;
 	}
 
-	private boolean showContinueDialogInUI(final IPreferenceStore store,
-			final ILaunchConfiguration launchConfiguration) {
-		String[] buttons = new String[] { UIText.BranchOperationUI_Continue,
-				IDialogConstants.CANCEL_LABEL };
-		String message = NLS.bind(
-				UIText.BranchOperationUI_RunningLaunchMessage,
-				launchConfiguration.getName());
-		MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
-				getShell(), UIText.BranchOperationUI_RunningLaunchTitle, null,
-				message, MessageDialog.NONE, buttons, 0,
-				UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
-		int result = continueDialog.open();
-		// cancel
-		if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT)
-			return true;
-		boolean dontWarnAgain = continueDialog.getToggleState();
-		if (dontWarnAgain)
-			store.setValue(
-					UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
-					false);
-		return false;
-	}
+	private ILaunchConfiguration getRunningLaunchConfiguration() {
+		Set<IProject> projects = new HashSet<IProject>(
+				Arrays.asList(ProjectUtil.getProjects(repository)));
 
-	private ILaunchConfiguration getRunningLaunchConfiguration(
-			IProgressMonitor monitor) {
-		final ILaunchConfiguration[] lc = new ILaunchConfiguration[1];
-		try {
-			ModalContext.run(new IRunnableWithProgress() {
-
-				public void run(IProgressMonitor m)
-						throws InvocationTargetException, InterruptedException {
-
-					Set<IProject> projects = new HashSet<IProject>(Arrays
-							.asList(ProjectUtil.getProjects(repository)));
-
-					ILaunchManager launchManager = DebugPlugin.getDefault()
-							.getLaunchManager();
-					ILaunch[] launches = launchManager.getLaunches();
-					m.beginTask(
-							UIText.BranchOperationUI_SearchLaunchConfiguration,
-							launches.length);
-					for (ILaunch launch : launches) {
-						m.worked(1);
-						if (launch.isTerminated())
-							continue;
-						ISourceLocator locator = launch.getSourceLocator();
-						if (locator instanceof ISourceLookupDirector) {
-							ISourceLookupDirector director = (ISourceLookupDirector) locator;
-							ISourceContainer[] containers = director
-									.getSourceContainers();
-							if (isAnyProjectInSourceContainers(containers,
-									projects)) {
-								lc[0] = launch.getLaunchConfiguration();
-								return;
-							}
-						}
-					}
-				}
-			}, true, monitor, Display.getDefault());
-		} catch (InvocationTargetException e) {
-			// ignore
-		} catch (InterruptedException e) {
-			// ignore
+		ILaunchManager launchManager = DebugPlugin.getDefault()
+				.getLaunchManager();
+		ILaunch[] launches = launchManager.getLaunches();
+		for (ILaunch launch : launches) {
+			if (launch.isTerminated())
+				continue;
+			ISourceLocator locator = launch.getSourceLocator();
+			if (locator instanceof ISourceLookupDirector) {
+				ISourceLookupDirector director = (ISourceLookupDirector) locator;
+				ISourceContainer[] containers = director.getSourceContainers();
+				if (isAnyProjectInSourceContainers(containers, projects))
+					return launch.getLaunchConfiguration();
+			}
 		}
-		return lc[0];
+		return null;
 	}
 
 	private boolean isAnyProjectInSourceContainers(

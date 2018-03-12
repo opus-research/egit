@@ -147,7 +147,8 @@ class FetchResultTable {
 				// else
 				//$FALL-THROUGH$
 			case FAST_FORWARD:
-				try (RevWalk walk = new RevWalk(reader)) {
+				RevWalk walk = new RevWalk(reader);
+				try {
 					walk.setRetainBody(true);
 					walk.markStart(walk.parseCommit(update.getNewObjectId()));
 					walk.markUninteresting(walk.parseCommit(update
@@ -160,6 +161,8 @@ class FetchResultTable {
 				} catch (IOException e) {
 					Activator.logError(
 							"Error parsing commits from fetch result", e); //$NON-NLS-1$
+				} finally {
+					walk.release();
 				}
 				//$FALL-THROUGH$
 			default:
@@ -326,11 +329,12 @@ class FetchResultTable {
 		ColumnViewerToolTipSupport.enableFor(treeViewer);
 		final Tree tree = treeViewer.getTree();
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree);
+		tree.setLinesVisible(true);
 
 		treePanel.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				if (reader != null)
-					reader.close();
+					reader.release();
 			}
 		});
 
@@ -350,21 +354,11 @@ class FetchResultTable {
 			}
 
 			public Object[] getChildren(Object element) {
-				if (element instanceof RepositoryCommit) {
+				if (element instanceof RepositoryCommit)
 					return ((RepositoryCommit) element).getDiffs();
-				}
 				return super.getChildren(element);
 			}
 
-			@Override
-			public boolean hasChildren(Object element) {
-				if (element instanceof RepositoryCommit) {
-					// always return true for commits to avoid commit diff
-					// calculation in UI thread, see bug 458839
-					return true;
-				}
-				return super.hasChildren(element);
-			}
 		});
 
 		new OpenAndLinkWithEditorHelper(treeViewer) {

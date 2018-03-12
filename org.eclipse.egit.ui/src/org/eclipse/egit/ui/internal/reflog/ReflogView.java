@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2015 Chris Aniszczyk <caniszczyk@gmail.com> and others.
+ * Copyright (c) 2011, 2014 Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -21,7 +21,6 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
@@ -205,13 +204,17 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			}
 
 			private RevCommit getCommit(final ReflogEntry entry) {
-				try (RevWalk walk = new RevWalk(getRepository())) {
-					walk.setRetainBody(true);
-					return walk.parseCommit(entry.getNewId());
+				RevWalk walk = new RevWalk(getRepository());
+				walk.setRetainBody(true);
+				RevCommit c = null;
+				try {
+					c = walk.parseCommit(entry.getNewId());
 				} catch (IOException ignored) {
 					// ignore
-					return null;
+				} finally {
+					walk.release();
 				}
+				return c;
 			}
 		});
 
@@ -297,7 +300,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				Repository repo = getRepository();
 				if (repo == null)
 					return;
-				try (RevWalk walk = new RevWalk(repo)) {
+				RevWalk walk = new RevWalk(repo);
+				try {
 					for (Object element : ((IStructuredSelection)selection).toArray()) {
 						ReflogEntry entry = (ReflogEntry) element;
 						ObjectId id = entry.getNewId();
@@ -309,6 +313,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 					}
 				} catch (IOException e) {
 					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
+				} finally {
+					walk.release();
 				}
 			}
 		};
@@ -327,7 +333,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		};
 
 		IWorkbenchPartSite site = getSite();
-		ISelectionService service = CommonUtils.getService(site, ISelectionService.class);
+		ISelectionService service = (ISelectionService) site
+				.getService(ISelectionService.class);
 		service.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate reflog view
@@ -358,7 +365,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 	}
 
 	private void activateContextService() {
-		IContextService contextService = CommonUtils.getService(getSite(), IContextService.class);
+		IContextService contextService = (IContextService) getSite()
+				.getService(IContextService.class);
 		if (contextService != null)
 			contextService.activateContext(VIEW_ID);
 
@@ -367,7 +375,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 	@Override
 	public void dispose() {
 		super.dispose();
-		ISelectionService service = CommonUtils.getService(getSite(), ISelectionService.class);
+		ISelectionService service = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		service.removePostSelectionListener(selectionChangedListener);
 		if (addRefsChangedListener != null)
 			addRefsChangedListener.remove();
@@ -389,8 +398,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				selectedRepo = mapping.getRepository();
 		}
 		if (selectedRepo == null && first instanceof IAdaptable) {
-			IResource adapted = CommonUtils.getAdapter(((IAdaptable) ssel
-					.getFirstElement()), IResource.class);
+			IResource adapted = (IResource) ((IAdaptable) ssel
+					.getFirstElement()).getAdapter(IResource.class);
 			if (adapted != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(adapted);
