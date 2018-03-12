@@ -547,8 +547,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		localBranchesItem = myRepoViewUtil.getLocalBranchesItem(
 				tree, repositoryFile).expand();
 		localBranchesItem.getNode("abc").select();
-		ContextMenuHelper.clickContextMenuSync(tree,
-				myUtil.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
+		ContextMenuHelper.clickContextMenu(tree, myUtil
+				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 
 		refreshAndWait();
 		SWTBotTreeItem[] items = myRepoViewUtil.getLocalBranchesItem(tree,
