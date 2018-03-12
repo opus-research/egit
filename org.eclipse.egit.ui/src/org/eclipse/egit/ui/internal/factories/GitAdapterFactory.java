@@ -15,23 +15,30 @@ package org.eclipse.egit.ui.internal.factories;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Collections;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdapterFactory;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.history.GitHistoryPageSource;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
+import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.synchronize.mapping.GitModelWorkbenchAdapter;
 import org.eclipse.egit.ui.internal.synchronize.mapping.GitObjectMapping;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
@@ -39,6 +46,7 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.viewers.ILabelProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.ui.history.IHistoryPage;
 import org.eclipse.team.ui.history.IHistoryPageSource;
@@ -108,10 +116,11 @@ public class GitAdapterFactory implements IAdapterFactory {
 			GitModelObject obj = (GitModelObject) adaptableObject;
 
 			if (obj instanceof GitModelBlob) {
-				IResource res = ResourceUtil.getFileForLocation(obj
-						.getLocation(), false);
+				IResource res = ResourceUtil
+						.getFileForLocation(obj.getLocation(), false);
 				if (res == null) {
-					res = root.getFile(obj.getLocation());
+					// Deleted resource?
+					res = getWorkspaceResourceFromGitPath(obj.getLocation());
 				}
 
 				return res;
@@ -127,7 +136,38 @@ public class GitAdapterFactory implements IAdapterFactory {
 			}
 		}
 
+		if (adapterType == Repository.class) {
+			ResourceMapping m = AdapterUtils.adapt(adaptableObject,
+					ResourceMapping.class);
+			if (m != null) {
+				return SelectionUtils.getRepository(new StructuredSelection(m));
+			}
+		}
+
 		return null;
+	}
+
+	@Nullable
+	private IResource getWorkspaceResourceFromGitPath(IPath gitPath) {
+		Repository repository = Activator.getDefault().getRepositoryCache()
+				.getRepository(gitPath);
+		if (repository == null || repository.isBare()) {
+			return null;
+		}
+		try {
+			IPath repoRelativePath = gitPath.makeRelativeTo(
+					new Path(repository.getWorkTree().getAbsolutePath()));
+			IProject[] projects = ProjectUtil.getProjectsContaining(repository,
+					Collections.singleton(repoRelativePath.toString()));
+			if (projects.length > 0) {
+				IPath projectRelativePath = gitPath
+						.makeRelativeTo(projects[0].getLocation());
+				return projects[0].getFile(projectRelativePath);
+			}
+		} catch (CoreException e) {
+			// Ignore and fall through
+		}
+		return root.getFile(gitPath);
 	}
 
 	@Nullable

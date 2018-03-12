@@ -198,10 +198,13 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 */
 	private void decorateResource(@NonNull IResource resource,
 			IDecoration decoration) throws CoreException {
+		if (resource.getType() == IResource.ROOT || !resource.isAccessible()) {
+			return;
+		}
 		IndexDiffData indexDiffData = ResourceStateFactory.getInstance()
 				.getIndexDiffDataOrNull(resource);
 
-		if(indexDiffData == null) {
+		if (indexDiffData == null) {
 			return;
 		}
 		IDecoratableResource decoratableResource = null;
@@ -323,7 +326,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 		private static ImageDescriptor conflictImage;
 
-		private static ImageDescriptor assumeValidImage;
+		private static ImageDescriptor assumeUnchangedImage;
 
 		private static ImageDescriptor dirtyImage;
 
@@ -336,7 +339,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 			stagedRemovedImage = new CachedImageDescriptor(
 					UIIcons.OVR_STAGED_REMOVE);
 			conflictImage = new CachedImageDescriptor(UIIcons.OVR_CONFLICT);
-			assumeValidImage = new CachedImageDescriptor(UIIcons.OVR_ASSUMEVALID);
+			assumeUnchangedImage = new CachedImageDescriptor(UIIcons.OVR_ASSUMEUNCHANGED);
 			dirtyImage = new CachedImageDescriptor(UIIcons.OVR_DIRTY);
 		}
 
@@ -464,9 +467,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 					overlay = trackedImage;
 
 				if (store
-						.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON)
-						&& resource.isAssumeValid())
-					overlay = assumeValidImage;
+						.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON)
+						&& resource.isAssumeUnchanged())
+					overlay = assumeUnchangedImage;
 
 				// Staged overrides tracked
 				StagingState staged = resource.getStagingState();

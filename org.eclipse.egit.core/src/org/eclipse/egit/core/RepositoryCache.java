@@ -20,14 +20,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
@@ -38,26 +34,8 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 public class RepositoryCache {
 	private final Map<File, Reference<Repository>> repositoryCache = new HashMap<File, Reference<Repository>>();
 
-	private final IPreferenceChangeListener preferenceListener = new IPreferenceChangeListener() {
-
-		@Override
-		public void preferenceChange(PreferenceChangeEvent event) {
-			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey())) {
-				return;
-			}
-			prune(Activator.getDefault().getRepositoryUtil().getRepositories());
-		}
-
-	};
-
 	RepositoryCache() {
-		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
-				.addPreferenceChangeListener(preferenceListener);
-	}
-
-	void dispose() {
-		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
-				.removePreferenceChangeListener(preferenceListener);
+		// package private constructor
 	}
 
 	/**
@@ -122,7 +100,8 @@ public class RepositoryCache {
 	 * @since 3.2
 	 */
 	public Repository getRepository(final IPath location) {
-		Repository[] repositories = getAllRepositories();
+		Repository[] repositories = org.eclipse.egit.core.Activator
+				.getDefault().getRepositoryCache().getAllRepositories();
 		Repository repository = null;
 		int largestSegmentCount = 0;
 		for (Repository r : repositories) {
@@ -144,19 +123,9 @@ public class RepositoryCache {
 		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = map.entrySet()
 				.iterator(); i.hasNext();) {
 			Repository repository = i.next().getValue().get();
-			if (repository == null || !repository.getDirectory().exists()) {
+			if (repository == null
+					|| !repository.getDirectory().exists())
 				i.remove();
-			}
-		}
-	}
-
-	private synchronized void prune(Set<String> configuredRepositories) {
-		Iterator<File> iterator = repositoryCache.keySet().iterator();
-		while (iterator.hasNext()) {
-			File gitDir = iterator.next();
-			if (!configuredRepositories.contains(gitDir.getAbsolutePath())) {
-				iterator.remove();
-			}
 		}
 	}
 
