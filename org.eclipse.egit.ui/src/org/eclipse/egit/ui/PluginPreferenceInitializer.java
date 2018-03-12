@@ -12,6 +12,7 @@ package org.eclipse.egit.ui;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetLabelProvider;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.util.FS;
@@ -73,6 +74,13 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.REBASE_HIDE_CONFIRM, false);
 		store.setDefault(UIPreferences.SHOW_INITIAL_CONFIG_DIALOG, true);
 		store.setDefault(UIPreferences.SHOW_HOME_DIR_WARNING, MessageDialogWithToggle.PROMPT);
+
+		store.setDefault(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT,
+				GitChangeSetLabelProvider.DEFAULT_CHANGESET_FORMAT);
+		store.setDefault(UIPreferences.DATE_FORMAT,
+				GitChangeSetLabelProvider.DEFAULT_DATE_FORMAT);
+		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);
+		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);
 	}
 
 }

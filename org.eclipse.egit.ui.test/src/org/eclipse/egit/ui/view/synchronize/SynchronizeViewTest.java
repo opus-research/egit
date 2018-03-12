@@ -12,9 +12,12 @@ import static org.eclipse.egit.ui.test.ContextMenuHelper.clickContextMenu;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.MASTER;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
@@ -23,6 +26,7 @@ import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
@@ -176,13 +180,108 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
+	@Test public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
+		// given
+		resetRepository(PROJ1);
+		createTag(PROJ1, "compare1");
+		changeFilesInProject();
+		showDialog(PROJ1, "Team", "Synchronize...");
+
+		// when
+		bot.shell("Synchronize repository: " + REPO1 + File.separator + ".git")
+				.activate();
+
+		bot.comboBox(2)
+				.setSelection(UIText.SynchronizeWithAction_tagsName);
+		bot.comboBox(3).setSelection("compare1");
+
+		// fire action
+		bot.button(IDialogConstants.OK_LABEL).click();
+
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		// expand all nodes
+		syncViewTree.getAllItems()[0].collapse().doubleClick();
+		// try to open compare editor for FILE1
+		syncViewTree.getAllItems()[0].getItems()[0].getNode(FOLDER)
+				.getNode(FILE1).doubleClick();
+
+		// then
+		SWTBot compare = bot.editorByTitle(FILE1).bot();
+		assertNotNull(compare);
+	}
+
+	@Test public void shouldOpenCompareEditorInWorkspaceModel() throws Exception {
+		// given
+		resetRepository(PROJ1);
+		createTag(PROJ1, "compare2");
+		changeFilesInProject();
+		showDialog(PROJ1, "Team", "Synchronize...");
+
+		// when
+		bot.shell("Synchronize repository: " + REPO1 + File.separator + ".git")
+				.activate();
+
+		bot.comboBox(2)
+				.setSelection(UIText.SynchronizeWithAction_tagsName);
+		bot.comboBox(3).setSelection("compare2");
+
+		// fire action
+		bot.button(IDialogConstants.OK_LABEL).click();
+
+		SWTBotView syncView = bot.viewByTitle("Synchronize");
+		syncView.toolbarDropDownButton("Show File System Resources").click()
+				.menuItem("Workspace").click();
+		SWTBotTree syncViewTree = syncView.bot().tree();
+		// try to open compare editor for FILE1
+		syncViewTree.getAllItems()[0].expand().getItems()[0].expand()
+				.getItems()[0].doubleClick();
+
+		// then
+		SWTBot compare = bot.editorByTitle(FILE1).bot();
+		assertNotNull(compare);
+	}
+
+	@Test
+	public void shouldListFileDeletedChange() throws Exception {
+		// given
+		resetRepository(PROJ1);
+		createTag(PROJ1, "base");
+		deleteFileAndCommit(PROJ1);
+		showDialog(PROJ1, "Team", "Synchronize...");
+
+		// when
+		bot.shell("Synchronize repository: " + REPO1 + File.separator + ".git")
+				.activate();
+
+		bot.comboBox(2)
+				.setSelection(UIText.SynchronizeWithAction_tagsName);
+		bot.comboBox(3).setSelection("base");
+
+		// fire action
+		bot.button(IDialogConstants.OK_LABEL).click();
+
+		// then
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		assertEquals(1, syncViewTree.getAllItems().length);
+		SWTBotTreeItem commitTree = syncViewTree.getAllItems()[0];
+		commitTree.expand();
+		SWTBotTreeItem projectTree = commitTree.getItems()[0];
+		projectTree.expand();
+		assertEquals(1, projectTree.getItems().length);
+		SWTBotTreeItem folderTree = projectTree.getItems()[0];
+		folderTree.expand();
+		assertEquals(1, folderTree.getItems().length);
+		SWTBotTreeItem fileTree = folderTree.getItems()[0];
+		assertEquals("test.txt", fileTree.getText());
+	}
+
 	private void waitUntilTreeHasNodeWithText(final SWTBotTree tree,
 			final String text) {
 		bot.waitUntil(new ICondition() {
 
 			public boolean test() throws Exception {
 				for (SWTBotTreeItem item : tree.getAllItems())
-					if (item.getText().startsWith(text))
+					if (item.getText().contains(text))
 						return true;
 				return false;
 			}
@@ -308,6 +407,17 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		changeFilesInProject();
 		Thread.sleep(1000); // wait 1 s to get different time stamps
 							// TODO can be removed when commit is based on DirCache
+		commit(projectName);
+	}
+
+	private void deleteFileAndCommit(String projectName) throws Exception {
+		ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1)
+				.getFile(new Path("folder/test.txt")).delete(true, null);
+
+		commit(projectName);
+	}
+
+	private void commit(String projectName) throws InterruptedException {
 		showDialog(projectName, "Team", UIText.CommitAction_commit);
 
 		bot.shell(UIText.CommitDialog_CommitChanges).bot().activeShell();

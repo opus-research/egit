@@ -11,6 +11,7 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
 import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -119,6 +120,29 @@ public class GitModelRepository extends GitModelObject {
 		return true;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+
+		if (obj instanceof GitModelRepository) {
+			File objWorkTree = ((GitModelRepository) obj).repo.getWorkTree();
+			return objWorkTree.equals(repo.getWorkTree());
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return repo.getWorkTree().hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "ModelRepository[" + repo.getWorkTree() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 	private void getChildrenImpl() {
 		RevWalk rw = new RevWalk(repo);
 		RevFlag localFlag = rw.newFlag("local"); //$NON-NLS-1$
@@ -150,8 +174,14 @@ public class GitModelRepository extends GitModelObject {
 			}
 
 			if (includeLocal) {
-				result.add(new GitModelCache(this, srcCommit));
-				result.add(new GitModelWorkingTree(this, srcCommit));
+				GitModelCache gitModelCache = new GitModelCache(this, srcCommit);
+				if (gitModelCache.getChildren().length > 0)
+					result.add(gitModelCache);
+
+				GitModelWorkingTree gitModelWorkingTree = new GitModelWorkingTree(
+						this, srcCommit);
+				if (gitModelWorkingTree.getChildren().length > 0)
+					result.add(gitModelWorkingTree);
 			}
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
