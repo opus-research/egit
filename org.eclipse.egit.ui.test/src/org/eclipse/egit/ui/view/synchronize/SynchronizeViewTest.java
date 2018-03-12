@@ -24,10 +24,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileWriter;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -63,7 +61,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.team.ui.synchronize.ISynchronizeManager;
+import org.eclipse.team.internal.ui.synchronize.RefreshParticipantJob;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -329,57 +327,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, projectTree.getItems().length);
 	}
 
-	@Test public void shouldShowNonWorkspaceFileInSynchronization()
-			throws Exception {
-		// given
-		String name = "non-workspace.txt";
-		File root = new File(getTestDirectory(), REPO1);
-		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
-		writer.append("file content");
-		writer.close();
-
-		// when
-		launchSynchronization(SynchronizeWithAction_tagsName, INITIAL_TAG,
-				SynchronizeWithAction_localRepoName, HEAD, true);
-
-		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		SWTBotTreeItem workingTree = syncViewTree
-				.expandNode(UIText.GitModelWorkingTree_workingTree);
-		assertEquals(1, syncViewTree.getAllItems().length);
-		assertEquals(1, workingTree.getNodes(name).size());
-	}
-
-	@Test public void shouldShowCompareEditorForNonWorkspaceFileFromSynchronization()
-			throws Exception {
-		// given
-		String content = "file content";
-		String name = "non-workspace.txt";
-		File root = new File(getTestDirectory(), REPO1);
-		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
-		writer.append(content);
-		writer.close();
-
-		// when
-		launchSynchronization(SynchronizeWithAction_tagsName, INITIAL_TAG,
-				SynchronizeWithAction_localRepoName, HEAD, true);
-
-		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		SWTBotTreeItem workingTree = syncViewTree
-				.expandNode(UIText.GitModelWorkingTree_workingTree);
-		assertEquals(1, syncViewTree.getAllItems().length);
-		workingTree.expand().getNode(name).doubleClick();
-
-		SWTBotEditor editor = bot.editorByTitle(name);
-		editor.setFocus();
-
-		assertNotNull(editor);
-		assertThat(editor.bot().styledText(1).getText(), equalTo(content));
-	}
-
 	// this test always fails with cause:
 	// Timeout after: 5000 ms.: Could not find context menu with text:
 	// Synchronize
@@ -587,9 +534,8 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 			implements ICondition {
 		private boolean state = false;
 
-		public void done(IJobChangeEvent event) {
-			if (event.getJob().belongsTo(
-					ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION))
+		@SuppressWarnings("restriction") public void done(IJobChangeEvent event) {
+			if (event.getJob() instanceof RefreshParticipantJob)
 				state = true;
 		}
 
@@ -679,7 +625,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotTreeItem waitForNodeWithText(SWTBotTreeItem tree, String name) {
-		waitUntilTreeHasNodeContainsText(bot, tree, name, 15000);
+		waitUntilTreeHasNodeContainsText(bot, tree, name, 10000);
 		return getTreeItemContainingText(tree.getItems(), name).expand();
 	}
 

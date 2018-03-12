@@ -55,7 +55,6 @@ public abstract class GitTestCase {
 	@After
 	public void tearDown() throws Exception {
 		project.dispose();
-		Activator.getDefault().getRepositoryCache().clear();
 		if (gitDir.exists())
 			FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
