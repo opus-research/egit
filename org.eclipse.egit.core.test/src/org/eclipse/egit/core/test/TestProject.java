@@ -105,7 +105,7 @@ public class TestProject {
 
 	public IType createType(IPackageFragment pack, String cuName, String source)
 			throws JavaModelException {
-		StringBuilder buf = new StringBuilder();
+		StringBuffer buf = new StringBuffer();
 		buf.append("package " + pack.getElementName() + ";\n");
 		buf.append("\n");
 		buf.append(source);
