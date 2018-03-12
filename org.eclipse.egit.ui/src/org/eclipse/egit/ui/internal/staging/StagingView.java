@@ -62,7 +62,6 @@ import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
@@ -72,10 +71,6 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.LocalSelectionTransfer;
-import org.eclipse.jface.viewers.ContentViewer;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
-import org.eclipse.jface.viewers.IBaseLabelProvider;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -231,16 +226,6 @@ public class StagingView extends ViewPart {
 
 	private Action openNewCommitsAction;
 
-	private Action columnLayoutAction;
-
-	private Action fileNameModeAction;
-
-	private Action refreshAction;
-
-	private SashForm stagingSashForm;
-
-	private Job reloadJob;
-
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
@@ -268,13 +253,13 @@ public class StagingView extends ViewPart {
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(horizontalSashForm);
 
-		stagingSashForm = new SashForm(horizontalSashForm,
-				getStagingFormOrientation());
-		toolkit.adapt(stagingSashForm, true, true);
+		SashForm verticalSashForm = new SashForm(horizontalSashForm,
+				SWT.VERTICAL);
+		toolkit.adapt(verticalSashForm, true, true);
 		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(stagingSashForm);
+				.applyTo(verticalSashForm);
 
-		unstagedSection = toolkit.createSection(stagingSashForm,
+		unstagedSection = toolkit.createSection(verticalSashForm,
 				ExpandableComposite.TITLE_BAR);
 
 		Composite unstagedTableComposite = toolkit
@@ -291,7 +276,7 @@ public class StagingView extends ViewPart {
 		unstagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
 		unstagedTableViewer.getTable().setLinesVisible(true);
-		unstagedTableViewer.setLabelProvider(createLabelProvider());
+		unstagedTableViewer.setLabelProvider(new StagingViewLabelProvider());
 		unstagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				true));
 		unstagedTableViewer.addDragSupport(DND.DROP_MOVE,
@@ -363,7 +348,7 @@ public class StagingView extends ViewPart {
 		committerText.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).create());
 
-		stagedSection = toolkit.createSection(stagingSashForm,
+		stagedSection = toolkit.createSection(verticalSashForm,
 				ExpandableComposite.TITLE_BAR);
 		Composite stagedTableComposite = toolkit.createComposite(stagedSection);
 		toolkit.paintBordersFor(stagedTableComposite);
@@ -378,7 +363,7 @@ public class StagingView extends ViewPart {
 		stagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
 		stagedTableViewer.getTable().setLinesVisible(true);
-		stagedTableViewer.setLabelProvider(createLabelProvider());
+		stagedTableViewer.setLabelProvider(new StagingViewLabelProvider());
 		stagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				false));
 		stagedTableViewer.addDragSupport(DND.DROP_MOVE,
@@ -426,7 +411,7 @@ public class StagingView extends ViewPart {
 			}
 		};
 
-		IPreferenceStore preferenceStore = getPreferenceStore();
+		IPreferenceStore preferenceStore = Activator.getDefault().getPreferenceStore();
 		if (preferenceStore.contains(UIPreferences.STAGING_VIEW_SYNC_SELECTION))
 			reactOnSelection = preferenceStore.getBoolean(
 					UIPreferences.STAGING_VIEW_SYNC_SELECTION);
@@ -506,7 +491,6 @@ public class StagingView extends ViewPart {
 
 		updateSectionText();
 		updateToolbar();
-		enableCommitWidgets(false);
 
 		createPopupMenu(unstagedTableViewer);
 		createPopupMenu(stagedTableViewer);
@@ -526,47 +510,19 @@ public class StagingView extends ViewPart {
 				committerText);
 
 		// react on selection changes
-		IWorkbenchPartSite site = getSite();
-		ISelectionService srv = (ISelectionService) site
-				.getService(ISelectionService.class);
+		ISelectionService srv = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
 
-		// Use current selection to populate staging view
-		ISelection selection = srv.getSelection();
-		if (selection != null && !selection.isEmpty()) {
-			IWorkbenchPart part = site.getPage().getActivePart();
-			if (part != null)
-				selectionChangedListener.selectionChanged(part, selection);
-		}
-
-		site.setSelectionProvider(unstagedTableViewer);
-	}
-
-	private int getStagingFormOrientation() {
-		boolean columnLayout = Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.STAGING_VIEW_COLUMN_LAYOUT);
-		if (columnLayout)
-			return SWT.HORIZONTAL;
-		else
-			return SWT.VERTICAL;
-	}
-
-	private void enableCommitWidgets(boolean enabled) {
-		commitMessageText.setEnabled(enabled);
-		committerText.setEnabled(enabled);
-		authorText.setEnabled(enabled);
-		refreshAction.setEnabled(enabled);
-		amendPreviousCommitAction.setEnabled(enabled);
-		signedOffByAction.setEnabled(enabled);
-		addChangeIdAction.setEnabled(enabled);
-		commitAction.setEnabled(enabled);
+		getSite().setSelectionProvider(unstagedTableViewer);
 	}
 
 	private void updateToolbar() {
 		IToolBarManager toolbar = getViewSite().getActionBars()
 				.getToolBarManager();
 
-		refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
+		// refresh
+		Action refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
 			public void run() {
 				reload(currentRepository);
 			}
@@ -576,7 +532,8 @@ public class StagingView extends ViewPart {
 
 		// link with selection
 		Action linkSelectionAction = new BooleanPrefAction(
-				(IPersistentPreferenceStore) getPreferenceStore(),
+				(IPersistentPreferenceStore) Activator.getDefault()
+						.getPreferenceStore(),
 				UIPreferences.STAGING_VIEW_SYNC_SELECTION,
 				UIText.StagingView_LinkSelection) {
 			@Override
@@ -634,65 +591,18 @@ public class StagingView extends ViewPart {
 				IAction.AS_CHECK_BOX) {
 
 			public void run() {
-				getPreferenceStore().setValue(
-						UIPreferences.STAGING_VIEW_SHOW_NEW_COMMITS, isChecked());
+				Activator
+						.getDefault()
+						.getPreferenceStore()
+						.setValue(UIPreferences.STAGING_SHOW_NEW_COMMITS,
+								isChecked());
 			}
 		};
-		openNewCommitsAction.setChecked(getPreferenceStore().getBoolean(
-				UIPreferences.STAGING_VIEW_SHOW_NEW_COMMITS));
-
-		columnLayoutAction = new Action(UIText.StagingView_ColumnLayout,
-				IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				getPreferenceStore().setValue(
-						UIPreferences.STAGING_VIEW_COLUMN_LAYOUT, isChecked());
-				stagingSashForm.setOrientation(isChecked() ? SWT.HORIZONTAL
-						: SWT.VERTICAL);
-			}
-		};
-		columnLayoutAction.setChecked(getPreferenceStore().getBoolean(
-				UIPreferences.STAGING_VIEW_COLUMN_LAYOUT));
-
-		fileNameModeAction = new Action(UIText.StagingView_ShowFileNamesFirst,
-				IAction.AS_CHECK_BOX) {
-
-			public void run() {
-				final boolean enable = isChecked();
-				getLabelProvider(stagedTableViewer).setFileNameMode(enable);
-				getLabelProvider(unstagedTableViewer).setFileNameMode(enable);
-				stagedTableViewer.refresh();
-				unstagedTableViewer.refresh();
-				getPreferenceStore().setValue(
-						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
-			}
-		};
-		fileNameModeAction.setChecked(getPreferenceStore().getBoolean(
-				UIPreferences.STAGING_VIEW_FILENAME_MODE));
-
-		IMenuManager dropdownMenu = getViewSite().getActionBars()
-				.getMenuManager();
-		dropdownMenu.add(openNewCommitsAction);
-		dropdownMenu.add(columnLayoutAction);
-		dropdownMenu.add(fileNameModeAction);
-	}
-
-	private IBaseLabelProvider createLabelProvider() {
-		StagingViewLabelProvider baseProvider = new StagingViewLabelProvider();
-		baseProvider.setFileNameMode(getPreferenceStore().getBoolean(
-				UIPreferences.STAGING_VIEW_FILENAME_MODE));
-		return new DelegatingStyledCellLabelProvider(baseProvider);
-	}
-
-	private IPreferenceStore getPreferenceStore() {
-		return Activator.getDefault().getPreferenceStore();
-	}
-
-	private StagingViewLabelProvider getLabelProvider(ContentViewer viewer) {
-		IBaseLabelProvider base = viewer.getLabelProvider();
-		IStyledLabelProvider styled = ((DelegatingStyledCellLabelProvider) base)
-				.getStyledStringProvider();
-		return (StagingViewLabelProvider) styled;
+		openNewCommitsAction.setChecked(Activator.getDefault()
+				.getPreferenceStore()
+				.getBoolean(UIPreferences.STAGING_SHOW_NEW_COMMITS));
+		getViewSite().getActionBars().getMenuManager()
+				.add(openNewCommitsAction);
 	}
 
 	private void updateSectionText() {
@@ -912,14 +822,11 @@ public class StagingView extends ViewPart {
 		if (selection.isEmpty())
 			return;
 
-		RevCommit headRev = null;
+		final RevCommit headRev;
 		try {
 			final Ref head = currentRepository.getRef(Constants.HEAD);
-			// head.getObjectId() is null if the repository does not contain any
-			// commit
-			if (head.getObjectId() != null)
-				headRev = new RevWalk(currentRepository).parseCommit(head
-						.getObjectId());
+			headRev = new RevWalk(currentRepository).parseCommit(head
+					.getObjectId());
 		} catch (IOException e1) {
 			// TODO fix text
 			MessageDialog.openError(getSite().getShell(),
@@ -1006,15 +913,11 @@ public class StagingView extends ViewPart {
 		final String jobTitle = MessageFormat.format(UIText.StagingView_IndexDiffReload,
 				StagingView.getRepositoryName(repository));
 
-		if (reloadJob != null)
-			reloadJob.cancel();
-		reloadJob = new Job(jobTitle) {
+		Job job = new Job(jobTitle) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				IndexDiff indexDiff = doReload(repository, monitor, jobTitle);
 				results.set(indexDiff);
-				if (monitor.isCanceled())
-					return Status.CANCEL_STATUS;
 				return Status.OK_STATUS;
 			}
 
@@ -1027,22 +930,20 @@ public class StagingView extends ViewPart {
 
 		};
 
-		reloadJob.setUser(false);
-		reloadJob.setRule(ResourcesPlugin.getWorkspace().getRoot());
+		job.setUser(false);
+		job.setRule(ResourcesPlugin.getWorkspace().getRoot());
 
-		reloadJob.addJobChangeListener(new JobChangeAdapter() {
+		job.addJobChangeListener(new JobChangeAdapter() {
 			public void done(final IJobChangeEvent event) {
-				if (!event.getResult().isOK())
-					return;
 				asyncExec(new Runnable() {
 					public void run() {
 						if (form.isDisposed())
 							return;
+
 						final IndexDiff indexDiff = results.get();
 						final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 						unstagedTableViewer.setInput(update);
 						stagedTableViewer.setInput(update);
-						enableCommitWidgets(true);
 						commitAction.setEnabled(repository.getRepositoryState()
 								.canCommit());
 						form.setText(StagingView.getRepositoryName(repository));
@@ -1054,7 +955,7 @@ public class StagingView extends ViewPart {
 			}
 		});
 
-		schedule(reloadJob);
+		schedule(job);
 	}
 
 	private void schedule(final Job j) {

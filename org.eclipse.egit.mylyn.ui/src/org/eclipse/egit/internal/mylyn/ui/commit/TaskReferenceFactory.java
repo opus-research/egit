@@ -78,7 +78,6 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 			String repoUrl = null;
 			String message = null;
-			long timestamp = 0;
 
 			// try to get repository url and commit message
 			try {
@@ -86,7 +85,6 @@ public class TaskReferenceFactory implements IAdapterFactory {
 				if (revCommit != null) {
 					repoUrl = getRepoUrl(r);
 					message = revCommit.getFullMessage();
-					timestamp = (long)revCommit.getCommitTime() * 1000;
 				}
 			} catch (Exception e) {
 				continue;
@@ -102,7 +100,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 					taskRepositoryUrl = repository.getRepositoryUrl();
 			}
 
-			return new LinkedTaskInfo(taskRepositoryUrl, null, null, message, timestamp);
+			return new LinkedTaskInfo(taskRepositoryUrl, null, null, message);
 		}
 
 		return null;
