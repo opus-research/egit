@@ -75,14 +75,11 @@ public class RepositoryUtil {
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
-	private java.nio.file.Path workspacePath;
-
 	/**
 	 * Clients should obtain an instance from {@link Activator}
 	 */
 	RepositoryUtil() {
-		workspacePath = ResourcesPlugin.getWorkspace().getRoot().getLocation()
-				.toFile().toPath();
+		// nothing
 	}
 
 	/**
@@ -380,7 +377,7 @@ public class RepositoryUtil {
 	}
 
 	/**
-	 * Returns the absolute path strings of configured repositories.
+	 * Returns the configured repositories.
 	 *
 	 * @return set of configured repositories' .git directories
 	 *
@@ -397,8 +394,7 @@ public class RepositoryUtil {
 		Set<String> configuredStrings = new HashSet<String>();
 		StringTokenizer tok = new StringTokenizer(dirs, File.pathSeparator);
 		while (tok.hasMoreTokens())
-			configuredStrings
-					.add(workspacePath.resolve(tok.nextToken()).toString());
+			configuredStrings.add(tok.nextToken());
 		return configuredStrings;
 	}
 
@@ -464,7 +460,7 @@ public class RepositoryUtil {
 	private void saveDirs(Set<String> gitDirStrings) {
 		StringBuilder sb = new StringBuilder();
 		for (String gitDirString : gitDirStrings) {
-			sb.append(relativizeToWorkspace(gitDirString));
+			sb.append(gitDirString);
 			sb.append(File.pathSeparatorChar);
 		}
 
@@ -475,22 +471,6 @@ public class RepositoryUtil {
 			IStatus error = new Status(IStatus.ERROR, Activator.getPluginId(),
 					e.getMessage(), e);
 			Activator.getDefault().getLog().log(error);
-		}
-	}
-
-	/**
-	 * @param pathString
-	 *            an absolute path String
-	 * @return if the given {@code pathString} is under the workspace root the
-	 *         relative path of {@code pathString} relative to the workspace
-	 *         root, otherwise the absolute path {@code pathString}
-	 */
-	private String relativizeToWorkspace(String pathString) {
-		java.nio.file.Path p = java.nio.file.Paths.get(pathString);
-		if (p.startsWith(workspacePath)) {
-			return workspacePath.relativize(p).toString();
-		} else {
-			return pathString;
 		}
 	}
 
