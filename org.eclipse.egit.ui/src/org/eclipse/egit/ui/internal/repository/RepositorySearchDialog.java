@@ -102,6 +102,8 @@ public class RepositorySearchDialog extends WizardPage {
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
+	private boolean isUserModifiedTreeSelection;
+
 	private static final class ContentProvider implements ITreeContentProvider {
 
 		private final Object[] children = new Object[0];
@@ -196,7 +198,6 @@ public class RepositorySearchDialog extends WizardPage {
 	@Override
 	public void dispose() {
 		fResult = getCheckedItems();
-		fResult.addAll(getCheckedItems());
 		super.dispose();
 	}
 
@@ -298,11 +299,16 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public boolean isElementVisible(Viewer viewer, Object element) {
-
-				if (getCheckedItems().contains(element))
-					return true;
-
-				return super.isElementVisible(viewer, element);
+				boolean elementVisible = super
+						.isElementVisible(viewer, element);
+				// Only user selected elements are not searched.
+				if (getCheckedItems().contains(element)) {
+					if (!isUserModifiedTreeSelection)
+						fTreeViewer.setChecked(element, elementVisible);
+					else
+						return true;
+				}
+				return elementVisible;
 			}
 		};
 
@@ -312,6 +318,7 @@ public class RepositorySearchDialog extends WizardPage {
 		fTreeViewer.addCheckStateListener(new ICheckStateListener() {
 
 			public void checkStateChanged(CheckStateChangedEvent event) {
+				isUserModifiedTreeSelection = true;
 				enableOk();
 			}
 		});
@@ -456,6 +463,8 @@ public class RepositorySearchDialog extends WizardPage {
 			// ignore
 		}
 
+		final TreeSet<String> validDirs = new TreeSet<String>(getCheckedItems());
+
 		IRunnableWithProgress action = new IRunnableWithProgress() {
 
 			public void run(IProgressMonitor monitor)
@@ -489,8 +498,6 @@ public class RepositorySearchDialog extends WizardPage {
 
 		int foundOld = 0;
 
-		final TreeSet<String> validDirs = new TreeSet<String>();
-
 		for (String foundDir : directories) {
 			if (!fExistingDirectories.contains(foundDir)) {
 				validDirs.add(foundDir);
@@ -514,6 +521,7 @@ public class RepositorySearchDialog extends WizardPage {
 		fTreeViewer.setInput(validDirs);
 		// this sets all to selected
 		fTreeViewer.setAllChecked(true);
+		isUserModifiedTreeSelection = false;
 		enableOk();
 	}
 
