@@ -236,11 +236,8 @@ public class CommitOperation implements IEGitOperation {
 			TreeEntry treeMember = projTree.findBlobMember(repoRelativePath);
 			// we always want to delete it from the current tree, since if it's
 			// updated, we'll add it again
-			Tree treeWithDeletedEntry = null;
-			if (treeMember != null) {
-				treeWithDeletedEntry = treeMember.getParent();
+			if (treeMember != null)
 				treeMember.delete();
-			}
 
 			Entry idxEntry = index.getEntry(string);
 			if (notIndexed.contains(file)) {
@@ -253,11 +250,6 @@ public class CommitOperation implements IEGitOperation {
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.CORE.getLocation(),
 								"Phantom file, so removing from index"); //$NON-NLS-1$
-					while (treeWithDeletedEntry.memberCount() == 0) {
-						Tree toDelete = treeWithDeletedEntry;
-						treeWithDeletedEntry = treeWithDeletedEntry.getParent();
-						toDelete.delete();
-					}
 					continue;
 				} else {
 					idxEntry.update(thisfile);
