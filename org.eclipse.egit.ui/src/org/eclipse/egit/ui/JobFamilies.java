@@ -79,11 +79,6 @@ public class JobFamilies {
 	public final static Object ASSUME_NOASSUME_UNCHANGED = new Object();
 
 	/**
-	 * Clean
-	 */
-	public final static Object CLEAN = new Object();
-
-	/**
 	 * Untrack
 	 */
 	public final static Object UNTRACK = new Object();
@@ -132,4 +127,24 @@ public class JobFamilies {
 	 * Show annotations git job
 	 */
 	public static final Object BLAME = new Object();
+
+	/**
+	 * Submodule add git job
+	 */
+	public static final Object SUBMODULE_ADD = new Object();
+
+	/**
+	 * Submodule sync git job
+	 */
+	public static final Object SUBMODULE_SYNC = new Object();
+
+	/**
+	 * Submodule update git job
+	 */
+	public static final Object SUBMODULE_UPDATE = new Object();
+
+	/**
+	 * Stash git job
+	 */
+	public static final Object STASH = new Object();
 }
