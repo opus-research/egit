@@ -133,7 +133,7 @@ public class SwitchToMenu extends ContributionItem implements
 				}
 			}
 		});
-		createSeparator(menu);
+		new MenuItem(menu, SWT.SEPARATOR);
 		try {
 			String currentBranch = repository.getFullBranch();
 			Map<String, Ref> localBranches = repository.getRefDatabase().getRefs(
@@ -174,7 +174,7 @@ public class SwitchToMenu extends ContributionItem implements
 				// nice but only if we have both recently used branches and other
 				// local branches
 				if (itemCount > 0 && localBranches.size() > 0)
-					createSeparator(menu);
+					new MenuItem(menu, SWT.SEPARATOR);
 
 				// Now add more other branches if we have only a few branch switches
 				// Sort the remaining local branches
@@ -191,7 +191,7 @@ public class SwitchToMenu extends ContributionItem implements
 				}
 			}
 			if (itemCount > 0)
-				createSeparator(menu);
+				new MenuItem(menu, SWT.SEPARATOR);
 			MenuItem others = new MenuItem(menu, SWT.PUSH);
 			others.setText(UIText.SwitchToMenu_OtherMenuLabel);
 			others.addSelectionListener(new SelectionAdapter() {
@@ -203,10 +203,6 @@ public class SwitchToMenu extends ContributionItem implements
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		}
-	}
-
-	private static MenuItem createSeparator(Menu menu) {
-		return new MenuItem(menu, SWT.SEPARATOR);
 	}
 
 	private void createMenuItem(Menu menu, final Repository repository,
