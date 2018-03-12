@@ -1298,6 +1298,9 @@ public class UIText extends NLS {
 	public static String CompareUtils_errorGettingHeadCommit;
 
 	/** */
+	public static String CompareUtils_wrongResourceArgument;
+
+	/** */
 	public static String MergeHandler_SelectBranchMessage;
 
 	/** */
@@ -3404,7 +3407,7 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_iconsShowConflicts;
 
 	/** */
-	public static String DecoratorPreferencesPage_iconsShowAssumeValid;
+	public static String DecoratorPreferencesPage_iconsShowAssumeUnchanged;
 
 	/** */
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
