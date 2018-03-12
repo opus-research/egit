@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,7 +25,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.jface.text.DefaultTextDoubleClickStrategy;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
@@ -81,9 +79,6 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 	private Repository db;
 
 	private TreeWalk walker;
-
-	// the encoding for the currently processed file
-	private String currentEncoding = null;
 
 	private static final String SPACE = " "; //$NON-NLS-1$
 
@@ -309,14 +304,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			@Override
 			public synchronized void write(byte[] b, int off, int len) {
 				super.write(b, off, len);
-				if (currentEncoding == null)
-					d.append(toString());
-
-				else try {
-					d.append(toString(currentEncoding));
-				} catch (UnsupportedEncodingException e) {
-					d.append(toString());
-				}
+				d.append(toString());
 				reset();
 			}
 
@@ -366,7 +354,6 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			for (FileDiff diff : diffs) {
 				if (diff.getBlobs().length == 2) {
 					String path = diff.getPath();
-					currentEncoding = CompareUtils.getResourceEncoding(db, path);
 					d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
 					diff.outputDiff(d, db, diffFmt, true);
 					diffFmt.flush();

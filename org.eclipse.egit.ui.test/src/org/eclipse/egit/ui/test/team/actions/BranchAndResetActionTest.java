@@ -117,7 +117,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		SWTBotShell resetDialog = openResetDialog();
 		resetDialog.bot().tree().getTreeItem(LOCAL_BRANCHES).getNode("stable")
 				.select();
-		resetDialog.bot().radio(UIText.ResetTargetSelectionDialog_ResetTypeHardButton).click();
+		activateItemByKeyboard(resetDialog,
+				UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
 
 		resetDialog.bot().button(UIText.ResetTargetSelectionDialog_ResetButton)
 				.click();
