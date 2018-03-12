@@ -107,11 +107,10 @@ public class FileDiff extends WorkbenchAdapter {
 				r.add(d);
 				for (Iterator<DiffEntry> i = xentries.iterator(); i.hasNext();) {
 					DiffEntry n = i.next();
-					if (m.getOldPath().equals(n.getOldPath())) {
+					if (m.getOldPath().equals(n.getOldPath()))
 						i.remove();
-					} else if (m.getNewPath().equals(n.getNewPath())) {
+					else if (m.getNewPath().equals(n.getNewPath()))
 						i.remove();
-					}
 				}
 			}
 			for (DiffEntry m : xentries) {
