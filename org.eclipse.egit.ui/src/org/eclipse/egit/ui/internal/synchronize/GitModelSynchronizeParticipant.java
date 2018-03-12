@@ -114,7 +114,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 	@Override
 	public boolean hasCompareInputFor(Object object) {
-		return object instanceof GitModelBlob || object instanceof IFile;
+		return object instanceof GitModelBlob;
 	}
 
 	@Override
