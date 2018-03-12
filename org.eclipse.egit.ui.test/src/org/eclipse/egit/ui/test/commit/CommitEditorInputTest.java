@@ -79,8 +79,6 @@ public class CommitEditorInputTest extends LocalRepositoryTestCase {
 		assertNotNull(input.getImageDescriptor());
 		assertNotNull(input.getToolTipText());
 		assertNotNull(input.getName());
-		assertEquals(repoCommit, input.getCommit());
-		assertNotNull(input.getPersistable());
 	}
 
 }
