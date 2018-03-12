@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.compare;
 
-import static org.eclipse.egit.core.internal.storage.GitFileRevision.INDEX;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import org.eclipse.compare.CompareConfiguration;
@@ -19,7 +18,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.LocalResourceTypedElement;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -41,25 +39,15 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 
 	private final ObjectId remoteId;
 
+	private final Repository repo;
+
+	private final String gitPath;
+
 	private final RevCommit ancestorCommit;
 
 	private final RevCommit remoteCommit;
 
-	/**
-	 * {@link RevCommit} instance of base commit associated with this compare
-	 * input
-	 */
-	protected final RevCommit baseCommit;
-
-	/**
-	 * {@link Repository} associated with this compare compare input
-	 */
-	protected final Repository repo;
-
-	/**
-	 * Git repository relative path of file associated with this compare input
-	 */
-	protected final String gitPath;
+	private final RevCommit baseCommit;
 
 	/**
 	 * Creates {@link GitCompareInput}
@@ -87,8 +75,8 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		this.ancestorId = ancestroDataSource.getObjectId();
 		this.remoteCommit = remoteDataSource.getRevCommit();
 		this.ancestorCommit = ancestroDataSource.getRevCommit();
-		this.name = gitPath.lastIndexOf('/') < 0 ? gitPath : gitPath
-				.substring(gitPath.lastIndexOf('/'));
+		this.name = gitPath.lastIndexOf('/') < 0 ? gitPath :
+			gitPath.substring(gitPath.lastIndexOf('/'));
 	}
 
 	public String getName() {
@@ -152,6 +140,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 			IProgressMonitor monitor) throws CoreException {
 		configuration.setLeftLabel(getFileRevisionLabel(getLeft()));
 		configuration.setRightLabel(getFileRevisionLabel(getRight()));
+
 	}
 
 	public String getFullPath() {
@@ -166,24 +155,15 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 	private String getFileRevisionLabel(ITypedElement element) {
 		if (element instanceof FileRevisionTypedElement) {
 			FileRevisionTypedElement castElement = (FileRevisionTypedElement) element;
-			if (INDEX.equals(castElement.getContentIdentifier()))
-				return NLS.bind(
-						UIText.GitCompareFileRevisionEditorInput_StagedVersion,
-						element.getName());
-			else
-				return NLS.bind(
-						UIText.GitCompareFileRevisionEditorInput_RevisionLabel,
-						new Object[] {
-								element.getName(),
-								CompareUtils.truncatedRevision(castElement
-										.getContentIdentifier()),
-								castElement.getAuthor() });
-
-		} else if (element instanceof LocalResourceTypedElement)
 			return NLS.bind(
-					UIText.GitCompareFileRevisionEditorInput_LocalVersion,
-					element.getName());
-		else
+					UIText.GitCompareFileRevisionEditorInput_RevisionLabel,
+					new Object[] {
+							element.getName(),
+							CompareUtils.truncatedRevision(castElement
+									.getContentIdentifier()),
+							castElement.getAuthor() });
+
+		} else
 			return element.getName();
 	}
 

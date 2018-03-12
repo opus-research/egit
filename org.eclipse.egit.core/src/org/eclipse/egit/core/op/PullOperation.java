@@ -25,7 +25,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -67,8 +66,6 @@ public class PullOperation implements IEGitOperation {
 					pull.setTimeout(timeout);
 					pullResult = pull.call();
 				} catch (GitAPIException e) {
-					throw new CoreException(Activator.error(e.getMessage(), e));
-				} catch (JGitInternalException e) {
 					throw new CoreException(Activator.error(e.getMessage(), e));
 				}
 			}

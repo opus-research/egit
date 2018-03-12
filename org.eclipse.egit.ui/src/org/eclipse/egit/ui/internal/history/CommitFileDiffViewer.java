@@ -8,14 +8,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -28,6 +26,7 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -36,6 +35,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Repository;
@@ -56,6 +56,7 @@ import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -81,8 +82,6 @@ class CommitFileDiffViewer extends TableViewer {
 	private IAction copy;
 
 	private IAction open;
-
-	private IAction openWorkingTreeVersion;
 
 	private IAction compare;
 
@@ -116,7 +115,12 @@ class CommitFileDiffViewer extends TableViewer {
 				.getFont(UIPreferences.THEME_CommitMessageFont));
 		noInputText.setText(UIText.CommitFileDiffViewer_SelectOneCommitMessage);
 
+		rawTable.setHeaderVisible(true);
 		rawTable.setLinesVisible(true);
+
+		final TableLayout layout = new TableLayout();
+		rawTable.setLayout(layout);
+		createColumns(rawTable, layout);
 
 		setLabelProvider(new FileDiffLabelProvider());
 		setContentProvider(new FileDiffContentProvider());
@@ -169,26 +173,8 @@ class CommitFileDiffViewer extends TableViewer {
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
-				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
+				for (Iterator<FileDiff> it = iss.iterator();; it.hasNext()) {
 					openFileInEditor(it.next());
-				}
-			}
-		};
-
-		openWorkingTreeVersion = new Action(
-				UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
-			@SuppressWarnings("unchecked")
-			@Override
-			public void run() {
-				final ISelection s = getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection))
-					return;
-				final IStructuredSelection iss = (IStructuredSelection) s;
-				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
-					String relativePath = it.next().getPath();
-					String path = new Path(db.getWorkTree().getAbsolutePath())
-							.append(relativePath).toOSString();
-					openFileInEditor(path);
 				}
 			}
 		};
@@ -215,7 +201,6 @@ class CommitFileDiffViewer extends TableViewer {
 		};
 
 		mgr.add(open);
-		mgr.add(openWorkingTreeVersion);
 		mgr.add(compare);
 
 		mgr.add(new Separator());
@@ -251,7 +236,6 @@ class CommitFileDiffViewer extends TableViewer {
 		selectAll.setEnabled(!allSelected);
 		copy.setEnabled(!sel.isEmpty());
 		open.setEnabled(!sel.isEmpty());
-		openWorkingTreeVersion.setEnabled(!sel.isEmpty());
 		compare.setEnabled(sel.size() == 1);
 	}
 
@@ -309,18 +293,6 @@ class CommitFileDiffViewer extends TableViewer {
 			}
 			super.inputChanged(input, oldInput);
 		}
-	}
-
-	private void openFileInEditor(String filePath) {
-		IWorkbenchWindow window = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		File file = new File(filePath);
-		if (!file.exists()) {
-			String message = NLS.bind(UIText.CommitFileDiffViewer_FileDoesNotExist, filePath);
-			Activator.showError(message, null);
-		}
-		IWorkbenchPage page = window.getActivePage();
-		EgitUiEditorUtils.openEditor(file, page);
 	}
 
 	private void openFileInEditor(FileDiff d) {
@@ -417,5 +389,12 @@ class CommitFileDiffViewer extends TableViewer {
 
 		clipboard.setContents(new Object[] { r.toString() },
 				new Transfer[] { TextTransfer.getInstance() }, DND.CLIPBOARD);
+	}
+
+	private void createColumns(final Table rawTable, final TableLayout layout) {
+		final TableColumn path = new TableColumn(rawTable, SWT.NONE);
+		path.setResizable(true);
+		path.setText(UIText.HistoryPage_pathnameColumn);
+		layout.addColumnData(new ColumnWeightData(1, true));
 	}
 }

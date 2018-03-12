@@ -29,19 +29,17 @@ import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
+import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
-import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -60,8 +58,7 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.dialogs.PatternFilter;
+import org.eclipse.swt.widgets.Table;
 
 class SourceBranchPage extends WizardPage {
 
@@ -79,11 +76,9 @@ class SourceBranchPage extends WizardPage {
 
 	private Button unselectB;
 
-	private CachedCheckboxTreeViewer refsViewer;
+	private CheckboxTableViewer refsViewer;
 
 	private UserPasswordCredentials credentials;
-
-	private String helpContext = null;
 
 	SourceBranchPage() {
 		super(SourceBranchPage.class.getName());
@@ -123,52 +118,14 @@ class SourceBranchPage extends WizardPage {
 		label = new Label(panel, SWT.NONE);
 		label.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		PatternFilter filter = new PatternFilter() {
-			@Override
-			public boolean isElementVisible(Viewer viewer, Object element) {
-				if (getSelectedBranches().contains(element))
-					return true;
-				return super.isElementVisible(viewer, element);
-			}
-		};
-
-		FilteredCheckboxTree fTree = new FilteredCheckboxTree(panel, null, SWT.NONE,
-				filter);
-		refsViewer = fTree.getCheckboxTreeViewer();
-
-		ITreeContentProvider provider = new ITreeContentProvider() {
-
-			public void inputChanged(Viewer arg0, Object arg1, Object arg2) {
-				// nothing
-			}
-
-			public void dispose() {
-				// nothing
-			}
-
-			public Object[] getElements(Object input) {
-				return ((List) input).toArray();
-			}
-
-			public boolean hasChildren(Object element) {
-				return false;
-			}
-
-			public Object getParent(Object element) {
-				return null;
-			}
-
-			public Object[] getChildren(Object parentElement) {
-				return null;
-			}
-		};
-		refsViewer.setContentProvider(provider);
+		Table refsTable = new Table(panel, SWT.CHECK | SWT.V_SCROLL | SWT.BORDER);
+		refsTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		refsViewer = new CheckboxTableViewer(refsTable);
+		refsViewer.setContentProvider(ArrayContentProvider.getInstance());
 		refsViewer.setLabelProvider(new LabelProvider() {
 			@Override
 			public String getText(Object element) {
-				if (((Ref)element).getName().startsWith(Constants.R_HEADS))
-					return ((Ref)element).getName().substring(Constants.R_HEADS.length());
-				return ((Ref)element).getName();
+				return ((Ref)element).getName().substring(Constants.R_HEADS.length());
 			}
 
 			@Override
@@ -213,21 +170,6 @@ class SourceBranchPage extends WizardPage {
 
 	public void setCredentials(UserPasswordCredentials credentials) {
 		this.credentials = credentials;
-	}
-
-	/**
-	 * Set the ID for context sensitive help
-	 *
-	 * @param id
-	 *            help context
-	 */
-	public void setHelpContext(String id) {
-		helpContext = id;
-	}
-
-	@Override
-	public void performHelp() {
-		PlatformUI.getWorkbench().getHelpSystem().displayHelp(helpContext);
 	}
 
 	/**

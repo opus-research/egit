@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.0"?>
 <plugin>
-   <extension-point id="commitMessageProvider" name="CommitMessageProvider" schema="schema/commitMessageProvider.exsd"/>
    <extension point="org.eclipse.core.runtime.preferences">
       <initializer class="org.eclipse.egit.ui.PluginPreferenceInitializer"/>
    </extension>
@@ -132,12 +131,6 @@
                id="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
                label="%CompareWithIndexAction_label"
                menubarPath="compareWithMenu/gitCompareWithGroup"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
-               label="&amp;Branch or Tag..."
-               menubarPath="compareWithMenu/gitCompareWithGroup">
-         </action>
          <action
                class="org.eclipse.egit.ui.internal.actions.CompareWithHeadAction"
                id="org.eclipse.egit.ui.internal.actions.CompareWithHeadAction"
@@ -502,17 +495,6 @@
               name="repositoryGroup">
         </separator>
 	    </menu>
-  <action
-        class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamConfigAction"
-        definitionId="org.eclipse.egit.ui.team.Pull"
-        icon="icons/obj16/pull.gif"
-        id="org.eclipse.egit.ui.actionpull"
-        label="%PullIntoCurrentBranchMenuLabel"
-        menubarPath="org.eclipse.egit.ui.gitmenu/repo"
-        style="push"
-        toolbarPath="org.eclipse.egit.ui"
-        tooltip="%PullIntoCurrentBranch.tooltip">
-  </action>
 		<action
         class="org.eclipse.egit.ui.internal.actions.FetchAction"
         definitionId="org.eclipse.egit.ui.team.Fetch"
@@ -621,14 +603,6 @@
             id="org.eclipse.egit.ui.GitCategory"
             name="%GitCategory_name">
       </category>
-      <view
-            category="org.eclipse.egit.ui.GitCategory"
-            class="org.eclipse.egit.ui.internal.dialogs.CompareTreeView"
-            icon="icons/obj16/gitrepository.gif"
-            id="org.eclipse.egit.ui.CompareTreeView"
-            name="Git Tree Compare"
-            restorable="false">
-      </view>
    </extension>
    <extension
          point="org.eclipse.ui.perspectives">
@@ -736,12 +710,474 @@
       <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView">
          <separator
-               name="##Branch-1"
+               name="FirstGroup">
+         </separator>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
+               label="%RepoViewMergeSimple.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <or>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                        </or>
+                        <test
+                              property="GitRepository.canMerge">
+                        </test>
+                        <not>
+                           <test
+                                 property="GitRepository.isRefCheckedOut">
+                           </test>
+                        </not>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewNewRemote"
+               label="%RepoViewCreateRemote.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RemotesNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewConfigureFetch"
+               label="%RepoViewConfigureFetch.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <and>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
+                           </instanceof>
+                           <not>
+                              <test
+                                    property="GitRepository.fetchExists">
+                              </test>
+                           </not>
+                        </and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewConfigurePush"
+               label="%RepoViewConfigurePush.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                        </instanceof>
+                        <and>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
+                           </instanceof>
+                           <not>
+                              <test
+                                    property="GitRepository.pushExists">
+                              </test>
+                           </not>
+                        </and>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewReset"
+               label="%RepoViewReset.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <test
+                              property="GitRepository.isSafe">
+                        </test>
+                        <or>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                           </instanceof>
+                        </or>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <separator
+               name="SecondGroup">
+         </separator>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
+               label="Show in History"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="+">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewOpenInTextEditor"
+               label="%RepoViewOpenInEditor.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <separator
+               name="SecondSeparator"
                visible="true">
          </separator>
          <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
+               label="%RepoViewDeleteBranch.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="+">
+                  </count>
+                  <iterate>
+                     <and>
+                        <or>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                           <test
+                                 property="GitRepository.isLocalBranch">
+                           </test>
+                        </or>
+                        <not>
+                           <test
+                                 property="GitRepository.isRefCheckedOut">
+                           </test>
+                        </not>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
+               label="%RepoViewRenameBranch.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
+               label="%RepoViewRemoveRemote.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewDeleteFetch"
+               label="%RepoViewDeleteFetch.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewDeletePush"
+               label="%RepoViewDeletePush.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
+               label="%RepoViewDeleteRepository.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="+">
+                  </count>
+                  <iterate>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
+               label="%RepoViewOpenProperties.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewCopyPath"
+               label="%RepoViewCopyPath.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                        </instanceof>
+                        <and>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
+                           </instanceof>
+                           <not>
+                              <test
+                                    property="GitRepository.isBare">
+                              </test>
+                           </not>
+                        </and>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
+               label="%RepoViewPastePath.label"
+               style="push">
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewPull"
+               label="%RepoViewPullMenu.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <test
+                              property="GitRepository.canMerge">
+                        </test>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewPush"
+               label="%RepoViewPush.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewImportProjects"
+               label="%RepoViewImportProjects.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+                  <iterate>
+                     <not>
+                        <test
+                              property="GitRepository.isBare">
+                        </test>
+                     </not>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
                commandId="org.eclipse.egit.ui.CheckoutCommand"
-               icon="icons/obj16/checkout.gif"
                label="%RepoViewCheckout.label"
                style="push">
             <visibleWhen
@@ -779,157 +1215,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewCreateBranch"
-               icon="icons/obj16/branch_obj.gif"
-               label="%RepoViewCreateBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
-               icon="icons/obj16/editconfig.gif"
-               label="%RepoViewRenameBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewDeleteBranch"
-               icon="icons/obj16/delete_obj.gif"
-               label="%RepoViewDeleteBranch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <and>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <test
-                                 property="GitRepository.isLocalBranch">
-                           </test>
-                        </or>
-                        <not>
-                           <test
-                                 property="GitRepository.isRefCheckedOut">
-                           </test>
-                        </not>
-                     </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <separator
-               name="##Branch-2"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewMergeSimple"
-               icon="icons/obj16/merge.gif"
-               label="%RepoViewMergeSimple.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                        </or>
-                        <test
-                              property="GitRepository.canMerge">
-                        </test>
-                        <not>
-                           <test
-                                 property="GitRepository.isRefCheckedOut">
-                           </test>
-                        </not>
-                     </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRebase"
-               icon="icons/obj16/rebase.gif"
-               label="Rebase"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <test
-                              property="GitRepository.canMerge">
-                        </test>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <not>
-                              <test
-                                    property="GitRepository.isRefCheckedOut">
-                              </test>
-                           </not>
-                        </and>
-                     </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewSynchronize"
-               icon="icons/obj16/remotespec.gif"
                label="%RepoViewSynchronize.label"
                style="push">
             <visibleWhen
@@ -960,7 +1246,6 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewSynchronizeWithEachOther"
-               icon="icons/obj16/remotespec.gif"
                label="%RepoViewSynchronizeEachOther.label"
                style="push">
             <visibleWhen
@@ -989,51 +1274,8 @@
                </and>
             </visibleWhen>
          </command>
-         <separator
-               name="##Remotes">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewNewRemote"
-               label="%RepoViewCreateRemote.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemotesNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
-               icon="icons/obj16/push.gif"
-               label="%RepoViewPushSimpleLabel"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewFetchConfigured"
-               icon="icons/obj16/fetch.gif"
                label="%RepoViewFetchSimple.label"
                style="push">
             <visibleWhen
@@ -1052,14 +1294,9 @@
                </and>
             </visibleWhen>
          </command>
-         <separator
-               name="Tag-1"
-               visible="true">
-         </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
-               icon="icons/obj16/tags.gif"
-               label="%RepoViewCreateTag.label"
+               commandId="org.eclipse.egit.ui.RepositoriesViewPushConfigured"
+               label="%RepoViewPushSimpleLabel"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -1067,77 +1304,12 @@
                   <count
                         value="1">
                   </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagsNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <separator
-               name="##Remote">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewConfigureFetch"
-               icon="icons/obj16/editconfig.gif"
-               label="%RepoViewConfigureFetch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                           </instanceof>
-                           <not>
-                              <test
-                                    property="GitRepository.fetchExists">
-                              </test>
-                           </not>
-                        </and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewConfigurePush"
-               icon="icons/obj16/editconfig.gif"
-               label="%RepoViewConfigurePush.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                        </instanceof>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                           </instanceof>
-                           <not>
-                              <test
-                                    property="GitRepository.pushExists">
-                              </test>
-                           </not>
-                        </and>
-                     </or>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -1192,86 +1364,21 @@
                </and>
             </visibleWhen>
          </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewDeleteFetch"
-               icon="icons/obj16/delete_obj.gif"
-               label="%RepoViewDeleteFetch.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewDeletePush"
-               icon="icons/obj16/delete_obj.gif"
-               label="%RepoViewDeletePush.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
-               icon="icons/obj16/delete_obj.gif"
-               label="%RepoViewRemoveRemote.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
          <separator
-               name="##Repo-1">
+               name="FirstSeparator"
+               visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPush"
-               icon="icons/obj16/push.gif"
-               label="%RepoViewPush.label"
+               commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
+               label="%RepoViewRemove.label"
                style="push">
             <visibleWhen
                   checkEnabled="false">
                <and>
                   <count
-                        value="1">
+                        value="+">
                   </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
+                  <iterate>
                      <instanceof
                            value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                      </instanceof>
@@ -1280,8 +1387,56 @@
             </visibleWhen>
          </command>
          <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewCreateBranch"
+               label="%RepoViewCreateBranch.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
+               label="%RepoViewCreateTag.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.TagsNode">
+                        </instanceof>
+                     </or>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewFetch"
-               icon="icons/obj16/fetch.gif"
                label="%RepoViewFetch.label"
                style="push">
             <visibleWhen
@@ -1301,36 +1456,7 @@
             </visibleWhen>
          </command>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPull"
-               icon="icons/obj16/pull.gif"
-               label="%RepoViewPullMenu.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <test
-                              property="GitRepository.canMerge">
-                        </test>
-                     </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <separator
-               name="##Repo-2"
-               visible="true">
-         </separator>
-         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewMerge"
-               icon="icons/obj16/merge.gif"
                label="%RepoViewMerge.label"
                style="push">
             <visibleWhen
@@ -1363,8 +1489,37 @@
             </visibleWhen>
          </command>
          <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewRebase"
+               label="Rebase"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <test
+                              property="GitRepository.canMerge">
+                        </test>
+                        <and>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                           <not>
+                              <test
+                                    property="GitRepository.isRefCheckedOut">
+                              </test>
+                           </not>
+                        </and>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewRebaseWithDialog"
-               icon="icons/obj16/rebase.gif"
                label="Rebase..."
                style="push">
             <visibleWhen
@@ -1382,312 +1537,6 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                         </instanceof>
                      </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <menu
-               icon="icons/obj16/rebase.gif"
-               label="Rebase">
-            <command
-                  commandId="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
-                  label="Abort"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                           </instanceof>
-                           <test
-                                 property="GitRepository.canAbortRebase">
-                           </test>
-                        </and>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </command>
-            <command
-                  commandId="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
-                  label="&amp;Continue"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                           </instanceof>
-                           <test
-                                 property="GitRepository.canAbortRebase">
-                           </test>
-                        </and>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </command>
-            <command
-                  commandId="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
-                  label="&amp;Skip"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                           </instanceof>
-                           <test
-                                 property="GitRepository.canAbortRebase">
-                           </test>
-                        </and>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </command>
-         </menu>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewReset"
-               icon="icons/obj16/reset.gif"
-               label="%RepoViewReset.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <test
-                              property="GitRepository.isSafe">
-                        </test>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                           </instanceof>
-                        </or>
-                     </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <separator
-               name="##Repo-3"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
-               icon="icons/obj16/history.gif"
-               label="Show in History"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewImportProjects"
-               icon="icons/obj16/import_prj.gif"
-               label="%RepoViewImportProjects.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-                  <iterate>
-                     <not>
-                        <test
-                              property="GitRepository.isBare">
-                        </test>
-                     </not>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewOpenProperties"
-               icon="icons/obj16/properties.gif"
-               label="%RepoViewOpenProperties.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FetchNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.PushNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <separator
-               name="##Repo-4"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
-               label="%RepoViewRemove.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewDelete"
-               icon="icons/obj16/delete_obj.gif"
-               label="%RepoViewDeleteRepository.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <separator
-               name="##Repo-5"
-               visible="true">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewCopyPath"
-               label="%RepoViewCopyPath.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
-                        </instanceof>
-                        <and>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
-                           </instanceof>
-                           <not>
-                              <test
-                                    property="GitRepository.isBare">
-                              </test>
-                           </not>
-                        </and>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
-               label="%RepoViewPastePath.label"
-               style="push">
-         </command>
-         <separator
-               name="File-1">
-         </separator>
-         <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewOpenInTextEditor"
-               label="%RepoViewOpenInEditor.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
-                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2031,18 +1880,6 @@
             id="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
             name="Abort Rebase">
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SkipRebaseCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
-            name="Skip Rebase">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ContinueRebaseCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
-            name="Continue Rebase">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
@@ -2182,22 +2019,6 @@
             commandId="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
             icon="icons/elcl16/progress_stop.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewContinueRebase"
-            icon="icons/elcl16/continue.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewSkipRebase"
-            icon="icons/elcl16/skip.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.Merge"
-            icon="icons/obj16/merge.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.RebaseCurrent"
-            icon="icons/obj16/rebase.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -2205,7 +2026,7 @@
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewPropertyTester"
             id="org.eclipse.egit.ui.RepositoryTester"
             namespace="GitRepository"
-            properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase"
+            properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,isRebasing"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
    </extension>
@@ -2502,21 +2323,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
             id="org.eclipse.egit.ui.history.CherryPick"
             name="%CherryPickCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.RevertHandler"
-            id="org.eclipse.egit.ui.history.Revert"
-            name="%RevertCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.MergeHandler"
-            id="org.eclipse.egit.ui.history.Merge"
-            name="%MergeCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.RebaseCurrentHandler"
-            id="org.eclipse.egit.ui.history.RebaseCurrent"
-            name="%RebaseCurrentCommand.name">
       </command>
    </extension>
    <extension

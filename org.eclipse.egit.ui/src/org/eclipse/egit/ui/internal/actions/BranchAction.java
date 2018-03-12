@@ -10,12 +10,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
+import org.eclipse.egit.core.op.BranchOperation;
 
 /**
  * Action for selecting a branch and checking it out.
  *
- * @see BranchOperationUI
+ * @see BranchOperation
  */
 public class BranchAction extends RepositoryAction {
 	/**
