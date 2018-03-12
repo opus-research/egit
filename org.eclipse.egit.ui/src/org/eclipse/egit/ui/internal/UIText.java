@@ -4197,6 +4197,12 @@ public class UIText extends NLS {
 	public static String LoginDialog_user;
 
 	/** */
+	public static String LoginService_readingCredentialsFailed;
+
+	/** */
+	public static String LoginService_storingCredentialsFailed;
+
+	/** */
 	public static String NewRemoteDialog_ConfigurationMessage;
 
 	/** */
