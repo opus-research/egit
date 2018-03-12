@@ -157,14 +157,17 @@ public class UIText extends NLS {
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
 
 	/** */
+	public static String FinishFeatureDialog_squashCheck;
+
+	/** */
+	public static String FinishFeatureDialog_title;
+
+	/** */
+	public static String FinishFeatureDialog_setParameterForFinishing;
+
+	/** */
 	public static String HotfixFinishOperation_unexpectedConflictsHotfixAborted;
 
 	/** */
 	public static String ReleaseFinishOperation_unexpectedConflictsReleaseAborted;
-
-	/** */
-	public static String UIIcons_errorDeterminingIconBase;
-
-	/** */
-	public static String UIIcons_errorLoadingPluginImage;
 }
