@@ -10,7 +10,6 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import static org.eclipse.egit.core.internal.util.ResourceUtil.getResourceMappings;
-import static org.eclipse.egit.ui.internal.CompareUtils.canDirectlyOpenInCompare;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
 import java.io.IOException;
@@ -62,7 +61,7 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 			if (resources.length == 1 && resources[0] instanceof IFile) {
 				final IFile baseFile = (IFile) resources[0];
 
-				if (canDirectlyOpenInCompare(baseFile)) {
+				if (isOKToShowSingleFile(baseFile)) {
 					showSingleFileComparison(baseFile, dlg.getRefName());
 				} else {
 					synchronizeModel(baseFile, repo, dlg.getRefName());

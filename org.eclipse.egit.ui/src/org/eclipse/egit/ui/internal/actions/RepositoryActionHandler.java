@@ -4,6 +4,7 @@
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,10 +13,13 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import static org.eclipse.egit.core.internal.util.ResourceUtil.getResourceMappings;
+
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -25,14 +29,18 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
+import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.PlatformObject;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -241,9 +249,9 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	private Repository getRepository(boolean warn,
 			IStructuredSelection selection, Shell shell) {
 		RepositoryMapping mapping = null;
-		for (IResource resource : getSelectedResources(selection)) {
+		for (IPath location : getSelectedLocations(selection)) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(resource);
+					.getMapping(location);
 			if (mapping == null)
 				mapping = repositoryMapping;
 			if (repositoryMapping == null)
@@ -484,6 +492,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return getSelectedResources(selection);
 	}
 
+	protected IPath[] getSelectedLocations(ExecutionEvent event)
+			throws ExecutionException {
+		IStructuredSelection selection = getSelection(event);
+		return getSelectedLocations(selection);
+	}
+
 	/**
 	 * @return the resources in the selection
 	 */
@@ -503,12 +517,35 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			if (resource != null)
 				result.add(resource);
 			else
-				extractResourcesFromMapping(result, o);
+				result.addAll(extractResourcesFromMapping(o));
 		}
 		return result.toArray(new IResource[result.size()]);
 	}
 
-	private void extractResourcesFromMapping(Set<IResource> result, Object o) {
+	private IPath[] getSelectedLocations(IStructuredSelection selection) {
+		Set<IPath> result = new LinkedHashSet<IPath>();
+		for (Object o : selection.toList()) {
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null) {
+				IPath location = resource.getLocation();
+				if (location != null)
+					result.add(location);
+			} else {
+				IPath location = AdapterUtils.adapt(o, IPath.class);
+				if (location != null)
+					result.add(location);
+				else
+					for (IResource r : extractResourcesFromMapping(o)) {
+						IPath l = r.getLocation();
+						if (l != null)
+							result.add(l);
+					}
+			}
+		}
+		return result.toArray(new IPath[result.size()]);
+	}
+
+	private List<IResource> extractResourcesFromMapping(Object o) {
 		ResourceMapping mapping = (ResourceMapping) getAdapter(o,
 				ResourceMapping.class);
 		if (mapping != null) {
@@ -517,12 +554,13 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 				traversals = mapping.getTraversals(null, null);
 				for (ResourceTraversal traversal : traversals) {
 					IResource[] resources = traversal.getResources();
-					result.addAll(Arrays.asList(resources));
+					return Arrays.asList(resources);
 				}
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 			}
 		}
+		return Collections.emptyList();
 	}
 
 	/**
@@ -692,5 +730,47 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			this.commit = commit;
 			this.path = path;
 		}
+	}
+
+	/**
+	 * Return whether it is OK to open the selected file directly in a compare
+	 * editor. It is not OK to show the single file if the file is part of a
+	 * logical model element that spans multiple files.
+	 *
+	 * @param file
+	 *            File the user is trying to compare.
+	 * @return <code>true</code> if the file can be opened directly in a compare
+	 *         editor, <code>false</code> if the synchronize view should be
+	 *         opened instead.
+	 */
+	protected boolean isOKToShowSingleFile(IFile file) {
+		/*
+		 * Note : it would be better to use a remote context here in order to
+		 * give the model provider a change to resolve the remote logical model
+		 * instead of only relying on the local one. However, this might be a
+		 * long operation and would not really provide more context : we're
+		 * trying to determine if the local file can be compared alone, this can
+		 * be done by relying one the local model only.
+		 */
+		final ResourceMapping[] mappings = getResourceMappings(file,
+				ResourceMappingContext.LOCAL_CONTEXT);
+
+		for (ResourceMapping mapping : mappings) {
+			try {
+				final ResourceTraversal[] traversals = mapping.getTraversals(
+						ResourceMappingContext.LOCAL_CONTEXT, null);
+				for (ResourceTraversal traversal : traversals) {
+					final IResource[] resources = traversal.getResources();
+					for (IResource resource : resources) {
+						if (!resource.equals(file)) {
+							return false;
+						}
+					}
+				}
+			} catch (CoreException e) {
+				Activator.logError(e.getMessage(), e);
+			}
+		}
+		return true;
 	}
 }
