@@ -153,7 +153,7 @@ public class SwitchToMenu extends ContributionItem implements
 				localBranches.remove(shortName);
 			}
 
-			if (itemCount < MAX_NUM_MENU_ENTRIES) {
+			if (itemCount < MAX_NUM_MENU_ENTRIES && itemCount > 0 && sortedRefs.size() > 0) {
 				// Now add more other branches if we have only a few branch switches
 				// Sort the remaining local branches
 				sortedRefs.clear();
@@ -167,7 +167,7 @@ public class SwitchToMenu extends ContributionItem implements
 						break;
 					final String fullName = entry.getValue().getName();
 					final String shortName = entry.getKey();
-					createMenuItem(menu, repository, currentBranch, fullName, shortName);
+					createMenuItem(menu, repository, fullName, shortName, shortName);
 				}
 			}
 			if (localBranches.size() > 0)
