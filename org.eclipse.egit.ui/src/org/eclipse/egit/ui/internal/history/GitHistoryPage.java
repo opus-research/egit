@@ -316,7 +316,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 
 		showAllRepoVersionsAction = new ShowFilterAction(
-				ShowFilter.SHOWALLREPO, UIIcons.REPOSITORY,
+				ShowFilter.SHOWALLREPO, UIIcons.FILTERREPO,
 				UIText.HistoryPage_ShowAllVersionsForRepo);
 
 		showAllProjectVersionsAction = new ShowFilterAction(
