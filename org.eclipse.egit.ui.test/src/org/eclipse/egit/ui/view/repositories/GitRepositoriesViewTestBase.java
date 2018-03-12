@@ -35,6 +35,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
+import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -53,6 +54,8 @@ import org.junit.After;
  */
 public abstract class GitRepositoriesViewTestBase extends
 		LocalRepositoryTestCase {
+
+	protected static final RepositoriesViewLabelProvider labelProvider = new RepositoriesViewLabelProvider();
 
 	// test utilities
 	protected static final TestUtil myUtil = new TestUtil();
