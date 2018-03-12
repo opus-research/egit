@@ -38,9 +38,6 @@ public class SelectionPropertyTester extends PropertyTester {
 	@Override
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
-		if (receiver == null || !(receiver instanceof Repository)) {
-			return false;
-		}
 		Repository repository = (Repository) receiver;
 
 		GitFlowRepository gitFlowRepository = new GitFlowRepository(repository);

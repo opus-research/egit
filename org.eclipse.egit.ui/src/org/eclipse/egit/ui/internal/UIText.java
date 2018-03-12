@@ -2016,9 +2016,6 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_MaxBranchLength;
 
 	/** */
-	public static String HistoryPreferencePage_MaxDiffLines;
-
-	/** */
 	public static String HistoryPreferencePage_MaxTagLength;
 
 	/** */
@@ -3181,9 +3178,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String Decorator_exceptionMessage;
-
-	/** */
-	public static String Decorator_exceptionMessageCommon;
 
 	/** */
 	public static String DecoratorPreferencesPage_addVariablesTitle;
@@ -5050,9 +5044,6 @@ public class UIText extends NLS {
 	public static String StagingView_noStagedFiles;
 
 	/** */
-	public static String StagingView_BareRepoSelection;
-
-	/** */
 	public static String StagingView_NoSelectionTitle;
 
 	/** */
@@ -5363,9 +5354,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushMenu_PushBranch;
-
-	/** */
-	public static String DiffStyleRangeFormatter_diffTruncated;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
