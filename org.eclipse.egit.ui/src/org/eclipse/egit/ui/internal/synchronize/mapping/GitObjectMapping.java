@@ -8,8 +8,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
@@ -72,26 +74,20 @@ public abstract class GitObjectMapping extends ResourceMapping {
 		return GitChangeSetModelProvider.ID;
 	}
 
-	private IProject getProject(IResource resource) {
-		return resource != null ? resource.getProject() : null;
-	}
-
 	@Override
 	public IProject[] getProjects() {
-		IProject[] projects = null;
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		if (!object.isContainer()) {
-			IProject project = getProject(ResourcesPlugin.getWorkspace()
-					.getRoot().getFileForLocation(object.getLocation()));
-			if (project != null)
-				projects = new IProject[] { project };
+			IFile file = root.getFileForLocation(object.getLocation());
+			return (file == null) ? null : new IProject[] {file.getProject()};
 		} else if (object instanceof GitModelTree) {
-			IProject project = getProject(ResourcesPlugin.getWorkspace()
-					.getRoot().getContainerForLocation(object.getLocation()));
-			if (project != null)
-				projects = new IProject[] { project };
-		} else if (object instanceof HasProjects)
-			projects = ((HasProjects) object).getProjects();
+			IContainer container = root.getContainerForLocation(object.getLocation());
 
-		return projects != null ? projects : new IProject[0];
+			return new IProject[] {container.getProject()};
+		} else if (object instanceof HasProjects)
+			return ((HasProjects) object).getProjects();
+		else
+			return null;
 	}
+
 }
