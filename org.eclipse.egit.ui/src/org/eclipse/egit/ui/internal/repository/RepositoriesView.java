@@ -824,7 +824,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				Wizard wiz = new ExternalProjectImportWizard() {
+				Wizard wiz = new ExternalProjectImportWizard(path) {
 
 					@Override
 					public void addPages() {
