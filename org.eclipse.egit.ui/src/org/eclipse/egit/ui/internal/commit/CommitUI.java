@@ -222,6 +222,7 @@ public class CommitUI  {
 				commitDialog.getCommitMessage());
 		if (commitDialog.isAmending()) {
 			commitOperation.setAmending(true);
+			commitOperation.setPreviousCommit(previousCommit);
 			commitOperation.setRepos(repos);
 		}
 		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
