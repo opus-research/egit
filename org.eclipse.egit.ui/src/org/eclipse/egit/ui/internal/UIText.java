@@ -3519,9 +3519,6 @@ public class UIText extends NLS {
 	public static String MergeTargetSelectionDialog_MergeTypeCommitButton;
 
 	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeNoCommitButton;
-
-	/** */
 	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
 
 	/** */
