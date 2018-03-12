@@ -10,7 +10,6 @@ package org.eclipse.egit.core.synchronize.dto;
 
 import static org.eclipse.core.runtime.Assert.isNotNull;
 import static org.eclipse.egit.core.RevUtils.getCommonAncestor;
-import static org.eclipse.jgit.lib.Constants.R_REMOTES;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,15 +38,11 @@ public class GitSynchronizeData {
 
 	private final Repository repo;
 
-	private final String srcRemote;
+	private final RevCommit srcRev;
 
-	private final String dstRemote;
+	private final RevCommit dstRev;
 
-	private final RevCommit srcRevCommit;
-
-	private final RevCommit dstRevCommit;
-
-	private final RevCommit ancestorRevCommit;
+	private final RevCommit commonAncestorRev;
 
 	private final Set<IProject> projects;
 
@@ -71,25 +66,22 @@ public class GitSynchronizeData {
 		isNotNull(dstRev);
 		repo = repository;
 
-		srcRemote = extractRemoteName(srcRev);
-		dstRemote = extractRemoteName(dstRev);
-
 		ObjectWalk ow = new ObjectWalk(repo);
 		if (srcRev.length() > 0)
-			this.srcRevCommit = ow.parseCommit(repo.resolve(srcRev));
+			this.srcRev = ow.parseCommit(repo.resolve(srcRev));
 		else
-			this.srcRevCommit = null;
+			this.srcRev = null;
 
 		if (dstRev.length() > 0)
-			this.dstRevCommit = ow.parseCommit(repo.resolve(dstRev));
+			this.dstRev = ow.parseCommit(repo.resolve(dstRev));
 		else
-			this.dstRevCommit = null;
+			this.dstRev = null;
 
-		if (this.dstRevCommit != null || this.srcRevCommit != null)
-			this.ancestorRevCommit = getCommonAncestor(repo, this.srcRevCommit,
-					this.dstRevCommit);
+		if (this.dstRev != null || this.srcRev != null)
+			this.commonAncestorRev = getCommonAncestor(repo, this.srcRev,
+					this.dstRev);
 		else
-			this.ancestorRevCommit = null;
+			this.commonAncestorRev = null;
 
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
@@ -112,33 +104,17 @@ public class GitSynchronizeData {
 	}
 
 	/**
-	 * @return name of source remote or {@code null} when source branch is not a
-	 *         remote branch
-	 */
-	public String getSrcRemoteName() {
-		return srcRemote;
-	}
-
-	/**
-	 * @return name of destination remote or {@code null} when destination
-	 *         branch is not a remote branch
-	 */
-	public String getDstRemoteName() {
-		return dstRemote;
-	}
-
-	/**
 	 * @return synchronize source rev name
 	 */
 	public RevCommit getSrcRevCommit() {
-		return srcRevCommit;
+		return srcRev;
 	}
 
 	/**
 	 * @return synchronize destination rev name
 	 */
 	public RevCommit getDstRevCommit() {
-		return dstRevCommit;
+		return dstRev;
 	}
 
 	/**
@@ -168,15 +144,7 @@ public class GitSynchronizeData {
 	 * @return common ancestor commit
 	 */
 	public RevCommit getCommonAncestorRev() {
-		return ancestorRevCommit;
-	}
-
-	private String extractRemoteName(String rev) {
-		if (rev.contains(R_REMOTES)) {
-			String remote = rev.replaceAll(R_REMOTES, ""); //$NON-NLS-1$
-			return remote.substring(0, remote.indexOf("/")); //$NON-NLS-1$
-		} else
-			return null;
+		return commonAncestorRev;
 	}
 
 }
