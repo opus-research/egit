@@ -1,7 +1,6 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import org.eclipse.osgi.util.NLS;
-
 /**
  * UI Texts for the Repositories View
  *
@@ -34,18 +33,6 @@ public class RepositoryViewUITexts extends NLS {
 	public static String RepositoriesView_Clone_Tooltip;
 
 	/** */
-	public static String RepositoriesView_ConfigureFetchMenu;
-
-	/** */
-	public static String RepositoriesView_ConfigurePushMenu;
-
-	/** */
-	public static String RepositoriesView_ConfirmDeleteRemoteHeader;
-
-	/** */
-	public static String RepositoriesView_ConfirmDeleteRemoteMessage;
-
-	/** */
 	public static String RepositoriesView_ConfirmProjectDeletion_Question;
 
 	/** */
@@ -53,9 +40,6 @@ public class RepositoryViewUITexts extends NLS {
 
 	/** */
 	public static String RepositoriesView_Error_WindowTitle;
-
-	/** */
-	public static String RepositoriesView_ErrorHeader;
 
 	/** */
 	public static String RepositoriesView_ExistingProjects_Nodetext;
@@ -73,26 +57,16 @@ public class RepositoryViewUITexts extends NLS {
 	public static String RepositoriesView_ImportRepository_MenuItem;
 
 	/** */
-	public static String RepositoriesView_NewRemoteMenu;
-
-	/** */
-	public static String RepositoriesView_OpenPropertiesMenu;
-
-	/** */
 	public static String RepositoriesView_Refresh_Button;
 
 	/** */
-	public static String RepositoriesView_RemotesNodeText;
-
-	/** */
 	public static String RepositoriesView_Remove_MenuItem;
-
-	/** */
-	public static String RepositoriesView_RemoveRemoteMenu;
 
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, RepositoryViewUITexts.class);
 	}
 
+	private RepositoryViewUITexts() {
+	}
 }
