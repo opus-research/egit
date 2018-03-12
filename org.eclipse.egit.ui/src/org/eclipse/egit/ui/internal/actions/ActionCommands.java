@@ -41,6 +41,9 @@ public class ActionCommands {
 	/** "Compare with revision" action command id */
 	public static final String COMPARE_WITH_REVISION_ACTION = "org.eclipse.egit.ui.team.CompareWithRevision"; //$NON-NLS-1$
 
+	/** "Compare with previous" action command id */
+	public static final String COMPARE_WITH_PREVIOUS_ACTION = "org.eclipse.egit.ui.team.CompareWithPrevious"; //$NON-NLS-1$
+
 	/** "Configure Fetch" action command id */
 	public static final String CONFIGURE_FETCH = "org.eclipse.egit.ui.team.ConfigureFetch"; //$NON-NLS-1$
 
@@ -88,9 +91,6 @@ public class ActionCommands {
 
 	/** "Synchronize with" action command id */
 	public static final String SYNC_WITH_ACTION = "org.eclipse.egit.ui.team.SyncWith"; //$NON-NLS-1$
-
-	/** "Synchronize workspace" action command id */
-	public static final String SYNC_WORKSPACE_ACTION = "org.eclipse.egit.ui.team.SyncWorkspace"; //$NON-NLS-1$
 
 	/** "Tag" action command id */
 	public static final String TAG_ACTION = "org.eclipse.egit.ui.team.Tag"; //$NON-NLS-1$
