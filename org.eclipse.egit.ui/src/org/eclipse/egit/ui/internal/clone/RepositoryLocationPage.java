@@ -16,6 +16,7 @@ import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.provisional.wizards.RepositoryServerInfo;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -52,8 +53,8 @@ public class RepositoryLocationPage extends WizardPage {
 		cloneSourceProvider.add(0, CloneSourceProvider.LOCAL);
 		this.repositoryImports = cloneSourceProvider;
 		resolvedWizardPages = new HashMap<CloneSourceProvider, WizardPage>();
-		setTitle("Select Repository Source"); //$NON-NLS-1$
-		setMessage("Do the needful"); //$NON-NLS-1$
+		setTitle(UIText.RepositoryLocationPage_title);
+		setMessage(UIText.RepositoryLocationPage_info);
 	}
 
 	public void createControl(Composite parent) {
