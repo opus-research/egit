@@ -151,22 +151,10 @@ public class UIText extends NLS {
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
-	public static String SelectResetTypePage_labelCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_labelResettingTo;
-
-	/** */
 	public static String SelectResetTypePage_PageMessage;
 
 	/** */
 	public static String SelectResetTypePage_PageTitle;
-
-	/** */
-	public static String SelectResetTypePage_tooltipCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_tooltipResettingTo;
 
 	/** */
 	public static String SharingWizard_windowTitle;
@@ -277,7 +265,7 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_FolderWillBeCreatedMessage;
 
 	/** */
-	public static String ExistingOrNewPage_HeaderLocation;
+	public static String ExistingOrNewPage_HeaderPath;
 
 	/** */
 	public static String ExistingOrNewPage_HeaderProject;
@@ -557,9 +545,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_ShowSubMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_toggleEmailAddresses;
 
 	/** */
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
@@ -1174,6 +1159,9 @@ public class UIText extends NLS {
 	public static String SourceBranchPage_errorBranchRequired;
 
 	/** */
+	public static String SourceBranchPage_transportError;
+
+	/** */
 	public static String SourceBranchPage_cannotListBranches;
 
 	/** */
@@ -1687,9 +1675,6 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_toggleAllBranches;
 
 	/** */
-	public static String HistoryPreferencePage_toggleEmailAddresses;
-
-	/** */
 	public static String PullOperationUI_ConnectionProblem;
 
 	/** */
@@ -1739,15 +1724,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushAction_wrongURITitle;
-
-	/** */
-	public static String PushCommand_pushBranchTitle;
-
-	/** */
-	public static String PushCommand_pushTagTitle;
-
-	/** */
-	public static String PushCommitHandler_pushCommitTitle;
 
 	/** */
 	public static String PushOperationUI_MultiRepositoriesDestinationString;
@@ -2060,9 +2036,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageComponent_MessageInvalidCommitter;
-
-	/** */
-	public static String CommitMessageComponent_AmendingCommitInRemoteBranch;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -2996,9 +2969,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
-
-	/** */
-	public static String DialogsPreferencePage_ShowCloneFailedDialog;
 
 	/** */
 	public static String DiffEditorPage_TaskGeneratingDiff;
@@ -4497,18 +4467,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitOpenInCompareAction_cannotRetrieveCommitWithId;
-
-	/** */
-	public static String EclipseSshSessionFactory_noIdentities;
-
-	/** */
-	public static String CloneFailureDialog_tile;
-
-	/** */
-	public static String CloneFailureDialog_dontShowAgain;
-
-	/** */
-	public static String CloneFailureDialog_checkList;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
