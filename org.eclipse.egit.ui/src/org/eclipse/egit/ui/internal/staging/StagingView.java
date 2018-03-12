@@ -1085,16 +1085,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			return SWT.VERTICAL;
 	}
 
-	private void enableAllWidgets(boolean enabled) {
-		if (isDisposed())
-			return;
-		enableCommitWidgets(enabled);
-		enableStagingWidgets(enabled);
-	}
-
 	private void enableStagingWidgets(boolean enabled) {
-		if (isDisposed())
-			return;
 		unstagedViewer.getControl().setEnabled(enabled);
 		stagedViewer.getControl().setEnabled(enabled);
 	}
@@ -2404,14 +2395,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 			.setPushUpstream(pushUpstream);
 
 		// don't allow to do anything as long as commit is in progress
-		enableAllWidgets(false);
+		enableCommitWidgets(false);
+		enableStagingWidgets(false);
 		commitJob.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent event) {
 				PlatformUI.getWorkbench().getDisplay()
 						.asyncExec(new Runnable() {
 							public void run() {
-								enableAllWidgets(true);
+								enableCommitWidgets(true);
+								enableStagingWidgets(true);
 							}
 						});
 			}
