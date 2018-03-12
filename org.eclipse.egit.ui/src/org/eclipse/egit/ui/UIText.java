@@ -96,12 +96,6 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_SymbolicValueEmptyMapping;
 
 	/** */
-	public static String GitCloneWizard_CloneFailedHeading;
-
-	/** */
-	public static String GitCloneWizard_CloneCanceledMessage;
-
-	/** */
 	public static String GitCloneWizard_title;
 
 	/** */
