@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
@@ -99,7 +100,7 @@ public class GitCloneSourceProviderExtension {
 		 * The constant provider used for local repositories
 		 */
 		public static final CloneSourceProvider LOCAL = new CloneSourceProvider(
-				"Local", null, null, true, UIIcons.REPOSITORY); //$NON-NLS-1$
+				UIText.GitCloneSourceProviderExtension_Local, null, null, true, UIIcons.REPOSITORY);
 
 		private static final ImageDescriptor defaultImage = UIIcons.REPOSITORY;
 
