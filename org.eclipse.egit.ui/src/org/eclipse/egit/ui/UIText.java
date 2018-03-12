@@ -1566,9 +1566,6 @@ public class UIText extends NLS {
 	/** */
 	public static String RefSpecPage_titlePush;
 
-	/***/
-	public static String RefSpecPage_titlePusxh;
-
 	/** */
 	public static String RefSpecPage_annotatedTagsGroup;
 
@@ -3711,6 +3708,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenInEditorMenuLabel;
+
+	/** */
+	public static String CommitFileDiffViewer_ShowInMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
