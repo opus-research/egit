@@ -161,25 +161,10 @@ public class Activator extends Plugin implements DebugOptionsListener {
 					IResource resource = event.getResource();
 					if (resource instanceof IProject) {
 						IProject project = (IProject) resource;
-						if (project.isAccessible()) {
-							if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
-								IResource dotGit = project
-										.findMember(Constants.DOT_GIT);
-								if (dotGit != null
-										&& dotGit.getType() == IResource.FOLDER)
-									GitProjectData.reconfigureWindowCache();
-							}
-						} else {
-							// bug 419706: project is closed - use java.io API
-							IPath locationPath = project.getLocation();
-							if (locationPath != null) {
-								File locationDir = locationPath.toFile();
-								File dotGit = new File(locationDir,
-										Constants.DOT_GIT);
-								if (dotGit.exists() && dotGit.isDirectory()) {
-									GitProjectData.reconfigureWindowCache();
-								}
-							}
+						if (RepositoryProvider.getProvider(project) instanceof GitProvider) {
+							IResource dotGit = project.findMember(Constants.DOT_GIT);
+							if (dotGit != null && dotGit.getType() == IResource.FOLDER)
+								GitProjectData.reconfigureWindowCache();
 						}
 					}
 				}
