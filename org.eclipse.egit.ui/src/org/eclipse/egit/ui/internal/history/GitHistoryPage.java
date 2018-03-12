@@ -1028,13 +1028,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			}
 		});
-		int[] weights = UIPreferences.stringToIntArray(store.getString(key), 2);
-		if (weights == null) {
-			// Corrupted preferences?
-			weights = UIPreferences
-					.stringToIntArray(store.getDefaultString(key), 2);
-		}
-		sf.setWeights(weights);
+		sf.setWeights(UIPreferences.stringToIntArray(store.getString(key), 2));
 	}
 
 	private Composite createMainPanel(final Composite parent) {

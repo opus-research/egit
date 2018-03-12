@@ -20,7 +20,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -157,8 +156,7 @@ public class ResourcePropertyTester extends PropertyTester {
 	 * @param repository
 	 * @return {@code true} if repository has been configured for Gerrit
 	 */
-	public static boolean hasGerritConfiguration(
-			@NonNull Repository repository) {
+	public static boolean hasGerritConfiguration(Repository repository) {
 		Config config = repository.getConfig();
 		if (GerritUtil.getCreateChangeId(config))
 			return true;

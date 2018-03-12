@@ -3,8 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2016, Andre Bossert <anb0s@anbos.de>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -55,10 +53,8 @@ import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -72,7 +68,7 @@ public class GitProjectData {
 
 	private static final Map<IProject, GitProjectData> projectDataCache = new HashMap<IProject, GitProjectData>();
 
-	private static Set<RepositoryMappingChangeListener> repositoryChangeListeners = new HashSet<RepositoryMappingChangeListener>();
+	private static Set<RepositoryChangeListener> repositoryChangeListeners = new HashSet<RepositoryChangeListener>();
 
 	@SuppressWarnings("synthetic-access")
 	private static final IResourceChangeListener rcl = new RCL();
@@ -106,12 +102,14 @@ public class GitProjectData {
 
 	/**
 	 * Start listening for resource changes.
+	 *
+	 * @param includeChange true to listen to content changes
 	 */
-	public static void attachToWorkspace() {
+	public static void attachToWorkspace(final boolean includeChange) {
 		trace("attachToWorkspace - addResourceChangeListener");  //$NON-NLS-1$
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				rcl,
-				IResourceChangeEvent.POST_CHANGE
+				(includeChange ? IResourceChangeEvent.POST_CHANGE : 0)
 						| IResourceChangeEvent.PRE_CLOSE
 						| IResourceChangeEvent.PRE_DELETE);
 	}
@@ -135,25 +133,25 @@ public class GitProjectData {
 	 *            the new listener to register. Must not be null.
 	 */
 	public static synchronized void addRepositoryChangeListener(
-			final RepositoryMappingChangeListener objectThatCares) {
+			final RepositoryChangeListener objectThatCares) {
 		if (objectThatCares == null)
 			throw new NullPointerException();
 		repositoryChangeListeners.add(objectThatCares);
 	}
 
 	/**
-	 * Remove a registered {@link RepositoryMappingChangeListener}
+	 * Remove a registered {@link RepositoryChangeListener}
 	 *
 	 * @param objectThatCares
 	 *            The listener to remove
 	 */
 	public static synchronized void removeRepositoryChangeListener(
-			final RepositoryMappingChangeListener objectThatCares) {
+			final RepositoryChangeListener objectThatCares) {
 		repositoryChangeListeners.remove(objectThatCares);
 	}
 
 	/**
-	 * Notify registered {@link RepositoryMappingChangeListener}s of a change.
+	 * Notify registered {@link RepositoryChangeListener}s of a change.
 	 *
 	 * @param which
 	 *            the repository which has had changes occur within it.
@@ -163,12 +161,12 @@ public class GitProjectData {
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				RepositoryMappingChangeListener[] listeners = getRepositoryChangeListeners();
+				RepositoryChangeListener[] listeners = getRepositoryChangeListeners();
 				monitor.beginTask(
 						CoreText.GitProjectData_repositoryChangedTaskName,
 						listeners.length);
 
-				for (RepositoryMappingChangeListener listener : listeners) {
+				for (RepositoryChangeListener listener : listeners) {
 					listener.repositoryChanged(which);
 					monitor.worked(1);
 				}
@@ -197,9 +195,9 @@ public class GitProjectData {
 	 *
 	 * @return a copy of the current repository change listeners
 	 */
-	private static synchronized RepositoryMappingChangeListener[] getRepositoryChangeListeners() {
+	private static synchronized RepositoryChangeListener[] getRepositoryChangeListeners() {
 		return repositoryChangeListeners
-				.toArray(new RepositoryMappingChangeListener[repositoryChangeListeners
+				.toArray(new RepositoryChangeListener[repositoryChangeListeners
 						.size()]);
 	}
 
@@ -239,26 +237,6 @@ public class GitProjectData {
 			deletePropertyFiles(p);
 		else
 			d.deletePropertyFilesAndUncache();
-	}
-
-	/**
-	 * Drop the Eclipse project from our association of projects/repositories
-	 * and remove all RepositoryMappings.
-	 *
-	 * @param p
-	 *            to deconfigure
-	 * @throws IOException
-	 *             if the property file cannot be removed.
-	 */
-	public static void deconfigure(final IProject p) throws IOException {
-		trace("deconfigure(" + p.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-		GitProjectData d = lookup(p);
-		if (d == null) {
-			deletePropertyFiles(p);
-		} else {
-			d.deletePropertyFilesAndUncache();
-			unmap(d);
-		}
 	}
 
 	/**
@@ -382,23 +360,6 @@ public class GitProjectData {
 		}
 	}
 
-	private static void unmap(GitProjectData data) {
-		for (RepositoryMapping m : data.mappings.values()) {
-			IContainer c = m.getContainer();
-			if (c != null && c.isAccessible()) {
-				try {
-					c.setSessionProperty(MAPPING_KEY, null);
-					// Team private members are re-set in
-					// DisconnectProviderOperation
-				} catch (CoreException e) {
-					Activator.logWarning(MessageFormat.format(
-							CoreText.GitProjectData_failedToUnmapRepoMapping,
-							c.getFullPath()), e);
-				}
-			}
-		}
-	}
-
 	private synchronized static GitProjectData lookup(final IProject p) {
 		return projectDataCache.get(p);
 	}
@@ -455,15 +416,6 @@ public class GitProjectData {
 	}
 
 	/**
-	 * Get repository mappings
-	 *
-	 * @return the repository mappings for a project
-	 */
-	public final Map<IPath, RepositoryMapping> getRepositoryMappings() {
-		return mappings;
-	}
-
-	/**
 	 * Hide our private parts from the navigators other browsers.
 	 *
 	 * @throws CoreException
@@ -495,13 +447,13 @@ public class GitProjectData {
 	}
 
 	/**
-	 * Determines whether the project this instance belongs to has any inner
-	 * repositories like submodules or nested repositories.
+	 * Determines whether the project this instance belongs to has any
+	 * submodules.
 	 *
-	 * @return {@code true} if the project has inner repositories; {@code false}
+	 * @return {@code true} if the project has submodules; {@code false}
 	 *         otherwise.
 	 */
-	public boolean hasInnerRepositories() {
+	public boolean hasSubmodules() {
 		return !protectedResources.isEmpty();
 	}
 
@@ -662,8 +614,7 @@ public class GitProjectData {
 			return;
 		}
 		git = absolutePath.toFile();
-
-		if (!RepositoryCache.FileKey.isGitRepository(git, FS.DETECTED)) {
+		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
 			logAndUnmapGoneMappedResource(m);
 			return;
 		}
@@ -676,6 +627,8 @@ public class GitProjectData {
 			return;
 		}
 
+		m.fireRepositoryChanged();
+
 		trace("map "  //$NON-NLS-1$
 				+ c
 				+ " -> "  //$NON-NLS-1$
@@ -686,8 +639,6 @@ public class GitProjectData {
 			Activator.logError(
 					CoreText.GitProjectData_failedToCacheRepoMapping, err);
 		}
-
-		fireRepositoryChanged(m);
 
 		dotGit = c.findMember(Constants.DOT_GIT);
 		if (dotGit != null) {

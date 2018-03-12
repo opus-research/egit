@@ -13,9 +13,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.decorators;
@@ -30,7 +27,6 @@ import org.eclipse.egit.ui.internal.resources.ResourceStateFactory;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 class DecoratableResourceAdapter extends DecoratableResource {
 
@@ -43,7 +39,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		if (trace) {
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.DECORATION.getLocation(),
-					"Decorate " + resourceToWrap.getFullPath()); //$NON-NLS-1$
+					"Decorate " + resource.getFullPath()); //$NON-NLS-1$
 			start = System.currentTimeMillis();
 		}
 		try {
@@ -56,7 +52,6 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			if (repository == null) {
 				return;
 			}
-			setIsRepositoryContainer(resourceToWrap.equals(mapping.getContainer()));
 			IResourceState baseState = ResourceStateFactory.getInstance()
 					.get(indexDiffData, resourceToWrap);
 			setTracked(baseState.isTracked());
@@ -65,19 +60,12 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			setConflicts(baseState.hasConflicts());
 			setAssumeUnchanged(baseState.isAssumeUnchanged());
 			setStagingState(baseState.getStagingState());
-			if (isRepositoryContainer()) {
-				// We only need this very expensive info for for decorating
-				// projects and folders that are submodule or nested repository
-				// roots
+			if (resource.getType() == IResource.PROJECT) {
+				// We only need this very expensive info for project decoration
 				repositoryName = DecoratableResourceHelper
 						.getRepositoryName(repository);
 				branch = DecoratableResourceHelper.getShortBranch(repository);
 				branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
-				RevCommit headCommit = DecoratableResourceHelper
-						.getHeadCommit(repository);
-				if (headCommit != null) {
-					commitMessage = headCommit.getShortMessage();
-				}
 			}
 		} finally {
 			if (trace)

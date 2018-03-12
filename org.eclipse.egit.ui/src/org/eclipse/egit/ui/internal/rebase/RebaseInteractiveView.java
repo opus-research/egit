@@ -331,10 +331,8 @@ public class RebaseInteractiveView extends ViewPart implements
 		prefListener = new IPreferenceChangeListener() {
 			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
-				if (!RepositoryUtil.PREFS_DIRECTORIES_REL
-						.equals(event.getKey())) {
+				if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
 					return;
-				}
 
 				final Repository repo = currentRepository;
 				if (repo == null)
@@ -574,10 +572,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		@Override
 		public void widgetSelected(SelectionEvent sEvent) {
 			try {
-				Repository repository = currentPlan.getRepository();
-				if (repository != null) {
-					command.execute(repository);
-				}
+				command.execute(currentPlan.getRepository());
 			} catch (ExecutionException e) {
 				Activator.showError(e.getMessage(), e);
 			}

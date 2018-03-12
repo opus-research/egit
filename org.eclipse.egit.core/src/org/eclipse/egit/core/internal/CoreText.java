@@ -176,9 +176,6 @@ public class CoreText extends NLS {
 	public static String GitProjectData_failedToCacheRepoMapping;
 
 	/** */
-	public static String GitProjectData_failedToUnmapRepoMapping;
-
-	/** */
 	public static String GitProjectData_FailedToMarkTeamPrivate;
 
 	/** */

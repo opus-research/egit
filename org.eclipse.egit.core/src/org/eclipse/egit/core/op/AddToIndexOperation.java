@@ -81,6 +81,8 @@ public class AddToIndexOperation implements IEGitOperation {
 		} catch (GitAPIException e) {
 			throw new CoreException(Activator.error(CoreText.AddToIndexOperation_failed, e));
 		} finally {
+			for (final RepositoryMapping rm : addCommands.keySet())
+				rm.fireRepositoryChanged();
 			monitor.done();
 		}
 	}

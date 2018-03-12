@@ -7,9 +7,8 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *   Jens Baumgart <jens.baumgart@sap.com> - initial implementation in IndexDifCacheEntry
- *   Dariusz Luksza - extraction to separate class
- *   Andre Bossert <anb0s@anbos.de> - Cleaning up the DecoratableResourceAdapter
+ *  * Jens Baumgart <jens.baumgart@sap.com> - initial implementation in IndexDifCacheEntry
+ *  * Dariusz Luksza - extraction to separate class
  *******************************************************************************/
 package org.eclipse.egit.core.internal.indexdiff;
 
@@ -87,7 +86,7 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 				return false;
 			}
 			RepositoryMapping mapping = gitData.getRepositoryMapping(resource);
-			if (mapping == null || !gitData.hasInnerRepositories()
+			if (mapping == null || !gitData.hasSubmodules()
 					&& mapping.getRepository() != repository) {
 				return false;
 			}
@@ -115,14 +114,12 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 				if (repoRelativePath == null) {
 					return false;
 				}
-				if (!repoRelativePath.isEmpty()) {
-					String path = repoRelativePath + "/"; //$NON-NLS-1$
-					if (isIgnoredInOldIndex(path)) {
-						return true; // keep going to catch .gitignore files.
-					}
-					filesToUpdate.add(path);
-					resourcesToUpdate.add(resource);
+				String path = repoRelativePath + "/"; //$NON-NLS-1$
+				if (isIgnoredInOldIndex(path)) {
+					return true; // keep going to catch .gitignore files.
 				}
+				filesToUpdate.add(path);
+				resourcesToUpdate.add(resource);
 			}
 
 			// continue with children

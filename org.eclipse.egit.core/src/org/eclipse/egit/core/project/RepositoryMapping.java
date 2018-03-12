@@ -13,17 +13,12 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Extended support for nested repositories in project.
  *******************************************************************************/
 package org.eclipse.egit.core.project;
 
 import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.core.resources.IContainer;
@@ -74,8 +69,8 @@ public class RepositoryMapping {
 	 * @param initialKey
 	 *            property key to use to read the git directory
 	 */
-	public RepositoryMapping(final @NonNull Properties p,
-			final @NonNull String initialKey) {
+	public RepositoryMapping(@NonNull final Properties p,
+			@NonNull final String initialKey) {
 		final int dot = initialKey.lastIndexOf('.');
 
 		containerPathString = initialKey.substring(0, dot);
@@ -216,6 +211,15 @@ public class RepositoryMapping {
 		container = c;
 	}
 
+	/**
+	 * Notify registered {@link RepositoryChangeListener}s of a change.
+	 *
+	 * @see GitProjectData#addRepositoryChangeListener(RepositoryChangeListener)
+	 */
+	public void fireRepositoryChanged() {
+		GitProjectData.fireRepositoryChanged(this);
+	}
+
 	synchronized void store(final Properties p) {
 		p.setProperty(containerPathString + ".gitdir", gitDirPathString); //$NON-NLS-1$
 	}
@@ -253,7 +257,7 @@ public class RepositoryMapping {
 	 *         determined.
 	 */
 	@Nullable
-	public String getRepoRelativePath(final @NonNull IResource rsrc) {
+	public String getRepoRelativePath(@NonNull final IResource rsrc) {
 		IPath location = rsrc.getLocation();
 		if (location == null)
 			return null;
@@ -300,8 +304,7 @@ public class RepositoryMapping {
 	 *         GitProvider.
 	 */
 	@Nullable
-	public static RepositoryMapping getMapping(
-			final @NonNull IResource resource) {
+	public static RepositoryMapping getMapping(@NonNull final IResource resource) {
 		if (isNonWorkspace(resource)) {
 			return null;
 		}
@@ -324,8 +327,7 @@ public class RepositoryMapping {
 	 *         GitProvider.
 	 */
 	@Nullable
-	public static RepositoryMapping getMapping(
-			final @Nullable IProject project) {
+	public static RepositoryMapping getMapping(@Nullable final IProject project) {
 		if (project == null) {
 			return null;
 		}
@@ -333,16 +335,17 @@ public class RepositoryMapping {
 	}
 
 	/**
-	 * Get the git project data for a project.
+	 * Get the repository mapping for a project.
 	 *
-	 * @param project
-	 *            to find the data for
-	 * @return the git project data for this project, or null for non
+	 * @param resource
+	 *            to find the mapping for
+	 * @return the RepositoryMapping for this project, or null for non
 	 *         GitProvider.
 	 */
 	@Nullable
-	private static GitProjectData getProjectData(
-			final @Nullable IProject project) {
+	private static RepositoryMapping findMapping(@NonNull
+	final IResource resource) {
+		final IProject project = resource.getProject();
 		if (project == null || isNonWorkspace(project)) {
 			return null;
 		}
@@ -358,42 +361,10 @@ public class RepositoryMapping {
 		} else {
 			data = rp.getData();
 		}
-		return data;
-	}
-
-	/**
-	 * Get the repository mapping for a resource.
-	 *
-	 * @param resource
-	 *            to find the mapping for
-	 * @return the RepositoryMapping for this resource, or null if resource is
-	 *         not associated with Git managed project.
-	 */
-	@Nullable
-	private static RepositoryMapping findMapping(
-			final @NonNull IResource resource) {
-		GitProjectData data = getProjectData(resource.getProject());
 		if (data == null) {
 			return null;
 		}
 		return data.getRepositoryMapping(resource);
-	}
-
-	/**
-	 * Get all repository mappings for a project.
-	 *
-	 * @param project
-	 * @return all RepositoryMappings for this project, can be empty list for
-	 *         non GitProvider.
-	 */
-	@NonNull
-	private static Map<IPath, RepositoryMapping> getMappings(
-			final @Nullable IProject project) {
-		GitProjectData data = getProjectData(project);
-		if (data == null) {
-			return Collections.emptyMap();
-		}
-		return data.getRepositoryMappings();
 	}
 
 	/**
@@ -406,27 +377,34 @@ public class RepositoryMapping {
 	public static RepositoryMapping getMapping(@NonNull IPath path) {
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
+
 		IPath bestWorkingTree = null;
 		RepositoryMapping bestMapping = null;
+
 		for (IProject project : projects) {
 			if (isNonWorkspace(project)) {
 				continue;
 			}
-			for (RepositoryMapping mapping : getMappings(project).values()) {
-				File workTree = mapping.getWorkTree();
-				if (workTree == null) {
-					continue;
-				}
-				IPath workingTree = new Path(workTree.toString());
-				if (workingTree.isPrefixOf(path)) {
-					if (bestWorkingTree == null || workingTree
-							.segmentCount() > bestWorkingTree.segmentCount()) {
-						bestWorkingTree = workingTree;
-						bestMapping = mapping;
-					}
+			RepositoryMapping mapping = getMapping(project);
+			if (mapping == null) {
+				continue;
+			}
+
+			File workTree = mapping.getWorkTree();
+			if (workTree == null) {
+				continue;
+			}
+			IPath workingTree = new Path(workTree.toString());
+			if (workingTree.isPrefixOf(path)) {
+				if (bestWorkingTree == null
+						|| workingTree.segmentCount() > bestWorkingTree
+								.segmentCount()) {
+					bestWorkingTree = workingTree;
+					bestMapping = mapping;
 				}
 			}
 		}
+
 		return bestMapping;
 	}
 
