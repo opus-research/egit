@@ -31,11 +31,10 @@ public class LoginService {
 	 *
 	 * @param parent
 	 * @param uri
-	 * @param promptText
 	 * @return credentials, <code>null</code> if the user canceled the dialog.
 	 */
-	public static UserPasswordCredentials login(Shell parent, URIish uri, final String promptText) {
-		LoginDialog dialog = new LoginDialog(parent, uri, promptText);
+	public static UserPasswordCredentials login(Shell parent, URIish uri) {
+		LoginDialog dialog = new LoginDialog(parent, uri);
 		if (dialog.open() == Window.OK) {
 			UserPasswordCredentials credentials = dialog.getCredentials();
 			if (credentials != null && dialog.getStoreInSecureStore())
