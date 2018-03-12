@@ -37,7 +37,8 @@ import org.eclipse.ui.actions.WorkspaceModifyOperation;
 /**
  * A wizard used to import existing projects from a {@link Repository}
  */
-public class GitCreateProjectViaWizardWizard extends Wizard {
+public class GitCreateProjectViaWizardWizard extends Wizard implements
+		ProjectCreator {
 
 	private final Repository myRepository;
 
@@ -87,14 +88,10 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 		addPage(mySelectionPage);
 		myCreateGeneralProjectPage = new GitCreateGeneralProjectPage(myGitDir);
 		addPage(myCreateGeneralProjectPage);
-		// for "Import Existing Projects"
-		// TODO new constructor with repository and directory once we
-		// remove this page from the GitCloneWizard
-		myProjectsImportPage = new GitProjectsImportPage(false) {
+		myProjectsImportPage = new GitProjectsImportPage() {
 
 			@Override
 			public void setVisible(boolean visible) {
-				setGitDir(myRepository.getDirectory());
 				setProjectsList(myGitDir);
 				super.setVisible(visible);
 			}
@@ -165,11 +162,10 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 			final int actionSelection = mySelectionPage.getActionSelection();
 
 			final IProject[] projectsToShare;
-			if (actionSelection != GitSelectWizardPage.ACTION_DIALOG_SHARE) {
-				projectsToShare = getAddedProjects();
-			} else {
+			if (actionSelection == GitSelectWizardPage.ACTION_DIALOG_SHARE)
 				projectsToShare = mySharePage.getSelectedProjects();
-			}
+			else
+				projectsToShare = null;
 
 			getContainer().run(true, true, new IRunnableWithProgress() {
 
@@ -188,7 +184,12 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 					if (actionSelection != GitSelectWizardPage.ACTION_NO_SHARE) {
 
 						// TODO scheduling rule?
-						for (IProject prj : projectsToShare) {
+						IProject[] projects;
+						if (projectsToShare == null)
+							projects = getAddedProjects();
+						else
+							projects = projectsToShare;
+						for (IProject prj : projects) {
 							if (monitor.isCanceled())
 								throw new InterruptedException();
 							//
@@ -283,10 +284,6 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 		});
 	}
 
-	/**
-	 * @return the projects added to the workspace since the start of this
-	 *         wizard
-	 */
 	public IProject[] getAddedProjects() {
 
 		IProject[] currentProjects = ResourcesPlugin.getWorkspace().getRoot()

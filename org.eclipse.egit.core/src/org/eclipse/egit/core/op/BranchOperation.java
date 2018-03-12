@@ -16,7 +16,9 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.errors.CheckoutConflictException;
@@ -25,8 +27,10 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
+import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
@@ -65,7 +69,12 @@ public class BranchOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 
 		if (!refName.startsWith(Constants.R_REFS))
 			throw new TeamException(NLS.bind(
@@ -102,15 +111,43 @@ public class BranchOperation implements IEGitOperation {
 		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
+	public ISchedulingRule getSchedulingRule() {
+		return ResourcesPlugin.getWorkspace().getRoot();
+	}
+
 	private void updateHeadRef() throws TeamException {
+		boolean detach = false;
+		// in case of a non-local branch or a tag,
+		// we "detach" HEAD, i.e. point it to the
+		// underlying commit instead of to the Ref
+		if (!refName.startsWith(Constants.R_HEADS))
+			detach = true;
 		try {
-			RefUpdate u = repository.updateRef(Constants.HEAD);
-			u.setRefLogMessage(NLS.bind(
-					CoreText.BranchOperation_checkoutMovingTo, refName), false);
-			switch (u.link(refName)) {
+			RefUpdate u = repository.updateRef(Constants.HEAD, detach);
+			Result res;
+			if (detach) {
+				u.setNewObjectId(newCommit.getCommitId());
+				// using forceUpdate instead of update avoids
+				// the merge tests which would otherwise make
+				// this fail
+				u.setRefLogMessage(NLS.bind(
+						CoreText.BranchOperation_checkoutMovingTo, newCommit
+								.getCommitId().toString()), false);
+				res = u.forceUpdate();
+			} else {
+				u.setRefLogMessage(NLS.bind(
+						CoreText.BranchOperation_checkoutMovingTo, refName),
+						false);
+				res = u.link(refName);
+			}
+			switch (res) {
 			case NEW:
 			case FORCED:
 			case NO_CHANGE:
+			case FAST_FORWARD:
 				break;
 			default:
 				throw new IOException(u.getResult().name());
@@ -153,7 +190,12 @@ public class BranchOperation implements IEGitOperation {
 
 	private void lookupRefs() throws TeamException {
 		try {
-			newCommit = repository.mapCommit(refName);
+			// if we have a tag, we have to make an indirection
+			if (refName.startsWith(Constants.R_TAGS)) {
+				Tag tag = repository.mapTag(refName);
+				newCommit = repository.mapCommit(tag.getObjId());
+			} else
+				newCommit = repository.mapCommit(refName);
 		} catch (IOException e) {
 			throw new TeamException(NLS.bind(
 					CoreText.BranchOperation_mappingCommit, refName), e);

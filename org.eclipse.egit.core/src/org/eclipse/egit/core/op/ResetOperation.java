@@ -13,9 +13,13 @@ package org.eclipse.egit.core.op;
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.core.resources.IWorkspaceRunnable;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.lib.Commit;
@@ -76,9 +80,39 @@ public class ResetOperation implements IEGitOperation {
 	}
 
 	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
+	public ISchedulingRule getSchedulingRule() {
+		if (type == ResetType.HARD)
+			return ResourcesPlugin.getWorkspace().getRoot();
+		else
+			return null;
+	}
+
+
+	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
+		if (type == ResetType.HARD) {
+			IWorkspaceRunnable action = new IWorkspaceRunnable() {
+				public void run(IProgressMonitor monitor) throws CoreException {
+					reset(monitor);
+				}
+			};
+			// lock workspace to protect working tree changes
+			ResourcesPlugin.getWorkspace().run(action, monitor);
+		} else {
+			reset(monitor);
+		}
+	}
+
+	private void reset(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(NLS.bind(CoreText.ResetOperation_performingReset,
 				type.toString().toLowerCase(), refName), 7);
 
@@ -109,8 +143,10 @@ public class ResetOperation implements IEGitOperation {
 
 		monitor.worked(1);
 
-		ProjectUtil.refreshProjects(repository, new SubProgressMonitor(monitor,
-				1));
+		if (type == ResetType.HARD)
+			// only refresh if working tree changes
+			ProjectUtil.refreshProjects(repository, new SubProgressMonitor(
+					monitor, 1));
 
 		monitor.done();
 	}

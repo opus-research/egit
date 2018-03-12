@@ -15,14 +15,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.resource.CompositeImageDescriptor;
+import org.eclipse.jface.viewers.ColumnViewer;
 import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.graphics.Image;
@@ -45,7 +43,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 	 *
 	 * @param viewer
 	 */
-	RepositoriesViewLabelProvider(final TreeViewer viewer) {
+	public RepositoriesViewLabelProvider(final ColumnViewer viewer) {
 
 		viewer.setLabelProvider(this);
 		// we could implement some hover here to display additional information
@@ -168,11 +166,7 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 			// fall through
 		case ERROR:
 			return (String) node.getObject();
-		case PROJECTS:
-			return UIText.RepositoriesView_ExistingProjects_Nodetext;
 		case REF:
-			// fall through
-		case HEAD:
 			// fall through
 		case TAG:
 			// fall through
@@ -185,17 +179,17 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 						+ ref.getLeaf().getName();
 			}
 			return refName;
-		case PROJ:
-
-			File file = (File) node.getObject();
-			return file.getName();
-
 		case WORKINGDIR:
-
-			return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-					+ node.getRepository().getWorkDir().getAbsolutePath();
-
-		case PUSH: // fall through
+			if (node.getRepository().getConfig().getBoolean(
+					"core", "bare", false)) //$NON-NLS-1$ //$NON-NLS-2$
+				return UIText.RepositoriesView_WorkingDir_treenode
+						+ " - " //$NON-NLS-1$
+						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
+			else
+				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
+						+ node.getRepository().getWorkDir().getAbsolutePath();
+		case PUSH:
+			// fall through
 		case FETCH:
 			return (String) node.getObject();
 
@@ -219,30 +213,46 @@ public class RepositoriesViewLabelProvider extends LabelProvider {
 		RepositoryTreeNode node = (RepositoryTreeNode) element;
 		switch (node.getType()) {
 
+		case TAG:
+			// fall through
 		case REF:
-			Ref ref = (Ref) node.getObject();
-			// shorten the name
-			String refName = node.getRepository().shortenRefName(ref.getName());
+			// if the branch or tag is checked out,
+			// we want to decorate the corresponding
+			// node with a little check indicator
+			String refName = ((Ref) node.getObject()).getName();
+
+			String branchName;
+			String compareString;
+
 			try {
-				String branch = node.getBranch();
-				if (refName.equals(branch)) {
-					return getDecoratedImage(image);
+				branchName = node.getRepository().getFullBranch();
+				if (branchName == null)
+					return image;
+				if (refName.startsWith(Constants.R_HEADS)) {
+					// local branch: HEAD would be on the branch
+					compareString = refName;
+				} else if (refName.startsWith(Constants.R_TAGS)) {
+					// tag: HEAD would be on the commit id to which the tag is
+					// pointing
+					compareString = node.getRepository().mapTag(refName)
+							.getObjId().getName();
+				} else if (refName.startsWith(Constants.R_REMOTES)) {
+					// remote branch: HEAD would be on the commit id to which
+					// the branch is pointing
+					compareString = node.getRepository().mapCommit(refName)
+							.getCommitId().getName();
+				} else {
+					// some other symbolic reference
+					return image;
 				}
 			} catch (IOException e1) {
-				// simply ignore here
+				return image;
 			}
-			return image;
 
-		case PROJ:
-
-			File file = (File) node.getObject();
-
-			for (IProject proj : ResourcesPlugin.getWorkspace().getRoot()
-					.getProjects()) {
-				if (proj.getLocation().equals(new Path(file.getAbsolutePath()))) {
-					return getDecoratedImage(image);
-				}
+			if (compareString.equals(branchName)) {
+				return getDecoratedImage(image);
 			}
+
 			return image;
 
 		default:
