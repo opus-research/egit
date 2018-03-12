@@ -39,10 +39,7 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
-	public static String AbstractRebaseCommandHandler_CancelDialogTitle;
-
-	/** */
-	public static String AbstractRebaseCommandHandler_CleanUpFailed;
+	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
 	public static String AbstractReflogCommandHandler_NoInput;
