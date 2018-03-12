@@ -271,9 +271,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_CompareModeMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_CompareWithCurrentHeadMenu;
-
-	/** */
 	public static String GitHistoryPage_CompareWithEachOtherMenuLabel;
 
 	/** */
@@ -302,9 +299,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_FileNotInCommit;
-
-	/** */
-	public static String GitHistoryPage_FileOrFolderPartOfGitDirMessage;
 
 	/** */
 	public static String GitHistoryPage_FileType;
@@ -1096,7 +1090,13 @@ public class UIText extends NLS {
 	public static String PullResultDialog_FetchResultGroupHeader;
 
 	/** */
+	public static String PullResultDialog_MergeAlreadyUpToDateMessage;
+
+	/** */
 	public static String PullResultDialog_MergeResultGroupHeader;
+
+	/** */
+	public static String PullResultDialog_NothingToFetchFromLocal;
 
 	/** */
 	public static String PushAction_wrongURIDescription;

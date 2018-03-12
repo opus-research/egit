@@ -176,7 +176,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 */
 	public static boolean canShowHistoryFor(final Object object) {
 		if (object instanceof HistoryPageInput) {
+			final IResource[] array = ((HistoryPageInput) object).getItems();
+			if (array.length == 0)
+				return false;
+			for (final IResource r : array) {
+				if (!typeOk(r))
+					return false;
+			}
 			return true;
+
 		}
 
 		if (object instanceof IResource) {
@@ -455,7 +463,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		graph = new CommitGraphTable(graphDetailSplit);
 		graph.getTableView().addOpenListener(new IOpenListener() {
 			public void open(OpenEvent event) {
-				if (!input.isSingleFile()) {
+				if (!inputIsSingleFile()) {
 					return;
 				}
 
@@ -583,18 +591,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					int selectionSize = ((IStructuredSelection) getSelectionProvider()
 							.getSelection()).size();
 
-					if (input.isSingleFile()) {
+					if (inputIsSingleFile()) {
 						if (selectionSize == 1)
-							if (input.getSingleFile() instanceof IResource)
-								popupMgr
-										.add(getCommandContributionItem(
-												HistoryViewCommands.COMPARE_WITH_TREE,
-												UIText.GitHistoryPage_CompareWithWorkingTreeMenuMenuLabel));
-							else
-								popupMgr
-										.add(getCommandContributionItem(
-												HistoryViewCommands.COMPARE_WITH_TREE,
-												UIText.GitHistoryPage_CompareWithCurrentHeadMenu));
+							popupMgr
+									.add(getCommandContributionItem(
+											HistoryViewCommands.COMPARE_WITH_TREE,
+											UIText.GitHistoryPage_CompareWithWorkingTreeMenuMenuLabel));
 						else if (selectionSize == 2)
 							popupMgr
 									.add(getCommandContributionItem(
@@ -720,6 +722,19 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				}
 			});
 		}
+	}
+
+	private boolean inputIsSingleFile() {
+		boolean isFile;
+		// check resource list
+		isFile = (input.getItems() != null && input.getItems().length == 1 && input
+				.getItems()[0].getType() == IResource.FILE);
+		// check file list
+		if (!isFile)
+			isFile = (input.getFileList() != null
+					&& input.getFileList().length == 1 && input.getFileList()[0]
+					.isFile());
+		return isFile;
 	}
 
 	private void layoutSashForm(final SashForm sf, final String key) {
@@ -1106,7 +1121,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			}
 		} else if (inFiles != null) {
 			IPath workdirPath = new Path(db.getWorkTree().getPath());
-			IPath gitDirPath = new Path(db.getDirectory().getPath());
 			int segmentCount = workdirPath.segmentCount();
 			paths = new ArrayList<String>(inFiles.length);
 			for (File file : inFiles) {
@@ -1120,15 +1134,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				} else /* if (showAllFilter == ShowFilter.SHOWALLRESOURCE) */{
 					filePath = new Path(file.getPath());
 				}
-
-				if (gitDirPath.isPrefixOf(filePath)) {
-					setErrorMessage(NLS
-							.bind(
-									UIText.GitHistoryPage_FileOrFolderPartOfGitDirMessage,
-									filePath.toOSString()));
-					return false;
-				}
-
 				IPath pathToAdd = filePath.removeFirstSegments(segmentCount)
 						.setDevice(null);
 				if (!pathToAdd.isEmpty()) {
@@ -1345,13 +1350,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	public String getName() {
 		return this.name;
-	}
-
-	/**
-	 * @return the internal input object, or <code>null</code>
-	 */
-	public HistoryPageInput getInputInternal() {
-		return this.input;
 	}
 
 	private static String calcluateName(HistoryPageInput in) {
