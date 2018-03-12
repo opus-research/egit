@@ -31,6 +31,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
+import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -124,6 +125,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				destinationString);
 
 		// first time: expect new branch
+		bot.waitUntil(Conditions.shellIsActive(dialogTitle));
 		SWTBotShell confirmed = bot.shell(dialogTitle);
 		SWTBotTreeItem[] treeItems = confirmed.bot().tree().getAllItems();
 		boolean newBranch = false;
@@ -140,6 +142,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		runPush(tree);
 
+		bot.waitUntil(Conditions.shellIsActive(dialogTitle));
 		confirmed = bot.shell(dialogTitle);
 		treeItems = confirmed.bot().tree().getAllItems();
 		boolean uptodate = false;
@@ -152,7 +155,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		confirmed.close();
 		assertTrue("Up to date expected", uptodate);
 		// touch and run again: expect new branch
-		String objectIdBefore = repository.getRef(repository.getFullBranch())
+		String objectIdBefore = repository.exactRef(repository.getFullBranch())
 				.getLeaf().getObjectId().name();
 		objectIdBefore = objectIdBefore.substring(0, 7);
 		touchAndSubmit(null);
@@ -163,6 +166,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		runPush(updatedTree);
 
+		bot.waitUntil(Conditions.shellIsActive(dialogTitle));
 		confirmed = bot.shell(dialogTitle);
 		treeItems = confirmed.bot().tree().getAllItems();
 		newBranch = false;
@@ -229,6 +233,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		selectNode(tree, useRemote, true);
 		runFetch(tree);
 
+		bot.waitUntil(Conditions.shellIsActive(dialogTitle));
 		SWTBotShell confirm = bot.shell(dialogTitle);
 		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
 				.rowCount());
@@ -236,7 +241,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		deleteAllProjects();
 		shareProjects(clonedRepositoryFile2);
-		String objid = repository.getRef("refs/heads/master").getTarget()
+		String objid = repository.exactRef("refs/heads/master").getTarget()
 				.getObjectId().name();
 		objid = objid.substring(0, 7);
 		touchAndSubmit(null);
@@ -256,6 +261,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		selectNode(tree, useRemote, true);
 		runFetch(tree);
 
+		bot.waitUntil(Conditions.shellIsActive(dialogTitle));
 		confirm = bot.shell(dialogTitle);
 		SWTBotTreeItem[] treeItems = confirm.bot().tree().getAllItems();
 		boolean found = false;
@@ -277,26 +283,29 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 	private void selectNode(SWTBotTree tree, boolean useRemote, boolean fetchMode)
 			throws Exception {
-		if (useRemote)
-			myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand()
-					.getNode("origin").select();
-		else
-			myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand()
-					.getNode("origin").expand().getNode(fetchMode ? 0 : 1)
+		SWTBotTreeItem remotesNode = myRepoViewUtil.getRemotesItem(tree,
+				clonedRepositoryFile);
+		SWTBotTreeItem originNode = TestUtil.expandAndWait(remotesNode)
+				.getNode("origin");
+		if (useRemote) {
+			originNode.select();
+		} else {
+			TestUtil.expandAndWait(originNode).getNode(fetchMode ? 0 : 1)
 					.select();
+		}
 	}
 
 	private void runPush(SWTBotTree tree) {
 		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.PUSH, 60, TimeUnit.SECONDS);
 		ContextMenuHelper.clickContextMenuSync(tree, myUtil
 				.getPluginLocalizedValue("SimplePushCommand"));
-		jobJoiner.join();
+		TestUtil.openJobResultDialog(jobJoiner.join());
 	}
 
 	private void runFetch(SWTBotTree tree) {
 		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.FETCH, 60, TimeUnit.SECONDS);
 		ContextMenuHelper.clickContextMenuSync(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
-		jobJoiner.join();
+		TestUtil.openJobResultDialog(jobJoiner.join());
 	}
 }

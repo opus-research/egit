@@ -43,6 +43,7 @@ import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
@@ -53,13 +54,15 @@ import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 @SuppressWarnings("restriction")
 public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
+	@NonNull
 	private final IPath path;
 
+	@NonNull
 	private final Repository repository;
 
 	private boolean exists;
 
-	private boolean fDirty = false;
+	private boolean fDirty;
 
 	private long timestamp;
 
@@ -77,7 +80,8 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 	 * @param path
 	 *            absolute path to non-workspace file
 	 */
-	public LocalNonWorkspaceTypedElement(Repository repository, IPath path) {
+	public LocalNonWorkspaceTypedElement(@NonNull Repository repository,
+			@NonNull IPath path) {
 		super(ROOT.getFile(path));
 		this.path = path;
 		this.repository = repository;
@@ -98,6 +102,19 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 				if (Files.isSymbolicLink(file.toPath())) {
 					String symLink = FileUtils.readSymLink(file);
 					return new ByteArrayInputStream(Constants.encode(symLink));
+				}
+				if (file.isDirectory()) {
+					// submodule
+					Repository sub = ResourceUtil.getRepository(path);
+					if (sub != null && sub != repository) {
+						RevCommit headCommit = Activator.getDefault()
+								.getRepositoryUtil().parseHeadCommit(sub);
+						if (headCommit == null) {
+							return null;
+						}
+						return new ByteArrayInputStream(Constants
+								.encode(headCommit.name()));
+					}
 				}
 				return new FileInputStream(file);
 			} catch (IOException | UnsupportedOperationException e) {
@@ -242,7 +259,7 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 		// external file change must be reported explicitly, see bug 481682
 		Repository myRepository = repository;
 		boolean updated = false;
-		if (myRepository != null && !myRepository.isBare()) {
+		if (!myRepository.isBare()) {
 			updated = refreshRepositoryState(myRepository);
 		}
 		if (!updated) {
@@ -272,9 +289,6 @@ public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 		return fDirty || (sharedDocumentAdapter != null && sharedDocumentAdapter.hasBufferedContents());
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.core.runtime.IAdaptable#getAdapter(java.lang.Class)
-	 */
 	@Override
 	public Object getAdapter(Class adapter) {
 		if (adapter == ISharedDocumentAdapter.class) {

@@ -63,7 +63,7 @@ public class BranchHierarchyNode extends RepositoryTreeNode<IPath> {
 	}
 
 	/**
-	 * @return the child Refs (branches)
+	 * @return the direct child Refs (branches) only
 	 * @throws IOException
 	 */
 	public List<Ref> getChildRefs() throws IOException {
@@ -73,9 +73,25 @@ public class BranchHierarchyNode extends RepositoryTreeNode<IPath> {
 				int segmentDiff = myPath.segmentCount()
 						- getObject().segmentCount();
 				if (segmentDiff == 1) {
-					Ref ref = getRepository().getRef(myPath.toPortableString());
+					Ref ref = getRepository()
+							.findRef(myPath.toPortableString());
 					childRefs.add(ref);
 				}
+			}
+		}
+		return childRefs;
+	}
+
+	/**
+	 * @return all child Refs reachable from this hierarchy node
+	 * @throws IOException
+	 */
+	public List<Ref> getChildRefsRecursive() throws IOException {
+		List<Ref> childRefs = new ArrayList<>();
+		for (IPath myPath : getPathList()) {
+			if (getObject().isPrefixOf(myPath)) {
+				Ref ref = getRepository().exactRef(myPath.toPortableString());
+				childRefs.add(ref);
 			}
 		}
 		return childRefs;

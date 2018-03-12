@@ -51,6 +51,7 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -91,7 +92,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 			throws CoreException {
 		bot.menu("File").menu("New").menu("Project...").click();
 		SWTBotShell createProjectDialogShell = bot.shell("New Project");
-		bot.tree().getTreeItem("General").expand().getNode("Project").select();
+		SWTBotTreeItem item = bot.tree().getTreeItem("General");
+		TestUtil.expandAndWait(item).getNode("Project").select();
 		bot.button("Next >").click();
 
 		bot.textWithLabel("Project name:").setText(projectName);
@@ -184,8 +186,11 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		assertTrue((new File(repopath)).exists());
 
 		// share project
-		bot.button("Finish").click();
-		Thread.sleep(1000);
+		SWTBotShell shell = bot.activeShell();
+		bot.button(IDialogConstants.FINISH_LABEL).click();
+		bot.waitUntil(Conditions.shellCloses(shell));
+		ResourcesPlugin.getWorkspace().getRoot()
+				.refreshLocal(IResource.DEPTH_INFINITE, null);
 		assertEquals("org.eclipse.egit.core.GitProvider",
 				workspace.getRoot().getProject(projectName0)
 						.getPersistentProperty(
@@ -239,8 +244,11 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 		bot.tree().getAllItems()[1].getItems()[0].check();
 		existingOrNewPage.assertEnabling(false, false, true);
-		bot.button("Finish").click();
-		Thread.sleep(1000);
+		SWTBotShell shell = bot.activeShell();
+		bot.button(IDialogConstants.FINISH_LABEL).click();
+		bot.waitUntil(Conditions.shellCloses(shell));
+		ResourcesPlugin.getWorkspace().getRoot()
+				.refreshLocal(IResource.DEPTH_INFINITE, null);
 		assertEquals(repo1.getDirectory().getAbsolutePath(), RepositoryMapping
 				.getMapping(workspace.getRoot().getProject(projectName1))
 				.getRepository().getDirectory().toString());
@@ -301,8 +309,11 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				.append("a/b").append(projectName2).toString();
 		existingOrNewPage.assertTableContents(contents);
 
+		SWTBotShell shell = bot.activeShell();
 		bot.button(IDialogConstants.FINISH_LABEL).click();
-		Thread.sleep(1000);
+		bot.waitUntil(Conditions.shellCloses(shell));
+		ResourcesPlugin.getWorkspace().getRoot()
+				.refreshLocal(IResource.DEPTH_INFINITE, null);
 		String location1Path = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName1).getLocation().toString();
 		assertEquals(contents[0][2], location1Path);

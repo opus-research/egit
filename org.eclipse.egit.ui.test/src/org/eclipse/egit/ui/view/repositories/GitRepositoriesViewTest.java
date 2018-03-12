@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2016 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Tobias Baumann <tobbaumann@gmail.com> - Bug #494269
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
@@ -21,6 +22,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -52,6 +54,10 @@ import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.dialogs.WorkbenchWizardElement;
+import org.eclipse.ui.internal.wizards.AbstractExtensionWizardRegistry;
+import org.eclipse.ui.wizards.IWizardCategory;
+import org.eclipse.ui.wizards.IWizardDescriptor;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -81,8 +87,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	public void beforeClass() throws Exception {
 		setVerboseBranchMode(false);
 		repositoryFile = createProjectAndCommitToRepository();
-		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
-				repositoryFile);
+		Activator.getDefault().getRepositoryUtil()
+				.addConfiguredRepository(repositoryFile);
 	}
 
 	/**
@@ -93,8 +99,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	@Test
 	public void testExpandFirstLevel() throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
-		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile)
-				.expand();
+		SWTBotTreeItem item = TestUtil.expandAndWait(
+				myRepoViewUtil.getRootItem(tree, repositoryFile));
 		SWTBotTreeItem[] children = item.getItems();
 		assertEquals("Wrong number of children", 5, children.length);
 	}
@@ -116,9 +122,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		item.doubleClick();
 		assertTrue("Item should be expanded", item.isExpanded());
 		// open a file in editor
-		item = myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand();
-		SWTBotTreeItem fileiItem = item.getNode(PROJ1).expand().getNode(FOLDER)
-				.expand().getNode(FILE1).select();
+		item = TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile));
+		SWTBotTreeItem fileiItem = TestUtil.expandAndWait(item.getNode(PROJ1))
+				.getNode(FOLDER);
+		fileiItem = TestUtil.expandAndWait(fileiItem).getNode(FILE1).select();
 		fileiItem.doubleClick();
 		assertTrue(bot.activeEditor().getTitle().equals(FILE1));
 		bot.activeEditor().close();
@@ -136,8 +144,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	private void checkoutWithDoubleClick(SWTBotTree tree, String branch)
 			throws Exception {
-		myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile).expand()
-				.getNode(branch).doubleClick();
+		SWTBotTreeItem node = myRepoViewUtil.getLocalBranchesItem(tree,
+				repositoryFile);
+		TestUtil.expandAndWait(node).getNode(branch).doubleClick();
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_CheckoutConfirmationTitle);
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
@@ -154,13 +163,16 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	@Test
 	public void testExpandSymbolicRef() throws Exception {
 		SWTBotTree tree = getOrOpenView().bot().tree();
-		SWTBotTreeItem item = myRepoViewUtil.getSymbolicRefsItem(tree,
-				repositoryFile).expand();
+		SWTBotTreeItem item = TestUtil.expandAndWait(
+				myRepoViewUtil.getSymbolicRefsItem(tree, repositoryFile));
 		List<String> children = item.getNodes();
 		boolean found = false;
-		for (String child : children)
-			if (child.contains(Constants.HEAD))
+		for (String child : children) {
+			if (child.contains(Constants.HEAD)) {
 				found = true;
+				break;
+			}
+		}
 		assertTrue(found);
 	}
 
@@ -175,12 +187,17 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		Repository myRepository = lookupRepository(repositoryFile);
 		List<String> children = Arrays
 				.asList(myRepository.getWorkTree().list());
-		List<String> treeChildren = myRepoViewUtil.getWorkdirItem(tree,
-				repositoryFile).expand().getNodes();
+		List<String> treeChildren = TestUtil
+				.expandAndWait(
+						myRepoViewUtil.getWorkdirItem(tree, repositoryFile))
+				.getNodes();
 		assertTrue(children.containsAll(treeChildren)
 				&& treeChildren.containsAll(children));
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand().getNode(
-				PROJ1).expand().getNode(FOLDER).expand().getNode(FILE1);
+		SWTBotTreeItem item = TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile));
+		item = TestUtil.expandAndWait(item.getNode(PROJ1));
+		item = TestUtil.expandAndWait(item.getNode(FOLDER));
+		item.getNode(FILE1);
 	}
 
 	/**
@@ -191,9 +208,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	 */
 	@Test
 	public void testContextMenuRepository() throws Exception {
+		removeSmartImportWizardToForceGitImportWizardUsage();
 		Activator.getDefault().getPreferenceStore()
 				.setValue(UIPreferences.ALWAYS_USE_STAGING_VIEW, false);
-		// We just check if the dialogs open, the actual commit and import projects
+		// We just check if the dialogs open, the actual commit and import
+		// projects
 		// is tested elsewhere
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile);
@@ -220,8 +239,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTreeItem item = myRepoViewUtil.getRootItem(tree, repositoryFile);
 		item.select();
 		ContextMenuHelper.clickContextMenuSync(tree,
-				myUtil.getPluginLocalizedValue("ShowIn"),
-				"Properties");
+				myUtil.getPluginLocalizedValue("ShowIn"), "Properties");
 		SWTBotView propertieView = bot.viewById(IPageLayout.ID_PROP_SHEET);
 		assertTrue(propertieView.isActive());
 	}
@@ -233,6 +251,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	 */
 	@Test
 	public void testImportWizard() throws Exception {
+		removeSmartImportWizardToForceGitImportWizardUsage();
 		deleteAllProjects();
 		assertProjectExistence(PROJ1, false);
 		SWTBotTree tree = getOrOpenView().bot().tree();
@@ -240,23 +259,27 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		String wizardTitle = NLS.bind(
 				UIText.GitCreateProjectViaWizardWizard_WizardTitle,
 				repositoryFile.getPath());
+
 		// start wizard from root item
 		item.select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("ImportProjectsCommand"));
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("ImportProjectsCommand"));
 		SWTBotShell shell = bot.shell(wizardTitle);
 		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
 		TableCollection selected = shell.bot().tree().selection();
 		String wizardNode = selected.get(0, 0);
 		// wizard directory should be working dir
-		assertEquals(myRepoViewUtil.getWorkdirItem(tree, repositoryFile)
-				.getText(), wizardNode);
+		assertEquals(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile).getText(),
+				wizardNode);
 		shell.close();
+		tree = getOrOpenView().bot().tree();
 		// start wizard from .git
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand().getNode(
-				Constants.DOT_GIT).select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("ImportProjectsCommand"));
+		TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile))
+				.getNode(Constants.DOT_GIT).select();
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("ImportProjectsCommand"));
 		shell = bot.shell(wizardTitle);
 		selected = shell.bot().tree().selection();
 		wizardNode = selected.get(0, 0);
@@ -272,19 +295,50 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		bot.button(UIText.WizardProjectsImportPage_deselectAll).click();
 		assertEquals(1, shell.bot().tree().getAllItems().length);
-		assertTrue(!shell.bot().button(IDialogConstants.FINISH_LABEL)
-				.isEnabled());
+		assertTrue(
+				!shell.bot().button(IDialogConstants.FINISH_LABEL).isEnabled());
 		shell.bot().button(UIText.WizardProjectsImportPage_selectAll).click();
-		assertTrue(shell.bot().button(IDialogConstants.FINISH_LABEL)
-				.isEnabled());
+		assertTrue(
+				shell.bot().button(IDialogConstants.FINISH_LABEL).isEnabled());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		bot.waitUntil(Conditions.shellCloses(shell));
 		assertProjectExistence(PROJ1, true);
 		assertProjectIsShared(PROJ1, true);
 	}
 
+	private static void removeSmartImportWizardToForceGitImportWizardUsage()
+			throws Exception {
+		final String smartImportWizardId = "org.eclipse.e4.ui.importer.wizard";
+		AbstractExtensionWizardRegistry wizardRegistry = (AbstractExtensionWizardRegistry) PlatformUI
+				.getWorkbench().getImportWizardRegistry();
+		IWizardCategory[] categories = PlatformUI.getWorkbench()
+				.getImportWizardRegistry().getRootCategory().getCategories();
+		for (IWizardDescriptor wizard : getAllWizards(categories)) {
+			if (wizard.getId().equals(smartImportWizardId)) {
+				WorkbenchWizardElement wizardElement = (WorkbenchWizardElement) wizard;
+				wizardRegistry.removeExtension(
+						wizardElement.getConfigurationElement()
+								.getDeclaringExtension(),
+						new Object[] { wizardElement });
+				return;
+			}
+		}
+	}
+
+	private static IWizardDescriptor[] getAllWizards(
+			IWizardCategory[] categories) {
+		List<IWizardDescriptor> results = new ArrayList<IWizardDescriptor>();
+		for (IWizardCategory wizardCategory : categories) {
+			results.addAll(Arrays.asList(wizardCategory.getWizards()));
+			results.addAll(Arrays
+					.asList(getAllWizards(wizardCategory.getCategories())));
+		}
+		return results.toArray(new IWizardDescriptor[0]);
+	}
+
 	@Test
 	public void testImportWizardGeneralProject() throws Exception {
+		removeSmartImportWizardToForceGitImportWizardUsage();
 		deleteAllProjects();
 		assertProjectExistence(PROJ2, false);
 		SWTBotTree tree = getOrOpenView().bot().tree();
@@ -292,10 +346,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				UIText.GitCreateProjectViaWizardWizard_WizardTitle,
 				repositoryFile.getPath());
 		// start wizard from PROJ2
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand().getNode(
-				PROJ2).select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("ImportProjectsCommand"));
+		TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile))
+				.getNode(PROJ2).select();
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("ImportProjectsCommand"));
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// try import existing project first
@@ -309,24 +364,35 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(0, shell.bot().tree().getAllItems().length);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// import as general
-		shell.bot().radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
+		shell.bot().radio(UIText.GitSelectWizardPage_ImportAsGeneralButton)
+				.click();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		assertEquals(PROJ2, shell.bot().textWithLabel(
-				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
+		assertEquals(PROJ2,
+				shell.bot()
+						.textWithLabel(
+								UIText.GitCreateGeneralProjectPage_ProjectNameLabel)
+						.getText());
 		// switch to a sub directory and see if this is used
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
-		shell.bot().tree().getAllItems()[0].expand().getNode(PROJ2).expand()
-				.getNode(FOLDER).select();
+		SWTBotTreeItem item = TestUtil
+				.expandAndWait(shell.bot().tree().getAllItems()[0]);
+		TestUtil.expandAndWait(item.getNode(PROJ2)).getNode(FOLDER).select();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		String name = shell.bot().textWithLabel(
-				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText();
+		String name = shell.bot()
+				.textWithLabel(
+						UIText.GitCreateGeneralProjectPage_ProjectNameLabel)
+				.getText();
 		assertEquals(FOLDER, name);
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// switch back to the root directory
-		shell.bot().tree().getAllItems()[0].expand().getNode(PROJ2).select();
+		TestUtil.expandAndWait(shell.bot().tree().getAllItems()[0])
+				.getNode(PROJ2).select();
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
-		assertEquals(PROJ2, shell.bot().textWithLabel(
-				UIText.GitCreateGeneralProjectPage_ProjectNameLabel).getText());
+		assertEquals(PROJ2,
+				shell.bot()
+						.textWithLabel(
+								UIText.GitCreateGeneralProjectPage_ProjectNameLabel)
+						.getText());
 
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		bot.waitUntil(Conditions.shellCloses(shell));
@@ -335,7 +401,9 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	}
 
 	@Test
-	public void testImportWizardGeneralProjectWithWorkingSet() throws Exception {
+	public void testImportWizardGeneralProjectWithWorkingSet()
+			throws Exception {
+		removeSmartImportWizardToForceGitImportWizardUsage();
 		deleteAllProjects();
 		assertProjectExistence(PROJ1, false);
 		String workingSetName = "myWorkingSet";
@@ -345,22 +413,26 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				UIText.GitCreateProjectViaWizardWizard_WizardTitle,
 				repositoryFile.getPath());
 		// start wizard from PROJ1
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand().getNode(
-				PROJ1).select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("ImportProjectsCommand"));
+		TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile))
+				.getNode(PROJ1).select();
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("ImportProjectsCommand"));
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// try import existing project first
 		bot.radio(UIText.GitSelectWizardPage_ImportExistingButton).click();
 		SWTBotButton button = shell.bot().button(IDialogConstants.NEXT_LABEL);
-		// Set focus on the next button. If this is not done, Wizard Framework restores
-		// the focus to the "Import as &General Project" radio button. Setting the focus on
+		// Set focus on the next button. If this is not done, Wizard Framework
+		// restores
+		// the focus to the "Import as &General Project" radio button. Setting
+		// the focus on
 		// the radio button selects the button and causes the test to fail.
 		// See also SWTBot Bug 337465
 		button.setFocus();
 		button.click();
-		shell.bot().text(UIText.WizardProjectsImportPage_ImportProjectsDescription);
+		shell.bot().text(
+				UIText.WizardProjectsImportPage_ImportProjectsDescription);
 		shell.bot().tree().getAllItems()[0].check();
 		// add to working set
 		shell.bot().checkBox("Add project to working sets").select();
@@ -393,8 +465,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals("Wrong number of projects in working set", 1,
 				elements.length);
 		IProject project = Utils.getAdapter(elements[0], IProject.class);
-		assertEquals("Wrong project in working set", projectName, project
-				.getName());
+		assertEquals("Wrong project in working set", projectName,
+				project.getName());
 	}
 
 	private void removeWorkingSet(String name) {
@@ -407,8 +479,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	private void assertProjectIsShared(String projectName,
 			boolean shouldBeShared) {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(
-				projectName);
+		IProject project = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(projectName);
 		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 		if (shouldBeShared) {
 			assertNotNull(mapping);
@@ -467,13 +539,15 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotView view = TestUtil.showExplorerView();
 		SWTBotTree projectExplorerTree = view.bot().tree();
 
-		SWTBotTreeItem item = getProjectItem(projectExplorerTree, PROJ1)
-				.expand().getNode(FOLDER).expand().getNode(FILE1);
+		SWTBotTreeItem item = TestUtil
+				.expandAndWait(getProjectItem(projectExplorerTree, PROJ1));
+		item = TestUtil.expandAndWait(item.getNode(FOLDER)).getNode(FILE1);
 		view.show();
 		item.doubleClick();
 
-		item = getProjectItem(projectExplorerTree, PROJ1).expand()
-				.getNode(FOLDER).expand().getNode(FILE2);
+		item = TestUtil
+				.expandAndWait(getProjectItem(projectExplorerTree, PROJ1));
+		item = TestUtil.expandAndWait(item.getNode(FOLDER)).getNode(FILE2);
 		view.show();
 		item.doubleClick();
 		// now we should have two editors
@@ -501,9 +575,11 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 		bot.editorByTitle(FILE1).show();
 
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-				.getNode(PROJ1).expand().getNode(FOLDER).expand()
-				.getNode(FILE2).select();
+		item = TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile));
+		item = TestUtil.expandAndWait(item.getNode(PROJ1));
+		item = TestUtil.expandAndWait(item.getNode(FOLDER));
+		item.getNode(FILE2).select();
 
 		// the editor should still be test.txt
 		assertEquals(FILE1, bot.activeEditor().getTitle());
@@ -516,22 +592,28 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		// tried setting focus, waiting for focus, joining RepositoriesView
 		// refresh job
 		waitInUI();
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-				.getNode(PROJ1).expand().getNode(FOLDER).expand()
-				.getNode(FILE2).select();
+		item = TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile));
+		item = TestUtil.expandAndWait(item.getNode(PROJ1));
+		item = TestUtil.expandAndWait(item.getNode(FOLDER));
+		item.getNode(FILE2).select();
 		TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE2), 10000);
 
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-				.getNode(PROJ1).expand().getNode(FOLDER).expand()
-				.getNode(FILE1).select();
+		item = TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile));
+		item = TestUtil.expandAndWait(item.getNode(PROJ1));
+		item = TestUtil.expandAndWait(item.getNode(FOLDER));
+		item.getNode(FILE1).select();
 		TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE1), 10000);
 
 		// deactivate the link with editor
 		toggleLinkWithSelection();
 
-		myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand()
-				.getNode(PROJ1).expand().getNode(FOLDER).expand()
-				.getNode(FILE2).select();
+		item = TestUtil.expandAndWait(
+				myRepoViewUtil.getWorkdirItem(tree, repositoryFile));
+		item = TestUtil.expandAndWait(item.getNode(PROJ1));
+		item = TestUtil.expandAndWait(item.getNode(FOLDER));
+		item.getNode(FILE2).select();
 		TestUtil.waitUntilEditorIsActive(bot, bot.editorByTitle(FILE1), 10000);
 	}
 
@@ -541,30 +623,30 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		refreshAndWait();
 		// create a branch (no checkout)
-		SWTBotTreeItem localBranchesItem = myRepoViewUtil.getLocalBranchesItem(
-				tree, repositoryFile).expand();
+		SWTBotTreeItem localBranchesItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile));
 		SWTBotTreeItem masterNode = localBranchesItem.getNode("master");
 		masterNode.select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("RepoViewCreateBranch.label"));
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("RepoViewCreateBranch.label"));
 		SWTBotShell createBranchShell = bot
 				.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createBranchShell.bot().textWithId("BranchName").setText("abc");
-		createBranchShell.bot()
-				.checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
+		createBranchShell.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
+				.deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		// delete branch
 		// lookup node again. Widget might have changed due to refresh
-		localBranchesItem = myRepoViewUtil.getLocalBranchesItem(
-				tree, repositoryFile).expand();
+		localBranchesItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile));
 		localBranchesItem.getNode("abc").select();
 		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 
 		refreshAndWait();
-		SWTBotTreeItem[] items = myRepoViewUtil.getLocalBranchesItem(tree,
-				repositoryFile).getItems();
+		SWTBotTreeItem[] items = myRepoViewUtil
+				.getLocalBranchesItem(tree, repositoryFile).getItems();
 		assertEquals("Wrong number of branches", 2, items.length);
 		assertEquals("master", items[0].getText());
 		assertEquals("stable", items[1].getText());
@@ -576,8 +658,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		refreshAndWait();
 		// open a branch (checkout)
-		SWTBotTreeItem localBranchesItem = myRepoViewUtil.getLocalBranchesItem(
-				tree, repositoryFile).expand();
+		SWTBotTreeItem localBranchesItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile));
 		SWTBotTreeItem masterNode = localBranchesItem.getNode("master");
 		// create first branch (abc)
 		masterNode.select();
@@ -585,27 +667,27 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell createBranchShell = bot
 				.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createBranchShell.bot().textWithId("BranchName").setText("abc");
-		createBranchShell.bot()
-				.checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
+		createBranchShell.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
+				.deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		// create second branch (123)
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
 		createBranchShell = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
 		createBranchShell.bot().textWithId("BranchName").setText("123");
-		createBranchShell.bot()
-				.checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
+		createBranchShell.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
+				.deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
-		localBranchesItem = myRepoViewUtil.getLocalBranchesItem(tree,
-				repositoryFile).expand();
+		localBranchesItem = TestUtil.expandAndWait(
+				myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile));
 		// delete both
 		localBranchesItem.select("abc", "123");
-		ContextMenuHelper.clickContextMenuSync(tree, myUtil
-				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
+		ContextMenuHelper.clickContextMenuSync(tree,
+				myUtil.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		refreshAndWait();
 
-		SWTBotTreeItem[] items = myRepoViewUtil.getLocalBranchesItem(tree,
-				repositoryFile).getItems();
+		SWTBotTreeItem[] items = myRepoViewUtil
+				.getLocalBranchesItem(tree, repositoryFile).getItems();
 		assertEquals("Wrong number of branches", 2, items.length);
 		assertEquals("master", items[0].getText());
 		assertEquals("stable", items[1].getText());
@@ -616,8 +698,10 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		refreshAndWait();
 
-		IProject project1 = ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1);
-		// Make sure that the refresh doesn't happen on delete and cause a timeout
+		IProject project1 = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(PROJ1);
+		// Make sure that the refresh doesn't happen on delete and cause a
+		// timeout
 		project1.refreshLocal(IResource.DEPTH_INFINITE, null);
 
 		SWTBotTreeItem folder = findWorkdirNode(tree, PROJ1, FOLDER);
@@ -647,7 +731,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		ContextMenuHelper.clickContextMenu(tree,
 				myUtil.getPluginLocalizedValue("RepoViewDeleteFile.label"));
 
-		SWTBotShell confirm = bot.shell(UIText.DeleteResourcesOperationUI_confirmActionTitle);
+		SWTBotShell confirm = bot
+				.shell(UIText.DeleteResourcesOperationUI_confirmActionTitle);
 		confirm.bot().button(IDialogConstants.OK_LABEL).click();
 		bot.waitUntil(shellCloses(confirm));
 		TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
@@ -663,10 +748,13 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				.click();
 	}
 
-	private SWTBotTreeItem findWorkdirNode(SWTBotTree tree, String... nodes) throws Exception {
-		SWTBotTreeItem item = myRepoViewUtil.getWorkdirItem(tree, repositoryFile).expand();
-		for (String node : nodes)
-			item = item.getNode(node).expand();
-		return item;
+	private SWTBotTreeItem findWorkdirNode(SWTBotTree tree, String... nodes)
+			throws Exception {
+		SWTBotTreeItem item = myRepoViewUtil.getWorkdirItem(tree,
+				repositoryFile);
+		for (String node : nodes) {
+			item = TestUtil.expandAndWait(item).getNode(node);
+		}
+		return item.expand();
 	}
 }

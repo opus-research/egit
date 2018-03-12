@@ -377,11 +377,11 @@
             </with>
          </or>
       </definition>
-      <definition id="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
+      <definition id="org.eclipse.egit.ui.fileOrFolderPushToGerrit">
          <or>
             <test
                   property="GitSelection.fileOrFolderInRepository"
-                  args="hasGerritConfiguration">
+                  args="canPushToGerrit">
             </test>
             <with variable="activePart">
                <instanceof
@@ -395,7 +395,32 @@
                            property="GitResource.isShared">
                      </test>
                      <test
-                           property="GitResource.hasGerritConfiguration">
+                           property="GitResource.canPushToGerrit">
+                     </test>
+                  </adapt>
+               </with>
+            </with>
+         </or>
+      </definition>
+      <definition id="org.eclipse.egit.ui.fileOrFolderFetchFromGerrit">
+         <or>
+            <test
+                  property="GitSelection.fileOrFolderInRepository"
+                  args="canFetchFromGerrit">
+            </test>
+            <with variable="activePart">
+               <instanceof
+                     value="org.eclipse.ui.IEditorPart">
+               </instanceof>
+               <with
+                     variable="activeEditorInput">
+                  <adapt
+                        type="org.eclipse.core.resources.IResource">
+                     <test
+                           property="GitResource.isShared">
+                     </test>
+                     <test
+                           property="GitResource.canFetchFromGerrit">
                      </test>
                   </adapt>
                </with>
@@ -1487,6 +1512,9 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                            </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
+                           </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
                            </test>
@@ -1703,6 +1731,20 @@
          </activeWhen>
       </handler>
       <handler
+            commandId="org.eclipse.ui.file.refresh">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand">
+         </class>
+         <activeWhen>
+             <with
+                   variable="activePartId">
+                <equals
+                        value="org.eclipse.egit.ui.RepositoriesView">
+                </equals>
+             </with>
+          </activeWhen>
+      </handler>
+      <handler
             commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
@@ -1769,6 +1811,31 @@
                      </instanceof>
                   </iterate>
                </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.RenameBranch"
+            class="org.eclipse.egit.ui.internal.actions.RenameBranchActionHandler">
+         <activeWhen>
+            <test property="GitSelection.projectsSingleRepository" />
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.ui.edit.rename"
+            class="org.eclipse.egit.ui.internal.history.command.RenameBranchOnCommitHandler">
+         <activeWhen>
+            <and>
+               <with
+                     variable="activePartId">
+                  <equals
+                        value="org.eclipse.team.ui.GenericHistoryView">
+                  </equals>
+               </with>
+               <count value="1" />
+               <iterate>
+                  <instanceof value="org.eclipse.egit.ui.internal.history.SWTCommit" />
+               </iterate>
+            </and>
          </activeWhen>
       </handler>
       <handler
@@ -2393,6 +2460,9 @@
                         <or>
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchHierarchyNode">
                            </instanceof>
                            <test
                                  property="GitRepository.isLocalBranch">
@@ -3120,7 +3190,7 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                         </instanceof>
                         <test
-                              property="GitRepository.hasGerritConfiguration">
+                              property="GitRepository.canPushToGerrit">
                         </test>
                      </and>
                   </iterate>
@@ -3143,7 +3213,7 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                         </instanceof>
                         <test
-                              property="GitRepository.hasGerritConfiguration">
+                              property="GitRepository.canFetchFromGerrit">
                         </test>
                      </and>
                   </iterate>
@@ -3580,6 +3650,24 @@
                </and>
             </visibleWhen>
          </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
+               label="%OpenInCommitViewerCommand.name"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode">
+                        </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
       </menuContribution>
       <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=repo-4">
@@ -3797,7 +3885,9 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
+               commandId="org.eclipse.ui.file.refresh"
+               icon="icons/obj16/refresh.gif"
+               disabledIcon="icons/obj16/refresh.gif"
                style="push">
          </command>
          <command
@@ -3842,8 +3932,8 @@
                visible="true">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
-               label="%RepoViewRefreshViewMenu.label"
+               commandId="org.eclipse.ui.file.refresh"
+               icon="icons/obj16/refresh.gif"
                style="push">
          </command>
          <command
@@ -3983,7 +4073,7 @@
                         checkEnabled="false">
                      <test
                            property="GitSelection.projectsSingleRepository"
-                           args="hasGerritConfiguration">
+                           args="canPushToGerrit">
                      </test>
                   </visibleWhen>
                </command>
@@ -3995,7 +4085,7 @@
                         checkEnabled="false">
                      <test
                            property="GitSelection.projectsSingleRepository"
-                           args="hasGerritConfiguration">
+                           args="canFetchFromGerrit">
                      </test>
                   </visibleWhen>
                </command>
@@ -4078,7 +4168,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <reference
-                           definitionId="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
+                           definitionId="org.eclipse.egit.ui.fileOrFolderPushToGerrit">
                      </reference>
                   </visibleWhen>
                </command>
@@ -4089,7 +4179,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <reference
-                           definitionId="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
+                           definitionId="org.eclipse.egit.ui.fileOrFolderFetchFromGerrit">
                      </reference>
                   </visibleWhen>
                </command>
@@ -4729,7 +4819,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="compareWithMenu"
-               label="Compare With">
+               label="%CompareWithMenu.label">
             <separator
                   name="compareWithGroup">
             </separator>
@@ -4748,7 +4838,7 @@
             locationURI="popup:org.eclipse.ui.popup.any?after=additions">
          <menu
                id="replaceWithMenu"
-               label="Replace With">
+               label="%ReplaceWithMenu.label">
             <separator
                   name="replaceWithGroup">
             </separator>
@@ -4785,21 +4875,9 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RenameBranchCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewRenameBranch"
-            name="%RenameBranchCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.PasteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewPaste"
             name="%PastePathCommand">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RefreshCommand"
-            id="org.eclipse.egit.ui.RepositoriesViewRefresh"
-            name="%RefreshCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -4999,10 +5077,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewClone"
             icon="icons/obj16/cloneGit.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesViewRefresh"
-            icon="icons/obj16/refresh.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
@@ -5277,6 +5351,10 @@
             icon="icons/obj16/open-commit.gif">
       </image>
       <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewOpen"
+            icon="icons/obj16/open-commit.gif">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.history.Revert"
             icon="icons/obj16/revert.gif">
       </image>
@@ -5295,10 +5373,6 @@
       <image
             commandId="org.eclipse.egit.ui.team.stash.create"
             icon="icons/obj16/stash-create.png">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.RenameBranch"
-            icon="icons/obj16/editconfig.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.ShowBlame"
@@ -5327,14 +5401,14 @@
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewPropertyTester"
             id="org.eclipse.egit.ui.RepositoryTester"
             namespace="GitRepository"
-            properties="isBare,isSafe,canCommit,canAmend,canResetHead,canStash,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,canContinueRebase,isSubmodule,containsHead,hasGerritConfiguration"
+            properties="isBare,isSafe,canCommit,canAmend,canResetHead,canStash,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,canContinueRebase,isSubmodule,containsHead,hasGerritConfiguration,canFetchFromGerrit,canPushToGerrit"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
       <propertyTester
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration"
+            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration,canFetchFromGerrit,canPushToGerrit"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
       <propertyTester
@@ -5604,9 +5678,8 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.RenameBranchActionHandler"
             id="org.eclipse.egit.ui.team.RenameBranch"
-            name="%RenameBranchCommand.name">
+            name="%RenameBranchCommand">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -5710,11 +5783,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.DeleteBranchOnCommitHandler"
             id="org.eclipse.egit.ui.history.DeleteBranch"
             name="%DeleteBranchCommand">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.RenameBranchOnCommitHandler"
-            id="org.eclipse.egit.ui.history.RenameBranch"
-            name="%RenameBranchCommand">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"

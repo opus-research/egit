@@ -3,6 +3,7 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -164,11 +165,10 @@ public class PushOperation {
 				totalWork);
 
 		operationResult = new PushOperationResult();
-		Git git = new Git(localDb);
-
-		if (specification != null)
-			for (final URIish uri : specification.getURIs()) {
-				if (progress.isCanceled()) {
+		try (Git git = new Git(localDb)) {
+			if (specification != null)
+				for (final URIish uri : specification.getURIs()) {
+					if (progress.isCanceled()) {
 						operationResult.addOperationResult(uri,
 								CoreText.PushOperation_resultCancelled);
 						continue;
@@ -177,15 +177,15 @@ public class PushOperation {
 					Collection<RemoteRefUpdate> refUpdates = specification
 							.getRefUpdates(uri);
 					final EclipseGitProgressTransformer gitSubMonitor = new EclipseGitProgressTransformer(
-						progress.newChild(WORK_UNITS_PER_TRANSPORT / 2));
+							progress.newChild(WORK_UNITS_PER_TRANSPORT / 2));
 
-					try {
-						Transport transport = Transport.open(localDb, uri);
+					try (Transport transport = Transport.open(localDb, uri)) {
 						transport.setDryRun(dryRun);
 						transport.setTimeout(timeout);
-						if (credentialsProvider != null)
+						if (credentialsProvider != null) {
 							transport.setCredentialsProvider(
 									credentialsProvider);
+						}
 						PushResult result = transport.push(gitSubMonitor,
 								refUpdates, out);
 
@@ -204,31 +204,33 @@ public class PushOperation {
 						handleException(uri, e, e.getMessage());
 					}
 
-				progress.worked(WORK_UNITS_PER_TRANSPORT / 2);
-			}
-		else {
-			final EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
-					progress.newChild(totalWork));
-			try {
-				Iterable<PushResult> results = git.push().setRemote(remoteName)
-						.setDryRun(dryRun).setTimeout(timeout)
-						.setProgressMonitor(gitMonitor)
-						.setCredentialsProvider(credentialsProvider)
-						.setOutputStream(out).call();
-				for (PushResult result : results) {
-					operationResult.addOperationResult(result.getURI(), result);
+					progress.worked(WORK_UNITS_PER_TRANSPORT / 2);
 				}
-			} catch (JGitInternalException e) {
-				String errorMessage = e.getCause() != null ? e.getCause()
-						.getMessage() : e.getMessage();
-				String userMessage = NLS.bind(
-						CoreText.PushOperation_InternalExceptionOccurredMessage,
-						errorMessage);
-				URIish uri = getPushURIForErrorHandling();
-				handleException(uri, e, userMessage);
-			} catch (Exception e) {
-				URIish uri = getPushURIForErrorHandling();
-				handleException(uri, e, e.getMessage());
+			else {
+				final EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
+						progress.newChild(totalWork));
+				try {
+					Iterable<PushResult> results = git.push()
+							.setRemote(remoteName).setDryRun(dryRun)
+							.setTimeout(timeout).setProgressMonitor(gitMonitor)
+							.setCredentialsProvider(credentialsProvider)
+							.setOutputStream(out).call();
+					for (PushResult result : results) {
+						operationResult.addOperationResult(result.getURI(),
+								result);
+					}
+				} catch (JGitInternalException e) {
+					String errorMessage = e.getCause() != null
+							? e.getCause().getMessage() : e.getMessage();
+					String userMessage = NLS.bind(
+							CoreText.PushOperation_InternalExceptionOccurredMessage,
+							errorMessage);
+					URIish uri = getPushURIForErrorHandling();
+					handleException(uri, e, userMessage);
+				} catch (Exception e) {
+					URIish uri = getPushURIForErrorHandling();
+					handleException(uri, e, e.getMessage());
+				}
 			}
 		}
 	}
