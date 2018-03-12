@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?p2f version='1.0.0'?>
 <p2f version='1.0.0'>
-  <ius size='30'>
+  <ius size='37'>
     <iu id='org.apache.ant' name='Apache Ant' version='1.9.4.v201410062020'>
       <repositories size='1'>
         <repository location='http://download.eclipse.org/tools/orbit/downloads/drops/S20150202203538/repository/'/>
@@ -33,8 +33,7 @@
       </repositories>
     </iu>
     <iu id='org.hamcrest.library' name='Hamcrest Library of Additional Matchers' version='1.3.0.v201305281000'>
-      <repositories size='2'>
-        <repository location='http://download.eclipse.org/releases/mars'/>
+      <repositories size='1'>
         <repository location='http://download.eclipse.org/tools/orbit/downloads/drops/S20150202203538/repository/'/>
       </repositories>
     </iu>
@@ -128,6 +127,11 @@
         <repository location='http://download.eclipse.org/eclipse/updates/4.4'/>
       </repositories>
     </iu>
+    <iu id='org.eclipse.pde.api.tools.ee.javase18.group' name='JavaSE-1.8 Execution Environment Description' version='0.0.0'>
+      <repositories size='1'>
+        <repository location='http://download.eclipse.org/eclipse/updates/4.4'/>
+      </repositories>
+    </iu>
     <iu id='com.mountainminds.eclemma.feature.feature.group' name='EclEmma Java Code Coverage' version='0.0.0'>
       <repositories size='1'>
         <repository location='http://update.eclemma.org/'/>
@@ -139,12 +143,12 @@
       </repositories>
     </iu>
     <iu id='org.eclipse.mylyn_feature.feature.group' name='Mylyn' version='0.0.0'>
-      <repositories size='2'>
+      <repositories size='1'>
         <repository location='http://download.eclipse.org/mylyn/snapshots/weekly'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.mylyn.bugzilla_feature.feature.group' name='Mylyn Tasks Connector: Bugzilla' version='0.0.0'>
-      <repositories size='2'>
+      <repositories size='1'>
         <repository location='http://download.eclipse.org/mylyn/snapshots/weekly'/>
       </repositories>
     </iu>
@@ -160,31 +164,31 @@
     </iu>
     <iu id='org.eclipse.swtbot.forms.feature.group' name='SWTBot for Eclipse Forms Testing (incubation)' version='0.0.0'>
       <repositories size='1'>
-        <repository location='http://download.eclipse.org/technology/swtbot/snapshots'/>
+        <repository location='http://download.eclipse.org/technology/swtbot/releases/latest/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.swtbot.eclipse.feature.group' name='SWTBot for Eclipse Testing (incubation)' version='0.0.0'>
       <repositories size='1'>
-        <repository location='http://download.eclipse.org/technology/swtbot/snapshots'/>
+        <repository location='http://download.eclipse.org/technology/swtbot/releases/latest/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.swtbot.feature.group' name='SWTBot for SWT Testing (incubation)' version='0.0.0'>
       <repositories size='1'>
-        <repository location='http://download.eclipse.org/technology/swtbot/snapshots'/>
+        <repository location='http://download.eclipse.org/technology/swtbot/releases/latest/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.swtbot.ide.feature.group' name='SWTBot IDE Features (incubation)' version='0.0.0'>
       <repositories size='1'>
-        <repository location='http://download.eclipse.org/technology/swtbot/snapshots'/>
+        <repository location='http://download.eclipse.org/technology/swtbot/releases/latest/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.swtbot.eclipse.test.junit.feature.group' name='SWTBot JUnit Headless launchers for Eclipse (incubation)' version='0.0.0'>
       <repositories size='1'>
-        <repository location='http://download.eclipse.org/technology/swtbot/snapshots'/>
+        <repository location='http://download.eclipse.org/technology/swtbot/releases/latest/'/>
       </repositories>
     </iu>
     <iu id='fr.obeo.releng.targetplatform-feature.feature.group' name='Target Platform Definition DSL and Generator' version='0.0.0'>
-      repositories size='1'>
+      <repositories size='1'>
         <repository location='http://mbarbero.github.io/fr.obeo.releng.targetplatform/p2/latest/'/>
       </repositories>
     </iu>
