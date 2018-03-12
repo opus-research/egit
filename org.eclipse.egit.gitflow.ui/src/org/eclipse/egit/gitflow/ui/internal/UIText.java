@@ -109,33 +109,6 @@ public class UIText extends NLS {
 	public static String HotfixStartHandler_startingNewHotfix;
 
 	/**	 */
-	public static String InitDialog_chooseBranchNamesAndPrefixes;
-
-	/**	 */
-	public static String InitDialog_developBranch;
-
-	/**	 */
-	public static String InitDialog_featureBranchPrefix;
-
-	/**	 */
-	public static String InitDialog_hotfixBranchPrefix;
-
-	/**	 */
-	public static String InitDialog_invalidBranchName;
-
-	/**	 */
-	public static String InitDialog_invalidPrefix;
-
-	/**	 */
-	public static String InitDialog_masterBranch;
-
-	/**	 */
-	public static String InitDialog_releaseBranchPrefix;
-
-	/**	 */
-	public static String InitDialog_versionTagPrefix;
-
-	/**	 */
 	public static String InitHandler_initializing;
 
 	/**	 */
@@ -203,4 +176,10 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ReleaseFinishOperation_unexpectedConflictsReleaseAborted;
+
+	/** */
+	public static String UIIcons_errorDeterminingIconBase;
+
+	/** */
+	public static String UIIcons_errorLoadingPluginImage;
 }
