@@ -13,6 +13,7 @@ package org.eclipse.egit.core.project;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.util.SystemReader;
 
 /**
  * Searches for existing Git repositories associated with a project's files.
@@ -54,6 +56,8 @@ public class RepositoryFinder {
 	private final Collection<RepositoryMapping> results = new ArrayList<RepositoryMapping>();
 	private final Set<File> gitdirs = new HashSet<File>();
 
+	private Set<String> ceilingDirectories = new HashSet<String>();
+
 	/**
 	 * Create a new finder to locate Git repositories for a project.
 	 *
@@ -63,6 +67,12 @@ public class RepositoryFinder {
 	 */
 	public RepositoryFinder(final IProject p) {
 		proj = p;
+		String ceilingDirectoriesVar = SystemReader.getInstance().getenv(
+				Constants.GIT_CEILING_DIRECTORIES_KEY);
+		if (ceilingDirectoriesVar != null) {
+			ceilingDirectories.addAll(Arrays.asList(ceilingDirectoriesVar
+					.split(File.pathSeparator)));
+		}
 	}
 
 	/**
@@ -93,6 +103,7 @@ public class RepositoryFinder {
 		try {
 			if (loc != null) {
 				final File fsLoc = loc.toFile();
+				assert fsLoc.isAbsolute();
 				final File ownCfg = configFor(fsLoc);
 				final IResource[] children;
 
@@ -102,10 +113,13 @@ public class RepositoryFinder {
 				if (c.isLinked() || c instanceof IProject) {
 					File p = fsLoc.getParentFile();
 					while (p != null) {
+						System.out.println("Looking at candidate dir: " + p);
 						final File pCfg = configFor(p);
 						if (pCfg.isFile()) {
 							register(c, pCfg.getParentFile());
 						}
+						if (ceilingDirectories.contains(p.getPath()))
+							break;
 						p = p.getParentFile();
 					}
 				}
@@ -117,7 +131,7 @@ public class RepositoryFinder {
 					for (int k = 0; k < children.length; k++) {
 						final IResource o = children[k];
 						if (o instanceof IContainer
-								&& !o.getName().equals(Constants.DOT_GIT)) {
+								&& !o.getName().equals(".git")) {
 							find(new SubProgressMonitor(m, scale),
 									(IContainer) o);
 						} else {
@@ -132,7 +146,7 @@ public class RepositoryFinder {
 	}
 
 	private File configFor(final File fsLoc) {
-		return new File(new File(fsLoc, Constants.DOT_GIT), "config");
+		return new File(new File(fsLoc, ".git"), "config");
 	}
 
 	private void register(final IContainer c, final File gitdir) {

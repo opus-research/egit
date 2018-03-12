@@ -24,7 +24,6 @@ import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.jgit.lib.Commit;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileTreeEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectWriter;
@@ -54,7 +53,7 @@ public class T0002_history extends GitTestCase {
 		super.setUp();
 		project.createSourceFolder();
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
-				.getRawLocation().toFile(), Constants.DOT_GIT);
+				.getRawLocation().toFile(), ".git");
 		thisGit = new Repository(gitDir);
 		workDir = thisGit.getWorkDir();
 		thisGit.create();

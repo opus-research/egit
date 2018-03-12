@@ -135,10 +135,13 @@ public class CloneOperation implements IRunnableWithProgress {
 			throws URISyntaxException, IOException {
 		monitor.setTaskName("Initializing local repository");
 
-		final File gitdir = new File(workdir, Constants.DOT_GIT);
+		final File gitdir = new File(workdir, ".git");
 		local = new Repository(gitdir);
 		local.create();
-		local.writeSymref(Constants.HEAD, branch);
+
+		final RefUpdate head = local.updateRef(Constants.HEAD);
+		head.disableRefLog();
+		head.link(branch);
 
 		remoteConfig = new RemoteConfig(local.getConfig(), remoteName);
 		remoteConfig.addURI(uri);
