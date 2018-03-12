@@ -191,7 +191,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		});
 
 		TreeViewerColumn commitMessageColumn = createColumn(layout,
-				UIText.ReflogView_CommitMessageColumnHeader, 30, SWT.LEFT);
+				UIText.ReflogView_CommitMessageColumnHeader, 40, SWT.LEFT);
 		commitMessageColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			@Override
@@ -214,6 +214,12 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 				}
 				return c;
 			}
+
+			@Override
+			public Image getImage(Object element) {
+				return branchImage;
+			}
+
 		});
 
 		TreeViewerColumn dateColumn = createColumn(layout,
@@ -236,7 +242,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		});
 
 		TreeViewerColumn messageColumn = createColumn(layout,
-				UIText.ReflogView_MessageColumnHeader, 30, SWT.LEFT);
+				UIText.ReflogView_MessageColumnHeader, 40, SWT.LEFT);
 		messageColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			private ResourceManager resourceManager = new LocalResourceManager(
