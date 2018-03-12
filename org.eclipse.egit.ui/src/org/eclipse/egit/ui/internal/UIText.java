@@ -385,12 +385,6 @@ public class UIText extends NLS {
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
-	public static String GitDocument_ReloadJobError;
-
-	/** */
-	public static String GitDocument_ReloadJobName;
-
-	/** */
 	public static String GitHistoryPage_AllChangesInRepoHint;
 
 	/** */
@@ -566,9 +560,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_rebaseInteractiveMenuItem;
-
-	/** */
-	public static String GitHistoryPage_rewordMenuItem;
 
 	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
@@ -1046,9 +1037,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
-
-	/** */
-	public static String CancelAfterSaveDialog_Title;
 
 	/** */
 	public static String CleanRepositoryPage_cleanDirs;
@@ -2480,9 +2468,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_ChooseNameMessage;
-
-	/** */
-	public static String CreateBranchPage_CreateBranchNameProviderFailed;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -4844,9 +4829,6 @@ public class UIText extends NLS {
 	public static String StagingView_CommitToolTip;
 
 	/** */
-	public static String StagingView_cancelCommitAfterSaving;
-
-	/** */
 	public static String StagingView_checkoutFailed;
 
 	/** */
@@ -5043,21 +5025,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebasePulldownAction_Abort;
-
-	/** */
-	public static String RewordHandler_CommitNotOnCurrentBranch;
-
-	/** */
-	public static String RewordHandler_Error_Title;
-
-	/** */
-	public static String RewordHandler_ErrorCheckingIfCommitIsOnCurrentBranch;
-
-	/** */
-	public static String RewordHandler_InternalError;
-
-	/** */
-	public static String RewordHandler_JobName;
 
 	/** */
 	public static String SynchronizeCommand_jobName;

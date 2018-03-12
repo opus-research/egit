@@ -106,13 +106,6 @@ public class PushOperation {
 	}
 
 	/**
-	 * @return the operation's credentials provider
-	 */
-	public CredentialsProvider getCredentialsProvider() {
-		return credentialsProvider;
-	}
-
-	/**
 	 * @return push operation result
 	 */
 	public PushOperationResult getOperationResult() {
