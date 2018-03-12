@@ -13,15 +13,6 @@ package org.eclipse.egit.ui.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.StringTokenizer;
-
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -49,7 +40,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
-import org.eclipse.jgit.util.IO;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -58,6 +48,16 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.StringTokenizer;
 
 /**
  * Base class for testing with local (file-system based) repositories
@@ -100,7 +100,7 @@ import org.junit.BeforeClass;
 public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	// the temporary directory
-	private static File testDirectory;
+	protected static File testDirectory;
 
 	protected static final String REPO1 = "FirstRepository";
 
@@ -120,10 +120,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	protected static final String FOLDER = "folder";
 
-	public static File getTestDirectory() {
-		return testDirectory;
-	}
-	
 	@BeforeClass
 	public static void beforeClassBase() throws Exception {
 		deleteAllProjects();
@@ -475,7 +471,16 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		IFile file = ResourcesPlugin.getWorkspace().getRoot().getProject(PROJ1)
 				.getFile(new Path("folder/test.txt"));
 		if (file.exists()) {
-			byte[] bytes = IO.readFully(file.getLocation().toFile());
+			byte[] bytes = new byte[0];
+			InputStream is = null;
+			try {
+				is = file.getContents();
+				bytes = new byte[is.available()];
+				is.read(bytes);
+			} finally {
+				if (is != null)
+					is.close();
+			}
 			return new String(bytes, file.getCharset());
 		} else {
 			return "";

@@ -57,7 +57,7 @@ public class GitModelCacheTree extends GitModelTree {
 			GitModelCacheTree cacheEntry = (GitModelCacheTree) cacheTreeMap
 					.get(pathKey);
 			if (cacheEntry == null) {
-				cacheEntry = new GitModelCacheTree(this, baseCommit, repoId,
+				cacheEntry = new GitModelCacheTree(this, remoteCommit, repoId,
 						cacheId, pathKey, factory);
 				cacheTreeMap.put(pathKey, cacheEntry);
 			}
@@ -65,7 +65,7 @@ public class GitModelCacheTree extends GitModelTree {
 					path.substring(path.indexOf('/') + 1));
 		} else
 			cacheTreeMap.put(pathKey, factory.createFileModel(this,
-					baseCommit, repoId, cacheId, pathKey));
+					remoteCommit, repoId, cacheId, pathKey));
 	}
 
 	@Override
