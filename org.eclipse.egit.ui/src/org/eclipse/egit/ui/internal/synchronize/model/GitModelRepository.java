@@ -204,6 +204,7 @@ public class GitModelRepository extends GitModelObject {
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);
 		}
+
 		return result;
 	}
 
