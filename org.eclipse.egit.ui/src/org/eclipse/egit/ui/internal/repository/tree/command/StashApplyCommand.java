@@ -23,7 +23,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.StashApplyOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -53,10 +53,11 @@ public class StashApplyCommand extends
 				try {
 					op.execute(monitor);
 				} catch (CoreException e) {
-					Activator.logError(
+					return new Status(IStatus.ERROR, Activator.getPluginId(),
 							MessageFormat.format(
 									UIText.StashApplyCommand_applyFailed,
-									commit.name()), e);
+									commit.abbreviate(7).name(),
+									e.getLocalizedMessage()), e);
 				}
 				return Status.OK_STATUS;
 			}

@@ -12,7 +12,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.project.GitProjectData;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.ui.IWorkbench;
@@ -31,7 +31,7 @@ public class WindowCachePreferencePage extends FieldEditorPreferencePage
 		super(GRID);
 		setTitle(UIText.WindowCachePreferencePage_title);
 		ScopedPreferenceStore store = new ScopedPreferenceStore(
-				new InstanceScope(), Activator.getPluginId());
+				InstanceScope.INSTANCE, Activator.getPluginId());
 		setPreferenceStore(store);
 	}
 

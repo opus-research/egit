@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2012, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2012, 2013 Matthias Sohn <matthias.sohn@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,8 +8,11 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.util;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -20,13 +23,18 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.test.GitTestCase;
+import org.eclipse.egit.core.test.TestProject;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.After;
@@ -37,6 +45,8 @@ public class ProjectUtilTest extends GitTestCase {
 
 	private TestRepository repository;
 
+	private TestProject project2;
+
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -46,6 +56,8 @@ public class ProjectUtilTest extends GitTestCase {
 	@After
 	public void tearDown() throws Exception {
 		super.tearDown();
+		if (project2 != null)
+			project2.dispose();
 	}
 
 	@Test
@@ -55,6 +67,115 @@ public class ProjectUtilTest extends GitTestCase {
 		assertEquals(1, projects.length);
 		IProject p = projects[0];
 		assertEquals("Project-1", p.getDescription().getName());
+	}
+
+	@Test
+	public void testGetProjectsContains() throws Exception {
+		TestProject prj2 = new TestProject(true, "Project-1-sub");
+
+		try {
+			repository.createFile(project.getProject(), "xxx");
+			repository.createFile(project.getProject(), "zzz");
+			repository.createFile(prj2.getProject(), "zzz");
+
+			project.getProject().refreshLocal(IResource.DEPTH_INFINITE, null);
+			prj2.getProject().refreshLocal(IResource.DEPTH_INFINITE, null);
+
+			IProject[] projectsContaining = ProjectUtil.getProjectsContaining(
+					repository.getRepository(),
+					Collections.singleton("Project-1/xxx"));
+			IProject[] projectsEmpty = ProjectUtil.getProjectsContaining(
+					repository.getRepository(), Collections.singleton("yyy"));
+			IProject[] projectSelf = ProjectUtil.getProjectsContaining(
+					repository.getRepository(),
+					Collections.singleton("Project-1"));
+			Set<String> files = new TreeSet<String>();
+			files.add("Project-1/xxx");
+			files.add("Project-1/zzz");
+			IProject[] multiFile = ProjectUtil.getProjectsContaining(
+					repository.getRepository(), files);
+
+			files.clear();
+			files.add("Project-1/xxx");
+			files.add("Project-1-sub/zzz");
+			IProject[] multiProject = ProjectUtil.getProjectsContaining(
+					repository.getRepository(), files);
+			IProject[] nonExistProject = ProjectUtil.getProjectsContaining(
+					repository.getRepository(),
+					Collections.singleton("Project-2"));
+
+			assertEquals(1, projectsContaining.length);
+			assertEquals(0, projectsEmpty.length);
+			assertEquals(1, projectSelf.length);
+			assertEquals(1, multiFile.length);
+			assertEquals(2, multiProject.length);
+			assertEquals(0, nonExistProject.length);
+
+			IProject p = projectsContaining[0];
+			assertEquals("Project-1", p.getDescription().getName());
+		} finally {
+			prj2.dispose();
+		}
+	}
+
+	@Test
+	public void testGetNestedProjectsContains() throws Exception {
+		TestProject prj2 = new TestProject(true, "Project-1/dir/Project-1-sub");
+
+		try {
+			repository.createFile(project.getProject(), "xxx");
+			repository.createFile(project.getProject(), "zzz");
+			repository.createFile(prj2.getProject(), "zzz");
+
+			project.getProject().refreshLocal(IResource.DEPTH_INFINITE, null);
+			prj2.getProject().refreshLocal(IResource.DEPTH_INFINITE, null);
+
+			IProject[] projectsContaining = ProjectUtil.getProjectsContaining(
+					repository.getRepository(),
+					Collections.singleton("Project-1/xxx"));
+			IProject[] projectsEmpty = ProjectUtil.getProjectsContaining(
+					repository.getRepository(), Collections.singleton("yyy"));
+			IProject[] projectSelf = ProjectUtil.getProjectsContaining(
+					repository.getRepository(),
+					Collections.singleton("Project-1"));
+			Set<String> files = new TreeSet<String>();
+			files.add("Project-1/xxx");
+			files.add("Project-1/zzz");
+			IProject[] multiFile = ProjectUtil.getProjectsContaining(
+					repository.getRepository(), files);
+
+			files.clear();
+			files.add("Project-1/dir/Project-1-sub/zzz");
+			files.add("Project-1/xxx");
+			IProject[] multiProject = ProjectUtil.getProjectsContaining(
+					repository.getRepository(), files);
+			IProject[] nonExistProject = ProjectUtil.getProjectsContaining(
+					repository.getRepository(),
+					Collections.singleton("Project-2"));
+
+			assertEquals(1, projectsContaining.length);
+			assertEquals(0, projectsEmpty.length);
+			assertEquals(1, projectSelf.length);
+			assertEquals(1, multiFile.length);
+			assertEquals(2, multiProject.length);
+			assertEquals(0, nonExistProject.length);
+
+			IProject p = projectsContaining[0];
+			assertEquals("Project-1", p.getDescription().getName());
+		} finally {
+			prj2.dispose();
+		}
+	}
+
+	@Test
+	public void testFindContainer() throws Exception {
+		File tmp = new File("/tmp/file");
+		File test1 = new File(project.getProject().getLocation().toFile(), "xxx");
+		File test2 = new File(repository.getRepository().getWorkTree(), "xxx");
+
+		assertNull(ProjectUtil.findProjectOrWorkspaceRoot(tmp));
+		assertEquals(project.getProject(), ProjectUtil.findProjectOrWorkspaceRoot(test1));
+		assertEquals(ResourcesPlugin.getWorkspace().getRoot(), ProjectUtil.findProjectOrWorkspaceRoot(test2));
 	}
 
 	@Test
@@ -120,13 +241,13 @@ public class ProjectUtilTest extends GitTestCase {
 	public void testFindProjectFiles() {
 		Collection<File> files = new ArrayList<File>();
 		assertTrue(ProjectUtil.findProjectFiles(files, gitDir.getParentFile(),
-				null, new NullProgressMonitor()));
+				true, new NullProgressMonitor()));
 	}
 
 	@Test
 	public void testFindProjectFilesNullDir() {
 		Collection<File> files = new ArrayList<File>();
-		assertFalse(ProjectUtil.findProjectFiles(files, null, null,
+		assertFalse(ProjectUtil.findProjectFiles(files, null, true,
 				new NullProgressMonitor()));
 	}
 
@@ -136,8 +257,33 @@ public class ProjectUtilTest extends GitTestCase {
 		File dir = new File(gitDir.getParentFile().getPath() + File.separator
 				+ "xxx");
 		FileUtils.mkdir(dir);
-		assertFalse(ProjectUtil.findProjectFiles(files, dir, null,
+		assertFalse(ProjectUtil.findProjectFiles(files, dir, true,
 				new NullProgressMonitor()));
 	}
 
+	@Test
+	public void testFindProjectFilesNested() throws Exception {
+		project2 = new TestProject(true, "Project-1/Project-Nested");
+		File workingDir = gitDir.getParentFile();
+
+		Collection<File> nestedResult = new ArrayList<File>();
+		boolean nestedFound = ProjectUtil.findProjectFiles(nestedResult,
+				workingDir, true,
+				new NullProgressMonitor());
+
+		assertTrue("Expected to find projects", nestedFound);
+		assertEquals(2, nestedResult.size());
+		assertThat(nestedResult, hasItem(new File(workingDir,
+				"Project-1/.project")));
+		assertThat(nestedResult, hasItem(new File(workingDir,
+				"Project-1/Project-Nested/.project")));
+
+		Collection<File> noNestedResult = new ArrayList<File>();
+		boolean noNestedFound = ProjectUtil.findProjectFiles(noNestedResult,
+				workingDir, false, new NullProgressMonitor());
+		assertTrue("Expected to find projects", noNestedFound);
+		assertEquals(1, noNestedResult.size());
+		assertThat(noNestedResult, hasItem(new File(workingDir,
+				"Project-1/.project")));
+	}
 }

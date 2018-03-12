@@ -4,6 +4,9 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Shunichi Fuji <palglowr@gmail.com>
  * Copyright (C) 2008, Google Inc.
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
+ * Copyright (C) 2013, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -203,13 +206,15 @@ public class RepositoryMapping {
 	 * bother.
 	 *
 	 * @param rsrc
-	 * @return the path relative to the Git repository, including base name.
-	 *         <code>null</code> if the path cannot be determined.
+	 * @return the path relative to the Git repository, including base name. An
+	 *         empty string (<code>""</code>) if passed resource corresponds to
+	 *         working directory (root). <code>null</code> if the path cannot be
+	 *         determined.
 	 */
 	public String getRepoRelativePath(final IResource rsrc) {
 		IPath location = rsrc.getLocation();
 		if (location == null)
-			location = rsrc.getFullPath();
+			return null;
 		return getRepoRelativePath(location);
 	}
 
@@ -220,8 +225,10 @@ public class RepositoryMapping {
 	 * bother.
 	 *
 	 * @param location
-	 * @return the path relative to the Git repository, including base name.
-	 *         <code>null</code> if the path cannot be determined.
+	 * @return the path relative to the Git repository, including base name. An
+	 *         empty string (<code>""</code>) if passed location corresponds to
+	 *         working directory (root). <code>null</code> if the path cannot be
+	 *         determined.
 	 */
 	public String getRepoRelativePath(IPath location) {
 		final int pfxLen = workdirPrefix.length();
@@ -235,15 +242,20 @@ public class RepositoryMapping {
 	}
 
 	/**
-	 * Get the repository mapping for a resource
+	 * Get the repository mapping for a resource. If the given resource is a
+	 * linked resource, the raw location of the resource will be used to
+	 * determine a repository mapping.
 	 *
 	 * @param resource
-	 * @return the RepositoryMapping for this resource,
-	 *         or null for non GitProvider.
+	 * @return the RepositoryMapping for this resource, or null for non
+	 *         GitProvider.
 	 */
 	public static RepositoryMapping getMapping(final IResource resource) {
 		if (isNonWorkspace(resource))
-			return getMappingForNonWorkspaceResource(resource);
+			return null;
+
+		if (resource.isLinked(IResource.CHECK_ANCESTORS))
+			return getMapping(resource.getLocation());
 
 		IProject project = resource.getProject();
 		if (project == null)
@@ -267,9 +279,11 @@ public class RepositoryMapping {
 	 *         or null for non GitProvider.
 	 */
 	public static RepositoryMapping getMapping(IPath path) {
-		IPath fullPath = path.removeLastSegments(1);
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
+
+		IPath bestWorkingTree = null;
+		RepositoryMapping bestMapping = null;
 
 		for (IProject project : projects) {
 			if (isNonWorkspace(project))
@@ -278,15 +292,18 @@ public class RepositoryMapping {
 			if (mapping == null)
 				continue;
 
-			Path workingTree = new Path(mapping.getWorkTree().toString());
-			IPath relative = fullPath.makeRelativeTo(workingTree);
-			String firstSegment = relative.segment(0);
-
-			if (firstSegment == null || !"..".equals(firstSegment)) //$NON-NLS-1$
-				return mapping;
+			IPath workingTree = new Path(mapping.getWorkTree().toString());
+			if (workingTree.isPrefixOf(path)) {
+				if (bestWorkingTree == null
+						|| workingTree.segmentCount() > bestWorkingTree
+								.segmentCount()) {
+					bestWorkingTree = workingTree;
+					bestMapping = mapping;
+				}
+			}
 		}
 
-		return null;
+		return bestMapping;
 	}
 
 	/**
@@ -319,17 +336,15 @@ public class RepositoryMapping {
 	 */
 	public synchronized IPath getGitDirAbsolutePath() {
 		if (gitDirAbsolutePath == null) {
-			if (container != null) {
+			IPath p = getGitDirPath();
+			if (p.isAbsolute())
+				gitDirAbsolutePath = p;
+			else if (container != null) {
 				IPath cloc = container.getLocation();
 				if (cloc != null)
-					gitDirAbsolutePath = cloc.append(getGitDirPath());
+					gitDirAbsolutePath = cloc.append(p);
 			}
 		}
 		return gitDirAbsolutePath;
-	}
-
-	private static RepositoryMapping getMappingForNonWorkspaceResource(
-			final IResource resource) {
-		return getMapping(resource.getFullPath());
 	}
 }

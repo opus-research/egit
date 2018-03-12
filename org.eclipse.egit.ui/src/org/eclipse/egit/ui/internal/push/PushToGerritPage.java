@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012 SAP AG.
+ * Copyright (c) 2012, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -26,12 +26,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.bindings.keys.KeyStroke;
-import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
@@ -57,6 +56,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.IWorkbenchCommandConstants;
 
 /**
  * Push the current HEAD to Gerrit
@@ -77,6 +77,8 @@ class PushToGerritPage extends WizardPage {
 	private final String lastBranchKey;
 
 	private Combo uriCombo;
+
+	private Combo prefixCombo;
 
 	private Label branchTextlabel;
 
@@ -121,9 +123,10 @@ class PushToGerritPage extends WizardPage {
 		branchTextlabel = new Label(main, SWT.NONE);
 
 		// we visualize the prefix here
-		Text prefix = new Text(main, SWT.NONE);
-		prefix.setText("refs/for/"); //$NON-NLS-1$
-		prefix.setEnabled(false);
+		prefixCombo = new Combo(main, SWT.READ_ONLY | SWT.DROP_DOWN);
+		prefixCombo.add(GerritUtil.REFS_FOR);
+		prefixCombo.add("refs/drafts/"); //$NON-NLS-1$
+		prefixCombo.select(0);
 
 		branchTextlabel.setText(UIText.PushToGerritPage_BranchLabel);
 		branchText = new Text(main, SWT.SINGLE | SWT.BORDER);
@@ -211,18 +214,16 @@ class PushToGerritPage extends WizardPage {
 
 	void doPush(IProgressMonitor monitor) {
 		try {
-			int timeout = Activator.getDefault().getPreferenceStore()
-					.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			URIish uri = new URIish(uriCombo.getText());
 			Ref currentHead = repository.getRef(Constants.HEAD);
 			RemoteRefUpdate update = new RemoteRefUpdate(repository,
-					currentHead,
-					"refs/for/" + branchText.getText(), false, null, null); //$NON-NLS-1$
+					currentHead, prefixCombo.getItem(prefixCombo
+							.getSelectionIndex()) + branchText.getText(),
+					false, null, null);
 			PushOperationSpecification spec = new PushOperationSpecification();
 
 			spec.addURIRefUpdates(uri, Arrays.asList(update));
-			PushOperationUI op = new PushOperationUI(repository, spec, timeout,
-					false);
+			PushOperationUI op = new PushOperationUI(repository, spec, false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
 			PushOperationResult result = op.execute(monitor);
 			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
@@ -241,16 +242,12 @@ class PushToGerritPage extends WizardPage {
 	}
 
 	private void addRefContentProposalToText(final Text textField) {
-		KeyStroke stroke;
-		try {
-			stroke = KeyStroke.getInstance("CTRL+SPACE"); //$NON-NLS-1$
+		KeyStroke stroke = UIUtils
+				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
+		if (stroke != null)
 			UIUtils.addBulbDecorator(textField, NLS.bind(
 					UIText.PushToGerritPage_ContentProposalHoverText,
 					stroke.format()));
-		} catch (ParseException e1) {
-			Activator.handleError(e1.getMessage(), e1, false);
-			stroke = null;
-		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			public IContentProposal[] getProposals(String contents, int position) {

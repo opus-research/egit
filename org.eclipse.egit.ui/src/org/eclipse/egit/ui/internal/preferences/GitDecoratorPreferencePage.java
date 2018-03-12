@@ -24,9 +24,9 @@ import java.util.Observer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.SWTUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.decorators.DecorationResult;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
@@ -799,8 +799,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private class ChangeSetPreview extends Preview
-			implements Observer, ITreeContentProvider {
+	private class ChangeSetPreview extends Preview implements
+			ITreeContentProvider {
 
 		public ChangeSetPreview(Composite composite) {
 			super(composite);

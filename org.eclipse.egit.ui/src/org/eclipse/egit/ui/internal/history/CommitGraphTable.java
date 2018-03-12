@@ -5,7 +5,7 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011-2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012-2013, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -17,8 +17,9 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,10 +35,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -62,6 +64,7 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -69,6 +72,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -428,24 +432,24 @@ class CommitGraphTable {
 		} finally {
 			gc.dispose();
 		}
-		layout.addColumnData(new ColumnWeightData(3, minWidth, true));
+		layout.addColumnData(new ColumnWeightData(1, minWidth, true));
 
 		final TableColumn graph = new TableColumn(rawTable, SWT.NONE);
 		graph.setResizable(true);
 		graph.setText(UIText.CommitGraphTable_messageColumn);
-		graph.setWidth(250);
+		graph.setWidth(400);
 		layout.addColumnData(new ColumnWeightData(20, true));
 
 		final TableColumn author = new TableColumn(rawTable, SWT.NONE);
 		author.setResizable(true);
 		author.setText(UIText.HistoryPage_authorColumn);
-		author.setWidth(250);
-		layout.addColumnData(new ColumnWeightData(10, true));
+		author.setWidth(100);
+		layout.addColumnData(new ColumnWeightData(5, true));
 
 		final TableColumn date = new TableColumn(rawTable, SWT.NONE);
 		date.setResizable(true);
 		date.setText(UIText.HistoryPage_authorDateColumn);
-		date.setWidth(250);
+		date.setWidth(100);
 		layout.addColumnData(new ColumnWeightData(5, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
@@ -595,10 +599,19 @@ class CommitGraphTable {
 		}
 
 		private String getHoverText(Ref r) {
+			StringBuilder sb = new StringBuilder();
 			String name = r.getName();
-			if (r.isSymbolic())
-				name += ": " + r.getLeaf().getName(); //$NON-NLS-1$
-			return name;
+			sb.append(name);
+			if (r.isSymbolic()) {
+				sb.append(": "); //$NON-NLS-1$
+				sb.append(r.getLeaf().getName());
+			}
+			String description = GitLabelProvider.getRefDescription(r);
+			if (description != null) {
+				sb.append("\n"); //$NON-NLS-1$
+				sb.append(description);
+			}
+			return sb.toString();
 		}
 	}
 
@@ -690,7 +703,8 @@ class CommitGraphTable {
 
 		private void writeToFile(final String fileName, String content)
 				throws IOException {
-			Writer output = new BufferedWriter(new FileWriter(fileName));
+			Writer output = new BufferedWriter(new OutputStreamWriter(
+					new FileOutputStream(fileName), RawParseUtils.UTF8_CHARSET));
 			try {
 				output.write(content);
 			} finally {
@@ -764,9 +778,18 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.CHECKOUT,
-						UIText.GitHistoryPage_CheckoutMenuLabel));
+				if (!input.getRepository().isBare()) {
+					if (hasMultipleRefNodes()) {
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CHECKOUT,
+								UIText.GitHistoryPage_CheckoutMenuLabel2));
+					} else {
+						popupMgr.add(getCommandContributionItem(
+								HistoryViewCommands.CHECKOUT,
+								UIText.GitHistoryPage_CheckoutMenuLabel));
+					}
+				}
+
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.PUSH_COMMIT,
 						UIText.GitHistoryPage_pushCommit));
@@ -799,6 +822,9 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.REBASECURRENT,
 						UIText.GitHistoryPage_rebaseMenuItem));
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.REBASE_INTERACTIVE_CURRENT,
+						UIText.GitHistoryPage_rebaseInteractiveMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(
@@ -861,6 +887,25 @@ class CommitGraphTable {
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
 			popupMgr.add(new Separator());
+		}
+
+		private boolean hasMultipleRefNodes() {
+			try {
+				Map<String, Ref> branches = input.getRepository()
+						.getRefDatabase().getRefs(Constants.R_HEADS);
+				int count = 0;
+				for (Ref branch : branches.values()) {
+					if (branch.getLeaf().getObjectId()
+							.equals(((RevCommit) ((IStructuredSelection) selectionProvider
+									.getSelection()).getFirstElement()).getId()))
+						count++;
+				}
+				return (count > 1);
+
+			} catch (IOException e) {
+				// ignore here
+			}
+			return false;
 		}
 
 		private CommandContributionItem getCommandContributionItem(

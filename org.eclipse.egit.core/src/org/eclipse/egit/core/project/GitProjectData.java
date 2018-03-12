@@ -40,18 +40,18 @@ import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.WindowCache;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.team.core.TeamException;
 
 /**
  * This class keeps information about how a project is mapped to
@@ -192,7 +192,9 @@ public class GitProjectData {
 
 	/**
 	 * @param p
-	 * @return {@link GitProjectData} for the specified project
+	 * @return {@link GitProjectData} for the specified project, or null if the
+	 *         Git provider is not associated with the project or an exception
+	 *         occurred
 	 */
 	public synchronized static GitProjectData get(final IProject p) {
 		try {
@@ -269,14 +271,14 @@ public class GitProjectData {
 	 */
 	public static void reconfigureWindowCache() {
 		final WindowCacheConfig c = new WindowCacheConfig();
-		IEclipsePreferences d = new DefaultScope().getNode(Activator.getPluginId());
-		IEclipsePreferences p = new InstanceScope().getNode(Activator.getPluginId());
+		IEclipsePreferences d = DefaultScope.INSTANCE.getNode(Activator.getPluginId());
+		IEclipsePreferences p = InstanceScope.INSTANCE.getNode(Activator.getPluginId());
 		c.setPackedGitLimit(p.getInt(GitCorePreferences.core_packedGitLimit, d.getInt(GitCorePreferences.core_packedGitLimit, 0)));
 		c.setPackedGitWindowSize(p.getInt(GitCorePreferences.core_packedGitWindowSize, d.getInt(GitCorePreferences.core_packedGitWindowSize, 0)));
 		c.setPackedGitMMAP(p.getBoolean(GitCorePreferences.core_packedGitMMAP, d.getBoolean(GitCorePreferences.core_packedGitMMAP, false)));
 		c.setDeltaBaseCacheLimit(p.getInt(GitCorePreferences.core_deltaBaseCacheLimit, d.getInt(GitCorePreferences.core_deltaBaseCacheLimit, 0)));
 		c.setStreamFileThreshold(p.getInt(GitCorePreferences.core_streamFileThreshold, d.getInt(GitCorePreferences.core_streamFileThreshold, 0)));
-		WindowCache.reconfigure(c);
+		c.install();
 	}
 
 	private final IProject project;
@@ -485,16 +487,14 @@ public class GitProjectData {
 		}
 
 		if (c == null) {
-			logGoneMappedResource(m);
-			m.clear();
+			logAndUnmapGoneMappedResource(m);
 			return;
 		}
 		m.setContainer(c);
 
-		git = c.getLocation().append(m.getGitDirPath()).toFile();
+		git = m.getGitDirAbsolutePath().toFile();
 		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
-			logGoneMappedResource(m);
-			m.clear();
+			logAndUnmapGoneMappedResource(m);
 			return;
 		}
 
@@ -502,8 +502,7 @@ public class GitProjectData {
 			m.setRepository(Activator.getDefault().getRepositoryCache()
 					.lookupRepository(git));
 		} catch (IOException ioe) {
-			logGoneMappedResource(m);
-			m.clear();
+			logAndUnmapGoneMappedResource(m);
 			return;
 		}
 
@@ -526,10 +525,16 @@ public class GitProjectData {
 		}
 	}
 
-	private void logGoneMappedResource(final RepositoryMapping m) {
+	private void logAndUnmapGoneMappedResource(final RepositoryMapping m) {
 		Activator.logError(MessageFormat.format(
 				CoreText.GitProjectData_mappedResourceGone, m.toString()),
 				new FileNotFoundException(m.getContainerPath().toString()));
+		m.clear();
+		try {
+			RepositoryProvider.unmap(getProject());
+		} catch (TeamException e) {
+			Activator.logError(CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
+		}
 	}
 
 	private void protect(IResource resource) {
@@ -537,6 +542,14 @@ public class GitProjectData {
 		while (c != null && !c.equals(getProject())) {
 			trace("protect " + c);  //$NON-NLS-1$
 			protectedResources.add(c);
+			try {
+				c.setTeamPrivateMember(true);
+			} catch (CoreException e) {
+				Activator.logError(MessageFormat.format(
+						CoreText.GitProjectData_FailedToMarkTeamPrivate,
+						c.getFullPath()),
+						e);
+			}
 			c = c.getParent();
 		}
 	}

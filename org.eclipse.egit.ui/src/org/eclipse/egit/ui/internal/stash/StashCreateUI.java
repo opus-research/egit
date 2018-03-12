@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2012 GitHub Inc.
+ *  Copyright (c) 2012, 2013 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -19,34 +19,38 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.StashCreateOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 
 /**
 * The UI wrapper for {@link StashCreateOperation} */
 public class StashCreateUI {
 
 	private Repository repo;
-	private Shell shell;
 
 	/**
-	 * @param shell
 	 * @param repo
 	 */
-	public StashCreateUI(Shell shell, Repository repo) {
-		this.shell = shell;
+	public StashCreateUI(Repository repo) {
 		this.repo = repo;
 	}
 
 	/**
+	 * @param shell
+	 *            the shell to use for showing the message input dialog
 	 * @return true if a stash create operation was triggered
 	 */
-	public boolean createStash() {
+	public boolean createStash(Shell shell) {
+		if (!UIUtils.saveAllEditors(repo))
+			return false;
 		InputDialog commitMessageDialog = new InputDialog(shell,
 				UIText.StashCreateCommand_titleEnterCommitMessage,
 				UIText.StashCreateCommand_messageEnterCommitMessage,
@@ -89,10 +93,12 @@ public class StashCreateUI {
 
 	}
 
-	private void showNoChangesToStash() {
-		shell.getDisplay().asyncExec(new Runnable() {
+	private static void showNoChangesToStash() {
+		Display.getDefault().asyncExec(new Runnable() {
 
 			public void run() {
+				Shell shell = PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow().getShell();
 				MessageDialog.openInformation(shell,
 						UIText.StashCreateCommand_titleNoChanges,
 						UIText.StashCreateCommand_messageNoChanges);

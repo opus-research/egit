@@ -26,9 +26,9 @@ public class CreateBranchPageTest {
 	@Test
 	public void computeTargetName() {
 		assertNull(getProposedTargetName(null));
-		assertNull(getProposedTargetName(""));
+		assertEquals("", getProposedTargetName(""));
 		assertEquals("a/b", getProposedTargetName(R_REMOTES + "origin/a/b"));
 		assertEquals("r1", getProposedTargetName(R_REMOTES + "review/r1"));
-		assertEquals("v1", getProposedTargetName(R_TAGS + "v1"));
+		assertEquals("v1-branch", getProposedTargetName(R_TAGS + "v1"));
 	}
 }

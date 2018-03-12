@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -14,18 +14,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -33,7 +33,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,16 +43,16 @@ import org.junit.runner.RunWith;
 public class GitRepositoriesViewFetchAndPushTest extends
 		GitRepositoriesViewTestBase {
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
-	private static File remoteRepositoryFile;
+	private File remoteRepositoryFile;
 
-	private static File clonedRepositoryFile;
+	private File clonedRepositoryFile;
 
-	private static File clonedRepositoryFile2;
+	private File clonedRepositoryFile2;
 
-	@BeforeClass
-	public static void beforeClass() throws Exception {
+	@Before
+	public void before() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		// now let's clone the remote repository
@@ -75,13 +74,11 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		op.run(null);
 
 		clonedRepositoryFile2 = new File(workdir, Constants.DOT_GIT);
-	}
 
-	@Before
-	public void before() throws Exception {
 		clearView();
 		deleteAllProjects();
 	}
+
 	@Test
 	public void testPushToOriginPushNode() throws Exception {
 		testPushToOrigin(false);
@@ -113,17 +110,15 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		selectNode(tree, useRemote, false);
 
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("SimplePushCommand"));
+		runPush(tree);
 
 		String destinationString = clonedRepositoryFile.getParentFile()
 				.getName()
 				+ " - " + "origin";
-		String dialogTitle = NLS.bind(UIText.ResultDialog_title,
+		String dialogTitle = NLS.bind(UIText.PushResultDialog_title,
 				destinationString);
 
 		// first time: expect new branch
-		TestUtil.joinJobs(JobFamilies.PUSH);
 		SWTBotShell confirmed = bot.shell(dialogTitle);
 		SWTBotTreeItem[] treeItems = confirmed.bot().tree().getAllItems();
 		boolean newBranch = false;
@@ -138,8 +133,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// second time: expect up to date
 		selectNode(tree, useRemote, false);
 
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("SimplePushCommand"));
+		runPush(tree);
 
 		confirmed = bot.shell(dialogTitle);
 		treeItems = confirmed.bot().tree().getAllItems();
@@ -160,8 +154,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		selectNode(tree, useRemote, false);
 
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("SimplePushCommand"));
+		runPush(tree);
 
 		confirmed = bot.shell(dialogTitle);
 		treeItems = confirmed.bot().tree().getAllItems();
@@ -192,7 +185,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile2);
 
-		FileRepository repository = lookupRepository(clonedRepositoryFile2);
+		Repository repository = lookupRepository(clonedRepositoryFile2);
 		// add the configuration for push from cloned2
 		repository.getConfig().setString("remote", "origin", "push",
 				"refs/heads/*:refs/heads/*");
@@ -207,8 +200,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				destinationString);
 
 		selectNode(tree, useRemote, true);
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("SimpleFetchCommand"));
+		runFetch(tree);
 
 		SWTBotShell confirm = bot.shell(dialogTitle);
 		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
@@ -222,10 +214,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		objid = objid.substring(0, 7);
 		touchAndSubmit(null);
 		// push from other repository
-		PushOperationUI op =new PushOperationUI(repository, "origin", 0, false);
+		PushOperationUI op =new PushOperationUI(repository, "origin", false);
 		op.start();
 
-		String pushdialogTitle = NLS.bind(UIText.ResultDialog_title,
+		String pushdialogTitle = NLS.bind(UIText.PushResultDialog_title,
 				op.getDestinationString());
 
 		bot.shell(pushdialogTitle).close();
@@ -235,10 +227,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		refreshAndWait();
 
 		selectNode(tree, useRemote, true);
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("SimpleFetchCommand"));
+		runFetch(tree);
 
-		TestUtil.joinJobs(JobFamilies.FETCH);
 		confirm = bot.shell(dialogTitle);
 		SWTBotTreeItem[] treeItems = confirm.bot().tree().getAllItems();
 		boolean found = false;
@@ -251,8 +241,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		confirm.close();
 
 		selectNode(tree, useRemote, true);
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("SimpleFetchCommand"));
+		runFetch(tree);
 
 		confirm = bot.shell(dialogTitle);
 		assertEquals("Wrong result tree row count", 0, confirm.bot().tree()
@@ -268,5 +257,19 @@ public class GitRepositoriesViewFetchAndPushTest extends
 			myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand()
 					.getNode("origin").expand().getNode(fetchMode ? 0 : 1)
 					.select();
+	}
+
+	private void runPush(SWTBotTree tree) {
+		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.PUSH, 60, TimeUnit.SECONDS);
+		ContextMenuHelper.clickContextMenuSync(tree, myUtil
+				.getPluginLocalizedValue("SimplePushCommand"));
+		jobJoiner.join();
+	}
+
+	private void runFetch(SWTBotTree tree) {
+		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.FETCH, 60, TimeUnit.SECONDS);
+		ContextMenuHelper.clickContextMenuSync(tree, myUtil
+				.getPluginLocalizedValue("SimpleFetchCommand"));
+		jobJoiner.join();
 	}
 }
