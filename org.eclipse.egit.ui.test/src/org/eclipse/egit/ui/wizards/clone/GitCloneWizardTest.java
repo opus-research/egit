@@ -43,7 +43,7 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 			throws Exception {
 
 		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard.openRepoPropertiesPage();
+		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
 
 		propertiesPage.setURI("git://www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT", "git",
@@ -177,25 +177,23 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 				.getRoot().getLocation().toFile(), "test1");
 
 		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard.openRepoPropertiesPage();
+		RepoPropertiesPage propertiesPage = importWizard.openCloneWizard();
 
 		RepoRemoteBranchesPage remoteBranches = propertiesPage
 				.nextToRemoteBranches(r.getUri());
 
 		cloneRepo(destRepo, remoteBranches);
-		bot.button("Cancel").click();
 	}
 
 	@Test
-	public void clonedRepositoryShouldExistOnFileSystem() throws Exception {
+	public void clonedRepositoryShouldExistOnFileSystem() {
 		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches(r.getUri());
 		remoteBranches.assertRemoteBranches(SampleTestRepository.FIX, Constants.MASTER);
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
 		workingCopy.assertWorkingCopyExists();
-		bot.button("Cancel").click();
 	}
 
 	@Test
@@ -204,7 +202,7 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 				.getRoot().getLocation().toFile(), "test2");
 
 		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches(r.getUri());
 		remoteBranches.deselectAllBranches();
@@ -236,13 +234,12 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 		assertNotNull(repository.resolve(Constants.R_TAGS + SampleTestRepository.v2_0_name).name());
 		// lots of refs
 		assertTrue(repository.getAllRefs().size() >= 4);
-		bot.button("Cancel").click();
 	}
 
 	@Test
 	public void invalidHostnameFreezesDialog() throws Exception {
 		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://no.example.com/EGIT");
 		remoteBranches.assertErrorMessage(NLS.bind(
@@ -256,12 +253,13 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 	@Test
 	public void invalidPortFreezesDialog() throws Exception {
 		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://localhost:80/EGIT");
-		remoteBranches
-				.assertErrorMessage("Exception caught during execution of ls-remote command:\n"
-						+ "git://localhost:80/EGIT: Connection refused");
+		remoteBranches.assertErrorMessage(NLS.bind(
+				UIText.SourceBranchPage_CompositeTransportErrorMessage,
+				"Exception caught during execution of ls-remote command",
+				"git://localhost:80/EGIT: Connection refused"));
 		remoteBranches.assertCannotProceed();
 		remoteBranches.cancel();
 	}
@@ -271,11 +269,11 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 	@Ignore
 	public void timeoutToASocketFreezesDialog() throws Exception {
 		importWizard.openWizard();
-		RepoPropertiesPage repoProperties = importWizard.openRepoPropertiesPage();
+		RepoPropertiesPage repoProperties = importWizard.openCloneWizard();
 		RepoRemoteBranchesPage remoteBranches = repoProperties
 				.nextToRemoteBranches("git://www.example.com/EGIT");
 		remoteBranches
-				.assertErrorMessage("git://www.example.com/EGIT: unknown host");
+				.assertErrorMessage("git://www.example.com/EGIT: Connection timed out");
 		remoteBranches.assertCannotProceed();
 		remoteBranches.cancel();
 	}
