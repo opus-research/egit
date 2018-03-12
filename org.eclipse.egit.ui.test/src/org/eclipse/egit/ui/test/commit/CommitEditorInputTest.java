@@ -30,8 +30,6 @@ import org.junit.Test;
 
 /**
  * Unit tests for {@link CommitEditorInput}
- * 
- * @author Kevin Sawicki (kevin@github.com)
  */
 public class CommitEditorInputTest extends LocalRepositoryTestCase {
 
@@ -81,8 +79,6 @@ public class CommitEditorInputTest extends LocalRepositoryTestCase {
 		assertNotNull(input.getImageDescriptor());
 		assertNotNull(input.getToolTipText());
 		assertNotNull(input.getName());
-		assertEquals(repoCommit, input.getCommit());
-		assertNotNull(input.getPersistable());
 	}
 
 }
