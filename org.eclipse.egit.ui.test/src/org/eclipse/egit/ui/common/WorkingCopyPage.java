@@ -40,7 +40,6 @@ public class WorkingCopyPage {
 	public void waitForCreate() {
 		bot.button("Finish").click();
 
-		// TODO: pass the repo url in via the constructor from the first page.
 		SWTBotShell shell = bot.shell("Cloning from " + cloneUrl);
 
 		// This is not a performance test. Allow lots of time to complete
