@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -21,18 +20,15 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.RebaseOperation;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.rebase.RebaseResultDialog;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * Rebase command base class
@@ -58,17 +54,10 @@ public abstract class AbstractRebaseCommand extends
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IStructuredSelection selection = (IStructuredSelection) HandlerUtil.getCurrentSelectionChecked(event);
-		Object selected = selection.getFirstElement();
 
-		final Repository repository;
-		if (selected instanceof IProject) {
-			IProject project = (IProject) selected;
-			repository = RepositoryMapping.getMapping(project).getRepository();
-		} else {
-			RepositoryTreeNode node = (RepositoryTreeNode) selected;
-			repository = node.getRepository();
-		}
+		RepositoryTreeNode node = getSelectedNodes(event).get(0);
+
+		final Repository repository = node.getRepository();
 
 		final RebaseOperation rebase = new RebaseOperation(repository,
 				this.operation);
