@@ -8,17 +8,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
@@ -42,19 +37,11 @@ import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
 
 class CommitFileDiffViewer extends TableViewer {
-	private Repository db;
-
 	private TreeWalk walker;
 
 	private Clipboard clipboard;
-
-	private boolean compareMode;
 
 	CommitFileDiffViewer(final Composite parent) {
 		super(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER
@@ -77,11 +64,8 @@ class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (walker != null && d.blobs.length <= 2)
-					if (compareMode)
-						showTwoWayFileDiff(d);
-					else
-						openFileInEditor(d);
+				if (walker != null && d.blobs.length == 2)
+					showTwoWayFileDiff(d);
 			}
 		});
 
@@ -93,41 +77,19 @@ class CommitFileDiffViewer extends TableViewer {
 		});
 	}
 
-	private void openFileInEditor(FileDiff d) {
-		try {
-			IWorkbenchWindow window = PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow();
-			IWorkbenchPage page = window.getActivePage();
-			IFileRevision rev = CompareUtils.getFileRevision(d.path, d.commit,
-					db, d.blobs[0]);
-			EgitUiEditorUtils.openEditor(page, rev, new NullProgressMonitor());
-		} catch (IOException e) {
-			Activator.logError(UIText.GitHistoryPage_openFailed, e);
-			Activator.showError(UIText.GitHistoryPage_openFailed, null);
-		} catch (CoreException e) {
-			Activator.logError(UIText.GitHistoryPage_openFailed, e);
-			Activator.showError(UIText.GitHistoryPage_openFailed, null);
-		}
-	}
-
 	void showTwoWayFileDiff(final FileDiff d) {
 		final GitCompareFileRevisionEditorInput in;
 
+		final Repository db = walker.getRepository();
 		final String p = d.path;
 		final RevCommit c = d.commit;
 		final ITypedElement base;
 		final ITypedElement next;
 
-		if (d.blobs.length == 2) {
-			base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.blobs[0]);
-			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[1]);
-		} else {
-			// Initial import
-			base = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
-			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[0]);
-		}
+		base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.blobs[0]);
+		next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[1]);
 
-		in = new GitCompareFileRevisionEditorInput(next, base, null);
+		in = new GitCompareFileRevisionEditorInput(base, next, null);
 		CompareUI.openCompareEditor(in);
 	}
 
@@ -135,8 +97,7 @@ class CommitFileDiffViewer extends TableViewer {
 		return walker;
 	}
 
-	void setTreeWalk(Repository repository, TreeWalk walk) {
-		db = repository;
+	void setTreeWalk(final TreeWalk walk) {
 		walker = walk;
 	}
 
@@ -153,7 +114,6 @@ class CommitFileDiffViewer extends TableViewer {
 		setSelection(new StructuredSelection(el));
 	}
 
-	@SuppressWarnings("unchecked")
 	void doCopy() {
 		final ISelection s = getSelection();
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -184,9 +144,5 @@ class CommitFileDiffViewer extends TableViewer {
 		path.setText(UIText.HistoryPage_pathnameColumn);
 		path.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(20, true));
-	}
-
-	public void setCompareMode(boolean compareMode) {
-		this.compareMode = compareMode;
 	}
 }

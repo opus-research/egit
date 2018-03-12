@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
+ * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,15 +9,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import org.eclipse.egit.core.op.TrackOperation;
 
 /**
- * An action to show the history for a resource.
+ * An action to add resources to the Git repository.
+ *
+ * @see TrackOperation
  */
-public class ShowHistoryAction extends RepositoryAction {
+public class Track extends RepositoryAction {
 	/**
 	 *
 	 */
-	public ShowHistoryAction() {
-		super(ActionCommands.SHOW_HISTORY, new ShowHistoryActionHandler());
+	public Track() {
+		super(ActionCommands.TRACK_ACTION);
 	}
 }
