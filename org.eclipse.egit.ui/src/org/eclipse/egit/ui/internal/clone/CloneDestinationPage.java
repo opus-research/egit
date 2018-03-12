@@ -65,8 +65,6 @@ class CloneDestinationPage extends WizardPage {
 
 	private Text remoteText;
 
-	private Button importProjectsButton;
-
 	private String helpContext = null;
 
 	CloneDestinationPage() {
@@ -82,11 +80,6 @@ class CloneDestinationPage extends WizardPage {
 
 		createDestinationGroup(panel);
 		createConfigGroup(panel);
-
-		importProjectsButton = new Button(panel, SWT.CHECK);
-		importProjectsButton
-				.setText("Import all projects after clone finishes"); //$NON-NLS-1$
-
 		Dialog.applyDialogFont(panel);
 		setControl(panel);
 		checkPage();
@@ -214,13 +207,6 @@ class CloneDestinationPage extends WizardPage {
 
 	private static GridData createFieldGridData() {
 		return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-	}
-
-	/**
-	 * @return true to import projects, false otherwise
-	 */
-	public boolean isImportProjects() {
-		return importProjectsButton.getSelection();
 	}
 
 	/**
