@@ -187,8 +187,6 @@ class GitSyncObjectCache {
 		} else if (members != null)
 			for (GitSyncObjectCache obj : members.values())
 				obj.diffEntry.changeType = ChangeType.IN_SYNC;
-		else // we should be on leaf entry, just update the change type value
-			diffEntry.changeType = value.diffEntry.changeType;
 	}
 
 }
