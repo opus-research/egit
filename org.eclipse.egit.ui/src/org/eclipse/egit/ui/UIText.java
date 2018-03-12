@@ -38,9 +38,6 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
 
 	/** */
-	public static String AbstractRebaseCommand_DialogTitle;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -1613,15 +1610,6 @@ public class UIText extends NLS {
 	public static String ConfirmationPage_title;
 
 	/** */
-	public static String ContinueRebaseCommand_CancelDialogMessage;
-
-	/** */
-	public static String ContinueRebaseCommand_CancelDialogTitle;
-
-	/** */
-	public static String ContinueRebaseCommand_JobName;
-
-	/** */
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
@@ -2665,15 +2653,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SelectUriWiazrd_Title;
-
-	/** */
-	public static String SkipRebaseCommand_CancelDialogMessage;
-
-	/** */
-	public static String SkipRebaseCommand_CancelDialogTitle;
-
-	/** */
-	public static String SkipRebaseCommand_JobName;
 
 	/** */
 	public static String SynchronizeWithAction_localRepoName;
