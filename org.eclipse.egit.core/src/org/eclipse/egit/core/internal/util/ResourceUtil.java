@@ -58,18 +58,7 @@ public class ResourceUtil {
 		if (file != null)
 			return file;
 		IContainer[] containers = root.findContainersForLocationURI(uri);
-		int shortestContainerPath = Integer.MAX_VALUE;
-		IContainer containeeWithShortestPath = null;
-		for (IContainer container : containers) {
-			if (!container.exists())
-				continue;
-			IPath fullPath = container.getFullPath();
-			if (fullPath.segmentCount() < shortestContainerPath) {
-				shortestContainerPath = fullPath.segmentCount();
-				containeeWithShortestPath = container;
-			}
-		}
-		return containeeWithShortestPath;
+		return getExistingResourceWithShortestPath(containers);
 	}
 
 	/**
@@ -167,15 +156,21 @@ public class ResourceUtil {
 
 	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
 		IFile[] files = root.findFilesForLocationURI(uri);
+		return getExistingResourceWithShortestPath(files);
+	}
+
+	private static <T extends IResource> T getExistingResourceWithShortestPath(
+			T[] resources) {
 		int shortestPathSegmentCount = Integer.MAX_VALUE;
-		IFile shortestPath = null;
-		for (IFile file : files) {
-			IPath fullPath = file.getFullPath();
-			if (!file.exists())
+		T shortestPath = null;
+		for (T resource : resources) {
+			if (!resource.exists())
 				continue;
-			if (fullPath.segmentCount() < shortestPathSegmentCount) {
-				shortestPath = file;
-				shortestPathSegmentCount = fullPath.segmentCount();
+			IPath fullPath = resource.getFullPath();
+			int segmentCount = fullPath.segmentCount();
+			if (segmentCount < shortestPathSegmentCount) {
+				shortestPath = resource;
+				shortestPathSegmentCount = segmentCount;
 			}
 		}
 		return shortestPath;
