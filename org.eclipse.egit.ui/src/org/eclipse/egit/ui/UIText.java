@@ -1008,9 +1008,6 @@ public class UIText extends NLS {
 	public static String CompareTreeView_WorkspaceVersionText;
 
 	/** */
-	public static String CompareTreeView_ShowIn_label;
-
-	/** */
 	public static String CompareUtils_errorGettingEncoding;
 
 	/** */
@@ -2895,9 +2892,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_labelDecorationsLink;
 
 	/** */
-	public static String DecoratorPreferencesPage_colorsAndFontsLink;
-
-	/** */
 	public static String DecoratorPreferencesPage_iconsShowTracked;
 
 	/** */
@@ -3938,6 +3932,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchOnCommitHandler_SelectBranchDialogTitle;
+
+	/** */
+	public static String RepositoryStatistics_Description;
+
+	/** */
+	public static String RepositoryStatistics_LooseObjects;
+
+	/** */
+	public static String RepositoryStatistics_NrOfObjects;
+
+	/** */
+	public static String RepositoryStatistics_NrOfPackfiles;
+
+	/** */
+	public static String RepositoryStatistics_NrOfRefs;
+
+	/** */
+	public static String RepositoryStatistics_PackedObjects;
+
+	/** */
+	public static String RepositoryStatistics_SpaceNeededOnFilesystem;
 
 	/** */
 	public static String RevertFailureDialog_Message;
