@@ -1518,15 +1518,13 @@ class CommitItem implements IProblemDecoratable {
 
 class CommitViewerComparator extends ViewerComparator {
 
-	private Comparator<CommitItem> itemComparator;
-
-	public CommitViewerComparator(Comparator<CommitItem> comparator) {
-		this.itemComparator = comparator;
+	public CommitViewerComparator(Comparator comparator){
+		super(comparator);
 	}
 
 	@Override
 	public int compare(Viewer viewer, Object e1, Object e2) {
-		return itemComparator.compare((CommitItem) e1, (CommitItem) e2);
+		return getComparator().compare(e1, e2);
 	}
 
 }
