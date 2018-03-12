@@ -2374,7 +2374,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 
 		final boolean repositoryChanged = currentRepository != repository;
-		currentRepository = repository;
 
 		asyncExec(new Runnable() {
 
@@ -2411,7 +2410,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 							});
 				}
-				final StagingViewUpdate update = new StagingViewUpdate(repository, indexDiff, null);
+				final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 				Object[] unstagedExpanded = unstagedViewer
 						.getExpandedElements();
 				Object[] stagedExpanded = stagedViewer
@@ -2451,8 +2450,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private IndexDiffData doReload(final Repository repository) {
-		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator.getDefault()
-				.getIndexDiffCache().getIndexDiffCacheEntry(repository);
+		currentRepository = repository;
+
+		IndexDiffCacheEntry entry = org.eclipse.egit.core.Activator.getDefault().getIndexDiffCache().getIndexDiffCacheEntry(currentRepository);
 
 		if(cacheEntry != null && cacheEntry != entry)
 			cacheEntry.removeIndexDiffChangedListener(myIndexDiffListener);
