@@ -3500,12 +3500,6 @@ public class UIText extends NLS {
 	public static String CommitEditorInput_ToolTip;
 
 	/** */
-	public static String CommitEditorPage_JobName;
-
-	/** */
-	public static String CommitEditorPage_SectionBranchesEmpty;
-
-	/** */
 	public static String CommitEditorPage_LabelAuthor;
 
 	/** */
@@ -3522,9 +3516,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_SectionFiles;
-
-	/** */
-	public static String CommitEditorPage_SectionFilesEmpty;
 
 	/** */
 	public static String CommitEditorPage_SectionMessage;
@@ -4358,16 +4349,10 @@ public class UIText extends NLS {
 	public static String StashCreateCommand_jobTitle;
 
 	/** */
-	public static String StashCreateCommand_messageEnterCommitMessage;
-
-	/** */
 	public static String StashCreateCommand_messageNoChanges;
 
 	/** */
 	public static String StashCreateCommand_stashFailed;
-
-	/** */
-	public static String StashCreateCommand_titleEnterCommitMessage;
 
 	/** */
 	public static String StashCreateCommand_titleNoChanges;

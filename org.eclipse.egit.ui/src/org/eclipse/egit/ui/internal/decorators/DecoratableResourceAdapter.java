@@ -170,15 +170,9 @@ class DecoratableResourceAdapter extends DecoratableResource {
 	}
 
 	private boolean containsPrefixPath(Set<String> collection, String path) {
-		for (String entry : collection) {
-			String entryPath;
-			if (entry.endsWith("/")) //$NON-NLS-1$
-				entryPath = entry;
-			else
-				entryPath = entry + "/"; //$NON-NLS-1$
-			if (path.startsWith(entryPath))
+		for (String entry : collection)
+			if (path.startsWith(entry + "/")) //$NON-NLS-1$
 				return true;
-		}
 		return false;
 	}
 
