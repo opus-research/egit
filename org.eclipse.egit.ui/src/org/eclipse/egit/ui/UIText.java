@@ -445,6 +445,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_PreferencesLink;
+
+	/** */
 	public static String GitHistoryPage_ProjectType;
 
 	/** */
@@ -3081,6 +3084,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_repository;
+
+	/** */
+	public static String CommitEditor_couldNotShowRepository;
+
+	/** */
+	public static String CommitEditor_showGitRepo;
 
 	/** */
 	public static String CommitEditor_TitleHeader;
