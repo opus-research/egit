@@ -22,7 +22,7 @@
   <artifactId>org.eclipse.egit.ui</artifactId>
   <packaging>eclipse-plugin</packaging>
 
-  <name>Git Team Provider (UI)</name>
+  <name>Git Team Provider (UI) (Incubation)</name>
 
   <!-- workaround for https://issues.sonatype.org/browse/TYCHO-168 -->
   <build>
@@ -36,8 +36,8 @@
     </resources>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.tycho</groupId>
-        <artifactId>tycho-source-plugin</artifactId>
+        <groupId>org.sonatype.tycho</groupId>
+        <artifactId>maven-osgi-source-plugin</artifactId>
       </plugin>
     </plugins>
     <pluginManagement>
