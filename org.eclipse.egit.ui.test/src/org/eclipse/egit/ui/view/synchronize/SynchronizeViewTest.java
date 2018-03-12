@@ -57,7 +57,6 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
@@ -317,14 +316,9 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		// then
 		// asserts for Git Change Set model
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		bot.waitUntil(Conditions.treeHasRows(syncViewTree, syncViewTree.rowCount()), 20000);
-
 		syncViewTree.expandNode(UIText.GitModelWorkingTree_workingTree);
-		bot.waitUntil(Conditions.treeHasRows(syncViewTree, syncViewTree.rowCount()), 20000);
 		assertEquals(1, syncViewTree.getAllItems().length);
-
 		SWTBotTreeItem proj1Node = syncViewTree.getAllItems()[0];
-		bot.waitUntil(Conditions.treeHasRows(syncViewTree, syncViewTree.rowCount()), 20000);
 		proj1Node.getItems()[0].expand();
 		assertEquals(1, proj1Node.getItems()[0].getItems().length);
 
@@ -381,6 +375,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		workingTree.expand().getNode(name).doubleClick();
 
 		SWTBotEditor editor = bot.editorByTitle(name);
+		editor.setFocus();
 
 		// the WidgetNotFoundException will be thrown when widget with given content cannot be not found
 		SWTBotStyledText left = editor.bot().styledText(content);
@@ -558,7 +553,8 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 			boolean includeLocal) throws InterruptedException {
 		showDialog(projectName, "Team", "Synchronize...");
 
-		bot.shell("Synchronize repository: " + repo + File.separator + ".git");
+		bot.shell("Synchronize repository: " + repo + File.separator + ".git")
+				.activate();
 
 		if (!includeLocal)
 			bot.checkBox(
@@ -597,6 +593,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	private void createEmptyRepository() throws Exception {
 		File gitDir = new File(new File(getTestDirectory(), EMPTY_REPOSITORY),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
@@ -640,7 +637,10 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		SWTBotTreeItem folderNode = waitForNodeWithText(projNode, FOLDER);
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
-		return bot.editorByTitle(fileName);
+		SWTBotEditor editor = bot.editorByTitle(fileName);
+		editor.toTextEditor().setFocus();
+
+		return editor;
 	}
 
 	private SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {
@@ -670,7 +670,10 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		SWTBotTreeItem folderTree = waitForNodeWithText(projectTree, FOLDER);
 		waitForNodeWithText(folderTree, FILE1).doubleClick();
 
-		return bot.editorByTitle(FILE1);
+		SWTBotEditor editor = bot.editorByTitle(FILE1);
+		editor.toTextEditor().setFocus();
+
+		return editor;
 	}
 
 }

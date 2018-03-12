@@ -298,7 +298,7 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorParsingHead;
 
 	/** */
-	public static String GitHistoryPage_errorSettingStartPoints;
+	public static String GitHistoryPage_errorReadingHeadCommit;
 
 	/** */
 	public static String GitHistoryPage_FileNotInCommit;
@@ -406,7 +406,16 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_DefaultRepoFolderTooltip;
 
 	/** */
+	public static String GitPreferenceRoot_HideConfirmationGroup;
+
+	/** */
+	public static String GitPreferenceRoot_HideRebaseConfirmationField;
+
+	/** */
 	public static String GitPreferenceRoot_HistoryGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_InitialConfiguration;
 
 	/** */
 	public static String GitPreferenceRoot_MergeGroupHeader;
@@ -431,6 +440,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_ShowInitialConfigDialogCheckbox;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -641,6 +653,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
+
+	/** */
+	public static String CheckoutDialog_Message;
+
+	/** */
+	public static String CheckoutDialog_Title;
+
+	/** */
+	public static String CheckoutDialog_WindowTitle;
 
 	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
@@ -1744,6 +1765,15 @@ public class UIText extends NLS {
 	public static String ContinueRebaseCommand_JobName;
 
 	/** */
+	public static String CreateBranchDialog_DialogTitle;
+
+	/** */
+	public static String CreateBranchDialog_SelectRefMessage;
+
+	/** */
+	public static String CreateBranchDialog_WindowTitle;
+
+	/** */
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
@@ -2182,39 +2212,6 @@ public class UIText extends NLS {
 	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
-	public static String BranchSelectionDialog_TitleCheckout;
-
-	/** */
-	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
-
-	/** */
-	public static String BranchSelectionDialog_ErrorCouldNotDeleteRef;
-
-	/** */
-	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
-
-	/** */
-	public static String BranchSelectionDialog_QuestionNewBranchTitle;
-
-	/** */
-	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
-
-	/** */
-	public static String BranchSelectionDialog_NewBranch;
-
-	/** */
-	public static String BranchSelectionDialog_OkCheckout;
-
-	/** */
-	public static String BranchSelectionDialog_Refs;
-
-	/** */
-	public static String BranchSelectionDialog_Rename;
-
-	/** */
-	public static String BranchSelectionDialog_Delete;
-
-	/** */
 	public static String CommitDialogPreferencePage_title;
 
 	/** */
@@ -2356,6 +2353,15 @@ public class UIText extends NLS {
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
 
 	/** */
+	public static String DeleteBranchDialog_DialogMessage;
+
+	/** */
+	public static String DeleteBranchDialog_DialogTitle;
+
+	/** */
+	public static String DeleteBranchDialog_WindowTitle;
+
+	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
 
 	/** */
@@ -2450,27 +2456,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesViewLabelProvider_TagsNodeText;
-
-	/** */
-	public static String DialogsPreferencePage_DetachedHeadCombo;
-
-	/** */
-	public static String DialogsPreferencePage_DontShowDialog;
-
-	/** */
-	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_HomeDirWarning;
-
-	/** */
-	public static String DialogsPreferencePage_RebaseCheckbox;
-
-	/** */
-	public static String DialogsPreferencePage_ShowDialog;
-
-	/** */
-	public static String DialogsPreferencePage_ShowInitialConfigCheckbox;
 
 	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
