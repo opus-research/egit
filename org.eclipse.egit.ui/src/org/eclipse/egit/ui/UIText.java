@@ -307,9 +307,6 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_title;
 
 	/** */
-	public static String GitCloneWizard_jobImportProjects;
-
-	/** */
 	public static String GitCloneWizard_jobName;
 
 	/** */
@@ -671,18 +668,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_NextStepsDoNothing;
-
-	/** */
-	public static String RebaseResultDialog_notInWorkspace;
-
-	/** */
-	public static String RebaseResultDialog_notInWorkspaceMessage;
-
-	/** */
-	public static String RebaseResultDialog_notShared;
-
-	/** */
-	public static String RebaseResultDialog_notSharedMessage;
 
 	/** */
 	public static String RebaseResultDialog_SkipCommitButton;
@@ -1132,9 +1117,6 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_groupConfiguration;
 
 	/** */
-	public static String CloneDestinationPage_groupProjects;
-
-	/** */
 	public static String CloneDestinationPage_promptDirectory;
 
 	/** */
@@ -1160,9 +1142,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneDestinationPage_errorRemoteNameRequired;
-
-	/** */
-	public static String CloneDestinationPage_importButton;
 
 	/** */
 	public static String RefContentProposal_blob;
@@ -2683,18 +2662,6 @@ public class UIText extends NLS {
 	public static String DeleteBranchDialog_WindowTitle;
 
 	/** */
-	public static String DeleteBranchOnCommitHandler_ConfirmBranchDeletionDialogTitle;
-
-	/** */
-	public static String DeleteBranchOnCommitHandler_ConfirmBranchDeletionMessage;
-
-	/** */
-	public static String DeleteBranchOnCommitHandler_SelectBranchDialogMessage;
-
-	/** */
-	public static String DeleteBranchOnCommitHandler_SelectBranchDialogTitle;
-
-	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
 
 	/** */
@@ -2705,18 +2672,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox;
-
-	/** */
-	public static String DeleteTagCommand_messageConfirmMultipleTag;
-
-	/** */
-	public static String DeleteTagCommand_messageConfirmSingleTag;
-
-	/** */
-	public static String DeleteTagCommand_taskName;
-
-	/** */
-	public static String DeleteTagCommand_titleConfirm;
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
@@ -3362,9 +3317,6 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
 
 	/** */
-	public static String CommitGraphTable_DeleteBranchAction;
-
-	/** */
 	public static String CommitGraphTable_messageColumn;
 
 	/** */
@@ -3746,9 +3698,6 @@ public class UIText extends NLS {
 	public static String SimpleConfigurePushDialog_CopyRefSpecButton;
 
 	/** */
-	public static String SimpleConfigurePushDialog_DefaultPushNoRefspec;
-
-	/** */
 	public static String SimpleConfigurePushDialog_DeletePushUriButton;
 
 	/** */
@@ -3795,6 +3744,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SimpleConfigurePushDialog_PasteRefSpecButton;
+
+	/** */
+	public static String SimpleConfigurePushDialog_PushAllBranchesMessage;
 
 	/** */
 	public static String SimpleConfigurePushDialog_PushUrisLabel;
@@ -4104,9 +4056,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_UnstageItemMenuLabel;
-
-	/** */
-	public static String StagingView_StageItemMenuLabel;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
