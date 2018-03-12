@@ -301,6 +301,12 @@ public class CoreText extends NLS {
 	public static String RevertCommitOperation_reverting;
 
 	/** */
+	public static String RewordCommitOperation_rewording;
+
+	/** */
+	public static String EditCommitOperation_editing;
+
+	/** */
 	public static String BranchOperation_closingMissingProject;
 
 	/** */
