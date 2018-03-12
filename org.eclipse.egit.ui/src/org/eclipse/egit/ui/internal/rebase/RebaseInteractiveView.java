@@ -8,7 +8,6 @@
  * Contributors:
  *    Tobias Pfeifer (SAP AG) - initial implementation
  *    Tobias Baumann (tobbaumann@gmail.com) - Bug 473950
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
 
@@ -34,7 +33,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
@@ -57,9 +55,7 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.LocalSelectionTransfer;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DoubleClickEvent;
@@ -166,8 +162,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private IPreferenceChangeListener prefListener;
 
-	private IPropertyChangeListener uiPrefsListener;
-
 	private InitialSelection initialSelection;
 
 	@Override
@@ -254,8 +248,6 @@ public class RebaseInteractiveView extends ViewPart implements
 		InstanceScope.INSTANCE.getNode(
 				org.eclipse.egit.core.Activator.getPluginId())
 				.removePreferenceChangeListener(prefListener);
-		Activator.getDefault().getPreferenceStore()
-				.removePropertyChangeListener(uiPrefsListener);
 	}
 
 	@Override
@@ -347,22 +339,6 @@ public class RebaseInteractiveView extends ViewPart implements
 		InstanceScope.INSTANCE.getNode(
 				org.eclipse.egit.core.Activator.getPluginId())
 				.addPreferenceChangeListener(prefListener);
-
-		uiPrefsListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (UIPreferences.DATE_FORMAT.equals(property)
-						|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)
-						|| UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE
-								.equals(property)) {
-					refresh();
-				}
-			}
-		};
-
-		Activator.getDefault().getPreferenceStore()
-				.addPropertyChangeListener(uiPrefsListener);
 
 		IActionBars actionBars = getViewSite().getActionBars();
 		IToolBarManager toolbar = actionBars.getToolBarManager();
@@ -1038,7 +1014,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		if (useRelativeDates)
 			return new GitDateFormatter(Format.RELATIVE);
 		else
-			return PreferenceBasedDateFormatter.create();
+			return new GitDateFormatter(Format.LOCALE);
 	}
 
 	@Override
