@@ -56,6 +56,8 @@ import org.eclipse.team.core.Team;
  */
 public class IndexDiffCacheEntry {
 
+	private static final String GITIGNORE_NAME = ".gitignore"; //$NON-NLS-1$
+
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
 	private Repository repository;
@@ -169,14 +171,6 @@ public class IndexDiffCacheEntry {
 					}
 					notifyListeners();
 					return Status.OK_STATUS;
-				} catch (RuntimeException e) {
-					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
-								"Calculating IndexDiff failed", e); //$NON-NLS-1$
-					}
-					scheduleReloadJob();
-					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
 				}
@@ -206,7 +200,7 @@ public class IndexDiffCacheEntry {
 		// of an IndexDiff while the workspace changes (e.g. due to a
 		// branch switch).
 		// The index diff calculation jobs do not lock the workspace
-		// during execution to avoid blocking the wordspace.
+		// during execution to avoid blocking the workspace.
 		try {
 			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
 
@@ -250,14 +244,6 @@ public class IndexDiffCacheEntry {
 								.toString());
 					}
 					notifyListeners();
-					return Status.OK_STATUS;
-				} catch (RuntimeException e) {
-					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
-								"Calculating IndexDiff failed", e); //$NON-NLS-1$
-					}
-					scheduleReloadJob();
 					return Status.OK_STATUS;
 				} finally {
 					lock.unlock();
@@ -332,19 +318,24 @@ public class IndexDiffCacheEntry {
 			public void resourceChanged(IResourceChangeEvent event) {
 				final Collection<String> filesToUpdate = new HashSet<String>();
 				final Collection<IFile> fileResourcesToUpdate = new HashSet<IFile>();
+				final boolean[] gitIgnoreChanged = new boolean[1];
+				gitIgnoreChanged[0] = false;
 
 				try {
 					event.getDelta().accept(new IResourceDeltaVisitor() {
 						public boolean visit(IResourceDelta delta)
 								throws CoreException {
+							final IResource resource = delta.getResource();
+							// Don't include ignored resources
+							if (Team.isIgnoredHint(resource))
+								return false;
+
 							// If the file has changed but not in a way that we
 							// care about (e.g. marker changes to files) then
 							// ignore
 							if (delta.getKind() == IResourceDelta.CHANGED
 									&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
 								return true;
-
-							final IResource resource = delta.getResource();
 
 							// skip any non-FILE resources
 							if (resource.getType() != IResource.FILE)
@@ -359,9 +350,10 @@ public class IndexDiffCacheEntry {
 								// Ignore the change
 								return true;
 
-							// Don't include ignored resources
-							if (Team.isIgnoredHint(resource))
+							if (resource.getName().equals(GITIGNORE_NAME)) {
+								gitIgnoreChanged[0] = true;
 								return false;
+							}
 
 							String repoRelativePath = mapping
 									.getRepoRelativePath(resource);
@@ -376,7 +368,9 @@ public class IndexDiffCacheEntry {
 					return;
 				}
 
-				if (!filesToUpdate.isEmpty())
+				if (gitIgnoreChanged[0] || indexDiffData == null)
+					scheduleReloadJob();
+				else if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
 						scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
 					else
