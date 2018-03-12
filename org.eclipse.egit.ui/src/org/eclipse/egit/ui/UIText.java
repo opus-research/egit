@@ -4496,6 +4496,9 @@ public class UIText extends NLS {
 	public static String GitOpenInCompareAction_cannotRetrieveCommitWithId;
 
 	/** */
+	public static String EclipseSshSessionFactory_noIdentities;
+
+	/** */
 	public static String CloneFailureDialog_tile;
 
 	/** */
