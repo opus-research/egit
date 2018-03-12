@@ -164,11 +164,9 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 			Tree tree = getRevTree(resource);
 			ObjectId objId = getRevObjId(resource);
 
-			if (objId != null && tree != null) {
-				trees.put(db, tree);
-				// walk the tree to retrieve information
-				walk(db, objId, tree);
-			}
+			trees.put(db, tree);
+			// walk the tree to retrieve information
+			walk(db, objId, tree);
 		}
 	}
 
@@ -389,10 +387,6 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 		Repository repo = gsd.getRepository();
 		try {
 			Tree tree = gsd.mapSrcTree();
-
-			if (tree == null)
-				return new IResource[0];
-
 			IResource[] members = ((IContainer) resource).members();
 			Set<IResource> membersSet = getAllMembers(repo, tree, members);
 
