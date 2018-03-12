@@ -2683,6 +2683,12 @@ public class UIText extends NLS {
 	public static String DeleteBranchDialog_WindowTitle;
 
 	/** */
+	public static String DeleteBranchOnCommitHandler_ConfirmBranchDeletionDialogTitle;
+
+	/** */
+	public static String DeleteBranchOnCommitHandler_ConfirmBranchDeletionMessage;
+
+	/** */
 	public static String DeleteBranchOnCommitHandler_SelectBranchDialogMessage;
 
 	/** */
@@ -2728,10 +2734,16 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ClipboardContentNotDirectoryOrURIMessage;
 
 	/** */
+	public static String RepositoriesView_ConfirmBranchDeletionMessage;
+
+	/** */
 	public static String RepositoriesView_ConfirmDeleteRemoteHeader;
 
 	/** */
 	public static String RepositoriesView_ConfirmDeleteRemoteMessage;
+
+	/** */
+	public static String RepositoriesView_ConfirmDeleteTitle;
 
 	/** */
 	public static String RepositoriesView_ConfirmProjectDeletion_Question;
@@ -3146,12 +3158,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
-
-	/** */
-	public static String UnmergedBranchDialog_Message;
-
-	/** */
-	public static String UnmergedBranchDialog_Title;
 
 	/** */
 	public static String Untrack_untrack;
@@ -3585,6 +3591,21 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchDialog_WindowTitle;
+
+	/** */
+	public static String RevertFailureDialog_Message;
+
+	/** */
+	public static String RevertFailureDialog_ReasonChangesInIndex;
+
+	/** */
+	public static String RevertFailureDialog_ReasonChangesInWorkingDirectory;
+
+	/** */
+	public static String RevertFailureDialog_ReasonDeleteFailure;
+
+	/** */
+	public static String RevertFailureDialog_Title;
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
