@@ -531,7 +531,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		fileNodes.clear();
 		containerNodes.clear();
 		boolean checkIgnored = false;
-		try (TreeWalk tw = new TreeWalk(repository)) {
+		TreeWalk tw = new TreeWalk(repository);
+		try {
 			int baseTreeIndex;
 			if (baseCommit == null) {
 				checkIgnored = true;
@@ -688,6 +689,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				}
 			}
 		} finally {
+			tw.release();
 			monitor.done();
 		}
 	}

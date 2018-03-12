@@ -42,17 +42,15 @@ public class StagedChangeCache {
 	 * @return list of changes in git staging area
 	 */
 	public static Map<String, Change> build(Repository repo) {
-		try (TreeWalk tw = new TreeWalk(repo)) {
+		TreeWalk tw = new TreeWalk(repo);
+		try {
 			tw.addTree(new DirCacheIterator(repo.readDirCache()));
 			ObjectId headId = repo.resolve(HEAD);
 			RevCommit headCommit;
-			if (headId != null) {
-				try (RevWalk rw = new RevWalk(repo)) {
-					headCommit = rw.parseCommit(headId);
-				}
-			} else {
+			if (headId != null)
+				headCommit = new RevWalk(repo).parseCommit(headId);
+			else
 				headCommit = null;
-			}
 
 			AbbreviatedObjectId commitId;
 			if (headCommit != null) {
@@ -85,6 +83,7 @@ public class StagedChangeCache {
 
 				result.put(tw.getPathString(), change);
 			}
+			tw.release();
 
 			return result;
 		} catch (IOException e) {

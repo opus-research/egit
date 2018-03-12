@@ -84,9 +84,10 @@ public class ImportChangedProjectsCommand extends
 	private List<File> getChangedFiles(RevCommit commit, Repository repo) {
 		try {
 			List<File> files = new ArrayList<File>();
-			try (TreeWalk tw = new TreeWalk(repo);
-					final RevWalk walk = new RevWalk(repo)) {
-				tw.setRecursive(true);
+			TreeWalk tw = new TreeWalk(repo);
+			tw.setRecursive(true);
+			final RevWalk walk = new RevWalk(repo);
+			try {
 				FileDiff[] diffs = FileDiff.compute(repo, tw, commit,
 						TreeFilter.ALL);
 				if (diffs != null && diffs.length > 0) {
@@ -97,6 +98,9 @@ public class ImportChangedProjectsCommand extends
 						files.add(f);
 					}
 				}
+			} finally {
+				tw.release();
+				walk.release();
 			}
 			return files;
 		} catch (MissingObjectException e) {
