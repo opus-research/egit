@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.compare.CompareEditorInput;
-import org.eclipse.compare.CompareUI;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -23,8 +22,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
@@ -66,11 +63,7 @@ abstract class AbstractHistoryCommanndHandler extends AbstractHandler {
 			throws ExecutionException {
 		IWorkbenchPage workBenchPage = HandlerUtil
 				.getActiveWorkbenchWindowChecked(event).getActivePage();
-		if (Activator.getDefault().getPreferenceStore().getBoolean(
-				UIPreferences.RESOURCEHISTORY_REUSE_EDITOR))
-			CompareUtils.openInCompare(workBenchPage, input);
-		else
-			CompareUI.openCompareEditor(input);
+		CompareUtils.openInCompare(workBenchPage, input);
 	}
 
 	protected Repository getRepository(ExecutionEvent event)
