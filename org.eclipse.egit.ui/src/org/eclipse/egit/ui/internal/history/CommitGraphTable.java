@@ -88,7 +88,7 @@ import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.part.IPageSite;
 
 class CommitGraphTable {
-	private static Font highlightFont() {
+	static Font highlightFont() {
 		final Font n, h;
 
 		n = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
@@ -133,8 +133,6 @@ class CommitGraphTable {
 	private Shell hoverShell;
 
 	MenuListener menuListener;
-
-	private RevCommit commitToShow;
 
 	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
@@ -314,21 +312,14 @@ class CommitGraphTable {
 		return table.getControl();
 	}
 
-	void selectCommitStored(final RevCommit c) {
-		commitToShow = c;
-		selectCommit(c);
-	}
-
 	void selectCommit(final RevCommit c) {
 		if (c instanceof PlotCommit) {
 			table.setSelection(new StructuredSelection(c));
 			table.reveal(c);
-		} else if (commitsMap != null) {
+		} else {
 			PlotCommit swtCommit = commitsMap.get(c.getId().name());
-			if (swtCommit != null) {
-				table.setSelection(new StructuredSelection(swtCommit));
-				table.reveal(swtCommit);
-			}
+			table.setSelection(new StructuredSelection(swtCommit));
+			table.reveal(swtCommit);
 		}
 	}
 
@@ -378,8 +369,6 @@ class CommitGraphTable {
 		} else {
 			table.getTable().deselectAll();
 		}
-		if (commitToShow != null)
-			selectCommit(commitToShow);
 	}
 
 	void setHistoryPageInput(HistoryPageInput input) {
@@ -451,7 +440,7 @@ class CommitGraphTable {
 			event.gc.setFont(nFont);
 
 		if (event.index == 0) {
-			renderer.paint(event);
+			renderer.paint(event, input.getHead());
 			return;
 		}
 

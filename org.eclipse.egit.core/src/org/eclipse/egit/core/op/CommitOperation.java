@@ -204,7 +204,7 @@ public class CommitOperation implements IEGitOperation {
 		if (selectedItems.length == 0) {
 			// amending commit - need to put something into the map
 			for (Repository repo : repos) {
-				treeMap.put(repo, repo.mapTree(Constants.HEAD));
+				treeMap.put(repo, mapTree(repo, Constants.HEAD));
 			}
 		}
 
@@ -220,7 +220,7 @@ public class CommitOperation implements IEGitOperation {
 			Repository repository = repositoryMapping.getRepository();
 			Tree projTree = treeMap.get(repository);
 			if (projTree == null) {
-				projTree = repository.mapTree(Constants.HEAD);
+				projTree = mapTree(repository, Constants.HEAD);
 				if (projTree == null)
 					projTree = new Tree(repository);
 				treeMap.put(repository, projTree);
@@ -294,6 +294,12 @@ public class CommitOperation implements IEGitOperation {
 		return true;
 	}
 
+	private Tree mapTree(Repository db, String name) throws IOException {
+		ObjectId id = db.resolve(name + "^{tree}"); //$NON-NLS-1$
+		return id == null ? null : new Tree(db, id, db.open(id)
+				.getCachedBytes());
+	}
+
 	private void doCommits(String actMessage,
 			HashMap<Repository, Tree> treeMap) throws IOException,
 			TeamException {
@@ -336,7 +342,7 @@ public class CommitOperation implements IEGitOperation {
 					commitMessage = commitMessage.replaceAll("\nChange-Id: I0000000000000000000000000000000000000000\n", "\nChange-Id: I" + changeId.getName() + "\n");  //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
 			}
 			CommitBuilder commit = new CommitBuilder();
-			commit.setTreeId(tree.getTreeId());
+			commit.setTreeId(tree.getId());
 			commit.setParentIds(parentIds);
 			commit.setMessage(commitMessage);
 			commit.setAuthor(new PersonIdent(authorIdent, commitDate,
