@@ -108,10 +108,11 @@ public class CompareCoreUtils {
 
 		List<DiffEntry> entries = DiffEntry.scan(walk);
 
-		for (DiffEntry diff : entries)
+		for (DiffEntry diff : entries) {
 			if (diff.getChangeType() == ChangeType.MODIFY
 					&& newPath.equals(diff.getNewPath()))
 				return diff;
+		}
 
 		if (entries.size() < 2)
 			return null;
@@ -120,10 +121,11 @@ public class CompareCoreUtils {
 		detector.addAll(entries);
 		List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
 				NullProgressMonitor.INSTANCE);
-		for (DiffEntry diff : renames)
+		for (DiffEntry diff : renames) {
 			if (diff.getChangeType() == ChangeType.RENAME
 					&& newPath.equals(diff.getNewPath()))
 				return diff;
+		}
 
 		return null;
 	}
