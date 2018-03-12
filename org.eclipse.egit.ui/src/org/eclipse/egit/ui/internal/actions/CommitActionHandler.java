@@ -31,6 +31,9 @@ public class CommitActionHandler extends RepositoryActionHandler {
 
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final Repository[] repos = getRepositories(event);
+		if (repos.length == 0)
+			return null;
+
 		final Shell shell = getShell(event);
 		IResource[] resourcesInScope;
 		try {
@@ -54,8 +57,7 @@ public class CommitActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return getRepositories().length > 0
-				&& !selectionContainsLinkedResources();
+		return getRepositories().length > 0;
 	}
 
 }

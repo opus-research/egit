@@ -113,8 +113,6 @@ public class UntrackOperation implements IEGitOperation {
 	}
 
 	private void remove(final IResource path) throws CoreException {
-		if (path.isLinked(IResource.CHECK_ANCESTORS))
-			return;
 		final IProject proj = path.getProject();
 		final GitProjectData pd = GitProjectData.get(proj);
 		if (pd == null)

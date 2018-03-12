@@ -27,7 +27,7 @@ import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.NoFilepatternException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -79,7 +79,7 @@ public class AddToIndexOperation implements IEGitOperation {
 			}
 		} catch (RuntimeException e) {
 			throw new CoreException(Activator.error(CoreText.AddToIndexOperation_failed, e));
-		} catch (NoFilepatternException e) {
+		} catch (GitAPIException e) {
 			throw new CoreException(Activator.error(CoreText.AddToIndexOperation_failed, e));
 		} finally {
 			for (final RepositoryMapping rm : addCommands.keySet())
@@ -96,8 +96,6 @@ public class AddToIndexOperation implements IEGitOperation {
 	}
 
 	private void addToCommand(IResource resource, Map<RepositoryMapping, AddCommand> addCommands) {
-		if (resource.isLinked(IResource.CHECK_ANCESTORS))
-			return;
 		IProject project = resource.getProject();
 		RepositoryMapping map = RepositoryMapping.getMapping(project);
 		AddCommand command = addCommands.get(map);

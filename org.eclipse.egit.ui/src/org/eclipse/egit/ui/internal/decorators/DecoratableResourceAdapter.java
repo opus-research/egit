@@ -69,6 +69,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 				break;
 			case IResource.PROJECT:
 				tracked = true;
+				//$FALL-THROUGH$
 			case IResource.FOLDER:
 				extractContainerProperties();
 				break;
@@ -148,8 +149,10 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		// locally modified / untracked
 		Set<String> modified = indexDiffData.getModified();
 		Set<String> untracked = indexDiffData.getUntracked();
+		Set<String> missing = indexDiffData.getMissing();
 		dirty = containsPrefix(modified, repoRelativePath)
-				|| containsPrefix(untracked, repoRelativePath);
+				|| containsPrefix(untracked, repoRelativePath)
+				|| containsPrefix(missing, repoRelativePath);
 	}
 
 	private String makeRepoRelative(IResource res) {

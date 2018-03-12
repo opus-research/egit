@@ -19,7 +19,6 @@ import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ResetOperation;
-import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
@@ -29,9 +28,8 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -63,16 +61,12 @@ public class ResetCommand extends
 		final String repoName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(node.getRepository());
 
-		RevCommit latestCommit = getLatestCommit(node);
-		final String targetCommit = latestCommit.abbreviate(7).name() + ' '
-				+ latestCommit.getShortMessage();
-
 		Wizard wiz = new Wizard() {
 
 			@Override
 			public void addPages() {
-				addPage(new SelectResetTypePage(repoName, currentBranch,
-						targetBranch, targetCommit));
+				addPage(new SelectResetTypePage(repoName, node.getRepository(),
+						currentBranch, targetBranch));
 				setWindowTitle(UIText.ResetCommand_WizardTitle);
 			}
 
@@ -121,17 +115,5 @@ public class ResetCommand extends
 		dlg.open();
 
 		return null;
-	}
-
-	private RevCommit getLatestCommit(RepositoryTreeNode node) {
-		RevWalk walk = new RevWalk(node.getRepository());
-		walk.setRetainBody(true);
-		try {
-			return walk.parseCommit(((Ref) node.getObject()).getObjectId());
-		} catch (IOException ignored) {
-			return null;
-		} finally {
-			walk.release();
-		}
 	}
 }
