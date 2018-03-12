@@ -1846,10 +1846,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
 		if (mapping == null)
 			return;
-		Repository newRep = mapping.getRepository(resource);
-		if (newRep != currentRepository) {
-			reload(newRep);
-		}
+		if (mapping.getRepository() != currentRepository)
+			reload(mapping.getRepository());
 	}
 
 	private void stage(IStructuredSelection selection) {
