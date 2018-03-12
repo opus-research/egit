@@ -10,30 +10,36 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.team.core.TeamException;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.errors.CheckoutConflictException;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.RefLogWriter;
+import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
+import org.eclipse.jgit.lib.RefUpdate.Result;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.TeamException;
 
 /**
  * This class implements checkouts of a specific revision. A check
  * is made that this can be done without data loss.
  */
-public class BranchOperation implements IWorkspaceRunnable {
+public class BranchOperation implements IEGitOperation {
 
 	private final Repository repository;
 
@@ -61,63 +67,96 @@ public class BranchOperation implements IWorkspaceRunnable {
 
 
 
-	public void run(IProgressMonitor monitor) throws CoreException {
-		lookupRefs();
-		monitor.worked(1);
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	 */
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 
-		mapObjects();
-		monitor.worked(1);
+		if (!refName.startsWith(Constants.R_REFS))
+			throw new TeamException(NLS.bind(
+					CoreText.BranchOperation_CheckoutOnlyBranchOrTag, refName));
 
-		checkoutTree();
-		monitor.worked(1);
+		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-		writeIndex();
-		monitor.worked(1);
+			public void run(IProgressMonitor monitor) throws CoreException {
+				IProject[] validProjects = ProjectUtil.getValidProjects(repository);
+				monitor.beginTask(NLS.bind(
+						CoreText.BranchOperation_performingBranch, refName), 6);
+				lookupRefs();
+				monitor.worked(1);
 
-		updateHeadRef();
-		monitor.worked(1);
+				mapObjects();
+				monitor.worked(1);
 
-		writeHeadReflog();
-		monitor.worked(1);
+				checkoutTree();
+				monitor.worked(1);
 
-		refreshProjects();
-		monitor.worked(1);
+				writeIndex();
+				monitor.worked(1);
 
-		monitor.done();
-	}
+				updateHeadRef();
+				monitor.worked(1);
 
-	private void refreshProjects() {
-		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects();
-		final File parentFile = repository.getWorkDir();
-		for (IProject p : projects) {
-			final File file = p.getLocation().toFile();
-			if (file.getAbsolutePath().startsWith(parentFile.getAbsolutePath())) {
-				try {
-					System.out.println("Refreshing " + p);
-					p.refreshLocal(IResource.DEPTH_INFINITE, null);
-				} catch (CoreException e) {
-					e.printStackTrace();
-				}
+				ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
+						monitor, 1));
+				monitor.worked(1);
+
+				monitor.done();
 			}
-		}
+		};
+		// lock workspace to protect working tree changes
+		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
-	private void writeHeadReflog() throws TeamException {
-		try {
-			RefLogWriter.writeReflog(repository, oldCommit.getCommitId(),
-					newCommit.getCommitId(), "checkout: moving to " + refName,
-					Constants.HEAD);
-		} catch (IOException e) {
-			throw new TeamException("Writing HEAD's reflog", e);
-		}
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
+	public ISchedulingRule getSchedulingRule() {
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 
 	private void updateHeadRef() throws TeamException {
+		boolean detach = false;
+		// in case of a non-local branch or a tag,
+		// we "detach" HEAD, i.e. point it to the
+		// underlying commit instead of to the Ref
+		if (!refName.startsWith(Constants.R_HEADS))
+			detach = true;
 		try {
-			repository.writeSymref(Constants.HEAD, refName);
+			RefUpdate u = repository.updateRef(Constants.HEAD, detach);
+			Result res;
+			if (detach) {
+				u.setNewObjectId(newCommit.getCommitId());
+				// using forceUpdate instead of update avoids
+				// the merge tests which would otherwise make
+				// this fail
+				u.setRefLogMessage(NLS.bind(
+						CoreText.BranchOperation_checkoutMovingTo, newCommit
+								.getCommitId().toString()), false);
+				res = u.forceUpdate();
+			} else {
+				u.setRefLogMessage(NLS.bind(
+						CoreText.BranchOperation_checkoutMovingTo, refName),
+						false);
+				res = u.link(refName);
+			}
+			switch (res) {
+			case NEW:
+			case FORCED:
+			case NO_CHANGE:
+			case FAST_FORWARD:
+				break;
+			default:
+				throw new IOException(u.getResult().name());
+			}
 		} catch (IOException e) {
-			throw new TeamException("Updating HEAD to ref: " + refName, e);
+			throw new TeamException(NLS.bind(
+					CoreText.BranchOperation_updatingHeadToRef, refName), e);
 		}
 	}
 
@@ -125,7 +164,7 @@ public class BranchOperation implements IWorkspaceRunnable {
 		try {
 			index.write();
 		} catch (IOException e) {
-			throw new TeamException("Writing index", e);
+			throw new TeamException(CoreText.BranchOperation_writingIndex, e);
 		}
 	}
 
@@ -137,7 +176,7 @@ public class BranchOperation implements IWorkspaceRunnable {
 			TeamException teamException = new TeamException(e.getMessage());
 			throw teamException;
 		} catch (IOException e) {
-			throw new TeamException("Problem while checking out:", e);
+			throw new TeamException(CoreText.BranchOperation_checkoutProblem, e);
 		}
 	}
 
@@ -147,21 +186,28 @@ public class BranchOperation implements IWorkspaceRunnable {
 			index = repository.getIndex();
 			newTree = newCommit.getTree();
 		} catch (IOException e) {
-			throw new TeamException("Mapping trees", e);
+			throw new TeamException(CoreText.BranchOperation_mappingTrees, e);
 		}
 	}
 
 	private void lookupRefs() throws TeamException {
 		try {
-			newCommit = repository.mapCommit(refName);
+			// if we have a tag, we have to make an indirection
+			if (refName.startsWith(Constants.R_TAGS)) {
+				Tag tag = repository.mapTag(refName);
+				newCommit = repository.mapCommit(tag.getObjId());
+			} else
+				newCommit = repository.mapCommit(refName);
 		} catch (IOException e) {
-			throw new TeamException("Mapping commit: " + refName, e);
+			throw new TeamException(NLS.bind(
+					CoreText.BranchOperation_mappingCommit, refName), e);
 		}
 
 		try {
 			oldCommit = repository.mapCommit(Constants.HEAD);
 		} catch (IOException e) {
-			throw new TeamException("Mapping commit HEAD commit", e);
+			throw new TeamException(CoreText.BranchOperation_mappingCommitHead,
+					e);
 		}
 	}
 

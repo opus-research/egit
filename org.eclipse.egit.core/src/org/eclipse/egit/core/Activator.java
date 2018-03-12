@@ -9,20 +9,22 @@
  *******************************************************************************/
 package org.eclipse.egit.core;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
-import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.eclipse.osgi.service.debug.DebugOptions;
 import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * The plugin class for the org.eclipse.egit.core plugin. This
  * is a singleton class.
  */
-public class Activator extends AbstractUIPlugin {
+public class Activator extends Plugin {
 	private static Activator plugin;
+	private RepositoryCache repositoryCache;
 
 	/**
 	 * @return the singleton {@link Activator}
@@ -39,16 +41,14 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	/**
-	 * Utility method to help throwing errors in the Egit plugin. This method
-	 * does not actually throw the exception, but just creates an instance.
+	 * Utility to create an error status for this plug-in.
 	 *
 	 * @param message User comprehensible message
 	 * @param thr cause
-	 * @return an Initialized {@link CoreException}
+	 * @return an initialized error status
 	 */
-	public static CoreException error(final String message, final Throwable thr) {
-		return new CoreException(new Status(IStatus.ERROR, getPluginId(), 0,
-				message, thr));
+	public static IStatus error(final String message, final Throwable thr) {
+		return new Status(IStatus.ERROR, getPluginId(), 0,	message, thr);
 	}
 
 	/**
@@ -61,25 +61,6 @@ public class Activator extends AbstractUIPlugin {
 				new Status(IStatus.ERROR, getPluginId(), 0, message, thr));
 	}
 
-	private static boolean isOptionSet(final String optionId) {
-		final String option = getPluginId() + optionId;
-		final String value = Platform.getDebugOption(option);
-		return value != null && value.equals("true");
-	}
-
-	/**
-	 * Utility method for debug logging.
-	 *
-	 * @param what
-	 */
-	public static void trace(final String what) {
-		if (getDefault().traceVerbose) {
-			System.out.println("[" + getPluginId() + "] " + what);
-		}
-	}
-
-	private boolean traceVerbose;
-
 	/**
 	 * Construct the {@link Activator} singleton instance
 	 */
@@ -88,15 +69,39 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public void start(final BundleContext context) throws Exception {
+
 		super.start(context);
-		traceVerbose = isOptionSet("/trace/verbose");
-		GitProjectData.reconfigureWindowCache();
+
+		if (isDebugging()) {
+			ServiceTracker debugTracker = new ServiceTracker(context,
+					DebugOptions.class.getName(), null);
+			debugTracker.open();
+
+			DebugOptions opts = (DebugOptions) debugTracker.getService();
+			GitTraceLocation.initializeFromOptions(opts, true);
+		}
+
+		repositoryCache = new RepositoryCache();
+		try {
+			GitProjectData.reconfigureWindowCache();
+		} catch (RuntimeException e) {
+			logError(CoreText.Activator_ReconfigureWindowCacheError, e);
+		}
 		GitProjectData.attachToWorkspace(true);
+	}
+
+	/**
+	 *  @return cache for Repository objects
+	 */
+	public RepositoryCache getRepositoryCache() {
+		return repositoryCache;
 	}
 
 	public void stop(final BundleContext context) throws Exception {
 		GitProjectData.detachFromWorkspace();
+		repositoryCache = null;
 		super.stop(context);
 		plugin = null;
 	}
+
 }

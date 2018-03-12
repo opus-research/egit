@@ -15,21 +15,22 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.jgit.errors.NoRemoteRepositoryException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Push operation: pushing from local repository to one or many remote ones.
  */
-public class PushOperation implements IRunnableWithProgress {
+public class PushOperation {
 	private static final int WORK_UNITS_PER_TRANSPORT = 10;
 
 	private final Repository localDb;
@@ -40,7 +41,7 @@ public class PushOperation implements IRunnableWithProgress {
 
 	private final RemoteConfig rc;
 
-	private final PushOperationResult operationResult = new PushOperationResult();
+	private PushOperationResult operationResult;
 
 	/**
 	 * Create push operation for provided specification.
@@ -73,6 +74,8 @@ public class PushOperation implements IRunnableWithProgress {
 	 * @return push operation result.
 	 */
 	public PushOperationResult getOperationResult() {
+		if (operationResult == null)
+			throw new IllegalStateException(CoreText.OperationNotYetExecuted);
 		return operationResult;
 	}
 
@@ -88,15 +91,31 @@ public class PushOperation implements IRunnableWithProgress {
 	 * on each remote repository.
 	 * <p>
 	 *
+	 * @param actMonitor
+	 *            the monitor to be used for reporting progress and responding
+	 *            to cancellation. The monitor is never <code>null</code>
+	 *
 	 * @throws InvocationTargetException
 	 *             Cause of this exceptions may include
 	 *             {@link TransportException}, {@link NotSupportedException} or
 	 *             some unexpected {@link RuntimeException}.
-	 * @see IRunnableWithProgress#run(IProgressMonitor)
 	 */
-	public void run(IProgressMonitor monitor) throws InvocationTargetException {
-		if (monitor == null)
+	public void run(IProgressMonitor actMonitor) throws InvocationTargetException {
+
+		if (operationResult != null)
+			throw new IllegalStateException(CoreText.OperationAlreadyExecuted);
+
+		for (URIish uri : this.specification.getURIs()) {
+			for (RemoteRefUpdate update : this.specification.getRefUpdates(uri))
+				if (update.getStatus() != Status.NOT_ATTEMPTED)
+					throw new IllegalStateException(
+							CoreText.RemoteRefUpdateCantBeReused);
+		}
+		IProgressMonitor monitor;
+		if (actMonitor == null)
 			monitor = new NullProgressMonitor();
+		else
+			monitor = actMonitor;
 
 		final int totalWork = specification.getURIsNumber()
 				* WORK_UNITS_PER_TRANSPORT;
@@ -105,6 +124,8 @@ public class PushOperation implements IRunnableWithProgress {
 		else
 			monitor.beginTask(CoreText.PushOperation_taskNameNormalRun,
 					totalWork);
+
+		operationResult = new PushOperationResult();
 
 		for (final URIish uri : specification.getURIs()) {
 			final SubProgressMonitor subMonitor = new SubProgressMonitor(

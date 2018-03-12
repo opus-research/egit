@@ -14,6 +14,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -44,6 +45,10 @@ public class GitProjectPropertyPage extends PropertyPage {
 
 	@Override
 	protected Control createContents(Composite parent) {
+		// this page just shows read-only information to the user, no
+		// default/apply buttons needed
+		noDefaultAndApplyButton();
+
 		final Composite composite = new Composite(parent, SWT.NULL);
 
 		composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -80,7 +85,8 @@ public class GitProjectPropertyPage extends PropertyPage {
 			try {
 				fillValues(repository);
 			} catch (IOException e) {
-				e.printStackTrace();
+				if (GitTraceLocation.UI.isActive())
+					GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);
 			}
 		}
 

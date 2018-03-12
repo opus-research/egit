@@ -3,6 +3,8 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,15 +14,29 @@
 package org.eclipse.egit.ui.internal.components;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -33,56 +49,27 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.DirectoryDialog;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.util.FS;
 
 /**
  * Wizard page that allows the user entering the location of a remote repository
  * by specifying URL manually or selecting a preconfigured remote repository.
  */
-public class RepositorySelectionPage extends BaseWizardPage {
+public class RepositorySelectionPage extends WizardPage {
+
+	private final static String USED_URIS_PREF = "RepositorySelectionPage.UsedUris"; //$NON-NLS-1$
+
 	private static final int REMOTE_CONFIG_TEXT_MAX_LENGTH = 80;
 
-	private static final int S_GIT = 0;
-
-	private static final int S_SSH = 1;
-
-	private static final int S_SFTP = 2;
-
-	private static final int S_HTTP = 3;
-
-	private static final int S_HTTPS = 4;
-
-	private static final int S_FTP = 5;
-
-	private static final int S_FILE = 6;
-
-	private static final String[] DEFAULT_SCHEMES;
-	static {
-		DEFAULT_SCHEMES = new String[7];
-		DEFAULT_SCHEMES[S_GIT] = "git"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_SSH] = "git+ssh"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_SFTP] = "sftp"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_HTTP] = "http"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_HTTPS] = "https"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_FTP] = "ftp"; //$NON-NLS-1$
-		DEFAULT_SCHEMES[S_FILE] = "file"; //$NON-NLS-1$
-	}
-
-	private static void setEnabledRecursively(final Control control,
-			final boolean enable) {
-		control.setEnabled(enable);
-		if (control instanceof Composite)
-			for (final Control child : ((Composite) control).getChildren())
-				setEnabledRecursively(child, enable);
-	}
-
 	private final List<RemoteConfig> configuredRemotes;
+
+	private final boolean sourceSelection;
+
+	private final String presetUri;
 
 	private Group authGroup;
 
@@ -118,6 +105,174 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private Button uriButton;
 
+	private IPreviousValueProposalHandler uriProposalHandler;
+
+	/**
+	 * Transport protocol abstraction
+	 *
+	 * TODO rework this to become part of JGit API
+	 */
+	public static class Protocol {
+		/** Ordered list of all protocols **/
+		private static final TreeMap<String, Protocol> protocols = new TreeMap<String, Protocol>();
+
+		/** Git native transfer */
+		public static final Protocol GIT = new Protocol("git", //$NON-NLS-1$
+				UIText.RepositorySelectionPage_tip_git, true, true, false);
+
+		/** Git over SSH */
+		public static final Protocol SSH = new Protocol("ssh", //$NON-NLS-1$
+				UIText.RepositorySelectionPage_tip_ssh, true, true, true) {
+			@Override
+			public boolean handles(URIish uri) {
+				if (!uri.isRemote())
+					return false;
+				final String scheme = uri.getScheme();
+				if (getDefaultScheme().equals(scheme))
+					return true;
+				if ("ssh+git".equals(scheme)) //$NON-NLS-1$
+					return true;
+				if ("git+ssh".equals(scheme)) //$NON-NLS-1$
+					return true;
+				if (scheme == null && uri.getHost() != null
+						&& uri.getPath() != null)
+					return true;
+				return false;
+			}
+		};
+
+		/** Secure FTP */
+		public static final Protocol SFTP = new Protocol("sftp", //$NON-NLS-1$
+				UIText.RepositorySelectionPage_tip_sftp, true, true, true);
+
+		/** HTTP */
+		public static final Protocol HTTP = new Protocol("http", //$NON-NLS-1$
+				UIText.RepositorySelectionPage_tip_http, true, true, true);
+
+		/** Secure HTTP */
+		public static final Protocol HTTPS = new Protocol("https", //$NON-NLS-1$
+				UIText.RepositorySelectionPage_tip_https, true, true, true);
+
+		/** FTP */
+		public static final Protocol FTP = new Protocol("ftp", //$NON-NLS-1$
+				UIText.RepositorySelectionPage_tip_ftp, true, true, true);
+
+		/** Local repository */
+		public static final Protocol FILE = new Protocol("file", //$NON-NLS-1$
+				UIText.RepositorySelectionPage_tip_file, false, false, false) {
+			@Override
+			public boolean handles(URIish uri) {
+				if (getDefaultScheme().equals(uri.getScheme())
+						|| uri.getScheme() == null)
+					return true;
+				if (uri.getHost() != null || uri.getPort() > 0
+						|| uri.getUser() != null || uri.getPass() != null
+						|| uri.getPath() == null)
+					return false;
+				if (uri.getScheme() == null)
+					return FS.DETECTED
+							.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
+				return false;
+			}
+		};
+
+		private final String defaultScheme;
+
+		private final String tooltip;
+
+		private final boolean hasHost;
+
+		private final boolean hasPort;
+
+		private final boolean canAuthenticate;
+
+		private Protocol(String defaultScheme, String tooltip,
+				boolean hasHost, boolean hasPort, boolean canAuthenticate) {
+			this.defaultScheme = defaultScheme;
+			this.tooltip = tooltip;
+			this.hasHost = hasHost;
+			this.hasPort = hasPort;
+			this.canAuthenticate = canAuthenticate;
+			protocols.put(defaultScheme, this);
+		}
+
+		/**
+		 * @param uri
+		 *            URI to match against this protocol
+		 * @return {@code true} if the uri is handled by this protocol
+		 */
+		public boolean handles(URIish uri) {
+			return getDefaultScheme().equals(uri.getScheme());
+		}
+
+		/**
+		 * @return the default protocol scheme
+		 */
+		public String getDefaultScheme() {
+			return defaultScheme;
+		}
+
+		/**
+		 * @return the tooltip text describing the protocol
+		 */
+		public String getTooltip() {
+			return tooltip;
+		}
+
+		/**
+		 * @return true if protocol has host segment
+		 */
+		public boolean hasHost() {
+			return hasHost;
+		}
+
+		/**
+		 * @return true if protocol has port
+		 */
+		public boolean hasPort() {
+			return hasPort;
+		}
+
+		/**
+		 * @return true if protocol can authenticate
+		 */
+		public boolean canAuthenticate() {
+			return canAuthenticate;
+		}
+
+		/**
+		 * @return all protocols
+		 */
+		public static Protocol[] values() {
+			return protocols.values().toArray(new Protocol[protocols.size()]);
+		}
+
+		/**
+		 * Lookup protocol supporting given default URL scheme
+		 *
+		 * @param scheme
+		 *            default scheme to lookup protocol for
+		 * @return protocol matching scheme or null
+		 */
+		public static Protocol fromDefaultScheme(String scheme) {
+			return protocols.get(scheme);
+		}
+
+		/**
+		 * Lookup protocol handling given URI
+		 *
+		 * @param uri URI to lookup protocol for
+		 * @return protocol handling this URI
+		 */
+		public static Protocol fromUri(URIish uri) {
+			for (Protocol p : protocols.values()) {
+				if (p.handles(uri))
+					return p;
+			}
+			return null;
+		}
+	}
+
 	/**
 	 * Create repository selection page, allowing user specifying URI or
 	 * (optionally) choosing from preconfigured remotes list.
@@ -131,24 +286,50 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	 * @param configuredRemotes
 	 *            list of configured remotes that user may select as an
 	 *            alternative to manual URI specification. Remotes appear in
-	 *            given order in GUI, with {@value Constants#DEFAULT_REMOTE_NAME} as the
-	 *            default choice. List may be null or empty - no remotes
-	 *            configurations appear in this case. Note that the provided
-	 *            list may be changed by this constructor.
+	 *            given order in GUI, with
+	 *            {@value Constants#DEFAULT_REMOTE_NAME} as the default choice.
+	 *            List may be null or empty - no remotes configurations appear
+	 *            in this case. Note that the provided list may be changed by
+	 *            this constructor.
+	 * @param presetUri
+	 *            the pre-set URI, may be null
 	 */
 	public RepositorySelectionPage(final boolean sourceSelection,
-			final List<RemoteConfig> configuredRemotes) {
-		super(RepositorySelectionPage.class.getName());
-		this.uri = new URIish();
+			final List<RemoteConfig> configuredRemotes, String presetUri) {
 
-		if (configuredRemotes != null)
-			removeUnusableRemoteConfigs(configuredRemotes);
-		if (configuredRemotes == null || configuredRemotes.isEmpty())
-			this.configuredRemotes = null;
-		else {
-			this.configuredRemotes = configuredRemotes;
-			this.remoteConfig = selectDefaultRemoteConfig();
+		super(RepositorySelectionPage.class.getName());
+
+		this.uri = new URIish();
+		this.sourceSelection = sourceSelection;
+
+		String preset = null;
+		if (presetUri == null) {
+			Clipboard clippy = new Clipboard(Display.getCurrent());
+			String text = (String) clippy.getContents(TextTransfer
+					.getInstance());
+			try {
+				if (text != null) {
+					text = text.trim();
+					int index = text.indexOf(' ');
+					if (index > 0)
+						text = text.substring(0, index);
+					URIish u = new URIish(text);
+					if (Transport.canHandleProtocol(u, FS.DETECTED)) {
+						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
+								|| text.endsWith(Constants.DOT_GIT))
+							preset = text;
+					}
+				}
+			} catch (URISyntaxException e) {
+				preset = null;
+			}
+			clippy.dispose();
 		}
+		this.presetUri = preset;
+
+		this.configuredRemotes = getUsableConfigs(configuredRemotes);
+		this.remoteConfig = selectDefaultRemoteConfig();
+
 		selection = RepositorySelection.INVALID_SELECTION;
 
 		if (sourceSelection) {
@@ -168,9 +349,12 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	 *            true if dialog is used for source selection; false otherwise
 	 *            (destination selection). This indicates appropriate text
 	 *            messages.
+	 * @param presetUri
+	 *            the pre-set URI, may be null
 	 */
-	public RepositorySelectionPage(final boolean sourceSelection) {
-		this(sourceSelection, null);
+	public RepositorySelectionPage(final boolean sourceSelection,
+			String presetUri) {
+		this(sourceSelection, null, presetUri);
 	}
 
 	/**
@@ -198,10 +382,16 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		if (configuredRemotes != null)
 			createRemotePanel(panel);
+
 		createUriPanel(panel);
 
+		if (presetUri != null)
+			updateFields(presetUri);
+
 		updateRemoteAndURIPanels();
+		Dialog.applyDialogFont(panel);
 		setControl(panel);
+
 		checkPage();
 	}
 
@@ -266,62 +456,62 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		final Group g = createGroup(parent,
 				UIText.RepositorySelectionPage_groupLocation);
 
+		g.setLayout(new GridLayout(3, false));
+
 		newLabel(g, UIText.RepositorySelectionPage_promptURI + ":"); //$NON-NLS-1$
 		uriText = new Text(g, SWT.BORDER);
+
+		if (presetUri != null) {
+			uriText.setText(presetUri);
+			uriText.selectAll();
+		}
+
 		uriText.setLayoutData(createFieldGridData());
 		uriText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				try {
-					eventDepth++;
-					if (eventDepth != 1)
-						return;
+				updateFields(uriText.getText());
+			}
+		});
 
-					final URIish u = new URIish(uriText.getText());
-					safeSet(hostText, u.getHost());
-					safeSet(pathText, u.getPath());
-					safeSet(userText, u.getUser());
-					safeSet(passText, u.getPass());
+		uriProposalHandler = UIUtils.addPreviousValuesContentProposalToText(
+				uriText, USED_URIS_PREF);
 
-					if (u.getPort() > 0)
-						portText.setText(Integer.toString(u.getPort()));
-					else
-						portText.setText(""); //$NON-NLS-1$
+		Button browseButton = new Button(g, SWT.NULL);
+		browseButton.setText(UIText.RepositorySelectionPage_BrowseLocalFile);
+		browseButton.addSelectionListener(new SelectionAdapter() {
 
-					if (isFile(u))
-						scheme.select(S_FILE);
-					else if (isSSH(u))
-						scheme.select(S_SSH);
-					else {
-						for (int i = 0; i < DEFAULT_SCHEMES.length; i++) {
-							if (DEFAULT_SCHEMES[i].equals(u.getScheme())) {
-								scheme.select(i);
-								break;
-							}
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				DirectoryDialog dialog = new DirectoryDialog(getShell());
+				// if a file-uri was selected before, let's try to open
+				// the directory dialog on the same directory
+				if (!uriText.getText().equals("")) { //$NON-NLS-1$
+					try {
+						URI testUri = URI.create(uriText.getText().replace(
+								'\\', '/'));
+						if (testUri.getScheme().equals("file")) { //$NON-NLS-1$
+							String path = testUri.getPath();
+							if (path.length() > 1 && path.startsWith("/")) //$NON-NLS-1$
+								path = path.substring(1);
+
+							dialog.setFilterPath(path);
 						}
+					} catch (IllegalArgumentException e1) {
+						// ignore here, we just' don't set the directory in the
+						// browser
 					}
 
-					updateAuthGroup();
-					uri = u;
-				} catch (URISyntaxException err) {
-					// leave uriText as it is, but clean up underlying uri and
-					// decomposed fields
-					uri = new URIish();
-					hostText.setText(""); //$NON-NLS-1$
-					pathText.setText(""); //$NON-NLS-1$
-					userText.setText(""); //$NON-NLS-1$
-					passText.setText(""); //$NON-NLS-1$
-					portText.setText(""); //$NON-NLS-1$
-					scheme.select(0);
-				} finally {
-					eventDepth--;
 				}
-				checkPage();
+				String result = dialog.open();
+				if (result != null)
+					uriText.setText("file:///" + result); //$NON-NLS-1$
 			}
+
 		});
 
 		newLabel(g, UIText.RepositorySelectionPage_promptHost + ":"); //$NON-NLS-1$
 		hostText = new Text(g, SWT.BORDER);
-		hostText.setLayoutData(createFieldGridData());
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(hostText);
 		hostText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setHost(nullString(hostText.getText())));
@@ -330,12 +520,13 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		newLabel(g, UIText.RepositorySelectionPage_promptPath + ":"); //$NON-NLS-1$
 		pathText = new Text(g, SWT.BORDER);
-		pathText.setLayoutData(createFieldGridData());
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(pathText);
 		pathText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setPath(nullString(pathText.getText())));
 			}
 		});
+
 	}
 
 	private Group createAuthenticationGroup(final Composite parent) {
@@ -363,14 +554,19 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		newLabel(g, UIText.RepositorySelectionPage_promptScheme + ":"); //$NON-NLS-1$
 		scheme = new Combo(g, SWT.DROP_DOWN | SWT.READ_ONLY);
-		scheme.setItems(DEFAULT_SCHEMES);
+		for (Protocol p : Protocol.values()) {
+			scheme.add(p.getDefaultScheme());
+		}
 		scheme.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(final SelectionEvent e) {
 				final int idx = scheme.getSelectionIndex();
-				if (idx < 0)
+				if (idx < 0) {
 					setURI(uri.setScheme(null));
-				else
+					scheme.setToolTipText(""); //$NON-NLS-1$
+				} else {
 					setURI(uri.setScheme(nullString(scheme.getItem(idx))));
+					scheme.setToolTipText(Protocol.values()[idx].getTooltip());
+				}
 				updateAuthGroup();
 			}
 		});
@@ -403,7 +599,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		});
 	}
 
-	private static Group createGroup(final Composite parent, final String text) {
+	private Group createGroup(final Composite parent, final String text) {
 		final Group g = new Group(parent, SWT.NONE);
 		final GridLayout layout = new GridLayout();
 		layout.numColumns = 2;
@@ -416,57 +612,27 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		return g;
 	}
 
-	private static void newLabel(final Group g, final String text) {
+	private void newLabel(final Group g, final String text) {
 		new Label(g, SWT.NULL).setText(text);
 	}
 
-	private static GridData createFieldGridData() {
+	private GridData createFieldGridData() {
 		return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 	}
 
-	private static boolean isGIT(final URIish uri) {
-		return "git".equals(uri.getScheme()); //$NON-NLS-1$
-	}
-
-	private static boolean isFile(final URIish uri) {
-		if ("file".equals(uri.getScheme()) || uri.getScheme() == null) //$NON-NLS-1$
-			return true;
-		if (uri.getHost() != null || uri.getPort() > 0 || uri.getUser() != null
-				|| uri.getPass() != null || uri.getPath() == null)
-			return false;
-		if (uri.getScheme() == null)
-			return FS.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
-		return false;
-	}
-
-	private static boolean isSSH(final URIish uri) {
-		if (!uri.isRemote())
-			return false;
-		final String scheme = uri.getScheme();
-		if ("ssh".equals(scheme)) //$NON-NLS-1$
-			return true;
-		if ("ssh+git".equals(scheme)) //$NON-NLS-1$
-			return true;
-		if ("git+ssh".equals(scheme)) //$NON-NLS-1$
-			return true;
-		if (scheme == null && uri.getHost() != null && uri.getPath() != null)
-			return true;
-		return false;
-	}
-
-	private static String nullString(final String value) {
+	private String nullString(final String value) {
 		if (value == null)
 			return null;
 		final String v = value.trim();
 		return v.length() == 0 ? null : v;
 	}
 
-	private static void safeSet(final Text text, final String value) {
+	private void safeSet(final Text text, final String value) {
 		text.setText(value != null ? value : ""); //$NON-NLS-1$
 	}
 
 	private boolean isURISelected() {
-		return configuredRemotes == null || uriButton.getSelection();
+		return uriButton == null || uriButton.getSelection();
 	}
 
 	private void setURI(final URIish u) {
@@ -482,28 +648,50 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		}
 	}
 
-	private static void removeUnusableRemoteConfigs(
-			final List<RemoteConfig> remotes) {
-		final Iterator<RemoteConfig> iter = remotes.iterator();
-		while (iter.hasNext()) {
-			final RemoteConfig rc = iter.next();
-			if (rc.getURIs().isEmpty())
-				iter.remove();
-		}
+	private List<RemoteConfig> getUsableConfigs(final List<RemoteConfig> remotes) {
+
+		if (remotes == null)
+			return null;
+
+		List<RemoteConfig> result = new ArrayList<RemoteConfig>();
+
+		for (RemoteConfig config : remotes)
+			if ((sourceSelection && !config.getURIs().isEmpty() || !sourceSelection
+					&& (!config.getPushURIs().isEmpty() || !config.getURIs()
+							.isEmpty())))
+				result.add(config);
+
+		if (!result.isEmpty())
+			return result;
+
+		return null;
 	}
 
 	private RemoteConfig selectDefaultRemoteConfig() {
+		if (configuredRemotes == null)
+			return null;
 		for (final RemoteConfig rc : configuredRemotes)
-			if (Constants.DEFAULT_REMOTE_NAME.equals(getTextForRemoteConfig(rc)))
+			if (Constants.DEFAULT_REMOTE_NAME.equals(rc.getName()))
 				return rc;
 		return configuredRemotes.get(0);
 	}
 
-	private static String getTextForRemoteConfig(final RemoteConfig rc) {
+	private String getTextForRemoteConfig(final RemoteConfig rc) {
 		final StringBuilder sb = new StringBuilder(rc.getName());
 		sb.append(": "); //$NON-NLS-1$
 		boolean first = true;
-		for (final URIish u : rc.getURIs()) {
+		List<URIish> uris;
+		if (sourceSelection) {
+			uris = rc.getURIs();
+		} else {
+			uris = rc.getPushURIs();
+			// if no push URIs are defined, use fetch URIs instead
+			if (uris.isEmpty()) {
+				uris = rc.getURIs();
+			}
+		}
+
+		for (final URIish u : uris) {
 			final String uString = u.toString();
 			if (first)
 				first = false;
@@ -536,11 +724,12 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				if (uri.getPath() == null) {
 					selectionIncomplete(NLS.bind(
 							UIText.RepositorySelectionPage_fieldRequired,
-							unamp(UIText.RepositorySelectionPage_promptPath), proto));
+							unamp(UIText.RepositorySelectionPage_promptPath),
+							proto));
 					return;
 				}
 
-				if (isFile(finalURI)) {
+				if (Protocol.FILE.handles(finalURI)) {
 					String badField = null;
 					if (uri.getHost() != null)
 						badField = UIText.RepositorySelectionPage_promptHost;
@@ -556,11 +745,12 @@ public class RepositorySelectionPage extends BaseWizardPage {
 						return;
 					}
 
-					final File d = FS.resolve(new File("."), uri.getPath()); //$NON-NLS-1$
+					final File d = FS.DETECTED.resolve(
+							new File("."), uri.getPath()); //$NON-NLS-1$
 					if (!d.exists()) {
 						selectionIncomplete(NLS.bind(
-								UIText.RepositorySelectionPage_fileNotFound, d
-										.getAbsolutePath()));
+								UIText.RepositorySelectionPage_fileNotFound,
+										d.getAbsolutePath()));
 						return;
 					}
 
@@ -571,11 +761,12 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				if (uri.getHost() == null) {
 					selectionIncomplete(NLS.bind(
 							UIText.RepositorySelectionPage_fieldRequired,
-							unamp(UIText.RepositorySelectionPage_promptHost), proto));
+							unamp(UIText.RepositorySelectionPage_promptHost),
+							proto));
 					return;
 				}
 
-				if (isGIT(finalURI)) {
+				if (Protocol.GIT.handles(finalURI)) {
 					String badField = null;
 					if (uri.getUser() != null)
 						badField = UIText.RepositorySelectionPage_promptUser;
@@ -596,8 +787,9 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				selectionIncomplete(e.getReason());
 				return;
 			} catch (Exception e) {
-				Activator.logError("Error validating " + getClass().getName(),
-						e);
+				Activator.logError(NLS.bind(
+						UIText.RepositorySelectionPage_errorValidating,
+						getClass().getName()), e);
 				selectionIncomplete(UIText.RepositorySelectionPage_internalError);
 				return;
 			}
@@ -609,7 +801,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	}
 
 	private String unamp(String s) {
-		return s.replace("&",""); //$NON-NLS-1$ //$NON-NLS-2$
+		return s.replace("&", ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private void selectionIncomplete(final String errorMessage) {
@@ -630,7 +822,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			return;
 
 		selection = newSelection;
-		notifySelectionChanged();
 	}
 
 	private void updateRemoteAndURIPanels() {
@@ -642,26 +833,12 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	}
 
 	private void updateAuthGroup() {
-		switch (scheme.getSelectionIndex()) {
-		case S_GIT:
-			hostText.setEnabled(true);
-			portText.setEnabled(true);
-			setEnabledRecursively(authGroup, false);
-			break;
-		case S_SSH:
-		case S_SFTP:
-		case S_HTTP:
-		case S_HTTPS:
-		case S_FTP:
-			hostText.setEnabled(true);
-			portText.setEnabled(true);
-			setEnabledRecursively(authGroup, true);
-			break;
-		case S_FILE:
-			hostText.setEnabled(false);
-			portText.setEnabled(false);
-			setEnabledRecursively(authGroup, false);
-			break;
+		int idx = scheme.getSelectionIndex();
+		if (idx >= 0) {
+			Protocol p = Protocol.values()[idx];
+			hostText.setEnabled(p.hasHost());
+			portText.setEnabled(p.hasPort());
+			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
 	}
 
@@ -670,5 +847,58 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		super.setVisible(visible);
 		if (visible)
 			uriText.setFocus();
+	}
+
+	/**
+	 * Updates the proposal list for the URI field
+	 */
+	public void saveUriInPrefs() {
+		uriProposalHandler.updateProposals();
+	}
+
+	private void setEnabledRecursively(final Control control,
+			final boolean enable) {
+		control.setEnabled(enable);
+		if (control instanceof Composite)
+			for (final Control child : ((Composite) control).getChildren())
+				setEnabledRecursively(child, enable);
+	}
+
+	private void updateFields(final String text) {
+		try {
+			eventDepth++;
+			if (eventDepth != 1)
+				return;
+
+			final URIish u = new URIish(text);
+			safeSet(hostText, u.getHost());
+			safeSet(pathText, u.getPath());
+			safeSet(userText, u.getUser());
+			safeSet(passText, u.getPass());
+
+			if (u.getPort() > 0)
+				portText.setText(Integer.toString(u.getPort()));
+			else
+				portText.setText(""); //$NON-NLS-1$
+
+			Protocol p = Protocol.fromUri(u);
+			scheme.select(scheme.indexOf(p.getDefaultScheme()));
+
+			updateAuthGroup();
+			uri = u;
+		} catch (URISyntaxException err) {
+			// leave uriText as it is, but clean up underlying uri and
+			// decomposed fields
+			uri = new URIish();
+			hostText.setText(""); //$NON-NLS-1$
+			pathText.setText(""); //$NON-NLS-1$
+			userText.setText(""); //$NON-NLS-1$
+			passText.setText(""); //$NON-NLS-1$
+			portText.setText(""); //$NON-NLS-1$
+			scheme.select(0);
+		} finally {
+			eventDepth--;
+		}
+		checkPage();
 	}
 }

@@ -18,11 +18,11 @@ import java.util.Map;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.GitProjectData;
@@ -30,12 +30,13 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Tell JGit to ignore changes in selected files
  */
-public class AssumeUnchangedOperation implements IWorkspaceRunnable {
-	private final Collection rsrcList;
+public class AssumeUnchangedOperation implements IEGitOperation {
+	private final Collection<? extends IResource> rsrcList;
 
 	private final IdentityHashMap<Repository, DirCache> caches;
 
@@ -48,13 +49,16 @@ public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 	 *            collection of {@link IResource}s which should be ignored when
 	 *            looking for changes or committing.
 	 */
-	public AssumeUnchangedOperation(final Collection rsrcs) {
+	public AssumeUnchangedOperation(final Collection<? extends IResource> rsrcs) {
 		rsrcList = rsrcs;
 		caches = new IdentityHashMap<Repository, DirCache>();
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 	}
 
-	public void run(IProgressMonitor m) throws CoreException {
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	 */
+	public void execute(IProgressMonitor m) throws CoreException {
 		if (m == null)
 			m = new NullProgressMonitor();
 
@@ -64,24 +68,24 @@ public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 		m.beginTask(CoreText.AssumeUnchangedOperation_adding,
 				rsrcList.size() * 200);
 		try {
-			for (Object obj : rsrcList) {
-				obj = ((IAdaptable) obj).getAdapter(IResource.class);
-				if (obj instanceof IResource)
-					assumeValid((IResource) obj);
+			for (IResource resource : rsrcList) {
+				assumeValid(resource);
 				m.worked(200);
 			}
 
 			for (Map.Entry<Repository, DirCache> e : caches.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCache editor = e.getValue();
-				m.setTaskName("Writing index for " + db.getDirectory());
+				m.setTaskName(NLS.bind(
+						CoreText.AssumeUnchangedOperation_writingIndex, db
+								.getDirectory()));
 				editor.write();
 				editor.commit();
 			}
 		} catch (RuntimeException e) {
-			throw Activator.error(CoreText.UntrackOperation_failed, e);
+			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
 		} catch (IOException e) {
-			throw Activator.error(CoreText.UntrackOperation_failed, e);
+			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
 		} finally {
 			for (final RepositoryMapping rm : mappings.keySet())
 				rm.fireRepositoryChanged();
@@ -89,6 +93,13 @@ public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 			mappings.clear();
 			m.done();
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
+	public ISchedulingRule getSchedulingRule() {
+		return new MultiRule(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	private void assumeValid(final IResource resource) throws CoreException {
@@ -106,7 +117,7 @@ public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 			try {
 				cache = DirCache.lock(db);
 			} catch (IOException err) {
-				throw Activator.error(CoreText.UntrackOperation_failed, err);
+				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}
 			caches.put(db, cache);
 			mappings.put(rm, rm);

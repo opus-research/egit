@@ -29,7 +29,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.team.core.Team;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -38,7 +37,9 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -46,6 +47,7 @@ import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.team.core.Team;
 
 class DecoratableResourceAdapter implements IDecoratableResource {
 
@@ -59,7 +61,9 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 
 	private final IPreferenceStore store;
 
-	private String branch = ""; //$NON-NLS-1$
+	private final String branch;
+
+	private final String repositoryName;
 
 	private boolean tracked = false;
 
@@ -88,9 +92,14 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 		headId = repository.resolve(Constants.HEAD);
 
 		store = Activator.getDefault().getPreferenceStore();
+		String repoName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
+		RepositoryState state = repository.getRepositoryState();
+		if (state != RepositoryState.SAFE)
+			repositoryName = repoName + '|' + state.getDescription();
+		else
+			repositoryName = repoName;
 
-		// TODO: Add option to shorten branch name to 6 chars if it's a SHA
-		branch = repository.getBranch();
+		branch = getShortBranch();
 
 		TreeWalk treeWalk = createThreeWayTreeWalk();
 		if (treeWalk == null)
@@ -108,6 +117,22 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			extractContainerProperties(treeWalk);
 			break;
 		}
+	}
+
+	private String getShortBranch() throws IOException {
+		Ref head = repository.getRef(Constants.HEAD);
+		if (head != null && !head.isSymbolic()) {
+			String refString = Activator.getDefault().getRepositoryUtil()
+					.mapCommitToRef(repository, repository.getFullBranch(),
+							false);
+			if (refString != null) {
+				return repository.getFullBranch().substring(0, 7)
+						+ "... (" + refString + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+			} else
+				return repository.getFullBranch().substring(0, 7) + "..."; //$NON-NLS-1$
+		}
+
+		return repository.getBranch();
 	}
 
 	private void extractResourceProperties(TreeWalk treeWalk) {
@@ -377,6 +402,10 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 
 	public int getType() {
 		return resource.getType();
+	}
+
+	public String getRepositoryName() {
+		return repositoryName;
 	}
 
 	public String getBranch() {
