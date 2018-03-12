@@ -229,6 +229,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_openFailed;
 
 	/** */
+	public static String GitHistoryPage_seeLog;
+
+	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -395,9 +398,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_uriChoice;
-
-	/** */
-	public static String SourceBranchPage_repoEmpty;
 
 	/** */
 	public static String SourceBranchPage_title;
@@ -1270,13 +1270,7 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_packedGitMMAP;
 
 	/** */
-	public static String BranchAction_branchFailed;
-
-	/** */
 	public static String BranchAction_cannotCheckout;
-
-	/** */
-	public static String BranchAction_checkingOut;
 
 	/** */
 	public static String BranchAction_errorSwitchingBranches;
@@ -1307,6 +1301,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotRenameRef2;
+
+	/** */
+	public static String BranchSelectionDialog_BranchSelectionDialog_CreateFailedTitle;
+
+	/** */
+	public static String BranchSelectionDialog_BranchSelectionDialog_RenamedFailedTitle;
 
 	/** */
 	public static String BranchSelectionDialog_BranchSuffix_Current;
@@ -1540,9 +1543,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ConfirmProjectDeletion_WindowTitle;
 
 	/** */
-	public static String RepositoriesView_CopyPathToClipboardMenu;
-
-	/** */
 	public static String RepositoriesView_CreateFetch_menu;
 
 	/** */
@@ -1565,9 +1565,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_ImportProject_MenuItem;
-
-	/** */
-	public static String RepositoriesView_ImportProjectsMenu;
 
 	/** */
 	public static String RepositoriesView_ImportRepository_MenuItem;
@@ -1606,21 +1603,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_WorkingDir_treenode;
 
 	/** */
-	public static String RepositoriesViewContentProvider_ExceptionNodeText;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_LocalBranchesNodetext;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_RemoteBrancheNodetext;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
-
-	/** */
-	public static String RepositoriesViewLabelProvider_TagsNodeText;
-
-	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
 
 	/** */
@@ -1643,87 +1625,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCompareFileRevisionEditorInput_contentIdentifier;
-
-	/** */
-	public static String GitCreateGeneralProjectPage_DirLabel;
-
-	/** */
-	public static String GitCreateGeneralProjectPage_DirNotExistMessage;
-
-	/** */
-	public static String GitCreateGeneralProjectPage_EnterProjectNameMessage;
-
-	/** */
-	public static String GitCreateGeneralProjectPage_FileExistsInDirMessage;
-
-	/** */
-	public static String GitCreateGeneralProjectPage_FileNotDirMessage;
-
-	/** */
-	public static String GitCreateGeneralProjectPage_PorjectAlreadyExistsMessage;
-
-	/** */
-	public static String GitCreateGeneralProjectPage_ProjectNameLabel;
-
-	/** */
-	public static String GitCreateProjectViaWizardWizard_AbortedMessage;
-
-	/** */
-	public static String GitCreateProjectViaWizardWizard_WizardTitle;
-
-	/** */
-	public static String GitSelectWizardPage_AutoShareButton;
-
-	/** */
-	public static String GitSelectWizardPage_ImportAsGeneralButton;
-
-	/** */
-	public static String GitSelectWizardPage_ImportExistingButton;
-
-	/** */
-	public static String GitSelectWizardPage_InteractiveShareButton;
-
-	/** */
-	public static String GitSelectWizardPage_NoShareButton;
-
-	/** */
-	public static String GitSelectWizardPage_ProjectCreationHeader;
-
-	/** */
-	public static String GitSelectWizardPage_SharingProjectsHeader;
-
-	/** */
-	public static String GitSelectWizardPage_UseNewProjectsWizardButton;
-
-	/** */
-	public static String GitSelectWizardPage_WizardTitle;
-
-	/** */
-	public static String GitShareProjectsPage_AbortedMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NoNewProjectMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NoRepoForProjectMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NoRepoFoundMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NothingSelectedMessage;
-
-	/** */
-	public static String GitShareProjectsPage_PageTitle;
-
-	/** */
-	public static String GitShareProjectsPage_ProjectAlreadySharedMessage;
-
-	/** */
-	public static String GitShareProjectsPage_ProjectNameLabel;
-
-	/** */
-	public static String GitShareProjectsPage_RepositoryLabel;
 
 	/** */
 	public static String UIIcons_errorDeterminingIconBase;

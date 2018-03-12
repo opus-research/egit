@@ -20,6 +20,7 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -28,10 +29,10 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.Team;
+import org.eclipse.jgit.lib.GitIndex;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 
 /**
  * Add one or more new files/folders to the Git repository.
@@ -46,7 +47,7 @@ import org.eclipse.team.core.Team;
  * Resources are only scheduled for addition in the index.
  * </p>
  */
-public class TrackOperation implements IEGitOperation {
+public class TrackOperation implements IWorkspaceRunnable {
 	private final Collection rsrcList;
 
 	/**
@@ -60,10 +61,7 @@ public class TrackOperation implements IEGitOperation {
 		rsrcList = rsrcs;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		if (m == null) {
 			m = new NullProgressMonitor();
 		}

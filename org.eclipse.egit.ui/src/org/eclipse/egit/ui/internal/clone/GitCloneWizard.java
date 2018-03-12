@@ -14,7 +14,6 @@ package org.eclipse.egit.ui.internal.clone;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
-import java.util.Collections;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -124,16 +123,9 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 
 	boolean performClone(boolean background) {
 		final URIish uri = cloneSource.getSelection().getURI();
-		final boolean allSelected;
-		final Collection<Ref> selectedBranches;
-		if (validSource.isSourceRepoEmpty()) {
-			// fetch all branches of empty repo
-			allSelected = true;
-			selectedBranches = Collections.emptyList();
-		} else {
-			allSelected = validSource.isAllSelected();
-			selectedBranches = validSource.getSelectedBranches();
-		}
+		final boolean allSelected = validSource.isAllSelected();
+		final Collection<Ref> selectedBranches = validSource
+				.getSelectedBranches();
 		final File workdir = cloneDestination.getDestinationFile();
 		final String branch = cloneDestination.getInitialBranch();
 		final String remoteName = cloneDestination.getRemote();
@@ -209,8 +201,9 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 						UIText.GitCloneWizard_CloneCanceledMessage);
 				return false;
 			} catch (Exception e) {
-				Activator.handleError(UIText.GitCloneWizard_CloneFailedHeading,
-						e, true);
+				Activator.logError(UIText.GitCloneWizard_CloneFailedHeading, e);
+				MessageDialog.openError(getShell(),
+						UIText.GitCloneWizard_CloneFailedHeading, e.toString());
 				return false;
 			}
 		}
