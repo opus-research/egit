@@ -2071,6 +2071,9 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
+	public static String CommitMessageViewer_SelectOneCommitMessage;
+
+	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
@@ -3495,6 +3498,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
+
+	/** */
+	public static String CommitFileDiffViewer_SelectOneCommitMessage;
 
 	/** */
 	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
