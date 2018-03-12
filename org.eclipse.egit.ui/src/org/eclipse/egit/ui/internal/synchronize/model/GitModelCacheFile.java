@@ -17,12 +17,9 @@ import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 
-/**
- * Representation of staged file in Git Change Set model
- */
-public class GitModelCacheFile extends GitModelBlob {
+class GitModelCacheFile extends GitModelBlob {
 
-	GitModelCacheFile(GitModelObjectContainer parent, RevCommit commit,
+	public GitModelCacheFile(GitModelObjectContainer parent, RevCommit commit,
 			ObjectId repoId, ObjectId cacheId, IPath location) throws IOException {
 		super(parent, commit, null, repoId, cacheId, repoId, location);
 	}
