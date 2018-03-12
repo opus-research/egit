@@ -18,17 +18,11 @@ import static org.eclipse.jgit.lib.ObjectId.zeroId;
 import java.io.IOException;
 
 import org.eclipse.compare.CompareConfiguration;
-import org.eclipse.compare.IResourceProvider;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.compare.structuremergeviewer.ICompareInput;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
 import org.eclipse.jgit.lib.ObjectId;
@@ -38,7 +32,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 /**
  * Git blob object representation in Git ChangeSet
  */
-public class GitModelBlob extends GitModelCommit implements IResourceProvider {
+public class GitModelBlob extends GitModelCommit {
 
 	private final IPath location;
 
@@ -135,9 +129,9 @@ public class GitModelBlob extends GitModelCommit implements IResourceProvider {
 			return kind;
 
 		int changeKind;
-		if (zeroId().equals(baseId))
+		if (zeroId().equals(remoteId))
 			changeKind = DELETION;
-		else if (zeroId().equals(remoteId) || remoteId == null)
+		else if (zeroId().equals(ancestorId))
 			changeKind = ADDITION;
 		else
 			changeKind = CHANGE;
@@ -159,23 +153,22 @@ public class GitModelBlob extends GitModelCommit implements IResourceProvider {
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelBlob && !(obj instanceof GitModelCacheFile)
+				&& !(obj instanceof GitModelWorkingFile)) {
+			GitModelBlob objBlob = (GitModelBlob) obj;
 
-		if (obj.getClass() != getClass())
-			return false;
+			boolean equalsRemoteId;
+			ObjectId objRemoteId = objBlob.remoteId;
+			if (objRemoteId != null)
+				equalsRemoteId = objRemoteId.equals(remoteId);
+			else
+				equalsRemoteId = remoteId == null;
 
-		GitModelBlob objBlob = (GitModelBlob) obj;
+			return objBlob.baseId.equals(baseId) && equalsRemoteId
+					&& objBlob.location.equals(location);
+		}
 
-		boolean equalsRemoteId;
-		ObjectId objRemoteId = objBlob.remoteId;
-		if (objRemoteId != null)
-			equalsRemoteId = objRemoteId.equals(remoteId);
-		else
-			equalsRemoteId = remoteId == null;
-
-		return objBlob.baseId.equals(baseId) && equalsRemoteId
-				&& objBlob.location.equals(location);
+		return false;
 	}
 
 	@Override
@@ -224,19 +217,6 @@ public class GitModelBlob extends GitModelCommit implements IResourceProvider {
 			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
 		return new GitCompareInput(getRepository(), ancestorData, remoteData,
 				baseData, gitPath);
-	}
-
-	public IResource getResource() {
-		String absoluteFilePath = getRepository().getWorkTree()
-				.getAbsolutePath() + "/" + gitPath; //$NON-NLS-1$
-		Path path = new Path(absoluteFilePath);
-		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
-		IFile file = workspaceRoot.getFileForLocation(path);
-
-		if (file == null)
-			file = workspaceRoot.getFile(path);
-
-		return file;
 	}
 
 }

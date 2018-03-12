@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2011 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,9 +11,6 @@
  *    										resolved
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -28,20 +25,16 @@ import org.eclipse.jgit.lib.Repository;
 public class PullCommand extends RepositoriesViewCommandHandler<RepositoryNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 
-		Set<Repository> repositories = new HashSet<Repository>();
-		for (RepositoryNode node : getSelectedNodes(event)) {
-			if (node.getRepository() != null)
-				repositories.add(node.getRepository());
-		}
-
-		if (repositories.isEmpty())
+		final Repository repository = getSelectedNodes(event).get(0)
+				.getRepository();
+		if (repository == null)
 			return null;
-		new PullOperationUI(repositories).start();
+		new PullOperationUI(repository).start();
 		return null;
 	}
 
 	public void setEnabled(Object evaluationContext) {
-		enableWhenAllRepositoriesHaveHead(evaluationContext);
+		enableWhenRepositoryHaveHead(evaluationContext);
 	}
 
 }

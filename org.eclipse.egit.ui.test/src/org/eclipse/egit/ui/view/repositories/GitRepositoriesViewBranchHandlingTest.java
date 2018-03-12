@@ -15,6 +15,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.egit.core.op.BranchOperation;
@@ -28,6 +29,7 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
@@ -65,8 +67,16 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		final URIish uri = new URIish(remoteRepositoryFile.getPath());
 		final File workdir = new File(getTestDirectory(), "Cloned");
 
+		Collection<Ref> remoteRefs = getRemoteRefs(uri);
+		Ref myref = null;
+		for (Ref ref : remoteRefs) {
+			if (ref.getName().equals("refs/heads/master")) {
+				myref = ref;
+				break;
+			}
+		}
 		CloneOperation op = new CloneOperation(uri, true, null, workdir,
-				"refs/heads/master", "origin", 0);
+				myref, "origin", 0);
 		op.run(null);
 
 		clonedRepositoryFile = new File(workdir, Constants.DOT_GIT);
@@ -210,7 +220,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		ContextMenuHelper.clickContextMenu(bot.tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		SWTBotShell confirmPopup = bot
-				.shell(UIText.UnmergedBranchDialog_Title);
+				.shell(UIText.RepositoriesView_ConfirmDeleteTitle);
 		confirmPopup.activate();
 		confirmPopup.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();

@@ -33,7 +33,6 @@ import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.NoMessageException;
 import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
 import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -44,7 +43,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.util.FileUtils;
 
 /**
  * Helper class for creating and filling a test repository
@@ -121,14 +119,13 @@ public class TestRepository {
 			JGitInternalException, WrongRepositoryStateException {
 		String repoPath = repository.getWorkTree().getAbsolutePath();
 		File file = new File(repoPath, "dummy");
-		if (!file.exists())
-			FileUtils.createNewFile(file);
+		file.createNewFile();
 		track(file);
 		return commit(message);
 	}
 
 	/**
-	 * Create a file or get an existing one
+	 * Create new file
 	 *
 	 * @param project
 	 *            instance of project inside with file will be created
@@ -140,11 +137,10 @@ public class TestRepository {
 	public File createFile(IProject project, String name) throws IOException {
 		String path = project.getLocation().append(name).toOSString();
 		int lastSeparator = path.lastIndexOf(File.separator);
-		FileUtils.mkdirs(new File(path.substring(0, lastSeparator)), true);
+		new File(path.substring(0, lastSeparator)).mkdirs();
 
 		File file = new File(path);
-		if (!file.exists())
-			FileUtils.createNewFile(file);
+		file.createNewFile();
 
 		return file;
 	}
@@ -406,19 +402,10 @@ public class TestRepository {
 	}
 
 	public boolean inIndex(String path) throws IOException {
-		return getDirCacheEntry(path) != null;
-	}
+		String repoPath = getRepoRelativePath(path);
+		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
 
-	public boolean removedFromIndex(String path) throws IOException {
-		DirCacheEntry dc = getDirCacheEntry(path);
-		if (dc == null)
-			return true;
-
-		Ref ref = repository.getRef(Constants.HEAD);
-		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
-		TreeWalk tw = TreeWalk.forPath(repository, path, c.getTree());
-
-		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
+		return dc.getEntry(repoPath) != null;
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {
@@ -488,10 +475,4 @@ public class TestRepository {
 		disconnect.execute(null);
 	}
 
-	private DirCacheEntry getDirCacheEntry(String path) throws IOException {
-		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
-
-		return dc.getEntry(repoPath);
-	}
 }

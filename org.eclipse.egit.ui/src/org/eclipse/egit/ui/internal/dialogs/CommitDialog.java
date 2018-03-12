@@ -13,90 +13,81 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.net.URI;
-import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.compare.CompareUI;
+import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.core.GitProvider;
+import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
+import org.eclipse.egit.core.op.AddToIndexOperation;
+import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
+import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferenceDialog;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.DocumentEvent;
-import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IDocumentListener;
-import org.eclipse.jface.text.contentassist.ContentAssistant;
-import org.eclipse.jface.text.contentassist.IContentAssistant;
-import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
-import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.ICheckStateListener;
-import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
-import org.eclipse.jface.window.Window;
-import org.eclipse.jgit.api.AddCommand;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
+import org.eclipse.jgit.util.ChangeIdUtil;
+import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
@@ -104,176 +95,42 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.ToolBar;
-import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.team.core.RepositoryProvider;
-import org.eclipse.ui.IMemento;
-import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.WorkbenchException;
-import org.eclipse.ui.XMLMemento;
+import org.eclipse.team.core.history.IFileHistory;
+import org.eclipse.team.core.history.IFileHistoryProvider;
+import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.dialogs.PreferencesUtil;
-import org.eclipse.ui.forms.IFormColors;
-import org.eclipse.ui.forms.widgets.ExpandableComposite;
-import org.eclipse.ui.forms.widgets.FormToolkit;
-import org.eclipse.ui.forms.widgets.Section;
+import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
  * Dialog is shown to user when they request to commit files. Changes in the
  * selected portion of the tree are shown.
  */
-public class CommitDialog extends TitleAreaDialog {
+public class CommitDialog extends Dialog {
 
-	private static final String KEY_MESSAGE = "message"; //$NON-NLS-1$
+	static class CommitLabelProvider extends WorkbenchLabelProvider implements
+			ITableLabelProvider {
+		public String getColumnText(Object obj, int columnIndex) {
+			CommitItem item = (CommitItem) obj;
 
-	private static final String KEY_MESSAGES = "messages"; //$NON-NLS-1$
+			switch (columnIndex) {
+			case 0:
+				return item.status.getText();
 
-	private static IPreferenceStore getPreferenceStore() {
-		return org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
-	}
+			case 1:
+				return item.file.getProject().getName() + ": " //$NON-NLS-1$
+						+ item.file.getProjectRelativePath();
 
-	private static Set<String> getCommitHistory() {
-		String all = getPreferenceStore().getString(
-				UIPreferences.COMMIT_DIALOG_HISTORY_MESSAGES);
-		if (all.length() == 0)
-			return Collections.emptySet();
-		int max = getCommitHistorySize();
-		if (max < 1)
-			return Collections.emptySet();
-		XMLMemento memento;
-		try {
-			memento = XMLMemento.createReadRoot(new StringReader(all));
-		} catch (WorkbenchException e) {
-			org.eclipse.egit.ui.Activator.logError(
-					"Error reading commit message history", e); //$NON-NLS-1$
-			return Collections.emptySet();
-		}
-		Set<String> messages = new LinkedHashSet<String>();
-		for (IMemento child : memento.getChildren(KEY_MESSAGE)) {
-			messages.add(child.getTextData());
-			if (messages.size() == max)
-				break;
-		}
-		return messages;
-	}
-
-	private static void saveCommitHistory(String message) {
-		if (message == null || message.length() == 0)
-			return;
-		int size = getCommitHistorySize();
-		if (size < 1)
-			return;
-
-		XMLMemento memento = XMLMemento.createWriteRoot(KEY_MESSAGES);
-		memento.createChild(KEY_MESSAGE).putTextData(message);
-
-		int count = 1;
-		if (count < size) {
-			Set<String> history = getCommitHistory();
-			history.remove(message);
-			for (String previous : history) {
-				memento.createChild(KEY_MESSAGE).putTextData(previous);
-				count++;
-				if (count == size)
-					break;
-			}
-		}
-		StringWriter writer = new StringWriter();
-		try {
-			memento.save(writer);
-			getPreferenceStore().setValue(
-					UIPreferences.COMMIT_DIALOG_HISTORY_MESSAGES,
-					writer.toString());
-		} catch (IOException e) {
-			org.eclipse.egit.ui.Activator.logError(
-					"Error writing commit message history", e); //$NON-NLS-1$
-		}
-	}
-
-	private static int getCommitHistorySize() {
-		return getPreferenceStore().getInt(
-				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE);
-	}
-
-	static class CommitStatusLabelProvider extends ColumnLabelProvider {
-
-		private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
-				.getImage(ISharedImages.IMG_OBJ_FILE);
-
-		private ResourceManager resourceManager = new LocalResourceManager(
-				JFaceResources.getResources());
-
-		private final Image SUBMODULE = UIIcons.REPOSITORY.createImage();
-
-		private Image getEditorImage(CommitItem item) {
-			if (!item.submodule) {
-				Image image = DEFAULT;
-				String name = new Path(item.path).lastSegment();
-				if (name != null) {
-					ImageDescriptor descriptor = PlatformUI.getWorkbench()
-							.getEditorRegistry().getImageDescriptor(name);
-					image = (Image) this.resourceManager.get(descriptor);
-				}
-				return image;
-			} else
-				return SUBMODULE;
-		}
-
-		private Image getDecoratedImage(Image base, ImageDescriptor decorator) {
-			DecorationOverlayIcon decorated = new DecorationOverlayIcon(base,
-					decorator, IDecoration.BOTTOM_RIGHT);
-			return (Image) this.resourceManager.get(decorated);
-		}
-
-		public String getText(Object obj) {
-			return ""; //$NON-NLS-1$
-		}
-
-		public Image getImage(Object element) {
-			CommitItem item = (CommitItem) element;
-			ImageDescriptor decorator = null;
-			switch (item.status) {
-			case UNTRACKED:
-				decorator = UIIcons.OVR_UNTRACKED;
-				break;
-			case ADDED:
-			case ADDED_INDEX_DIFF:
-				decorator = UIIcons.OVR_STAGED_ADD;
-				break;
-			case REMOVED:
-			case REMOVED_NOT_STAGED:
-			case REMOVED_UNTRACKED:
-				decorator = UIIcons.OVR_STAGED_REMOVE;
-				break;
 			default:
-				break;
+				return null;
 			}
-			return decorator != null ? getDecoratedImage(getEditorImage(item),
-					decorator) : getEditorImage(item);
 		}
 
-		public String getToolTipText(Object element) {
-			return ((CommitItem) element).status.getText();
+		public Image getColumnImage(Object element, int columnIndex) {
+			if (columnIndex == 0)
+				return getImage(element);
+			return null;
 		}
-
-		public void dispose() {
-			SUBMODULE.dispose();
-			resourceManager.dispose();
-			super.dispose();
-		}
-
-	}
-
-	static class CommitPathLabelProvider extends ColumnLabelProvider {
-
-		public String getText(Object obj) {
-			return ((CommitItem) obj).path;
-		}
-
-		public String getToolTipText(Object element) {
-			return ((CommitItem) element).status.getText();
-		}
-
 	}
 
 	class HeaderSelectionListener extends SelectionAdapter {
@@ -335,17 +192,44 @@ public class CommitDialog extends TitleAreaDialog {
 
 		public void widgetDefaultSelected(SelectionEvent e) {
 			IStructuredSelection selection = (IStructuredSelection) filesViewer.getSelection();
+
 			CommitItem commitItem = (CommitItem) selection.getFirstElement();
 			if (commitItem == null) {
 				return;
 			}
-			IFile file = findFile(commitItem.path);
-			if (file == null
-					|| RepositoryProvider.getProvider(file.getProject()) == null)
-				CompareUtils.compareHeadWithWorkingTree(repository,
-						commitItem.path);
-			else
-				CompareUtils.compareHeadWithWorkspace(repository, file);
+			if (commitItem.status == Status.UNTRACKED)
+				return;
+
+			IProject project = commitItem.file.getProject();
+			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+			if (mapping == null) {
+				return;
+			}
+			Repository repository = mapping.getRepository();
+
+			try {
+				ObjectId id = repository.resolve(Constants.HEAD);
+				if (id == null
+						|| repository.open(id, Constants.OBJ_COMMIT).getType() != Constants.OBJ_COMMIT) {
+					return;
+				}
+			} catch (IOException e1) {
+				return;
+			}
+
+			GitProvider provider = (GitProvider) RepositoryProvider.getProvider(project);
+			GitFileHistoryProvider fileHistoryProvider = (GitFileHistoryProvider) provider.getFileHistoryProvider();
+
+			IFileHistory fileHistory = fileHistoryProvider.getFileHistoryFor(commitItem.file, IFileHistoryProvider.SINGLE_REVISION, null);
+
+			IFileRevision baseFile = fileHistory.getFileRevisions()[0];
+			IFileRevision nextFile = fileHistoryProvider.getWorkspaceFileRevision(commitItem.file);
+
+			ITypedElement base = new FileRevisionTypedElement(baseFile);
+			ITypedElement next = new FileRevisionTypedElement(nextFile);
+
+			GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(next, base, null);
+			CompareUI.openCompareDialog(input);
 		}
 
 	}
@@ -366,11 +250,16 @@ public class CommitDialog extends TitleAreaDialog {
 		}
 	}
 
+	/**
+	* Constant for the extension point for the commit message provider
+	*/
+	private static final String COMMIT_MESSAGE_PROVIDER_ID = "org.eclipse.egit.ui.commitMessageProvider"; //$NON-NLS-1$
+
+	private static final String COMMITTER_VALUES_PREF = "CommitDialog.committerValues"; //$NON-NLS-1$
+
+	private static final String AUTHOR_VALUES_PREF = "CommitDialog.authorValues"; //$NON-NLS-1$
+
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
-
-	FormToolkit toolkit;
-
-	CommitMessageComponent commitMessageComponent;
 
 	SpellcheckableMessageArea commitText;
 
@@ -378,36 +267,40 @@ public class CommitDialog extends TitleAreaDialog {
 
 	Text committerText;
 
-	ToolItem amendingItem;
+	Button amendingButton;
 
-	ToolItem signedOffItem;
+	Button signedOffButton;
 
-	ToolItem changeIdItem;
+	Button changeIdButton;
 
-	ToolItem showUntrackedItem;
+	Button showUntrackedButton;
 
 	CheckboxTableViewer filesViewer;
 
-	Section filesSection;
-
-	Button commitButton;
+	ObjectId originalChangeId;
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
 	private String commitMessage = null;
 
+	private String previousCommitMessage = ""; //$NON-NLS-1$
+
 	private String author = null;
+
+	private String previousAuthor = null;
 
 	private String committer = null;
 
 	/**
 	 * A collection of files that should be already checked in the table.
 	 */
-	private Set<String> preselectedFiles = Collections.emptySet();
+	private Set<IFile> preselectedFiles = Collections.emptySet();
 
-	private boolean preselectAll = false;
+	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
 
-	private ArrayList<String> selectedFiles = new ArrayList<String>();
+	private boolean signedOff = org.eclipse.egit.ui.Activator.getDefault()
+	.getPreferenceStore()
+	.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
 
 	private boolean amending = false;
 
@@ -419,7 +312,9 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private boolean allowToChangeSelection = true;
 
-	private Repository repository;
+	private IPreviousValueProposalHandler authorHandler;
+
+	private IPreviousValueProposalHandler committerHandler;
 
 	/**
 	 * @param parentShell
@@ -444,10 +339,19 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	/**
-	 * @return the files selected by the user to commit.
+	 * Pre-select suggested set of resources to commit
+	 *
+	 * @param items
 	 */
-	public Collection<String> getSelectedFiles() {
-		return selectedFiles;
+	public void setSelectedFiles(IFile[] items) {
+		Collections.addAll(selectedFiles, items);
+	}
+
+	/**
+	 * @return the resources selected by the user to commit.
+	 */
+	public IFile[] getSelectedFiles() {
+		return selectedFiles.toArray(new IFile[0]);
 	}
 
 	/**
@@ -457,46 +361,45 @@ public class CommitDialog extends TitleAreaDialog {
 	 *            the files to be checked in the dialog's table, must not be
 	 *            <code>null</code>
 	 */
-	public void setPreselectedFiles(Set<String> preselectedFiles) {
+	public void setPreselectedFiles(Set<IFile> preselectedFiles) {
 		Assert.isNotNull(preselectedFiles);
 		this.preselectedFiles = preselectedFiles;
 	}
 
 	/**
-	 * Preselect all changed files in the commit dialog.
-	 * Untracked files are not preselected.
-	 * @param preselectAll
-	 */
-	public void setPreselectAll(boolean preselectAll) {
-		this.preselectAll = preselectAll;
-	}
-
-	/**
-	 * Set the total set of changed files, including additions and
+	 * Set the total set of changed resources, including additions and
 	 * removals
-	 * @param repository
-	 * @param paths paths of files potentially affected by a new commit
-	 * @param indexDiff IndexDiff of the related repository
+	 *
+	 * @param files potentially affected by a new commit
+	 * @param indexDiffs IndexDiffs of the related repositories
 	 */
-	public void setFiles(Repository repository, Set<String> paths,
-			IndexDiff indexDiff) {
-		this.repository = repository;
+	public void setFiles(Set<IFile> files, Map<Repository, IndexDiff> indexDiffs) {
 		items.clear();
-		for (String path : paths) {
+		for (IFile file : files) {
+			RepositoryMapping repositoryMapping = RepositoryMapping
+					.getMapping(file.getProject());
+			Repository repo = repositoryMapping.getRepository();
+			String path = repositoryMapping.getRepoRelativePath(file);
 			CommitItem item = new CommitItem();
-			item.status = getFileStatus(path, indexDiff);
-			item.submodule = FileMode.GITLINK == indexDiff.getIndexMode(path);
-			item.path = path;
+			item.status = getFileStatus(path, indexDiffs.get(repo));
+			item.file = file;
 			items.add(item);
 		}
-
-		// initially, we sort by status plus path
+		// initially, we sort by status plus project plus path
 		Collections.sort(items, new Comparator<CommitItem>() {
 			public int compare(CommitItem o1, CommitItem o2) {
 				int diff = o1.status.ordinal() - o2.status.ordinal();
 				if (diff != 0)
 					return diff;
-				return o1.path.compareTo(o2.path);
+				diff = o1.file.getProject().getName().compareTo(
+						o2.file.getProject().getName());
+				if (diff != 0)
+					return diff;
+				return o1.file
+				.getProjectRelativePath()
+				.toString()
+				.compareTo(
+						o2.file.getProjectRelativePath().toString());
 			}
 		});
 	}
@@ -534,6 +437,32 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	/**
+	 * Pre-set the previous author if amending the commit
+	 *
+	 * @param previousAuthor
+	 */
+	public void setPreviousAuthor(String previousAuthor) {
+		this.previousAuthor = previousAuthor;
+	}
+
+	/**
+	 * @return whether to auto-add a signed-off line to the message
+	 */
+	public boolean isSignedOff() {
+		return signedOff;
+	}
+
+	/**
+	 * Pre-set whether a signed-off line should be included in the commit
+	 * message.
+	 *
+	 * @param signedOff
+	 */
+	public void setSignedOff(boolean signedOff) {
+		this.signedOff = signedOff;
+	}
+
+	/**
 	 * @return whether the last commit is to be amended
 	 */
 	public boolean isAmending() {
@@ -547,6 +476,15 @@ public class CommitDialog extends TitleAreaDialog {
 	 */
 	public void setAmending(boolean amending) {
 		this.amending = amending;
+	}
+
+	/**
+	 * Set the message from the previous commit for amending.
+	 *
+	 * @param string
+	 */
+	public void setPreviousCommitMessage(String string) {
+		this.previousCommitMessage = string;
 	}
 
 	/**
@@ -575,84 +513,12 @@ public class CommitDialog extends TitleAreaDialog {
 
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		toolkit.adapt(parent, false, false);
-		commitButton = createButton(parent, IDialogConstants.OK_ID,
-				UIText.CommitDialog_Commit, true);
+		createButton(parent, IDialogConstants.SELECT_ALL_ID, UIText.CommitDialog_SelectAll, false);
+		createButton(parent, IDialogConstants.DESELECT_ALL_ID, UIText.CommitDialog_DeselectAll, false);
+
+		createButton(parent, IDialogConstants.OK_ID, UIText.CommitDialog_Commit, true);
 		createButton(parent, IDialogConstants.CANCEL_ID,
 				IDialogConstants.CANCEL_LABEL, false);
-		updateMessage();
-	}
-
-	@Override
-	protected Control createButtonBar(Composite parent) {
-		toolkit.adapt(parent, false, false);
-		return super.createButtonBar(parent);
-	}
-
-	@Override
-	protected Control createHelpControl(Composite parent) {
-		toolkit.adapt(parent, false, false);
-		Control help = super.createHelpControl(parent);
-		toolkit.adapt(help, false, false);
-		return help;
-	}
-
-	/**
-	 * Add message drop down toolbar item
-	 *
-	 * @param parent
-	 * @return toolbar
-	 */
-	protected ToolBar addMessageDropDown(Composite parent) {
-		final ToolBar dropDownBar = new ToolBar(parent, SWT.FLAT | SWT.RIGHT);
-		final ToolItem dropDownItem = new ToolItem(dropDownBar, SWT.PUSH);
-		dropDownItem.setImage(PlatformUI.getWorkbench().getSharedImages()
-				.getImage("IMG_LCL_RENDERED_VIEW_MENU")); //$NON-NLS-1$
-		final Menu menu = new Menu(dropDownBar);
-		dropDownItem.addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				menu.dispose();
-			}
-		});
-		MenuItem preferencesItem = new MenuItem(menu, SWT.PUSH);
-		preferencesItem.setText(UIText.CommitDialog_ConfigureLink);
-		preferencesItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				String[] pages = new String[] { UIPreferences.PAGE_COMMIT_PREFERENCES };
-				PreferenceDialog dialog = PreferencesUtil
-						.createPreferenceDialogOn(getShell(), pages[0], pages,
-								null);
-				if (Window.OK == dialog.open())
-					commitText.reconfigure();
-			}
-
-		});
-		dropDownItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				Rectangle b = dropDownItem.getBounds();
-				Point p = dropDownItem.getParent().toDisplay(
-						new Point(b.x, b.y + b.height));
-				menu.setLocation(p.x, p.y);
-				menu.setVisible(true);
-			}
-
-		});
-		return dropDownBar;
-	}
-
-	@Override
-	protected Control createContents(Composite parent) {
-		toolkit = new FormToolkit(parent.getDisplay());
-		parent.addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				toolkit.dispose();
-			}
-		});
-		return super.createContents(parent);
 	}
 
 	@Override
@@ -660,70 +526,19 @@ public class CommitDialog extends TitleAreaDialog {
 		Composite container = (Composite) super.createDialogArea(parent);
 		parent.getShell().setText(UIText.CommitDialog_CommitChanges);
 
-		container = toolkit.createComposite(container);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(container);
-		toolkit.paintBordersFor(container);
-		GridLayoutFactory.swtDefaults().applyTo(container);
+		GridLayout layout = new GridLayout(2, false);
+		container.setLayout(layout);
 
-		Section messageSection = toolkit.createSection(container,
-				ExpandableComposite.TITLE_BAR
-						| ExpandableComposite.CLIENT_INDENT);
-		messageSection.setText(UIText.CommitDialog_CommitMessage);
-		Composite messageArea = toolkit.createComposite(messageSection);
-		GridLayoutFactory.fillDefaults().spacing(0, 0)
-				.extendedMargins(2, 2, 2, 2).applyTo(messageArea);
-		toolkit.paintBordersFor(messageArea);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(messageSection);
+		Label label = new Label(container, SWT.LEFT);
+		label.setText(UIText.CommitDialog_CommitMessage);
+		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		Composite headerArea = new Composite(messageSection, SWT.NONE);
-		GridLayoutFactory.fillDefaults().spacing(0, 0).numColumns(2)
-				.applyTo(headerArea);
-
-		ToolBar messageToolbar = new ToolBar(headerArea, SWT.FLAT
-				| SWT.HORIZONTAL);
-		GridDataFactory.fillDefaults().align(SWT.END, SWT.FILL)
-				.grab(true, false).applyTo(messageToolbar);
-
-		addMessageDropDown(headerArea);
-
-		messageSection.setTextClient(headerArea);
-
-		commitText = new SpellcheckableMessageArea(messageArea, commitMessage,
-				SWT.NONE) {
-
-			protected IContentAssistant createContentAssistant(
-					ISourceViewer viewer) {
-				ContentAssistant assistant = new ContentAssistant();
-				assistant.enableAutoInsert(true);
-				Collection<String> paths = getFileList();
-				Collection<String> messages = getCommitHistory();
-				final CommitProposalProcessor processor = new CommitProposalProcessor(
-						messages.toArray(new String[messages.size()]),
-						paths.toArray(new String[paths.size()]));
-				viewer.getTextWidget().addDisposeListener(
-						new DisposeListener() {
-
-							public void widgetDisposed(DisposeEvent e) {
-								processor.dispose();
-							}
-						});
-				assistant.setContentAssistProcessor(processor,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				return assistant;
-			}
-
-		};
-		commitText
-				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
-		messageSection.setClient(messageArea);
+		commitText = new SpellcheckableMessageArea(container, commitMessage);
 		Point size = commitText.getTextWidget().getSize();
 		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
-		commitText.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, true).hint(size).minSize(size.x, minHeight)
-				.align(SWT.FILL, SWT.FILL).create());
-
-		UIUtils.addBulbDecorator(commitText.getTextWidget(),
-				UIText.CommitDialog_ContentAssist);
+		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
+				.hint(size).minSize(size.x, minHeight).align(SWT.FILL, SWT.FILL).create());
+		commitText.setText(calculateCommitMessage());
 
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
@@ -739,116 +554,159 @@ public class CommitDialog extends TitleAreaDialog {
 			}
 		});
 
-		Composite personArea = toolkit.createComposite(container);
-		toolkit.paintBordersFor(personArea);
-		GridLayoutFactory.swtDefaults().numColumns(2).applyTo(personArea);
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(personArea);
+		new Label(container, SWT.LEFT).setText(UIText.CommitDialog_Author);
+		authorText = new Text(container, SWT.BORDER);
+		authorText.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).create());
+		if (author != null)
+			authorText.setText(author);
 
-		toolkit.createLabel(personArea, UIText.CommitDialog_Author)
-				.setForeground(
-						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-		authorText = toolkit.createText(personArea, null);
-		authorText
-				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
-		authorText.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).create());
-
-		toolkit.createLabel(personArea, UIText.CommitDialog_Committer)
-				.setForeground(
-						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-		committerText = toolkit.createText(personArea, null);
-		committerText.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).create());
+		authorHandler = UIUtils.addPreviousValuesContentProposalToText(authorText, AUTHOR_VALUES_PREF);
+		new Label(container, SWT.LEFT).setText(UIText.CommitDialog_Committer);
+		committerText = new Text(container, SWT.BORDER);
+		committerText.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).create());
 		if (committer != null)
 			committerText.setText(committer);
-
-		amendingItem = new ToolItem(messageToolbar, SWT.CHECK);
-		amendingItem.setSelection(amending);
-		if (amending)
-			amendingItem.setEnabled(false); // if already set, don't allow any
-											// changes
-		else if (!amendAllowed)
-			amendingItem.setEnabled(false);
-		amendingItem.setToolTipText(UIText.CommitDialog_AmendPreviousCommit);
-		Image amendImage = UIIcons.AMEND_COMMIT.createImage();
-		UIUtils.hookDisposal(amendingItem, amendImage);
-		amendingItem.setImage(amendImage);
-
-		signedOffItem = new ToolItem(messageToolbar, SWT.CHECK);
-
-		signedOffItem.setToolTipText(UIText.CommitDialog_AddSOB);
-		Image signedOffImage = UIIcons.SIGNED_OFF.createImage();
-		UIUtils.hookDisposal(signedOffItem, signedOffImage);
-		signedOffItem.setImage(signedOffImage);
-
-		changeIdItem = new ToolItem(messageToolbar, SWT.CHECK);
-		Image changeIdImage = UIIcons.GERRIT.createImage();
-		UIUtils.hookDisposal(changeIdItem, changeIdImage);
-		changeIdItem.setImage(changeIdImage);
-		changeIdItem.setToolTipText(UIText.CommitDialog_AddChangeIdLabel);
-
-		final ICommitMessageComponentNotifications listener = new ICommitMessageComponentNotifications() {
-
-			public void updateSignedOffToggleSelection(boolean selection) {
-				signedOffItem.setSelection(selection);
-			}
-
-			public void updateChangeIdToggleSelection(boolean selection) {
-				changeIdItem.setSelection(selection);
-			}
-		};
-
-		commitMessageComponent = new CommitMessageComponent(repository, listener);
-		commitMessageComponent.enableListers(false);
-		commitMessageComponent.setDefaults();
-		commitMessageComponent.attachControls(commitText, authorText, committerText);
-		commitMessageComponent.setCommitMessage(commitMessage);
-		commitMessageComponent.setAuthor(author);
-		commitMessageComponent.setCommitter(committer);
-		commitMessageComponent.setAmending(amending);
-		commitMessageComponent.setFilesToCommit(getFileList());
-
-		amendingItem.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent arg0) {
-				commitMessageComponent.setAmendingButtonSelection(amendingItem.getSelection());
+		committerText.addModifyListener(new ModifyListener() {
+			String oldCommitter = committerText.getText();
+			public void modifyText(ModifyEvent e) {
+				if (signedOffButton.getSelection()) {
+					// the commit message is signed
+					// the signature must be updated
+					String newCommitter = committerText.getText();
+					String oldSignOff = getSignedOff(oldCommitter);
+					String newSignOff = getSignedOff(newCommitter);
+					commitText.setText(replaceSignOff(commitText.getText(), oldSignOff, newSignOff));
+					oldCommitter = newCommitter;
+				}
 			}
 		});
 
-		changeIdItem.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent arg0) {
-				commitMessageComponent.setChangeIdButtonSelection(changeIdItem.getSelection());
+		committerHandler = UIUtils.addPreviousValuesContentProposalToText(committerText, COMMITTER_VALUES_PREF);
+
+		Link preferencesLink = new Link(container, SWT.NONE);
+		preferencesLink.setText(UIText.CommitDialog_ConfigureLink);
+		preferencesLink.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				String preferencePageId = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
+				PreferenceDialog dialog = PreferencesUtil
+						.createPreferenceDialogOn(getShell(), preferencePageId,
+								new String[] { preferencePageId }, null);
+				dialog.open();
+				commitText.reconfigure();
 			}
 		});
 
-		signedOffItem.addSelectionListener(new SelectionAdapter() {
+		amendingButton = new Button(container, SWT.CHECK);
+		if (amending) {
+			amendingButton.setSelection(amending);
+			amendingButton.setEnabled(false); // if already set, don't allow any changes
+			authorText.setText(previousAuthor);
+			saveOriginalChangeId();
+		} else if (!amendAllowed) {
+			amendingButton.setEnabled(false);
+			originalChangeId = null;
+		}
+		amendingButton.addSelectionListener(new SelectionListener() {
+			boolean alreadyAdded = false;
 			public void widgetSelected(SelectionEvent arg0) {
-				commitMessageComponent.setSignedOffButtonSelection(signedOffItem.getSelection());
+				if (!amendingButton.getSelection()) {
+					originalChangeId = null;
+					authorText.setText(author);
+				}
+				else {
+					saveOriginalChangeId();
+					if (!alreadyAdded) {
+						alreadyAdded = true;
+						commitText.setText(previousCommitMessage.replaceAll(
+								"\n", Text.DELIMITER)); //$NON-NLS-1$
+					}
+					authorText.setText(previousAuthor);
+				}
+				refreshChangeIdText();
+			}
+
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+				// Empty
 			}
 		});
 
-		commitMessageComponent.updateUI();
-		commitMessageComponent.enableListers(true);
+		amendingButton.setText(UIText.CommitDialog_AmendPreviousCommit);
+		amendingButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 
-		filesSection = toolkit.createSection(container,
-				ExpandableComposite.TITLE_BAR
-						| ExpandableComposite.CLIENT_INDENT);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(filesSection);
-		Composite filesArea = toolkit.createComposite(filesSection);
-		filesSection.setClient(filesArea);
-		toolkit.paintBordersFor(filesArea);
-		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
-				.applyTo(filesArea);
+		signedOffButton = new Button(container, SWT.CHECK);
+		signedOffButton.setSelection(signedOff);
+		if (!amending)
+			refreshSignedOffBy();
+		signedOffButton.setText(UIText.CommitDialog_AddSOB);
+		signedOffButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
 
-		ToolBar filesToolbar = new ToolBar(filesSection, SWT.FLAT);
+		signedOffButton.addSelectionListener(new SelectionListener() {
+			public void widgetSelected(SelectionEvent arg0) {
+				refreshSignedOffBy();
+			}
 
-		filesSection.setTextClient(filesToolbar);
+			public void widgetDefaultSelected(SelectionEvent arg0) {
+				// Empty
+			}
+		});
 
-		Table resourcesTable = toolkit.createTable(filesArea, SWT.H_SCROLL
-				| SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.MULTI | SWT.CHECK);
-		resourcesTable.setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TREE_BORDER);
-		resourcesTable.setLayoutData(GridDataFactory.fillDefaults()
-				.hint(600, 200).grab(true, true).create());
+		changeIdButton = new Button(container, SWT.CHECK);
+		changeIdButton.setText(UIText.CommitDialog_AddChangeIdLabel);
+		changeIdButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
+		changeIdButton.setToolTipText(UIText.CommitDialog_AddChangeIdTooltip);
+		changeIdButton.addSelectionListener(new SelectionListener() {
+
+			public void widgetSelected(SelectionEvent e) {
+				refreshChangeIdText();
+			}
+
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// empty
+			}
+		});
+
+		changeIdButton.setSelection( org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.COMMIT_DIALOG_CREATE_CHANGE_ID));
+		if (!amending)
+			refreshChangeIdText();
+
+		showUntrackedButton = new Button(container, SWT.CHECK);
+		showUntrackedButton.setText(UIText.CommitDialog_ShowUntrackedFiles);
+		showUntrackedButton.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(2, 1).create());
+
+		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
+				.getDialogSettings();
+		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
+			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
+					.booleanValue();
+		}
+
+		showUntrackedButton.setSelection(showUntracked);
+
+		showUntrackedButton.addSelectionListener(new SelectionAdapter() {
+
+			public void widgetSelected(SelectionEvent e) {
+				showUntracked = showUntrackedButton.getSelection();
+				filesViewer.refresh(true);
+			}
+
+		});
+
+		commitText.getTextWidget().addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				updateSignedOffButton();
+				updateChangeIdButton();
+			}
+		});
+
+		updateSignedOffButton();
+		updateChangeIdButton();
+
+		Table resourcesTable = new Table(container, SWT.H_SCROLL | SWT.V_SCROLL
+				| SWT.FULL_SELECTION | SWT.MULTI | SWT.CHECK | SWT.BORDER);
+		resourcesTable.setLayoutData(GridDataFactory.fillDefaults().hint(600,
+				200).span(2,1).grab(true, true).create());
 
 		resourcesTable.addSelectionListener(new CommitItemSelectionListener());
 
@@ -856,219 +714,271 @@ public class CommitDialog extends TitleAreaDialog {
 		TableColumn statCol = new TableColumn(resourcesTable, SWT.LEFT);
 		statCol.setText(UIText.CommitDialog_Status);
 		statCol.setWidth(150);
-		statCol.addSelectionListener(new HeaderSelectionListener(
-				CommitItem.Order.ByStatus));
+		statCol.addSelectionListener(new HeaderSelectionListener(CommitItem.Order.ByStatus));
 
 		TableColumn resourceCol = new TableColumn(resourcesTable, SWT.LEFT);
-		resourceCol.setText(UIText.CommitDialog_Path);
-		resourceCol.setWidth(415);
-		resourceCol.addSelectionListener(new HeaderSelectionListener(
-				CommitItem.Order.ByFile));
+		resourceCol.setText(UIText.CommitDialog_File);
+		resourceCol.addSelectionListener(new HeaderSelectionListener(CommitItem.Order.ByFile));
 
 		filesViewer = new CheckboxTableViewer(resourcesTable);
-		new TableViewerColumn(filesViewer, statCol)
-				.setLabelProvider(new CommitStatusLabelProvider());
-		new TableViewerColumn(filesViewer, resourceCol)
-				.setLabelProvider(new CommitPathLabelProvider());
-		ColumnViewerToolTipSupport.enableFor(filesViewer);
 		filesViewer.setContentProvider(ArrayContentProvider.getInstance());
 		filesViewer.setUseHashlookup(true);
-		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
-				.getDialogSettings();
-		if (settings.get(SHOW_UNTRACKED_PREF) != null)
-			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
-					.booleanValue();
+		filesViewer.setLabelProvider(new CommitLabelProvider());
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items.toArray());
 		filesViewer.getTable().setMenu(getContextMenu());
-		filesViewer.addCheckStateListener(new ICheckStateListener() {
-
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				updateFileSectionText();
-			}
-		});
-
-		showUntrackedItem = new ToolItem(filesToolbar, SWT.CHECK);
-		Image showUntrackedImage = UIIcons.UNTRACKED_FILE.createImage();
-		UIUtils.hookDisposal(showUntrackedItem, showUntrackedImage);
-		showUntrackedItem.setImage(showUntrackedImage);
-		showUntrackedItem
-				.setToolTipText(UIText.CommitDialog_ShowUntrackedFiles);
-		showUntrackedItem.setSelection(showUntracked);
-		showUntrackedItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				showUntracked = showUntrackedItem.getSelection();
-				filesViewer.refresh(true);
-				updateFileSectionText();
-				updateMessage();
-			}
-
-		});
-
-		ToolItem checkAllItem = new ToolItem(filesToolbar, SWT.PUSH);
-		Image checkImage = UIIcons.CHECK_ALL.createImage();
-		UIUtils.hookDisposal(checkAllItem, checkImage);
-		checkAllItem.setImage(checkImage);
-		checkAllItem.setToolTipText(UIText.CommitDialog_SelectAll);
-		checkAllItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				filesViewer.setAllChecked(true);
-				updateFileSectionText();
-				updateMessage();
-			}
-
-		});
-
-		ToolItem uncheckAllItem = new ToolItem(filesToolbar, SWT.PUSH);
-		Image uncheckImage = UIIcons.UNCHECK_ALL.createImage();
-		UIUtils.hookDisposal(uncheckAllItem, uncheckImage);
-		uncheckAllItem.setImage(uncheckImage);
-		uncheckAllItem.setToolTipText(UIText.CommitDialog_DeselectAll);
-		uncheckAllItem.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				filesViewer.setAllChecked(false);
-				updateFileSectionText();
-				updateMessage();
-			}
-
-		});
-
 		if (!allowToChangeSelection) {
-			amendingItem.setSelection(false);
-			amendingItem.setEnabled(false);
-			showUntrackedItem.setSelection(false);
-			showUntrackedItem.setEnabled(false);
-			checkAllItem.setEnabled(false);
-			uncheckAllItem.setEnabled(false);
+			amendingButton.setSelection(false);
+			amendingButton.setEnabled(false);
+			showUntrackedButton.setSelection(false);
+			showUntrackedButton.setEnabled(false);
 
 			filesViewer.addCheckStateListener(new ICheckStateListener() {
 
 				public void checkStateChanged(CheckStateChangedEvent event) {
-					if (!event.getChecked())
-						filesViewer.setAllChecked(true);
-					updateFileSectionText();
+				       if( !event.getChecked() ) {
+				    	   filesViewer.setAllChecked(true);
+				       }
 				}
 			});
 			filesViewer.setAllGrayed(true);
 			filesViewer.setAllChecked(true);
-		} else {
-			final boolean includeUntracked = getPreferenceStore().getBoolean(
-					UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED);
+		}
+		else {
 			for (CommitItem item : items) {
-				if (!preselectAll && !preselectedFiles.contains(item.path))
-					continue;
-				if (item.status == Status.ASSUME_UNCHANGED)
-					continue;
-				if (!includeUntracked && item.status == Status.UNTRACKED)
-					continue;
-				filesViewer.setChecked(item, true);
+				if (preselectedFiles.contains(item.file) &&
+						item.status != Status.UNTRACKED &&
+						item.status != Status.ASSUME_UNCHANGED) {
+					filesViewer.setChecked(item, true);
+				}
 			}
 		}
 
 		applyDialogFont(container);
-		statCol.pack();
 		resourceCol.pack();
 		container.pack();
-		commitText.setFocus();
-		Image titleImage = UIIcons.WIZBAN_CONNECT_REPO.createImage();
-		UIUtils.hookDisposal(parent, titleImage);
-		setTitleImage(titleImage);
-		setTitle(UIText.CommitDialog_Title);
-		setMessage(UIText.CommitDialog_Message, IMessageProvider.INFORMATION);
-
-		ModifyListener validator = new ModifyListener() {
-
-			public void modifyText(ModifyEvent e) {
-				updateMessage();
-			}
-		};
-		commitText.getDocument().addDocumentListener(new IDocumentListener() {
-
-			public void documentChanged(DocumentEvent event) {
-				updateMessage();
-			}
-
-			public void documentAboutToBeChanged(DocumentEvent event) {
-				// Intentionally empty
-			}
-		});
-		authorText.addModifyListener(validator);
-		committerText.addModifyListener(validator);
-		filesViewer.addCheckStateListener(new ICheckStateListener() {
-
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				updateMessage();
-			}
-		});
-
-		updateFileSectionText();
 		return container;
 	}
 
-	private void updateMessage() {
-		String message = commitMessageComponent.getMessage();
-		if (message == null && filesViewer.getCheckedElements().length == 0
-				&& !amendingItem.getSelection())
-			message = UIText.CommitDialog_MessageNoFilesSelected;
-		setMessage(message, IMessageProvider.INFORMATION);
-		commitButton.setEnabled(message == null);
-	}
-
-	private Collection<String> getFileList() {
-		Collection<String> result = new ArrayList<String>();
-		for (CommitItem item : items) {
-			result.add(item.path);
+	/**
+	 * @return the calculated commit message
+	 */
+	private String calculateCommitMessage() {
+		if(commitMessage != null) {
+			// special case for merge
+			return commitMessage;
 		}
-		return result;
+
+		if (amending)
+			return previousCommitMessage;
+
+		String calculatedCommitMessage = null;
+
+		Set<IResource> resources = new HashSet<IResource>();
+		for (CommitItem item : items) {
+			IResource resource = item.file.getProject();
+			resources.add(resource);
+		}
+		try {
+			ICommitMessageProvider messageProvider = getCommitMessageProvider();
+			if(messageProvider != null) {
+				IResource[] resourcesArray = resources.toArray(new IResource[0]);
+				calculatedCommitMessage = messageProvider.getMessage(resourcesArray);
+			}
+		} catch (CoreException coreException) {
+			Activator.error(coreException.getLocalizedMessage(),
+					coreException);
+		}
+		if (calculatedCommitMessage != null)
+			return calculatedCommitMessage;
+		else
+			return ""; //$NON-NLS-1$
 	}
 
-	private void updateFileSectionText() {
-		filesSection.setText(MessageFormat.format(UIText.CommitDialog_Files,
-				Integer.valueOf(filesViewer.getCheckedElements().length),
-				Integer.valueOf(filesViewer.getTable().getItemCount())));
+	private ICommitMessageProvider getCommitMessageProvider()
+			throws CoreException {
+		IExtensionRegistry registry = Platform.getExtensionRegistry();
+		IConfigurationElement[] config = registry
+				.getConfigurationElementsFor(COMMIT_MESSAGE_PROVIDER_ID);
+		if (config.length > 0) {
+			Object provider;
+			provider = config[0].createExecutableExtension("class");//$NON-NLS-1$
+			if (provider instanceof ICommitMessageProvider) {
+				return (ICommitMessageProvider) provider;
+			} else {
+				Activator.logError(UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
+						null);
+			}
+		}
+		return null;
+	}
+
+	private void saveOriginalChangeId() {
+		int changeIdOffset = findOffsetOfChangeIdLine(previousCommitMessage);
+		if (changeIdOffset > 0) {
+			int endOfChangeId = findNextEOL(changeIdOffset, previousCommitMessage);
+			if (endOfChangeId < 0)
+				endOfChangeId = previousCommitMessage.length()-1;
+			int sha1Offset = changeIdOffset + "\nChange-Id: I".length(); //$NON-NLS-1$
+			try {
+				originalChangeId = ObjectId.fromString(previousCommitMessage.substring(sha1Offset, endOfChangeId));
+			} catch (IllegalArgumentException e) {
+				originalChangeId = null;
+			}
+		} else
+			originalChangeId = null;
+	}
+
+	private int findNextEOL(int oldPos, String message) {
+		return message.indexOf("\n", oldPos + 1); //$NON-NLS-1$
+	}
+
+	private int findOffsetOfChangeIdLine(String message) {
+		return message.indexOf("\nChange-Id: I"); //$NON-NLS-1$
+	}
+
+	private void updateChangeIdButton() {
+		String curText = commitText.getText();
+		if (!curText.endsWith(Text.DELIMITER))
+			curText += Text.DELIMITER;
+
+		boolean hasId = curText.indexOf(Text.DELIMITER + "Change-Id: ") != -1; //$NON-NLS-1$
+		if (hasId) {
+			changeIdButton.setSelection(true);
+			createChangeId = true;
+		}
+	}
+
+	private void refreshChangeIdText() {
+		createChangeId = changeIdButton.getSelection();
+		String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
+		if (createChangeId) {
+			String changedText = ChangeIdUtil.insertId(text,
+					originalChangeId != null ? originalChangeId : ObjectId.zeroId(), true);
+			if (!text.equals(changedText)) {
+				changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(changedText);
+			}
+		} else {
+			int changeIdOffset = findOffsetOfChangeIdLine(text);
+			if (changeIdOffset > 0) {
+				int endOfChangeId = findNextEOL(changeIdOffset, text);
+				String cleanedText = text.substring(0, changeIdOffset)
+						+ text.substring(endOfChangeId);
+				cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(cleanedText);
+			}
+		}
+	}
+
+	private String getSignedOff() {
+		return getSignedOff(committerText.getText());
+	}
+
+	private String getSignedOff(String signer) {
+		return Constants.SIGNED_OFF_BY_TAG + signer;
+	}
+
+	private String signOff(String input) {
+		String output = input;
+		if (!output.endsWith(Text.DELIMITER))
+			output += Text.DELIMITER;
+
+		// if the last line is not footer line, add a line break
+		if (!getLastLine(output).matches("[A-Za-z\\-]+:.*")) //$NON-NLS-1$
+			output += Text.DELIMITER;
+		output += getSignedOff();
+		return output;
+	}
+
+	private String getLastLine(String input) {
+		String output = input;
+		int breakLength = Text.DELIMITER.length();
+
+		// remove last line break if exist
+		int lastIndexOfLineBreak = output.lastIndexOf(Text.DELIMITER);
+		if (lastIndexOfLineBreak != -1 && lastIndexOfLineBreak == output.length() - breakLength)
+			output = output.substring(0, output.length() - breakLength);
+
+		// get the last line
+		lastIndexOfLineBreak = output.lastIndexOf(Text.DELIMITER);
+		return lastIndexOfLineBreak == -1 ? output : output.substring(lastIndexOfLineBreak + breakLength, output.length());
+	}
+
+	private void updateSignedOffButton() {
+		String curText = commitText.getText();
+		if (!curText.endsWith(Text.DELIMITER))
+			curText += Text.DELIMITER;
+
+		signedOffButton.setSelection(curText.indexOf(getSignedOff() + Text.DELIMITER) != -1);
+	}
+
+	private void refreshSignedOffBy() {
+		String curText = commitText.getText();
+		if (signedOffButton.getSelection()) {
+			// add signed off line
+			commitText.setText(signOff(curText));
+		} else {
+			// remove signed off line
+			String s = getSignedOff();
+			if (s != null) {
+				curText = replaceSignOff(curText, s, ""); //$NON-NLS-1$
+				if (curText.endsWith(Text.DELIMITER + Text.DELIMITER))
+					curText = curText.substring(0, curText.length()
+							- Text.DELIMITER.length());
+				commitText.setText(curText);
+			}
+		}
+	}
+
+	private String replaceSignOff(String input, String oldSignOff, String newSignOff) {
+		assert input != null;
+		assert oldSignOff != null;
+		assert newSignOff != null;
+
+		String curText = input;
+		if (!curText.endsWith(Text.DELIMITER))
+			curText += Text.DELIMITER;
+
+		int indexOfSignOff = curText.indexOf(oldSignOff + Text.DELIMITER);
+		if (indexOfSignOff == -1)
+			return input;
+
+		return input.substring(0, indexOfSignOff) + newSignOff + input.substring(indexOfSignOff + oldSignOff.length(), input.length());
 	}
 
 	private Menu getContextMenu() {
 		if (!allowToChangeSelection)
 			return null;
-		final Menu menu = new Menu(filesViewer.getTable());
-		filesViewer.getTable().addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				menu.dispose();
-			}
-		});
+		Menu menu = new Menu(filesViewer.getTable());
 		MenuItem item = new MenuItem(menu, SWT.PUSH);
 		item.setText(UIText.CommitDialog_AddFileOnDiskToIndex);
 		item.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event arg0) {
-				IStructuredSelection sel = (IStructuredSelection) filesViewer
-						.getSelection();
+				IStructuredSelection sel = (IStructuredSelection) filesViewer.getSelection();
 				if (sel.isEmpty()) {
 					return;
 				}
-				AddCommand addCommand = new Git(repository).add();
-				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
-					CommitItem commitItem = (CommitItem) it.next();
-					addCommand.addFilepattern(commitItem.path);
-				}
 				try {
-					addCommand.call();
-				} catch (NoFilepatternException e) {
-					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
-				}
-				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
-					CommitItem commitItem = (CommitItem) it.next();
-					try {
-						commitItem.status = getFileStatus(commitItem.path);
-					} catch (IOException e) {
-						Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
+					List<IResource> filesToAdd = new ArrayList<IResource>();
+					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
+						CommitItem commitItem = (CommitItem) it.next();
+						filesToAdd.add(commitItem.file);
 					}
+					AddToIndexOperation op = new AddToIndexOperation(filesToAdd);
+					op.execute(new NullProgressMonitor());
+					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
+						CommitItem commitItem = (CommitItem) it.next();
+						commitItem.status = getFileStatus(commitItem.file);
+					}
+					filesViewer.refresh(true);
+				} catch (CoreException e) {
+					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
+					return;
+				} catch (IOException e) {
+					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
+					return;
 				}
-				filesViewer.refresh(true);
 			}
 		});
 
@@ -1076,14 +986,17 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	/** Retrieve file status
-	 * @param path
+	 * @param file
 	 * @return file status
 	 * @throws IOException
 	 */
-	private Status getFileStatus(String path) throws IOException {
+	private static Status getFileStatus(IFile file) throws IOException {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		String path = mapping.getRepoRelativePath(file);
+		Repository repo = mapping.getRepository();
 		AdaptableFileTreeIterator fileTreeIterator = new AdaptableFileTreeIterator(
-				repository, ResourcesPlugin.getWorkspace().getRoot());
-		IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD, fileTreeIterator);
+				repo, ResourcesPlugin.getWorkspace().getRoot());
+		IndexDiff indexDiff = new IndexDiff(repo, Constants.HEAD, fileTreeIterator);
 		Set<String> repositoryPaths = Collections.singleton(path);
 		indexDiff.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
 		indexDiff.diff(null, 0, 0, ""); //$NON-NLS-1$
@@ -1131,30 +1044,63 @@ public class CommitDialog extends TitleAreaDialog {
 
 	@Override
 	protected void okPressed() {
-		if (!commitMessageComponent.checkCommitInfo())
-			return;
+		commitMessage = commitText.getCommitMessage();
+		author = authorText.getText().trim();
+		committer = committerText.getText().trim();
+		signedOff = signedOffButton.getSelection();
+		amending = amendingButton.getSelection();
 
 		Object[] checkedElements = filesViewer.getCheckedElements();
 		selectedFiles.clear();
 		for (Object obj : checkedElements)
-			selectedFiles.add(((CommitItem) obj).path);
+			selectedFiles.add(((CommitItem) obj).file);
 
-		amending = commitMessageComponent.isAmending();
-		commitMessage = commitMessageComponent.getCommitMessage();
-		author = commitMessageComponent.getAuthor();
-		committer = commitMessageComponent.getCommitter();
-		createChangeId = changeIdItem.getSelection();
+		if (commitMessage.trim().length() == 0) {
+			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoMessage, UIText.CommitDialog_ErrorMustEnterCommitMessage);
+			return;
+		}
+
+		boolean authorValid = false;
+		if (author.length() > 0) {
+			authorValid = RawParseUtils.parsePersonIdent(author) != null;
+		}
+		if (!authorValid) {
+			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidAuthorSpecified);
+			return;
+		}
+
+		boolean committerValid = false;
+		if (committer.length() > 0) {
+			committerValid = RawParseUtils.parsePersonIdent(committer)!=null;
+		}
+		if (!committerValid) {
+			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidCommitterSpecified);
+			return;
+		}
 
 		if (selectedFiles.isEmpty() && !amending) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoItemsSelected, UIText.CommitDialog_ErrorNoItemsSelectedToBeCommitted);
 			return;
 		}
 
+		authorHandler.updateProposals();
+		committerHandler.updateProposals();
+
 		IDialogSettings settings = org.eclipse.egit.ui.Activator
 			.getDefault().getDialogSettings();
 		settings.put(SHOW_UNTRACKED_PREF, showUntracked);
-		saveCommitHistory(getCommitMessage());
 		super.okPressed();
+	}
+
+	@Override
+	protected void buttonPressed(int buttonId) {
+		if (IDialogConstants.SELECT_ALL_ID == buttonId) {
+			filesViewer.setAllChecked(true);
+		}
+		if (IDialogConstants.DESELECT_ALL_ID == buttonId) {
+			filesViewer.setAllChecked(false);
+		}
+		super.buttonPressed(buttonId);
 	}
 
 	@Override
@@ -1162,23 +1108,12 @@ public class CommitDialog extends TitleAreaDialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
-	private IFile findFile(String path) {
-		URI uri = new File(repository.getWorkTree(), path).toURI();
-		IFile[] workspaceFiles = ResourcesPlugin.getWorkspace().getRoot()
-				.findFilesForLocationURI(uri);
-		if (workspaceFiles.length > 0)
-			return workspaceFiles[0];
-		else
-			return null;
-	}
 }
 
 class CommitItem {
 	Status status;
 
-	String path;
-
-	boolean submodule;
+	IFile file;
 
 	/** The ordinal of this {@link Enum} is used to provide the "native" sorting of the list */
 	public static enum Status {
@@ -1228,8 +1163,12 @@ class CommitItem {
 		ByFile() {
 
 			public int compare(CommitItem o1, CommitItem o2) {
-				return o1.path.compareTo(
-						o2.path);
+				int diff = o1.file.getProject().getName().compareTo(
+						o2.file.getProject().getName());
+				if (diff != 0)
+					return diff;
+				return o1.file.getProjectRelativePath().toString().compareTo(
+						o2.file.getProjectRelativePath().toString());
 			}
 
 		};

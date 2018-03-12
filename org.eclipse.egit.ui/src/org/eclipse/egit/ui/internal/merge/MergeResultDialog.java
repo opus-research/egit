@@ -9,29 +9,17 @@
 package org.eclipse.egit.ui.internal.merge;
 
 import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.commit.CommitEditor;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.IOpenListener;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
-import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.lib.ObjectId;
@@ -51,7 +39,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 /**
  * Dialog for displaying a MergeResult
@@ -60,6 +47,8 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
 public class MergeResultDialog extends Dialog {
 
 	private static final String SPACE = " "; //$NON-NLS-1$
+
+	private static final String EMPTY = ""; //$NON-NLS-1$
 
 	private final MergeResult mergeResult;
 
@@ -131,17 +120,22 @@ public class MergeResultDialog extends Dialog {
 			}
 
 			public Object[] getElements(Object inputElement) {
-				return getCommits(mergeResult.getMergedCommits());
+				return mergeResult.getMergedCommits();
 			}
 		});
+		TableViewerColumn idColumn = new TableViewerColumn(viewer, SWT.LEFT);
+		idColumn.getColumn().setText(UIText.MergeResultDialog_id);
+		idColumn.getColumn().setWidth(100);
+		TableViewerColumn textColumn = new TableViewerColumn(viewer, SWT.LEFT);
+		textColumn.getColumn().setText(UIText.MergeResultDialog_description);
+		textColumn.getColumn().setWidth(300);
 		Table table = viewer.getTable();
+		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
-		final IStyledLabelProvider styleProvider = new IStyledLabelProvider() {
-
-			private final WorkbenchLabelProvider wrapped = new WorkbenchLabelProvider();
+		viewer.setLabelProvider(new ITableLabelProvider() {
 
 			public void removeListener(ILabelProviderListener listener) {
-				// Empty
+				// empty
 			}
 
 			public boolean isLabelProperty(Object element, String property) {
@@ -149,67 +143,38 @@ public class MergeResultDialog extends Dialog {
 			}
 
 			public void dispose() {
-				wrapped.dispose();
+				// empty
 			}
 
 			public void addListener(ILabelProviderListener listener) {
-				// Empty
+				// empty
 			}
 
-			public StyledString getStyledText(Object element) {
-				// TODO Replace with use of IWorkbenchAdapter3 when is no longer
-				// supported
-				if (element instanceof RepositoryCommit)
-					return ((RepositoryCommit) element).getStyledText(element);
-
-				return new StyledString(wrapped.getText(element));
+			public String getColumnText(Object element, int columnIndex) {
+				ObjectId commitId = (ObjectId) element;
+				if (columnIndex == 0)
+					return abbreviate(commitId, false);
+				else if (columnIndex == 1)
+					return getCommitMessage(commitId);
+				return EMPTY;
 			}
 
-			public Image getImage(Object element) {
-				return wrapped.getImage(element);
+			public Image getColumnImage(Object element, int columnIndex) {
+				return null;
 			}
-		};
-		viewer.setLabelProvider(new DelegatingStyledCellLabelProvider(
-				styleProvider));
+		});
 		applyDialogFont(composite);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.align(SWT.FILL, SWT.FILL).span(2, 1)
 				.applyTo(viewer.getControl());
 		viewer.setInput(mergeResult);
-		viewer.addOpenListener(new IOpenListener() {
-
-			public void open(OpenEvent event) {
-				ISelection selection = event.getSelection();
-				if (selection instanceof IStructuredSelection)
-					for (Object element : ((IStructuredSelection) selection)
-							.toArray())
-						if (element instanceof RepositoryCommit)
-							CommitEditor.openQuiet((RepositoryCommit) element);
-			}
-		});
 		return composite;
-	}
-
-	private RepositoryCommit[] getCommits(final ObjectId[] merges) {
-		final List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
-		final RevWalk walk = new RevWalk(objectReader);
-		walk.setRetainBody(true);
-		for (ObjectId merge : merges)
-			try {
-				commits.add(new RepositoryCommit(repository, walk
-						.parseCommit(merge)));
-			} catch (IOException e) {
-				Activator.logError(MessageFormat.format(
-						UIText.MergeResultDialog_couldNotFindCommit,
-						merge.name()), e);
-			}
-		return commits.toArray(new RepositoryCommit[commits.size()]);
 	}
 
 	private String getCommitMessage(ObjectId id) {
 		RevCommit commit;
 		try {
-			commit = new RevWalk(objectReader).parseCommit(id);
+			commit = new RevWalk(repository).parseCommit(id);
 		} catch (IOException e) {
 			Activator.logError(UIText.MergeResultDialog_couldNotFindCommit, e);
 			return UIText.MergeResultDialog_couldNotFindCommit;
@@ -218,7 +183,7 @@ public class MergeResultDialog extends Dialog {
 	}
 
 	private String abbreviate(ObjectId id, boolean addBrackets) {
-		StringBuilder result = new StringBuilder();
+		StringBuilder result = new StringBuilder(EMPTY);
 		if (addBrackets)
 			result.append("["); //$NON-NLS-1$
 		try {
@@ -234,16 +199,12 @@ public class MergeResultDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText(UIText.MergeAction_MergeResultTitle);
+		newShell.setText(UIText.MergeResultDialog_mergeResult);
 		newShell.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				if (objectReader != null)
 					objectReader.release();
 			}
 		});
-	}
-
-	protected IDialogSettings getDialogBoundsSettings() {
-		return UIUtils.getDialogBoundSettings(getClass());
 	}
 }

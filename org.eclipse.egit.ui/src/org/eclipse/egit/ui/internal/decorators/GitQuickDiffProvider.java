@@ -82,8 +82,7 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 	}
 
 	public boolean isEnabled() {
-		return resource == null ? false : RepositoryProvider
-				.getProvider(resource.getProject()) != null;
+		return true;
 	}
 
 	public void setActiveEditor(ITextEditor editor) {

@@ -22,8 +22,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
@@ -95,8 +93,6 @@ public class FindToolbar extends Composite {
 
 	private String lastErrorPattern;
 
-	private Menu prefsMenu;
-
 	private MenuItem commitIdItem;
 
 	private MenuItem commentsItem;
@@ -167,7 +163,7 @@ public class FindToolbar extends Composite {
 		new ToolItem(toolBar, SWT.SEPARATOR);
 
 		final ToolItem prefsItem = new ToolItem(toolBar, SWT.DROP_DOWN);
-		prefsMenu = new Menu(getShell(), SWT.POP_UP);
+		final Menu prefsMenu = new Menu(this.getShell(), SWT.POP_UP);
 		final MenuItem caseItem = new MenuItem(prefsMenu, SWT.CHECK);
 		caseItem.setText(UIText.HistoryPage_findbar_ignorecase);
 		new MenuItem(prefsMenu, SWT.SEPARATOR);
@@ -392,24 +388,6 @@ public class FindToolbar extends Composite {
 			prefsItem
 					.setToolTipText(UIText.HistoryPage_findbar_changeto_comments);
 		}
-
-		registerDisposal();
-	}
-
-	private void registerDisposal() {
-		addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				prefsMenu.dispose();
-				errorBackgroundColor.dispose();
-				nextIcon.dispose();
-				previousIcon.dispose();
-				commitIdIcon.dispose();
-				commentsIcon.dispose();
-				authorIcon.dispose();
-				committerIcon.dispose();
-			}
-		});
 	}
 
 	private void prefsItemChanged(int findin, MenuItem item) {
@@ -429,6 +407,18 @@ public class FindToolbar extends Composite {
 		clear();
 	}
 
+	@Override
+	public void dispose() {
+		errorBackgroundColor.dispose();
+		nextIcon.dispose();
+		previousIcon.dispose();
+		commitIdIcon.dispose();
+		commentsIcon.dispose();
+		authorIcon.dispose();
+		committerIcon.dispose();
+		super.dispose();
+	}
+
 	/**
 	 * Sets the table that will have its selected items changed by this toolbar.
 	 * Sets the list to be searched.
@@ -437,11 +427,8 @@ public class FindToolbar extends Composite {
 	 * @param historyTable
 	 * @param commitArray
 	 */
-	void setInput(final RevFlag hFlag, final Table historyTable,
+	public void setInput(final RevFlag hFlag, final Table historyTable,
 			final SWTCommit[] commitArray) {
-		// this may cause a FindBugs warning, but
-		// copying the array is probably not a good
-		// idea
 		this.fileRevisions = commitArray;
 		this.historyTable = historyTable;
 		findResults.setHighlightFlag(hFlag);
@@ -519,7 +506,7 @@ public class FindToolbar extends Composite {
 	/**
 	 * Clears the toolbar.
 	 */
-	void clear() {
+	public void clear() {
 		patternField.setBackground(null);
 		if (patternField.getText().length() > 0) {
 			patternField.selectAll();
@@ -559,7 +546,7 @@ public class FindToolbar extends Composite {
 	 * @param listener
 	 *            the listener that will receive the event
 	 */
-	void addSelectionListener(Listener listener) {
+	public void addSelectionListener(Listener listener) {
 		eventList.add(listener);
 	}
 

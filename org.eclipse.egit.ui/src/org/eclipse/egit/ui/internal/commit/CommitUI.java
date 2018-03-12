@@ -15,19 +15,22 @@
 package org.eclipse.egit.ui.internal.commit;
 
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URI;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
-import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -45,15 +48,19 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
+import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.lib.UserConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -63,50 +70,45 @@ import org.eclipse.ui.PlatformUI;
  */
 public class CommitUI  {
 
-	private IndexDiff indexDiff;
+	private Map<Repository, IndexDiff> indexDiffs;
 
-	private Set<String> notIndexed;
+	private Set<IFile> notIndexed;
 
-	private Set<String> indexChanges;
+	private Set<IFile> indexChanges;
 
-	private Set<String> notTracked;
+	private Set<IFile> notTracked;
 
-	private Set<String> files;
+	private Set<IFile> files;
+
+	private RevCommit previousCommit;
+
+	private boolean amendAllowed;
 
 	private boolean amending;
 
 	private Shell shell;
 
-	private Repository repo;
+	private Repository[] repos;
 
 	private IResource[] selectedResources;
-
-	private boolean preselectAll;
 
 	/**
 	 * Constructs a CommitUI object
 	 * @param shell
 	 *            Shell to use for UI interaction. Must not be null.
-	 * @param repo
-	 *            Repository to commit. Must not be null
+	 * @param repos
+	 *            Repositories to commit. Must not be null
 	 * @param selectedResources
 	 *            Resources selected by the user. A file is preselected in the
 	 *            commit dialog if the file is contained in selectedResources or
 	 *            if selectedResources contains a resource that is parent of the
 	 *            file. selectedResources must not be null.
-	 * @param preselectAll
-	 * 			  preselect all changed files in the commit dialog.
-	 * 			  If set to true selectedResources are ignored.
 	 */
-	public CommitUI(Shell shell, Repository repo,
-			IResource[] selectedResources, boolean preselectAll) {
+	public CommitUI(Shell shell, Repository[] repos,
+			IResource[] selectedResources) {
 		this.shell = shell;
-		this.repo = repo;
-		this.selectedResources = new IResource[selectedResources.length];
-		// keep our own copy
-		System.arraycopy(selectedResources, 0, this.selectedResources, 0,
-				selectedResources.length);
-		this.preselectAll = preselectAll;
+		this.repos = repos;
+		this.selectedResources = selectedResources;
 	}
 
 	/**
@@ -119,8 +121,7 @@ public class CommitUI  {
 			return;
 		}
 
-		BasicConfigurationDialog.show(new Repository[]{repo});
-
+		BasicConfigurationDialog.show();
 		resetState();
 		final IProject[] projects = getProjectsOfRepositories();
 		try {
@@ -143,18 +144,29 @@ public class CommitUI  {
 			return;
 		}
 
-		CommitHelper commitHelper = new CommitHelper(repo);
-
-		if (!commitHelper.canCommit()) {
-			MessageDialog.openError(
-					shell,
-					UIText.CommitAction_cannotCommit,
-					commitHelper.getCannotCommitMessage());
-			return;
+		Repository repository = null;
+		Repository mergeRepository = null;
+		amendAllowed = repos.length == 1;
+		boolean isMergedResolved = false;
+		for (Repository repo : repos) {
+			repository = repo;
+			RepositoryState state = repo.getRepositoryState();
+			if (!state.canCommit()) {
+				MessageDialog.openError(shell,
+						UIText.CommitAction_cannotCommit, NLS.bind(
+								UIText.CommitAction_repositoryState, state
+										.getDescription()));
+				return;
+			}
+			else if (state.equals(RepositoryState.MERGING_RESOLVED)) {
+				isMergedResolved = true;
+				mergeRepository = repo;
+			}
 		}
-		boolean amendAllowed = commitHelper.amendAllowed();
+		if (amendAllowed)
+			loadPreviousCommit(repos[0]);
 		if (files.isEmpty()) {
-			if (amendAllowed && commitHelper.getPreviousCommit() != null) {
+			if (amendAllowed && previousCommit != null) {
 				boolean result = MessageDialog.openQuestion(shell,
 						UIText.CommitAction_noFilesToCommit,
 						UIText.CommitAction_amendCommit);
@@ -169,73 +181,71 @@ public class CommitUI  {
 			}
 		}
 
+		String author = null;
+		String committer = null;
+		if (repository != null) {
+			final UserConfig config = repository.getConfig().get(UserConfig.KEY);
+			author = config.getAuthorName();
+			final String authorEmail = config.getAuthorEmail();
+			author = author + " <" + authorEmail + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+
+			committer = config.getCommitterName();
+			final String committerEmail = config.getCommitterEmail();
+			committer = committer + " <" + committerEmail + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
+
 		CommitDialog commitDialog = new CommitDialog(shell);
 		commitDialog.setAmending(amending);
 		commitDialog.setAmendAllowed(amendAllowed);
-		commitDialog.setFiles(repo, files, indexDiff);
+		commitDialog.setFiles(files, indexDiffs);
 		commitDialog.setPreselectedFiles(getSelectedFiles());
-		commitDialog.setPreselectAll(preselectAll);
-		commitDialog.setAuthor(commitHelper.getAuthor());
-		commitDialog.setCommitter(commitHelper.getCommitter());
-		commitDialog.setAllowToChangeSelection(!commitHelper.isMergedResolved && !commitHelper.isCherryPickResolved);
-		commitDialog.setCommitMessage(commitHelper.getCommitMessage());
+		commitDialog.setAuthor(author);
+		commitDialog.setCommitter(committer);
+		commitDialog.setAllowToChangeSelection(!isMergedResolved);
+
+		if (previousCommit != null) {
+			commitDialog.setPreviousCommitMessage(previousCommit.getFullMessage());
+			PersonIdent previousAuthor = previousCommit.getAuthorIdent();
+			commitDialog.setPreviousAuthor(previousAuthor.getName()
+					+ " <" + previousAuthor.getEmailAddress() + ">"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if (isMergedResolved) {
+			commitDialog.setCommitMessage(getMergeResolveMessage(mergeRepository));
+		}
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
 			return;
 
-		final CommitOperation commitOperation;
-		try {
-			commitOperation= new CommitOperation(
-					repo,
-					commitDialog.getSelectedFiles(), notTracked, commitDialog.getAuthor(),
-					commitDialog.getCommitter(), commitDialog.getCommitMessage());
-		} catch (CoreException e1) {
-			Activator.handleError(UIText.CommitUI_commitFailed, e1, true);
-			return;
-		}
-		if (commitDialog.isAmending())
+		final CommitOperation commitOperation = new CommitOperation(
+				commitDialog.getSelectedFiles(), notIndexed, notTracked,
+				commitDialog.getAuthor(), commitDialog.getCommitter(),
+				commitDialog.getCommitMessage());
+		if (commitDialog.isAmending()) {
 			commitOperation.setAmending(true);
+			commitOperation.setRepos(repos);
+		}
 		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
-		commitOperation.setCommitAll(commitHelper.isMergedResolved);
-		if (commitHelper.isMergedResolved)
-			commitOperation.setRepository(repo);
-		performCommit(repo, commitOperation, false);
-		return;
-	}
-
-	/**
-	 * Uses a Job to perform the given CommitOperation
-	 * @param repository
-	 * @param commitOperation
-	 * @param openNewCommit
-	 */
-	public static void performCommit(final Repository repository,
-			final CommitOperation commitOperation, final boolean openNewCommit) {
+		commitOperation.setCommitAll(isMergedResolved);
+		if (isMergedResolved)
+			commitOperation.setRepos(repos);
 		String jobname = UIText.CommitAction_CommittingChanges;
 		Job job = new Job(jobname) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				RevCommit commit = null;
 				try {
 					commitOperation.execute(monitor);
-					commit = commitOperation.getCommit();
-					CommitMessageComponentStateManager.deleteState(
-							repository);
-					RepositoryMapping mapping = RepositoryMapping
-							.findRepositoryMapping(repository);
-					if (mapping != null)
-						mapping.fireRepositoryChanged();
+					for (Repository repo : repos) {
+						RepositoryMapping mapping = RepositoryMapping
+								.findRepositoryMapping(repo);
+						if (mapping != null)
+							mapping.fireRepositoryChanged();
+					}
 				} catch (CoreException e) {
-					if (e.getCause() instanceof JGitInternalException)
-						return Activator.createErrorStatus(
-								e.getLocalizedMessage(), e.getCause());
 					return Activator.createErrorStatus(
 							UIText.CommitAction_CommittingFailed, e);
 				} finally {
 					GitLightweightDecorator.refresh();
 				}
-				if (openNewCommit && commit != null)
-					openCommit(repository, commit);
 				return Status.OK_STATUS;
 			}
 
@@ -249,17 +259,7 @@ public class CommitUI  {
 		};
 		job.setUser(true);
 		job.schedule();
-	}
-
-	private static void openCommit(final Repository repository,
-			final RevCommit newCommit) {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-
-			public void run() {
-				CommitEditor.openQuiet(new RepositoryCommit(repository,
-						newCommit));
-			}
-		});
+		return;
 	}
 
 	private IProject[] getProjectsOfRepositories() {
@@ -268,19 +268,24 @@ public class CommitUI  {
 				.getProjects();
 		for (IProject project : projects) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-			if (mapping != null && mapping.getRepository() == repo)
-				ret.add(project);
+			for (Repository repository : repos) {
+				if (mapping != null && mapping.getRepository() == repository) {
+					ret.add(project);
+					break;
+				}
+			}
 		}
 		return ret.toArray(new IProject[ret.size()]);
 	}
 
 	private void resetState() {
-		files = new LinkedHashSet<String>();
-		notIndexed = new LinkedHashSet<String>();
-		indexChanges = new LinkedHashSet<String>();
-		notTracked = new LinkedHashSet<String>();
+		files = new LinkedHashSet<IFile>();
+		notIndexed = new LinkedHashSet<IFile>();
+		indexChanges = new LinkedHashSet<IFile>();
+		notTracked = new LinkedHashSet<IFile>();
 		amending = false;
-		indexDiff = null;
+		previousCommit = null;
+		indexDiffs = new HashMap<Repository, IndexDiff>();
 	}
 
 	/**
@@ -292,64 +297,87 @@ public class CommitUI  {
 	 * @return a collection of files that is eligible to be committed based on
 	 *         the user's selection
 	 */
-	private Set<String> getSelectedFiles() {
-		Set<String> preselectionCandidates = new LinkedHashSet<String>();
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+	private Set<IFile> getSelectedFiles() {
+		Set<IFile> preselectionCandidates = new LinkedHashSet<IFile>();
 		// iterate through all the files that may be committed
-		for (String fileName : files) {
-			URI uri = new File(repo.getWorkTree(), fileName).toURI();
-			IFile[] workspaceFiles = root.findFilesForLocationURI(uri);
-			if (workspaceFiles.length > 0) {
-				IFile file = workspaceFiles[0];
-				for (IResource resource : selectedResources) {
-					// if any selected resource contains the file, add it as a
-					// preselection candidate
-					if (resource.contains(file)) {
-						preselectionCandidates.add(fileName);
-						break;
-					}
-				}
-			} else {
-				// could be file outside of workspace
-				for (IResource resource : selectedResources) {
-					if(resource.getFullPath().toFile().equals(new File(uri))) {
-						preselectionCandidates.add(fileName);
-					}
+		for (IFile file : files) {
+			for (IResource resource : selectedResources) {
+				// if any selected resource contains the file, add it as a
+				// preselection candidate
+				if (resource.contains(file)) {
+					preselectionCandidates.add(file);
+					break;
 				}
 			}
 		}
 		return preselectionCandidates;
 	}
 
-	private void buildIndexHeadDiffList(IProject[] selectedProjects,
-			IProgressMonitor monitor) throws IOException,
-			OperationCanceledException {
-
-		monitor.beginTask(UIText.CommitActionHandler_calculatingChanges, 1000);
-		EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(
-				monitor);
-		CountingVisitor counter = new CountingVisitor();
-		for (IProject p : selectedProjects) {
-			try {
-				p.accept(counter);
-			} catch (CoreException e) {
-				// ignore
-			}
+	private void loadPreviousCommit(Repository repo) {
+		try {
+			ObjectId parentId = repo.resolve(Constants.HEAD);
+			if (parentId != null)
+				previousCommit = new RevWalk(repo).parseCommit(parentId);
+		} catch (IOException e) {
+			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
+					true);
 		}
-		indexDiff = new IndexDiff(repo, Constants.HEAD,
-				IteratorService.createInitialIterator(repo));
-		indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(
-				UIText.CommitActionHandler_repository, repo.getDirectory()
-						.getPath()));
+	}
 
-		includeList(indexDiff.getAdded(), indexChanges);
-		includeList(indexDiff.getChanged(), indexChanges);
-		includeList(indexDiff.getRemoved(), indexChanges);
-		includeList(indexDiff.getMissing(), notIndexed);
-		includeList(indexDiff.getModified(), notIndexed);
-		includeList(indexDiff.getUntracked(), notTracked);
-		if (monitor.isCanceled())
-			throw new OperationCanceledException();
+	private void buildIndexHeadDiffList(IProject[] selectedProjects, IProgressMonitor monitor)
+			throws IOException, OperationCanceledException {
+		HashMap<Repository, HashSet<IProject>> repositories = new HashMap<Repository, HashSet<IProject>>();
+
+		for (IProject project : selectedProjects) {
+			RepositoryMapping repositoryMapping = RepositoryMapping
+					.getMapping(project);
+			assert repositoryMapping != null;
+
+			Repository repository = repositoryMapping.getRepository();
+
+			HashSet<IProject> projects = repositories.get(repository);
+
+			if (projects == null) {
+				projects = new HashSet<IProject>();
+				repositories.put(repository, projects);
+			}
+
+			projects.add(project);
+		}
+
+		monitor.beginTask(UIText.CommitActionHandler_calculatingChanges,
+				repositories.size() * 1000);
+		for (Map.Entry<Repository, HashSet<IProject>> entry : repositories
+				.entrySet()) {
+			Repository repository = entry.getKey();
+			EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(monitor);
+			HashSet<IProject> projects = entry.getValue();
+			CountingVisitor counter = new CountingVisitor();
+			for (IProject p : projects) {
+				try {
+					p.accept(counter);
+				} catch (CoreException e) {
+					// ignore
+				}
+			}
+			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD,
+					IteratorService.createInitialIterator(repository));
+			indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(
+					UIText.CommitActionHandler_repository, repository
+							.getDirectory().getPath()));
+			indexDiffs.put(repository, indexDiff);
+
+			for (IProject project : projects) {
+				includeList(project, indexDiff.getAdded(), indexChanges);
+				includeList(project, indexDiff.getChanged(), indexChanges);
+				includeList(project, indexDiff.getRemoved(), indexChanges);
+				includeList(project, indexDiff.getMissing(), notIndexed);
+				includeList(project, indexDiff.getModified(), notIndexed);
+				includeList(project, indexDiff.getUntracked(), notTracked);
+			}
+			if (monitor.isCanceled())
+				throw new OperationCanceledException();
+		}
 		monitor.done();
 	}
 
@@ -361,12 +389,70 @@ public class CommitUI  {
 		}
 	}
 
-	private void includeList(Set<String> added, Set<String> category) {
-		for (String filename : added) {
-			if (!files.contains(filename))
-				files.add(filename);
-			category.add(filename);
+	private void includeList(IProject project, Set<String> added,
+			Set<IFile> category) {
+		String repoRelativePath = RepositoryMapping.getMapping(project)
+				.getRepoRelativePath(project);
+		if (repoRelativePath.length() > 0) {
+			repoRelativePath += "/"; //$NON-NLS-1$
 		}
+
+		for (String filename : added) {
+			try {
+				if (!filename.startsWith(repoRelativePath))
+					continue;
+				String projectRelativePath = filename
+						.substring(repoRelativePath.length());
+				IFile member = project.getFile(projectRelativePath);
+				if (!files.contains(member))
+					files.add(member);
+				category.add(member);
+			} catch (Exception e) {
+				if (GitTraceLocation.UI.isActive())
+					GitTraceLocation.getTrace().trace(
+							GitTraceLocation.UI.getLocation(), e.getMessage(),
+							e);
+				continue;
+			} // if it's outside the workspace, bad things happen
+		}
+	}
+
+	private String getMergeResolveMessage(Repository mergeRepository) {
+		File mergeMsg = new File(mergeRepository.getDirectory(), Constants.MERGE_MSG);
+		FileReader reader;
+		try {
+			reader = new FileReader(mergeMsg);
+			BufferedReader br = new BufferedReader(reader);
+			try {
+				StringBuilder message = new StringBuilder();
+				String s;
+				String newLine = newLine();
+				while ((s = br.readLine()) != null) {
+					message.append(s).append(newLine);
+				}
+				return message.toString();
+			} catch (IOException e) {
+				MessageDialog.openError(shell,
+						UIText.CommitAction_MergeHeadErrorTitle,
+						UIText.CommitAction_ErrorReadingMergeMsg);
+				throw new IllegalStateException(e);
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					// Empty
+				}
+			}
+		} catch (FileNotFoundException e) {
+			MessageDialog.openError(shell,
+					UIText.CommitAction_MergeHeadErrorTitle,
+					UIText.CommitAction_MergeHeadErrorMessage);
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private String newLine() {
+		return System.getProperty("line.separator"); //$NON-NLS-1$
 	}
 
 }

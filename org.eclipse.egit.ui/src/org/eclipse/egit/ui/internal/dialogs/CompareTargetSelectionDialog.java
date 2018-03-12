@@ -31,9 +31,7 @@ public class CompareTargetSelectionDialog extends AbstractBranchSelectionDialog 
 	 */
 	public CompareTargetSelectionDialog(Shell parentShell, Repository repo,
 			String pathString) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| SHOW_TAGS | SHOW_REFERENCES | EXPAND_LOCAL_BRANCHES_NODE
-				| SELECT_CURRENT_REF);
+		super(parentShell, repo);
 		this.pathString = pathString;
 	}
 
@@ -51,11 +49,8 @@ public class CompareTargetSelectionDialog extends AbstractBranchSelectionDialog 
 
 	@Override
 	protected String getTitle() {
-		if (pathString != null && pathString.length() > 0)
-			return NLS.bind(UIText.CompareTargetSelectionDialog_CompareTitle,
-					pathString);
-		else
-			return UIText.CompareTargetSelectionDialog_CompareTitleEmptyPath;
+		return NLS.bind(UIText.CompareTargetSelectionDialog_CompareTitle,
+				pathString);
 	}
 
 	@Override
