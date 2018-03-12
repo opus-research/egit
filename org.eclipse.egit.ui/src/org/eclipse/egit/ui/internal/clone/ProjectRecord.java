@@ -20,6 +20,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.osgi.util.NLS;
 
@@ -37,21 +38,50 @@ class ProjectRecord {
 	 */
 	ProjectRecord(File file) {
 		projectSystemFile = file;
-		initProjectDescription();
+		setProjectName();
 	}
 
 	/**
 	 * Set the name of the project based on the projectFile.
 	 */
-	private void initProjectDescription() {
+	private void setProjectName() {
 		try {
+			// If we don't have the project name try again
+			if (projectName == null) {
 				IPath path = new Path(projectSystemFile.getPath());
-				description = ResourcesPlugin.getWorkspace()
-						.loadProjectDescription(path);
-				projectName = description.getName();
+				// if the file is in the default location, use the directory
+				// name as the project name
+				if (isDefaultLocation(path)) {
+					projectName = path.segment(path.segmentCount() - 2);
+					description = ResourcesPlugin.getWorkspace()
+							.newProjectDescription(projectName);
+				} else {
+					description = ResourcesPlugin.getWorkspace()
+							.loadProjectDescription(path);
+					projectName = description.getName();
+				}
+
+			}
 		} catch (CoreException e) {
 			// no good couldn't get the name
 		}
+	}
+
+	/**
+	 * Returns whether the given project description file path is in the
+	 * default location for a project
+	 *
+	 * @param path
+	 *            The path to examine
+	 * @return Whether the given path is the default location for a project
+	 */
+	private boolean isDefaultLocation(IPath path) {
+		// The project description file must at least be within the project,
+		// which is within the workspace location
+		if (path.segmentCount() < 2)
+			return false;
+		return path.removeLastSegments(2).toFile().equals(
+				Platform.getLocation().toFile());
 	}
 
 	/**
@@ -68,8 +98,12 @@ class ProjectRecord {
 	 * UI.
 	 *
 	 * @return String the label
+	 * @since 3.4
 	 */
 	public String getProjectLabel() {
+		if (description == null)
+			return projectName;
+
 		String path = projectSystemFile.getParent();
 
 		return NLS.bind(UIText.WizardProjectsImportPage_projectLabel,
