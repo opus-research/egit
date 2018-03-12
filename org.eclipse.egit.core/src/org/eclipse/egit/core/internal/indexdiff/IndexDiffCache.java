@@ -16,6 +16,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,8 +31,12 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
@@ -51,6 +56,18 @@ public class IndexDiffCache {
 	private IndexDiffChangedListener globalListener;
 
 	private ExternalFileBufferListener bufferListener;
+
+	private final IPreferenceChangeListener configuredRepositoriesListener = new IPreferenceChangeListener() {
+
+		@Override
+		public void preferenceChange(PreferenceChangeEvent event) {
+			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey())) {
+				return;
+			}
+			prune(Activator.getDefault().getRepositoryUtil().getRepositories());
+		}
+
+	};
 
 	/**
 	 * Listener on buffer changes related to the workspace external files.
@@ -205,6 +222,12 @@ public class IndexDiffCache {
 	public IndexDiffCache() {
 		createGlobalListener();
 		registerBufferListener();
+		registerConfiguredRepositoriesListener();
+	}
+
+	private void registerConfiguredRepositoriesListener() {
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.addPreferenceChangeListener(configuredRepositoriesListener);
 	}
 
 	private void registerBufferListener() {
@@ -298,6 +321,8 @@ public class IndexDiffCache {
 				bufferListener = null;
 			}
 		}
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.removePreferenceChangeListener(configuredRepositoriesListener);
 		for (IndexDiffCacheEntry entry : entries.values()) {
 			entry.dispose();
 		}
@@ -309,17 +334,21 @@ public class IndexDiffCache {
 		}
 	}
 
-	/**
-	 * Removes the {@link IndexDiffCacheEntry} for the given {@link Repository}.
-	 *
-	 * @param repository
-	 *            to remove the cache entry of
-	 */
-	public void remove(@NonNull Repository repository) {
+	private void prune(Set<String> configuredRepositories) {
 		synchronized (entries) {
-			IndexDiffCacheEntry cachedEntry = entries.remove(repository);
-			if (cachedEntry != null) {
+			Iterator<Map.Entry<Repository, IndexDiffCacheEntry>> iterator = entries
+					.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry<Repository, IndexDiffCacheEntry> cached = iterator
+						.next();
+				if (configuredRepositories.contains(
+						cached.getKey().getDirectory().getAbsolutePath())) {
+					continue;
+				}
+				// Repository has vanished: remove cache entry.
+				IndexDiffCacheEntry cachedEntry = cached.getValue();
 				cachedEntry.dispose();
+				iterator.remove();
 			}
 		}
 	}

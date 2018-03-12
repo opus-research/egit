@@ -36,7 +36,6 @@ import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.AddToIndexOperation;
@@ -209,17 +208,11 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		testUtils.deleteTempDirs();
 	}
 
-	protected static void shutDownRepositories() throws Exception {
+	protected static void shutDownRepositories() {
 		RepositoryCache cache = Activator.getDefault().getRepositoryCache();
 		for(Repository repository:cache.getAllRepositories())
 			repository.close();
 		cache.clear();
-		IEclipsePreferences prefs = Activator.getDefault().getRepositoryUtil()
-				.getPreferences();
-		synchronized (prefs) {
-			prefs.put(RepositoryUtil.PREFS_DIRECTORIES, "");
-			prefs.flush();
-		}
 	}
 
 	protected static void deleteAllProjects() throws Exception {
