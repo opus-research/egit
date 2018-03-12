@@ -326,15 +326,6 @@ public class CoreText extends NLS {
 	/** */
 	public static String GitProjectData_repositoryChangedTaskName;
 
-	/** */
-	public static String GitResourceVariantTreeSubscriber_fetchTaskName;
-
-	/** */
-	public static String GitSyncObjectCache_noData;
-
-	/** */
-	public static String GitRemoteFolder_fetchingMembers;
-
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
 	}
