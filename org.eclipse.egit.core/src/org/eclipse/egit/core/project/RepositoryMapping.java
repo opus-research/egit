@@ -282,9 +282,6 @@ public class RepositoryMapping {
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 
-		IPath bestWorkingTree = null;
-		RepositoryMapping bestMapping = null;
-
 		for (IProject project : projects) {
 			if (isNonWorkspace(project))
 				continue;
@@ -293,17 +290,11 @@ public class RepositoryMapping {
 				continue;
 
 			IPath workingTree = new Path(mapping.getWorkTree().toString());
-			if (workingTree.isPrefixOf(path)) {
-				if (bestWorkingTree == null
-						|| workingTree.segmentCount() > bestWorkingTree
-								.segmentCount()) {
-					bestWorkingTree = workingTree;
-					bestMapping = mapping;
-				}
-			}
+			if (workingTree.isPrefixOf(path))
+				return mapping;
 		}
 
-		return bestMapping;
+		return null;
 	}
 
 	/**
@@ -336,13 +327,10 @@ public class RepositoryMapping {
 	 */
 	public synchronized IPath getGitDirAbsolutePath() {
 		if (gitDirAbsolutePath == null) {
-			IPath p = getGitDirPath();
-			if (p.isAbsolute())
-				gitDirAbsolutePath = p;
-			else if (container != null) {
+			if (container != null) {
 				IPath cloc = container.getLocation();
 				if (cloc != null)
-					gitDirAbsolutePath = cloc.append(p);
+					gitDirAbsolutePath = cloc.append(getGitDirPath());
 			}
 		}
 		return gitDirAbsolutePath;

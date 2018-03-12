@@ -12,7 +12,6 @@ package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -272,29 +271,29 @@ public class RepositoryUtil {
 	/**
 	 * Return a cached UI "name" for a Repository
 	 * <p>
-	 * This uses the name of the working directory. In case of a bare
-	 * repository, the repository directory name is used.
+	 * This uses the name of the parent of the repository's directory.
 	 *
 	 * @param repository
 	 * @return the name
 	 */
 	public String getRepositoryName(final Repository repository) {
-		File dir;
-		// Use working directory name for non-bare repositories
-		if (!repository.isBare())
-			dir = repository.getWorkTree();
-		else
-			dir = repository.getDirectory();
-
-		if (dir == null)
+		File gitDir = repository.getDirectory();
+		if (gitDir == null)
 			return ""; //$NON-NLS-1$
 
+		// Use parent file for non-bare repositories
+		if (!repository.isBare()) {
+			gitDir = gitDir.getParentFile();
+			if (gitDir == null)
+				return ""; //$NON-NLS-1$
+		}
+
 		synchronized (repositoryNameCache) {
-			final String path = dir.getPath().toString();
+			final String path = gitDir.getPath().toString();
 			String name = repositoryNameCache.get(path);
 			if (name != null)
 				return name;
-			name = dir.getName();
+			name = gitDir.getName();
 			repositoryNameCache.put(path, name);
 			return name;
 		}
@@ -352,9 +351,7 @@ public class RepositoryUtil {
 		synchronized (prefs) {
 
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
-				throw new IllegalArgumentException(MessageFormat.format(
-						CoreText.RepositoryUtil_DirectoryIsNotGitDirectory,
-						repositoryDir));
+				throw new IllegalArgumentException();
 
 			String dirString = getPath(repositoryDir);
 
