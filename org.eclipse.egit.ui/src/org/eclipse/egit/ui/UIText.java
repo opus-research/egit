@@ -2,7 +2,7 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -592,6 +592,9 @@ public class UIText extends NLS {
 	public static String ProjectsPreferencePage_AutoShareProjects;
 
 	/** */
+	public static String ProjectsPreferencePage_RestoreBranchProjects;
+
+	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -1129,6 +1132,9 @@ public class UIText extends NLS {
 	public static String SourceBranchPage_cannotCreateTemp;
 
 	/** */
+	public static String SourceBranchPage_CompositeTransportErrorMessage;
+
+	/** */
 	public static String CloneDestinationPage_title;
 
 	/** */
@@ -1154,6 +1160,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneDestinationPage_browseButton;
+
+	/** */
+	public static String CloneDestinationPage_cloneSubmodulesButton;
 
 	/** */
 	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
@@ -1201,12 +1210,6 @@ public class UIText extends NLS {
 	public static String RefContentProposal_unknownObject;
 
 	/** */
-	public static String ReflogView_CommitterColumnHeader;
-
-	/** */
-	public static String ReflogView_CommitterMe;
-
-	/** */
 	public static String ReflogView_DateColumnHeader;
 
 	/** */
@@ -1217,6 +1220,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ReflogView_CommitColumnHeader;
+
+	/** */
+	public static String ReflogView_CommitMessageColumnHeader;
 
 	/** */
 	public static String RefSelectionDialog_Messsage;
@@ -1618,6 +1624,12 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_notFound;
 
 	/** */
+	public static String HistoryPreferencePage_MaxBranchLength;
+
+	/** */
+	public static String HistoryPreferencePage_MaxTagLength;
+
+	/** */
 	public static String PullOperationUI_ConnectionProblem;
 
 	/** */
@@ -1870,6 +1882,12 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_AddButton;
 
 	/** */
+	public static String ConfigurationEditorComponent_BrowseForPrefix;
+
+	/** */
+	public static String ConfigurationEditorComponent_CannotChangeGitPrefixError;
+
+	/** */
 	public static String ConfigurationEditorComponent_ChangeButton;
 
 	/** */
@@ -1880,6 +1898,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_EmptyStringNotAllowed;
+
+	/** */
+	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorMessage;
+
+	/** */
+	public static String ConfigurationEditorComponent_GitPrefixSelectionErrorTitle;
 
 	/** */
 	public static String ConfigurationEditorComponent_KeyColumnHeader;
@@ -1922,6 +1946,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_RemoveSubsectionTitle;
+
+	/** */
+	public static String ConfigurationEditorComponent_SelectGitInstallation;
 
 	/** */
 	public static String ConfigurationEditorComponent_ValueColumnHeader;
@@ -2545,6 +2572,9 @@ public class UIText extends NLS {
 	public static String CheckoutDialog_Delete;
 
 	/** */
+	public static String CommitDialogPreferencePage_commitMessageHistory;
+
+	/** */
 	public static String CommitDialogPreferencePage_title;
 
 	/** */
@@ -2558,6 +2588,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialogPreferencePage_formatting;
+
+	/** */
+	public static String CommitDialogPreferencePage_includeUntrackedFiles;
+
+	/** */
+	public static String CommitDialogPreferencePage_includeUntrackedFilesTooltip;
 
 	/** */
 	public static String CommitDialogPreferencePage_signedOffBy;
@@ -2587,12 +2623,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip;
 
 	/** */
-	public static String DecoratorPreferencesPage_computeRecursiveLimit;
-
-	/** */
-	public static String DecoratorPreferencesPage_computeRecursiveLimitTooltip;
-
-	/** */
 	public static String DecoratorPreferencesPage_description;
 
 	/** */
@@ -2615,6 +2645,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingBranchName;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingBranchStatus;
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingDirtyFlag;
@@ -2797,13 +2830,13 @@ public class UIText extends NLS {
 	public static String RepositoriesViewContentProvider_ExceptionNodeText;
 
 	/** */
-	public static String RepositoriesViewLabelProvider_BareRepositoryMessage;
-
-	/** */
 	public static String RepositoriesViewLabelProvider_LocalNodetext;
 
 	/** */
 	public static String RepositoriesViewLabelProvider_RemoteTrackingNodetext;
+
+	/** */
+	public static String RepositoriesViewLabelProvider_SubmodulesNodeText;
 
 	/** */
 	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
@@ -2921,6 +2954,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreateGeneralProjectPage_ProjectNameLabel;
+
+	/** */
+	public static String GitCreatePatchAction_cannotCreatePatch;
+
+	/** */
+	public static String GitCreatePatchAction_workingTreeClean;
 
 	/** */
 	public static String GitCreatePatchWizard_Browse;
@@ -3335,18 +3374,6 @@ public class UIText extends NLS {
 	public static String CommitEditorPage_TooltipSignedOffByCommitter;
 
 	/** */
-	public static String Header_contextMenu_copy;
-
-	/** */
-	public static String Header_contextMenu_copy_SHA1;
-	/** */
-
-	public static String Header_copy_SHA1_error_title;
-
-	/** */
-	public static String Header_copy_SHA1_error_message;
-
-	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
 
 	/** */
@@ -3612,6 +3639,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertFailureDialog_Message;
+
+	/** */
+	public static String RevertFailureDialog_MessageNoFiles;
 
 	/** */
 	public static String RevertFailureDialog_ReasonChangesInIndex;
