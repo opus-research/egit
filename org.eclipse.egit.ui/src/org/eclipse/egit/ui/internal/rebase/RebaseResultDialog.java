@@ -122,8 +122,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_Aborted;
 		case STOPPED:
 			return UIText.RebaseResultDialog_Stopped;
-		case FAILED:
-			return UIText.RebaseResultDialog_Failed;
 		case UP_TO_DATE:
 			return UIText.RebaseResultDialog_UpToDate;
 		case FAST_FORWARD:
@@ -141,9 +139,7 @@ public class RebaseResultDialog extends MessageDialog {
 	private RebaseResultDialog(Shell shell, Repository repository,
 			RebaseResult result) {
 		super(shell, UIText.RebaseResultDialog_DialogTitle, INFO,
-				getTitle(result.getStatus()),
-				result.getStatus() == Status.FAILED ? MessageDialog.ERROR
-						: MessageDialog.INFORMATION,
+				getTitle(result.getStatus()), MessageDialog.INFORMATION,
 				new String[] { IDialogConstants.OK_LABEL }, 0);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repository;
@@ -196,7 +192,7 @@ public class RebaseResultDialog extends MessageDialog {
 			}
 			if (conflictPaths.size() > 0) {
 				message = NLS.bind(UIText.RebaseResultDialog_Conflicting,
-						conflictPaths.size());
+						Integer.valueOf(conflictPaths.size()));
 				messageLabel.setText(message);
 			}
 		} catch (IOException e) {
@@ -245,10 +241,12 @@ public class RebaseResultDialog extends MessageDialog {
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				nextSteps
-						.getTextWidget()
-						.setText(
-								UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
+				if (startMergeButton.getSelection()) {
+					nextSteps
+							.getTextWidget()
+							.setText(
+									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
+				}
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -262,7 +260,8 @@ public class RebaseResultDialog extends MessageDialog {
 		skipCommitButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
+				if (skipCommitButton.getSelection())
+					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -277,7 +276,8 @@ public class RebaseResultDialog extends MessageDialog {
 		abortRebaseButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
+				if (abortRebaseButton.getSelection())
+					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -291,8 +291,9 @@ public class RebaseResultDialog extends MessageDialog {
 		doNothingButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				nextSteps.getTextWidget().setText(
-						UIText.RebaseResultDialog_NextStepsDoNothing);
+				if (doNothingButton.getSelection())
+					nextSteps.getTextWidget().setText(
+							UIText.RebaseResultDialog_NextStepsDoNothing);
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {

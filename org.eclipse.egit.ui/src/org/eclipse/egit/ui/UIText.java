@@ -538,9 +538,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_FastForward;
 
 	/** */
-	public static String RebaseResultDialog_Failed;
-
-	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
@@ -1780,9 +1777,6 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_committer;
 
 	/** */
-	public static String CommitMessageViewer_errorGettingFileDifference;
-
-	/** */
 	public static String CommitMessageViewer_FormattingMessageTaskName;
 
 	/** */
@@ -2263,6 +2257,12 @@ public class UIText extends NLS {
 	public static String BranchAction_repositoryState;
 
 	/** */
+	public static String BranchOperationUI_DetachedHeadTitle;
+
+	/** */
+	public static String BranchOperationUI_DetachedHeadMessage;
+
+	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
 
 	/** */
@@ -2285,9 +2285,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
-
-	/** */
-	public static String BranchSelectionDialog_QuestionNewBranchMessage;
 
 	/** */
 	public static String BranchSelectionDialog_NewBranch;
@@ -2945,9 +2942,6 @@ public class UIText extends NLS {
 	public static String GitSynchronizeWizard_synchronize;
 
 	/** */
-	public static String GitSynchronizeWizard_gitResourceSynchronization;
-
-	/** */
 	public static String GitBranchSynchronizeWizardPage_title;
 
 	/** */
@@ -3051,6 +3045,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NonDeletedFilesTree_ResourcePathsButton;
+
+	/** */
+	public static String OpenWorkingFileAction_text;
+
+	/** */
+	public static String OpenWorkingFileAction_tooltip;
+
+	/** */
+	public static String OpenWorkingFileAction_openWorkingFileShellTitle;
 
 	/** */
 	public static String RemoteConnectionPreferencePage_TimeoutLabel;
@@ -3347,6 +3350,12 @@ public class UIText extends NLS {
 	public static String SkipRebaseCommand_JobName;
 
 	/** */
+	public static String SwitchToMenu_NewBranchMenuLabel;
+
+	/** */
+	public static String SwitchToMenu_OtherMenuLabel;
+
+	/** */
 	public static String SynchronizeWithAction_localRepoName;
 
 	/** */
@@ -3408,8 +3417,11 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
-	/** */
 
+	/** */
+	public static String DecoratableResourceHelper_noHead;
+
+	/** */
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}

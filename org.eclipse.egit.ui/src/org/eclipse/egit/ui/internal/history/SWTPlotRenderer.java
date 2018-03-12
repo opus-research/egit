@@ -20,6 +20,7 @@ import org.eclipse.jgit.revplot.AbstractPlotRenderer;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
@@ -56,6 +57,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	Color cellBG;
 
+	private Ref headRef;
+
 	SWTPlotRenderer(final Display d) {
 		sys_blue = d.getSystemColor(SWT.COLOR_BLUE);
 		sys_black = d.getSystemColor(SWT.COLOR_BLACK);
@@ -67,8 +70,9 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	}
 
 	@SuppressWarnings("unchecked")
-	void paint(final Event event) {
+	void paint(final Event event, Ref actHeadRef) {
 		g = event.gc;
+		this.headRef = actHeadRef;
 		cellX = event.x;
 		cellY = event.y;
 		cellFG = g.getForeground();
@@ -146,7 +150,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		}
 
 		if (txt.length() > 12)
-			txt = txt.substring(0,11) + "\u2026"; // ellipsis "…" (in UTF-8) //$NON-NLS-1$
+			txt = txt.substring(0,11) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
 
 		Point textsz = g.stringExtent(txt);
 		int arc = textsz.y/2;
@@ -155,7 +159,17 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		// Draw backgrounds
 		g.fillRoundRectangle(cellX + x + 1, cellY + texty -1, textsz.x + 3, textsz.y + 1, arc, arc);
 		g.setForeground(sys_black);
+
+		// highlight checked out branch
+		Font oldFont = g.getFont();
+		boolean isHead = isHead(name);
+		if (isHead)
+			g.setFont(CommitGraphTable.highlightFont());
+
 		g.drawString(txt,cellX + x + 2, cellY + texty, true);
+
+		if (isHead)
+			g.setFont(oldFont);
 		g.setLineWidth(2);
 
 		// And a two color shaded border, blend with whatever background there already is
@@ -171,6 +185,17 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			peeledColor.dispose();
 		labelCoordinates.put(name, new Point(x, x + textsz.x));
 		return 8 + textsz.x;
+	}
+
+	private boolean isHead(String name) {
+		boolean isHead = false;
+		if (headRef != null) {
+			String headRefName = headRef.getLeaf().getName();
+			if (name.equals(headRefName)) {
+				isHead = true;
+			}
+		}
+		return isHead;
 	}
 
 	protected Color laneColor(final SWTLane myLane) {

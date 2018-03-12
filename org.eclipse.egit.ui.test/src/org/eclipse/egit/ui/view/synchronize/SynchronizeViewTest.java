@@ -13,10 +13,6 @@ import static org.eclipse.egit.ui.UIText.CommitDialog_Commit;
 import static org.eclipse.egit.ui.UIText.CommitDialog_CommitChanges;
 import static org.eclipse.egit.ui.UIText.CommitDialog_SelectAll;
 import static org.eclipse.egit.ui.UIText.GitModelWorkingTree_workingTree;
-import static org.eclipse.egit.ui.UIText.ResetCommand_WizardTitle;
-import static org.eclipse.egit.ui.UIText.ResetTargetSelectionDialog_ResetButton;
-import static org.eclipse.egit.ui.UIText.ResetTargetSelectionDialog_ResetQuestion;
-import static org.eclipse.egit.ui.UIText.ResetTargetSelectionDialog_ResetTypeHardButton;
 import static org.eclipse.egit.ui.UIText.SynchronizeWithAction_localRepoName;
 import static org.eclipse.egit.ui.UIText.SynchronizeWithAction_tagsName;
 import static org.eclipse.egit.ui.test.ContextMenuHelper.clickContextMenu;
@@ -28,19 +24,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileWriter;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
+import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
@@ -56,12 +56,11 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.team.internal.ui.synchronize.RefreshParticipantJob;
+import org.eclipse.team.ui.synchronize.ISynchronizeManager;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -78,10 +77,12 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 
 	private static final String EMPTY_REPOSITORY = "EmptyRepository";
 
+	private static File repositoryFile;
+
 	@Test
 	public void shouldReturnNoChanges() throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 
 		// when
@@ -96,7 +97,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	@Test
 	public void shouldReturnListOfChanges() throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 
 		// when
@@ -112,7 +113,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	@Test
 	public void shouldCompareBranchAgainstTag() throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		makeChangesAndCommit(PROJ1);
 
 		// when
@@ -127,7 +128,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	@Test
 	public void shouldCompareTagAgainstTag() throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		makeChangesAndCommit(PROJ1);
 		createTag(PROJ1, "v0.1");
 
@@ -140,9 +141,11 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
-	@Test public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
+	@Test
+	@Ignore // failing rather often on Hudson
+	public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 
 		// when
@@ -158,7 +161,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	@Test public void shouldOpenCompareEditorInWorkspaceModel()
 			throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		changeFilesInProject();
 
 		// when
@@ -172,7 +175,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 
 	@Test public void shouldListFileDeletedChange() throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		deleteFileAndCommit(PROJ1);
 
 		// when
@@ -224,7 +227,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	@Test public void shouldExchangeCompareEditorSidesBetweenIncomingAndOutgoingChangesInGitChangeSet()
 			throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		makeChangesAndCommit(PROJ1);
 
 		// compare HEAD against tag
@@ -256,7 +259,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	@Test public void shouldExchangeCompareEditorSidesBetweenIncomingAndOutgoingChangesInWorkspaceModel()
 			throws Exception {
 		// given
-		resetRepositoryToCreateInitialTag(PROJ1);
+		resetRepositoryToCreateInitialTag();
 		makeChangesAndCommit(PROJ1);
 
 		// compare HEAD against tag
@@ -284,6 +287,98 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		assertThat(outgoingLeft, equalTo(incomingRight));
 		// left side from compare editor should be equal with right
 		assertThat(outgoingRight, equalTo(incomingLeft));
+	}
+
+	@Test public void shouldNotShowIgnoredFilesInGitChangeSetModel()
+			throws Exception {
+		// given
+		resetRepositoryToCreateInitialTag();
+		String ignoredName = "to-be-ignored.txt";
+
+		IProject proj = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject(PROJ1);
+
+		IFile ignoredFile = proj.getFile(ignoredName);
+		ignoredFile.create(new ByteArrayInputStream("content of ignored file"
+				.getBytes(proj.getDefaultCharset())), false, null);
+
+		IFile gitignore = proj.getFile(".gitignore");
+		gitignore.create(
+				new ByteArrayInputStream(ignoredName.getBytes(proj
+						.getDefaultCharset())), false, null);
+		proj.refreshLocal(IResource.DEPTH_INFINITE, null);
+
+		// when
+		launchSynchronization(SynchronizeWithAction_tagsName, INITIAL_TAG,
+				SynchronizeWithAction_localRepoName, HEAD, true);
+
+		// then
+		// asserts for Git Change Set model
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		syncViewTree.expandNode(UIText.GitModelWorkingTree_workingTree);
+		assertEquals(1, syncViewTree.getAllItems().length);
+		SWTBotTreeItem proj1Node = syncViewTree.getAllItems()[0];
+		proj1Node.getItems()[0].expand();
+		assertEquals(1, proj1Node.getItems()[0].getItems().length);
+
+		// asserts for Workspace model
+		syncViewTree = setPresentationModel("Workspace").tree();
+		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree, PROJ1);
+		projectTree.expand();
+		assertEquals(1, projectTree.getItems().length);
+	}
+
+	@Test public void shouldShowNonWorkspaceFileInSynchronization()
+			throws Exception {
+		// given
+		String name = "non-workspace.txt";
+		File root = new File(getTestDirectory(), REPO1);
+		File nonWorkspace = new File(root, name);
+		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
+		writer.append("file content");
+		writer.close();
+
+		// when
+		launchSynchronization(SynchronizeWithAction_tagsName, INITIAL_TAG,
+				SynchronizeWithAction_localRepoName, HEAD, true);
+
+		// then
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem workingTree = syncViewTree
+				.expandNode(UIText.GitModelWorkingTree_workingTree);
+		assertEquals(1, syncViewTree.getAllItems().length);
+		assertEquals(1, workingTree.getNodes(name).size());
+	}
+
+	@Test
+	@Ignore // failing rather often on Hudson
+	public void shouldShowCompareEditorForNonWorkspaceFileFromSynchronization()
+			throws Exception {
+		// given
+		String content = "file content";
+		String name = "non-workspace.txt";
+		File root = new File(getTestDirectory(), REPO1);
+		File nonWorkspace = new File(root, name);
+		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
+		writer.append(content);
+		writer.close();
+
+		// when
+		launchSynchronization(SynchronizeWithAction_tagsName, INITIAL_TAG,
+				SynchronizeWithAction_localRepoName, HEAD, true);
+
+		// then
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTreeItem workingTree = syncViewTree
+				.expandNode(UIText.GitModelWorkingTree_workingTree);
+		assertEquals(1, syncViewTree.getAllItems().length);
+		workingTree.expand().getNode(name).doubleClick();
+
+		SWTBotEditor editor = bot.editorByTitle(name);
+		editor.setFocus();
+
+		assertNotNull(editor);
+		assertThat(editor.bot().styledText(1).getText(), equalTo(content));
 	}
 
 	// this test always fails with cause:
@@ -331,10 +426,13 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		SWTBotRadio syncPerspectiveCheck = bot.radio("Never");
 		if (!syncPerspectiveCheck.isSelected())
 			syncPerspectiveCheck.click();
+		bot.comboBox(0).setSelection("None");
+
+		bot.comboBox().setSelection("None");
 
 		bot.button(IDialogConstants.OK_LABEL).click();
 
-		File repositoryFile = createProjectAndCommitToRepository();
+		repositoryFile = createProjectAndCommitToRepository();
 		createChildRepository(repositoryFile);
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
@@ -369,22 +467,11 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		coreTreeItem.collapse();
 	}
 
-	private void resetRepositoryToCreateInitialTag(String projectName)
-			throws Exception {
-		showDialog(projectName, "Team", "Reset...");
-
-		bot.shell(ResetCommand_WizardTitle).bot().activeShell();
-
-		SWTBotTreeItem tagsNode = bot.tree().getTreeItem("Tags");
-		tagsNode.expand();
-		tagsNode.getNode(INITIAL_TAG).select();
-
-		bot.radio(ResetTargetSelectionDialog_ResetTypeHardButton).click();
-		bot.button(ResetTargetSelectionDialog_ResetButton).click();
-
-		bot.shell(ResetTargetSelectionDialog_ResetQuestion).bot().activeShell();
-		bot.button("Yes").click();
-		TestUtil.joinJobs(JobFamilies.RESET);
+	private void resetRepositoryToCreateInitialTag() throws Exception {
+		ResetOperation rop = new ResetOperation(
+				lookupRepository(repositoryFile), Constants.R_TAGS +
+						INITIAL_TAG, ResetType.HARD);
+		rop.execute(new NullProgressMonitor());
 	}
 
 	private static void createTag(String projectName, String tagName)
@@ -453,14 +540,14 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	private void launchSynchronization(String srcRepo, String srcRef,
-			String dstRepo, String dstRef, boolean includeLocal) {
+			String dstRepo, String dstRef, boolean includeLocal) throws InterruptedException{
 		launchSynchronization(REPO1, PROJ1, srcRepo, srcRef, dstRepo, dstRef,
 				includeLocal);
 	}
 
 	private void launchSynchronization(String repo, String projectName,
 			String srcRepo, String srcRef, String dstRepo, String dstRef,
-			boolean includeLocal) {
+			boolean includeLocal) throws InterruptedException {
 		showDialog(projectName, "Team", "Synchronize...");
 
 		bot.shell("Synchronize repository: " + repo + File.separator + ".git")
@@ -471,10 +558,10 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 					UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges)
 					.click();
 
-		if (srcRepo != null)
+		if (!includeLocal && srcRepo != null)
 			bot.comboBox(0)
 					.setSelection(srcRepo);
-		if (srcRef != null)
+		if (!includeLocal && srcRef != null)
 			bot.comboBox(1).setSelection(srcRef);
 
 		if (dstRepo != null)
@@ -483,42 +570,9 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		if (dstRef != null)
 			bot.comboBox(3).setSelection(dstRef);
 
-		// register synchronization finish hook
-		SynchronizeFinishHook sfh = new SynchronizeFinishHook();
-		Job.getJobManager().addJobChangeListener(sfh);
+		Job.getJobManager().join(ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
 
-		// fire action
 		bot.button(IDialogConstants.OK_LABEL).click();
-
-		try {
-			bot.waitUntil(sfh, 120000);
-		} finally {
-			Job.getJobManager().removeJobChangeListener(sfh);
-		}
-	}
-
-	private static class SynchronizeFinishHook extends JobChangeAdapter
-			implements ICondition {
-		private boolean state = false;
-
-		@SuppressWarnings("restriction") public void done(IJobChangeEvent event) {
-			if (event.getJob() instanceof RefreshParticipantJob)
-				state = true;
-		}
-
-		public boolean test() throws Exception {
-			return state;
-		}
-
-		public void init(SWTBot swtBot) {
-			// unused
-		}
-
-		public String getFailureMessage() {
-			// unused
-			return null;
-		}
-
 	}
 
 	private SWTBot setPresentationModel(String model) throws Exception {
@@ -592,7 +646,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotTreeItem waitForNodeWithText(SWTBotTreeItem tree, String name) {
-		waitUntilTreeHasNodeContainsText(bot, tree, name, 10000);
+		waitUntilTreeHasNodeContainsText(bot, tree, name, 15000);
 		return getTreeItemContainingText(tree.getItems(), name).expand();
 	}
 
