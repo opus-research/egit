@@ -12,6 +12,8 @@
 package org.eclipse.egit.ui;
 
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.ProxySelector;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashSet;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -218,6 +221,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				props);
 
 		setupSSH(context);
+		setupProxy(context);
 		setupRepoChangeScanner();
 		setupRepoIndexRefresh();
 		setupFocusHandling();
@@ -501,6 +505,18 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		if (ssh != null) {
 			SshSessionFactory.setInstance(new EclipseSshSessionFactory(
 					(IJSchService) context.getService(ssh)));
+		}
+	}
+
+	private void setupProxy(final BundleContext context) {
+		final ServiceReference proxy;
+
+		proxy = context.getServiceReference(IProxyService.class.getName());
+		if (proxy != null) {
+			ProxySelector.setDefault(new EclipseProxySelector(
+					(IProxyService) context.getService(proxy)));
+			Authenticator.setDefault(new EclipseAuthenticator(
+					(IProxyService) context.getService(proxy)));
 		}
 	}
 
