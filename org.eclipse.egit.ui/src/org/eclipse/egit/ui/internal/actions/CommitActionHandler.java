@@ -32,14 +32,12 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -47,7 +45,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
-import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -93,7 +90,6 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			return null;
 		}
 
-		BasicConfigurationDialog.show();
 		resetState();
 		final IProject[] projects = getProjectsInRepositoryOfSelectedResources(event);
 		try {
@@ -315,26 +311,18 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			projects.add(project);
 		}
 
-		monitor.beginTask(UIText.CommitActionHandler_calculatingChanges,
-				repositories.size() * 1000);
+		monitor.beginTask(UIText.CommitActionHandler_caculatingChanges,
+				repositories.size());
 		for (Map.Entry<Repository, HashSet<IProject>> entry : repositories
 				.entrySet()) {
 			Repository repository = entry.getKey();
-			EclipseGitProgressTransformer jgitMonitor = new EclipseGitProgressTransformer(monitor);
+			monitor.subTask(NLS.bind(UIText.CommitActionHandler_repository,
+					repository.getDirectory().getPath()));
 			HashSet<IProject> projects = entry.getValue();
-			CountingVisitor counter = new CountingVisitor();
-			for (IProject p : projects) {
-				try {
-					p.accept(counter);
-				} catch (CoreException e) {
-					// ignore
-				}
-			}
+
 			IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD,
 					IteratorService.createInitialIterator(repository));
-			indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(
-					UIText.CommitActionHandler_repository, repository
-							.getDirectory().getPath()));
+			indexDiff.diff();
 			indexDiffs.put(repository, indexDiff);
 
 			for (IProject project : projects) {
@@ -347,17 +335,11 @@ public class CommitActionHandler extends RepositoryActionHandler {
 			}
 			if (monitor.isCanceled())
 				throw new OperationCanceledException();
+			monitor.worked(1);
 		}
 		monitor.done();
 	}
 
-	static class CountingVisitor implements IResourceVisitor {
-		int count;
-		public boolean visit(IResource resource) throws CoreException {
-			count++;
-			return true;
-		}
-	}
 
 	private void includeList(IProject project, Set<String> added,
 			ArrayList<IFile> category) {

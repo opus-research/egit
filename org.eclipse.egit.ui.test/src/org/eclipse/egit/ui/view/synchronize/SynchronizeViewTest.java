@@ -24,7 +24,6 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.SWTBot;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -48,11 +47,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		bot.shell("Synchronize repository: " + REPO1 + File.separator + ".git")
 				.activate();
 
-		// we need to disable 'Include local changes'
-		bot.checkBox(
-				UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges)
-				.click();
-
 		bot.comboBox(0)
 				.setSelection(UIText.SynchronizeWithAction_localRepoName);
 		bot.comboBox(1).setSelection(HEAD);
@@ -60,6 +54,8 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		bot.comboBox(2)
 				.setSelection(UIText.SynchronizeWithAction_localRepoName);
 		bot.comboBox(3).setSelection(MASTER);
+
+		// do not check 'Include local changes'
 
 		// fire action
 		bot.button(IDialogConstants.OK_LABEL).click();
@@ -81,11 +77,16 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		bot.shell("Synchronize repository: " + REPO1 + File.separator + ".git")
 				.activate();
 
-		// include local changes are enabled by default
+		bot.comboBox(0)
+				.setSelection(UIText.SynchronizeWithAction_localRepoName);
+		bot.comboBox(1).setSelection(HEAD);
 
 		bot.comboBox(2)
 				.setSelection(UIText.SynchronizeWithAction_localRepoName);
 		bot.comboBox(3).setSelection(MASTER);
+
+		// include local changes
+		bot.checkBox("Include local uncommited changes in comparison").click();
 
 		// fire action
 		bot.button(IDialogConstants.OK_LABEL).click();
@@ -93,7 +94,7 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		bot.waitUntil(Conditions.treeHasRows(syncViewTree, 1), 10000);
+		assertEquals(1, syncViewTree.getAllItems().length);
 
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertEquals(UIText.GitModelWorkingTree_workingTree,
@@ -111,11 +112,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		// when
 		bot.shell("Synchronize repository: " + REPO1 + File.separator + ".git")
 				.activate();
-
-		// we need to disable 'Include local changes'
-		bot.checkBox(
-				UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges)
-				.click();
 
 		bot.comboBox(0)
 				.setSelection(UIText.SynchronizeWithAction_localRepoName);
@@ -150,11 +146,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		// when
 		bot.shell("Synchronize repository: " + REPO1 + File.separator + ".git")
 				.activate();
-
-		// we need to disable 'Include local changes'
-		bot.checkBox(
-				UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges)
-				.click();
 
 		bot.comboBox(0)
 				.setSelection(UIText.SynchronizeWithAction_localRepoName);
@@ -318,7 +309,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	private void showDialog(String projectName, String... cmd) {
-		bot.activeView();
 		SWTBot packageExplorerBot = bot.viewByTitle("Package Explorer").bot();
 		packageExplorerBot.activeShell();
 		SWTBotTree tree = packageExplorerBot.tree();

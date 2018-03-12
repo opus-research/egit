@@ -32,12 +32,6 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 class GitTreeTraversal extends ResourceTraversal {
 
-	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
-
-	private static Repository lastRepo;
-
-	private static FileTreeIterator fileTreeIterator;
-
 	public GitTreeTraversal(GitModelTree modelTree) {
 		this(modelTree.getRepository(), modelTree.getBaseId(), modelTree
 				.getRemoteId(), modelTree.getLocation());
@@ -79,18 +73,13 @@ class GitTreeTraversal extends ResourceTraversal {
 
 		TreeWalk tw = new TreeWalk(repo);
 		List<IResource> result = new ArrayList<IResource>();
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 
 		tw.reset();
 		tw.setRecursive(false);
 		tw.setFilter(TreeFilter.ANY_DIFF);
 		try {
-			if (fileTreeIterator == null || !repo.equals(lastRepo)) {
-				lastRepo = repo;
-				fileTreeIterator = new FileTreeIterator(repo);
-			} else
-				fileTreeIterator.reset();
-
-			tw.addTree(fileTreeIterator);
+			tw.addTree(new FileTreeIterator(repo));
 			if (!baseId.equals(zeroId()))
 				tw.addTree(baseId);
 
@@ -98,19 +87,13 @@ class GitTreeTraversal extends ResourceTraversal {
 
 			while (tw.next()) {
 				int objectType = tw.getFileMode(actualNth).getObjectType();
-				String name = tw.getNameString();
-				IPath childPath = path.append(name);
+				IPath childPath = path.append(tw.getNameString());
 
 				IResource resource = null;
 				if (objectType == Constants.OBJ_BLOB)
-					resource = ROOT.getFileForLocation(childPath);
-				else if (objectType == Constants.OBJ_TREE) {
-					resource = ROOT.getProject(name);
-					if (resource == null)
-						resource = ROOT.getFolder(childPath.makeRelativeTo(ROOT.getLocation()));
-
-					resource = ROOT.getContainerForLocation(childPath);
-				}
+					resource = root.getFileForLocation(childPath);
+				else if (objectType == Constants.OBJ_TREE)
+					resource = root.getContainerForLocation(childPath);
 
 				if (resource != null)
 					result.add(resource);
