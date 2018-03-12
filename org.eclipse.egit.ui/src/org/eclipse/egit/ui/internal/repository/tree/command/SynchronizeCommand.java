@@ -87,9 +87,6 @@ public class SynchronizeCommand extends
 
 	private String getRefName(final RepositoryTreeNode node) {
 		Object object = node.getObject();
-		if(object instanceof Repository) {
-			return Constants.HEAD;
-		}
 		if (!(object instanceof Ref))
 			return null;
 
