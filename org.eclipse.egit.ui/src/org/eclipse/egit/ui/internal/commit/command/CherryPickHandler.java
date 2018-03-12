@@ -8,13 +8,11 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Maik Schreiber - support for cherry-picking multiple commits
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.commit.command;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,22 +52,21 @@ public class CherryPickHandler extends SelectionHandler {
 	public static final String ID = "org.eclipse.egit.ui.commit.CherryPick"; //$NON-NLS-1$
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<RevCommit> commits = getSelectedItems(RevCommit.class, event);
-		if (commits == null || commits.isEmpty())
+		RevCommit commit = getSelectedItem(RevCommit.class, event);
+		if (commit == null)
 			return null;
 		Repository repo = getSelectedItem(Repository.class, event);
 		if (repo == null)
 			return null;
 		final Shell parent = getPart(event).getSite().getShell();
 
-		if (!confirmCherryPick(parent, repo, commits))
+		if (!confirmCherryPick(parent, repo, commit))
 			return null;
 
-		final CherryPickOperation op = new CherryPickOperation(repo, commits);
+		final CherryPickOperation op = new CherryPickOperation(repo, commit);
 
 		Job job = new WorkspaceJob(MessageFormat.format(
-				UIText.CherryPickHandler_JobName,
-				Integer.valueOf(commits.size()))) {
+				UIText.CherryPickHandler_JobName, commit.name())) {
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
@@ -114,22 +111,14 @@ public class CherryPickHandler extends SelectionHandler {
 	}
 
 	private boolean confirmCherryPick(final Shell shell,
-			final Repository repository, final List<RevCommit> commits)
+			final Repository repository, final RevCommit commit)
 			throws ExecutionException {
 		final AtomicBoolean confirmed = new AtomicBoolean(false);
-		final String title = commits.size() == 1 ? UIText.CherryPickHandler_ConfirmTitle
-				: UIText.CherryPickHandler_ConfirmTitle_Multi;
 		final String message;
 		try {
-			if (commits.size() == 1)
-				message = MessageFormat.format(
-						UIText.CherryPickHandler_ConfirmMessage, commits.get(0)
-								.abbreviate(7).name(), repository.getBranch());
-			else
-				message = MessageFormat.format(
-						UIText.CherryPickHandler_ConfirmMessage_Multi,
-								Integer.valueOf(commits.size()),
-								repository.getBranch());
+			message = MessageFormat.format(
+					UIText.CherryPickHandler_ConfirmMessage,
+					commit.abbreviate(7).name(), repository.getBranch());
 		} catch (IOException e) {
 			throw new ExecutionException(
 					"Exception obtaining current repository branch", e); //$NON-NLS-1$
@@ -138,7 +127,8 @@ public class CherryPickHandler extends SelectionHandler {
 		shell.getDisplay().syncExec(new Runnable() {
 
 			public void run() {
-				confirmed.set(MessageDialog.openConfirm(shell, title, message));
+				confirmed.set(MessageDialog.openConfirm(shell,
+						UIText.CherryPickHandler_ConfirmTitle, message));
 			}
 		});
 		return confirmed.get();

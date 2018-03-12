@@ -1145,13 +1145,7 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_ConfirmMessage;
 
 	/** */
-	public static String CherryPickHandler_ConfirmMessage_Multi;
-
-	/** */
 	public static String CherryPickHandler_ConfirmTitle;
-
-	/** */
-	public static String CherryPickHandler_ConfirmTitle_Multi;
 
 	/** */
 	public static String CherryPickHandler_unknown;
@@ -1749,9 +1743,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPage_errorTransportDialogMessage;
-
-	/** */
-	public static String RefSpecPage_errorTransportDialogTitle;
 
 	/** */
 	public static String RefSpecPage_operationCancelled;
@@ -5061,7 +5052,7 @@ public class UIText extends NLS {
 	public static String CustomPromptDialog_information_about;
 
 	/** */
-	public static String GitModelSynchonize_fetchGitDataJobName;
+	public static String GitModelSynchronize_fetchGitDataJobName;
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedTitle;

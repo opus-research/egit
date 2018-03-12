@@ -8,13 +8,9 @@
  * Contributors:
  *    Christian Halstrick (SAP AG) - initial implementation
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Maik Schreiber - support for cherry-picking multiple commits
  *******************************************************************************/
 
 package org.eclipse.egit.ui.internal.history.command;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -40,16 +36,13 @@ public class CherryPickHandler extends AbstractHistoryCommandHandler {
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<RevCommit> commits = getSelectedCommits(event);
+		RevCommit commit = getSelectedCommit(event);
 		Repository repo = getRepository(event);
 		if (repo == null)
 			return null;
 
-		List<RepositoryCommit> repositoryCommits = new ArrayList<RepositoryCommit>();
-		for (RevCommit commit : commits)
-			repositoryCommits.add(new RepositoryCommit(repo, commit));
 		final IStructuredSelection selected = new StructuredSelection(
-				repositoryCommits);
+				new RepositoryCommit(repo, commit));
 		CommonUtils
 				.runCommand(
 						org.eclipse.egit.ui.internal.commit.command.CherryPickHandler.ID,
