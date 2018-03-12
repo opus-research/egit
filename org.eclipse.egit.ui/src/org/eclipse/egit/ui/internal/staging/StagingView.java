@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2012 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -731,7 +731,7 @@ public class StagingView extends ViewPart {
 	}
 
 	private void updateMessage() {
-		String message = commitMessageComponent.getMessage();
+		String message = commitMessageComponent.getStatus().getMessage();
 		boolean needsRedraw = false;
 		if (message != null) {
 			warningLabel.showMessage(message);
@@ -942,7 +942,6 @@ public class StagingView extends ViewPart {
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void openSelectionInEditor(ISelection s) {
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
 			return;
@@ -1045,12 +1044,16 @@ public class StagingView extends ViewPart {
 				add.call();
 			} catch (NoFilepatternException e1) {
 				// cannot happen
+			} catch (Exception e2) {
+				Activator.error(e2.getMessage(), e2);
 			}
 		if (rm != null)
 			try {
 				rm.call();
 			} catch (NoFilepatternException e) {
 				// cannot happen
+			} catch (Exception e2) {
+				Activator.error(e2.getMessage(), e2);
 			}
 	}
 
@@ -1266,6 +1269,8 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
+		commitMessageComponent.setCommitAllowed(helper.canCommit());
+		commitMessageComponent.setCannotCommitMessage(helper.getCannotCommitMessage());
 		boolean amendAllowed = helper.amendAllowed();
 		commitMessageComponent.setAmendAllowed(amendAllowed);
 		if (!amendAllowed)
@@ -1293,6 +1298,8 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
+		commitMessageComponent.setCommitAllowed(helper.canCommit());
+		commitMessageComponent.setCannotCommitMessage(helper.getCannotCommitMessage());
 		commitMessageComponent.setAmendAllowed(helper.amendAllowed());
 		commitMessageComponent.setAmending(false);
 		// set the defaults for change id and signed off buttons.

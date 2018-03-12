@@ -5,6 +5,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +39,7 @@ import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
+import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -69,7 +71,6 @@ import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
@@ -925,18 +926,26 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private void updateMessage() {
-		String message = commitMessageComponent.getMessage();
+		String message = null;
+		int type = IMessageProvider.NONE;
 
 		String commitMsg = commitMessageComponent.getCommitMessage();
-		if (message == null && (commitMsg == null || commitMsg.trim().length() == 0))
+		if (commitMsg == null || commitMsg.trim().length() == 0) {
 			message = UIText.CommitDialog_Message;
-
-		if (message == null && filesViewer.getCheckedElements().length == 0
-				&& !amendingItem.getSelection())
+			type = IMessageProvider.INFORMATION;
+		} else if (filesViewer.getCheckedElements().length == 0
+				&& !amendingItem.getSelection()) {
 			message = UIText.CommitDialog_MessageNoFilesSelected;
+			type = IMessageProvider.INFORMATION;
+		} else {
+			CommitStatus status = commitMessageComponent.getStatus();
+			message = status.getMessage();
+			type = status.getMessageType();
+		}
 
-		setMessage(message, IMessageProvider.INFORMATION);
-		commitButton.setEnabled(message == null);
+		setMessage(message, type);
+		commitButton.setEnabled(type == IMessageProvider.WARNING
+				|| type == IMessageProvider.NONE);
 	}
 
 	private Collection<String> getFileList() {
@@ -979,7 +988,7 @@ public class CommitDialog extends TitleAreaDialog {
 				}
 				try {
 					addCommand.call();
-				} catch (NoFilepatternException e) {
+				} catch (Exception e) {
 					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 				}
 				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
@@ -1172,7 +1181,6 @@ class CommitViewerComparator extends ViewerComparator {
 		super(comparator);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public int compare(Viewer viewer, Object e1, Object e2) {
 		return getComparator().compare(e1, e2);
