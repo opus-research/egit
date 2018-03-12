@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
-import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -554,19 +553,11 @@ public class RebaseResultDialog extends MessageDialog {
 				return;
 			} else if (skipCommitButton.getSelection()) {
 				// skip the rebase
-				SkipRebaseCommand skipCommand = new SkipRebaseCommand() {
-					protected Repository getRepository(ExecutionEvent event) {
-						return repo;
-					}
-				};
+				SkipRebaseCommand skipCommand = new SkipRebaseCommand();
 				execute(skipCommand);
 			} else if (abortRebaseButton.getSelection()) {
 				// abort the rebase
-				AbortRebaseCommand abortCommand = new AbortRebaseCommand() {
-					protected Repository getRepository(ExecutionEvent event) {
-						return repo;
-					}
-				};
+				AbortRebaseCommand abortCommand = new AbortRebaseCommand();
 				execute(abortCommand);
 			} else if (doNothingButton.getSelection()) {
 				// nothing
@@ -577,7 +568,7 @@ public class RebaseResultDialog extends MessageDialog {
 
 	private void execute(AbstractRebaseCommandHandler command) {
 		try {
-			command.execute(null);
+			command.execute(repo);
 		} catch (ExecutionException e) {
 			Activator.showError(e.getMessage(), e);
 		}

@@ -10,12 +10,11 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
-import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.rebase.RebaseInteracitveHandler;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Implements "Continue Rebase"
@@ -30,9 +29,8 @@ public class ContinueRebaseCommand extends AbstractRebaseCommandHandler {
 	}
 
 	@Override
-	public RebaseOperation createRebaseOperation(ExecutionEvent event)
+	protected RebaseOperation createRebaseOperation(Repository repository)
 			throws ExecutionException {
-		return new RebaseOperation(getRepository(event), Operation.CONTINUE,
-				RebaseInteracitveHandler.INSTANCE);
+		return new RebaseOperation(repository, Operation.CONTINUE);
 	}
 }
