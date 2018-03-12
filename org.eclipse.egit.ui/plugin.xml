@@ -3311,7 +3311,7 @@
             <instanceof value="org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider"/>
            </or>
          </enablement>
-	     <commonSorter
+         <commonSorter
                class="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetSorter"/>
        </navigatorContent>
    </extension>
@@ -3325,7 +3325,7 @@
    <extension point="org.eclipse.ui.navigator.viewer">
        <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
            <popupMenu
-                allowsPlatformContributions="true"
+                allowsPlatformContributions="false"
                 id="org.eclipse.egit.ui.compareSynchronizationMenu">
              <insertionPoint name="gitActions" separator="true"/>
              <insertionPoint name="file"/>
@@ -3347,12 +3347,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.actions.AddToIndexActionHandler"
             id="org.eclipse.egit.ui.team.AddToIndex"
             name="%AddToIndexCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.RemoveFromIndexActionHandler"
-            id="org.eclipse.egit.ui.team.RemoveFromIndex"
-            name="RemoveFromIndexCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"

@@ -97,9 +97,6 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
-	public static String RemoveFromIndexAction_removingFiles;
-
-	/** */
 	public static String BlameInformationControl_Author;
 
 	/** */
@@ -3824,6 +3821,9 @@ public class UIText extends NLS {
 	public static String StagingView_exceptionMessage;
 
 	/** */
+	public static String StagingView_UnstageItemMenuLabel;
+
+	/** */
 	public static String SynchronizeWithMenu_custom;
 
 	/** */
@@ -3840,6 +3840,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SynchronizeFetchJob_FetchFailedMessage;
+
+	/** */
+	public static String EGitCredentialsProvider_question;
+
+	/** */
+	public static String EGitCredentialsProvider_information;
+
+	/** */
+	public static String CustomPromptDialog_provide_information_for;
+
+	/** */
+	public static String CustomPromptDialog_information_about;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
