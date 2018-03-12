@@ -26,13 +26,9 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Allows to configure a "Remote".
- * <p>
- * Asks for a name and whether to configure fetch, push, or both. Depending on
- * the user's decision about what to configure, the fetch, push, or both
- * configurations are performed.
+ *
  */
-public class ConfigureRemoteWizard extends Wizard {
+class ConfigureRemoteWizard extends Wizard {
 
 	final RepositoryConfig myConfiguration;
 
