@@ -20,6 +20,8 @@ package org.eclipse.egit.ui;
  */
 public class UIPreferences {
 	/** */
+	public final static String RESOURCEHISTORY_SHOW_RELATIVE_DATE = "resourcehistory_show_relative_date"; //$NON-NLS-1$
+	/** */
 	public final static String RESOURCEHISTORY_SHOW_COMMENT_WRAP = "resourcehistory_show_comment_wrap"; //$NON-NLS-1$
 	/** */
 	public static final String RESOURCEHISTORY_SHOW_COMMENT_FILL = "resourcehistory_fill_comment_paragraph"; //$NON-NLS-1$
@@ -109,8 +111,6 @@ public class UIPreferences {
 	public final static String SYNC_VIEW_CHANGESET_LABEL_FORMAT = "sync_view_changeset_pattern"; //$NON-NLS-1$
 	/** */
 	public final static String SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL = "sync_view_show_changeset_model"; //$NON-NLS-1$
-	/** */
-	public static final String SYNC_VIEW_FETCH_BEFORE_LAUNCH = "sync_view_fetch_before_launch"; //$NON-NLS-1$
 	/** */
 	public final static String DATE_FORMAT = "date_format"; //$NON-NLS-1$
 	/** */

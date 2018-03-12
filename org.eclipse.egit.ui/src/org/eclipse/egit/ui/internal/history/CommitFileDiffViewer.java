@@ -58,12 +58,16 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 
-class CommitFileDiffViewer extends TableViewer {
+/**
+ * Viewer to display {@link FileDiff} objects in a table.
+ */
+public class CommitFileDiffViewer extends TableViewer {
 	private static final String LINESEP = System.getProperty("line.separator"); //$NON-NLS-1$
 
 	private Repository db;
@@ -86,7 +90,7 @@ class CommitFileDiffViewer extends TableViewer {
 
 	private IAction compare;
 
-	private final IPageSite site;
+	private final IWorkbenchSite site;
 
 	/**
 	 * Shows a list of file changed by a commit.
@@ -96,7 +100,7 @@ class CommitFileDiffViewer extends TableViewer {
 	 * @param parent
 	 * @param site
 	 */
-	CommitFileDiffViewer(final Composite parent, final IPageSite site) {
+	public CommitFileDiffViewer(final Composite parent, final IWorkbenchSite site) {
 		// since out parent is a SashForm, we can't add the alternate
 		// text to be displayed in case of no input directly to that
 		// parent; we create our own parent instead and set the
@@ -223,24 +227,27 @@ class CommitFileDiffViewer extends TableViewer {
 		mgr.add(selectAll = createStandardAction(ActionFactory.SELECT_ALL));
 		mgr.add(copy = createStandardAction(ActionFactory.COPY));
 
-		getControl().addFocusListener(new FocusListener() {
-			public void focusLost(FocusEvent e) {
-				site.getActionBars().setGlobalActionHandler(
-						ActionFactory.SELECT_ALL.getId(), null);
-				site.getActionBars().setGlobalActionHandler(
-						ActionFactory.COPY.getId(), null);
-				site.getActionBars().updateActionBars();
-			}
+		if (site instanceof IPageSite) {
+			final IPageSite pageSite = (IPageSite) site;
+			getControl().addFocusListener(new FocusListener() {
+				public void focusLost(FocusEvent e) {
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.SELECT_ALL.getId(), null);
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.COPY.getId(), null);
+					pageSite.getActionBars().updateActionBars();
+				}
 
-			public void focusGained(FocusEvent e) {
-				updateActionEnablement(getSelection());
-				site.getActionBars().setGlobalActionHandler(
-						ActionFactory.SELECT_ALL.getId(), selectAll);
-				site.getActionBars().setGlobalActionHandler(
-						ActionFactory.COPY.getId(), copy);
-				site.getActionBars().updateActionBars();
-			}
-		});
+				public void focusGained(FocusEvent e) {
+					updateActionEnablement(getSelection());
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.SELECT_ALL.getId(), selectAll);
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.COPY.getId(), copy);
+					pageSite.getActionBars().updateActionBars();
+				}
+			});
+		}
 	}
 
 	private void updateActionEnablement(ISelection selection) {
@@ -292,24 +299,16 @@ class CommitFileDiffViewer extends TableViewer {
 
 	@Override
 	protected void inputChanged(final Object input, final Object oldInput) {
-		boolean inputChanged;
-		if (oldInput == null && input == null) {
-			inputChanged = false;
-		} else if (oldInput == null || input == null) {
-			inputChanged = true;
-		} else {
-			inputChanged = !input.equals(oldInput);
+		if (oldInput == null && input == null)
+			return;
+		if (input == null && stackLayout.topControl != noInputText) {
+			stackLayout.topControl = noInputText;
+			getTable().getParent().layout(false);
+		} else if (input != null && stackLayout.topControl != getTable()) {
+			stackLayout.topControl = getTable();
+			getTable().getParent().layout(false);
 		}
-		if (inputChanged) {
-			if (input == null && stackLayout.topControl != noInputText) {
-				stackLayout.topControl = noInputText;
-				getTable().getParent().layout(false);
-			} else if (input != null && stackLayout.topControl != getTable()) {
-				stackLayout.topControl = getTable();
-				getTable().getParent().layout(false);
-			}
-			super.inputChanged(input, oldInput);
-		}
+		super.inputChanged(input, oldInput);
 	}
 
 	private void openFileInEditor(String filePath) {
@@ -391,7 +390,13 @@ class CommitFileDiffViewer extends TableViewer {
 		return db;
 	}
 
-	void setTreeWalk(Repository repository, TreeWalk walk) {
+	/**
+	 * Set repository and tree walk
+	 *
+	 * @param repository
+	 * @param walk
+	 */
+	public void setTreeWalk(Repository repository, TreeWalk walk) {
 		db = repository;
 		walker = walk;
 	}
