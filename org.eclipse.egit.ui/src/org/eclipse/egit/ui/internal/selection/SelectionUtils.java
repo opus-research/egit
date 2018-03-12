@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.selection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,9 +27,10 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.egit.ui.internal.revision.FileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -56,7 +56,9 @@ public class SelectionUtils {
 	 * @param selection
 	 * @return the single selected repository, or <code>null</code>
 	 */
-	public static Repository getRepository(IStructuredSelection selection) {
+	@Nullable
+	public static Repository getRepository(
+			@NonNull IStructuredSelection selection) {
 		return getRepository(false, selection, null);
 	}
 
@@ -64,7 +66,9 @@ public class SelectionUtils {
 	 * @param evaluationContext
 	 * @return the single selected repository, or <code>null</code>
 	 */
-	public static Repository getRepository(IEvaluationContext evaluationContext) {
+	@Nullable
+	public static Repository getRepository(
+			@Nullable IEvaluationContext evaluationContext) {
 		return getRepository(false, getSelection(evaluationContext), null);
 	}
 
@@ -77,8 +81,9 @@ public class SelectionUtils {
 	 *            the shell for showing the warning
 	 * @return the single selected repository, or <code>null</code>
 	 */
+	@Nullable
 	public static Repository getRepositoryOrWarn(
-			IStructuredSelection selection, Shell shell) {
+			@NonNull IStructuredSelection selection, @NonNull Shell shell) {
 		return getRepository(true, selection, shell);
 	}
 
@@ -86,7 +91,9 @@ public class SelectionUtils {
 	 * @param context
 	 * @return the structured selection of the evaluation context
 	 */
-	public static IStructuredSelection getSelection(IEvaluationContext context) {
+	@NonNull
+	public static IStructuredSelection getSelection(
+			@Nullable IEvaluationContext context) {
 		if (context == null)
 			return StructuredSelection.EMPTY;
 
@@ -112,8 +119,9 @@ public class SelectionUtils {
 	 * @param selection
 	 * @return the structured selection, or an empty selection
 	 */
+	@NonNull
 	public static IStructuredSelection getStructuredSelection(
-			ISelection selection) {
+			@NonNull ISelection selection) {
 		if (selection instanceof ITextSelection)
 			return getSelectionFromEditorInput(getEvaluationContext());
 		else if (selection instanceof IStructuredSelection)
@@ -125,7 +133,9 @@ public class SelectionUtils {
 	 * @param selection
 	 * @return the selected locations
 	 */
-	public static IPath[] getSelectedLocations(IStructuredSelection selection) {
+	@NonNull
+	public static IPath[] getSelectedLocations(
+			@NonNull IStructuredSelection selection) {
 		Set<IPath> result = new LinkedHashSet<IPath>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
@@ -149,25 +159,12 @@ public class SelectionUtils {
 	}
 
 	/**
-	 * Returns the resources contained in the given selection.
-	 *
 	 * @param selection
 	 * @return the resources in the selection
 	 */
+	@NonNull
 	public static IResource[] getSelectedResources(
-			IStructuredSelection selection) {
-		Set<IResource> result = getSelectedResourcesSet(selection);
-		return result.toArray(new IResource[result.size()]);
-	}
-
-	/**
-	 * Returns the resources contained in the given selection.
-	 *
-	 * @param selection
-	 * @return the resources in the selection
-	 */
-	private static Set<IResource> getSelectedResourcesSet(
-			IStructuredSelection selection) {
+			@NonNull IStructuredSelection selection) {
 		Set<IResource> result = new LinkedHashSet<IResource>();
 		for (Object o : selection.toList()) {
 			IResource resource = AdapterUtils.adapt(o, IResource.class);
@@ -176,7 +173,7 @@ public class SelectionUtils {
 			else
 				result.addAll(extractResourcesFromMapping(o));
 		}
-		return result;
+		return result.toArray(new IResource[result.size()]);
 	}
 
 	private static List<IResource> extractResourcesFromMapping(Object o) {
@@ -201,50 +198,6 @@ public class SelectionUtils {
 			result.addAll(Arrays.asList(resources));
 		}
 		return result;
-	}
-
-	/**
-	 * Determines the most fitting {@link HistoryPageInput} for the given
-	 * {@link IStructuredSelection}. The {@code mandatoryObject} must be
-	 * contained in the selection and in a repository.
-	 * <p>
-	 * Most fitting means that the input will contain all selected resources
-	 * which are contained in the same repository as the given
-	 * {@code mandatoryObject}.
-	 * </p>
-	 *
-	 * @param selection
-	 *            The selection for which the most fitting HistoryPageInput is
-	 *            to be determined.
-	 * @param mandatoryObject
-	 *            The object to which the HistoryPageInput is tailored. Must be
-	 *            contained in the given selection and in a repository.
-	 * @return The most fitting HistoryPageInput. Will return {@code null} when
-	 *         the {@code mandatoryObject} is not contained in the given
-	 *         selection or in a repository.
-	 */
-	public static HistoryPageInput getMostFittingInput(
-			IStructuredSelection selection, Object mandatoryObject) {
-		Set<IResource> resources = getSelectedResourcesSet(selection);
-		if (!resources.contains(mandatoryObject)) {
-			return null;
-		}
-
-		Repository repository = getRepository((IResource) mandatoryObject);
-		if (repository == null) {
-			return null;
-		}
-
-		for (Iterator<IResource> it = resources.iterator(); it.hasNext();) {
-			IResource resource = it.next();
-			if (getRepository(resource) != repository) {
-				it.remove();
-			}
-		}
-
-		IResource[] resourceArray = resources.toArray(new IResource[resources
-				.size()]);
-		return new HistoryPageInput(repository, resourceArray);
 	}
 
 	/**
@@ -273,10 +226,10 @@ public class SelectionUtils {
 		for (IPath location : locations) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(location);
-			if (mapping == null)
-				mapping = repositoryMapping;
 			if (repositoryMapping == null)
 				return null;
+			if (mapping == null)
+				mapping = repositoryMapping;
 			if (mapping.getRepository() != repositoryMapping.getRepository()) {
 				if (warn)
 					MessageDialog.openError(shell,
@@ -357,18 +310,6 @@ public class SelectionUtils {
 		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
 		ctx = hsr.getCurrentState();
 		return ctx;
-	}
-
-	private static Repository getRepository(IResource resource) {
-		IPath location = resource.getLocation();
-		if (location != null) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(location);
-			if (repositoryMapping != null) {
-				return repositoryMapping.getRepository();
-			}
-		}
-		return null;
 	}
 
 }
