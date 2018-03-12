@@ -320,9 +320,7 @@ public class CompareUtils {
 
 			// check if file is staged
 			if (entry != null) {
-				GitFileRevision nextFile = GitFileRevision.inIndex(db, gitPath);
-				String encoding = CompareCoreUtils.getResourceEncoding(db, gitPath);
-				return new FileRevisionTypedElement(nextFile, encoding);
+				return new FileRevisionTypedElement(GitFileRevision.inIndex(db, gitPath));
 			}
 		} catch (IOException e) {
 			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
