@@ -96,8 +96,9 @@ public class BranchResultDialog extends MessageDialog {
 				}
 			});
 		} else if (result.getStatus() == CheckoutResult.Status.OK) {
-			if (RepositoryUtil.isDetachedHead(repository))
+			if (RepositoryUtil.isDetachedHead(repository)) {
 				showDetachedHeadWarning();
+			}
 		}
 	}
 
