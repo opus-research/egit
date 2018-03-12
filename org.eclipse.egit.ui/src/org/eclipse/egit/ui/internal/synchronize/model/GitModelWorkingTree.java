@@ -43,10 +43,6 @@ public class GitModelWorkingTree extends GitModelCache {
 				return new GitModelWorkingFile(modelParent, modelCommit,
 						repoId, location);
 			}
-
-			public boolean isWorkingTree() {
-				return true;
-			}
 		});
 	}
 
