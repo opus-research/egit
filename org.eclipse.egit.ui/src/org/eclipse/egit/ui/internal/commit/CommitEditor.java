@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2016 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2015 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -17,7 +17,6 @@ import java.text.MessageFormat;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
@@ -49,7 +48,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.ui.IEditorActionBarContributor;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
@@ -57,7 +55,6 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.IManagedForm;
-import org.eclipse.ui.forms.editor.IFormPage;
 import org.eclipse.ui.forms.editor.SharedHeaderFormEditor;
 import org.eclipse.ui.forms.events.HyperlinkAdapter;
 import org.eclipse.ui.forms.events.HyperlinkEvent;
@@ -69,17 +66,14 @@ import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.menus.IMenuService;
 import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.IShowInTargetList;
-import org.eclipse.ui.part.MultiPageEditorSite;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.UIJob;
-import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
 /**
  * Editor class to view a commit in a form editor.
  */
 public class CommitEditor extends SharedHeaderFormEditor implements
-		RefsChangedListener, IShowInSource, IShowInTargetList {
+		RefsChangedListener, IShowInSource {
 
 	/**
 	 * ID - editor id
@@ -143,8 +137,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		return openQuiet(commit, true);
 	}
 
-	private IContentOutlinePage outlinePage;
-
 	private CommitEditorPage commitPage;
 
 	private DiffEditorPage diffPage;
@@ -153,45 +145,19 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 
 	private ListenerHandle refListenerHandle;
 
-	private static class CommitEditorNestedSite extends MultiPageEditorSite {
-
-		public CommitEditorNestedSite(CommitEditor topLevelEditor,
-				IEditorPart nestedEditor) {
-			super(topLevelEditor, nestedEditor);
-		}
-
-		@Override
-		public IEditorActionBarContributor getActionBarContributor() {
-			IEditorActionBarContributor globalContributor = getMultiPageEditor()
-					.getEditorSite().getActionBarContributor();
-			if (globalContributor instanceof CommitEditorActionBarContributor) {
-				return ((CommitEditorActionBarContributor) globalContributor)
-						.getTextEditorActionContributor();
-			}
-			return super.getActionBarContributor();
-		}
-
-	}
-
-	@Override
-	protected IEditorSite createSite(IEditorPart editor) {
-		return new CommitEditorNestedSite(this, editor);
-	}
-
 	/**
 	 * @see org.eclipse.ui.forms.editor.FormEditor#addPages()
 	 */
 	@Override
 	protected void addPages() {
 		try {
-			if (getCommit().isStash()) {
+			if (getCommit().isStash())
 				commitPage = new StashEditorPage(this);
-			} else {
+			else
 				commitPage = new CommitEditorPage(this);
-			}
 			addPage(commitPage);
 			diffPage = new DiffEditorPage(this);
-			addPage(diffPage, getEditorInput());
+			addPage(diffPage);
 			if (getCommit().getNotes().length > 0) {
 				notePage = new NotesEditorPage(this);
 				addPage(notePage);
@@ -337,12 +303,13 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		return index;
 	}
 
+	/**
+	 * @see org.eclipse.ui.forms.editor.SharedHeaderFormEditor#setFocus()
+	 * @since 2.0
+	 */
 	@Override
 	public void setFocus() {
-		IFormPage currentPage = getActivePageInstance();
-		if (currentPage != null) {
-			currentPage.setFocus();
-		}
+		commitPage.getPartControl().setFocus();
 	}
 
 	private void addContributions(IToolBarManager toolBarManager) {
@@ -365,11 +332,9 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	@Override
 	public Object getAdapter(Class adapter) {
-		if (RepositoryCommit.class == adapter) {
-			return AdapterUtils.adapt(getEditorInput(), RepositoryCommit.class);
-		} else if (IContentOutlinePage.class == adapter) {
-			return getOutlinePage();
-		}
+		if (RepositoryCommit.class == adapter)
+			return CommonUtils.getAdapter(getEditorInput(), adapter);
+
 		return super.getAdapter(adapter);
 	}
 
@@ -380,7 +345,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	@Override
 	public void init(IEditorSite site, IEditorInput input)
 			throws PartInitException {
-		if (AdapterUtils.adapt(input, RepositoryCommit.class) == null)
+		if (CommonUtils.getAdapter(input, RepositoryCommit.class) == null)
 			throw new PartInitException(
 					"Input could not be adapted to commit object"); //$NON-NLS-1$
 		super.init(site, input);
@@ -435,32 +400,11 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		}
 	}
 
-	private IContentOutlinePage getOutlinePage() {
-		if (outlinePage == null) {
-			outlinePage = new MultiPageEditorContentOutlinePage(this);
-		}
-		return outlinePage;
-	}
-
 	@Override
 	public ShowInContext getShowInContext() {
-		IFormPage currentPage = getActivePageInstance();
-		IShowInSource showInSource = AdapterUtils.adapt(currentPage,
-				IShowInSource.class);
-		if (showInSource != null) {
-			return showInSource.getShowInContext();
-		}
-		return null;
-	}
-
-	@Override
-	public String[] getShowInTargetIds() {
-		IFormPage currentPage = getActivePageInstance();
-		IShowInTargetList targetList = AdapterUtils.adapt(currentPage,
-				IShowInTargetList.class);
-		if (targetList != null) {
-			return targetList.getShowInTargetIds();
-		}
-		return null;
+		if (commitPage != null && commitPage.isActive())
+			return commitPage.getShowInContext();
+		else
+			return null;
 	}
 }

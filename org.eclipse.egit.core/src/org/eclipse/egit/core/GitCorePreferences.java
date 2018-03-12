@@ -49,22 +49,4 @@ public class GitCorePreferences {
 	 * {@code MergeStrategy.get(key)}.
 	 */
 	public static final String core_preferredMergeStrategy = "core_preferredMergeStrategy"; //$NON-NLS-1$
-
-	/**
-	 * Default key value of the core_preferredMergeStrategy property in the UI,
-	 * which means that EGit must not pass any specific merge strategy to JGit,
-	 * to let JGit use its default behavior.
-	 */
-	public static final String core_preferredMergeStrategy_Default = "jgit-default-mergeStrategy"; //$NON-NLS-1$
-
-	/**
-	 * if {@code true} file deletions are automatically staged by
-	 * GitMoveDeleteHook
-	 */
-	public static final String core_autoStageDeletion = "core_auto_stage_deletion"; //$NON-NLS-1$
-
-	/**
-	 * if {@code true} file moves are automatically staged by GitMoveDeleteHook
-	 */
-	public static final String core_autoStageMoves = "core_auto_stage_moves"; //$NON-NLS-1$
 }

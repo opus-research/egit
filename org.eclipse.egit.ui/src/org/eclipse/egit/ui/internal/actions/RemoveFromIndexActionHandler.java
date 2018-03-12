@@ -70,7 +70,7 @@ public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return haveSelectedResourcesWithRepository();
+		return getProjectsInRepositoryOfSelectedResources().length > 0;
 	}
 
 }

@@ -1,13 +1,10 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2016 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2011, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
@@ -23,7 +20,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.gerrit.GerritDialogSettings;
 import org.eclipse.egit.ui.internal.repository.SelectUriWizard;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -167,7 +163,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			allRemotes = RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig());
 		} catch (URISyntaxException e) {
-			allRemotes = new ArrayList<>();
+			allRemotes = new ArrayList<RemoteConfig>();
 		}
 
 		RemoteConfig configuredConfig = null;
@@ -636,7 +632,6 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
-			GerritDialogSettings.updateRemoteConfig(repository, config);
 			if (buttonId == OK)
 				try {
 					new ProgressMonitorDialog(getShell()).run(true, true,
@@ -678,7 +673,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 				Ref source;
 				try {
 					// TODO better checks for wild-cards and such
-					source = repository.findRef(spec.getSource());
+					source = repository.getRef(spec.getSource());
 				} catch (IOException e1) {
 					source = null;
 				}
@@ -714,7 +709,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	private void addDefaultOriginWarningIfNeeded(Composite parent) {
 		if (!showBranchInfo)
 			return;
-		List<String> otherBranches = new ArrayList<>();
+		List<String> otherBranches = new ArrayList<String>();
 		String currentBranch;
 		try {
 			currentBranch = repository.getBranch();

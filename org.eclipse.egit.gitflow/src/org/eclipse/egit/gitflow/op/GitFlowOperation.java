@@ -28,7 +28,6 @@ import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.internal.CoreText;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.MergeResult;
@@ -110,12 +109,11 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 * @param branchName
 	 * @param squash
 	 * @param fastForwardSingleCommit Has no effect if {@code squash} is true.
-	 * @param keepBranch
 	 * @throws CoreException
 	 * @since 4.1
 	 */
 	protected void finish(IProgressMonitor monitor, String branchName,
-			boolean squash, boolean keepBranch, boolean fastForwardSingleCommit)
+			boolean squash, boolean fastForwardSingleCommit)
 			throws CoreException {
 		try {
 			mergeResult = mergeTo(monitor, branchName, repository.getConfig()
@@ -130,19 +128,16 @@ abstract public class GitFlowOperation implements IEGitOperation {
 						CoreText.GitFlowOperation_branchMissing, branchName));
 			}
 			boolean forceDelete = squash;
-
-			if (!keepBranch) {
-				new DeleteBranchOperation(repository.getRepository(), branch,
-						forceDelete).execute(monitor);
-			}
+			new DeleteBranchOperation(repository.getRepository(), branch, forceDelete)
+					.execute(monitor);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	/**
-	 * Finish without squash, NO_FF and keep for single commit branches:
-	 * {@link org.eclipse.egit.gitflow.op.GitFlowOperation#finish(IProgressMonitor, String, boolean, boolean, boolean)}
+	 * Finish without squash and NO_FF for single commit branches:
+	 * {@link org.eclipse.egit.gitflow.op.GitFlowOperation#finish(IProgressMonitor, String, boolean, boolean)}
 	 *
 	 * @param monitor
 	 * @param branchName
@@ -150,7 +145,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 */
 	protected void finish(IProgressMonitor monitor, String branchName)
 			throws CoreException {
-		finish(monitor, branchName, false, false, false);
+		finish(monitor, branchName, false, false);
 	}
 
 	/**
@@ -163,7 +158,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 * @throws CoreException
 	 * @since 4.1
 	 */
-	protected @NonNull MergeResult mergeTo(IProgressMonitor monitor, String branchName,
+	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
 			String targetBranchName, boolean squash, boolean fastForwardSingleCommit) throws CoreException {
 		try {
 			if (!repository.hasBranch(targetBranchName)) {
@@ -193,14 +188,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			mergeOperation.execute(monitor);
 
-			MergeResult result = mergeOperation.getResult();
-			if (result == null) {
-				throw new CoreException(error(format(
-						CoreText.GitFlowOperation_unableToMerge, branchName,
-						targetBranchName)));
-			}
-
-			return result;
+			return mergeOperation.getResult();
 		} catch (GitAPIException | IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -254,38 +242,18 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	}
 
 	/**
-	 * Fetch using the default remote configuration
-	 *
-	 * @param monitor
-	 * @param timeout
-	 *            timeout in seconds
-	 * @return result of fetching from remote
-	 * @throws URISyntaxException
-	 * @throws InvocationTargetException
-	 *
-	 * @since 4.2
-	 */
-	protected FetchResult fetch(IProgressMonitor monitor, int timeout)
-			throws URISyntaxException, InvocationTargetException {
-		RemoteConfig config = repository.getConfig().getDefaultRemoteConfig();
-		FetchOperation fetchOperation = new FetchOperation(
-				repository.getRepository(), config, timeout, false);
-		fetchOperation.run(monitor);
-		return fetchOperation.getOperationResult();
-	}
-
-	/**
 	 * @param monitor
 	 * @return resulting of fetching from remote
 	 * @throws URISyntaxException
 	 * @throws InvocationTargetException
-	 * @deprecated Use {@link GitFlowOperation#fetch(IProgressMonitor, int)}
-	 *             instead.
 	 */
-	@Deprecated
 	protected FetchResult fetch(IProgressMonitor monitor)
 			throws URISyntaxException, InvocationTargetException {
-		return fetch(monitor, 0);
+		RemoteConfig config = repository.getConfig().getDefaultRemoteConfig();
+		FetchOperation fetchOperation = new FetchOperation(
+				repository.getRepository(), config, 0, false);
+		fetchOperation.run(monitor);
+		return fetchOperation.getOperationResult();
 	}
 
 	/**

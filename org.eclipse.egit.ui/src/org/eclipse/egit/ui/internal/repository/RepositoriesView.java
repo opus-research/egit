@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2016 SAP AG and others.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,7 +11,6 @@
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Don't reveal selection on refresh
  *    Robin Stocker <robin@nibor.org> - Show In support
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Show Git Staging view in Show In menu
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -31,6 +30,7 @@ import java.util.Set;
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -66,7 +66,6 @@ import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
-import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -102,6 +101,7 @@ import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.team.ui.history.IHistoryView;
@@ -111,7 +111,6 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
-import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -131,7 +130,6 @@ import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
-import org.eclipse.ui.progress.WorkbenchJob;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
 import org.eclipse.ui.views.properties.PropertySheet;
 import org.eclipse.ui.views.properties.PropertySheetPage;
@@ -161,7 +159,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 
 	private static final long DEFAULT_REFRESH_DELAY = 1000;
 
-	private final Set<Repository> repositories = new HashSet<>();
+	private final Set<Repository> repositories = new HashSet<Repository>();
 
 	private final RefsChangedListener myRefsChangedListener;
 
@@ -169,11 +167,9 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 
 	private final ConfigChangedListener myConfigChangeListener;
 
-	private final List<ListenerHandle> myListeners = new LinkedList<>();
+	private final List<ListenerHandle> myListeners = new LinkedList<ListenerHandle>();
 
 	private Job scheduledJob;
-
-	private RefreshUiJob refreshUiJob;
 
 	private final RepositoryUtil repositoryUtil;
 
@@ -197,7 +193,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	 * The default constructor
 	 */
 	public RepositoriesView() {
-		refreshUiJob = new RefreshUiJob();
 		repositoryUtil = Activator.getDefault().getRepositoryUtil();
 		repositoryCache = org.eclipse.egit.core.Activator.getDefault()
 				.getRepositoryCache();
@@ -205,25 +200,22 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		configurationListener = new IPreferenceChangeListener() {
 			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
-				if (RepositoryUtil.PREFS_DIRECTORIES_REL
-						.equals(event.getKey())) {
-					lastInputChange = System.currentTimeMillis();
-					scheduleRefresh(DEFAULT_REFRESH_DELAY, null);
-				}
+				lastInputChange = System.currentTimeMillis();
+				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
 		};
 
 		myRefsChangedListener = new RefsChangedListener() {
 			@Override
 			public void onRefsChanged(RefsChangedEvent e) {
-				scheduleRefresh(DEFAULT_REFRESH_DELAY, null);
+				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
 		};
 
 		myIndexChangedListener = new IndexChangedListener() {
 			@Override
 			public void onIndexChanged(IndexChangedEvent event) {
-				scheduleRefresh(DEFAULT_REFRESH_DELAY, null);
+				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 
 			}
 		};
@@ -231,7 +223,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		myConfigChangeListener = new ConfigChangedListener() {
 			@Override
 			public void onConfigChanged(ConfigChangedEvent event) {
-				scheduleRefresh(DEFAULT_REFRESH_DELAY, null);
+				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
 		};
 
@@ -239,23 +231,18 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			@Override
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
-				if (!reactOnSelection || part == RepositoriesView.this) {
+				if (!reactOnSelection)
 					return;
-				}
 
 				// this may happen if we switch between editors
 				if (part instanceof IEditorPart) {
 					IEditorInput input = ((IEditorPart) part).getEditorInput();
-					if (input instanceof IFileEditorInput) {
+					if (input instanceof IFileEditorInput)
 						reactOnSelection(new StructuredSelection(
 								((IFileEditorInput) input).getFile()));
-					} else if (input instanceof IURIEditorInput) {
-						reactOnSelection(new StructuredSelection(input));
-					}
 
-				} else {
+				} else
 					reactOnSelection(selection);
-				}
 			}
 		};
 	}
@@ -535,7 +522,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			this.scheduledJob.cancel();
 			this.scheduledJob = null;
 		}
-		refreshUiJob.cancel();
 
 		repositoryUtil.getPreferences().removePreferenceChangeListener(
 				configurationListener);
@@ -568,54 +554,40 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	 *            the paths to show
 	 */
 	private void showPaths(final List<IPath> paths) {
-		Map<Repository, Collection<String>> pathsByRepo = ResourceUtil
-				.splitPathsByRepository(paths);
-		boolean added = checkNotConfiguredRepositories(pathsByRepo);
-		if (added) {
-			scheduleRefresh(0, () -> {
-				if (UIUtils.isUsable(getCommonViewer())) {
-					selectAndReveal(pathsByRepo);
-				}
-			});
-		} else {
-			selectAndReveal(pathsByRepo);
-		}
-	}
+		final List<RepositoryTreeNode> nodesToShow = new ArrayList<RepositoryTreeNode>();
 
-	private boolean checkNotConfiguredRepositories(
-			Map<Repository, Collection<String>> pathsByRepo) {
-		boolean added = false;
+		Map<Repository, Collection<String>> pathsByRepo = ResourceUtil.splitPathsByRepository(paths);
 		for (Map.Entry<Repository, Collection<String>> entry : pathsByRepo.entrySet()) {
 			Repository repository = entry.getKey();
 			try {
-				boolean newOne = repositoryUtil
-						.addConfiguredRepository(repository.getDirectory());
-				if (newOne) {
-					added = true;
-				}
+				boolean added = repositoryUtil.addConfiguredRepository(repository.getDirectory());
+				if (added)
+					scheduleRefresh(0);
 			} catch (IllegalArgumentException iae) {
 				Activator.handleError(iae.getMessage(), iae, false);
 				continue;
 			}
-		}
-		return added;
-	}
 
-	private void selectAndReveal(
-			Map<Repository, Collection<String>> pathsByRepo) {
-		final List<RepositoryTreeNode> nodesToShow = new ArrayList<>();
-		for (Map.Entry<Repository, Collection<String>> entry : pathsByRepo
-				.entrySet()) {
-			Repository repository = entry.getKey();
-			for (String repoPath : entry.getValue()) {
-				final RepositoryTreeNode node = getNodeForPath(repository,
-						repoPath);
-				if (node != null) {
-					nodesToShow.add(node);
+			if (this.scheduledJob != null)
+				try {
+					this.scheduledJob.join();
+				} catch (InterruptedException e) {
+					Activator.handleError(e.getMessage(), e, false);
 				}
+
+			for (String repoPath : entry.getValue()) {
+				final RepositoryTreeNode node = getNodeForPath(repository, repoPath);
+				if (node != null)
+					nodesToShow.add(node);
 			}
 		}
-		selectReveal(new StructuredSelection(nodesToShow));
+
+		Display.getDefault().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				selectReveal(new StructuredSelection(nodesToShow));
+			}
+		});
 	}
 
 	/**
@@ -637,7 +609,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	 */
 	public void refresh() {
 		lastInputUpdate = -1L;
-		scheduleRefresh(0, null);
+		scheduleRefresh(0);
 	}
 
 	private void trace(String message) {
@@ -645,20 +617,17 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				GitTraceLocation.REPOSITORIESVIEW.getLocation(), message);
 	}
 
-	private synchronized void scheduleRefresh(long delay, Runnable uiTask) {
+	private Job scheduleRefresh(long delay) {
 		if (GitTraceLocation.REPOSITORIESVIEW.isActive()) {
 			trace("Entering scheduleRefresh()"); //$NON-NLS-1$
 		}
 
-		refreshUiJob.cancel();
-		refreshUiJob.uiTask = uiTask;
-
 		if (scheduledJob != null) {
 			schedule(scheduledJob, delay);
-			return;
+			return scheduledJob;
 		}
 
-		Job job = new Job("Refreshing Git Repositories data") { //$NON-NLS-1$
+		Job job = new Job("Refreshing Git Repositories view") { //$NON-NLS-1$
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -678,8 +647,54 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 					initRepositoriesAndListeners();
 				}
 
-				refreshUiJob.needsNewInput = needsNewInput;
-				refreshUiJob.schedule();
+				PlatformUI.getWorkbench().getDisplay()
+						.syncExec(new Runnable() {
+					@Override
+					public void run() {
+						if (!UIUtils.isUsable(tv)) {
+							return;
+						}
+						long start = 0;
+						if (trace) {
+							start = System.currentTimeMillis();
+							trace("Starting async update job"); //$NON-NLS-1$
+						}
+
+						if (needsNewInput) {
+							// keep expansion state and selection so that we can
+							// restore the tree
+							// after update
+							Object[] expanded = tv.getExpandedElements();
+							tv.setInput(ResourcesPlugin.getWorkspace()
+									.getRoot());
+							tv.setExpandedElements(expanded);
+						} else {
+							tv.refresh(true);
+						}
+
+						IViewPart part = PlatformUI.getWorkbench()
+								.getActiveWorkbenchWindow().getActivePage()
+								.findView(IPageLayout.ID_PROP_SHEET);
+						if (part instanceof PropertySheet) {
+							PropertySheet sheet = (PropertySheet) part;
+							IPage page = sheet.getCurrentPage();
+							if (page instanceof PropertySheetPage) {
+								((PropertySheetPage) page).refresh();
+							}
+						}
+						if (trace) {
+							trace("Ending async update job after " //$NON-NLS-1$
+									+ (System.currentTimeMillis() - start)
+									+ " ms"); //$NON-NLS-1$
+						}
+						if (!repositories.isEmpty()) {
+							layout.topControl = getCommonViewer().getControl();
+						} else {
+							layout.topControl = emptyArea;
+						}
+						emptyArea.getParent().layout(true, true);
+					}
+				});
 				if (monitor.isCanceled()) {
 					return Status.CANCEL_STATUS;
 				}
@@ -693,89 +708,11 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 
 		};
 		job.setSystem(true);
-		job.setUser(false);
+
 		schedule(job, delay);
+
 		scheduledJob = job;
-	}
-
-	class RefreshUiJob extends WorkbenchJob {
-		volatile boolean needsNewInput;
-		volatile Runnable uiTask;
-
-		RefreshUiJob() {
-			super(PlatformUI.getWorkbench().getDisplay(),
-					"Refreshing Git Repositories View"); //$NON-NLS-1$
-			setSystem(true);
-			setUser(false);
-		}
-
-		@Override
-		public boolean belongsTo(Object family) {
-			return JobFamilies.REPO_VIEW_REFRESH.equals(family);
-		}
-
-		@Override
-		public IStatus runInUIThread(IProgressMonitor monitor) {
-			final boolean trace = GitTraceLocation.REPOSITORIESVIEW.isActive();
-			long start = 0;
-			if (trace) {
-				start = System.currentTimeMillis();
-				trace("Starting async update job"); //$NON-NLS-1$
-			}
-			CommonViewer tv = getCommonViewer();
-			if (monitor.isCanceled() || !UIUtils.isUsable(tv)) {
-				return Status.CANCEL_STATUS;
-			}
-
-			if (needsNewInput) {
-				// keep expansion state and selection so that we can
-				// restore the tree after update
-				Object[] expanded = tv.getExpandedElements();
-				tv.setInput(ResourcesPlugin.getWorkspace().getRoot());
-				tv.setExpandedElements(expanded);
-			} else {
-				tv.refresh(true);
-			}
-			if (monitor.isCanceled()) {
-				return Status.CANCEL_STATUS;
-			}
-
-			IWorkbenchWindow ww = PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow();
-			IViewPart part = ww == null ? null
-					: ww.getActivePage().findView(IPageLayout.ID_PROP_SHEET);
-			if (part instanceof PropertySheet) {
-				PropertySheet sheet = (PropertySheet) part;
-				IPage page = sheet.getCurrentPage();
-				if (page instanceof PropertySheetPage) {
-					((PropertySheetPage) page).refresh();
-				}
-			}
-			if (monitor.isCanceled()) {
-				return Status.CANCEL_STATUS;
-			}
-
-			if (!repositories.isEmpty()) {
-				layout.topControl = getCommonViewer().getControl();
-			} else {
-				layout.topControl = emptyArea;
-			}
-			emptyArea.getParent().layout(true, true);
-			if (monitor.isCanceled()) {
-				return Status.CANCEL_STATUS;
-			}
-
-			Runnable task = uiTask;
-			if (task != null) {
-				task.run();
-			}
-			if (trace) {
-				trace("Ending async update job after " //$NON-NLS-1$
-						+ (System.currentTimeMillis() - start) + " ms"); //$NON-NLS-1$
-			}
-			return monitor.isCanceled() ? Status.CANCEL_STATUS
-					: Status.OK_STATUS;
-		}
+		return scheduledJob;
 	}
 
 	private void schedule(Job job, long delay) {
@@ -798,13 +735,12 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	@Override
 	public boolean show(ShowInContext context) {
 		ISelection selection = context.getSelection();
-		if ((selection instanceof IStructuredSelection)
-				&& !selection.isEmpty()) {
+		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
-			List<IPath> paths = new ArrayList<>();
+			List<IPath> paths = new ArrayList<IPath>();
 			for (Iterator it = ss.iterator(); it.hasNext();) {
 				Object element = it.next();
-				IResource resource = AdapterUtils.adaptToAnyResource(element);
+				IResource resource = AdapterUtils.adapt(element, IResource.class);
 				if (resource != null) {
 					IPath location = resource.getLocation();
 					if (location != null)
@@ -826,13 +762,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		if(context.getInput() instanceof IFileEditorInput) {
 			IFileEditorInput input = (IFileEditorInput) context.getInput();
 			showResource(input.getFile());
-			return true;
-		}
-		Repository repository = AdapterUtils.adapt(context.getInput(),
-				Repository.class);
-		if (repository != null) {
-			showRepository(repository);
-			return true;
 		}
 		return false;
 	}
@@ -857,22 +786,20 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				.getSelection();
 		for (Object element : selection.toList())
 			if (element instanceof RepositoryNode)
-				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID,
-						StagingView.VIEW_ID };
+				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID };
 
 		// Make sure History view is always listed, regardless of perspective
 		return new String[] { IHistoryView.VIEW_ID };
 	}
 
 	private static List<Object> getShowInElements(IStructuredSelection selection) {
-		List<Object> elements = new ArrayList<>();
+		List<Object> elements = new ArrayList<Object>();
 		for (Object element : selection.toList()) {
 			if (element instanceof FileNode || element instanceof FolderNode
 					|| element instanceof WorkingDirNode) {
 				RepositoryTreeNode treeNode = (RepositoryTreeNode) element;
 				IPath path = treeNode.getPath();
-				IResource resource = ResourceUtil.getResourceForLocation(path,
-						false);
+				IResource resource = ResourceUtil.getResourceForLocation(path);
 				if (resource != null)
 					elements.add(resource);
 			} else if (element instanceof RepositoryNode) {
@@ -896,7 +823,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	 * @return the HistoryPageInput corresponding to the selection, or null
 	 */
 	private static HistoryPageInput getHistoryPageInput(IStructuredSelection selection) {
-		List<File> files = new ArrayList<>();
+		List<File> files = new ArrayList<File>();
 		Repository repo = null;
 		for (Object element : selection.toList()) {
 			Repository nodeRepository;
@@ -927,20 +854,15 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	private void reactOnSelection(ISelection selection) {
 		if (selection instanceof StructuredSelection) {
 			StructuredSelection ssel = (StructuredSelection) selection;
-			if (ssel.size() != 1) {
+			if (ssel.size() != 1)
 				return;
-			}
-			IResource adapted = AdapterUtils
-					.adaptToAnyResource(ssel.getFirstElement());
-			if (adapted != null) {
-				showResource(adapted);
-				return;
-			}
-			File file = AdapterUtils.adapt(ssel.getFirstElement(), File.class);
-			if (file != null) {
-				IPath path = new Path(file.getAbsolutePath());
-				showPaths(Arrays.asList(path));
-				return;
+			if (ssel.getFirstElement() instanceof IResource)
+				showResource((IResource) ssel.getFirstElement());
+			if (ssel.getFirstElement() instanceof IAdaptable) {
+				IResource adapted = CommonUtils.getAdapter(((IAdaptable) ssel
+						.getFirstElement()), IResource.class);
+				if (adapted != null)
+					showResource(adapted);
 			}
 		}
 	}

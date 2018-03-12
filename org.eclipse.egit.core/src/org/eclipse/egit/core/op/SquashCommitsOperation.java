@@ -9,7 +9,6 @@
  * Contributors:
  *    Maik Schreiber - initial implementation
  *    Laurent Delaigue (Obeo) - use of preferred merge strategy
- *    Stephan Hackstedt <stephan.hackstedt@googlemail.com - Bug 477695
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -21,7 +20,8 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CommitUtil;
@@ -67,13 +67,14 @@ public class SquashCommitsOperation implements IEGitOperation {
 
 	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor = m != null ? m : new NullProgressMonitor();
 
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
-				SubMonitor progress = SubMonitor.convert(pm, 2);
+				pm.beginTask("", 2); //$NON-NLS-1$
 
-				progress.subTask(MessageFormat.format(
+				pm.subTask(MessageFormat.format(
 						CoreText.SquashCommitsOperation_squashing,
 						Integer.valueOf(commits.size())));
 
@@ -109,7 +110,8 @@ public class SquashCommitsOperation implements IEGitOperation {
 						return messageHandler.modifyCommitMessage(oldMessage);
 					}
 				};
-				try (Git git = new Git(repository)) {
+				try {
+					Git git = new Git(repository);
 					RebaseCommand command = git.rebase()
 							.setUpstream(commits.get(0).getParent(0))
 							.runInteractively(handler)
@@ -124,15 +126,17 @@ public class SquashCommitsOperation implements IEGitOperation {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
-				progress.worked(1);
+				pm.worked(1);
 
 				ProjectUtil.refreshValidProjects(
 						ProjectUtil.getValidOpenProjects(repository),
-						progress.newChild(1));
+						new SubProgressMonitor(pm, 1));
+
+				pm.done();
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, m);
+				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
 	@Override

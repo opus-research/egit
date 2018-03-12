@@ -78,7 +78,7 @@ public class AddToIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return haveSelectedResourcesWithRepository();
+		return getProjectsInRepositoryOfSelectedResources().length > 0;
 	}
 
 }

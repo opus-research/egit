@@ -26,13 +26,11 @@ import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.bindings.Trigger;
 import org.eclipse.jface.bindings.TriggerSequence;
@@ -290,7 +288,7 @@ public class UIUtils {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 
-				List<IContentProposal> resultList = new ArrayList<>();
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -387,7 +385,7 @@ public class UIUtils {
 						settings.put(preferenceKey, existingValues);
 					} else {
 
-						List<String> values = new ArrayList<>(
+						List<String> values = new ArrayList<String>(
 								existingValues.length + 1);
 
 						for (String existingValue : existingValues)
@@ -430,17 +428,17 @@ public class UIUtils {
 				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
 		if (stroke == null)
 			addBulbDecorator(textField,
-					UIText.UIUtils_StartTypingForRemoteRefMessage);
+					UIText.UIUtils_StartTypingForPreviousValuesMessage);
 		else
 			addBulbDecorator(
 					textField,
-					NLS.bind(UIText.UIUtils_PressShortcutForRemoteRefMessage,
+					NLS.bind(UIText.UIUtils_PressShortcutMessage,
 							stroke.format()));
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<>();
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -852,7 +850,7 @@ public class UIUtils {
 	@Deprecated
 	public static StyleRange[] getHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		HashSet<StyleRange> styleRangeList = new LinkedHashSet<>();
+		HashSet<StyleRange> styleRangeList = new LinkedHashSet<StyleRange>();
 		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
 			IDocument doc = textViewer.getDocument();
 			for (int line = 0; line < doc.getNumberOfLines(); line++) {
@@ -889,8 +887,8 @@ public class UIUtils {
 	}
 
 	private static String getShowInMenuLabel() {
-		IBindingService bindingService = AdapterUtils.adapt(PlatformUI
-		.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = CommonUtils.getAdapter(PlatformUI
+				.getWorkbench(), IBindingService.class);
 		if (bindingService != null) {
 			String keyBinding = bindingService
 					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
@@ -912,13 +910,9 @@ public class UIUtils {
 	 *         binding service returns a {@code TriggerSequence} containing more
 	 *         than one {@code Trigger}.
 	 */
-	@Nullable
 	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = AdapterUtils
-				.adapt(PlatformUI.getWorkbench(), IBindingService.class);
-		if (bindingService == null) {
-			return null;
-		}
+		IBindingService bindingService = CommonUtils.getAdapter(
+				PlatformUI.getWorkbench(), IBindingService.class);
 		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
 		if (ts == null)
 			return null;

@@ -4,7 +4,6 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * Copyright (C) 2013, Laurent Goubet <laurent.goubet@obeo.fr>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,23 +19,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.job.JobUtil;
-import org.eclipse.egit.core.internal.storage.CommitFileRevision;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.blame.BlameOperation;
-import org.eclipse.egit.ui.internal.commit.DiffViewer;
+import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
@@ -54,10 +55,9 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -69,21 +69,21 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.themes.ColorUtil;
 
@@ -115,8 +115,6 @@ public class CommitFileDiffViewer extends TableViewer {
 
 	private IAction compareWorkingTreeVersion;
 
-	private IAction showInHistory;
-
 	private final IWorkbenchSite site;
 
 	/**
@@ -140,8 +138,7 @@ public class CommitFileDiffViewer extends TableViewer {
 	 *
 	 * @param parent
 	 * @param site
-	 * @param style
-	 *            SWT style bits
+	 * @param style SWT style bits
 	 */
 	public CommitFileDiffViewer(final Composite parent,
 			final IWorkbenchSite site, final int style) {
@@ -160,21 +157,28 @@ public class CommitFileDiffViewer extends TableViewer {
 		addOpenListener(new IOpenListener() {
 			@Override
 			public void open(final OpenEvent event) {
-				ISelection s = event.getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection)) {
+				final ISelection s = event.getSelection();
+				if (s.isEmpty() || !(s instanceof IStructuredSelection))
 					return;
-				}
-				IStructuredSelection iss = (IStructuredSelection) s;
-				FileDiff d = (FileDiff) iss.getFirstElement();
+				final IStructuredSelection iss = (IStructuredSelection) s;
+				final FileDiff d = (FileDiff) iss.getFirstElement();
 				if (Activator.getDefault().getPreferenceStore().getBoolean(
 						UIPreferences.RESOURCEHISTORY_COMPARE_MODE)) {
-					showTwoWayFileDiff(d);
+					if (d.getBlobs().length <= 2)
+						showTwoWayFileDiff(d);
+					else
+						MessageDialog
+								.openInformation(
+										PlatformUI.getWorkbench()
+												.getActiveWorkbenchWindow()
+												.getShell(),
+										UIText.CommitFileDiffViewer_CanNotOpenCompareEditorTitle,
+										UIText.CommitFileDiffViewer_MergeCommitMultiAncestorMessage);
 				} else {
-					if (d.getChange() == ChangeType.DELETE) {
+					if (d.getChange() == ChangeType.DELETE)
 						openPreviousVersionInEditor(d);
-					} else {
+					else
 						openThisVersionInEditor(d);
-					}
 				}
 			}
 		});
@@ -198,8 +202,7 @@ public class CommitFileDiffViewer extends TableViewer {
 		Control c = getControl();
 		c.setMenu(mgr.createContextMenu(c));
 
-		openThisVersion = new Action(
-				UIText.CommitFileDiffViewer_OpenInEditorMenuLabel) {
+		openThisVersion = new Action(UIText.CommitFileDiffViewer_OpenInEditorMenuLabel) {
 			@Override
 			public void run() {
 				final ISelection s = getSelection();
@@ -224,7 +227,8 @@ public class CommitFileDiffViewer extends TableViewer {
 			}
 		};
 
-		blame = new Action(UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel,
+		blame = new Action(
+				UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel,
 				UIIcons.ANNOTATE) {
 			@Override
 			public void run() {
@@ -247,10 +251,10 @@ public class CommitFileDiffViewer extends TableViewer {
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
 					String relativePath = it.next().getPath();
-					File file = new Path(
-							getRepository().getWorkTree().getAbsolutePath())
-									.append(relativePath).toFile();
-					DiffViewer.openFileInEditor(file, -1);
+					String path = new Path(getRepository().getWorkTree()
+							.getAbsolutePath()).append(relativePath)
+							.toOSString();
+					openFileInEditor(path);
 				}
 			}
 		};
@@ -258,13 +262,21 @@ public class CommitFileDiffViewer extends TableViewer {
 		compare = new Action(UIText.CommitFileDiffViewer_CompareMenuLabel) {
 			@Override
 			public void run() {
-				ISelection s = getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection)) {
+				final ISelection s = getSelection();
+				if (s.isEmpty() || !(s instanceof IStructuredSelection))
 					return;
-				}
-				IStructuredSelection iss = (IStructuredSelection) s;
-				FileDiff d = (FileDiff) iss.getFirstElement();
-				showTwoWayFileDiff(d);
+				final IStructuredSelection iss = (IStructuredSelection) s;
+				final FileDiff d = (FileDiff) iss.getFirstElement();
+				if (d.getBlobs().length <= 2)
+					showTwoWayFileDiff(d);
+				else
+					MessageDialog
+							.openInformation(
+									PlatformUI.getWorkbench()
+											.getActiveWorkbenchWindow()
+											.getShell(),
+									UIText.CommitFileDiffViewer_CanNotOpenCompareEditorTitle,
+									UIText.CommitFileDiffViewer_MergeCommitMultiAncestorMessage);
 			}
 		};
 
@@ -280,50 +292,22 @@ public class CommitFileDiffViewer extends TableViewer {
 			}
 		};
 
-		showInHistory = new Action(
-				UIText.CommitFileDiffViewer_ShowInHistoryLabel,
-				UIIcons.HISTORY) {
-			@Override
-			public void run() {
-				ShowInContext context = getShowInContext();
-				if (context == null)
-					return;
-
-				IWorkbenchWindow window = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow();
-				IWorkbenchPage page = window.getActivePage();
-				IWorkbenchPart part = page.getActivePart();
-				// paranoia
-				if (part instanceof IHistoryView) {
-					((IShowInTarget) part).show(context);
-				}
-			}
-		};
-
 		mgr.add(openWorkingTreeVersion);
 		mgr.add(openThisVersion);
 		mgr.add(openPreviousVersion);
-		mgr.add(new Separator());
 		mgr.add(compare);
 		mgr.add(compareWorkingTreeVersion);
 		mgr.add(blame);
 
+		MenuManager showInSubMenu = UIUtils.createShowInMenu(
+				site.getWorkbenchWindow());
+
 		mgr.add(new Separator());
-		mgr.add(showInHistory);
-		MenuManager showInSubMenu = UIUtils
-				.createShowInMenu(site.getWorkbenchWindow());
 		mgr.add(showInSubMenu);
 
 		mgr.add(new Separator());
-		selectAll = ActionUtils.createGlobalAction(ActionFactory.SELECT_ALL,
-				() -> doSelectAll());
-		selectAll.setEnabled(true);
-		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
-				() -> doCopy());
-		copy.setEnabled(true);
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
-		mgr.add(selectAll);
-		mgr.add(copy);
+		mgr.add(selectAll = createStandardAction(ActionFactory.SELECT_ALL));
+		mgr.add(copy = createStandardAction(ActionFactory.COPY));
 
 		// See https://bugs.eclipse.org/bugs/show_bug.cgi?id=477510
 		mgr.addMenuListener(new IMenuListener() {
@@ -332,6 +316,29 @@ public class CommitFileDiffViewer extends TableViewer {
 				getControl().setFocus();
 			}
 		});
+		if (site instanceof IPageSite) {
+			final IPageSite pageSite = (IPageSite) site;
+			getControl().addFocusListener(new FocusListener() {
+				@Override
+				public void focusLost(FocusEvent e) {
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.SELECT_ALL.getId(), null);
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.COPY.getId(), null);
+					pageSite.getActionBars().updateActionBars();
+				}
+
+				@Override
+				public void focusGained(FocusEvent e) {
+					updateActionEnablement(getSelection());
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.SELECT_ALL.getId(), selectAll);
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.COPY.getId(), copy);
+					pageSite.getActionBars().updateActionBars();
+				}
+			});
+		}
 	}
 
 	private void updateActionEnablement(ISelection selection) {
@@ -356,7 +363,6 @@ public class CommitFileDiffViewer extends TableViewer {
 
 		selectAll.setEnabled(!allSelected);
 		copy.setEnabled(!sel.isEmpty());
-		showInHistory.setEnabled(!sel.isEmpty());
 
 		if (!submoduleSelected) {
 			boolean oneOrMoreSelected = !sel.isEmpty();
@@ -366,9 +372,9 @@ public class CommitFileDiffViewer extends TableViewer {
 			blame.setEnabled(oneOrMoreSelected);
 			if (sel.size() == 1 && !db.isBare()) {
 				FileDiff diff = (FileDiff) sel.getFirstElement();
-				String path = new Path(
-						getRepository().getWorkTree().getAbsolutePath())
-								.append(diff.getPath()).toOSString();
+				String path = new Path(getRepository().getWorkTree()
+						.getAbsolutePath()).append(diff.getPath())
+							.toOSString();
 				boolean workTreeFileExists = new File(path).exists();
 				compareWorkingTreeVersion.setEnabled(workTreeFileExists);
 				openWorkingTreeVersion.setEnabled(workTreeFileExists);
@@ -384,6 +390,38 @@ public class CommitFileDiffViewer extends TableViewer {
 			blame.setEnabled(false);
 			compareWorkingTreeVersion.setEnabled(false);
 		}
+	}
+
+	private IAction createStandardAction(final ActionFactory af) {
+		final String text = af.create(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow()).getText();
+		IAction action = new Action() {
+
+			@Override
+			public String getActionDefinitionId() {
+				return af.getCommandId();
+			}
+
+			@Override
+			public String getId() {
+				return af.getId();
+			}
+
+			@Override
+			public String getText() {
+				return text;
+			}
+
+			@Override
+			public void run() {
+				if (af == ActionFactory.SELECT_ALL)
+					doSelectAll();
+				if (af == ActionFactory.COPY)
+					doCopy();
+			}
+		};
+		action.setEnabled(true);
+		return action;
 	}
 
 	@Override
@@ -403,12 +441,12 @@ public class CommitFileDiffViewer extends TableViewer {
 			return null;
 		IPath workTreePath = new Path(db.getWorkTree().getAbsolutePath());
 		IStructuredSelection selection = (IStructuredSelection) getSelection();
-		List<Object> elements = new ArrayList<>();
-		List<File> files = new ArrayList<>();
+		List<Object> elements = new ArrayList<Object>();
+		List<File> files = new ArrayList<File>();
 		for (Object selectedElement : selection.toList()) {
 			FileDiff fileDiff = (FileDiff) selectedElement;
 			IPath path = workTreePath.append(fileDiff.getPath());
-			IFile file = ResourceUtil.getFileForLocation(path, false);
+			IFile file = ResourceUtil.getFileForLocation(path);
 			if (file != null)
 				elements.add(file);
 			else
@@ -420,16 +458,57 @@ public class CommitFileDiffViewer extends TableViewer {
 			historyPageInput = new HistoryPageInput(db,
 					files.toArray(new File[files.size()]));
 		}
-		return new ShowInContext(historyPageInput,
-				new StructuredSelection(elements));
+		return new ShowInContext(historyPageInput, new StructuredSelection(
+				elements));
+	}
+
+	private void openFileInEditor(String filePath) {
+		IWorkbenchWindow window = PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow();
+		File file = new File(filePath);
+		if (!file.exists()) {
+			String message = NLS.bind(UIText.CommitFileDiffViewer_FileDoesNotExist, filePath);
+			Activator.showError(message, null);
+		}
+		IWorkbenchPage page = window.getActivePage();
+		EgitUiEditorUtils.openEditor(file, page);
 	}
 
 	private void openThisVersionInEditor(FileDiff d) {
-		DiffViewer.openInEditor(getRepository(), d, DiffEntry.Side.NEW, -1);
+		ObjectId[] blobs = d.getBlobs();
+		ObjectId blob = blobs[blobs.length - 1];
+		openInEditor(d.getNewPath(), d.getCommit(), blob);
 	}
 
 	private void openPreviousVersionInEditor(FileDiff d) {
-		DiffViewer.openInEditor(getRepository(), d, DiffEntry.Side.OLD, -1);
+		RevCommit commit = d.getCommit().getParent(0);
+		ObjectId blob = d.getBlobs()[0];
+		openInEditor(d.getOldPath(), commit, blob);
+	}
+
+	private void openInEditor(String path, RevCommit commit, ObjectId blob) {
+		try {
+			IFileRevision rev = CompareUtils.getFileRevision(path, commit,
+					getRepository(), blob);
+			if (rev != null) {
+				IWorkbenchWindow window = PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow();
+				IWorkbenchPage page = window.getActivePage();
+				EgitUiEditorUtils.openEditor(page, rev,
+						new NullProgressMonitor());
+			} else {
+				String message = NLS.bind(
+						UIText.CommitFileDiffViewer_notContainedInCommit, path,
+						commit.getName());
+				Activator.showError(message, null);
+			}
+		} catch (IOException e) {
+			Activator.logError(UIText.GitHistoryPage_openFailed, e);
+			Activator.showError(UIText.GitHistoryPage_openFailed, null);
+		} catch (CoreException e) {
+			Activator.logError(UIText.GitHistoryPage_openFailed, e);
+			Activator.showError(UIText.GitHistoryPage_openFailed, null);
+		}
 	}
 
 	private void showAnnotations(FileDiff d) {
@@ -437,40 +516,100 @@ public class CommitFileDiffViewer extends TableViewer {
 			IWorkbenchWindow window = PlatformUI.getWorkbench()
 					.getActiveWorkbenchWindow();
 			IWorkbenchPage page = window.getActivePage();
-			RevCommit commit = d.getChange().equals(ChangeType.DELETE)
-					? d.getCommit().getParent(0) : d.getCommit();
+			RevCommit commit = d.getChange().equals(ChangeType.DELETE) ? d
+					.getCommit().getParent(0) : d.getCommit();
 			String path = d.getPath();
 			IFileRevision rev = CompareUtils.getFileRevision(path, commit,
 					getRepository(),
 					d.getChange().equals(ChangeType.DELETE) ? d.getBlobs()[0]
 							: d.getBlobs()[d.getBlobs().length - 1]);
-			if (rev instanceof CommitFileRevision) {
-				BlameOperation op = new BlameOperation((CommitFileRevision) rev,
-						window.getShell(), page);
+			if (rev != null) {
+				BlameOperation op = new BlameOperation(getRepository(),
+						rev.getStorage(new NullProgressMonitor()), path,
+						commit, window.getShell(), page);
 				JobUtil.scheduleUserJob(op, UIText.ShowBlameHandler_JobName,
 						JobFamilies.BLAME);
 			} else {
 				String message = NLS.bind(
-						UIText.DiffViewer_notContainedInCommit, path,
-						d.getCommit().getId().getName());
+						UIText.CommitFileDiffViewer_notContainedInCommit,
+						path, d.getCommit().getId().getName());
 				Activator.showError(message, null);
 			}
 		} catch (IOException e) {
+			Activator.logError(UIText.GitHistoryPage_openFailed, e);
+			Activator.showError(UIText.GitHistoryPage_openFailed, null);
+		} catch (CoreException e) {
 			Activator.logError(UIText.GitHistoryPage_openFailed, e);
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);
 		}
 	}
 
 	void showTwoWayFileDiff(final FileDiff d) {
-		if (d.getBlobs().length <= 2) {
-			DiffViewer.showTwoWayFileDiff(getRepository(), d);
+		final String np = d.getNewPath();
+		final String op = d.getOldPath();
+		final RevCommit c = d.getCommit();
+
+		// extract commits
+		final RevCommit oldCommit;
+		final ObjectId oldObjectId;
+		if (d.getBlobs().length == 2 && !d.getChange().equals(ChangeType.ADD)) {
+			oldCommit = c.getParent(0);
+			oldObjectId = d.getBlobs()[0];
 		} else {
-			MessageDialog.openInformation(
-					PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-							.getShell(),
-					UIText.CommitFileDiffViewer_CanNotOpenCompareEditorTitle,
-					UIText.CommitFileDiffViewer_MergeCommitMultiAncestorMessage);
+			// Initial import
+			oldCommit = null;
+			oldObjectId = null;
 		}
+
+		final RevCommit newCommit;
+		final ObjectId newObjectId;
+		if (d.getChange().equals(ChangeType.DELETE)) {
+			newCommit = null;
+			newObjectId = null;
+		} else {
+			newCommit = c;
+			newObjectId = d.getBlobs()[1];
+		}
+
+		IWorkbenchPage page = site.getWorkbenchWindow().getActivePage();
+		if (oldCommit != null && newCommit != null) {
+			IFile file = ResourceUtil.getFileForLocation(getRepository(), np);
+			try {
+				if (file != null) {
+					IResource[] resources = new IResource[] { file, };
+					CompareUtils.compare(resources, getRepository(), np, op,
+							newCommit.getName(), oldCommit.getName(), false,
+							page);
+				} else {
+					IPath location = new Path(getRepository().getWorkTree()
+							.getAbsolutePath()).append(np);
+					CompareUtils.compare(location, getRepository(),
+							newCommit.getName(), oldCommit.getName(), false,
+							page);
+				}
+			} catch (Exception e) {
+				Activator.logError(UIText.GitHistoryPage_openFailed, e);
+				Activator.showError(UIText.GitHistoryPage_openFailed, null);
+			}
+			return;
+		}
+
+		// still happens on initial commits
+		final ITypedElement oldSide = createTypedElement(op, oldCommit,
+				oldObjectId);
+		final ITypedElement newSide = createTypedElement(np, newCommit,
+				newObjectId);
+		CompareUtils.openInCompare(page, new GitCompareFileRevisionEditorInput(
+				newSide, oldSide, null));
+	}
+
+	private ITypedElement createTypedElement(final String path,
+			final RevCommit commit, final ObjectId objectId) {
+		if (null != commit)
+			return CompareUtils.getFileRevisionTypedElement(path, commit,
+					getRepository(), objectId);
+		else
+			return new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
 	}
 
 	void showWorkingDirectoryFileDiff(final FileDiff d) {
@@ -483,16 +622,15 @@ public class CommitFileDiffViewer extends TableViewer {
 		}
 
 		IWorkbenchPage activePage = site.getWorkbenchWindow().getActivePage();
-		IFile file = ResourceUtil.getFileForLocation(getRepository(), p, false);
+		IFile file = ResourceUtil.getFileForLocation(getRepository(), p);
 		try {
 			if (file != null) {
 				final IResource[] resources = new IResource[] { file, };
-				CompareUtils.compare(resources, getRepository(), Constants.HEAD,
-						commit.getName(), true, activePage);
+				CompareUtils.compare(resources, getRepository(),
+						Constants.HEAD, commit.getName(), true, activePage);
 			} else {
-				IPath path = new Path(
-						getRepository().getWorkTree().getAbsolutePath())
-								.append(p);
+				IPath path = new Path(getRepository().getWorkTree()
+						.getAbsolutePath()).append(p);
 				File ioFile = path.toFile();
 				if (ioFile.exists())
 					CompareUtils.compare(path, getRepository(), Constants.HEAD,
@@ -510,13 +648,10 @@ public class CommitFileDiffViewer extends TableViewer {
 		return walker;
 	}
 
-	@NonNull
 	Repository getRepository() {
-		Repository repo = db;
-		if (repo == null) {
+		if (db == null)
 			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
-		}
-		return repo;
+		return db;
 	}
 
 	/**
@@ -554,7 +689,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			final FileDiff d = itr.next();
 			if (r.length() > 0)
 				r.append(LINESEP);
-			r.append(d.getPath());
+			r.append(d.getNewPath());
 		}
 
 		clipboard.setContents(new Object[] { r.toString() },
@@ -566,8 +701,7 @@ public class CommitFileDiffViewer extends TableViewer {
 	 * @param interestingPaths
 	 */
 	void setInterestingPaths(Set<String> interestingPaths) {
-		((FileDiffContentProvider) getContentProvider())
-				.setInterestingPaths(interestingPaths);
+		((FileDiffContentProvider) getContentProvider()).setInterestingPaths(interestingPaths);
 	}
 
 	void selectFirstInterestingElement() {
@@ -576,8 +710,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		for (final Object element : elements) {
 			if (element instanceof FileDiff) {
 				FileDiff fileDiff = (FileDiff) element;
-				boolean marked = fileDiff.isMarked(
-						FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX);
+				boolean marked = fileDiff
+						.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX);
 				if (marked) {
 					setSelection(new StructuredSelection(fileDiff));
 					return;
@@ -595,8 +729,7 @@ public class CommitFileDiffViewer extends TableViewer {
 		for (final Object element : elements) {
 			if (element instanceof FileDiff) {
 				FileDiff fileDiff = (FileDiff) element;
-				boolean marked = fileDiff.isMarked(
-						FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX);
+				boolean marked = fileDiff.isMarked(FileDiffContentProvider.INTERESTING_MARK_TREE_FILTER_INDEX);
 				if (marked) {
 					// Does not yet work reliably, see comment on bug 393610.
 					getTable().getDisplay().asyncExec(new Runnable() {

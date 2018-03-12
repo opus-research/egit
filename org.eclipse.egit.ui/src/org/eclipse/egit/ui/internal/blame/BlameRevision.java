@@ -50,9 +50,9 @@ public class BlameRevision extends Revision {
 
 	private String sourcePath;
 
-	private Map<Integer, Integer> sourceLines = new HashMap<>();
+	private Map<Integer, Integer> sourceLines = new HashMap<Integer, Integer>();
 
-	private Map<RevCommit, Diff> diffToParentCommit = new HashMap<>();
+	private Map<RevCommit, Diff> diffToParentCommit = new HashMap<RevCommit, Diff>();
 
 	@Override
 	public Object getHoverInfo() {

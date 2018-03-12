@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, 2016 Max Hohenegger <eclipse@hohenegger.eu> and others
+ * Copyright (C) 2015, Max Hohenegger <eclipse@hohenegger.eu>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
+import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 
 import static org.eclipse.egit.gitflow.Activator.error;
 
@@ -27,7 +28,6 @@ import org.eclipse.egit.gitflow.internal.CoreText;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.FetchResult;
 
@@ -42,37 +42,16 @@ public final class FeatureTrackOperation extends AbstractFeatureOperation {
 
 	private FetchResult operationResult;
 
-	private int timeout;
-
 	/**
 	 * Track given ref, referencing a feature branch.
 	 *
 	 * @param repository
 	 * @param ref
-	 * @deprecated Use
-	 *             {@link FeatureTrackOperation#FeatureTrackOperation(GitFlowRepository, Ref, int)}
-	 *             instead.
 	 */
-	@Deprecated
 	public FeatureTrackOperation(GitFlowRepository repository, Ref ref) {
-		this(repository, ref, 0);
-	}
-
-	/**
-	 * Track given ref, referencing a feature branch.
-	 *
-	 * @param repository
-	 * @param ref
-	 * @param timeout
-	 *            timeout in seconds for remote operations
-	 * @since 4.2
-	 */
-	public FeatureTrackOperation(GitFlowRepository repository, Ref ref,
-			int timeout) {
 		this(repository, ref, ref.getName().substring(
 				(REMOTE_ORIGIN_FEATURE_PREFIX + repository.getConfig()
 						.getFeaturePrefix()).length()));
-		this.timeout = timeout;
 	}
 
 	/**
@@ -93,7 +72,7 @@ public final class FeatureTrackOperation extends AbstractFeatureOperation {
 		try {
 			String newLocalBranch = repository
 					.getConfig().getFeatureBranchName(featureName);
-			operationResult = fetch(monitor, timeout);
+			operationResult = fetch(monitor);
 
 			if (repository.hasBranch(newLocalBranch)) {
 				String errorMessage = String.format(
@@ -103,7 +82,7 @@ public final class FeatureTrackOperation extends AbstractFeatureOperation {
 			}
 			CreateLocalBranchOperation createLocalBranchOperation = new CreateLocalBranchOperation(
 					repository.getRepository(), newLocalBranch, remoteFeature,
-					BranchRebaseMode.NONE);
+					UpstreamConfig.MERGE);
 			createLocalBranchOperation.execute(monitor);
 
 			BranchOperation branchOperation = new BranchOperation(

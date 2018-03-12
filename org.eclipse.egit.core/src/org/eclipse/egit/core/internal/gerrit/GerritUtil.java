@@ -1,31 +1,19 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (c) 2013, 2015 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493352
  *******************************************************************************/
 package org.eclipse.egit.core.internal.gerrit;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -36,19 +24,9 @@ import org.eclipse.jgit.transport.URIish;
 public class GerritUtil {
 
 	/**
-	 * The Gerrit magic push prefix {@value} .
+	 * The Gerrit push prefix {@value} .
 	 */
 	public static final String REFS_FOR = "refs/for/"; //$NON-NLS-1$
-
-	/**
-	 * The Gerrit magic push prefix {@value}
-	 */
-	public static final String REFS_PUBLISH = "refs/publish/"; //$NON-NLS-1$
-
-	/**
-	 * The Gerrit magic push prefix {@value}
-	 */
-	public static final String REFS_DRAFTS = "refs/drafts/"; //$NON-NLS-1$
 
 	/**
 	 * @param config
@@ -136,139 +114,17 @@ public class GerritUtil {
 	 *
 	 * @param remoteConfig
 	 *            the remote configuration to configure this in
-	 * @return {@code true} if the {@code remoteConfig} was changed,
-	 *         {@code false} otherwise.
 	 */
-	public static boolean configureFetchNotes(RemoteConfig remoteConfig) {
+	public static void configureFetchNotes(RemoteConfig remoteConfig) {
 		String notesRef = Constants.R_NOTES + "*"; //$NON-NLS-1$
 		List<RefSpec> fetchRefSpecs = remoteConfig.getFetchRefSpecs();
 		for (RefSpec refSpec : fetchRefSpecs) {
 			if (refSpec.matchSource(notesRef)) {
-				return false;
+				return;
 			}
 		}
-		remoteConfig.addFetchRefSpec(new RefSpec(notesRef + ':' + notesRef));
-		return true;
+		remoteConfig.addFetchRefSpec(new RefSpec(notesRef + ":" + notesRef)); //$NON-NLS-1$
 	}
 
-
-	/**
-	 * @param rc
-	 *            the remote configuration
-	 * @return {@code true} if the remote configuration is configured for
-	 *         pushing to Gerrit
-	 */
-	public static boolean isGerritPush(RemoteConfig rc) {
-		for (RefSpec pushSpec : rc.getPushRefSpecs()) {
-			String destination = pushSpec.getDestination();
-			if (destination == null) {
-				continue;
-			}
-			if (destination.startsWith(GerritUtil.REFS_FOR)
-					|| destination.startsWith(GerritUtil.REFS_PUBLISH)
-					|| destination.startsWith(GerritUtil.REFS_DRAFTS)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * @param rc
-	 *            the remote configuration
-	 * @return {@code true} if the remote configuration is configured for
-	 *         fetching from Gerrit
-	 */
-	public static boolean isGerritFetch(RemoteConfig rc) {
-		for (RefSpec fetchSpec : rc.getFetchRefSpecs()) {
-			String source = fetchSpec.getSource();
-			String destination = fetchSpec.getDestination();
-			if (source == null || destination == null) {
-				continue;
-			}
-			if (source.startsWith(Constants.R_NOTES)
-					&& destination.startsWith(Constants.R_NOTES)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * If the repository is not bare and looks like it might be a Gerrit
-	 * repository, try to configure it such that EGit's Gerrit support is
-	 * enabled.
-	 *
-	 * @param repository
-	 *            to try to configure
-	 */
-	public static void tryToAutoConfigureForGerrit(
-			@NonNull Repository repository) {
-		if (repository.isBare()) {
-			return;
-		}
-		StoredConfig config = repository.getConfig();
-		boolean isGerrit = false;
-		boolean changed = false;
-		try {
-			for (RemoteConfig remote : RemoteConfig
-					.getAllRemoteConfigs(config)) {
-				if (isGerritPush(remote)) {
-					isGerrit = true;
-					if (configureFetchNotes(remote)) {
-						changed = true;
-						remote.update(config);
-					}
-				}
-			}
-		} catch (URISyntaxException ignored) {
-			// Ignore it here -- we're just trying to set up Gerrit support.
-		}
-		if (isGerrit) {
-			if (config.getString(ConfigConstants.CONFIG_GERRIT_SECTION, null,
-					ConfigConstants.CONFIG_KEY_CREATECHANGEID) != null) {
-				// Already configured.
-			} else {
-				setCreateChangeId(config);
-				changed = true;
-			}
-			if (changed) {
-				try {
-					config.save();
-				} catch (IOException e) {
-					Activator.logError(
-							MessageFormat.format(
-									CoreText.GerritUtil_ConfigSaveError,
-									repository.getDirectory()),
-							e);
-				}
-			}
-		}
-	}
-
-	/**
-	 * If the repository is not bare and looks like it might be a Gerrit
-	 * repository, try to configure it such that EGit's Gerrit support is
-	 * enabled. Does nothing if the {@code repositoryDir} is {@code null} or the
-	 * repository cannot be configured.
-	 *
-	 * @param repositoryDir
-	 *            .git Directory of the repository to try to configure
-	 */
-	public static void tryToAutoConfigureForGerrit(
-			@Nullable File repositoryDir) {
-		if (repositoryDir != null) {
-			try {
-				Repository repository = Activator.getDefault()
-						.getRepositoryCache().lookupRepository(repositoryDir);
-				if (repository != null) {
-					tryToAutoConfigureForGerrit(repository);
-				}
-			} catch (IOException ignored) {
-				// Ignore it here -- this is just a best-effort. If the repo
-				// cannot be read, other places will report the problem.
-			}
-		}
-	}
 
 }

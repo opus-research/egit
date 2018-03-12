@@ -26,7 +26,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.KnownHosts;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
@@ -138,7 +137,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	 */
 	public static class Protocol {
 		/** Ordered list of all protocols **/
-		private static final TreeMap<String, Protocol> protocols = new TreeMap<>();
+		private static final TreeMap<String, Protocol> protocols = new TreeMap<String, Protocol>();
 
 		/** Git native transfer */
 		public static final Protocol GIT = new Protocol("git", //$NON-NLS-1$
@@ -326,31 +325,25 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 		String preset = presetUri;
 		if (presetUri == null) {
-			Clipboard clipboard = new Clipboard(Display.getCurrent());
-			String text = (String) clipboard
-					.getContents(TextTransfer.getInstance());
+			Clipboard clippy = new Clipboard(Display.getCurrent());
+			String text = (String) clippy.getContents(TextTransfer
+					.getInstance());
 			try {
 				if (text != null) {
-					text = stripGitCloneCommand(text);
-					// Split on any whitespace character
-					text = text.split(
-							"[ \\f\\n\\r\\x0B\\t\\xA0\\u1680\\u180e\\u2000-\\u200a\\u202f\\u205f\\u3000]", //$NON-NLS-1$
-							2)[0];
+					text = text.trim();
+					int index = text.indexOf(' ');
+					if (index > 0)
+						text = text.substring(0, index);
 					URIish u = new URIish(text);
-					if (canHandleProtocol(u)) {
+					if (canHandleProtocol(u))
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
-								|| (Protocol.HTTP.handles(u)
-										|| Protocol.HTTPS.handles(u))
-										&& KnownHosts.isKnownHost(u.getHost())
-								|| text.endsWith(Constants.DOT_GIT_EXT)) {
+								|| text.endsWith(Constants.DOT_GIT_EXT))
 							preset = text;
-						}
-					}
 				}
 			} catch (URISyntaxException e) {
 				// ignore, preset is null
 			}
-			clipboard.dispose();
+			clippy.dispose();
 		}
 		this.presetUri = preset;
 
@@ -733,13 +726,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			eventDepth++;
 			if (eventDepth == 1) {
 				uri = u;
-				String oldUriText = uriText.getText();
-				String newUriText = uri.toString();
-				// avoid moving the cursor to the first position if there are no
-				// changes by this automatic update
-				if (!oldUriText.equals(newUriText)) {
-					uriText.setText(newUriText);
-				}
+				uriText.setText(uri.toString());
 				checkPage();
 			}
 		} finally {
@@ -752,7 +739,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		if (remotes == null)
 			return null;
 
-		List<RemoteConfig> result = new ArrayList<>();
+		List<RemoteConfig> result = new ArrayList<RemoteConfig>();
 
 		for (RemoteConfig config : remotes)
 			if ((sourceSelection && !config.getURIs().isEmpty() || !sourceSelection
@@ -889,7 +876,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		if (input.startsWith(GIT_CLONE_COMMAND_PREFIX)) {
 			return input.substring(GIT_CLONE_COMMAND_PREFIX.length()).trim();
 		}
-		return input;
+		return input.trim();
 	}
 
 	private boolean setSafePassword(String p) {

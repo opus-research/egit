@@ -24,7 +24,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
-import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.After;
 import org.junit.Before;
@@ -81,24 +80,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		assertTrue(entry.reloadScheduled);
 		assertFalse(entry.updateScheduled);
 		cleanEntryFlags();
-	}
-
-	@Test
-	public void testProjectDeletion() throws Exception {
-		prepareCacheEntry();
-
-		testRepository.connect(project.project);
-		waitForJobs(MAX_WAIT_TIME, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-
-		// Should have something from the project
-		String projectName = project.project.getName();
-		assertTrue(containsItemsStartingWith(
-				entry.getIndexDiff().getUntracked(), projectName + '/'));
-
-		project.project.delete(true, null);
-		waitForJobs(MAX_WAIT_TIME, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-		assertFalse(containsItemsStartingWith(
-				entry.getIndexDiff().getUntracked(), projectName + '/'));
 	}
 
 	@Test
@@ -197,7 +178,7 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 	 */
 	private void waitForJobs(long maxWaitTime, Object family)
 			throws InterruptedException {
-		TestUtils.waitForJobs(maxWaitTime, family);
+		testUtils.waitForJobs(maxWaitTime, family);
 	}
 
 	private void cleanEntryFlags() {
@@ -214,16 +195,6 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		assertFalse(entry.updateScheduled);
 		cleanEntryFlags();
 		return entry;
-	}
-
-	private boolean containsItemsStartingWith(Collection<String> values,
-			String prefix) {
-		for (String item : values) {
-			if (item.startsWith(prefix)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	@Override
@@ -250,7 +221,7 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		boolean updateScheduled;
 
 		public IndexDiffCacheEntry2(Repository repository) {
-			super(repository, null);
+			super(repository);
 		}
 
 		@Override

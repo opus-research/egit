@@ -104,7 +104,7 @@ public class InitHandlerTest extends AbstractGitflowHandlerTest {
 		assertEquals(HOTFIX_BRANCH_PREFIX, config.getHotfixPrefix());
 		assertEquals(VERSION_TAG_PREFIX, config.getVersionTagPrefix());
 
-		assertNotNull(repository.exactRef(Constants.R_HEADS + DEVELOP_BRANCH));
+		assertNotNull(repository.getRef(Constants.R_HEADS + DEVELOP_BRANCH));
 	}
 
 	@Test
@@ -132,8 +132,7 @@ public class InitHandlerTest extends AbstractGitflowHandlerTest {
 		assertEquals(HOTFIX_BRANCH_PREFIX, config.getHotfixPrefix());
 		assertEquals(VERSION_TAG_PREFIX, config.getVersionTagPrefix());
 
-		assertNotNull(
-				localRepository.exactRef(Constants.R_HEADS + DEVELOP_BRANCH));
+		assertNotNull(localRepository.getRef(Constants.R_HEADS + DEVELOP_BRANCH));
 	}
 
 	private void selectProject(String projectName) {
@@ -142,7 +141,9 @@ public class InitHandlerTest extends AbstractGitflowHandlerTest {
 	}
 
 	private void fillDialog(String masterBranch) {
-		typeInto(InitDialog_developBranch, ILLEGAL_BRANCH_NAME);
+		SWTBotText developText = bot.textWithLabel(InitDialog_developBranch);
+		developText.selectAll();
+		developText.typeText(ILLEGAL_BRANCH_NAME);
 
 		SWTBotButton ok = bot.button("OK");
 		assertFalse(ok.isEnabled());
@@ -190,6 +191,6 @@ public class InitHandlerTest extends AbstractGitflowHandlerTest {
 	private void typeInto(String textLabel, String textInput) {
 		SWTBotText developText = bot.textWithLabel(textLabel);
 		developText.selectAll();
-		developText.setText(textInput);
+		developText.typeText(textInput);
 	}
 }

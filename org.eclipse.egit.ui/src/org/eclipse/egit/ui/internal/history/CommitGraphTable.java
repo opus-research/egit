@@ -7,7 +7,6 @@
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012-2013, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,33 +37,30 @@ import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.ColumnWeightData;
-import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -85,6 +81,8 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.graphics.Font;
@@ -100,6 +98,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbenchActionConstants;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
@@ -154,6 +153,8 @@ class CommitGraphTable {
 
 	private RevCommit commitToShow;
 
+	private GraphLabelProvider graphLabelProvider;
+
 	private final TableLoader tableLoader;
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
@@ -162,11 +163,6 @@ class CommitGraphTable {
 
 	CommitGraphTable(Composite parent, final TableLoader loader,
 			final ResourceManager resources) {
-		this(parent, loader, resources, true);
-	}
-
-	CommitGraphTable(Composite parent, final TableLoader loader,
-			final ResourceManager resources, boolean canShowEmailAddresses) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		tableLoader = loader;
@@ -205,21 +201,12 @@ class CommitGraphTable {
 
 			@Override
 			protected void mapElement(final Object element, final Widget item) {
-				if (element == null) {
-					return;
-				}
 				((SWTCommit) element).widget = item;
 			}
 		};
 
-		GraphLabelProvider graphLabelProvider = new GraphLabelProvider(
-				canShowEmailAddresses);
-		graphLabelProvider.addListener(new ILabelProviderListener() {
-			@Override
-			public void labelProviderChanged(LabelProviderChangedEvent event) {
-				table.refresh();
-			}
-		});
+		graphLabelProvider = new GraphLabelProvider();
+
 		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay(), resources);
@@ -232,8 +219,8 @@ class CommitGraphTable {
 			}
 		});
 
-		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
-				() -> doCopy());
+		copy = createStandardAction(ActionFactory.COPY);
+
 		table.setUseHashlookup(true);
 
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
@@ -273,10 +260,26 @@ class CommitGraphTable {
 			final ResourceManager resources) {
 		this(parent, loader, resources);
 
-		final IAction selectAll = ActionUtils.createGlobalAction(
-				ActionFactory.SELECT_ALL,
-				() -> getTableView().getTable().selectAll());
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
+		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
+		getControl().addFocusListener(new FocusListener() {
+			@Override
+			public void focusLost(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), null);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), null);
+				site.getActionBars().updateActionBars();
+			}
+
+			@Override
+			public void focusGained(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), selectAll);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), copy);
+				site.getActionBars().updateActionBars();
+			}
+		});
 
 		getTableView().addOpenListener(new IOpenListener() {
 			@Override
@@ -347,6 +350,14 @@ class CommitGraphTable {
 		table.removePostSelectionChangedListener(l);
 	}
 
+	void setRelativeDate(boolean booleanValue) {
+		graphLabelProvider.setRelativeDate(booleanValue);
+	}
+
+	void setShowEmailAddresses(boolean booleanValue) {
+		graphLabelProvider.setShowEmailAddresses(booleanValue);
+	}
+
 	private boolean canDoCopy() {
 		return !table.getSelection().isEmpty();
 	}
@@ -403,7 +414,7 @@ class CommitGraphTable {
 	}
 
 	private void initCommitsMap() {
-		commitsMap = new HashMap<>();
+		commitsMap = new HashMap<String, PlotCommit>();
 		// ensure that filling (GenerateHistoryJob) and reading (here)
 		// the commit list is thread safe
 		synchronized (allCommits) {
@@ -522,6 +533,37 @@ class CommitGraphTable {
 	 */
 	public TableViewer getTableView() {
 		return table;
+	}
+
+	private IAction createStandardAction(final ActionFactory af) {
+		final String text = af.create(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow()).getText();
+		IAction action = new Action() {
+
+			@Override
+			public String getActionDefinitionId() {
+				return af.getCommandId();
+			}
+
+			@Override
+			public String getId() {
+				return af.getId();
+			}
+
+			@Override
+			public String getText() {
+				return text;
+			}
+
+			@Override
+			public void run() {
+				if (af == ActionFactory.SELECT_ALL)
+					table.getTable().selectAll();
+				if (af == ActionFactory.COPY)
+					doCopy();
+			}
+		};
+		return action;
 	}
 
 	private final class CommitDragSourceListener extends DragSourceAdapter {
@@ -769,14 +811,14 @@ class CommitGraphTable {
 					HistoryViewCommands.SET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_SetAsBaselineMenuLabel));
 
-			Map<String, String> parameters = new HashMap<>();
+			Map<String, String> parameters = new HashMap<String, String>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_ResetBaselineToHeadMenuLabel,
 					parameters));
 
-			parameters = new HashMap<>();
+			parameters = new HashMap<String, String>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD^1"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
@@ -815,18 +857,11 @@ class CommitGraphTable {
 				Map<String, Ref> branches = lastInput.getRepository()
 						.getRefDatabase().getRefs(Constants.R_HEADS);
 				int count = 0;
-				IStructuredSelection selection = (IStructuredSelection) selectionProvider
-						.getSelection();
-				if (selection.isEmpty()) {
-					return false;
-				}
-				ObjectId selectedId = ((RevCommit) selection.getFirstElement())
-						.getId();
 				for (Ref branch : branches.values()) {
-					ObjectId objectId = branch.getLeaf().getObjectId();
-					if (objectId != null && objectId.equals(selectedId)) {
+					if (branch.getLeaf().getObjectId()
+							.equals(((RevCommit) ((IStructuredSelection) selectionProvider
+									.getSelection()).getFirstElement()).getId()))
 						count++;
-					}
 				}
 				return (count > 1);
 

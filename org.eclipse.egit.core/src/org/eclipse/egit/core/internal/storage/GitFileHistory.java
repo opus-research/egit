@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map.Entry;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -67,10 +66,8 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 		final RepositoryMapping rm = RepositoryMapping.getMapping(resource);
 		if (rm == null) {
-			IProject project = resource.getProject();
-			String projectName = project != null ? project.getName() : ""; //$NON-NLS-1$
 			Activator.logError(NLS.bind(CoreText.GitFileHistory_gitNotAttached,
-					projectName), null);
+					resource.getProject().getName()), null);
 			db = null;
 			walk = null;
 		} else {
@@ -98,11 +95,9 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		try {
 			final AnyObjectId headId = db.resolve(Constants.HEAD);
 			if (headId == null) {
-				IProject project = resource.getProject();
-				String projectName = project != null? project.getName() : ""; //$NON-NLS-1$
 				Activator.logError(NLS.bind(
 						CoreText.GitFileHistory_noHeadRevisionAvailable,
-						projectName), null);
+						resource.getProject().getName()), null);
 				return NO_REVISIONS;
 			}
 
@@ -124,10 +119,9 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 			walk.markStart(root);
 		} catch (IOException e) {
-			IProject project = resource.getProject();
-			String projectName = project != null? project.getName() : ""; //$NON-NLS-1$
 			Activator.logError(NLS.bind(
-					CoreText.GitFileHistory_invalidHeadRevision, projectName), e);
+					CoreText.GitFileHistory_invalidHeadRevision, resource
+							.getProject().getName()), e);
 			return NO_REVISIONS;
 		}
 

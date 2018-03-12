@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (c) 2013, 2014 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -16,13 +16,10 @@ import java.util.Set;
 
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
+import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.AnyObjectId;
-import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -60,24 +57,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		wizard.finish();
 
 		assertBranchPushed("foo", remoteRepository);
-		assertBranchConfig("foo", "fetch", "refs/heads/foo", "false");
-	}
-
-	@Test
-	public void pushHeadToExistingRemote() throws Exception {
-		try (Git git = new Git(repository)) {
-			AnyObjectId head = repository.resolve(Constants.HEAD);
-			git.checkout().setName(head.name()).call();
-		}
-
-		PushBranchWizardTester wizard = PushBranchWizardTester
-				.startWizard(selectProject(), Constants.HEAD);
-		wizard.selectRemote("fetch");
-		wizard.enterBranchName("foo");
-		wizard.next();
-		wizard.finish();
-
-		assertBranchPushed("foo", remoteRepository);
+		assertBranchConfig("foo", "fetch", "refs/heads/foo", null);
 	}
 
 	@Test
@@ -127,7 +107,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 
 		assertRemoteConfig("quxremote", remoteUri);
 		assertBranchPushed("qux", newRemoteRepository);
-		assertBranchConfig("qux", "quxremote", "refs/heads/qux", "false");
+		assertBranchConfig("qux", "quxremote", "refs/heads/qux", null);
 	}
 
 	@Test
@@ -147,7 +127,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 
 		assertRemoteConfig("origin", uri);
 		assertBranchPushed("foo", other);
-		assertBranchConfig("foo", "origin", "refs/heads/foo", "false");
+		assertBranchConfig("foo", "origin", "refs/heads/foo", null);
 	}
 
 	@Test
@@ -166,8 +146,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		assertNotNull(pushed);
 		assertEquals(repository.resolve("localname"), pushed);
 
-		assertBranchConfig("localname", "fetch", "refs/heads/remotename",
-				"false");
+		assertBranchConfig("localname", "fetch", "refs/heads/remotename", null);
 	}
 
 	@Test
@@ -178,9 +157,9 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 				"foo", ConfigConstants.CONFIG_KEY_REMOTE, "fetch");
 		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
 				"foo", ConfigConstants.CONFIG_KEY_MERGE, "refs/heads/foo-on-remote");
-		repository.getConfig().setEnum(
+		repository.getConfig().setBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "foo",
-				ConfigConstants.CONFIG_KEY_REBASE, BranchRebaseMode.REBASE);
+				ConfigConstants.CONFIG_KEY_REBASE, true);
 		// Make sure the repository does not have autosetuprebase set
 		repository.getConfig().setBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, null,
@@ -233,7 +212,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		assertEquals(localId, remoteId);
 
 		// Newly configured
-		assertBranchConfig("foo", "fetch", "refs/heads/foo", "false");
+		assertBranchConfig("foo", "fetch", "refs/heads/foo", null);
 	}
 
 	private void removeExistingRemotes() throws IOException {
@@ -249,7 +228,8 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private void checkoutNewLocalBranch(String branchName)
 			throws Exception {
 		CreateLocalBranchOperation createBranch = new CreateLocalBranchOperation(
-				repository, branchName, repository.findRef("master"), null);
+				repository, branchName, repository.getRef("master"),
+				UpstreamConfig.NONE);
 		createBranch.execute(null);
 		BranchOperation checkout = new BranchOperation(repository, branchName);
 		checkout.execute(null);

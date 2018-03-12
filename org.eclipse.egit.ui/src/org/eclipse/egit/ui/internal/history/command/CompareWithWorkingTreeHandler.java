@@ -47,8 +47,8 @@ public class CompareWithWorkingTreeHandler extends
 				.getActiveWorkbenchWindowChecked(event).getActivePage();
 		if (input instanceof IFile) {
 			IFile file = (IFile) input;
-			final RepositoryMapping mapping = RepositoryMapping
-					.getMapping(file);
+			final RepositoryMapping mapping = RepositoryMapping.getMapping(file
+					.getProject());
 			if (mapping != null) {
 				final String gitPath = mapping.getRepoRelativePath(file);
 				final String commitPath = getRenamedPath(gitPath, commit);

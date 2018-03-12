@@ -6,7 +6,7 @@
  * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2014, Marc-Andre Laperle <marc-andre.laperle@ericsson.com>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2015, 2016 Thomas Wolf <thomas.wolf@paranor.ch>
+ * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,15 +23,14 @@ import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ActionUtils;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
-import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
@@ -47,11 +46,11 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextUtilities;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
-import org.eclipse.jface.text.hyperlink.IHyperlinkDetectorExtension2;
 import org.eclipse.jface.text.rules.FastPartitioner;
 import org.eclipse.jface.text.rules.IPartitionTokenScanner;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -64,13 +63,16 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
-class CommitMessageViewer extends HyperlinkSourceViewer {
+class CommitMessageViewer extends SourceViewer {
 
 	static final String HEADER_CONTENT_TYPE = "__egit_commit_msg_header"; //$NON-NLS-1$
 
@@ -110,7 +112,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 
 	private BooleanPrefAction fillParagraphsPrefAction;
 
-	CommitMessageViewer(final Composite parent, IWorkbenchPartSite partSite) {
+	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
 		super(parent, null, SWT.READ_ONLY);
 		this.partSite = partSite;
 
@@ -126,17 +128,16 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				String property = event.getProperty();
-				if (UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL
-						.equals(property)) {
+				if (property.equals(
+						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
 					setFill(((Boolean) event.getNewValue()).booleanValue());
-				} else
-					if (UIPreferences.HISTORY_SHOW_TAG_SEQUENCE.equals(property)
-							|| UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE
-									.equals(property)
-							|| UIPreferences.DATE_FORMAT.equals(property)
-							|| UIPreferences.DATE_FORMAT_CHOICE
-									.equals(property)) {
+					return;
+				}
+				if (property.equals(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)
+						|| property.equals(
+								UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE)) {
 					format();
+					return;
 				}
 			}
 		};
@@ -168,14 +169,50 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 				.addPropertyChangeListener(syntaxColoringListener);
 
 		// global action handlers for select all and copy
-		final IAction selectAll = ActionUtils.createGlobalAction(
-				ActionFactory.SELECT_ALL,
-				() -> doOperation(ITextOperationTarget.SELECT_ALL),
-				() -> canDoOperation(ITextOperationTarget.SELECT_ALL));
-		final IAction copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
-				() -> doOperation(ITextOperationTarget.COPY),
-				() -> canDoOperation(ITextOperationTarget.COPY));
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
+		final IAction selectAll = new Action() {
+			@Override
+			public void run() {
+				doOperation(ITextOperationTarget.SELECT_ALL);
+			}
+
+			@Override
+			public boolean isEnabled() {
+				return canDoOperation(ITextOperationTarget.SELECT_ALL);
+			}
+		};
+
+		final IAction copy = new Action() {
+			@Override
+			public void run() {
+				doOperation(ITextOperationTarget.COPY);
+			}
+
+			@Override
+			public boolean isEnabled() {
+				return canDoOperation(ITextOperationTarget.COPY);
+			}
+		};
+		// register and unregister the global actions upon focus events
+		getControl().addFocusListener(new FocusListener() {
+			@Override
+			public void focusLost(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), null);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), null);
+				site.getActionBars().updateActionBars();
+			}
+
+			@Override
+			public void focusGained(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), selectAll);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), copy);
+				site.getActionBars().updateActionBars();
+			}
+		});
+
 		final MenuManager mgr = new MenuManager();
 		Control c = getControl();
 		c.setMenu(mgr.createContextMenu(c));
@@ -310,7 +347,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 	}
 
 	private static List<Ref> getBranches(Repository repo)  {
-		List<Ref> ref = new ArrayList<>();
+		List<Ref> ref = new ArrayList<Ref>();
 		try {
 			RefDatabase refDb = repo.getRefDatabase();
 			ref.addAll(refDb.getRefs(Constants.R_HEADS).values());
@@ -338,7 +375,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 	}
 
 	private void scheduleFormatJob() {
-		IWorkbenchSiteProgressService siteService = AdapterUtils.adapt(partSite, IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService siteService = CommonUtils.getAdapter(partSite, IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
 		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(
@@ -500,8 +537,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 
 	}
 
-	static class KnownHyperlinksDetector
-			implements IHyperlinkDetector, IHyperlinkDetectorExtension2 {
+	static class KnownHyperlinksDetector implements IHyperlinkDetector {
 
 		@Override
 		public IHyperlink[] detectHyperlinks(ITextViewer textViewer,
@@ -522,11 +558,6 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 				}
 			}
 			return null;
-		}
-
-		@Override
-		public int getStateMask() {
-			return -1;
 		}
 
 	}

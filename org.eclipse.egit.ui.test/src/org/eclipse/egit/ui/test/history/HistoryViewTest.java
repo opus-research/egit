@@ -239,13 +239,11 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		if (path.length == 1)
 			explorerItem = projectItem;
 		else if (path.length == 2)
-			explorerItem = TestUtil
-					.getChildNode(TestUtil.expandAndWait(projectItem), path[1]);
+			explorerItem = TestUtil.getChildNode(projectItem.expand(), path[1]);
 		else {
-			SWTBotTreeItem childItem = TestUtil
-					.getChildNode(TestUtil.expandAndWait(projectItem), path[1]);
-			explorerItem = TestUtil
-					.getChildNode(TestUtil.expandAndWait(childItem), path[2]);
+			SWTBotTreeItem childItem = TestUtil.getChildNode(
+					projectItem.expand(), path[1]);
+			explorerItem = TestUtil.getChildNode(childItem.expand(), path[2]);
 		}
 		explorerItem.select();
 		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
@@ -401,7 +399,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	@Ignore
 	public void testRebaseAlreadyUpToDate() throws Exception {
 		Repository repo = lookupRepository(repoFile);
-		Ref stable = repo.findRef("stable");
+		Ref stable = repo.getRef("stable");
 		SWTBotTable table = getHistoryViewTable(PROJ1);
 		SWTBotTableItem stableItem = getTableItemWithId(table, stable.getObjectId());
 

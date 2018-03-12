@@ -41,7 +41,7 @@ public class RenameBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 
 		final Ref branchToRename;
 		if (branchesOfCommit.size() > 1) {
-			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
+			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<Ref>(
 					shell,
 					branchesOfCommit,
 					UIText.RenameBranchOnCommitHandler_SelectBranchDialogTitle,

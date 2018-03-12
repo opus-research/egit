@@ -28,7 +28,7 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.GitURI;
 import org.eclipse.egit.core.internal.ProjectReferenceImporter;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.annotations.Nullable;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.osgi.util.NLS;
@@ -129,17 +129,9 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 		return result;
 	}
 
-	@Nullable
 	@Override
 	public String asReference(URI uri, String projectName) {
-		try {
-			GitURI gitURI = new GitURI(uri);
-			return asReference(gitURI.getRepository().toString(),
-					gitURI.getTag(), gitURI.getPath().toString());
-		} catch (IllegalArgumentException e) {
-			Activator.logError(e.getMessage(), e);
-			// we must not fail but return null on invalid or unknown URI's.
-			return null;
-		}
+		GitURI gitURI = new GitURI(uri);
+		return asReference(gitURI.getRepository().toString(), gitURI.getTag(), gitURI.getPath().toString());
 	}
 }

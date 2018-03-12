@@ -34,9 +34,6 @@ public class UIText extends NLS {
 	public static String FeatureFinishHandler_Conflicts;
 
 	/**	 */
-	public static String FilteredBranchesWidget_lastModified;
-
-	/**	 */
 	public static String FinishHandler_conflictsWhileMergingFromTo;
 
 	/**	 */
@@ -44,15 +41,6 @@ public class UIText extends NLS {
 
 	/**	 */
 	public static String AbstractGitFlowHandler_finishConflicts;
-
-	/** */
-	public static String BranchSelectionTree_IdColumn;
-
-	/** */
-	public static String BranchSelectionTree_MessageColumn;
-
-	/** */
-	public static String BranchSelectionTree_NameColumn;
 
 	/**	 */
 	public static String FeatureFinishHandler_finishingFeature;
@@ -224,12 +212,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FeatureCheckoutHandler_cleanupDialog_text;
-
-	/** */
-	public static String FinishFeatureDialog_keepBranch;
-
-	/** */
-	public static String FinishFeatureDialog_saveAsDefault;
 
 	/** */
 	public static String FinishFeatureDialog_squashCheck;

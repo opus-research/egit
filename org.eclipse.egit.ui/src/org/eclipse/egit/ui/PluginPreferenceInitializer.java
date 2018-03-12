@@ -6,7 +6,6 @@
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -70,13 +69,11 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 				GitLightweightDecorator.DecorationHelper.FOLDER_FORMAT_DEFAULT);
 		store.setDefault(UIPreferences.DECORATOR_PROJECTTEXT_DECORATION,
 				GitLightweightDecorator.DecorationHelper.PROJECT_FORMAT_DEFAULT);
-		store.setDefault(UIPreferences.DECORATOR_SUBMODULETEXT_DECORATION,
-				GitLightweightDecorator.DecorationHelper.SUBMODULE_FORMAT_DEFAULT);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_TRACKED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_UNTRACKED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_STAGED_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON, true);
-		store.setDefault(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON, true);
+		store.setDefault(UIPreferences.DECORATOR_SHOW_ASSUME_VALID_ICON, true);
 		store.setDefault(UIPreferences.DECORATOR_SHOW_DIRTY_ICON, false);
 		store.setDefault(UIPreferences.WARN_BEFORE_COMMITTING, false);
 		store.setDefault(UIPreferences.WARN_BEFORE_COMMITTING_LEVEL,
@@ -93,8 +90,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.FINDTOOLBAR_IGNORE_CASE, true);
 		store.setDefault(UIPreferences.FINDTOOLBAR_FIND_IN,
 				FindToolbar.PREFS_FINDIN_ALL);
-		store.setDefault(UIPreferences.ALWAYS_USE_STAGING_VIEW, true);
-		store.setDefault(UIPreferences.AUTO_STAGE_ON_COMMIT, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE, true);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY, false);
@@ -118,8 +113,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, true);
 		store.setDefault(UIPreferences.DATE_FORMAT,
 				UIPreferences.DEFAULT_DATE_FORMAT);
-		store.setDefault(UIPreferences.DATE_FORMAT_CHOICE,
-				UIPreferences.DEFAULT_DATE_FORMAT_CHOICE);
 		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);
 		store.setDefault(UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE, true);
 		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);

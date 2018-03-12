@@ -41,6 +41,8 @@ import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -51,7 +53,6 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -88,12 +89,10 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		SystemReader.setInstance(null);
 	}
 
-	private static String createProject(String projectName)
-			throws CoreException {
+	private static String createProject(String projectName) {
 		bot.menu("File").menu("New").menu("Project...").click();
 		SWTBotShell createProjectDialogShell = bot.shell("New Project");
-		SWTBotTreeItem item = bot.tree().getTreeItem("General");
-		TestUtil.expandAndWait(item).getNode("Project").select();
+		bot.tree().getTreeItem("General").expand().getNode("Project").select();
 		bot.button("Next >").click();
 
 		bot.textWithLabel("Project name:").setText(projectName);
@@ -101,8 +100,6 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		String path = bot.textWithLabel("Location:").getText();
 		bot.button("Finish").click();
 		bot.waitUntil(Conditions.shellCloses(createProjectDialogShell), 10000);
-		ResourcesPlugin.getWorkspace().getRoot()
-				.refreshLocal(IResource.DEPTH_INFINITE, null);
 		return path;
 	}
 
@@ -186,11 +183,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		assertTrue((new File(repopath)).exists());
 
 		// share project
-		SWTBotShell shell = bot.activeShell();
-		bot.button(IDialogConstants.FINISH_LABEL).click();
-		bot.waitUntil(Conditions.shellCloses(shell));
-		ResourcesPlugin.getWorkspace().getRoot()
-				.refreshLocal(IResource.DEPTH_INFINITE, null);
+		bot.button("Finish").click();
+		Thread.sleep(1000);
 		assertEquals("org.eclipse.egit.core.GitProvider",
 				workspace.getRoot().getProject(projectName0)
 						.getPersistentProperty(
@@ -199,7 +193,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	public void shareProjectWithAlreadyCreatedRepos() throws Exception {
+	public void shareProjectWithAlreadyCreatedRepos() throws IOException,
+			InterruptedException, JGitInternalException, GitAPIException {
 		Repository repo1 = FileRepositoryBuilder.create(new File(
 				new File(createProject(projectName1)).getParent(), ".git"));
 		repo1.create();
@@ -244,11 +239,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 		bot.tree().getAllItems()[1].getItems()[0].check();
 		existingOrNewPage.assertEnabling(false, false, true);
-		SWTBotShell shell = bot.activeShell();
-		bot.button(IDialogConstants.FINISH_LABEL).click();
-		bot.waitUntil(Conditions.shellCloses(shell));
-		ResourcesPlugin.getWorkspace().getRoot()
-				.refreshLocal(IResource.DEPTH_INFINITE, null);
+		bot.button("Finish").click();
+		Thread.sleep(1000);
 		assertEquals(repo1.getDirectory().getAbsolutePath(), RepositoryMapping
 				.getMapping(workspace.getRoot().getProject(projectName1))
 				.getRepository().getDirectory().toString());
@@ -309,11 +301,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				.append("a/b").append(projectName2).toString();
 		existingOrNewPage.assertTableContents(contents);
 
-		SWTBotShell shell = bot.activeShell();
 		bot.button(IDialogConstants.FINISH_LABEL).click();
-		bot.waitUntil(Conditions.shellCloses(shell));
-		ResourcesPlugin.getWorkspace().getRoot()
-				.refreshLocal(IResource.DEPTH_INFINITE, null);
+		Thread.sleep(1000);
 		String location1Path = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName1).getLocation().toString();
 		assertEquals(contents[0][2], location1Path);

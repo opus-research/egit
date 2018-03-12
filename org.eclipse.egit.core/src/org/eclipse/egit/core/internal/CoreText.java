@@ -95,9 +95,6 @@ public class CoreText extends NLS {
 	public static String ContainerTreeIterator_DeletedFile;
 
 	/** */
-	public static String DeleteBranchOperation_Canceled;
-
-	/** */
 	public static String DeleteBranchOperation_TaskName;
 
 	/** */
@@ -155,9 +152,6 @@ public class CoreText extends NLS {
 	public static String UntrackOperation_writingIndex;
 
 	/** */
-	public static String GerritUtil_ConfigSaveError;
-
-	/** */
 	public static String GitFileHistory_errorParsingHistory;
 
 	/** */
@@ -182,9 +176,6 @@ public class CoreText extends NLS {
 	public static String GitProjectData_failedToCacheRepoMapping;
 
 	/** */
-	public static String GitProjectData_failedToUnmapRepoMapping;
-
-	/** */
 	public static String GitProjectData_FailedToMarkTeamPrivate;
 
 	/** */
@@ -198,6 +189,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RepositoryFinder_finding;
+
+	/** */
+	public static String RepositoryFinder_ResourceDoesNotExist;
+
+	/** */
+	public static String RepositoryMapping_ExceptionSubmoduleWalk;
 
 	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
@@ -285,9 +282,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
-
-	/** */
-	public static String IndexDiffCacheEntry_cannotReadIndex;
 
 	/** */
 	public static String IndexDiffCacheEntry_errorCalculatingIndexDelta;
@@ -378,9 +372,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
-
-	/** */
-	public static String GitLazyResourceVariantTreeSubscriber_name;
 
 	/** */
 	public static String OperationAlreadyExecuted;
