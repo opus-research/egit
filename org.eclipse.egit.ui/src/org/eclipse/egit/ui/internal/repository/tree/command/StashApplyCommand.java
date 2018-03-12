@@ -53,11 +53,10 @@ public class StashApplyCommand extends
 				try {
 					op.execute(monitor);
 				} catch (CoreException e) {
-					return new Status(IStatus.ERROR, Activator.getPluginId(),
+					Activator.logError(
 							MessageFormat.format(
 									UIText.StashApplyCommand_applyFailed,
-									commit.abbreviate(7).name(),
-									e.getLocalizedMessage()), e);
+									commit.name()), e);
 				}
 				return Status.OK_STATUS;
 			}
