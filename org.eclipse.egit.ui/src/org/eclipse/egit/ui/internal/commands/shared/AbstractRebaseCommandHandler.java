@@ -99,9 +99,6 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 					public void done(IJobChangeEvent cevent) {
 						finishRebaseInteractive();
 						IStatus result = cevent.getJob().getResult();
-						if (result == null) {
-							return;
-						}
 						// if a rebase was started, returned with an exception
 						// and left the repository in an unsafe state, try to
 						// abort and show exception
