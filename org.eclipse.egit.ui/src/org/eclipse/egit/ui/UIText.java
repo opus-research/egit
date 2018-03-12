@@ -96,6 +96,12 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_SymbolicValueEmptyMapping;
 
 	/** */
+	public static String GitCloneWizard_CloneFailedHeading;
+
+	/** */
+	public static String GitCloneWizard_CloneCanceledMessage;
+
+	/** */
 	public static String GitCloneWizard_title;
 
 	/** */
@@ -106,12 +112,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCloneWizard_errorCannotCreate;
-
-	/** */
-	public static String GitHistoryPage_CompareVersions;
-
-	/** */
-	public static String GitHistoryPage_CompareWithWorking;
 
 	/** */
 	public static String GitHistoryPage_FileNotInCommit;
