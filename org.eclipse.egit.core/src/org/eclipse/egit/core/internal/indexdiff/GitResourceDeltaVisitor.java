@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,7 +9,6 @@
  * Contributors:
  *  * Jens Baumgart <jens.baumgart@sap.com> - initial implementation in IndexDifCacheEntry
  *  * Dariusz Luksza - extraction to separate class
- *  * François Rey - gracefully ignore linked resources
  *******************************************************************************/
 package org.eclipse.egit.core.internal.indexdiff;
 
@@ -74,10 +73,6 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 		if (mapping == null || mapping.getRepository() != repository)
 			// Ignore the change
 			return true;
-
-		if (resource.isLinked(IResource.CHECK_ANCESTORS))
-			// Ignore linked resources, no need to check children
-			return false;
 
 		if (resource instanceof IFolder
 				&& delta.getKind() == IResourceDelta.ADDED) {
