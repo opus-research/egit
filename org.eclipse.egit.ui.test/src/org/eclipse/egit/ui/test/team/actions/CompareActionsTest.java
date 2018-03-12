@@ -30,6 +30,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
@@ -48,6 +49,7 @@ import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
+import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -236,26 +238,26 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 	public void testCompareWithIndex() throws Exception {
 		String compareWithIndexActionLabel = util
 				.getPluginLocalizedValue("CompareWithIndexAction_label");
-		clickCompareWithAndWaitForSync(compareWithIndexActionLabel);
+		clickCompareWith(compareWithIndexActionLabel);
 
-		closeFirstEmptySynchronizeDialog();
-
-		assertSynchronizeNoChange();
-
+		// compare with index should not have any changes
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 		// change test file -> should have one change
 		setTestFileContent("Hello there");
 
-		clickCompareWithAndWaitForSync(compareWithIndexActionLabel);
+		clickCompareWith(compareWithIndexActionLabel);
 
-		assertSynchronizeFile1Changed();
+		waitUntilCompareTreeViewTreeHasNodeCount(1);
 
 		// add to index -> no more changes
 		new Git(lookupRepository(repositoryFile)).add().addFilepattern(
 				PROJ1 + "/" + FOLDER + "/" + FILE1).call();
 
-		clickCompareWithAndWaitForSync(compareWithIndexActionLabel);
+		clickCompareWith(compareWithIndexActionLabel);
 
-		assertSynchronizeNoChange();
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 
 		// reset -> there should be no more changes
 		ResetOperation rop = new ResetOperation(
@@ -263,9 +265,9 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				ResetType.HARD);
 		rop.execute(new NullProgressMonitor());
 
-		clickCompareWithAndWaitForSync(compareWithIndexActionLabel);
+		clickCompareWith(compareWithIndexActionLabel);
 
-		assertSynchronizeNoChange();
+		waitUntilCompareTreeViewTreeHasNodeCount(0);
 	}
 
 	@Test
@@ -302,13 +304,17 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		assertSynchronizeNoChange();
 	}
 
+	private void clickCompareWith(String menuLabel) {
+		SWTBotTree projectExplorerTree = selectProjectItem();
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Compare With",
+				menuLabel);
+	}
+
 	private void clickCompareWithAndWaitForSync(String menuLabel) {
 		JobJoiner jobJoiner = JobJoiner.startListening(
 				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, 60,
 				TimeUnit.SECONDS);
-		SWTBotTree projectExplorerTree = selectProjectItem();
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Compare With",
-				menuLabel);
+		clickCompareWith(menuLabel);
 		jobJoiner.join();
 	}
 
@@ -326,6 +332,11 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		return projectExplorerTree;
+	}
+
+	private void waitUntilCompareTreeViewTreeHasNodeCount(int nodeCount) {
+		SWTBotTree tree = bot.viewById(CompareTreeView.ID).bot().tree();
+		bot.waitUntil(Conditions.treeHasRows(tree, nodeCount), 10000);
 	}
 
 	/**
@@ -348,9 +359,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				.label(2);
 
 		String noResultLabel = syncViewLabel.getText();
-		// may be one of two labels depending on the context
-		assertTrue(noResultLabel.contains("No changes")
-				|| noResultLabel.contains("No differences"));
+		assertTrue(noResultLabel.contains("No changes in 'Git (" + PROJ1
+				+ ")'."));
 	}
 
 	private void assertSynchronizeFile1Changed() {
