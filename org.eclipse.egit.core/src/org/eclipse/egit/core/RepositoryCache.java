@@ -71,32 +71,30 @@ public class RepositoryCache {
 	}
 
 	/**
-	 * Lookup the closest git repository with a working tree containing the
-	 * given resource. If there are repositories nested above in the file system
-	 * hierarchy we select the closest one above the given resource.
+	 * Lookup the closest git repository with a working tree containing the given
+	 * resource. If there are repositories nested above in the file system hierarchy
+	 * we select the closest one above the given resource.
 	 *
 	 * @param resource
 	 *            the resource to find the repository for
 	 * @return the git repository which has the given resource in its working
 	 *         tree
-	 * @since 3.2
 	 */
 	public Repository getRepository(final IResource resource) {
 		Repository[] repositories = org.eclipse.egit.core.Activator
 				.getDefault().getRepositoryCache().getAllRepositories();
 		Repository repository = null;
-		int largestSegmentCount = 0;
+		IPath repositoryPath = null;
 		for (Repository r : repositories) {
 			if (!r.isBare()) {
 				try {
 					IPath repoPath = new Path(r.getWorkTree()
 							.getCanonicalPath());
-					IPath location = resource.getLocation();
-					if (location != null && repoPath.isPrefixOf(location)) {
-						if (repository == null
-								|| repoPath.segmentCount() > largestSegmentCount) {
+					if (repoPath.isPrefixOf(resource.getLocation())) {
+						if (repository == null || repositoryPath == null
+								|| repositoryPath.isPrefixOf(repoPath)) {
 							repository = r;
-							largestSegmentCount = repoPath.segmentCount();
+							repositoryPath = repoPath;
 						}
 					}
 				} catch (IOException e) {
