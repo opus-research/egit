@@ -11,7 +11,6 @@ package org.eclipse.egit.core.internal.merge;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 import org.eclipse.core.resources.IFile;
@@ -76,8 +75,7 @@ public abstract class VariantsTestCase extends GitTestCase {
 			IFile targetFile, String newContents, String commitMessage)
 			throws Exception {
 		targetFile.setContents(
-				new ByteArrayInputStream(
-						newContents.getBytes(StandardCharsets.UTF_8)),
+				new ByteArrayInputStream(newContents.getBytes()),
 				IResource.FORCE, new NullProgressMonitor());
 		testRepository.addToIndex(targetFile);
 		return testRepository.commit(commitMessage);
@@ -91,8 +89,7 @@ public abstract class VariantsTestCase extends GitTestCase {
 
 	protected void assertContentEquals(IStorage storage, String expectedContents)
 			throws Exception {
-		try (Scanner scanner = new Scanner(storage.getContents(),
-				StandardCharsets.UTF_8.name())) {
+		try (Scanner scanner = new Scanner(storage.getContents())) {
 			scanner.useDelimiter("\\A");
 			String fileContent = "";
 			if (scanner.hasNext()) {
