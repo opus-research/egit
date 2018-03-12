@@ -21,9 +21,7 @@ import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
 import org.eclipse.egit.gitflow.ui.internal.validation.ReleaseNameValidator;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.dialogs.InputDialog;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Repository;
@@ -74,8 +72,8 @@ public class ReleaseStartHandler extends AbstractHandler {
 
 	private String getStartCommit(ExecutionEvent event)
 			throws ExecutionException {
-		ISelection currentSelection = HandlerUtil.getCurrentSelection(event);
-		IStructuredSelection selection = SelectionUtils.getStructuredSelection(currentSelection);
+		IStructuredSelection selection = (IStructuredSelection) HandlerUtil
+				.getCurrentSelection(event);
 		if (selection.getFirstElement() instanceof PlotCommit) {
 			RevCommit plotCommit = (RevCommit) selection.getFirstElement();
 			return plotCommit.getName();
