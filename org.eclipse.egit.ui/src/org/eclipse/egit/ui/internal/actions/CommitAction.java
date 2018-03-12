@@ -24,7 +24,6 @@ import java.util.TimeZone;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
@@ -161,7 +160,7 @@ public class CommitAction extends RepositoryAction {
 
 	private void performCommit(CommitDialog commitDialog, String commitMessage)
 			throws TeamException {
-
+		// System.out.println("Commit Message: " + commitMessage);
 		IFile[] selectedItems = commitDialog.getSelectedFiles();
 
 		HashMap<Repository, Tree> treeMap = new HashMap<Repository, Tree>();
@@ -239,6 +238,7 @@ public class CommitAction extends RepositoryAction {
 		}
 
 		for (IFile file : selectedItems) {
+			// System.out.println("\t" + file);
 
 			IProject project = file.getProject();
 			RepositoryMapping repositoryMapping = RepositoryMapping.getMapping(project);
@@ -249,11 +249,7 @@ public class CommitAction extends RepositoryAction {
 				if (projTree == null)
 					projTree = new Tree(repository);
 				treeMap.put(repository, projTree);
-				// TODO is this the right Location?
-				if (GitTraceLocation.UI.isActive())
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.UI.getLocation(),
-							"Orig tree id: " + projTree.getId()); //$NON-NLS-1$
+				System.out.println("Orig tree id: " + projTree.getId()); //$NON-NLS-1$
 			}
 			GitIndex index = repository.getIndex();
 			String repoRelativePath = repositoryMapping
@@ -272,11 +268,7 @@ public class CommitAction extends RepositoryAction {
 				if (!thisfile.isFile()) {
 					index.remove(repositoryMapping.getWorkDir(), thisfile);
 					index.write();
-					// TODO is this the right Location?
-					if (GitTraceLocation.UI.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.UI.getLocation(),
-								"Phantom file, so removing from index"); //$NON-NLS-1$
+					System.out.println("Phantom file, so removing from index"); //$NON-NLS-1$
 					continue;
 				} else {
 					if (idxEntry.update(thisfile))
@@ -290,13 +282,9 @@ public class CommitAction extends RepositoryAction {
 				TreeEntry newMember = projTree.findBlobMember(repoRelativePath);
 
 				newMember.setId(idxEntry.getObjectId());
-				// TODO is this the right Location?
-				if (GitTraceLocation.UI.isActive())
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.UI.getLocation(),
-							"New member id for " + repoRelativePath //$NON-NLS-1$
-									+ ": " + newMember.getId() + " idx id: " //$NON-NLS-1$ //$NON-NLS-2$
-									+ idxEntry.getObjectId());
+				System.out.println("New member id for " + repoRelativePath //$NON-NLS-1$
+						+ ": " + newMember.getId() + " idx id: " //$NON-NLS-1$ //$NON-NLS-2$
+						+ idxEntry.getObjectId());
 			}
 		}
 	}
@@ -314,11 +302,7 @@ public class CommitAction extends RepositoryAction {
 
 	private void writeTreeWithSubTrees(Tree tree) throws TeamException {
 		if (tree.getId() == null) {
-			// TODO is this the right Location?
-			if (GitTraceLocation.UI.isActive())
-				GitTraceLocation.getTrace().trace(
-						GitTraceLocation.UI.getLocation(),
-						"writing tree for: " + tree.getFullName()); //$NON-NLS-1$
+			System.out.println("writing tree for: " + tree.getFullName()); //$NON-NLS-1$
 			try {
 				for (TreeEntry entry : tree.members()) {
 					if (entry.isModified()) {
@@ -327,12 +311,8 @@ public class CommitAction extends RepositoryAction {
 						} else {
 							// this shouldn't happen.... not quite sure what to
 							// do here :)
-							// TODO is this the right Location?
-							if (GitTraceLocation.UI.isActive())
-								GitTraceLocation.getTrace().trace(
-										GitTraceLocation.UI.getLocation(),
-										"BAD JUJU: " //$NON-NLS-1$
-												+ entry.getFullName());
+							System.out.println("BAD JUJU: " //$NON-NLS-1$
+									+ entry.getFullName());
 						}
 					}
 				}
@@ -379,15 +359,10 @@ public class CommitAction extends RepositoryAction {
 						files.add((IFile) member);
 					category.add((IFile) member);
 				} else {
-					// TODO is this the right Location?
-					if (GitTraceLocation.UI.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.UI.getLocation(),
-								"Couldn't find " + filename); //$NON-NLS-1$
+					System.out.println("Couldn't find " + filename); //$NON-NLS-1$
 				}
-			} catch (Exception e) {
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+			} catch (Exception t) {
+				t.printStackTrace();
 				continue;
 			} // if it's outside the workspace, bad things happen
 		}
@@ -407,8 +382,7 @@ public class CommitAction extends RepositoryAction {
 				return true;
 			}
 		} catch (Exception e) {
-			if (GitTraceLocation.CORE.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+			e.printStackTrace();
 		}
 		return false;
 	}
@@ -423,11 +397,9 @@ public class CommitAction extends RepositoryAction {
 				return entry.isModified(map.getWorkDir());
 			return false;
 		} catch (UnsupportedEncodingException e) {
-			if (GitTraceLocation.CORE.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+			e.printStackTrace();
 		} catch (IOException e) {
-			if (GitTraceLocation.CORE.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+			e.printStackTrace();
 		}
 		return false;
 	}

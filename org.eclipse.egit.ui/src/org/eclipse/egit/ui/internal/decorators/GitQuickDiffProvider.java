@@ -16,7 +16,6 @@ import java.util.WeakHashMap;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.text.IDocument;
@@ -44,16 +43,12 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 	 * Create the GitQuickDiffProvider instance
 	 */
 	public GitQuickDiffProvider() {
-		// TODO is this the right location?
-		if (GitTraceLocation.UI.isActive())
-			GitTraceLocation.getTrace().traceEntry(GitTraceLocation.UI.getLocation());
+		Activator.trace("(GitQuickDiffProvider) constructor"); //$NON-NLS-1$
 		// Empty
 	}
 
 	public void dispose() {
-		// TODO is this the right location?
-		if (GitTraceLocation.UI.isActive())
-			GitTraceLocation.getTrace().traceEntry(GitTraceLocation.UI.getLocation());
+		Activator.trace("(GitQuickDiffProvider) dispose"); //$NON-NLS-1$
 		if (document != null)
 			document.dispose();
 	}
@@ -64,11 +59,7 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 
 	public IDocument getReference(IProgressMonitor monitor)
 			throws CoreException {
-		// TODO is this the right location?
-		if (GitTraceLocation.UI.isActive())
-			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.UI.getLocation(),
-					"(GitQuickDiffProvider) file: " + resource); //$NON-NLS-1$
+		Activator.trace("(GitQuickDiffProvider) file: " + resource); //$NON-NLS-1$
 		if (resource == null)
 			return null;
 		RepositoryProvider provider = RepositoryProvider.getProvider(resource
@@ -90,10 +81,7 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 	}
 
 	public void setActiveEditor(ITextEditor editor) {
-		// TODO is this the right location?
-		if (GitTraceLocation.UI.isActive())
-			GitTraceLocation.getTrace().traceEntry(
-					GitTraceLocation.UI.getLocation(), editor.getTitle());
+		Activator.trace("(GitQuickDiffProvider) setActiveEditor: " + editor.getTitle()); //$NON-NLS-1$
 		IEditorInput editorInput = editor.getEditorInput();
 		resource = ResourceUtil.getResource(editorInput);
 	}

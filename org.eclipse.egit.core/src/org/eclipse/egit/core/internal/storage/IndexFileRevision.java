@@ -18,7 +18,6 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.ObjectId;
@@ -55,7 +54,7 @@ class IndexFileRevision extends GitFileRevision implements IFileRevision {
 	}
 
 	public String getAuthor() {
-		return "";  //$NON-NLS-1$
+		return "";
 	}
 
 	public long getTimestamp() {
@@ -77,13 +76,13 @@ class IndexFileRevision extends GitFileRevision implements IFileRevision {
 			if (e == null)
 				throw new ResourceException(IResourceStatus.FAILED_READ_LOCAL,
 						Path.fromPortableString(path),
-						CoreText.IndexFileRevision_indexEntryNotFound, null);
+						"Git index entry not found", null);
 			return e.getObjectId();
 
 		} catch (IOException e) {
 			throw new ResourceException(IResourceStatus.FAILED_READ_LOCAL, Path
 					.fromPortableString(path),
-					CoreText.IndexFileRevision_errorLookingUpPath, e);
+					"IO error looking up path in index.", e);
 		}
 	}
 }

@@ -17,10 +17,13 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.ui.Activator;
@@ -103,8 +106,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private final List<RemoteConfig> configuredRemotes;
 
-	private final boolean sourceSelection;
-
 	private Group authGroup;
 
 	private Text uriText;
@@ -139,8 +140,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 	private Button uriButton;
 
-	private String presetUri;
-
 	/**
 	 * Create repository selection page, allowing user specifying URI or
 	 * (optionally) choosing from preconfigured remotes list.
@@ -161,33 +160,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	 */
 	public RepositorySelectionPage(final boolean sourceSelection,
 			final List<RemoteConfig> configuredRemotes) {
-		this(sourceSelection, configuredRemotes, null);
-	}
-
-	/**
-	 * Special case: the URI is set externally
-	 *
-	 * @param sourceSelection
-	 *            true if dialog is used for source selection; false otherwise
-	 *            (destination selection). This indicates appropriate text
-	 *            messages.
-	 * @param configuredRemotes
-	 *            list of configured remotes that user may select as an
-	 *            alternative to manual URI specification. Remotes appear in
-	 *            given order in GUI, with
-	 *            {@value Constants#DEFAULT_REMOTE_NAME} as the default choice.
-	 *            List may be null or empty - no remotes configurations appear
-	 *            in this case. Note that the provided list may be changed by
-	 *            this constructor.
-	 * @param presetUri
-	 *            the pre-set URI
-	 */
-	public RepositorySelectionPage(final boolean sourceSelection,
-			final List<RemoteConfig> configuredRemotes, String presetUri) {
 		super(RepositorySelectionPage.class.getName());
 		this.uri = new URIish();
-		this.sourceSelection = sourceSelection;
-		this.presetUri = presetUri;
 
 		if (configuredRemotes != null)
 			removeUnusableRemoteConfigs(configuredRemotes);
@@ -218,9 +192,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	 *            messages.
 	 */
 	public RepositorySelectionPage(final boolean sourceSelection) {
-		this(sourceSelection, null, null);
+		this(sourceSelection, null);
 	}
-
 
 	/**
 	 * @return repository selection representing current page state.
@@ -251,9 +224,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		updateRemoteAndURIPanels();
 		setControl(panel);
-		if (presetUri != null)
-			uriText.setText(presetUri);
-
 		checkPage();
 	}
 
@@ -555,7 +525,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	}
 
 	private boolean isURISelected() {
-		return configuredRemotes == null || presetUri != null || uriButton.getSelection();
+		return configuredRemotes == null || uriButton.getSelection();
 	}
 
 	private void setURI(final URIish u) {
@@ -588,19 +558,11 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		return configuredRemotes.get(0);
 	}
 
-	private String getTextForRemoteConfig(final RemoteConfig rc) {
+	private static String getTextForRemoteConfig(final RemoteConfig rc) {
 		final StringBuilder sb = new StringBuilder(rc.getName());
 		sb.append(": "); //$NON-NLS-1$
 		boolean first = true;
-		List<URIish> uris;
-		if (sourceSelection) {
-			uris = rc.getURIs();
-		} else {
-			// TODO shouldn't this be getPushURIs?
-			uris = rc.getPushURIs();
-		}
-
-		for (final URIish u : uris) {
+		for (final URIish u : rc.getURIs()) {
 			final String uString = u.toString();
 			if (first)
 				first = false;
@@ -776,32 +738,31 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	 */
 	public void saveUriInPrefs(String stringToAdd) {
 
-		List<String> uriStrings = getUrisFromPrefs();
+		Set<String> uriStrings = getUrisFromPrefs();
 
-		if (uriStrings.indexOf(stringToAdd) == 0)
-			return;
-		uriStrings.add(0, stringToAdd);
+		if (uriStrings.add(stringToAdd)) {
 
-		IEclipsePreferences prefs = new InstanceScope().getNode(Activator
-				.getPluginId());
+			IEclipsePreferences prefs = new InstanceScope().getNode(Activator
+					.getPluginId());
 
-		StringBuilder sb = new StringBuilder();
-		StringBuilder lb = new StringBuilder();
+			StringBuilder sb = new StringBuilder();
+			StringBuilder lb = new StringBuilder();
 
-		// there is no "good" separator for URIish, so we
-		// keep track of the URI lengths separately
-		for (String uriString : uriStrings) {
-			sb.append(uriString);
-			lb.append(uriString.length());
-			lb.append(" "); //$NON-NLS-1$
-		}
-		prefs.put(USED_URIS_PREF, sb.toString());
-		prefs.put(USED_URIS_LENGTH_PREF, lb.toString());
+			// there is no "good" separator for URIish, so we
+			// keep track of the URI lengths separately
+			for (String uriString : uriStrings) {
+				sb.append(uriString);
+				lb.append(uriString.length());
+				lb.append(" "); //$NON-NLS-1$
+			}
+			prefs.put(USED_URIS_PREF, sb.toString());
+			prefs.put(USED_URIS_LENGTH_PREF, lb.toString());
 
-		try {
-			prefs.flush();
-		} catch (BackingStoreException e) {
-			// we simply ignore this here
+			try {
+				prefs.flush();
+			} catch (BackingStoreException e) {
+				// we simply ignore this here
+			}
 		}
 	}
 
@@ -810,10 +771,10 @@ public class RepositorySelectionPage extends BaseWizardPage {
 	 *
 	 * @return a (possibly empty) list of URIs, never <code>null</code>
 	 */
-	public List<String> getUrisFromPrefs() {
+	public Set<String> getUrisFromPrefs() {
 
 		// use a TreeSet to get the same sorting always
-		List<String> uriStrings = new ArrayList<String>();
+		Set<String> uriStrings = new TreeSet<String>();
 
 		IEclipsePreferences prefs = new InstanceScope().getNode(Activator
 				.getPluginId());
@@ -845,9 +806,12 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		ControlDecoration dec = new ControlDecoration(uriTextField, SWT.TOP
 				| SWT.LEFT);
 
-		dec.setImage(FieldDecorationRegistry.getDefault().getFieldDecoration(
-				FieldDecorationRegistry.DEC_CONTENT_PROPOSAL).getImage());
-
+		if (Platform.isRunning()) {
+			dec.setImage(FieldDecorationRegistry.getDefault()
+					.getFieldDecoration(
+							FieldDecorationRegistry.DEC_CONTENT_PROPOSAL)
+					.getImage());
+		}
 		dec.setShowOnlyOnFocus(true);
 		dec.setShowHover(true);
 
@@ -856,15 +820,11 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		IContentProposalProvider cp = new IContentProposalProvider() {
 
 			public IContentProposal[] getProposals(String contents, int position) {
-
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
-				String patternString = contents;
-				while (patternString.length() > 0 && patternString.charAt(0)==' ')
-					patternString = patternString.substring(1);
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
-				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
+				String patternString = contents.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
 				// make sure we add a (logical) * at the end
 				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
 					patternString = patternString + ".*"; //$NON-NLS-1$
@@ -878,7 +838,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 					pattern = null;
 				}
 
-				List<String> uriStrings = getUrisFromPrefs();
+				Set<String> uriStrings = getUrisFromPrefs();
 				for (final String uriString : uriStrings) {
 
 					if (pattern!=null && !pattern.matcher(uriString).matches())

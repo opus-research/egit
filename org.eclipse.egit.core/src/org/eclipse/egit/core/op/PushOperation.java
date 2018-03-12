@@ -15,6 +15,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.jgit.errors.NoRemoteRepositoryException;
 import org.eclipse.jgit.errors.NotSupportedException;
@@ -28,7 +29,7 @@ import org.eclipse.jgit.transport.URIish;
 /**
  * Push operation: pushing from local repository to one or many remote ones.
  */
-public class PushOperation {
+public class PushOperation implements IRunnableWithProgress {
 	private static final int WORK_UNITS_PER_TRANSPORT = 10;
 
 	private final Repository localDb;
@@ -87,14 +88,11 @@ public class PushOperation {
 	 * on each remote repository.
 	 * <p>
 	 *
-	 * @param monitor
-	 *            the monitor to be used for reporting progress and responding
-	 *            to cancellation. The monitor is never <code>null</code>
-	 *
 	 * @throws InvocationTargetException
 	 *             Cause of this exceptions may include
 	 *             {@link TransportException}, {@link NotSupportedException} or
 	 *             some unexpected {@link RuntimeException}.
+	 * @see IRunnableWithProgress#run(IProgressMonitor)
 	 */
 	public void run(IProgressMonitor monitor) throws InvocationTargetException {
 		if (monitor == null)
