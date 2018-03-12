@@ -192,7 +192,7 @@ public class CommitInfoBuilder {
 			d.append(LF);
 		}
 
-		List<Ref> branches = getBranches();
+		List<Ref> branches = getBranches(allRefs);
 		if (!branches.isEmpty()) {
 			d.append(UIText.CommitMessageViewer_branches);
 			d.append(": "); //$NON-NLS-1$
@@ -312,10 +312,10 @@ public class CommitInfoBuilder {
 		addLink(d, to.getId().name(), styles, to);
 	}
 
-	/**
+	/*
 	 * @return List of heads from those current commit is reachable
 	 */
-	private List<Ref> getBranches() {
+	private List<Ref> getBranches(Collection<Ref> refs) {
 		RevWalk revWalk = new RevWalk(db);
 		List<Ref> result = new ArrayList<Ref>();
 
@@ -327,7 +327,7 @@ public class CommitInfoBuilder {
 
 			final int SKEW = 24*3600; // one day clock skew
 
-			for (Ref ref : allRefs) {
+			for (Ref ref : refs) {
 				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
 
 				// if commit is in the ref branch, then the tip of ref should be
