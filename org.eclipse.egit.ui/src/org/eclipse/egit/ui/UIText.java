@@ -37,6 +37,9 @@ public class UIText extends NLS {
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
+	public static String AbstractHistoryCommanndHandler_NoUniqueRepository;
+
+	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
@@ -1034,12 +1037,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryAction_errorFindingRepoTitle;
-
-	/** */
-	public static String RepositoryAction_linkedResourceSelection;
-
-	/** */
-	public static String RepositoryAction_linkedResourceSelectionTitle;
 
 	/** */
 	public static String RepositoryAction_multiRepoSelection;

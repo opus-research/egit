@@ -219,8 +219,7 @@ public class Activator extends Plugin implements DebugOptionsListener {
 								&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
 							return true;
 						final IResource resource = delta.getResource();
-						if (!resource.exists() || !resource.isAccessible() ||
-								resource.isLinked(IResource.CHECK_ANCESTORS))
+						if (!resource.exists() || !resource.isAccessible())
 							return false;
 						if (resource.getType() != IResource.PROJECT)
 							return true;
