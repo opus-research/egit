@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -139,10 +138,7 @@ public class GitResourceVariantTreeSubscriber extends
 			IProgressMonitor monitor) throws TeamException {
 		// refresh cache
 		GitSyncCache newCache = GitSyncCache.getAllData(gsds, monitor);
-		if(cache == null)
-			cache = newCache;
-		else
-			cache.merge(newCache);
+		cache.merge(newCache);
 
 		super.refresh(resources, depth, monitor);
 	}
@@ -206,12 +202,8 @@ public class GitResourceVariantTreeSubscriber extends
 	}
 
 	private boolean shouldBeIncluded(IResource res) {
-		if (res == null)
-			return false;
-		IProject proj = res.getProject();
-		if (proj == null)
-			return false;
-		Set<IContainer> includedPaths = gsds.getData(proj).getIncludedPaths();
+		Set<IContainer> includedPaths = gsds.getData(res.getProject())
+				.getIncludedPaths();
 		if (includedPaths == null)
 			return true;
 
