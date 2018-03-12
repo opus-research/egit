@@ -8,6 +8,7 @@
 package org.eclipse.egit.ui.internal.push;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
@@ -22,9 +23,8 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTableItem;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 
 public class PushTagsWizardTester {
 
@@ -38,6 +38,10 @@ public class PushTagsWizardTester {
 		ContextMenuHelper.clickContextMenu(projectTree, "Team", remoteMenu,
 				pushBranchMenu);
 
+		return forShell();
+	}
+
+	public static PushTagsWizardTester forShell() {
 		SWTWorkbenchBot bot = new SWTWorkbenchBot();
 		SWTBot wizard = bot.shell(UIText.PushTagsWizard_WindowTitle).bot();
 		return new PushTagsWizardTester(wizard);
@@ -66,20 +70,32 @@ public class PushTagsWizardTester {
 				wizard.button(IDialogConstants.NEXT_LABEL).isEnabled());
 	}
 
-	public void selectTag(String tagName) {
-		SWTBotTable table = wizard.table();
-		for (int i = 0; i < table.rowCount(); i++) {
-			SWTBotTableItem item = table.getTableItem(i);
-			if (item.getText().startsWith(tagName + " ")) {
-				item.check();
-				return;
-			}
+	public void assertTagChecked(String tagName) {
+		assertTrue("Expected tag " + tagName + " to be checked.",
+				findTag(tagName).isChecked());
+	}
+
+	public void checkTag(String tagName) {
+		findTag(tagName).check();
+	}
+
+	private SWTBotTreeItem findTag(String tagName) {
+		SWTBotTree tree = wizard.tree();
+		for (SWTBotTreeItem item : tree.getAllItems()) {
+			String text = item.getText();
+			if (text.equals(tagName) || text.startsWith(tagName + " "))
+				return item;
 		}
 		fail("Could not find item for tag name " + tagName);
+		return null;
 	}
 
 	public void next() {
 		wizard.button(IDialogConstants.NEXT_LABEL).click();
+	}
+
+	public void cancel() {
+		wizard.button(IDialogConstants.CANCEL_LABEL).click();
 	}
 
 	public void finish() {

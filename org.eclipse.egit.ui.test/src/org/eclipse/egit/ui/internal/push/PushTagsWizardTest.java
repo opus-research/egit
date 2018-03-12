@@ -46,7 +46,7 @@ public class PushTagsWizardTest extends LocalRepositoryTestCase {
 				.startWizard(selectProject());
 		wizard.selectRemote("push");
 		wizard.assertNextDisabled();
-		wizard.selectTag("foo");
+		wizard.checkTag("foo");
 		wizard.next();
 		wizard.finish();
 
