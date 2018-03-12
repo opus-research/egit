@@ -272,9 +272,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
 						left, right, PlatformUI.getWorkbench()
 								.getActiveWorkbenchWindow().getActivePage());
-				Repository repository = getRepository();
 				CompareUtils.openInCompare(PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage(), repository,
+						.getActiveWorkbenchWindow().getActivePage(),
 						compareInput);
 			} else {
 				IFile file = fileNode.getFile();
