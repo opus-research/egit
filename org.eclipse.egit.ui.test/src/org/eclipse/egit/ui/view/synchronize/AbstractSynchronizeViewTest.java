@@ -309,8 +309,8 @@ public abstract class AbstractSynchronizeViewTest extends
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
 
-		CommitOperation op = new CommitOperation(commitables, untracked,
-				new ArrayList<IFile>(), TestUtil.TESTAUTHOR,
+		CommitOperation op = new CommitOperation(commitables,
+				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
 				TestUtil.TESTCOMMITTER, "Add .gitignore file");
 		op.execute(null);
 	}

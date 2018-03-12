@@ -193,7 +193,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		untracked.add(toBeDeleted);
 		// commit to stable
 		CommitOperation op = new CommitOperation(new IFile[] { toBeDeleted },
-				untracked, new ArrayList<IFile>(), TestUtil.TESTAUTHOR,
+				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
 				TestUtil.TESTCOMMITTER, "Add to stable");
 		op.execute(null);
 
