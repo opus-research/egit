@@ -76,6 +76,9 @@ public class UIIcons {
 	/** Disabled, unchecked, checkbox image */
 	public static final ImageDescriptor CHECKBOX_DISABLED_UNCHECKED;
 
+	/** Create Patch Wizard banner */
+	public static final ImageDescriptor WIZBAN_CREATE_PATCH;
+
 	/** Import Wizard banner */
 	public static final ImageDescriptor WIZBAN_IMPORT_REPO;
 
@@ -92,7 +95,13 @@ public class UIIcons {
 	public static ImageDescriptor FILTERFOLDER;
 
 	/** Import button */
-	public static ImageDescriptor IMPORT;
+	public static ImageDescriptor FETCH;
+
+	/** Export button */
+	public static ImageDescriptor PUSH;
+
+	/** Collapse all button */
+	public static ImageDescriptor COLLAPSEALL;
 
 	/** Repository tree node */
 	public static ImageDescriptor REPOSITORY;
@@ -103,11 +112,26 @@ public class UIIcons {
 	/** Remote Repository tree node */
 	public static ImageDescriptor REMOTE_REPOSITORY;
 
+	/** Remote Repository tree node */
+	public static ImageDescriptor REMOTE_SPEC;
+
 	/** Branches tree node */
 	public static ImageDescriptor BRANCHES;
 
 	/** Checked-out decorator for branch */
 	public static ImageDescriptor OVR_CHECKEDOUT;
+
+	/** Tags icon */
+	public static ImageDescriptor TAGS;
+
+	/** Tag icon */
+	public static ImageDescriptor TAG;
+
+	/** Branch icon */
+	public static ImageDescriptor BRANCH;
+
+	/** Clone Icon */
+	public static ImageDescriptor CLONEGIT;
 
 	private static final URL base;
 
@@ -123,6 +147,7 @@ public class UIIcons {
 		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
 		ELCL16_PREVIOUS = map("elcl16/previous.gif"); //$NON-NLS-1$
+		WIZBAN_CREATE_PATCH = map("wizban/createpatch_wizban.png"); //$NON-NLS-1$
 		WIZBAN_IMPORT_REPO = map("wizban/import_wiz.png"); //$NON-NLS-1$
 		WIZBAN_CONNECT_REPO = map("wizban/newconnect_wizban.png"); //$NON-NLS-1$
 		ELCL16_COMMIT = map("elcl16/commit.gif"); //$NON-NLS-1$
@@ -142,12 +167,19 @@ public class UIIcons {
 		FILTERREPO = map("elcl16/filterrepo.gif"); //$NON-NLS-1$
 		FILTERPROJECT = map("elcl16/filterproject.gif"); //$NON-NLS-1$
 		FILTERFOLDER = map("elcl16/filterfolder.gif"); //$NON-NLS-1$
-		IMPORT = map("etool16/import_wiz.gif"); //$NON-NLS-1$
+		FETCH = map("obj16/pull.gif"); //$NON-NLS-1$
+		PUSH = map("obj16/commit.gif"); //$NON-NLS-1$
 		REPOSITORY = map("obj16/repository_rep.gif"); //$NON-NLS-1$
 		NEW_REPOSITORY = map("etool16/newlocation_wiz.gif"); //$NON-NLS-1$
 		REMOTE_REPOSITORY = map("obj16/remote_entry_tbl.gif"); //$NON-NLS-1$
-		BRANCHES = map("obj16/branches_rep.gif"); //$NON-NLS-1$
+		REMOTE_SPEC = map("obj16/remotespec.gif"); //$NON-NLS-1$
+		BRANCHES = map("obj16/branches_obj.gif"); //$NON-NLS-1$
 		OVR_CHECKEDOUT = map("ovr/checkedout_ov.gif"); //$NON-NLS-1$
+		TAGS = map("obj16/tags.gif"); //$NON-NLS-1$
+		TAG = map("obj16/version_rep.gif"); //$NON-NLS-1$
+		BRANCH = map("obj16/branch_obj.gif"); //$NON-NLS-1$
+		COLLAPSEALL = map("elcl16/collapseall.gif"); //$NON-NLS-1$
+		CLONEGIT = map("obj16/cloneGit.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

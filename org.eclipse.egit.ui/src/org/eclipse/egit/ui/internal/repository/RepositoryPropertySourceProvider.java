@@ -10,7 +10,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
-import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.ui.views.properties.IPropertySource;
 import org.eclipse.ui.views.properties.IPropertySourceProvider;
@@ -55,8 +56,12 @@ public class RepositoryPropertySourceProvider implements
 		} else if (node.getType() == RepositoryTreeNodeType.REMOTE) {
 			lastObject = object;
 			lastRepositorySource = new RepositoryRemotePropertySource(node
-					.getRepository().getConfig(), (String) node.getObject(), myPage);
+					.getRepository().getConfig(), (String) node.getObject(),
+					myPage);
 			return lastRepositorySource;
+		} else if (node.getType() == RepositoryTreeNodeType.FETCH
+				|| node.getType() == RepositoryTreeNodeType.PUSH) {
+			return getPropertySource(node.getParent());
 		} else {
 			return null;
 		}

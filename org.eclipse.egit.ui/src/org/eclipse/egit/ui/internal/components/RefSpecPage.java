@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.osgi.util.NLS;
@@ -49,11 +50,11 @@ public class RefSpecPage extends BaseWizardPage {
 
 	private final Repository local;
 
-	private final RepositorySelectionPage repoPage;
-
 	private final boolean pushPage;
 
 	private RepositorySelection validatedRepoSelection;
+
+	private RepositorySelection currentRepoSelection;
 
 	private RefSpecPanel specsPanel;
 
@@ -77,15 +78,10 @@ public class RefSpecPage extends BaseWizardPage {
 	 * @param pushPage
 	 *            true if this page is used for push specifications selection,
 	 *            false if it used for fetch specifications selection.
-	 * @param repoPage
-	 *            repository selection page - must be predecessor of this page
-	 *            in wizard.
 	 */
-	public RefSpecPage(final Repository local, final boolean pushPage,
-			final RepositorySelectionPage repoPage) {
+	public RefSpecPage(final Repository local, final boolean pushPage) {
 		super(RefSpecPage.class.getName());
 		this.local = local;
-		this.repoPage = repoPage;
 		this.pushPage = pushPage;
 		if (pushPage) {
 			setTitle(UIText.RefSpecPage_titlePush);
@@ -95,14 +91,18 @@ public class RefSpecPage extends BaseWizardPage {
 			setDescription(UIText.RefSpecPage_descriptionFetch);
 		}
 
-		repoPage.addSelectionListener(new SelectionChangeListener() {
-			public void selectionChanged() {
-				if (!repoPage.selectionEquals(validatedRepoSelection))
-					setPageComplete(false);
-				else
-					checkPage();
-			}
-		});
+	}
+
+	/**
+	 * @param selection
+	 */
+	public void setSelection(RepositorySelection selection) {
+		if (!selection.equals(validatedRepoSelection)) {
+			currentRepoSelection = selection;
+			setPageComplete(false);
+		} else
+			checkPage();
+		revalidate();
 	}
 
 	public void createControl(Composite parent) {
@@ -149,6 +149,7 @@ public class RefSpecPage extends BaseWizardPage {
 		saveButton.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, true, false));
 		saveButton.addSelectionListener(changesNotifier);
 
+		Dialog.applyDialogFont(panel);
 		setControl(panel);
 		notifySelectionChanged();
 		checkPage();
@@ -214,13 +215,15 @@ public class RefSpecPage extends BaseWizardPage {
 	}
 
 	private void revalidate() {
-		final RepositorySelection newRepoSelection = repoPage.getSelection();
 
-		if (repoPage.selectionEquals(validatedRepoSelection)) {
+		if (currentRepoSelection != null && currentRepoSelection.equals(validatedRepoSelection)) {
 			// nothing changed on previous page
 			checkPage();
 			return;
 		}
+
+		if (currentRepoSelection == null)
+			return;
 
 		specsPanel.clearRefSpecs();
 		specsPanel.setEnable(false);
@@ -231,7 +234,7 @@ public class RefSpecPage extends BaseWizardPage {
 		transportError = null;
 		getControl().getDisplay().asyncExec(new Runnable() {
 			public void run() {
-				revalidateImpl(newRepoSelection);
+				revalidateImpl(currentRepoSelection);
 			}
 		});
 	}
