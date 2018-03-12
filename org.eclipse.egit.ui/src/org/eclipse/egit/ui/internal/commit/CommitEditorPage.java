@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -266,17 +264,14 @@ public class CommitEditorPage extends FormPage {
 		createTagsArea(userArea, toolkit, 2);
 	}
 
-	private List<Ref> getTags() {
+	private List<String> getTags() {
+		RevCommit commit = getCommit().getRevCommit();
 		Repository repository = getCommit().getRepository();
-		List<Ref> tags = new ArrayList<Ref>(repository.getTags().values());
-		Collections.sort(tags, new Comparator<Ref>() {
-
-			public int compare(Ref r1, Ref r2) {
-				return Repository.shortenRefName(r1.getName())
-						.compareToIgnoreCase(
-								Repository.shortenRefName(r2.getName()));
-			}
-		});
+		List<String> tags = new ArrayList<String>();
+		for (Ref tag : repository.getTags().values())
+			if (commit.equals(repository.peel(tag).getPeeledObjectId()))
+				tags.add(Repository.shortenRefName(tag.getName()));
+		Collections.sort(tags);
 		return tags;
 	}
 
@@ -299,23 +294,12 @@ public class CommitEditorPage extends FormPage {
 		GridLayoutFactory.fillDefaults().spacing(1, 1).numColumns(4)
 				.applyTo(tagLabelArea);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tagLabelArea);
-		RevCommit commit = getCommit().getRevCommit();
-		Repository repository = getCommit().getRepository();
-		for (Ref tag : getTags()) {
-			tag = repository.peel(tag);
-			ObjectId id = tag.getPeeledObjectId();
-			boolean annotated = id != null;
-			if (id == null)
-				id = tag.getObjectId();
-			if (!commit.equals(id))
-				continue;
+		List<String> tags = getTags();
+		for (String tag : tags) {
 			CLabel tagLabel = new CLabel(tagLabelArea, SWT.NONE);
 			toolkit.adapt(tagLabel, false, false);
-			if (annotated)
-				tagLabel.setImage(getImage(UIIcons.TAG_ANNOTATED));
-			else
-				tagLabel.setImage(getImage(UIIcons.TAG));
-			tagLabel.setText(Repository.shortenRefName(tag.getName()));
+			tagLabel.setImage(getImage(UIIcons.TAG));
+			tagLabel.setText(tag);
 		}
 	}
 

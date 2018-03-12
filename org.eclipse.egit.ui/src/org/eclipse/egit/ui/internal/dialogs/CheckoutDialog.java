@@ -10,22 +10,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import static org.eclipse.jgit.lib.Constants.R_HEADS;
-import static org.eclipse.jgit.lib.Constants.R_REMOTES;
-
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
-import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.api.Git;
@@ -39,7 +33,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbenchCommandConstants;
 
 /**
  * Dialog for checking out a branch, tag, or Reference.
@@ -61,8 +54,7 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 	 */
 	public CheckoutDialog(Shell parentShell, Repository repo) {
 		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| SHOW_TAGS | SHOW_REFERENCES | EXPAND_LOCAL_BRANCHES_NODE
-				| ALLOW_MULTISELECTION);
+				| SHOW_TAGS | SHOW_REFERENCES | EXPAND_LOCAL_BRANCHES_NODE);
 		try {
 			currentBranch = repo.getFullBranch();
 		} catch (IOException e) {
@@ -94,26 +86,11 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 				&& (refName.startsWith(Constants.R_HEADS) || refName
 						.startsWith(Constants.R_REMOTES));
 
-		// handle multiple selection
-		if (((TreeSelection) branchTree.getSelection()).size() > 1) {
-			TreeSelection selection = (TreeSelection) branchTree
-					.getSelection();
-			boolean onlyBranchesAreSelected = onlyBranchesAreSelected(selection);
+		getButton(Window.OK).setEnabled(branchSelected || tagSelected);
 
-			// enable/disable buttons
-			deleteteButton.setEnabled(onlyBranchesAreSelected);
-			renameButton.setEnabled(false);
-			newButton.setEnabled(false);
-		} else {
-			getButton(Window.OK).setEnabled(branchSelected || tagSelected);
-
-			// we don't support rename on tags
-			renameButton.setEnabled(branchSelected && !tagSelected);
-			deleteteButton.setEnabled(branchSelected && !tagSelected);
-
-			// new button should be always enabled
-			newButton.setEnabled(true);
-		}
+		// we don't support rename on tags
+		renameButton.setEnabled(branchSelected && !tagSelected);
+		deleteteButton.setEnabled(branchSelected && !tagSelected);
 
 		getButton(Window.OK).setEnabled(
 				refName != null && !refName.equals(currentBranch));
@@ -202,9 +179,10 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 		deleteteButton.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent selectionEvent) {
 				try {
-					CommonUtils.runCommand(
-							IWorkbenchCommandConstants.EDIT_DELETE,
-							(IStructuredSelection) branchTree.getSelection());
+					CommonUtils
+							.runCommand(
+									"org.eclipse.egit.ui.RepositoriesViewDeleteBranch", //$NON-NLS-1$
+									(IStructuredSelection) branchTree.getSelection());
 					branchTree.refresh();
 				} catch (Throwable e) {
 					reportError(e,
@@ -235,23 +213,6 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 	private void reportError(Throwable e, String message, Object... args) {
 		String msg = NLS.bind(message, args);
 		Activator.handleError(msg, e, true);
-	}
-
-	private boolean onlyBranchesAreSelected(TreeSelection selection) {
-		Iterator selIterator = selection.iterator();
-		while (selIterator.hasNext()) {
-			Object sel = selIterator.next();
-			if (sel instanceof RefNode) {
-				RefNode node = (RefNode) sel;
-				String refName = node.getObject().getName();
-				if (!refName.startsWith(R_HEADS)
-						&& !refName.startsWith(R_REMOTES))
-					return false;
-			} else
-				return false;
-		}
-
-		return true;
 	}
 
 }
