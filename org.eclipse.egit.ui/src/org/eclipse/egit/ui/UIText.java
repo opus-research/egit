@@ -94,9 +94,6 @@ public class UIText extends NLS {
 	public static String AddConfigEntryDialog_ValueLabel;
 
 	/** */
-	public static String AddSubmoduleWizard_WindowTitle;
-
-	/** */
 	public static String AddToIndexAction_addingFiles;
 
 	/** */
@@ -2983,7 +2980,7 @@ public class UIText extends NLS {
 	public static String GitCreatePatchWizard_File;
 
 	/** */
-	public static String GitCreatePatchWizard_GitFormat;
+	public static String GitCreatePatchWizard_Format;
 
 	/** */
 	public static String GitCreatePatchWizard_InternalError;
@@ -4188,24 +4185,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
-
-	/** */
-	public static String SubmoduleAddCommand_AddError;
-
-	/** */
-	public static String SubmoduleAddCommand_JobTitle;
-
-	/** */
-	public static String SubmodulePathWizardPage_ErrorPathMustBeEmpty;
-
-	/** */
-	public static String SubmodulePathWizardPage_Message;
-
-	/** */
-	public static String SubmodulePathWizardPage_PathLabel;
-
-	/** */
-	public static String SubmodulePathWizardPage_Title;
 
 	/** */
 	public static String SubmoduleSyncCommand_SyncError;
