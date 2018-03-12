@@ -31,6 +31,10 @@ public class WorkingCopyPage {
 		assertText(remoteName, bot.textWithLabel("Remote name:"));
 	}
 
+	public void doNotImportProjectsAfterClone() {
+		bot.checkBox("Import projects after clone").deselect();
+	}
+
 	public void waitForCreate() {
 		bot.button("Finish").click();
 
