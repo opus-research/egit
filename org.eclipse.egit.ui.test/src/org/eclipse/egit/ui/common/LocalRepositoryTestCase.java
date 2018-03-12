@@ -26,7 +26,6 @@ import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.Eclipse;
@@ -129,10 +128,6 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		if (testDirectory.exists())
 			deleteRecursive(testDirectory);
 		testDirectory.mkdir();
-		File repoRoot = new File(testDirectory, "RepositoryRoot");
-		repoRoot.mkdir();
-		org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-				.setValue(UIPreferences.DEFAULT_REPO_DIR, repoRoot.getPath());
 	}
 
 	@AfterClass
@@ -434,6 +429,8 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		String message = commitMessage;
 		if (message == null)
 			message = newContent;
+		// TODO: remove after replacing GitIndex in CommitOperation
+		waitInUI();
 		CommitOperation op = new CommitOperation(commitables,
 				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
 				TestUtil.TESTCOMMITTER, message);

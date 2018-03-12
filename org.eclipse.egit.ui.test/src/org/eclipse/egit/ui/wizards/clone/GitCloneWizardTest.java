@@ -16,13 +16,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.ui.common.EGitTestCase;
 import org.eclipse.egit.ui.common.GitImportRepoWizard;
-import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.RepoPropertiesPage;
 import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
 import org.eclipse.egit.ui.common.WorkingCopyPage;
@@ -35,7 +32,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class GitCloneWizardTest extends LocalRepositoryTestCase {
+import java.io.File;
+import java.io.IOException;
+
+public class GitCloneWizardTest extends EGitTestCase {
 
 	private static final int NUMBER_RANDOM_COMMITS = 100;
 
