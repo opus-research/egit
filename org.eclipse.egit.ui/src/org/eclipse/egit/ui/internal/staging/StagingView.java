@@ -788,6 +788,8 @@ public class StagingView extends ViewPart {
 		if (selection.isEmpty())
 			return;
 		StagingEntry stagingEntry = (StagingEntry) selection.getFirstElement();
+		if (stagingEntry.isSubmodule())
+			return;
 		switch (stagingEntry.getState()) {
 		case ADDED:
 		case CHANGED:
@@ -818,13 +820,22 @@ public class StagingView extends ViewPart {
 				if (selection.isEmpty())
 					return;
 
-				menuMgr.add(new Action(
+				boolean submoduleSelected = false;
+				for (Object item : selection.toArray())
+					if (((StagingEntry) item).isSubmodule()) {
+						submoduleSelected = true;
+						break;
+					}
+
+				Action openWorkingTreeVersion = new Action(
 						UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
-							@Override
-							public void run() {
-								openSelectionInEditor(tableViewer.getSelection());
-							}
-						});
+					@Override
+					public void run() {
+						openSelectionInEditor(tableViewer.getSelection());
+					}
+				};
+				openWorkingTreeVersion.setEnabled(!submoduleSelected);
+				menuMgr.add(openWorkingTreeVersion);
 
 				StagingEntry stagingEntry = (StagingEntry) selection.getFirstElement();
 				switch (stagingEntry.getState()) {
@@ -1245,7 +1256,7 @@ public class StagingView extends ViewPart {
 		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(amendAllowed(helper));
+		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -1262,7 +1273,7 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		boolean amendAllowed = amendAllowed(helper);
+		boolean amendAllowed = helper.amendAllowed();
 		commitMessageComponent.setAmendAllowed(amendAllowed);
 		if (!amendAllowed) {
 			commitMessageComponent.setAmending(false);
@@ -1291,17 +1302,12 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		commitMessageComponent.setAmendAllowed(amendAllowed(helper));
+		commitMessageComponent.setAmendAllowed(helper.amendAllowed());
 		commitMessageComponent.setAmending(false);
-		commitMessageComponent.setSignedOff(false);
-		commitMessageComponent.setCreateChangeId(false);
+		// set the defaults for change id and signed off buttons.
+		commitMessageComponent.setDefaults();
 		commitMessageComponent.updateUI();
 		commitMessageComponent.enableListers(true);
-	}
-
-	private boolean amendAllowed(CommitHelper commitHelper) {
-		return !commitHelper.isMergedResolved()
-				&& !commitHelper.isCherryPickResolved();
 	}
 
 	private boolean userEnteredCommmitMessage() {
