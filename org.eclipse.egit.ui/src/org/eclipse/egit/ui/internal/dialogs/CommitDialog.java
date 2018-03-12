@@ -55,11 +55,11 @@ import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swt.SWT;
@@ -746,12 +746,7 @@ public class CommitDialog extends Dialog {
 
 		boolean authorValid = false;
 		if (author.length() > 0) {
-			try {
-				RawParseUtils.parsePersonIdent(author);
-				authorValid = true;
-			} catch (IllegalArgumentException e) {
-				authorValid = false;
-			}
+			authorValid = RawParseUtils.parsePersonIdent(author) != null;
 		}
 		if (!authorValid) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidAuthorSpecified);
@@ -760,12 +755,7 @@ public class CommitDialog extends Dialog {
 
 		boolean committerValid = false;
 		if (committer.length() > 0) {
-			try {
-				RawParseUtils.parsePersonIdent(committer);
-				committerValid = true;
-			} catch (IllegalArgumentException e) {
-				committerValid = false;
-			}
+			committerValid = RawParseUtils.parsePersonIdent(committer)!=null;
 		}
 		if (!committerValid) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorInvalidAuthor, UIText.CommitDialog_ErrorInvalidCommitterSpecified);
