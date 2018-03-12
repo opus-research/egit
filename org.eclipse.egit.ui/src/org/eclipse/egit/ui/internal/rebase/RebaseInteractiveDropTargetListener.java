@@ -31,7 +31,6 @@ final class RebaseInteractiveDropTargetListener extends ViewerDropAdapter {
 		this.rebaseInteractiveView = rebaseInteractiveView;
 	}
 
-	@Override
 	public boolean performDrop(Object data) {
 		if (!this.rebaseInteractiveView.isDragAndDropEnabled())
 			return false;

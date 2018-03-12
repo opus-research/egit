@@ -100,7 +100,6 @@ class PushToGerritPage extends WizardPage {
 		lastBranchKey = repository + LAST_BRANCH_POSTFIX;
 	}
 
-	@Override
 	protected IDialogSettings getDialogSettings() {
 		IDialogSettings s = Activator.getDefault().getDialogSettings();
 		IDialogSettings section = s.getSection(PUSH_TO_GERRIT_PAGE_SECTION);
@@ -109,7 +108,6 @@ class PushToGerritPage extends WizardPage {
 		return section;
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(3, false));
@@ -119,7 +117,6 @@ class PushToGerritPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
 				.applyTo(uriCombo);
 		uriCombo.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -137,7 +134,6 @@ class PushToGerritPage extends WizardPage {
 		branchText = new Text(main, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
 		branchText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -145,7 +141,6 @@ class PushToGerritPage extends WizardPage {
 
 		// give focus to the nameText if label is activated using the mnemonic
 		branchTextlabel.addTraverseListener(new TraverseListener() {
-			@Override
 			public void keyTraversed(TraverseEvent e) {
 				branchText.setFocus();
 				branchText.selectAll();
@@ -235,7 +230,6 @@ class PushToGerritPage extends WizardPage {
 			op.setCredentialsProvider(new EGitCredentialsProvider());
 			final PushOperationResult[] result = new PushOperationResult[1];
 			getContainer().run(true, true, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					try {
@@ -272,7 +266,6 @@ class PushToGerritPage extends WizardPage {
 					stroke.format()));
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
@@ -347,22 +340,18 @@ class PushToGerritPage extends WizardPage {
 			myString = string;
 		}
 
-		@Override
 		public String getContent() {
 			return myString;
 		}
 
-		@Override
 		public int getCursorPosition() {
 			return 0;
 		}
 
-		@Override
 		public String getDescription() {
 			return myString;
 		}
 
-		@Override
 		public String getLabel() {
 			return myString;
 		}

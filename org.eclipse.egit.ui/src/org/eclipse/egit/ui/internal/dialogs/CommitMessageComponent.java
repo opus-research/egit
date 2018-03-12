@@ -96,12 +96,10 @@ public class CommitMessageComponent {
 			this.type = type;
 		}
 
-		@Override
 		public String getMessage() {
 			return message;
 		}
 
-		@Override
 		public int getMessageType() {
 			return type;
 		}
@@ -498,7 +496,6 @@ public class CommitMessageComponent {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
 		authorText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				if (!listenersEnabled || !authorText.isEnabled())
 					return;
@@ -508,7 +505,6 @@ public class CommitMessageComponent {
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
-			@Override
 			public void modifyText(ModifyEvent e) {
 				if (!listenersEnabled || !committerText.isEnabled())
 					return;
@@ -528,7 +524,6 @@ public class CommitMessageComponent {
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
 		commitText.getDocument().addDocumentListener(new IDocumentListener() {
-			@Override
 			public void documentChanged(DocumentEvent event) {
 				if (!listenersEnabled || !commitText.isEnabled())
 					return;
@@ -536,7 +531,6 @@ public class CommitMessageComponent {
 				updateChangeIdButton();
 				listener.statusUpdated();
 			}
-			@Override
 			public void documentAboutToBeChanged(DocumentEvent event) {
 				// nothing to do
 			}

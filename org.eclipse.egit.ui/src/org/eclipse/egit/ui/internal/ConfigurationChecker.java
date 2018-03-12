@@ -44,7 +44,6 @@ public class ConfigurationChecker {
 				if (PlatformUI.isWorkbenchRunning()) {
 					PlatformUI.getWorkbench().getDisplay()
 							.asyncExec(new Runnable() {
-								@Override
 								public void run() {
 									check();
 								}

@@ -1723,7 +1723,6 @@ public class RefSpecPanel {
 	private List<RefContentProposal> createContentProposals(
 			final Collection<Ref> refs, final Ref HEAD) {
 		final TreeSet<Ref> set = new TreeSet<Ref>(new Comparator<Ref>() {
-			@Override
 			public int compare(Ref o1, Ref o2) {
 				// lexicographical ordering by name seems to be fine
 				return o1.getName().compareTo(o2.getName());

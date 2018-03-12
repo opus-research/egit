@@ -45,7 +45,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see java.lang.Object#hashCode()
 	 */
-	@Override
 	public int hashCode() {
 		return commit.getRevCommit().hashCode();
 	}
@@ -53,7 +52,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
-	@Override
 	public boolean equals(Object obj) {
 		if (obj == this)
 			return true;
@@ -69,7 +67,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see java.lang.Object#toString()
 	 */
-	@Override
 	public String toString() {
 		return getName();
 	}
@@ -77,7 +74,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.core.runtime.IAdaptable#getAdapter(java.lang.Class)
 	 */
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (RepositoryCommit.class == adapter)
 			return commit;
@@ -94,7 +90,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.ui.IEditorInput#exists()
 	 */
-	@Override
 	public boolean exists() {
 		return true;
 	}
@@ -102,7 +97,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getImageDescriptor()
 	 */
-	@Override
 	public ImageDescriptor getImageDescriptor() {
 		return UIIcons.CHANGESET;
 	}
@@ -110,7 +104,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getName()
 	 */
-	@Override
 	public String getName() {
 		return MessageFormat.format(UIText.CommitEditorInput_Name,
 				commit.abbreviate(), commit.getRepositoryName());
@@ -119,7 +112,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getPersistable()
 	 */
-	@Override
 	public IPersistableElement getPersistable() {
 		return this;
 	}
@@ -127,7 +119,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.ui.IEditorInput#getToolTipText()
 	 */
-	@Override
 	public String getToolTipText() {
 		return MessageFormat.format(UIText.CommitEditorInput_ToolTip, commit
 				.getRevCommit().getShortMessage(), commit.getRepositoryName());
@@ -145,7 +136,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.ui.IPersistable#saveState(org.eclipse.ui.IMemento)
 	 */
-	@Override
 	public void saveState(IMemento memento) {
 		CommitEditorInputFactory.saveState(memento, this);
 	}
@@ -153,7 +143,6 @@ public class CommitEditorInput extends PlatformObject implements IEditorInput,
 	/**
 	 * @see org.eclipse.ui.IPersistableElement#getFactoryId()
 	 */
-	@Override
 	public String getFactoryId() {
 		return CommitEditorInputFactory.ID;
 	}

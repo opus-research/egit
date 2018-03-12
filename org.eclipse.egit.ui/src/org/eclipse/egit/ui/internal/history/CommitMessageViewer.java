@@ -123,7 +123,6 @@ class CommitMessageViewer extends SourceViewer {
 
 		// set the cursor when hovering over a link
 		t.addListener(SWT.MouseMove, new Listener() {
-			@Override
 			public void handleEvent(final Event e) {
 				StyleRange styleRange = getStyleRange(e.x, e.y);
 				if (styleRange != null && styleRange.underline)
@@ -154,7 +153,6 @@ class CommitMessageViewer extends SourceViewer {
 
 		// react on changes in the fill and wrap preferences
 		listener = new IPropertyChangeListener() {
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				if (event.getProperty().equals(
 						UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL)) {
@@ -199,7 +197,6 @@ class CommitMessageViewer extends SourceViewer {
 		};
 		// register and unregister the global actions upon focus events
 		getControl().addFocusListener(new FocusListener() {
-			@Override
 			public void focusLost(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), null);
@@ -208,7 +205,6 @@ class CommitMessageViewer extends SourceViewer {
 				site.getActionBars().updateActionBars();
 			}
 
-			@Override
 			public void focusGained(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), selectAll);
@@ -259,7 +255,6 @@ class CommitMessageViewer extends SourceViewer {
 	void addDoneListenerToFormatJob() {
 		formatJob.addJobChangeListener(new JobChangeAdapter() {
 
-			@Override
 			public void done(IJobChangeEvent event) {
 				if (!event.getResult().isOK())
 					return;
@@ -268,7 +263,6 @@ class CommitMessageViewer extends SourceViewer {
 					return;
 				final FormatJob job = (FormatJob) event.getJob();
 				text.getDisplay().asyncExec(new Runnable() {
-					@Override
 					public void run() {
 						applyFormatJobResultInUI(job.getFormatResult());
 					}
@@ -320,7 +314,6 @@ class CommitMessageViewer extends SourceViewer {
 			refsChangedListener = db.getListenerList().addRefsChangedListener(
 					new RefsChangedListener() {
 
-						@Override
 						public void onRefsChanged(RefsChangedEvent event) {
 							allRefs = getBranches(db);
 						}
@@ -329,7 +322,6 @@ class CommitMessageViewer extends SourceViewer {
 		format();
 	}
 
-	@Override
 	public Object getInput() {
 		return commit;
 	}
@@ -402,7 +394,6 @@ class CommitMessageViewer extends SourceViewer {
 	static final class ObjectLink extends StyleRange {
 		RevCommit targetCommit;
 
-		@Override
 		public boolean similarTo(final StyleRange style) {
 			if (!(style instanceof ObjectLink))
 				return false;

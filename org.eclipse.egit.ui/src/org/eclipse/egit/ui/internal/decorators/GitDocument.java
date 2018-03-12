@@ -262,7 +262,6 @@ class GitDocument extends Document implements RefsChangedListener {
 		disposed = true;
 	}
 
-	@Override
 	public void onRefsChanged(final RefsChangedEvent event) {
 		cancelReloadJob();
 

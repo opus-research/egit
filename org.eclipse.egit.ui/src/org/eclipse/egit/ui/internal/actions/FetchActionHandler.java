@@ -27,7 +27,6 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class FetchActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		if (repository == null)
@@ -50,7 +49,6 @@ public class FetchActionHandler extends RepositoryActionHandler {
 		return null;
 	}
 
-	@Override
 	public boolean isEnabled() {
 		return selectionMapsToSingleRepository();
 	}

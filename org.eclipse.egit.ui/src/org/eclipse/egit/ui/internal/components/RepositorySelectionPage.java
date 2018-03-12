@@ -453,7 +453,6 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		remoteCombo = new RemoteSelectionCombo(remotePanel, SWT.NULL, selectionType);
 		remoteConfig = remoteCombo.setItems(configuredRemotes);
 		remoteCombo.addRemoteSelectionListener(new IRemoteSelectionListener() {
-			@Override
 			public void remoteSelected(RemoteConfig rc) {
 				remoteConfig = rc;
 				checkPage();
