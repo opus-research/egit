@@ -162,7 +162,7 @@ public class CommitDialog extends Dialog {
 				IDialogConstants.CANCEL_LABEL, false);
 	}
 
-	Text commitText;
+	CommitMessageArea commitText;
 	Text authorText;
 	Text committerText;
 	Button amendingButton;
@@ -191,19 +191,19 @@ public class CommitDialog extends Dialog {
 		label.setText(UIText.CommitDialog_CommitMessage);
 		label.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, false).create());
 
-		commitText = new Text(container, SWT.MULTI | SWT.BORDER | SWT.V_SCROLL);
+		commitText = new CommitMessageArea(container, commitMessage);
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
 				.hint(600, 200).create());
 
 		// allow to commit with ctrl-enter
-		commitText.addKeyListener(new KeyAdapter() {
-			public void keyPressed(KeyEvent arg0) {
-				if (arg0.keyCode == SWT.CR
-						&& (arg0.stateMask & SWT.CONTROL) > 0) {
+		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent event) {
+				if (event.keyCode == SWT.CR
+						&& (event.stateMask & SWT.CONTROL) > 0) {
 					okPressed();
-				} else if (arg0.keyCode == SWT.TAB
-						&& (arg0.stateMask & SWT.SHIFT) == 0) {
-					arg0.doit = false;
+				} else if (event.keyCode == SWT.TAB
+						&& (event.stateMask & SWT.SHIFT) == 0) {
+					event.doit = false;
 					commitText.traverse(SWT.TRAVERSE_TAB_NEXT);
 				}
 			}
@@ -252,19 +252,23 @@ public class CommitDialog extends Dialog {
 		amendingButton.addSelectionListener(new SelectionListener() {
 			boolean alreadyAdded = false;
 			public void widgetSelected(SelectionEvent arg0) {
-				if (alreadyAdded)
-					return;
-				if (amendingButton.getSelection()) {
-					alreadyAdded = true;
-					String curText = commitText.getText();
-					if (curText.length() > 0)
-						curText += Text.DELIMITER;
-					commitText.setText(curText
-							+ previousCommitMessage.replaceAll(
-									"\n", Text.DELIMITER)); //$NON-NLS-1$
-					authorText.setText(previousAuthor);
-					saveOriginalChangeId();
+				if (!amendingButton.getSelection()) {
+					originalChangeId = null;
 				}
+				else {
+					saveOriginalChangeId();
+					if (!alreadyAdded) {
+						alreadyAdded = true;
+						String curText = commitText.getText();
+						if (curText.length() > 0)
+							curText += Text.DELIMITER;
+						commitText.setText(curText
+								+ previousCommitMessage.replaceAll(
+										"\n", Text.DELIMITER)); //$NON-NLS-1$
+						authorText.setText(previousAuthor);
+					}
+				}
+				refreshChangeIdText();
 			}
 
 			public void widgetDefaultSelected(SelectionEvent arg0) {
@@ -307,25 +311,7 @@ public class CommitDialog extends Dialog {
 		changeIdButton.addSelectionListener(new SelectionListener() {
 
 			public void widgetSelected(SelectionEvent e) {
-				createChangeId = changeIdButton.getSelection();
-				String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
-				if (createChangeId) {
-					String changedText = ChangeIdUtil.insertId(text,
-							originalChangeId != null ? originalChangeId : ObjectId.zeroId());
-					if (!text.equals(changedText)) {
-						changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
-						commitText.setText(changedText);
-					}
-				} else {
-					int changeIdOffset = findOffsetOfChangeIdLine(text);
-					if (changeIdOffset > 0) {
-						int endOfChangeId = findNextEOL(changeIdOffset, text);
-						String cleanedText = text.substring(0, changeIdOffset)
-								+ text.substring(endOfChangeId);
-						cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
-						commitText.setText(cleanedText);
-					}
-				}
+				refreshChangeIdText();
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
@@ -346,19 +332,16 @@ public class CommitDialog extends Dialog {
 
 		showUntrackedButton.setSelection(showUntracked);
 
-		showUntrackedButton.addSelectionListener(new SelectionListener() {
+		showUntrackedButton.addSelectionListener(new SelectionAdapter() {
 
 			public void widgetSelected(SelectionEvent e) {
 				showUntracked = showUntrackedButton.getSelection();
 				filesViewer.refresh(true);
 			}
 
-			public void widgetDefaultSelected(SelectionEvent e) {
-				// Empty
-			}
 		});
 
-		commitText.addModifyListener(new ModifyListener() {
+		commitText.getTextWidget().addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateSignedOffButton();
 				updateChangeIdButton();
@@ -909,6 +892,28 @@ public class CommitDialog extends Dialog {
 	 */
 	public boolean getCreateChangeId() {
 		return createChangeId;
+	}
+
+	private void refreshChangeIdText() {
+		createChangeId = changeIdButton.getSelection();
+		String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
+		if (createChangeId) {
+			String changedText = ChangeIdUtil.insertId(text,
+					originalChangeId != null ? originalChangeId : ObjectId.zeroId(), true);
+			if (!text.equals(changedText)) {
+				changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(changedText);
+			}
+		} else {
+			int changeIdOffset = findOffsetOfChangeIdLine(text);
+			if (changeIdOffset > 0) {
+				int endOfChangeId = findNextEOL(changeIdOffset, text);
+				String cleanedText = text.substring(0, changeIdOffset)
+						+ text.substring(endOfChangeId);
+				cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(cleanedText);
+			}
+		}
 	}
 
 }
