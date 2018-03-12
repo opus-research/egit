@@ -9,9 +9,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -298,24 +297,19 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 	private void addDiff(final StringBuilder d,
 			final ArrayList<StyleRange> styles) {
-		final DiffFormatter diffFmt = new DiffFormatter(
-				new BufferedOutputStream(new ByteArrayOutputStream() {
+		DiffFormatter diffFmt = new DiffFormatter(new OutputStream() {
 
 			@Override
-			public synchronized void write(byte[] b, int off, int len) {
-				super.write(b, off, len);
-				d.append(toString());
-				reset();
-			}
+			public void write(int c) throws IOException {
+				d.append((char) c);
 
-		})) {
+			}
+		}) {
 			@Override
 			protected void writeHunkHeader(int aCur, int aEnd, int bCur,
 					int bEnd) throws IOException {
-				flush();
 				int start = d.length();
 				super.writeHunkHeader(aCur, aEnd, bCur, bEnd);
-				flush();
 				int end = d.length();
 				styles.add(new StyleRange(start, end - start,
 						sys_hunkHeaderColor, null));
@@ -324,10 +318,8 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			@Override
 			protected void writeAddedLine(RawText b, int bCur)
 					throws IOException {
-				flush();
 				int start = d.length();
 				super.writeAddedLine(b, bCur);
-				flush();
 				int end = d.length();
 				styles.add(new StyleRange(start, end - start,
 						sys_linesAddedColor, null));
@@ -336,10 +328,8 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			@Override
 			protected void writeRemovedLine(RawText b, int bCur)
 					throws IOException {
-				flush();
 				int start = d.length();
 				super.writeRemovedLine(b, bCur);
-				flush();
 				int end = d.length();
 				styles.add(new StyleRange(start, end - start,
 						sys_linesRemovedColor, null));
@@ -356,7 +346,6 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 					String path = diff.getPath();
 					d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
 					diff.outputDiff(d, db, diffFmt, true);
-					diffFmt.flush();
 				}
 			}
 		} catch (IOException e) {
@@ -394,12 +383,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 		@Override
 		public boolean equals(Object object) {
-			return super.equals(object) && targetCommit.equals(((ObjectLink)object).targetCommit);
-		}
-
-		@Override
-		public int hashCode() {
-			return super.hashCode() ^ targetCommit.hashCode();
+			return super.equals(object) && targetCommit.equals((RevCommit)object);
 		}
 	}
 
