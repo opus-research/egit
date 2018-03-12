@@ -5,10 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Dariusz Luksza - initial implementation
- *    François Rey - gracefully ignore linked resources
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
@@ -73,8 +69,7 @@ public class RemoveFromIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return getProjectsInRepositoryOfSelectedResources().length > 0
-				&& selectionMapsToSingleRepository();
+		return getProjectsInRepositoryOfSelectedResources().length > 0;
 	}
 
 }
