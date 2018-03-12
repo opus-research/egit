@@ -319,7 +319,7 @@ public class GitProjectsImportPage extends WizardPage {
 		};
 
 		FilteredTree filteredTree = new FilteredTree(listComposite, SWT.CHECK
-				| SWT.BORDER, filter);
+				| SWT.BORDER, filter, true);
 		filteredTree.setInitialText(UIText.WizardProjectsImportPage_filterText);
 		projectsList = filteredTree.getViewer();
 		GridData listData = new GridData(GridData.GRAB_HORIZONTAL
