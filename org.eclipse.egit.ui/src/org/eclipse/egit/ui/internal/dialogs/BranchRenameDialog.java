@@ -97,7 +97,6 @@ public class BranchRenameDialog extends TitleAreaDialog {
 		final IInputValidator inputValidator = ValidationUtils
 				.getRefNameInputValidator(repository, prefix, true);
 		name.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				String error = inputValidator.isValid(name.getText());
 				setErrorMessage(error);

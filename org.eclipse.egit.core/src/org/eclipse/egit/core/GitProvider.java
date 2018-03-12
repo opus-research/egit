@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
 import org.eclipse.egit.core.project.GitProjectData;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 
@@ -43,22 +42,12 @@ public class GitProvider extends RepositoryProvider {
 
 	private final IResourceRuleFactory resourceRuleFactory = new GitResourceRuleFactory();
 
-	/**
-	 * Default constructor
-	 */
-	public GitProvider() {
-		super();
-	}
-
 	public String getID() {
 		return ID;
 	}
 
 	public void configureProject() throws CoreException {
-		GitProjectData projectData = getData();
-		if (projectData != null) {
-			projectData.markTeamPrivateResources();
-		}
+		getData().markTeamPrivateResources();
 	}
 
 	public void deconfigure() throws CoreException {
@@ -92,7 +81,6 @@ public class GitProvider extends RepositoryProvider {
 	 * @return information about the mapping of an Eclipse project
 	 * to a Git repository.
 	 */
-	@Nullable
 	public synchronized GitProjectData getData() {
 		if (data == null) {
 			data = GitProjectData.get(getProject());

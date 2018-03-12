@@ -57,7 +57,6 @@ public class RebaseAction extends RepositoryAction implements
 		rebaseContinue = UIIcons.REBASE_CONTINUE.createImage();
 	}
 
-	@Override
 	public Menu getMenu(Control parent) {
 		Menu menu = new Menu(parent);
 		Repository repo = getRepository();
@@ -136,7 +135,6 @@ public class RebaseAction extends RepositoryAction implements
 			this.action = action;
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent selectionEvent) {
 			try {
 				action.execute(event);
@@ -145,7 +143,6 @@ public class RebaseAction extends RepositoryAction implements
 			}
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			// not used
 		}

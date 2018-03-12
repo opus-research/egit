@@ -131,7 +131,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 		return result.getPushResult(uri).getAdvertisedRef(getDstRefName());
 	}
 
-	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		switch (getStatus()) {
 		case OK:
@@ -161,13 +160,13 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
-	@Override
 	public String getLabel(Object object) {
 		return getStyledText(object).getString();
 	}
 
 	private RepositoryCommit[] getCommits(Ref end) {
-		try (final RevWalk walk = new RevWalk(reader)) {
+		final RevWalk walk = new RevWalk(reader);
+		try {
 			walk.setRetainBody(true);
 			walk.markStart(walk.parseCommit(update.getNewObjectId()));
 			walk.markUninteresting(walk.parseCommit(end.getObjectId()));
@@ -181,7 +180,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
-	@Override
 	public Object[] getChildren(Object object) {
 		if (children != null)
 			return children;

@@ -18,7 +18,6 @@ package org.eclipse.egit.ui.internal.decorators;
 
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,12 +25,9 @@ import java.util.Set;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jgit.lib.Repository;
 
 class DecoratableResourceAdapter extends DecoratableResource {
@@ -129,15 +125,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 	}
 
 	private void extractContainerProperties() {
-		String repoRelative = makeRepoRelative(resource);
-		if (repoRelative == null)
-			return;
-		String repoRelativePath = repoRelative + "/"; //$NON-NLS-1$
-
-		if (ResourceUtil.isSymbolicLink(repository, repoRelativePath)) {
-			extractResourceProperties();
-			return;
-		}
+		String repoRelativePath = makeRepoRelative(resource) + "/"; //$NON-NLS-1$
 
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
 		Set<String> untrackedFolders = indexDiffData.getUntrackedFolders();
@@ -196,17 +184,9 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		return false;
 	}
 
-	@Nullable
 	private String makeRepoRelative(IResource res) {
-		IPath location = res.getLocation();
-		if (location == null) {
-			return null;
-		}
-		if (repository.isBare()) {
-			return null;
-		}
-		File workTree = repository.getWorkTree();
-		return stripWorkDir(workTree, location.toFile());
+		return stripWorkDir(repository.getWorkTree(), res.getLocation()
+				.toFile());
 	}
 
 	private boolean containsPrefix(Set<String> collection, String prefix) {

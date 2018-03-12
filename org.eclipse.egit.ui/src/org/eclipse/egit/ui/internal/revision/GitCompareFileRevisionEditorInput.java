@@ -35,7 +35,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.storage.IndexFileRevision;
 import org.eclipse.egit.core.internal.storage.OpenWorkspaceVersionEnabled;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIText;
@@ -340,7 +339,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	/* (non-Javadoc)
 	 * @see org.eclipse.compare.CompareEditorInput#getToolTipText()
 	 */
-	@Override
 	public String getToolTipText() {
 		Object[] titleObject = new Object[3];
 		titleObject[0] = getLongName(left);
@@ -352,7 +350,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	/* (non-Javadoc)
 	 * @see org.eclipse.compare.CompareEditorInput#getTitle()
 	 */
-	@Override
 	public String getTitle() {
 		Object[] titleObject = new Object[3];
 		titleObject[0] = getShortName(left);
@@ -364,7 +361,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	/* (non-Javadoc)
 	 * @see org.eclipse.compare.CompareEditorInput#getAdapter(java.lang.Class)
 	 */
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (adapter == IFile.class || adapter == IResource.class) {
 			return getResource();
@@ -493,7 +489,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 						workspaceVersion.getGitPath());
 				if (workspaceFile.exists())
 					menu.addMenuListener(new IMenuListener() {
-						@Override
 						public void menuAboutToShow(IMenuManager manager) {
 							Action action = new OpenWorkspaceVersionAction(
 									UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel,
@@ -568,17 +563,14 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			this.name = name;
 		}
 
-		@Override
 		public Image getImage() {
 			return null;
 		}
 
-		@Override
 		public String getName() {
 			return name;
 		}
 
-		@Override
 		public String getType() {
 			return ITypedElement.UNKNOWN_TYPE;
 		}
@@ -612,19 +604,16 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 		}
 
-		@Override
 		protected void fireInputChange() {
 			GitCompareFileRevisionEditorInput.this.fireInputChange();
 		}
 
-		@Override
 		public void dispose() {
 			super.dispose();
 			if (lrte != null)
 				lrte.setSharedDocumentListener(null);
 		}
 
-		@Override
 		public void handleDocumentConnected() {
 			if (connected)
 				return;
@@ -660,26 +649,23 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			ISaveablesLifecycleListener listener = (ISaveablesLifecycleListener) Utils
 					.getAdapter(part, ISaveablesLifecycleListener.class);
 			if (listener == null)
-				listener = CommonUtils.getService(part.getSite(), ISaveablesLifecycleListener.class);
+				listener = (ISaveablesLifecycleListener) part.getSite()
+						.getService(ISaveablesLifecycleListener.class);
 			return listener;
 		}
 
-		@Override
 		public void handleDocumentDeleted() {
 			// Ignore
 		}
 
-		@Override
 		public void handleDocumentDisconnected() {
 			// Ignore
 		}
 
-		@Override
 		public void handleDocumentFlushed() {
 			// Ignore
 		}
 
-		@Override
 		public void handleDocumentSaved() {
 			// Ignore
 		}
