@@ -3034,11 +3034,7 @@
                         value="1">
                   </count>
                   <iterate>
-                    <or>
-                      <instanceof
-                             value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                      </instanceof>
-                      <and>
+                     <and>
                         <test
                               property="GitRepository.isSafe">
                         </test>
@@ -3049,9 +3045,11 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
                            </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                           </instanceof>
                         </or>
-                      </and>
-                    </or>
+                     </and>
                   </iterate>
                </and>
             </visibleWhen>
@@ -4437,14 +4435,14 @@
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewPropertyTester"
             id="org.eclipse.egit.ui.RepositoryTester"
             namespace="GitRepository"
-            properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,isSubmodule,containsHead"
+            properties="isBare,isSafe,canCommit,canAmmend,canResetHead,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase,isSubmodule,containsHead"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
       <propertyTester
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isSafe,isContainer"
+            properties="isShared,isContainer,isSafe,canCommit,canAmmend,canResetHead"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
    </extension>
