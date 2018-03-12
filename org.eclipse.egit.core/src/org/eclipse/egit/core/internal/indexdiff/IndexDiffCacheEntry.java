@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +15,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.core.resources.IProject;
@@ -38,8 +36,6 @@ import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.RefsChangedEvent;
@@ -47,10 +43,8 @@ import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -69,8 +63,6 @@ public class IndexDiffCacheEntry {
 
 	private Job reloadJob;
 
-	private DirCache lastIndex;
-
 	// used to serialize index diff update jobs
 	private ReentrantLock lock = new ReentrantLock(true);
 
@@ -86,7 +78,7 @@ public class IndexDiffCacheEntry {
 		repository.getListenerList().addIndexChangedListener(
 				new IndexChangedListener() {
 					public void onIndexChanged(IndexChangedEvent event) {
-						refreshIndexDelta();
+						scheduleReloadJob("IndexChanged"); //$NON-NLS-1$
 					}
 				});
 		repository.getListenerList().addRefsChangedListener(
@@ -97,13 +89,6 @@ public class IndexDiffCacheEntry {
 				});
 		scheduleReloadJob("IndexDiffCacheEntry construction"); //$NON-NLS-1$
 		createResourceChangeListener();
-		if (!repository.isBare()) {
-			try {
-				lastIndex = repository.readDirCache();
-			} catch (IOException ex) {
-				Activator.error(MessageFormat.format(CoreText.IndexDiffCacheEntry_errorCalculatingIndexDelta, repository), ex);
-			}
-		}
 	}
 
 	/**
@@ -175,55 +160,6 @@ public class IndexDiffCacheEntry {
 	public void refreshFiles(final Collection<String> filesToRefresh) {
 		List<IResource> resources = Collections.emptyList();
 		scheduleUpdateJob(filesToRefresh, resources);
-	}
-
-	/**
-	 * Refreshes all resources that changed in the index since the last call to
-	 * this method. This is suitable for incremental updates on index changed
-	 * events
-	 *
-	 * For bare repositories this does nothing.
-	 */
-	private void refreshIndexDelta() {
-		if (repository.isBare())
-			return;
-
-		try {
-			DirCache currentIndex = repository.readDirCache();
-			DirCache oldIndex = lastIndex;
-
-			lastIndex = currentIndex;
-
-			if (oldIndex == null) {
-				refresh(); // full refresh in case we have no data to compare.
-				return;
-			}
-
-			Set<String> paths = new TreeSet<String>();
-			TreeWalk walk = new TreeWalk(repository);
-
-			try {
-				walk.addTree(new DirCacheIterator(oldIndex));
-				walk.addTree(new DirCacheIterator(currentIndex));
-				walk.setFilter(TreeFilter.ANY_DIFF);
-
-				while (walk.next()) {
-					if (walk.isSubtree())
-						walk.enterSubtree();
-					else
-						paths.add(walk.getPathString());
-				}
-			} finally {
-				walk.release();
-			}
-
-			if (!paths.isEmpty())
-				refreshFiles(paths);
-
-		} catch (IOException ex) {
-			Activator.error(MessageFormat.format(CoreText.IndexDiffCacheEntry_errorCalculatingIndexDelta, repository), ex);
-			scheduleReloadJob("Exception while calculating index delta, doing full reload instead"); //$NON-NLS-1$
-		}
 	}
 
 	/**
