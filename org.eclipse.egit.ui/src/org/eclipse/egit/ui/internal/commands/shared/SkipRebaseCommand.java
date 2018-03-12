@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.commands.shared;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.rebase.RebaseInteracitveHandler;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 
 /**
@@ -30,8 +29,6 @@ public class SkipRebaseCommand extends AbstractRebaseCommandHandler {
 
 	@Override
 	public RebaseOperation createRebaseOperation(ExecutionEvent event) {
-		return new RebaseOperation(
-				AbstractSharedCommandHandler.getRepository(event),
-				Operation.SKIP, RebaseInteracitveHandler.INSTANCE);
+		return new RebaseOperation(getRepository(event), Operation.SKIP);
 	}
 }
