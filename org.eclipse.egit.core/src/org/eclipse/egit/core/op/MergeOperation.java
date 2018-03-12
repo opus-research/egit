@@ -75,9 +75,6 @@ public class MergeOperation implements IEGitOperation {
 	}
 
 	public void execute(IProgressMonitor m) throws CoreException {
-		if (mergeResult != null)
-			throw new CoreException(new Status(IStatus.ERROR, Activator
-					.getPluginId(), CoreText.OperationAlreadyExecuted));
 		IProgressMonitor monitor;
 		if (m == null)
 			monitor = new NullProgressMonitor();
@@ -122,14 +119,6 @@ public class MergeOperation implements IEGitOperation {
 		};
 		// lock workspace to protect working tree changes
 		ResourcesPlugin.getWorkspace().run(action, monitor);
-	}
-
-	/**
-	 * @return the merge result, or <code>null</code> if this has not been
-	 *         executed or if an exception occurred
-	 */
-	public MergeResult getResult() {
-		return this.mergeResult;
 	}
 
 	public ISchedulingRule getSchedulingRule() {
