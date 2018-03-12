@@ -1,10 +1,12 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- *
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
@@ -22,6 +24,7 @@ import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.job.JobUtil;
 import org.eclipse.jface.dialogs.Dialog;
@@ -39,7 +42,7 @@ import org.eclipse.ui.PlatformUI;
 /**
  * Push operation: pushing from local repository to one or many remote ones.
  */
-public class PushConfiguredRemoteOperation extends JobChangeAdapter implements
+public class PushConfiguredRemoteAction extends JobChangeAdapter implements
 		IEGitOperation {
 	private static final int WORK_UNITS_PER_TRANSPORT = 10;
 
@@ -65,7 +68,7 @@ public class PushConfiguredRemoteOperation extends JobChangeAdapter implements
 	 * @param timeout
 	 *            the timeout in seconds (0 for no timeout)
 	 */
-	public PushConfiguredRemoteOperation(final Repository localDb,
+	public PushConfiguredRemoteAction(final Repository localDb,
 			final RemoteConfig rc, int timeout) {
 		this.localDb = localDb;
 		this.rc = rc;
@@ -180,7 +183,10 @@ public class PushConfiguredRemoteOperation extends JobChangeAdapter implements
 	 *
 	 */
 	public void start() {
-		String jobName = "Push to " + localDb.getDirectory().getParentFile().getName() + " - " + rc.getName(); //$NON-NLS-1$ //$NON-NLS-2$ TODO
+		String jobName = NLS.bind(
+				CoreText.PushConfiguredRemoteAction_PushJobName, Activator
+						.getDefault().getRepositoryUtil().getRepositoryName(
+								localDb), rc.getName());
 		JobUtil.scheduleUserJob(this, jobName, JobFamilies.PUSH, this);
 	}
 
@@ -189,8 +195,8 @@ public class PushConfiguredRemoteOperation extends JobChangeAdapter implements
 			public void run() {
 				final Dialog dialog = new PushResultDialog(PlatformUI
 						.getWorkbench().getDisplay().getActiveShell(), localDb,
-						getOperationResult(), localDb.getDirectory()
-								.getParentFile().getName()
+						getOperationResult(), Activator.getDefault()
+								.getRepositoryUtil().getRepositoryName(localDb)
 								+ " - " + rc.getName()); //$NON-NLS-1$
 				dialog.open();
 			}

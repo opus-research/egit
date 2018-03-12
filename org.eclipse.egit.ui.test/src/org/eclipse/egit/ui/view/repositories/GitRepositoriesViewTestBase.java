@@ -33,9 +33,8 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteOperation;
+import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.test.Eclipse;
@@ -184,13 +183,11 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		myRepository.getConfig().save();
 		// and push
-		PushConfiguredRemoteOperation pa = new PushConfiguredRemoteOperation(
-				myRepository,
-				new RemoteConfig(myRepository.getConfig(), "push"),
-				org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore()
-						.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT));
-		pa.execute(null);
+		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
+		PushConfiguredRemoteAction pa = new PushConfiguredRemoteAction(
+				myRepository, config, 0);
 
+		pa.execute(null);
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		try {
 			// delete the stable branch again

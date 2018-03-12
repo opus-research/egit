@@ -15,7 +15,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeListener;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.IEGitOperation;
-import org.eclipse.egit.ui.Activator;
 
 /**
  * Utility class for scheduling jobs
@@ -50,8 +49,7 @@ public class JobUtil {
 				try {
 					op.execute(monitor);
 				} catch (CoreException e) {
-					return Activator.createErrorStatus(e.getStatus()
-							.getMessage(), e);
+					return e.getStatus();
 				}
 				return Status.OK_STATUS;
 			}
