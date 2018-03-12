@@ -1621,12 +1621,6 @@ public class UIText extends NLS {
 	public static String ResetTargetSelectionDialog_ResetTypeSoftButton;
 
 	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeHEADHardButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeHEADMixedButton;
-
-	/** */
 	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
 
 	/** */
