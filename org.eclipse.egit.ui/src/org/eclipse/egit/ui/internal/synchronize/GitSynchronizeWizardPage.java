@@ -80,7 +80,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 	GitSynchronizeWizardPage() {
 		super(GitSynchronizeWizardPage.class.getName());
 		setTitle(UIText.GitBranchSynchronizeWizardPage_title);
-		setMessage(UIText.GitBranchSynchronizeWizardPage_description, WARNING);
+		setDescription(UIText.GitBranchSynchronizeWizardPage_description);
 	}
 
 	public void createControl(Composite parent) {
