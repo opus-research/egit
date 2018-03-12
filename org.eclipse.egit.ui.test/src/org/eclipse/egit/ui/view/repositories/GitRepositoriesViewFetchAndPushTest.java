@@ -13,6 +13,8 @@ package org.eclipse.egit.ui.view.repositories;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -20,7 +22,6 @@ import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -32,8 +33,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.File;
 
 /**
  * SWTBot Tests for the Git Repositories View (mainly fetch and push)
@@ -175,7 +174,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile2);
 
-		FileRepository repository = lookupRepository(clonedRepositoryFile2);
+		Repository repository = lookupRepository(clonedRepositoryFile2);
 		// add the configuration for push from cloned2
 		repository.getConfig().setString("remote", "origin", "push",
 				"refs/heads/*:refs/heads/*");
