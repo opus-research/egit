@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.common;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -32,6 +33,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
@@ -40,6 +42,8 @@ import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
+import org.eclipse.egit.core.project.GitProjectData;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
@@ -63,6 +67,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.team.core.RepositoryProvider;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -164,12 +169,15 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 	@After
 	public void resetWorkspace() throws Exception {
+		TestUtil.processUIEvents();
 		// close all editors/dialogs
 		new Eclipse().reset();
+		TestUtil.processUIEvents();
 		// cleanup
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
-				.getProjects())
+				.getProjects()) {
 			project.delete(false, false, null);
+		}
 		shutDownRepositories();
 		TestUtil.waitForJobs(50, 5000);
 	}
@@ -239,7 +247,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 		if (firstProject.exists()) {
 			firstProject.delete(true, null);
-			TestUtil.waitForJobs(50, 5000);
+			TestUtil.waitForJobs(100, 5000);
 		}
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(PROJ1);
@@ -248,6 +256,9 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		firstProject.create(desc, null);
 		firstProject.open(null);
 		TestUtil.waitForJobs(50, 5000);
+
+		assertTrue("Project is not accessible: " + firstProject,
+				firstProject.isAccessible());
 
 		IFolder folder = firstProject.getFolder(FOLDER);
 		folder.create(false, true, null);
@@ -259,13 +270,14 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 				.getBytes(firstProject.getDefaultCharset())), false, null);
 
 		new ConnectProviderOperation(firstProject, gitDir).execute(null);
+		assertConnected(firstProject);
 
 		IProject secondProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ2);
 
 		if (secondProject.exists()) {
 			secondProject.delete(true, null);
-			TestUtil.waitForJobs(50, 5000);
+			TestUtil.waitForJobs(100, 5000);
 		}
 
 		desc = ResourcesPlugin.getWorkspace().newProjectDescription(PROJ2);
@@ -291,9 +303,13 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		// .getBytes(firstProject.getDefaultCharset())), false, null);
 
 		new ConnectProviderOperation(secondProject, gitDir).execute(null);
-		TestUtil.waitForJobs(50, 1000);
+		assertConnected(secondProject);
 
-		IFile[] commitables = new IFile[] { firstProject.getFile(".project"),
+		IFile dotProject = firstProject.getFile(".project");
+		assertTrue(".project is not accessible: " + dotProject,
+				dotProject.isAccessible());
+
+		IFile[] commitables = new IFile[] { dotProject,
 				textFile, textFile2, secondtextFile, secondtextFile2 };
 		ArrayList<IFile> untracked = new ArrayList<IFile>();
 		untracked.addAll(Arrays.asList(commitables));
@@ -313,6 +329,33 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		cache.getIndexDiffCacheEntry(lookupRepository(gitDir));
 
 		return gitDir;
+	}
+
+	protected RepositoryMapping assertConnected(IProject project) {
+		RepositoryProvider provider = RepositoryProvider.getProvider(project,
+				GitProvider.ID);
+		if (provider == null) {
+			TestUtil.waitForJobs(500, 10000);
+			provider = RepositoryProvider.getProvider(project, GitProvider.ID);
+		}
+		assertTrue("Project is not accessible: " + project,
+				project.isAccessible());
+		assertNotNull("GitProvider not mapped to: " + project, provider);
+
+		GitProjectData data = ((GitProvider) provider).getData();
+		if (data == null) {
+			TestUtil.waitForJobs(100, 5000);
+			data = ((GitProvider) provider).getData();
+		}
+		assertNotNull("GitProjectData is null for: " + project, data);
+
+		RepositoryMapping mapping = data.getRepositoryMapping(project);
+		if (mapping == null) {
+			TestUtil.waitForJobs(100, 5000);
+			mapping = data.getRepositoryMapping(project);
+		}
+		assertNotNull("RepositoryMapping is null for: " + project, mapping);
+		return mapping;
 	}
 
 	protected File createRemoteRepository(File repositoryDir)
@@ -447,6 +490,7 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 
 					new ConnectProviderOperation(prj, myRepository
 							.getDirectory()).execute(null);
+					assertConnected(prj);
 				}
 			}
 		}
