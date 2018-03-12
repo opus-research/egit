@@ -18,14 +18,12 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.operations.IUndoContext;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -65,7 +63,6 @@ import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -86,17 +83,17 @@ import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.ContentViewer;
-import org.eclipse.jface.viewers.DecoratingLabelProvider;
+import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
-import org.eclipse.jface.viewers.ILabelDecorator;
-import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.api.AddCommand;
@@ -108,6 +105,7 @@ import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -137,16 +135,15 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -195,9 +192,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private Section commitMessageSection;
 
-	private TreeViewer stagedViewer;
+	private TableViewer stagedTableViewer;
 
-	private TreeViewer unstagedViewer;
+	private TableViewer unstagedTableViewer;
 
 	private ToggleableWarningLabel warningLabel;
 
@@ -215,46 +212,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private ISelectionListener selectionChangedListener;
 
-	private ToolBarManager unstagedToolBarManager;
-
-	private ToolBarManager stagedToolBarManager;
-
-	private Action listPresentationAction;
-
-	private Action treePresentationAction;
-
-	private Action compactTreePresentationAction;
-
-	private Action unstagedExpandAllAction;
-
-	private Action unstagedCollapseAllAction;
-
-	private Action stagedExpandAllAction;
-
-	private Action stagedCollapseAllAction;
-
 	private Repository currentRepository;
-
-	private Presentation presentation = Presentation.LIST;
-
-	private Set<IPath> pathsToExpandInStaged = new HashSet<IPath>();
-
-	private Set<IPath> pathsToExpandInUnstaged = new HashSet<IPath>();
-
-	/**
-	 * Presentation mode of the staged/unstaged files.
-	 */
-	public enum Presentation {
-		/** Show files in flat list */
-		LIST,
-		/** Show folder structure in full tree */
-		TREE,
-		/**
-		 * Show folder structure in compact tree (folders with only one child
-		 * are folded into parent)
-		 */
-		COMPACT_TREE;
-	}
 
 	static class StagingViewUpdate {
 		Repository repository;
@@ -315,34 +273,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 					return;
 				}
 			}
-		}
-	}
-
-	class TreeDecoratingLabelProvider extends DecoratingLabelProvider {
-
-		ILabelProvider provider;
-
-		ILabelDecorator decorator;
-
-		public TreeDecoratingLabelProvider(ILabelProvider provider,
-				ILabelDecorator decorator) {
-			super(provider, decorator);
-			this.provider = provider;
-			this.decorator = decorator;
-		}
-
-		public Image getColumnImage(Object element) {
-			Image image = provider.getImage(element);
-			if (image != null && decorator != null) {
-				Image decorated = decorator.decorateImage(image, element);
-				if (decorated != null)
-					return decorated;
-			}
-			return image;
-		}
-
-		public String getText(Object element) {
-			return provider.getText(element);
 		}
 	}
 
@@ -456,30 +386,29 @@ public class StagingView extends ViewPart implements IShowInSource {
 		unstagedSection = toolkit.createSection(stagingSashForm,
 				ExpandableComposite.TITLE_BAR);
 
-		createUnstagedToolBarComposite();
-
-		Composite unstagedComposite = toolkit
+		Composite unstagedTableComposite = toolkit
 				.createComposite(unstagedSection);
-		toolkit.paintBordersFor(unstagedComposite);
-		unstagedSection.setClient(unstagedComposite);
+		toolkit.paintBordersFor(unstagedTableComposite);
+		unstagedSection.setClient(unstagedTableComposite);
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
-				.applyTo(unstagedComposite);
+				.applyTo(unstagedTableComposite);
 
-		unstagedViewer = createTree(unstagedComposite);
+		unstagedTableViewer = new TableViewer(toolkit.createTable(
+				unstagedTableComposite, SWT.FULL_SELECTION | SWT.MULTI));
 		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(unstagedViewer.getControl());
-		unstagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
+				.applyTo(unstagedTableViewer.getControl());
+		unstagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		unstagedViewer.getTree().setLinesVisible(true);
-		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
-		unstagedViewer.setContentProvider(new StagingViewContentProvider(this,
+		unstagedTableViewer.getTable().setLinesVisible(true);
+		unstagedTableViewer.setLabelProvider(createLabelProvider(unstagedTableViewer));
+		unstagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				true));
-		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
+		unstagedTableViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
 				| DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
 						FileTransfer.getInstance() }, new StagingDragListener(
-						unstagedViewer));
-		unstagedViewer.addDropSupport(DND.DROP_MOVE,
+						unstagedTableViewer));
+		unstagedTableViewer.addDropSupport(DND.DROP_MOVE,
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new DropTargetAdapter() {
 					public void drop(DropTargetEvent event) {
@@ -490,7 +419,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 						event.detail = DND.DROP_COPY;
 						if (event.data instanceof IStructuredSelection) {
 							final IStructuredSelection selection = (IStructuredSelection) event.data;
-							unstage(selection);
+							if (selection.getFirstElement() instanceof StagingEntry)
+								unstage(selection);
 						}
 					}
 
@@ -498,7 +428,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 						event.detail = DND.DROP_MOVE;
 					}
 				});
-		unstagedViewer.addOpenListener(new IOpenListener() {
+		unstagedTableViewer.addOpenListener(new IOpenListener() {
 			public void open(OpenEvent event) {
 				compareWith(event);
 			}
@@ -511,7 +441,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		Composite commitMessageToolbarComposite = toolkit
 				.createComposite(commitMessageSection);
 		commitMessageToolbarComposite.setBackground(null);
-		commitMessageToolbarComposite.setLayout(createRowLayoutWithoutMargin());
+		RowLayout commitMessageRowLayout = new RowLayout();
+		commitMessageRowLayout.marginHeight = 0;
+		commitMessageRowLayout.marginWidth = 0;
+		commitMessageRowLayout.marginTop = 0;
+		commitMessageRowLayout.marginBottom = 0;
+		commitMessageRowLayout.marginLeft = 0;
+		commitMessageRowLayout.marginRight = 0;
+		commitMessageToolbarComposite.setLayout(commitMessageRowLayout);
 		commitMessageSection.setTextClient(commitMessageToolbarComposite);
 		ToolBarManager commitMessageToolBarManager = new ToolBarManager(
 				SWT.FLAT | SWT.HORIZONTAL);
@@ -660,30 +597,28 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		stagedSection = toolkit.createSection(stagingSashForm,
 				ExpandableComposite.TITLE_BAR);
-
-		createStagedToolBarComposite();
-
-		Composite stagedComposite = toolkit.createComposite(stagedSection);
-		toolkit.paintBordersFor(stagedComposite);
-		stagedSection.setClient(stagedComposite);
+		Composite stagedTableComposite = toolkit.createComposite(stagedSection);
+		toolkit.paintBordersFor(stagedTableComposite);
+		stagedSection.setClient(stagedTableComposite);
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
-				.applyTo(stagedComposite);
+				.applyTo(stagedTableComposite);
 
-		stagedViewer = createTree(stagedComposite);
+		stagedTableViewer = new TableViewer(toolkit.createTable(
+				stagedTableComposite, SWT.FULL_SELECTION | SWT.MULTI));
 		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(stagedViewer.getControl());
-		stagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
+				.applyTo(stagedTableViewer.getControl());
+		stagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
-		stagedViewer.getTree().setLinesVisible(true);
-		stagedViewer.setLabelProvider(createLabelProvider(stagedViewer));
-		stagedViewer.setContentProvider(new StagingViewContentProvider(this,
+		stagedTableViewer.getTable().setLinesVisible(true);
+		stagedTableViewer.setLabelProvider(createLabelProvider(stagedTableViewer));
+		stagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				false));
-		stagedViewer.addDragSupport(
+		stagedTableViewer.addDragSupport(
 				DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
 						FileTransfer.getInstance() }, new StagingDragListener(
-						stagedViewer));
-		stagedViewer.addDropSupport(DND.DROP_MOVE,
+						stagedTableViewer));
+		stagedTableViewer.addDropSupport(DND.DROP_MOVE,
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new DropTargetAdapter() {
 					public void drop(DropTargetEvent event) {
@@ -709,7 +644,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 						event.detail = DND.DROP_MOVE;
 					}
 				});
-		stagedViewer.addOpenListener(new IOpenListener() {
+		stagedTableViewer.addOpenListener(new IOpenListener() {
 			public void open(OpenEvent event) {
 				compareWith(event);
 			}
@@ -747,8 +682,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		updateToolbar();
 		enableCommitWidgets(false);
 
-		createPopupMenu(unstagedViewer);
-		createPopupMenu(stagedViewer);
+		createPopupMenu(unstagedTableViewer);
+		createPopupMenu(stagedTableViewer);
 
 		final ICommitMessageComponentNotifications listener = new ICommitMessageComponentNotifications() {
 
@@ -810,116 +745,41 @@ public class StagingView extends ViewPart implements IShowInSource {
 				selectionChangedListener.selectionChanged(part, selection);
 		}
 
-		site.setSelectionProvider(unstagedViewer);
+		site.setSelectionProvider(unstagedTableViewer);
 
 		ViewerFilter filter = new ViewerFilter() {
 			@Override
 			public boolean select(Viewer viewer, Object parentElement,
 					Object element) {
-				StagingViewContentProvider contentProvider = getContentProvider((TreeViewer) viewer);
-				if (element instanceof StagingEntry)
-					return contentProvider.isInFilter((StagingEntry) element);
-				else if (element instanceof StagingFolderEntry)
-					return contentProvider
-							.hasVisibleChildren((StagingFolderEntry) element);
+				if (element instanceof StagingEntry) {
+					if (filterText != null && filterText.getText() != null
+							&& filterText.getText().trim().length() > 0) {
+						return ((StagingEntry) element)
+								.getPath()
+								.toUpperCase()
+								.contains(
+										filterText.getText().trim()
+												.toUpperCase());
+					}
+				}
 				return true;
 			}
 		};
-		unstagedViewer.addFilter(filter);
-		stagedViewer.addFilter(filter);
-	}
-
-	private void createUnstagedToolBarComposite() {
-		Composite unstagedToolbarComposite = toolkit
-				.createComposite(unstagedSection);
-		unstagedToolbarComposite.setBackground(null);
-		unstagedToolbarComposite.setLayout(createRowLayoutWithoutMargin());
-		unstagedSection.setTextClient(unstagedToolbarComposite);
-		unstagedExpandAllAction = new Action(UIText.UIUtils_ExpandAll,
-				IAction.AS_PUSH_BUTTON) {
-			public void run() {
-				unstagedViewer.expandAll();
-			}
-		};
-		unstagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
-
-		unstagedCollapseAllAction = new Action(UIText.UIUtils_CollapseAll,
-				IAction.AS_PUSH_BUTTON) {
-			public void run() {
-				unstagedViewer.collapseAll();
-			}
-		};
-		unstagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
-
-		unstagedToolBarManager = new ToolBarManager(SWT.FLAT | SWT.HORIZONTAL);
-
-		unstagedToolBarManager.add(unstagedExpandAllAction);
-		unstagedToolBarManager.add(unstagedCollapseAllAction);
-
-		unstagedToolBarManager.update(true);
-		unstagedToolBarManager.createControl(unstagedToolbarComposite);
-	}
-
-	private void createStagedToolBarComposite() {
-		Composite stagedToolbarComposite = toolkit
-				.createComposite(stagedSection);
-		stagedToolbarComposite.setBackground(null);
-		stagedToolbarComposite.setLayout(createRowLayoutWithoutMargin());
-		stagedSection.setTextClient(stagedToolbarComposite);
-		stagedExpandAllAction = new Action(UIText.UIUtils_ExpandAll,
-				IAction.AS_PUSH_BUTTON) {
-			public void run() {
-				stagedViewer.expandAll();
-			}
-		};
-		stagedExpandAllAction.setImageDescriptor(UIIcons.EXPAND_ALL);
-
-		stagedCollapseAllAction = new Action(UIText.UIUtils_CollapseAll,
-				IAction.AS_PUSH_BUTTON) {
-			public void run() {
-				stagedViewer.collapseAll();
-			}
-		};
-		stagedCollapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
-
-		stagedToolBarManager = new ToolBarManager(SWT.FLAT | SWT.HORIZONTAL);
-
-		stagedToolBarManager.add(stagedExpandAllAction);
-		stagedToolBarManager.add(stagedCollapseAllAction);
-		stagedToolBarManager.update(true);
-		stagedToolBarManager.createControl(stagedToolbarComposite);
-	}
-
-	private static RowLayout createRowLayoutWithoutMargin() {
-		RowLayout layout = new RowLayout();
-		layout.marginHeight = 0;
-		layout.marginWidth = 0;
-		layout.marginTop = 0;
-		layout.marginBottom = 0;
-		layout.marginLeft = 0;
-		layout.marginRight = 0;
-		return layout;
-	}
-
-	/**
-	 * @return selected repository
-	 */
-	public Repository getCurrentRepository() {
-		return currentRepository;
+		unstagedTableViewer.addFilter(filter);
+		stagedTableViewer.addFilter(filter);
 	}
 
 	public ShowInContext getShowInContext() {
-		if (stagedViewer != null && stagedViewer.getTree().isFocusControl())
-			return getShowInContext(stagedViewer);
-		else if (unstagedViewer != null
-				&& unstagedViewer.getTree().isFocusControl())
-			return getShowInContext(unstagedViewer);
+		if (stagedTableViewer != null && stagedTableViewer.getTable().isFocusControl())
+			return getShowInContext(stagedTableViewer);
+		else if (unstagedTableViewer != null && unstagedTableViewer.getTable().isFocusControl())
+			return getShowInContext(unstagedTableViewer);
 		else
 			return null;
 	}
 
-	private ShowInContext getShowInContext(TreeViewer treeViewer) {
-		IStructuredSelection selection = (IStructuredSelection) treeViewer.getSelection();
+	private ShowInContext getShowInContext(TableViewer tableViewer) {
+		IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
 		List<Object> elements = new ArrayList<Object>();
 		for (Object selectedElement : selection.toList()) {
 			if (selectedElement instanceof StagingEntry) {
@@ -927,13 +787,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				IFile file = entry.getFile();
 				if (file != null)
 					elements.add(file);
-				else
-					elements.add(entry.getLocation());
-			} else if (selectedElement instanceof StagingFolderEntry) {
-				StagingFolderEntry entry = (StagingFolderEntry) selectedElement;
-				IContainer container = entry.getContainer();
-				if (container != null)
-					elements.add(container);
 				else
 					elements.add(entry.getLocation());
 			}
@@ -1067,9 +920,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 			public void run() {
 				final boolean enable = isChecked();
-				getLabelProvider(stagedViewer).setFileNameMode(enable);
-				getLabelProvider(unstagedViewer).setFileNameMode(enable);
-				refreshViewers();
+				getLabelProvider(stagedTableViewer).setFileNameMode(enable);
+				getLabelProvider(unstagedTableViewer).setFileNameMode(enable);
+				stagedTableViewer.refresh();
+				unstagedTableViewer.refresh();
 				getPreferenceStore().setValue(
 						UIPreferences.STAGING_VIEW_FILENAME_MODE, enable);
 			}
@@ -1078,81 +932,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
 
 		IMenuManager dropdownMenu = actionBars.getMenuManager();
-		MenuManager presentationMenu = new MenuManager(
-				UIText.StagingView_Presentation);
-		listPresentationAction = new Action(UIText.StagingView_List,
-				IAction.AS_RADIO_BUTTON) {
-			public void run() {
-				presentation = Presentation.LIST;
-				getPreferenceStore().setValue(
-						UIPreferences.STAGING_VIEW_PRESENTATION,
-						Presentation.LIST.name());
-				treePresentationAction.setChecked(false);
-				compactTreePresentationAction.setChecked(false);
-				setExpandCollapseActionsVisible(false);
-				refreshViewers();
-			}
-		};
-		listPresentationAction.setImageDescriptor(UIIcons.FLAT);
-		presentationMenu.add(listPresentationAction);
-
-		treePresentationAction = new Action(UIText.StagingView_Tree,
-				IAction.AS_RADIO_BUTTON) {
-			public void run() {
-				presentation = Presentation.TREE;
-				getPreferenceStore().setValue(
-						UIPreferences.STAGING_VIEW_PRESENTATION,
-						Presentation.TREE.name());
-				listPresentationAction.setChecked(false);
-				compactTreePresentationAction.setChecked(false);
-				setExpandCollapseActionsVisible(true);
-				refreshViewers();
-			}
-		};
-		treePresentationAction.setImageDescriptor(UIIcons.HIERARCHY);
-		presentationMenu.add(treePresentationAction);
-
-		compactTreePresentationAction = new Action(UIText.StagingView_CompactTree,
-				IAction.AS_RADIO_BUTTON) {
-			public void run() {
-				presentation = Presentation.COMPACT_TREE;
-				getPreferenceStore().setValue(
-						UIPreferences.STAGING_VIEW_PRESENTATION,
-						Presentation.COMPACT_TREE.name());
-				listPresentationAction.setChecked(false);
-				treePresentationAction.setChecked(false);
-				setExpandCollapseActionsVisible(true);
-				refreshViewers();
-			}
-		};
-		compactTreePresentationAction.setImageDescriptor(UIIcons.COMPACT);
-		presentationMenu.add(compactTreePresentationAction);
-
-		String presentationString = getPreferenceStore().getString(
-				UIPreferences.STAGING_VIEW_PRESENTATION);
-		if (presentationString.length() > 0) {
-			try {
-				presentation = Presentation.valueOf(presentationString);
-			} catch (IllegalArgumentException e) {
-				// Use already set value of presentation
-			}
-		}
-		switch (presentation) {
-		case LIST:
-			listPresentationAction.setChecked(true);
-			setExpandCollapseActionsVisible(false);
-			break;
-		case TREE:
-			treePresentationAction.setChecked(true);
-			break;
-		case COMPACT_TREE:
-			compactTreePresentationAction.setChecked(true);
-			break;
-		default:
-			break;
-		}
-		dropdownMenu.add(presentationMenu);
-		dropdownMenu.add(new Separator());
 		dropdownMenu.add(openNewCommitsAction);
 		dropdownMenu.add(columnLayoutAction);
 		dropdownMenu.add(fileNameModeAction);
@@ -1168,35 +947,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 		actionBars.updateActionBars();
 	}
 
-	private void setExpandCollapseActionsVisible(boolean visible) {
-		for (IContributionItem item : unstagedToolBarManager.getItems())
-			item.setVisible(visible);
-		for (IContributionItem item : stagedToolBarManager.getItems())
-			item.setVisible(visible);
-		unstagedExpandAllAction.setEnabled(visible);
-		unstagedCollapseAllAction.setEnabled(visible);
-		stagedExpandAllAction.setEnabled(visible);
-		stagedCollapseAllAction.setEnabled(visible);
-		unstagedToolBarManager.update(true);
-		stagedToolBarManager.update(true);
-	}
-
-	private TreeViewer createTree(Composite composite) {
-		Tree tree = toolkit.createTree(composite, SWT.FULL_SELECTION
-				| SWT.MULTI);
-		tree.setLinesVisible(true);
-		TreeViewer treeViewer = new TreeViewer(tree);
-		return treeViewer;
-	}
-
-	private IBaseLabelProvider createLabelProvider(TreeViewer treeViewer) {
-		StagingViewLabelProvider baseProvider = new StagingViewLabelProvider(
-				this);
+	private IBaseLabelProvider createLabelProvider(TableViewer tableViewer) {
+		StagingViewLabelProvider baseProvider = new StagingViewLabelProvider();
 		baseProvider.setFileNameMode(getPreferenceStore().getBoolean(
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
 
-		ProblemLabelDecorator decorator = new ProblemLabelDecorator(treeViewer);
-		return new TreeDecoratingLabelProvider(baseProvider, decorator);
+		ProblemLabelDecorator decorator = new ProblemLabelDecorator(tableViewer);
+		return new DecoratingStyledCellLabelProvider(baseProvider, decorator, null);
 	}
 
 	private IPreferenceStore getPreferenceStore() {
@@ -1205,9 +962,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private StagingViewLabelProvider getLabelProvider(ContentViewer viewer) {
 		IBaseLabelProvider base = viewer.getLabelProvider();
-		ILabelProvider labelProvider = ((TreeDecoratingLabelProvider) base)
-				.getLabelProvider();
-		return (StagingViewLabelProvider) labelProvider;
+		IStyledLabelProvider styled = ((DelegatingStyledCellLabelProvider) base)
+				.getStyledStringProvider();
+		return (StagingViewLabelProvider) styled;
 	}
 
 	private StagingViewContentProvider getContentProvider(ContentViewer viewer) {
@@ -1215,22 +972,22 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void updateSectionText() {
-		stagedSection.setText(MessageFormat
-				.format(UIText.StagingView_StagedChanges,
-						getSectionCount(stagedViewer)));
+		stagedSection.setText(MessageFormat.format(
+				UIText.StagingView_StagedChanges,
+				getSectionCount(stagedTableViewer)));
 		unstagedSection.setText(MessageFormat.format(
 				UIText.StagingView_UnstagedChanges,
-				getSectionCount(unstagedViewer)));
+				getSectionCount(unstagedTableViewer)));
 	}
 
-	private String getSectionCount(TreeViewer viewer) {
-		StagingViewContentProvider contentProvider = getContentProvider(viewer);
-		int count = contentProvider.getCount();
-		int shownCount = contentProvider.getShownCount();
-		if (shownCount == count)
-			return Integer.toString(count);
+	private String getSectionCount(TableViewer viewer) {
+		int stagingEntryCount = ((StagingViewContentProvider) viewer
+				.getContentProvider()).getStagingEntryCount();
+		int itemCount = viewer.getTable().getItemCount();
+		if (itemCount == stagingEntryCount)
+			return Integer.toString(itemCount);
 		else
-			return shownCount + "/" + count; //$NON-NLS-1$
+			return itemCount + "/" + stagingEntryCount; //$NON-NLS-1$
 	}
 
 	private void updateMessage() {
@@ -1253,8 +1010,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private void compareWith(OpenEvent event) {
 		IStructuredSelection selection = (IStructuredSelection) event
 				.getSelection();
-		if (selection.isEmpty()
-				|| !(selection.getFirstElement() instanceof StagingEntry))
+		if (selection.isEmpty())
 			return;
 		StagingEntry stagingEntry = (StagingEntry) selection.getFirstElement();
 		if (stagingEntry.isSubmodule())
@@ -1278,58 +1034,36 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 	}
 
-	private void createPopupMenu(final TreeViewer treeViewer) {
+	private void createPopupMenu(final TableViewer tableViewer) {
 		final MenuManager menuMgr = new MenuManager();
 		menuMgr.setRemoveAllWhenShown(true);
-		Control control = treeViewer.getControl();
+		Control control = tableViewer.getControl();
 		control.setMenu(menuMgr.createContextMenu(control));
 		menuMgr.addMenuListener(new IMenuListener() {
 
 			public void menuAboutToShow(IMenuManager manager) {
-				IStructuredSelection selection = (IStructuredSelection) treeViewer.getSelection();
+				IStructuredSelection selection = (IStructuredSelection) tableViewer.getSelection();
 				if (selection.isEmpty())
 					return;
 
-				List<StagingEntry> stagingEntryList = new ArrayList<StagingEntry>();
-
 				boolean submoduleSelected = false;
-				boolean folderSelected = false;
-				for (Object element : selection.toArray()) {
-					if (element instanceof StagingFolderEntry) {
-						StagingFolderEntry folder = (StagingFolderEntry) element;
-						folderSelected = true;
-						StagingViewContentProvider contentProvider = getContentProvider(treeViewer);
-						List<StagingEntry> stagingEntries = contentProvider
-								.getStagingEntriesFiltered(folder);
-						for (StagingEntry stagingEntry : stagingEntries) {
-							if (!stagingEntryList.contains(stagingEntry))
-								stagingEntryList.add(stagingEntry);
-						}
-					} else if (element instanceof StagingEntry) {
-						StagingEntry entry = (StagingEntry) element;
-						if (entry.isSubmodule())
-							submoduleSelected = true;
-						if (!stagingEntryList.contains(entry))
-							stagingEntryList.add(entry);
+				for (Object item : selection.toArray())
+					if (((StagingEntry) item).isSubmodule()) {
+						submoduleSelected = true;
+						break;
 					}
-				}
 
-				final IStructuredSelection fileSelection = new StructuredSelection(
-						stagingEntryList);
+				Action openWorkingTreeVersion = new Action(
+						UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
+					@Override
+					public void run() {
+						openSelectionInEditor(tableViewer.getSelection());
+					}
+				};
+				openWorkingTreeVersion.setEnabled(!submoduleSelected);
+				menuMgr.add(openWorkingTreeVersion);
 
-				if (!folderSelected) {
-					Action openWorkingTreeVersion = new Action(
-							UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
-						@Override
-						public void run() {
-							openSelectionInEditor(fileSelection);
-						}
-					};
-					openWorkingTreeVersion.setEnabled(!submoduleSelected);
-					menuMgr.add(openWorkingTreeVersion);
-				}
-
-				Set<StagingEntry.Action> availableActions = getAvailableActions(fileSelection);
+				Set<StagingEntry.Action> availableActions = getAvailableActions(selection);
 
 				boolean addReplaceWithFileInGitIndex = availableActions.contains(StagingEntry.Action.REPLACE_WITH_FILE_IN_GIT_INDEX);
 				boolean addReplaceWithHeadRevision = availableActions.contains(StagingEntry.Action.REPLACE_WITH_HEAD_REVISION);
@@ -1343,42 +1077,34 @@ public class StagingView extends ViewPart implements IShowInSource {
 					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
 						@Override
 						public void run() {
-							stage(fileSelection);
+							stage((IStructuredSelection) tableViewer.getSelection());
 						}
 					});
 				if (addUnstage)
 					menuMgr.add(new Action(UIText.StagingView_UnstageItemMenuLabel) {
 						@Override
 						public void run() {
-							unstage(fileSelection);
+							unstage((IStructuredSelection) tableViewer.getSelection());
 						}
 					});
-				boolean selectionIncludesNonWorkspaceResources = selectionIncludesNonWorkspaceResources(fileSelection);
+				boolean selectionIncludesNonWorkspaceResources = selectionIncludesNonWorkspaceResources(tableViewer.getSelection());
 				if (addReplaceWithFileInGitIndex)
 					if (selectionIncludesNonWorkspaceResources)
-						menuMgr.add(new ReplaceAction(
-								UIText.StagingView_replaceWithFileInGitIndex,
-								fileSelection, false));
+						menuMgr.add(new ReplaceAction(UIText.StagingView_replaceWithFileInGitIndex, selection, false));
 					else
-						menuMgr.add(createItem(
-								ActionCommands.DISCARD_CHANGES_ACTION,
-								fileSelection)); // replace with index
+						menuMgr.add(createItem(ActionCommands.DISCARD_CHANGES_ACTION, tableViewer));	// replace with index
 				if (addReplaceWithHeadRevision)
 					if (selectionIncludesNonWorkspaceResources)
-						menuMgr.add(new ReplaceAction(
-								UIText.StagingView_replaceWithHeadRevision,
-								fileSelection, true));
+						menuMgr.add(new ReplaceAction(UIText.StagingView_replaceWithHeadRevision, selection, true));
 					else
-						menuMgr.add(createItem(
-								ActionCommands.REPLACE_WITH_HEAD_ACTION,
-								fileSelection));
+						menuMgr.add(createItem(ActionCommands.REPLACE_WITH_HEAD_ACTION, tableViewer));
 				if (addIgnore)
-					menuMgr.add(new IgnoreAction(fileSelection));
+					menuMgr.add(new IgnoreAction(selection));
 				if (addDelete)
-					menuMgr.add(new DeleteAction(fileSelection));
+					menuMgr.add(new DeleteAction(selection));
 				if (addLaunchMergeTool)
-					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION,
-							fileSelection));
+					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
+
 				menuMgr.add(new Separator());
 				menuMgr.add(createShowInMenu());
 			}
@@ -1387,37 +1113,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	/**
-	 * @return selected presentation
-	 */
-	Presentation getPresentation() {
-		return presentation;
-	}
-
-	/**
-	 * @return the trimmed string which is the current filter, empty string for
-	 *         no filter
-	 */
-	String getFilterString() {
-		if (filterText != null)
-			return filterText.getText().trim();
-		else
-			return ""; //$NON-NLS-1$
-	}
-
-	/**
 	 * Refresh the unstaged and staged viewers
 	 */
 	public void refreshViewers() {
-		Display.getDefault().syncExec(new Runnable() {
+		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
-				Object[] unstagedExpanded = unstagedViewer
-						.getExpandedElements();
-				Object[] stagedExpanded = stagedViewer.getExpandedElements();
-				unstagedViewer.refresh();
-				stagedViewer.refresh();
+				unstagedTableViewer.refresh();
+				stagedTableViewer.refresh();
 				updateSectionText();
-				unstagedViewer.setExpandedElements(unstagedExpanded);
-				stagedViewer.setExpandedElements(stagedExpanded);
 			}
 		});
 	}
@@ -1495,7 +1198,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		@Override
 		public boolean isEnabled() {
-			if (!unstagedViewer.getTree().isFocusControl())
+			if (!unstagedTableViewer.getTable().isFocusControl())
 				return false;
 
 			IStructuredSelection selection = getSelection();
@@ -1503,8 +1206,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				return false;
 
 			for (Object element : selection.toList()) {
-				if (!(element instanceof StagingEntry))
-					return false;
 				StagingEntry entry = (StagingEntry) element;
 				if (!entry.getAvailableActions().contains(StagingEntry.Action.DELETE))
 					return false;
@@ -1514,7 +1215,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 
 		private IStructuredSelection getSelection() {
-			return (IStructuredSelection) unstagedViewer.getSelection();
+			return (IStructuredSelection) unstagedTableViewer.getSelection();
 		}
 	}
 
@@ -1537,11 +1238,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		List<String> result = new ArrayList<String>();
 		Iterator iterator = selection.iterator();
 		while (iterator.hasNext()) {
-			Object selectedItem = iterator.next();
-			if (selectedItem instanceof StagingEntry) {
-				StagingEntry stagingEntry = (StagingEntry) selectedItem;
-				result.add(stagingEntry.getPath());
-			}
+			StagingEntry stagingEntry = (StagingEntry) iterator.next();
+			result.add(stagingEntry.getPath());
 		}
 		return result.toArray(new String[result.size()]);
 	}
@@ -1617,8 +1315,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		return availableActions;
 	}
 
-	private CommandContributionItem createItem(String itemAction,
-			final ISelection selection) {
+	private CommandContributionItem createItem(String itemAction, final TableViewer tableViewer) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		CommandContributionItemParameter itemParam = new CommandContributionItemParameter(
 				workbench, null, itemAction, STYLE_PUSH);
@@ -1628,7 +1325,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
 				.getService(IHandlerService.class);
 		IEvaluationContext ctx = hsr.getCurrentState();
-		ctx.addVariable(ACTIVE_MENU_SELECTION_NAME, selection);
+		ctx.addVariable(ACTIVE_MENU_SELECTION_NAME, tableViewer.getSelection());
 
 		return new CommandContributionItem(itemParam);
 	}
@@ -1662,26 +1359,33 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void stage(IStructuredSelection selection) {
-		StagingViewContentProvider contentProvider = getContentProvider(unstagedViewer);
 		Git git = new Git(currentRepository);
+		RmCommand rm = null;
 		Iterator iterator = selection.iterator();
 		List<String> addPaths = new ArrayList<String>();
-		List<String> rmPaths = new ArrayList<String>();
-		resetPathsToExpand();
 		while (iterator.hasNext()) {
 			Object element = iterator.next();
 			if (element instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) element;
-				selectEntryForStaging(entry, addPaths, rmPaths);
-				addPathAndParentPaths(entry.getParentPath(), pathsToExpandInStaged);
-			} else if (element instanceof StagingFolderEntry) {
-				StagingFolderEntry folder = (StagingFolderEntry) element;
-				List<StagingEntry> entries = contentProvider
-						.getStagingEntriesFiltered(folder);
-				for (StagingEntry entry : entries)
-					selectEntryForStaging(entry, addPaths, rmPaths);
-				addExpandedPathsBelowFolder(folder, unstagedViewer,
-						pathsToExpandInStaged);
+				switch (entry.getState()) {
+				case ADDED:
+				case CHANGED:
+				case REMOVED:
+					// already staged
+					break;
+				case CONFLICTING:
+				case MODIFIED:
+				case PARTIALLY_MODIFIED:
+				case UNTRACKED:
+					addPaths.add(entry.getPath());
+					break;
+				case MISSING:
+				case MISSING_AND_CHANGED:
+					if (rm == null)
+						rm = git.rm().setCached(true);
+					rm.addFilepattern(entry.getPath());
+					break;
+				}
 			} else {
 				IResource resource = AdapterUtils.adapt(element, IResource.class);
 				if (resource != null) {
@@ -1712,11 +1416,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			} catch (Exception e1) {
 				Activator.handleError(e1.getMessage(), e1, true);
 			}
-		if (!rmPaths.isEmpty())
+		if (rm != null)
 			try {
-				RmCommand rm = git.rm().setCached(true);
-				for (String rmPath : rmPaths)
-					rm.addFilepattern(rmPath);
 				rm.call();
 			} catch (NoFilepatternException e) {
 				// cannot happen
@@ -1726,27 +1427,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			} catch (Exception e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
-	}
-
-	private void selectEntryForStaging(StagingEntry entry,
-			List<String> addPaths, List<String> rmPaths) {
-		switch (entry.getState()) {
-		case ADDED:
-		case CHANGED:
-		case REMOVED:
-			// already staged
-			break;
-		case CONFLICTING:
-		case MODIFIED:
-		case PARTIALLY_MODIFIED:
-		case UNTRACKED:
-			addPaths.add(entry.getPath());
-			break;
-		case MISSING:
-		case MISSING_AND_CHANGED:
-			rmPaths.add(entry.getPath());
-			break;
-		}
 	}
 
 	private void unstage(IStructuredSelection selection) {
@@ -1783,7 +1463,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 
 		try {
-			processUnstageSelection(selection, headRev, edit);
+			updateDirCache(selection, headRev, edit);
 
 			try {
 				edit.commit();
@@ -1798,82 +1478,42 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 	}
 
-	private void processUnstageSelection(IStructuredSelection selection,
+	private void updateDirCache(IStructuredSelection selection,
 			final RevCommit headRev, final DirCacheEditor edit) {
-		resetPathsToExpand();
-		for (Object element : selection.toList()) {
-			if (element instanceof StagingEntry) {
-				StagingEntry entry = (StagingEntry) element;
-				updateDirCache(headRev, edit, entry);
-				addPathAndParentPaths(entry.getParentPath(), pathsToExpandInUnstaged);
-			} else if (element instanceof StagingFolderEntry) {
-				StagingFolderEntry folder = (StagingFolderEntry) element;
-				List<StagingEntry> entries = getContentProvider(stagedViewer)
-						.getStagingEntriesFiltered(folder);
-				for (StagingEntry entry : entries)
-					updateDirCache(headRev, edit, entry);
-				addExpandedPathsBelowFolder(folder, stagedViewer,
-						pathsToExpandInUnstaged);
+		Iterator iterator = selection.iterator();
+		while (iterator.hasNext()) {
+			StagingEntry entry = (StagingEntry) iterator.next();
+			switch (entry.getState()) {
+			case ADDED:
+				edit.add(new DirCacheEditor.DeletePath(entry.getPath()));
+				break;
+			case CHANGED:
+			case REMOVED:
+				// set the index object id/file mode back to our head revision
+				try {
+					final TreeWalk tw = TreeWalk.forPath(currentRepository,
+							entry.getPath(), headRev.getTree());
+					if (tw != null)
+						edit.add(new DirCacheEditor.PathEdit(entry.getPath()) {
+							@Override
+							public void apply(DirCacheEntry ent) {
+								ent.setFileMode(tw.getFileMode(0));
+								ent.setObjectId(tw.getObjectId(0));
+								// for index & working tree compare
+								ent.setLastModified(0);
+							}
+						});
+				} catch (IOException e) {
+					// TODO fix text
+					MessageDialog.openError(getSite().getShell(),
+							UIText.CommitAction_MergeHeadErrorTitle,
+							UIText.CommitAction_ErrorReadingMergeMsg);
+				}
+				break;
+			default:
+				// unstaged
 			}
 		}
-	}
-
-	private void updateDirCache(final RevCommit headRev,
-			final DirCacheEditor edit, final StagingEntry entry) {
-		switch (entry.getState()) {
-		case ADDED:
-			edit.add(new DirCacheEditor.DeletePath(entry.getPath()));
-			break;
-		case CHANGED:
-		case REMOVED:
-			// set the index object id/file mode back to our head revision
-			try {
-				final TreeWalk tw = TreeWalk.forPath(currentRepository,
-						entry.getPath(), headRev.getTree());
-				if (tw != null)
-					edit.add(new DirCacheEditor.PathEdit(entry.getPath()) {
-						@Override
-						public void apply(DirCacheEntry ent) {
-							ent.setFileMode(tw.getFileMode(0));
-							ent.setObjectId(tw.getObjectId(0));
-							// for index & working tree compare
-							ent.setLastModified(0);
-						}
-					});
-			} catch (IOException e) {
-				// TODO fix text
-				MessageDialog.openError(getSite().getShell(),
-						UIText.CommitAction_MergeHeadErrorTitle,
-						UIText.CommitAction_ErrorReadingMergeMsg);
-			}
-			break;
-		default:
-			// unstaged
-		}
-	}
-
-	private void resetPathsToExpand() {
-		pathsToExpandInStaged = new HashSet<IPath>();
-		pathsToExpandInUnstaged = new HashSet<IPath>();
-	}
-
-	private static void addExpandedPathsBelowFolder(StagingFolderEntry folder,
-			TreeViewer treeViewer, Set<IPath> addToSet) {
-		Object[] expandedElements = treeViewer.getExpandedElements();
-		for (Object expandedElement : expandedElements) {
-			if (expandedElement instanceof StagingFolderEntry) {
-				StagingFolderEntry expandedFolder = (StagingFolderEntry) expandedElement;
-				if (folder.getPath().isPrefixOf(
-						expandedFolder.getPath()))
-					addPathAndParentPaths(expandedFolder.getPath(), addToSet);
-			}
-		}
-	}
-
-	private static void addPathAndParentPaths(IPath initialPath, Set<IPath> addToSet) {
-		for (IPath p = initialPath; p.segmentCount() >= 1; p = p
-				.removeLastSegments(1))
-			addToSet.add(p);
 	}
 
 	private boolean isValidRepo(final Repository repository) {
@@ -1893,8 +1533,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 		saveCommitMessageComponentState();
 		currentRepository = null;
 		StagingViewUpdate update = new StagingViewUpdate(null, null, null);
-		unstagedViewer.setInput(update);
-		stagedViewer.setInput(update);
+		unstagedTableViewer.setInput(update);
+		stagedTableViewer.setInput(update);
 		enableCommitWidgets(false);
 		updateSectionText();
 		form.setText(UIText.StagingView_NoSelectionTitle);
@@ -1926,21 +1566,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 				boolean indexDiffAvailable = indexDiff !=  null;
 
-				if (repositoryChanged)
-					// Reset paths, they're from the old repository
-					resetPathsToExpand();
-
 				final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
-				Object[] unstagedExpanded = unstagedViewer
-						.getExpandedElements();
-				Object[] stagedExpanded = stagedViewer
-						.getExpandedElements();
-				unstagedViewer.setInput(update);
-				stagedViewer.setInput(update);
-				expandPreviousExpandedAndPaths(unstagedExpanded, unstagedViewer,
-						pathsToExpandInUnstaged);
-				expandPreviousExpandedAndPaths(stagedExpanded, stagedViewer,
-						pathsToExpandInStaged);
+				unstagedTableViewer.setInput(update);
+				stagedTableViewer.setInput(update);
 				enableCommitWidgets(indexDiffAvailable);
 				boolean commitEnabled =
 						indexDiffAvailable && repository.getRepositoryState().canCommit();
@@ -1965,25 +1593,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		cacheEntry.addIndexDiffChangedListener(myIndexDiffListener);
 
 		return cacheEntry.getIndexDiff();
-	}
-
-	private void expandPreviousExpandedAndPaths(Object[] previous,
-			TreeViewer viewer, Set<IPath> additionalPaths) {
-		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
-		// Instead of just expanding the previous elements directly, also expand
-		// all parent paths. This makes it work in case of "re-folding" of
-		// compact tree.
-		for (Object element : previous)
-			if (element instanceof StagingFolderEntry)
-				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
-		List<Object> expand = new ArrayList<Object>();
-		StagingViewContentProvider stagedContentProvider = getContentProvider(viewer);
-		for (StagingFolderEntry folder : stagedContentProvider
-				.getStagingFolderEntries()) {
-			if (paths.contains(folder.getPath()))
-				expand.add(folder);
-		}
-		viewer.setExpandedElements(expand.toArray());
 	}
 
 	private void clearCommitMessageToggles() {
@@ -2083,7 +1692,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		String chIdLine = "Change-Id: I" + ObjectId.zeroId().name(); //$NON-NLS-1$
 
-		if (GerritUtil.getCreateChangeId(currentRepository.getConfig())
+		if (currentRepository.getConfig().getBoolean(
+				ConfigConstants.CONFIG_GERRIT_SECTION,
+				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false)
 				&& commitMessageComponent.getCreateChangeId()) {
 			if (message.trim().equals(chIdLine))
 				return false;
@@ -2138,7 +1749,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private Collection<String> getStagedFileNames() {
-		StagingViewContentProvider stagedContentProvider = getContentProvider(stagedViewer);
+		StagingViewContentProvider stagedContentProvider = getContentProvider(stagedTableViewer);
 		StagingEntry[] entries = stagedContentProvider.getStagingEntries();
 		List<String> files = new ArrayList<String>();
 		for (StagingEntry entry : entries)
@@ -2183,7 +1794,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private boolean isCommitWithoutFilesAllowed() {
-		if (stagedViewer.getTree().getItemCount() > 0)
+		if (stagedTableViewer.getTable().getItemCount() > 0)
 			return true;
 
 		if (amendPreviousCommitAction.isChecked())
@@ -2194,7 +1805,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	@Override
 	public void setFocus() {
-		unstagedViewer.getControl().setFocus();
+		unstagedTableViewer.getControl().setFocus();
 	}
 
 	@Override
