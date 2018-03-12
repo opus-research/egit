@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
@@ -242,7 +241,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 	}
 
 	private String[] getRepositoryComboItems() {
-		Set<String> items = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+		List<String> items = new ArrayList<String>();
 		for (Repository repository : repositories) {
 			String repoName = repository.getDirectory().getParentFile().getName();
 			items.add(repoName);
