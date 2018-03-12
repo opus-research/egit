@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -267,16 +266,6 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 							.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
 				}
 				return dirString;
-			case TAGS:
-				StyledString tagsLabel = new StyledString(getSimpleText(node));
-				addCount(tagsLabel, node.getRepository().getTags().size());
-				return tagsLabel;
-			case REMOTES:
-				StyledString remotesLabel = new StyledString(
-						getSimpleText(node));
-				addCount(remotesLabel, node.getRepository().getConfig()
-						.getSubsections(RepositoriesView.REMOTE).size());
-				return remotesLabel;
 			case PUSH:
 				// fall through
 			case FETCH:
@@ -293,7 +282,11 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 				// fall through
 			case BRANCHHIERARCHY:
 				// fall through
+			case TAGS:
+				// fall through;
 			case ADDITIONALREFS:
+				// fall through
+			case REMOTES:
 				// fall through
 			case REMOTE:
 				// fall through
@@ -314,11 +307,6 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 
 		return null;
 
-	}
-
-	private void addCount(StyledString styled, int count) {
-		String formatted = MessageFormat.format(" ({0})", count); //$NON-NLS-1$
-		styled.append(formatted, StyledString.COUNTER_STYLER);
 	}
 
 	private String getSimpleText(RepositoryTreeNode node) {
