@@ -3120,12 +3120,18 @@
                      checkEnabled="false">
                   <and>
                      <count
-                           value="1">
+                           value="+">
                      </count>
                      <iterate>
                         <or>
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
                            </instanceof>
                         </or>
                      </iterate>
@@ -3185,32 +3191,7 @@
                      </iterate>
                   </and>
                </visibleWhen>
-            </command>
-            <dynamic
-                  class="org.eclipse.ui.ExtensionFactory:showInContribution"
-                  id="org.eclipse.ui.menus.dynamicShowInMenu">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="+">
-                     </count>
-                     <iterate>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode">
-                           </instanceof>
-                        </or>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </dynamic>
+           </command>
          </menu>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewImportProjects"
