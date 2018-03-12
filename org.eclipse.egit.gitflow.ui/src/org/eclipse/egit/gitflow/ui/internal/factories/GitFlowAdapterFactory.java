@@ -45,7 +45,8 @@ public class GitFlowAdapterFactory implements IAdapterFactory {
 	}
 
 	private Repository getRepository(IResource resource) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+		RepositoryMapping mapping = RepositoryMapping
+				.getMapping(resource.getProject());
 		return mapping != null ? mapping.getRepository() : null;
 	}
 
