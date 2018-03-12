@@ -38,14 +38,12 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		int[] w;
 
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE, true);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_NOTES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_TOOLTIPS, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES, false);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, false);
 
@@ -99,7 +97,6 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.CHECKOUT_PROJECT_RESTORE, true);
 		store.setDefault(UIPreferences.HISTORY_MAX_TAG_LENGTH, 15);
 		store.setDefault(UIPreferences.HISTORY_MAX_BRANCH_LENGTH, 15);
-		store.setDefault(UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG, true);
 	}
 
 }
