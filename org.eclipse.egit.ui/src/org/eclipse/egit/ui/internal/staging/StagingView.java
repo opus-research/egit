@@ -28,6 +28,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -166,13 +167,10 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.IPartListener2;
-import org.eclipse.ui.IPartService;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
@@ -229,11 +227,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private boolean reactOnSelection = true;
 
-	private boolean isViewHidden;
-
 	private ISelectionListener selectionChangedListener;
-
-	private IPartListener2 partListener;
 
 	private ToolBarManager unstagedToolBarManager;
 
@@ -335,94 +329,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 					return;
 				}
 			}
-		}
-	}
-
-	private final class PartListener implements IPartListener2 {
-		StructuredSelection lastSelection;
-
-		public void partVisible(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, false);
-		}
-
-		public void partOpened(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, false);
-		}
-
-		public void partHidden(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, true);
-		}
-
-		public void partClosed(IWorkbenchPartReference partRef) {
-			updateHiddenState(partRef, true);
-		}
-
-		public void partActivated(IWorkbenchPartReference partRef) {
-			if (isMe(partRef)) {
-				if (lastSelection != null) {
-					// view activated: synchronize with last active part
-					// selection
-					reactOnSelection(lastSelection);
-					lastSelection = null;
-				}
-				return;
-			}
-			IWorkbenchPart part = partRef.getPart(false);
-			StructuredSelection sel = null;
-			if (part instanceof IEditorPart) {
-				IResource resource = getResource((IEditorPart) part);
-				if (resource != null) {
-					sel = new StructuredSelection(resource);
-				}
-			} else {
-				ISelection selection = partRef.getPage().getSelection();
-				if (selection instanceof StructuredSelection) {
-					sel = (StructuredSelection) selection;
-				}
-			}
-			if (isViewHidden) {
-				// remember last selection in the part so that we can
-				// synchronize on it as soon as we will be visible
-				lastSelection = sel;
-			} else {
-				lastSelection = null;
-				if (sel != null) {
-					reactOnSelection(sel);
-				}
-			}
-
-		}
-
-		private IResource getResource(IEditorPart part) {
-			IEditorInput input = part.getEditorInput();
-			if (input instanceof IFileEditorInput) {
-				return ((IFileEditorInput) input).getFile();
-			} else {
-				return CommonUtils.getAdapter(input, IResource.class);
-			}
-		}
-
-		private void updateHiddenState(IWorkbenchPartReference partRef,
-				boolean hidden) {
-			if (isMe(partRef)) {
-				isViewHidden = hidden;
-			}
-		}
-
-		private boolean isMe(IWorkbenchPartReference partRef) {
-			return partRef.getPart(false) == StagingView.this;
-		}
-
-		public void partDeactivated(IWorkbenchPartReference partRef) {
-			//
-		}
-
-		public void partBroughtToTop(IWorkbenchPartReference partRef) {
-			//
-		}
-
-		public void partInputChanged(IWorkbenchPartReference partRef) {
-			//
 		}
 	}
 
@@ -901,17 +807,19 @@ public class StagingView extends ViewPart implements IShowInSource {
 		selectionChangedListener = new ISelectionListener() {
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
-				if (part == getSite().getPart()) {
+				if (!reactOnSelection || part == getSite().getPart())
 					return;
-				}
-				// don't accept text selection, only structural one
-				if (selection instanceof StructuredSelection) {
-					reactOnSelection((StructuredSelection) selection);
-				}
+
+				// this may happen if we switch between editors
+				if (part instanceof IEditorPart) {
+					IEditorInput input = ((IEditorPart) part).getEditorInput();
+					if (input instanceof IFileEditorInput)
+						reactOnSelection(new StructuredSelection(
+								((IFileEditorInput) input).getFile()));
+				} else
+					reactOnSelection(selection);
 			}
 		};
-
-		partListener = new PartListener();
 
 		IPreferenceStore preferenceStore = getPreferenceStore();
 		if (preferenceStore.contains(UIPreferences.STAGING_VIEW_SYNC_SELECTION))
@@ -978,8 +886,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		IWorkbenchPartSite site = getSite();
 		ISelectionService srv = CommonUtils.getService(site, ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
-		CommonUtils.getService(site, IPartService.class).addPartListener(
-				partListener);
 
 		// Use current selection to populate staging view
 		UIUtils.notifySelectionChangedWithCurrentSelection(
@@ -1957,60 +1863,30 @@ public class StagingView extends ViewPart implements IShowInSource {
 		};
 	}
 
-	private boolean shouldUpdateSelection() {
-		return !isDisposed() && !isViewHidden && reactOnSelection;
-	}
-	
-	private void reactOnSelection(StructuredSelection selection) {
-		if (selection.size() != 1 || !shouldUpdateSelection()) {
-			return;
-		}
-		Object firstElement = selection.getFirstElement();
-		if (firstElement instanceof RepositoryTreeNode) {
-			RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
-			if (currentRepository != repoNode.getRepository()) {
-				reload(repoNode.getRepository());
+	private void reactOnSelection(ISelection selection) {
+		if (selection instanceof StructuredSelection) {
+			StructuredSelection ssel = (StructuredSelection) selection;
+			if (ssel.size() != 1)
+				return;
+			Object firstElement = ssel.getFirstElement();
+			if (firstElement instanceof IResource)
+				showResource((IResource) firstElement);
+			else if (firstElement instanceof RepositoryTreeNode) {
+				RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
+				if (currentRepository != repoNode.getRepository())
+					reload(repoNode.getRepository());
+			} else if (firstElement instanceof IAdaptable) {
+				IResource adapted = (IResource) ((IAdaptable) firstElement).getAdapter(IResource.class);
+				if (adapted != null)
+					showResource(adapted);
 			}
-		} else {
-			IResource resource = CommonUtils.getAdapter(firstElement,
-					IResource.class);
-			showResource(resource);
 		}
 	}
 
 	private void showResource(final IResource resource) {
-		if (resource == null || !resource.isAccessible()) {
-			return;
-		}
-		Job.getJobManager().cancel(JobFamilies.UPDATE_SELECTION);
-		Job job = new Job(UIText.StagingView_GetRepo) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
-				Repository newRep = getRepositoryOrNestedSubmoduleRepository(resource);
-				if (newRep != null && newRep != currentRepository) {
-					if (monitor.isCanceled()) {
-						return Status.CANCEL_STATUS;
-					}
-					reload(newRep);
-				}
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				return JobFamilies.UPDATE_SELECTION == family;
-			}
-
-			@Override
-			public boolean shouldRun() {
-				return shouldUpdateSelection();
-			}
-		};
-		job.setSystem(true);
-		schedule(job, false);
+		Repository newRep = getRepositoryOrNestedSubmoduleRepository(resource);
+		if (newRep != null && newRep != currentRepository)
+			reload(newRep);
 	}
 
 	private static Repository getRepositoryOrNestedSubmoduleRepository(
@@ -2305,16 +2181,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	/**
-	 * Reload the staging view asynchronously
+	 * Reload the staging view
 	 *
 	 * @param repository
 	 */
 	public void reload(final Repository repository) {
-		if (isDisposed()) {
+		if (form.isDisposed())
 			return;
-		}
 		if (repository == null) {
-			asyncExec(new Runnable() {
+			syncExec(new Runnable() {
 				public void run() {
 					clearRepository();
 				}
@@ -2322,18 +2197,16 @@ public class StagingView extends ViewPart implements IShowInSource {
 			return;
 		}
 
-		if (!isValidRepo(repository)) {
+		if (!isValidRepo(repository))
 			return;
-		}
 
 		final boolean repositoryChanged = currentRepository != repository;
 
-		asyncExec(new Runnable() {
+		syncExec(new Runnable() {
 
 			public void run() {
-				if (isDisposed()) {
+				if (form.isDisposed())
 					return;
-				}
 
 				final IndexDiffData indexDiff = doReload(repository);
 				boolean indexDiffAvailable;
@@ -2711,23 +2584,18 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
 		srv.removePostSelectionListener(selectionChangedListener);
-		CommonUtils.getService(getSite(), IPartService.class)
-				.removePartListener(partListener);
 
-		if (cacheEntry != null) {
+		if(cacheEntry != null)
 			cacheEntry.removeIndexDiffChangedListener(myIndexDiffListener);
-		}
 
-		if (undoRedoActionGroup != null) {
+		if (undoRedoActionGroup != null)
 			undoRedoActionGroup.dispose();
-		}
 
 		InstanceScope.INSTANCE.getNode(
 				org.eclipse.egit.core.Activator.getPluginId())
 				.removePreferenceChangeListener(prefListener);
-		if (refsChangedListener != null) {
+		if (refsChangedListener != null)
 			refsChangedListener.remove();
-		}
 		disposed = true;
 	}
 
