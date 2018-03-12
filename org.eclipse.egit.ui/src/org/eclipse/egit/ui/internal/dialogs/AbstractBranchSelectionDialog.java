@@ -44,9 +44,7 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -267,20 +265,11 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 			selectionModel = SWT.MULTI;
 		else
 			selectionModel = SWT.SINGLE;
-		final DelegatingStyledCellLabelProvider labelProvider = new DelegatingStyledCellLabelProvider(
-				new RepositoriesViewLabelProvider());
-		PatternFilter filter = new PatternFilter() {
-			@Override
-			protected boolean isLeafMatch(Viewer viewer, Object element) {
-				StyledString text = labelProvider.getStyledStringProvider()
-						.getStyledText(element);
-				return text != null && wordMatches(text.getString());
-			}
-		};
 		FilteredTree tree = new FilteredTree(composite, selectionModel | SWT.BORDER,
-				filter, true);
+				new PatternFilter(), true);
 		branchTree = tree.getViewer();
-		branchTree.setLabelProvider(labelProvider);
+		branchTree.setLabelProvider(new DelegatingStyledCellLabelProvider(
+				new RepositoriesViewLabelProvider()));
 		branchTree.setContentProvider(new RepositoriesViewContentProvider());
 
 		GridDataFactory.fillDefaults().grab(true, true).hint(500, 300).applyTo(
