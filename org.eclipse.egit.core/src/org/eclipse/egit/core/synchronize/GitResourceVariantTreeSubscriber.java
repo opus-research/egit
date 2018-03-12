@@ -15,7 +15,6 @@ import static org.eclipse.team.core.Team.isIgnoredHint;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.synchronize.SyncInfo;
@@ -106,10 +105,9 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	protected SyncInfo getSyncInfo(IResource local, IResourceVariant base,
 			IResourceVariant remote) throws TeamException {
-		GitSynchronizeData gsd = gsds.getData(local.getProject());
-		GitSyncInfo info = new GitSyncInfo(local, base, remote, getResourceComparator(), gsd);
+		SyncInfo info = new SyncInfo(local, base, remote,
+				getResourceComparator());
 		info.init();
-
 		return info;
 	}
 
