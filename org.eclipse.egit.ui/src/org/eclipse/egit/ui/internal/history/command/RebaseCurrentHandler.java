@@ -44,8 +44,7 @@ public class RebaseCurrentHandler extends AbstractHistoryCommandHandler {
 		Ref ref = getRef(commit, repository, currentBranch);
 
 		String jobname = NLS.bind(
-				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
-				currentBranch, ref.getName());
+				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName, currentBranch);
 		RebaseHelper.runRebaseJob(repository, jobname, ref);
 		return null;
 	}
