@@ -32,6 +32,7 @@ public class CompareTargetSelectionDialog extends AbstractBranchSelectionDialog 
 	public CompareTargetSelectionDialog(Shell parentShell, Repository repo,
 			String pathString) {
 		super(parentShell, repo);
+		setRootsToShow(true, true, true);
 		this.pathString = pathString;
 	}
 
