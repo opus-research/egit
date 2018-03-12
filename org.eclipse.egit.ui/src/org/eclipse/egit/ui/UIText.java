@@ -1774,6 +1774,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_Message;
 
 	/** */
+	public static String CommitDialog_MessageNoFilesSelected;
+
+	/** */
 	public static String CommitDialog_Path;
 
 	/** */
@@ -1883,6 +1886,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SpellCheckingMessageArea_selectAll;
+
+	/** */
+	public static String CommitMessageComponent_MessageInvalidAuthor;
+
+	/** */
+	public static String CommitMessageComponent_MessageInvalidCommitter;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -2605,7 +2614,7 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
 
 	/** */
-	public static String RepositoriesView_ClipboardContentNotDirectoryMessage;
+	public static String RepositoriesView_ClipboardContentNotDirectoryOrURIMessage;
 
 	/** */
 	public static String RepositoriesView_ConfirmBranchDeletionMessage;
@@ -2852,6 +2861,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitImportWizard_WizardTitle;
+
+	/** */
+	public static String GitScopeOperation_couldNotDetermineState;
+
+	/** */
+	public static String GitScopeOperation_GitScopeManager;
 
 	/** */
 	public static String GitSelectRepositoryPage_AddButton;
@@ -3126,6 +3141,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_calculatingChanges;
+
+	/** */
+	public static String CommitActionHandler_errorBuildingScope;
+
+	/** */
+	public static String CommitActionHandler_lookingForChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
@@ -3743,6 +3764,9 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
+	public static String CommitHelper_couldNotFindMergeMsg;
+
+	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -3972,6 +3996,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
+
+	/** */
+	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
