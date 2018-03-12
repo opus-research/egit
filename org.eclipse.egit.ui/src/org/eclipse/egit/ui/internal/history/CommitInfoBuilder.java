@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -307,15 +306,16 @@ public class CommitInfoBuilder {
 			// add remote heads to search
 			refsMap.putAll(db.getRefDatabase().getRefs(Constants.R_REMOTES));
 
-			for (Ref ref : refsMap.values()) {
-				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
+			for (String headName : refsMap.keySet()) {
+				RevCommit headCommit = revWalk.parseCommit(refsMap
+						.get(headName).getObjectId());
 				// the base RevCommit also must be allocated using same RevWalk
 				// instance,
 				// otherwise isMergedInto returns wrong result!
 				RevCommit base = revWalk.parseCommit(commit);
 
 				if (revWalk.isMergedInto(base, headCommit))
-					result.add(ref); // commit is reachable
+					result.add(refsMap.get(headName)); // commit is reachable
 				// from this head
 			}
 		} catch (IOException e) {
@@ -374,7 +374,7 @@ public class CommitInfoBuilder {
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-		if (commit.getParentCount() > 1) {
+		if (commit.getParentCount() != 1) {
 			d.append(UIText.CommitMessageViewer_CanNotRenderDiffMessage);
 			return;
 		}
@@ -444,12 +444,12 @@ public class CommitInfoBuilder {
 	private String getTagsString() {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Ref> tagsMap = db.getTags();
-		for (Entry<String, Ref> tagEntry : tagsMap.entrySet()) {
-			ObjectId peeledId = tagEntry.getValue().getPeeledObjectId();
+		for (String tagName : tagsMap.keySet()) {
+			ObjectId peeledId = tagsMap.get(tagName).getPeeledObjectId();
 			if (peeledId != null && peeledId.equals(commit)) {
 				if (sb.length() > 0)
 					sb.append(", "); //$NON-NLS-1$
-				sb.append(tagEntry.getKey());
+				sb.append(tagName);
 			}
 		}
 		return sb.toString();
@@ -530,12 +530,13 @@ public class CommitInfoBuilder {
 		Map<String, Ref> tagsMap = db.getTags();
 		Ref tagRef = null;
 
-		for (Ref ref : tagsMap.values()) {
+		for (String tagName : tagsMap.keySet()) {
 			if (monitor.isCanceled())
 				throw new OperationCanceledException();
 			// both RevCommits must be allocated using same RevWalk instance,
 			// otherwise isMergedInto returns wrong result!
 			RevCommit current = revWalk.parseCommit(commit);
+			Ref ref = tagsMap.get(tagName);
 			// tags can point to any object, we only want tags pointing at
 			// commits
 			RevObject any = revWalk.peel(revWalk.parseAny(ref.getObjectId()));

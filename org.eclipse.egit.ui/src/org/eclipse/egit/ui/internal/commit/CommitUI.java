@@ -107,13 +107,8 @@ public class CommitUI  {
 	public CommitUI(Shell shell, Repository[] repos,
 			IResource[] selectedResources) {
 		this.shell = shell;
-		this.repos = new Repository[repos.length];
-		// keep our own copy
-		System.arraycopy(repos, 0, this.repos, 0, repos.length);
-		this.selectedResources = new IResource[selectedResources.length];
-		// keep our own copy
-		System.arraycopy(selectedResources, 0, this.selectedResources, 0,
-				selectedResources.length);
+		this.repos = repos;
+		this.selectedResources = selectedResources;
 	}
 
 	/**
@@ -126,8 +121,7 @@ public class CommitUI  {
 			return;
 		}
 
-		BasicConfigurationDialog.show(repos);
-
+		BasicConfigurationDialog.show();
 		resetState();
 		final IProject[] projects = getProjectsOfRepositories();
 		try {
@@ -154,7 +148,6 @@ public class CommitUI  {
 		Repository mergeRepository = null;
 		amendAllowed = repos.length == 1;
 		boolean isMergedResolved = false;
-		boolean isCherryPickResolved = false;
 		for (Repository repo : repos) {
 			repository = repo;
 			RepositoryState state = repo.getRepositoryState();
@@ -167,10 +160,6 @@ public class CommitUI  {
 			}
 			else if (state.equals(RepositoryState.MERGING_RESOLVED)) {
 				isMergedResolved = true;
-				mergeRepository = repo;
-			}
-			else if (state.equals(RepositoryState.CHERRY_PICKING_RESOLVED)) {
-				isCherryPickResolved = true;
 				mergeRepository = repo;
 			}
 		}
@@ -212,7 +201,7 @@ public class CommitUI  {
 		commitDialog.setPreselectedFiles(getSelectedFiles());
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
-		commitDialog.setAllowToChangeSelection(!isMergedResolved && !isCherryPickResolved);
+		commitDialog.setAllowToChangeSelection(!isMergedResolved);
 
 		if (previousCommit != null) {
 			commitDialog.setPreviousCommitMessage(previousCommit.getFullMessage());
@@ -220,12 +209,8 @@ public class CommitUI  {
 			commitDialog.setPreviousAuthor(previousAuthor.getName()
 					+ " <" + previousAuthor.getEmailAddress() + ">"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		if (isMergedResolved || isCherryPickResolved) {
+		if (isMergedResolved) {
 			commitDialog.setCommitMessage(getMergeResolveMessage(mergeRepository));
-		}
-
-		if (isCherryPickResolved) {
-			commitDialog.setAuthor(getCherryPickOriginalAuthor(mergeRepository));
 		}
 
 		if (commitDialog.open() != IDialogConstants.OK_ID)
@@ -237,6 +222,7 @@ public class CommitUI  {
 				commitDialog.getCommitMessage());
 		if (commitDialog.isAmending()) {
 			commitOperation.setAmending(true);
+			commitOperation.setPreviousCommit(previousCommit);
 			commitOperation.setRepos(repos);
 		}
 		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
@@ -462,18 +448,6 @@ public class CommitUI  {
 			MessageDialog.openError(shell,
 					UIText.CommitAction_MergeHeadErrorTitle,
 					UIText.CommitAction_MergeHeadErrorMessage);
-			throw new IllegalStateException(e);
-		}
-	}
-
-	private String getCherryPickOriginalAuthor(Repository mergeRepository) {
-		try {
-			ObjectId cherryPickHead = mergeRepository.readCherryPickHead();
-			PersonIdent author = new RevWalk(mergeRepository).parseCommit(cherryPickHead).getAuthorIdent();
-			return author.getName() + " <" + author.getEmailAddress() + ">";  //$NON-NLS-1$//$NON-NLS-2$
-		} catch (IOException e) {
-			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
-					true);
 			throw new IllegalStateException(e);
 		}
 	}

@@ -11,6 +11,7 @@ package org.eclipse.egit.ui.internal.synchronize;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IFile;
@@ -78,7 +79,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 				VIEWER_ID);
 		configuration.setProperty(
 				ModelSynchronizeParticipant.P_VISIBLE_MODEL_PROVIDER,
-				WORKSPACE_MODEL_PROVIDER_ID);
+				GitChangeSetModelProvider.ID);
 		super.initializeConfiguration(configuration);
 
 		configuration.addActionContribution(new GitActionContributor());
@@ -86,15 +87,31 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 	@Override
 	public ModelProvider[] getEnabledModelProviders() {
+		List<ModelProvider> providers = new ArrayList<ModelProvider>();
 		ModelProvider[] avaliableProviders = super.getEnabledModelProviders();
+		if (!includeResourceModelProvider()) {
+			for (ModelProvider provider : avaliableProviders)
+				if (provider.getId().equals(WORKSPACE_MODEL_PROVIDER_ID)) {
+					providers.add(provider);
+					break;
+				}
 
-		for (ModelProvider provider : avaliableProviders)
-			if (provider.getId().equals(GitChangeSetModelProvider.ID))
-				return avaliableProviders;
+			providers.add(GitChangeSetModelProvider.getProvider());
+		} else {
+			boolean addGitProvider = true;
 
-		int capacity = avaliableProviders.length + 1;
-		ArrayList<ModelProvider> providers = new ArrayList<ModelProvider>(capacity);
-		providers.add(GitChangeSetModelProvider.getProvider());
+			for (ModelProvider provider : avaliableProviders) {
+				String providerId = provider.getId();
+				providers.add(provider);
+
+				if (addGitProvider
+						&& providerId.equals(GitChangeSetModelProvider.ID))
+					addGitProvider = false;
+			}
+
+			if (addGitProvider)
+				providers.add(GitChangeSetModelProvider.getProvider());
+		}
 
 		return providers.toArray(new ModelProvider[providers.size()]);
 	}
@@ -125,6 +142,15 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		}
 
 		return super.asCompareInput(object);
+	}
+
+	private boolean includeResourceModelProvider() {
+		GitSubscriberMergeContext context = (GitSubscriberMergeContext) getContext();
+		for (GitSynchronizeData gsd : context.getSyncData())
+			if (!gsd.shouldIncludeLocal())
+				return false;
+
+		return true;
 	}
 
 	private ICompareInput getFileFromGit(GitSynchronizeData gsd, IPath location) {
