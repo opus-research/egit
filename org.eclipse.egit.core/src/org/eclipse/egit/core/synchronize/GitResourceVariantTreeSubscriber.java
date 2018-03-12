@@ -70,12 +70,6 @@ public class GitResourceVariantTreeSubscriber extends
 				&& gsds.contains(res.getProject()) && !isIgnoredHint(res);
 	}
 
-	/**
-	 * Returns all members of git repository (including those that are not
-	 * imported into workspace)
-	 *
-	 * @param res
-	 */
 	@Override
 	public IResource[] members(IResource res) throws TeamException {
 		if(res.getType() == IResource.FILE)
