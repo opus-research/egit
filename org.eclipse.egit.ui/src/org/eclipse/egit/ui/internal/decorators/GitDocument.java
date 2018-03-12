@@ -16,11 +16,11 @@ import org.eclipse.core.resources.IEncodedStorage;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.GitProvider;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.Document;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
@@ -32,8 +32,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.team.core.RepositoryProvider;
 
 class GitDocument extends Document implements RepositoryListener {
 	private final IResource resource;
@@ -113,17 +111,17 @@ class GitDocument extends Document implements RepositoryListener {
 				return;
 			}
 		} else {
-			String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
-					new Object[] { baseline, resource, repository });
-			Activator.logError(msg, new Throwable());
+			Activator.logError("Could not resolve quickdiff baseline "
+					+ baseline + " corresponding to " + resource + " in "
+					+ repository, new Throwable());
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
 		}
 		Commit baselineCommit = repository.mapCommit(commitId);
 		if (baselineCommit == null) {
-			String msg = NLS.bind(UIText.GitDocument_errorLoadCommit,
-					new Object[] { commitId, baseline, resource, repository });
-			Activator.logError(msg, new Throwable());
+			Activator.logError("Could not load commit " + commitId + " for "
+					+ baseline + " corresponding to " + resource + " in "
+					+ repository, new Throwable());
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
 		}
@@ -138,9 +136,9 @@ class GitDocument extends Document implements RepositoryListener {
 		}
 		Tree baselineTree = baselineCommit.getTree();
 		if (baselineTree == null) {
-			String msg = NLS.bind(UIText.GitDocument_errorLoadTree,
-					new Object[] { treeId, baseline, resource, repository });
-			Activator.logError(msg, new Throwable());
+			Activator.logError("Could not load tree " + treeId + " for "
+					+ baseline + " corresponding to " + resource + " in "
+					+ repository, new Throwable());
 			setResolved(null, null, null, ""); //$NON-NLS-1$
 			return;
 		}
@@ -206,7 +204,7 @@ class GitDocument extends Document implements RepositoryListener {
 		try {
 			populate();
 		} catch (IOException e1) {
-			Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
+			Activator.logError("Failed to refresh quickdiff", e1);
 		}
 	}
 
