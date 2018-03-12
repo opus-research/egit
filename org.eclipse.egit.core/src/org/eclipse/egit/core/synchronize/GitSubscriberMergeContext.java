@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,21 +11,22 @@ package org.eclipse.egit.core.synchronize;
 import java.io.IOException;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryChangeListener;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.diff.IDiff;
 import org.eclipse.team.core.mapping.ISynchronizationScopeManager;
 import org.eclipse.team.core.subscribers.SubscriberMergeContext;
@@ -39,7 +40,7 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 	private final RepositoryChangeListener repoChangeListener;
 
-	private final IndexDiffChangedListener indexDiffChangeListener;
+	private final IResourceChangeListener resourceChangeListener;
 
 	/**
 	 * @param subscriber
@@ -54,18 +55,24 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 		repoChangeListener = new RepositoryChangeListener() {
 			public void repositoryChanged(RepositoryMapping which) {
-				handleRepositoryChange(subscriber, which);
+				update(subscriber, which);
 			}
 		};
-		indexDiffChangeListener = new IndexDiffChangedListener() {
+		resourceChangeListener = new IResourceChangeListener() {
 
-			public void indexDiffChanged(Repository repository,
-					IndexDiffData indexDiffData) {
-				handleResourceChange(subscriber, repository);
+			public void resourceChanged(IResourceChangeEvent event) {
+				if (event.getDelta() == null)
+					return;
+
+				for (IResourceDelta delta : event.getDelta().getAffectedChildren()) {
+					RepositoryMapping repo = RepositoryMapping.getMapping(delta.getResource());
+					if (repo != null)
+						update(subscriber, repo);
+				}
 			}
 		};
 		GitProjectData.addRepositoryChangeListener(repoChangeListener);
-		Activator.getDefault().getIndexDiffCache().addIndexDiffChangedListener(indexDiffChangeListener);
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(resourceChangeListener);
 
 		initialize();
 	}
@@ -101,33 +108,27 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 	@Override
 	public void dispose() {
 		GitProjectData.removeRepositoryChangeListener(repoChangeListener);
-		Activator.getDefault().getIndexDiffCache().removeIndexDiffChangedListener(indexDiffChangeListener);
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
 		super.dispose();
 	}
 
-	private void handleRepositoryChange(
-			GitResourceVariantTreeSubscriber subscriber, RepositoryMapping which) {
+
+	private void update(GitResourceVariantTreeSubscriber subscriber,
+			RepositoryMapping which) {
 		for (GitSynchronizeData gsd : gsds) {
 			if (which.getRepository().equals(gsd.getRepository())) {
 				try {
 					gsd.updateRevs();
 				} catch (IOException e) {
-					Activator
-							.error(CoreText.GitSubscriberMergeContext_FailedUpdateRevs,
-									e);
+					Activator.error(
+							CoreText.GitSubscriberMergeContext_FailedUpdateRevs,
+							e);
 
 					return;
 				}
 
 				subscriber.reset(this.gsds);
-			}
-		}
-	}
 
-	private void handleResourceChange(GitResourceVariantTreeSubscriber subscriber,
-			Repository which) {
-		for (GitSynchronizeData gsd : gsds) {
-			if (which.equals(gsd.getRepository())) {
 				ResourceTraversal[] traversals = getScopeManager().getScope()
 						.getTraversals();
 				try {
