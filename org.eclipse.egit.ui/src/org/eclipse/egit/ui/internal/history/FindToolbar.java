@@ -427,11 +427,8 @@ public class FindToolbar extends Composite {
 	 * @param historyTable
 	 * @param commitArray
 	 */
-	void setInput(final RevFlag hFlag, final Table historyTable,
+	public void setInput(final RevFlag hFlag, final Table historyTable,
 			final SWTCommit[] commitArray) {
-		// this may cause a FindBugs warning, but
-		// copying the array is probably not a good
-		// idea
 		this.fileRevisions = commitArray;
 		this.historyTable = historyTable;
 		findResults.setHighlightFlag(hFlag);
@@ -509,7 +506,7 @@ public class FindToolbar extends Composite {
 	/**
 	 * Clears the toolbar.
 	 */
-	void clear() {
+	public void clear() {
 		patternField.setBackground(null);
 		if (patternField.getText().length() > 0) {
 			patternField.selectAll();
@@ -549,7 +546,7 @@ public class FindToolbar extends Composite {
 	 * @param listener
 	 *            the listener that will receive the event
 	 */
-	void addSelectionListener(Listener listener) {
+	public void addSelectionListener(Listener listener) {
 		eventList.add(listener);
 	}
 
