@@ -1129,9 +1129,6 @@ public class UIText extends NLS {
 	public static String SourceBranchPage_cannotCreateTemp;
 
 	/** */
-	public static String SourceBranchPage_CompositeTransportErrorMessage;
-
-	/** */
 	public static String CloneDestinationPage_title;
 
 	/** */
@@ -2621,9 +2618,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingBranchName;
-
-	/** */
-	public static String DecoratorPreferencesPage_bindingBranchStatus;
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingDirtyFlag;
