@@ -10,6 +10,7 @@ package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.egit.core.synchronize.GitCommitsModelCache.RIGHT;
 import static org.eclipse.egit.core.synchronize.GitCommitsModelCache.calculateAndSetChangeKind;
+import static org.eclipse.jgit.treewalk.filter.TreeFilter.ANY_DIFF;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
 import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
 
 /**
@@ -40,10 +40,9 @@ public class WorkingTreeChangeCache {
 	public static Map<String, Change> build(Repository repo) {
 		TreeWalk tw = new TreeWalk(repo);
 		try {
-			int fileNth = tw.addTree(new FileTreeIterator(repo));
-			int cacheNth = tw.addTree(new DirCacheIterator(repo.readDirCache()));
-			IndexDiffFilter diffFilter = new IndexDiffFilter(cacheNth, fileNth);
-			tw.setFilter(AndTreeFilter.create(new NotIgnoredFilter(0), diffFilter));
+			tw.addTree(new FileTreeIterator(repo));
+			tw.addTree(new DirCacheIterator(repo.readDirCache()));
+			tw.setFilter(AndTreeFilter.create(new NotIgnoredFilter(0), ANY_DIFF));
 			tw.setRecursive(true);
 
 			Map<String, Change> result = new HashMap<String, Change>();
