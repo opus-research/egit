@@ -124,6 +124,8 @@ public class BranchSelectionDialog extends Dialog {
 
 				String refName = refNameFromDialog();
 
+				boolean headSelected = Constants.HEAD.equals(refName);
+
 				boolean tagSelected = refName != null
 						&& refName.startsWith(Constants.R_TAGS);
 
@@ -131,15 +133,14 @@ public class BranchSelectionDialog extends Dialog {
 						&& (refName.startsWith(Constants.R_HEADS) || refName
 								.startsWith(Constants.R_REMOTES));
 
-				// we don't allow reset on tags, but checkout
-				if (showResetType)
-					confirmationBtn.setEnabled(branchSelected);
-				else
-					confirmationBtn.setEnabled(branchSelected || tagSelected);
+				// TODO add support for checkout of tags
+				confirmationBtn.setEnabled(branchSelected && !headSelected
+						&& !tagSelected);
 
 				if (!showResetType) {
 					// we don't support rename on tags
-					renameButton.setEnabled(branchSelected && !tagSelected);
+					renameButton.setEnabled(branchSelected && !headSelected
+							&& !tagSelected);
 
 					// new branch can not be based on a tag
 					newButton.setEnabled(branchSelected && !tagSelected);
@@ -214,8 +215,6 @@ public class BranchSelectionDialog extends Dialog {
 		RepositoryTreeNode<Repository> parentNode;
 		if (refName.startsWith(Constants.R_HEADS)) {
 			parentNode = localBranches;
-			// TODO fix this: if we are on a local branch or tag, we must do the
-			// indirection through the commit
 		} else if (refName.startsWith(Constants.R_REMOTES)) {
 			parentNode = remoteBranches;
 		} else if (refName.startsWith(Constants.R_TAGS)) {
@@ -298,8 +297,7 @@ public class BranchSelectionDialog extends Dialog {
 		if (sel.size() != 1)
 			return null;
 		RepositoryTreeNode node = (RepositoryTreeNode) sel.getFirstElement();
-		if (node.getType() == RepositoryTreeNodeType.REF
-				|| node.getType() == RepositoryTreeNodeType.TAG) {
+		if (node.getType() == RepositoryTreeNodeType.REF) {
 			return ((Ref) node.getObject()).getName();
 		}
 		return null;
