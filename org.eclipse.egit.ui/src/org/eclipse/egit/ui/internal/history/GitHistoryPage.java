@@ -270,7 +270,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				if (showAllFilter == filter) {
 					showAllFilter = ShowFilter.SHOWALLRESOURCE;
 					showAllResourceVersionsAction.setChecked(true);
-					initAndStartRevWalk(false);
+					refresh();
 				}
 			}
 			if (isChecked() && showAllFilter != filter) {
@@ -283,7 +283,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					showAllFolderVersionsAction.setChecked(false);
 				if (this != showAllResourceVersionsAction)
 					showAllResourceVersionsAction.setChecked(false);
-				initAndStartRevWalk(false);
+				refresh();
 			}
 			GitHistoryPage.this.firePropertyChange(GitHistoryPage.this, P_NAME,
 					oldName, getName());
@@ -410,100 +410,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		viewMenuMgr.add(showAllBranchesAction);
 	}
 
-	void initAndStartRevWalk(boolean forceNewWalk) throws IllegalStateException {
-		cancelRefreshJob();
-		Repository db = input.getRepository();
-		AnyObjectId headId;
-		try {
-			headId = db.resolve(Constants.HEAD);
-		} catch (IOException e) {
-			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorParsingHead, Activator
-							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)));
-		}
-		if (headId == null)
-			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorParsingHead, Activator
-							.getDefault().getRepositoryUtil()
-							.getRepositoryName(db)));
-
-		List<String> paths = buildFilterPaths(input.getItems(), input
-				.getFileList(), db);
-
-		if (forceNewWalk || pathChange(pathFilters, paths)
-				|| currentWalk == null || !headId.equals(currentHeadId)) {
-			// TODO Do not dispose SWTWalk just because HEAD changed
-			// In theory we should be able to update the graph and
-			// not dispose of the SWTWalk, even if HEAD was reset to
-			// HEAD^1 and the old HEAD commit should not be visible.
-			//
-			currentHeadId = headId;
-			if (currentWalk != null)
-				currentWalk.release();
-			currentWalk = new SWTWalk(db);
-			currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
-			currentWalk.sort(RevSort.BOUNDARY, true);
-			highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
-		} else {
-			currentWalk.reset();
-		}
-
-		try {
-			if (store
-					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
-				markStartAllRefs(Constants.R_HEADS);
-				markStartAllRefs(Constants.R_REMOTES);
-			} else
-				currentWalk.markStart(currentWalk.parseCommit(headId));
-		} catch (IOException e) {
-			throw new IllegalStateException(NLS.bind(
-					UIText.GitHistoryPage_errorReadingHeadCommit, headId, db
-							.getDirectory().getAbsolutePath()), e);
-		}
-
-		final TreeWalk fileWalker = new TreeWalk(db);
-		fileWalker.setRecursive(true);
-		if (paths.size() > 0) {
-			pathFilters = paths;
-			currentWalk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
-					.createFromStrings(paths), TreeFilter.ANY_DIFF));
-			fileWalker.setFilter(currentWalk.getTreeFilter().clone());
-
-		} else {
-			pathFilters = null;
-			currentWalk.setTreeFilter(TreeFilter.ALL);
-			fileWalker.setFilter(TreeFilter.ANY_DIFF);
-		}
-		fileViewer.setTreeWalk(db, fileWalker);
-		fileViewer.refresh();
-		fileViewer.addSelectionChangedListener(commentViewer);
-		commentViewer.setTreeWalk(fileWalker);
-		commentViewer.setDb(db);
-		commentViewer.refresh();
-
-		final SWTCommitList list;
-		list = new SWTCommitList(graph.getControl().getDisplay());
-		list.source(currentWalk);
-		final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
-		rj.addJobChangeListener(new JobChangeAdapter() {
-			@Override
-			public void done(final IJobChangeEvent event) {
-				final Control graphctl = graph.getControl();
-				if (job != rj || graphctl.isDisposed())
-					return;
-				graphctl.getDisplay().asyncExec(new Runnable() {
-					public void run() {
-						if (job == rj)
-							job = null;
-					}
-				});
-			}
-		});
-		job = rj;
-		schedule(rj);
-	}
-
 	/**
 	 * @param compareMode
 	 *            switch compare mode button of the view on / off
@@ -624,7 +530,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 														.getLocation(),
 												"Executing async repository changed event"); //$NON-NLS-1$
 							refschangedRunnable = null;
-							initAndStartRevWalk(true);
+							inputSet();
 						}
 					}
 				};
@@ -856,8 +762,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		} else if (!showComment && showFiles) {
 			graphDetailSplit.setMaximizedControl(null);
 			// the parent of the control!
-			revInfoSplit.setMaximizedControl(fileViewer.getControl()
-					.getParent());
+			revInfoSplit.setMaximizedControl(fileViewer.getControl().getParent());
 		} else if (!showComment && !showFiles) {
 			graphDetailSplit.setMaximizedControl(graph.getControl());
 		}
@@ -1082,12 +987,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	@Override
 	public boolean inputSet() {
+		cancelRefreshJob();
 
 		if (this.input != null)
 			return true;
 
-		cancelRefreshJob();
 		setErrorMessage(null);
+		if (currentWalk != null)
+			currentWalk.release();
+		currentWalk = null;
 		Object o = super.getInput();
 		if (o == null) {
 			setErrorMessage(UIText.GitHistoryPage_NoInputMessage);
@@ -1126,7 +1034,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					.getAdapter(IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
-						.getMapping(resource);
+						.getMapping((IResource) o);
 				Repository repo = mapping.getRepository();
 				input = new HistoryPageInput(repo, new IResource[] { resource });
 			}
@@ -1147,27 +1055,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		this.name = calcluateName(input);
 
-		// disable the filters if we have a Repository as input
-		boolean filtersActive = inResources != null || inFiles != null;
-		showAllRepoVersionsAction.setEnabled(filtersActive);
-		showAllProjectVersionsAction.setEnabled(filtersActive);
-		// the repository itself has no notion of projects
-		showAllFolderVersionsAction.setEnabled(inResources != null);
-		showAllResourceVersionsAction.setEnabled(filtersActive);
+		final Repository db = input.getRepository();
 
-		try {
-			initAndStartRevWalk(true);
-		} catch (IllegalStateException e) {
-			Activator.handleError(e.getMessage(), e.getCause(), true);
-			return false;
-		}
-
-		return true;
-	}
-
-	private ArrayList<String> buildFilterPaths(final IResource[] inResources,
-			final File[] inFiles, final Repository db)
-			throws IllegalStateException {
 		final ArrayList<String> paths;
 		if (inResources != null) {
 			paths = new ArrayList<String>(inResources.length);
@@ -1176,8 +1065,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				if (map == null)
 					continue;
 				if (db != map.getRepository()) {
-					throw new IllegalStateException(
-							UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
+					setErrorMessage(UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
+					return false;
 				}
 
 				if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
@@ -1214,11 +1103,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				}
 
 				if (gitDirPath.isPrefixOf(filePath)) {
-					throw new IllegalStateException(
-							NLS
-									.bind(
-											UIText.GitHistoryPage_FileOrFolderPartOfGitDirMessage,
-											filePath.toOSString()));
+					setErrorMessage(NLS
+							.bind(
+									UIText.GitHistoryPage_FileOrFolderPartOfGitDirMessage,
+									filePath.toOSString()));
+					return false;
 				}
 
 				IPath pathToAdd = filePath.removeFirstSegments(segmentCount)
@@ -1230,7 +1119,107 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		} else {
 			paths = new ArrayList<String>(0);
 		}
-		return paths;
+		// disable the filters if we have a Repository as input
+		boolean filtersActive = inResources != null || inFiles != null;
+		showAllRepoVersionsAction.setEnabled(filtersActive);
+		showAllProjectVersionsAction.setEnabled(filtersActive);
+		// the repository itself has no notion of projects
+		showAllFolderVersionsAction.setEnabled(inResources != null);
+		showAllResourceVersionsAction.setEnabled(filtersActive);
+
+		final AnyObjectId headId;
+		try {
+			headId = db.resolve(Constants.HEAD);
+		} catch (IOException e) {
+			String errorMessage = NLS.bind(
+					UIText.GitHistoryPage_errorParsingHead, db.getDirectory()
+							.getAbsolutePath());
+			setErrorMessage(errorMessage);
+			return false;
+		}
+
+		if (headId == null) {
+			String errorMessage = NLS.bind(
+					UIText.GitHistoryPage_errorParsingHead, Activator
+							.getDefault().getRepositoryUtil()
+							.getRepositoryName(db));
+			setErrorMessage(errorMessage);
+			return false;
+		}
+
+		if (pathChange(pathFilters, paths) || currentWalk == null
+				|| !headId.equals(currentHeadId)) {
+			// TODO Do not dispose SWTWalk just because HEAD changed
+			// In theory we should be able to update the graph and
+			// not dispose of the SWTWalk, even if HEAD was reset to
+			// HEAD^1 and the old HEAD commit should not be visible.
+			//
+			currentHeadId = headId;
+			if (currentWalk != null)
+				currentWalk.release();
+			currentWalk = new SWTWalk(db);
+			currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
+			currentWalk.sort(RevSort.BOUNDARY, true);
+			highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
+		} else {
+			currentWalk.reset();
+		}
+
+		try {
+			if (store.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
+				markStartAllRefs(Constants.R_HEADS);
+				markStartAllRefs(Constants.R_REMOTES);
+			} else
+				currentWalk.markStart(currentWalk.parseCommit(headId));
+		} catch (IOException e) {
+			Activator.logError(NLS.bind(
+					UIText.GitHistoryPage_errorReadingHeadCommit, headId, db
+							.getDirectory().getAbsolutePath()), e);
+			return false;
+		}
+
+		final TreeWalk fileWalker = new TreeWalk(db);
+		fileWalker.setRecursive(true);
+		if (paths.size() > 0) {
+			pathFilters = paths;
+			currentWalk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
+					.createFromStrings(paths), TreeFilter.ANY_DIFF));
+			fileWalker.setFilter(currentWalk.getTreeFilter().clone());
+
+		} else {
+			pathFilters = null;
+			currentWalk.setTreeFilter(TreeFilter.ALL);
+			fileWalker.setFilter(TreeFilter.ANY_DIFF);
+		}
+		fileViewer.setTreeWalk(db, fileWalker);
+		fileViewer.addSelectionChangedListener(commentViewer);
+		commentViewer.setTreeWalk(fileWalker);
+		commentViewer.setDb(db);
+		findToolbar.clear();
+		graph.setInput(highlightFlag, null, null);
+
+		final SWTCommitList list;
+		list = new SWTCommitList(graph.getControl().getDisplay());
+		list.source(currentWalk);
+
+		final GenerateHistoryJob rj = new GenerateHistoryJob(this, list);
+		rj.addJobChangeListener(new JobChangeAdapter() {
+			@Override
+			public void done(final IJobChangeEvent event) {
+				final Control graphctl = graph.getControl();
+				if (job != rj || graphctl.isDisposed())
+					return;
+				graphctl.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						if (job == rj)
+							job = null;
+					}
+				});
+			}
+		});
+		job = rj;
+		schedule(rj);
+		return true;
 	}
 
 	/**
@@ -1264,27 +1253,33 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	 * @throws MissingObjectException
 	 * @throws IncorrectObjectTypeException
 	 */
-	private void markStartAllRefs(String prefix) throws IOException,
-			MissingObjectException, IncorrectObjectTypeException {
-		for (Entry<String, Ref> refEntry : input.getRepository()
-				.getRefDatabase().getRefs(prefix).entrySet()) {
+	private void markStartAllRefs(String prefix) throws IOException, MissingObjectException,
+			IncorrectObjectTypeException {
+		for (Entry<String, Ref> refEntry : input.getRepository().getRefDatabase()
+				.getRefs(prefix).entrySet()) {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			currentWalk.markStart(currentWalk.parseCommit(ref.getObjectId()));
+			currentWalk.markStart(currentWalk.parseCommit(ref
+					.getObjectId()));
 		}
 	}
 
 	private void cancelRefreshJob() {
 		if (job != null && job.getState() != Job.NONE) {
 			job.cancel();
-			try {
-				job.join();
-			} catch (InterruptedException e) {
-				cancelRefreshJob();
-				return;
-			}
+
+			// As the job had to be canceled but was working on
+			// the data connected with the currentWalk we cannot
+			// be sure it really finished. Since the walk is not
+			// thread safe we must throw it away and build a new
+			// one to start another walk. Clearing our field will
+			// ensure that happens.
+			//
 			job = null;
+			currentWalk = null;
+			highlightFlag = null;
+			pathFilters = null;
 		}
 	}
 
@@ -1319,7 +1314,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					graph.setInput(highlightFlag, list, asArray);
 					findToolbar.setInput(highlightFlag, graph.getTableView()
 							.getTable(), asArray);
-					setErrorMessage(null);
 				}
 			}
 		});
