@@ -32,7 +32,10 @@ public class RevertHandler extends AbstractHistoryCommandHandler {
 	public static final String ID = "org.eclipse.egit.ui.history.Revert"; //$NON-NLS-1$
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final RevCommit commit = getSelectedCommit(event);
+		final RevCommit commit = (RevCommit) getSelection(getPage())
+				.getFirstElement();
+		if (commit == null)
+			return null;
 		Repository repo = getRepository(event);
 		if (repo == null)
 			return null;
