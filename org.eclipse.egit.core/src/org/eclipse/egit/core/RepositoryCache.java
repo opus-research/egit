@@ -21,11 +21,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
@@ -35,10 +38,29 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 public class RepositoryCache {
 	private final Map<File, Reference<Repository>> repositoryCache = new HashMap<File, Reference<Repository>>();
 
+	private final IPreferenceChangeListener configuredRepositoriesListener = new IPreferenceChangeListener() {
+
+		@Override
+		public void preferenceChange(PreferenceChangeEvent event) {
+			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey())) {
+				return;
+			}
+			prune(Activator.getDefault().getRepositoryUtil().getRepositories());
+		}
+
+	};
+
+	RepositoryCache() {
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.addPreferenceChangeListener(configuredRepositoriesListener);
+	}
+
+	void dispose() {
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.removePreferenceChangeListener(configuredRepositoriesListener);
+	}
+
 	/**
-	 * Looks in the cache for a {@link Repository} matching the given git
-	 * directory. If there is no such Repository instance in the cache, one is
-	 * created.
 	 *
 	 * @param gitDir
 	 * @return an existing instance of Repository for <code>gitDir</code> or a
@@ -48,7 +70,7 @@ public class RepositoryCache {
 	 */
 	public synchronized Repository lookupRepository(final File gitDir)
 			throws IOException {
-		prune();
+		prune(repositoryCache);
 		// Make sure we have a normalized path without .. segments here.
 		File normalizedGitDir = new Path(gitDir.getAbsolutePath()).toFile();
 		Reference<Repository> r = repositoryCache.get(normalizedGitDir);
@@ -62,34 +84,13 @@ public class RepositoryCache {
 	}
 
 	/**
-	 * Looks in the cache for a {@link Repository} matching the given git
-	 * directory.
-	 *
-	 * @param gitDir
-	 * @return the cached repository, if any, or {@code null} if node found in
-	 *         the cache.
-	 */
-	public synchronized Repository getRepository(final File gitDir) {
-		prune();
-		if (gitDir == null) {
-			return null;
-		}
-		File normalizedGitDir = new Path(gitDir.getAbsolutePath()).toFile();
-		Reference<Repository> r = repositoryCache.get(normalizedGitDir);
-		return r != null ? r.get() : null;
-	}
-
-	/**
 	 * @return all Repository instances contained in the cache
 	 */
 	public synchronized Repository[] getAllRepositories() {
-		prune();
+		prune(repositoryCache);
 		List<Repository> repositories = new ArrayList<Repository>();
 		for (Reference<Repository> reference : repositoryCache.values()) {
-			Repository repository = reference.get();
-			if (repository != null) {
-				repositories.add(repository);
-			}
+			repositories.add(reference.get());
 		}
 		return repositories.toArray(new Repository[repositories.size()]);
 	}
@@ -142,16 +143,22 @@ public class RepositoryCache {
 		return repository;
 	}
 
-	private void prune() {
-		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = repositoryCache
-				.entrySet()
+	private static void prune(Map<File, Reference<Repository>> map) {
+		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = map.entrySet()
 				.iterator(); i.hasNext();) {
-			Map.Entry<File, Reference<Repository>> entry = i.next();
-			Repository repository = entry.getValue().get();
+			Repository repository = i.next().getValue().get();
 			if (repository == null || !repository.getDirectory().exists()) {
 				i.remove();
-				Activator.getDefault().getIndexDiffCache()
-						.remove(entry.getKey());
+			}
+		}
+	}
+
+	private synchronized void prune(Set<String> configuredRepositories) {
+		Iterator<File> iterator = repositoryCache.keySet().iterator();
+		while (iterator.hasNext()) {
+			File gitDir = iterator.next();
+			if (!configuredRepositories.contains(gitDir.getAbsolutePath())) {
+				iterator.remove();
 			}
 		}
 	}
@@ -161,11 +168,6 @@ public class RepositoryCache {
 	 * Unit tests can use this method to get a clean beginning state
 	 */
 	public synchronized void clear() {
-		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
-		for (Map.Entry<File, Reference<Repository>> entry : repositoryCache
-				.entrySet()) {
-			cache.remove(entry.getKey());
-		}
 		repositoryCache.clear();
 	}
 

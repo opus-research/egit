@@ -572,10 +572,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		@Override
 		public void widgetSelected(SelectionEvent sEvent) {
 			try {
-				Repository repository = currentPlan.getRepository();
-				if (repository != null) {
-					command.execute(repository);
-				}
+				command.execute(currentPlan.getRepository());
 			} catch (ExecutionException e) {
 				Activator.showError(e.getMessage(), e);
 			}
