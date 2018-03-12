@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -14,7 +14,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.preferences.ConfigurationEditorComponent;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -40,7 +39,8 @@ public class RepositoryPropertyPage extends PropertyPage {
 		GridLayoutFactory.fillDefaults().applyTo(displayArea);
 		GridDataFactory.fillDefaults().applyTo(displayArea);
 
-		final Repository repo = CommonUtils.getAdapter(getElement(), Repository.class);
+		final Repository repo = (Repository) getElement()
+				.getAdapter(Repository.class);
 		if (repo == null)
 			return displayArea;
 
