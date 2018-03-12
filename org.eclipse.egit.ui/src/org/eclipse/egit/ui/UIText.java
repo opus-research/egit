@@ -172,6 +172,9 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_errorComputingHistory;
 
 	/** */
+	public static String GenerateHistoryJob_NoCommits;
+
+	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -2308,6 +2311,24 @@ public class UIText extends NLS {
 	public static String CommitDialogPreferencePage_hardWrapMessageTooltip;
 
 	/** */
+	public static String CommitDialogPreferencePage_createChangeId;
+
+	/** */
+	public static String CommitDialogPreferencePage_createChangeIdTooltip;
+
+	/** */
+	public static String CommitDialogPreferencePage_footers;
+
+	/** */
+	public static String CommitDialogPreferencePage_formatting;
+
+	/** */
+	public static String CommitDialogPreferencePage_signedOffBy;
+
+	/** */
+	public static String CommitDialogPreferencePage_signedOffByTooltip;
+
+	/** */
 	public static String Decorator_exceptionMessage;
 
 	/** */
@@ -2942,12 +2963,6 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_deselectAll;
 
 	/** */
-	public static String GitLightweightDecorator_AsynchronousDecorationError;
-
-	/** */
-	public static String GitLightweightDecorator_ResourceError;
-
-	/** */
 	public static String GitTraceConfigurationDialog_ApplyButton;
 
 	/** */
@@ -3390,6 +3405,7 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
+	/** */
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
