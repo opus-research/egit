@@ -27,7 +27,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,7 +44,7 @@ public class CloneOperationTest extends DualRepositoryTestCase {
 		repository1 = new TestRepository(new File(workdir, Constants.DOT_GIT));
 
 		File file = new File(workdir, "file1.txt");
-		FileUtils.createNewFile(file);
+		file.createNewFile();
 		Git git = new Git(repository1.getRepository());
 		git.add().addFilepattern("file1.txt").call();
 

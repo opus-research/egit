@@ -94,12 +94,10 @@ public class GerritConfigurationPage extends WizardPage {
 		configureGerrit.addSelectionListener(new SelectionListener() {
 			public void widgetSelected(SelectionEvent e) {
 				updateEnablement();
-				checkPage();
 			}
 
 			public void widgetDefaultSelected(SelectionEvent e) {
 				updateEnablement();
-				checkPage();
 			}
 		});
 		new Label(comp, SWT.NULL).setText(UIText.GerritConfigurationPage_configurePushToGerrit);
@@ -192,7 +190,7 @@ public class GerritConfigurationPage extends WizardPage {
 	 * @return true if Gerrit configuration should be done
 	 */
 	public boolean configureGerrit() {
-		return configureGerrit.getSelection();
+		return configureGerrit.isEnabled();
 	}
 
 	/**
