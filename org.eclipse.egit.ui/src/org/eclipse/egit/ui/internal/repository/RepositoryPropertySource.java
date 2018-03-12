@@ -65,7 +65,7 @@ public class RepositoryPropertySource implements IPropertySource,
 
 	private final FileBasedConfig userHomeConfig;
 
-	private final StoredConfig repositoryConfig;
+	private final FileBasedConfig repositoryConfig;
 
 	private final StoredConfig effectiveConfig;
 
@@ -83,13 +83,9 @@ public class RepositoryPropertySource implements IPropertySource,
 
 		effectiveConfig = rep.getConfig();
 		userHomeConfig = SystemReader.getInstance().openUserConfig(FS.DETECTED);
-
-		if (effectiveConfig instanceof FileBasedConfig) {
-			File configFile = ((FileBasedConfig) effectiveConfig).getFile();
-			repositoryConfig = new FileBasedConfig(configFile, rep.getFS());
-		} else {
-			repositoryConfig = effectiveConfig;
-		}
+		// TODO constant?
+		File configFile = new File(rep.getDirectory(), "config"); //$NON-NLS-1$
+		repositoryConfig = new FileBasedConfig(configFile);
 
 		try {
 			effectiveConfig.load();
@@ -323,12 +319,8 @@ public class RepositoryPropertySource implements IPropertySource,
 					resultList.add(desc);
 				}
 			}
-
-			categoryString = UIText.RepositoryPropertySource_RepositoryConfigurationCategory;
-			if (repositoryConfig instanceof FileBasedConfig) {
-				categoryString += ((FileBasedConfig) repositoryConfig)
-						.getFile().getAbsolutePath();
-			}
+			categoryString = UIText.RepositoryPropertySource_RepositoryConfigurationCategory
+					+ repositoryConfig.getFile().getAbsolutePath();
 
 			boolean editable = true;
 
@@ -435,7 +427,7 @@ public class RepositoryPropertySource implements IPropertySource,
 		return isPropertySet(id);
 	}
 
-	private void setConfigValue(StoredConfig configuration, String key,
+	private void setConfigValue(FileBasedConfig configuration, String key,
 			String value) throws IOException {
 		// we un-set empty strings, as the config API does not allow to
 		// distinguish this case
