@@ -13,10 +13,7 @@ package org.eclipse.egit.core.project;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
@@ -27,8 +24,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.util.SystemReader;
 
 /**
  * Searches for existing Git repositories associated with a project's files.
@@ -54,9 +49,6 @@ public class RepositoryFinder {
 	private final IProject proj;
 
 	private final Collection<RepositoryMapping> results = new ArrayList<RepositoryMapping>();
-	private final Set<File> gitdirs = new HashSet<File>();
-
-	private Set<String> ceilingDirectories = new HashSet<String>();
 
 	/**
 	 * Create a new finder to locate Git repositories for a project.
@@ -67,12 +59,6 @@ public class RepositoryFinder {
 	 */
 	public RepositoryFinder(final IProject p) {
 		proj = p;
-		String ceilingDirectoriesVar = SystemReader.getInstance().getenv(
-				Constants.GIT_CEILING_DIRECTORIES_KEY);
-		if (ceilingDirectoriesVar != null) {
-			ceilingDirectories.addAll(Arrays.asList(ceilingDirectoriesVar
-					.split(File.pathSeparator)));
-		}
 	}
 
 	/**
@@ -103,7 +89,6 @@ public class RepositoryFinder {
 		try {
 			if (loc != null) {
 				final File fsLoc = loc.toFile();
-				assert fsLoc.isAbsolute();
 				final File ownCfg = configFor(fsLoc);
 				final IResource[] children;
 
@@ -113,13 +98,10 @@ public class RepositoryFinder {
 				if (c.isLinked() || c instanceof IProject) {
 					File p = fsLoc.getParentFile();
 					while (p != null) {
-						System.out.println("Looking at candidate dir: " + p);
 						final File pCfg = configFor(p);
 						if (pCfg.isFile()) {
 							register(c, pCfg.getParentFile());
 						}
-						if (ceilingDirectories.contains(p.getPath()))
-							break;
 						p = p.getParentFile();
 					}
 				}
@@ -156,9 +138,6 @@ public class RepositoryFinder {
 		} catch (IOException ioe) {
 			f = gitdir.getAbsoluteFile();
 		}
-		if (gitdirs.contains(f))
-			return;
-		gitdirs.add(f);
 		results.add(new RepositoryMapping(c, f));
 	}
 }
