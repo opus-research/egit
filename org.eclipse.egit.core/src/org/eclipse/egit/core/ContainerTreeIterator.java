@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2012 Google Inc. and others.
+ * Copyright (C) 2008, Google Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -179,8 +179,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 				hasInheritedResourceFilters, resources, entries);
 
 		for (IResource resource : resources)
-			if (!resource.isLinked())
-				entries.add(new ResourceEntry(resource, inheritableResourceFilter));
+			entries.add(new ResourceEntry(resource, inheritableResourceFilter));
 
 		return entries.toArray(new Entry[entries.size()]);
 	}
@@ -222,17 +221,11 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			}
 
 			Set<File> resourceEntries = new HashSet<File>();
-			for (IResource resource : memberResources)
-				// Make sure linked resources are ignored here.
-				// This is particularly important in the case of a linked
-				// resource which targets a normally filtered/hidden file
-				// within the same location. In such case, ignoring it here
-				// ensures the actual target gets included in the code below.
-				if (!resource.isLinked()) {
-					IPath location = resource.getLocation();
-					if (location != null)
-						resourceEntries.add(location.toFile());
-				}
+			for (IResource resource : memberResources) {
+				IPath location = resource.getLocation();
+				if (location != null)
+					resourceEntries.add(location.toFile());
+			}
 
 			IPath containerLocation = node.getLocation();
 			if (containerLocation != null) {
@@ -240,7 +233,8 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 				File[] children = folder.listFiles();
 				for (File child : children) {
 					if (resourceEntries.contains(child))
-						continue; // ok if linked resources are ignored earlier on
+						continue;
+
 					IPath childLocation = new Path(child.getAbsolutePath());
 					IWorkspaceRoot root = node.getWorkspace().getRoot();
 					IContainer container = root.getContainerForLocation(childLocation);
