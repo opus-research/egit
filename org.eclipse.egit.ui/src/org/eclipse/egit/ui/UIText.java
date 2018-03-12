@@ -1968,12 +1968,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
-	public static String CommitDialog_PushSectionTitle;
-
-	/** */
-	public static String CommitDialog_PushUpstream;
-
-	/** */
 	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
@@ -4412,12 +4406,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitUI_commitFailed;
-
-	/** */
-	public static String CommitUI_pushFailedTitle;
-
-	/** */
-	public static String CommitUI_pushFailedMessage;
 
 	/** */
 	public static String EgitUiEditorUtils_openFailed;
