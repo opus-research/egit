@@ -1,7 +1,5 @@
 /******************************************************************************
  *  Copyright (c) 2011 GitHub Inc.
- *  Copyright (c) 2014, Obeo.
- *  
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -25,7 +23,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.merge.StrategyRecursiveModel;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
@@ -43,7 +40,7 @@ public class RevertCommitOperation implements IEGitOperation {
 
 	private final Repository repo;
 
-	private final RevCommit commit;
+	private final List<RevCommit> commits;
 
 	private RevCommit newHead;
 
@@ -55,11 +52,12 @@ public class RevertCommitOperation implements IEGitOperation {
 	 * Create revert commit operation
 	 *
 	 * @param repository
-	 * @param commit
+	 * @param commits
+	 *            the commits to revert (in newest-first order)
 	 */
-	public RevertCommitOperation(Repository repository, RevCommit commit) {
+	public RevertCommitOperation(Repository repository, List<RevCommit> commits) {
 		this.repo = repository;
-		this.commit = commit;
+		this.commits = commits;
 	}
 
 	/**
@@ -84,9 +82,11 @@ public class RevertCommitOperation implements IEGitOperation {
 				pm.beginTask("", 2); //$NON-NLS-1$
 
 				pm.subTask(MessageFormat.format(
-						CoreText.RevertCommitOperation_reverting, commit.name()));
-				RevertCommand command = new Git(repo).revert().include(commit)
-						.setStrategy(new StrategyRecursiveModel());
+						CoreText.RevertCommitOperation_reverting,
+						Integer.valueOf(commits.size())));
+				RevertCommand command = new Git(repo).revert();
+				for (RevCommit commit : commits)
+					command.include(commit);
 				try {
 					newHead = command.call();
 					reverted = command.getRevertedRefs();

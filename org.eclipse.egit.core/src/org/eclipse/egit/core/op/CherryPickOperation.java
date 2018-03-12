@@ -1,12 +1,6 @@
 /******************************************************************************
-<<<<<<< HEAD
  *  Copyright (c) 2011, 2014 GitHub Inc
  *  and other copyright owners as documented in the project's IP log.
-=======
- *  Copyright (c) 2011 GitHub Inc.
- *  Copyright (c) 2014, Obeo.
- *
->>>>>>> 0f53fbf... Use a workspace-aware merging strategy when working from EGit
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -34,11 +28,11 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.egit.core.internal.merge.StrategyRecursiveModel;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.api.RebaseCommand.InteractiveHandler;
+import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IllegalTodoFileModification;
 import org.eclipse.jgit.lib.Constants;
@@ -56,6 +50,8 @@ public class CherryPickOperation implements IEGitOperation {
 	private final Repository repo;
 
 	private List<RevCommit> commits;
+
+	private RebaseResult result;
 
 	/**
 	 * Create cherry pick operation
@@ -113,9 +109,9 @@ public class CherryPickOperation implements IEGitOperation {
 					ObjectId headCommitId = repo.resolve(Constants.HEAD);
 					RevCommit headCommit = new RevWalk(repo)
 							.parseCommit(headCommitId);
-					git.rebase().setUpstream(headCommit.getParent(0))
+					result = git.rebase()
+							.setUpstream(headCommit.getParent(0))
 							.runInteractively(handler)
-							.setStrategy(new StrategyRecursiveModel())
 							.setOperation(RebaseCommand.Operation.BEGIN).call();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
@@ -139,5 +135,14 @@ public class CherryPickOperation implements IEGitOperation {
 
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
+	}
+
+	/**
+	 * Returns the result of the rebase operation.
+	 *
+	 * @return the rebase result
+	 */
+	public RebaseResult getResult() {
+		return result;
 	}
 }
