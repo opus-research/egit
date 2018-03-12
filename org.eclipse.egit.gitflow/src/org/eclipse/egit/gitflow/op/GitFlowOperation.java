@@ -51,12 +51,6 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	protected GitFlowRepository repository;
 
 	/**
-	 * the status of the latest merge from this operation
-	 */
-	// TODO: Remove from this class. Not all GitFlow operations involve a merge
-	protected MergeResult mergeResult;
-
-	/**
 	 * @param repository
 	 */
 	public GitFlowOperation(GitFlowRepository repository) {
@@ -102,15 +96,16 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 *
 	 * @param monitor
 	 * @param branchName
+	 * @return result of merging back to develop branch
 	 * @throws CoreException
 	 */
-	protected void finish(IProgressMonitor monitor, String branchName)
+	protected MergeResult finish(IProgressMonitor monitor, String branchName)
 			throws CoreException {
 		try {
-			mergeResult = mergeTo(monitor, branchName,
+			MergeResult mergeResult = mergeTo(monitor, branchName,
 					repository.getConfig().getDevelop());
 			if (!mergeResult.getMergeStatus().isSuccessful()) {
-				return;
+				return mergeResult;
 			}
 
 			Ref branch = repository.findBranch(branchName);
@@ -120,6 +115,8 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			new DeleteBranchOperation(repository.getRepository(), branch, false)
 					.execute(monitor);
+
+			return mergeResult;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -173,13 +170,5 @@ abstract public class GitFlowOperation implements IEGitOperation {
 				repository.getRepository(), config, 0, false);
 		fetchOperation.run(monitor);
 		return fetchOperation.getOperationResult();
-	}
-
-	/**
-	 * @return The result of the merge this operation performs. May be null, if
-	 *         no merge was performed.
-	 */
-	public MergeResult getMergeResult() {
-		return mergeResult;
 	}
 }
