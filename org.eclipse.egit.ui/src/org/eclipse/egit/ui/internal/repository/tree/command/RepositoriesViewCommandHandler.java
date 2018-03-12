@@ -14,6 +14,8 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +24,7 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
@@ -202,4 +205,13 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 		return selection;
 	}
 
+	protected Collection<IPath> getSelectedFileAndFolderPaths(ExecutionEvent event) throws ExecutionException {
+		Collection<IPath> paths = new ArrayList<IPath>();
+		for (Object selectedNode : getSelectedNodes(event)) {
+			RepositoryTreeNode treeNode = (RepositoryTreeNode) selectedNode;
+			IPath path = treeNode.getPath();
+			paths.add(path);
+		}
+		return paths;
+	}
 }
