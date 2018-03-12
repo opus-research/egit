@@ -4,7 +4,6 @@
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2013, Michael Keppler <michael.keppler@gmx.de>
  * Copyright (C) 2014, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +22,7 @@ import org.eclipse.core.commands.common.CommandException;
 import org.eclipse.core.expressions.EvaluationContext;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Ref;
@@ -172,23 +172,26 @@ public class CommonUtils {
 	}
 
 	/**
-	 * Returns the adapter corresponding to the given adapter class.
-	 * <p>
-	 * Workaround for "Unnecessary cast" errors, see bug 460685. Can be removed
-	 * when EGit depends on Eclipse 4.5 or higher.
-	 *
-	 * @param adaptable
-	 *            the adaptable
-	 * @param adapterClass
-	 *            the adapter class to look up
-	 * @return a object of the given class, or <code>null</code> if this object
-	 *         does not have an adapter for the given class
+	 * @param element
+	 * @param adapterType
+	 * @return the adapted element, or null
 	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T getAdapter(IAdaptable adaptable,
-			Class<T> adapterClass) {
-		Object adapter = adaptable.getAdapter(adapterClass);
-		return (T) adapter;
+	public static <T> T getAdapter(Object element, Class<T> adapterType) {
+		if (adapterType.isInstance(element)) {
+			return adapterType.cast(element);
+		}
+		if (element instanceof IAdaptable) {
+			Object adapted = ((IAdaptable) element).getAdapter(adapterType);
+			if (adapterType.isInstance(adapted)) {
+				return adapterType.cast(adapted);
+			}
+		}
+		Object adapted = Platform.getAdapterManager().getAdapter(element,
+				adapterType);
+		if (adapterType.isInstance(adapted)) {
+			return adapterType.cast(adapted);
+		}
+		return null;
 	}
 
 	private static LinkedList<String> splitIntoDigitAndNonDigitParts(
@@ -214,5 +217,4 @@ public class CommonUtils {
 				return input.substring(i);
 		return ""; //$NON-NLS-1$
 	}
-
 }
