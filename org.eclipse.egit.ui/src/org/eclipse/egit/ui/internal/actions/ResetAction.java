@@ -16,7 +16,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
@@ -47,7 +46,7 @@ public class ResetAction extends RepositoryAction {
 			return;
 		}
 
-		BranchSelectionDialog branchSelectionDialog = new BranchSelectionDialog(getShell(), repository);
+		BranchSelectionDialog branchSelectionDialog = new BranchSelectionDialog(getShell(), repository, true);
 		if (branchSelectionDialog.open() == IDialogConstants.OK_ID) {
 			final String refName = branchSelectionDialog.getRefName();
 			final ResetType type = branchSelectionDialog.getResetType();
@@ -68,9 +67,9 @@ public class ResetAction extends RepositoryAction {
 					}
 				});
 			} catch (InvocationTargetException e) {
-				Activator.handleError(UIText.ResetAction_resetFailed, e, true);
+				MessageDialog.openError(getShell(),UIText.ResetAction_resetFailed, e.getMessage());
 			} catch (InterruptedException e) {
-				Activator.handleError(UIText.ResetAction_resetFailed, e, true);
+				MessageDialog.openError(getShell(),UIText.ResetAction_resetFailed, e.getMessage());
 			}
 		}
 
