@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -74,6 +76,11 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	}
 
 	@Override
+	public IPath getLocation() {
+		return new Path(getRepository().getWorkTree().toString());
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		if (obj == this)
 			return true;
@@ -102,11 +109,7 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public int hashCode() {
-		int result = getLocation().hashCode() ^ baseCommit.hashCode();
-		if (remoteCommit != null)
-			result ^= remoteCommit.hashCode();
-
-		return result;
+		return baseCommit.hashCode();
 	}
 
 	@Override
