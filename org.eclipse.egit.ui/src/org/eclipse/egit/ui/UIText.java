@@ -235,30 +235,6 @@ public class UIText extends NLS {
 	public static String GerritConfigurationPage_UserLabel;
 
 	/** */
-	public static String GerritUsersPreferencePage_AddUserButton;
-
-	/** */
-	public static String GerritUsersPreferencePage_FullNameColumn;
-
-	/** */
-	public static String GerritUsersPreferencePage_InitialLoginText;
-
-	/** */
-	public static String GerritUsersPreferencePage_InitialNameText;
-
-	/** */
-	public static String GerritUsersPreferencePage_LoginColumn;
-
-	/** */
-	public static String GerritUsersPreferencePage_PageDescription;
-
-	/** */
-	public static String GerritUsersPreferencePage_RemoveUserButton;
-
-	/** *//** */
-	public static String GerritUsersPreferencePage_SavingExceptionError;
-
-	/** */
 	public static String EGitCredentialsProvider_errorReadingCredentials;
 
 	/** */
@@ -656,9 +632,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_SynchronizeView;
-
-	/** */
-	public static String PreferenceStorePersonProvider_ExceptionMessage;
 
 	/** */
 	public static String ProjectsPreferencePage_AutoShareProjects;
@@ -2435,12 +2408,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushToGerritPage_MissingUriMessage;
-
-	/** */
-	public static String PushToGerritPage_ReviewersContentProposalText;
-
-	/** */
-	public static String PushToGerritPage_ReviewersLabel;
 
 	/** */
 	public static String PushToGerritPage_Title;
