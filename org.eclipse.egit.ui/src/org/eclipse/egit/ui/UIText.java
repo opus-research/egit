@@ -250,9 +250,6 @@ public class UIText extends NLS {
 	public static String GitProjectPropertyPage_ValueUnbornBranch;
 
 	/** */
-	public static String GitProjectsImportPage_NoProjectsMessage;
-
-	/** */
 	public static String RepositoryPropertySource_ConfigureKeysAction;
 
 	/** */
@@ -1273,7 +1270,13 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_packedGitMMAP;
 
 	/** */
+	public static String BranchAction_branchFailed;
+
+	/** */
 	public static String BranchAction_cannotCheckout;
+
+	/** */
+	public static String BranchAction_checkingOut;
 
 	/** */
 	public static String BranchAction_errorSwitchingBranches;
@@ -1667,30 +1670,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreateProjectViaWizardWizard_WizardTitle;
-
-	/** */
-	public static String GitImportWithDirectoriesPage_PageMessage;
-
-	/** */
-	public static String GitImportWithDirectoriesPage_PageTitle;
-
-	/** */
-	public static String GitImportWithDirectoriesPage_SelectFolderMessage;
-
-	/** */
-	public static String GitImportWizard_WizardTitle;
-
-	/** */
-	public static String GitSelectRepositoryPage_AddButton;
-
-	/** */
-	public static String GitSelectRepositoryPage_CloneButton;
-
-	/** */
-	public static String GitSelectRepositoryPage_PageMessage;
-
-	/** */
-	public static String GitSelectRepositoryPage_PageTitle;
 
 	/** */
 	public static String GitSelectWizardPage_AutoShareButton;

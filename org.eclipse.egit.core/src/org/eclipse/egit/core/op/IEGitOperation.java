@@ -1,25 +1,25 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.clone;
+package org.eclipse.egit.core.op;
 
-import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 
 /**
- * Helper interface for the wizards
+ * interface for EGit operations
  *
  */
-interface ProjectCreator {
-
-	public void importProjects();
-
-	public IProject[] getAddedProjects();
-
+public interface IEGitOperation {
+	/**
+	 * Executes the operation
+	 * @param monitor
+	 * @throws CoreException
+	 */
+	void execute(IProgressMonitor monitor) throws CoreException;
 }

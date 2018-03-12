@@ -37,8 +37,7 @@ import org.eclipse.ui.actions.WorkspaceModifyOperation;
 /**
  * A wizard used to import existing projects from a {@link Repository}
  */
-public class GitCreateProjectViaWizardWizard extends Wizard implements
-		ProjectCreator {
+public class GitCreateProjectViaWizardWizard extends Wizard {
 
 	private final Repository myRepository;
 
@@ -88,10 +87,14 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 		addPage(mySelectionPage);
 		myCreateGeneralProjectPage = new GitCreateGeneralProjectPage(myGitDir);
 		addPage(myCreateGeneralProjectPage);
-		myProjectsImportPage = new GitProjectsImportPage() {
+		// for "Import Existing Projects"
+		// TODO new constructor with repository and directory once we
+		// remove this page from the GitCloneWizard
+		myProjectsImportPage = new GitProjectsImportPage(false) {
 
 			@Override
 			public void setVisible(boolean visible) {
+				setGitDir(myRepository.getDirectory());
 				setProjectsList(myGitDir);
 				super.setVisible(visible);
 			}
@@ -162,10 +165,11 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 			final int actionSelection = mySelectionPage.getActionSelection();
 
 			final IProject[] projectsToShare;
-			if (actionSelection == GitSelectWizardPage.ACTION_DIALOG_SHARE)
+			if (actionSelection != GitSelectWizardPage.ACTION_DIALOG_SHARE) {
+				projectsToShare = getAddedProjects();
+			} else {
 				projectsToShare = mySharePage.getSelectedProjects();
-			else
-				projectsToShare = null;
+			}
 
 			getContainer().run(true, true, new IRunnableWithProgress() {
 
@@ -184,19 +188,14 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 					if (actionSelection != GitSelectWizardPage.ACTION_NO_SHARE) {
 
 						// TODO scheduling rule?
-						IProject[] projects;
-						if (projectsToShare == null)
-							projects = getAddedProjects();
-						else
-							projects = projectsToShare;
-						for (IProject prj : projects) {
+						for (IProject prj : projectsToShare) {
 							if (monitor.isCanceled())
 								throw new InterruptedException();
 							//
 							ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
 									prj, myRepository.getDirectory());
 							try {
-								connectProviderOperation.run(monitor);
+								connectProviderOperation.execute(monitor);
 							} catch (CoreException e) {
 								throw new InvocationTargetException(e);
 							}
@@ -284,6 +283,10 @@ public class GitCreateProjectViaWizardWizard extends Wizard implements
 		});
 	}
 
+	/**
+	 * @return the projects added to the workspace since the start of this
+	 *         wizard
+	 */
 	public IProject[] getAddedProjects() {
 
 		IProject[] currentProjects = ResourcesPlugin.getWorkspace().getRoot()
