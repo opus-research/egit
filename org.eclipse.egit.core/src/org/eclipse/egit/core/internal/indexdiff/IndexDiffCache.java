@@ -222,15 +222,14 @@ public class IndexDiffCache {
 		IndexDiffCacheEntry entry;
 		synchronized (entries) {
 			entry = entries.get(repository);
-			if (entry != null) {
+			if (entry != null)
 				return entry;
-			}
-			if (repository.isBare()) {
+			if (repository.isBare())
 				return null;
-			}
-			entry = new IndexDiffCacheEntry(repository, globalListener);
+			entry = new IndexDiffCacheEntry(repository);
 			entries.put(repository, entry);
 		}
+		entry.addIndexDiffChangedListener(globalListener);
 		return entry;
 	}
 

@@ -24,7 +24,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.egit.core.test.TestRepository;
-import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.After;
 import org.junit.Before;
@@ -179,7 +178,7 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 	 */
 	private void waitForJobs(long maxWaitTime, Object family)
 			throws InterruptedException {
-		TestUtils.waitForJobs(maxWaitTime, family);
+		testUtils.waitForJobs(maxWaitTime, family);
 	}
 
 	private void cleanEntryFlags() {
@@ -222,7 +221,7 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 		boolean updateScheduled;
 
 		public IndexDiffCacheEntry2(Repository repository) {
-			super(repository, null);
+			super(repository);
 		}
 
 		@Override
