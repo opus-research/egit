@@ -10,10 +10,7 @@
 package org.eclipse.egit.core.internal.storage;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
@@ -25,15 +22,10 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileHistoryProvider;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.core.history.provider.FileHistory;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevCommitList;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
@@ -56,7 +48,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 	private final Repository db;
 
-	private final RevWalk walk;
+	private final KidWalk walk;
 
 	private final IFileRevision[] revisions;
 
@@ -72,7 +64,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 			walk = null;
 		} else {
 			db = rm.getRepository();
-			walk = new RevWalk(db);
+			walk = new KidWalk(db);
 			gitPath = rm.getRepoRelativePath(resource);
 			if (gitPath == null || gitPath.length() == 0) {
 				walk.setTreeFilter(TreeFilter.ANY_DIFF);
@@ -113,10 +105,6 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 				return new IFileRevision[] { single };
 			}
 
-			markStartAllRefs(walk, Constants.R_HEADS);
-			markStartAllRefs(walk, Constants.R_REMOTES);
-			markStartAllRefs(walk, Constants.R_TAGS);
-
 			walk.markStart(root);
 		} catch (IOException e) {
 			Activator.logError(NLS.bind(
@@ -125,7 +113,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 			return NO_REVISIONS;
 		}
 
-		final RevCommitList<RevCommit> list = new RevCommitList<RevCommit>();
+		final KidCommitList list = new KidCommitList();
 		list.source(walk);
 		try {
 			for (;;) {
@@ -149,31 +137,6 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		return r;
 	}
 
-	private void markStartAllRefs(RevWalk theWalk, String prefix)
-			throws IOException, MissingObjectException,
-			IncorrectObjectTypeException {
-		for (Entry<String, Ref> refEntry : db.getRefDatabase().getRefs(prefix)
-				.entrySet()) {
-			Ref ref = refEntry.getValue();
-			if (ref.isSymbolic())
-				continue;
-			markStartRef(theWalk, ref);
-		}
-	}
-
-	private void markStartRef(RevWalk theWalk, Ref ref) throws IOException,
-			IncorrectObjectTypeException {
-		try {
-			Object refTarget = theWalk.parseAny(ref.getLeaf().getObjectId());
-			if (refTarget instanceof RevCommit)
-				theWalk.markStart((RevCommit) refTarget);
-		} catch (MissingObjectException e) {
-			// If there is a ref which points to Nirvana then we should simply
-			// ignore this ref. We should not let a corrupt ref cause that the
-			// history view is not filled at all
-		}
-	}
-
 	public IFileRevision[] getContributors(final IFileRevision ifr) {
 		if (!(ifr instanceof CommitFileRevision))
 			return NO_REVISIONS;
@@ -188,15 +151,20 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 	}
 
 	public IFileRevision[] getTargets(final IFileRevision ifr) {
-		// We need all predecessor revisions
-		final IFileRevision[] allRevisions = getFileRevisions();
-		final List<IFileRevision> descendants = new ArrayList<IFileRevision>();
+		if (!(ifr instanceof CommitFileRevision))
+			return NO_REVISIONS;
 
-		for (IFileRevision candidate : allRevisions) {
-			if (candidate.getTimestamp() < ifr.getTimestamp())
-				descendants.add(candidate);
-		}
-		return descendants.toArray(new IFileRevision[descendants.size()]);
+		final CommitFileRevision rev = (CommitFileRevision) ifr;
+		final String p = rev.getGitPath();
+		final RevCommit rc = rev.getRevCommit();
+		if (!(rc instanceof KidCommit))
+			return NO_REVISIONS;
+
+		final KidCommit c = (KidCommit) rc;
+		final IFileRevision[] r = new IFileRevision[c.children.length];
+		for (int i = 0; i < r.length; i++)
+			r[i] = new CommitFileRevision(db, c.children[i], p);
+		return r;
 	}
 
 	public IFileRevision getFileRevision(final String id) {
