@@ -39,7 +39,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbenchCommandConstants;
 
 /**
  * Dialog for checking out a branch, tag, or Reference.
@@ -202,9 +201,10 @@ public class CheckoutDialog extends AbstractBranchSelectionDialog {
 		deleteteButton.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(SelectionEvent selectionEvent) {
 				try {
-					CommonUtils.runCommand(
-							IWorkbenchCommandConstants.EDIT_DELETE,
-							(IStructuredSelection) branchTree.getSelection());
+					CommonUtils
+							.runCommand(
+									"org.eclipse.egit.ui.RepositoriesViewDeleteBranch", //$NON-NLS-1$
+									(IStructuredSelection) branchTree.getSelection());
 					branchTree.refresh();
 				} catch (Throwable e) {
 					reportError(e,
