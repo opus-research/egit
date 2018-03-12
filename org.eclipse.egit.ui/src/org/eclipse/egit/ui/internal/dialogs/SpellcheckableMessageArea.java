@@ -10,7 +10,6 @@
  *    Benjamin Muskalla (EclipseSource) - initial implementation
  *    Tomasz Zarna (IBM) - show whitespace action, bug 371353
  *    Wayne Beaton (Eclipse Foundation) - Bug 433721
- *    Thomas Wolf (Paranor) - Hyperlink syntax coloring; bug 471355
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -54,8 +53,6 @@ import org.eclipse.jface.text.contentassist.IContentAssistant;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
 import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
-import org.eclipse.jface.text.presentation.IPresentationReconciler;
-import org.eclipse.jface.text.presentation.PresentationReconciler;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
 import org.eclipse.jface.text.quickassist.IQuickAssistProcessor;
 import org.eclipse.jface.text.reconciler.IReconciler;
@@ -339,7 +336,14 @@ public class SpellcheckableMessageArea extends Composite {
 			public IHyperlinkPresenter getHyperlinkPresenter(
 					ISourceViewer targetViewer) {
 				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
-						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB());
+						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
+
+					@Override
+					public void hideHyperlinks() {
+						// We want links to always show.
+					}
+
+				};
 			}
 
 			@Override
@@ -366,27 +370,13 @@ public class SpellcheckableMessageArea extends Composite {
 				return assistant;
 			}
 
-			@Override
-			public IPresentationReconciler getPresentationReconciler(
-					ISourceViewer viewer) {
-				PresentationReconciler reconciler = new PresentationReconciler();
-				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(sourceViewer));
-				HyperlinkDamagerRepairer hyperlinkDamagerRepairer = new HyperlinkDamagerRepairer(
-						new HyperlinkTokenScanner(
-								getHyperlinkDetectors(sourceViewer),
-								sourceViewer));
-				reconciler.setDamager(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				reconciler.setRepairer(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				return reconciler;
-			}
-
 		};
 
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
+
+		UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
+				configuration.getHyperlinkDetectors(sourceViewer));
 
 		configureContextMenu();
 
@@ -751,29 +741,50 @@ public class SpellcheckableMessageArea extends Composite {
 
 				});
 
-		if (editable) {
+		if (editable)
 			sourceViewer.addTextListener(new ITextListener() {
+
 				@Override
 				public void textChanged(TextEvent event) {
+					removeHyperlinkStyleRanges();
+					UIUtils.applyHyperlinkDetectorStyleRanges(sourceViewer,
+							configuration.getHyperlinkDetectors(sourceViewer));
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
 						redoAction.update();
 				}
+
+				private void removeHyperlinkStyleRanges() {
+					StyleRange[] hyperlinkStyleRanges = textWidget.getStyleRanges(true);
+					Color blue = Display.getDefault()
+							.getSystemColor(SWT.COLOR_BLUE);
+					Color white = Display.getDefault()
+							.getSystemColor(SWT.COLOR_WHITE);
+					for (int i = 0; i < hyperlinkStyleRanges.length; i++) {
+						StyleRange styleRange = hyperlinkStyleRanges[i];
+						if (styleRange.underline == true
+								&& styleRange.foreground == blue
+								&& styleRange.background == white) {
+							styleRange = (StyleRange) styleRange.clone();
+							styleRange.background = null;
+							styleRange.foreground = null;
+							styleRange.underline = false;
+							textWidget.setStyleRange(styleRange);
+						}
+					}
+				}
 			});
-		}
 
 		// set the cursor when hovering over a link
 		textWidget.addListener(SWT.MouseMove, new Listener() {
 			@Override
 			public void handleEvent(final Event e) {
 				StyleRange styleRange = getStyleRange(e.x, e.y);
-				if (styleRange != null && styleRange.underline
-						&& styleRange.underlineStyle == SWT.UNDERLINE_LINK) {
+				if (styleRange != null && styleRange.underline)
 					textWidget.setCursor(SYS_LINK_CURSOR);
-				} else {
+				else
 					textWidget.setCursor(sys_normalCursor);
-				}
 			}
 		});
 
