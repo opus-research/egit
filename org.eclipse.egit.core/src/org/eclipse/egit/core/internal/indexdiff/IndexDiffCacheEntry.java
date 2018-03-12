@@ -186,7 +186,7 @@ public class IndexDiffCacheEntry {
 			private String getTraceMessage(long time) {
 				return NLS
 						.bind("\nUpdated IndexDiffData in {0} ms\nReason: {1}\nRepository: {2}\n", //$NON-NLS-1$
-						new Object[] { Long.valueOf(time), trigger,
+						new Object[] { new Long(time), trigger,
 								repository.getWorkTree().getName() });
 			}
 
@@ -250,8 +250,8 @@ public class IndexDiffCacheEntry {
 						StringBuilder message = new StringBuilder(
 								NLS.bind(
 										"Updated IndexDiffData based on resource list (length = {0}) in {1} ms\n", //$NON-NLS-1$
-										Integer.valueOf(fileResourcesToUpdate
-												.size()), Long.valueOf(time)));
+										new Integer(fileResourcesToUpdate
+												.size()), new Long(time)));
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.INDEXDIFFCACHE.getLocation(),
 								message.append(indexDiffData.toString())
