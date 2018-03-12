@@ -17,7 +17,6 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -31,7 +30,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.diff.IDiff;
 import org.eclipse.team.core.mapping.ISynchronizationScopeManager;
 import org.eclipse.team.core.subscribers.SubscriberMergeContext;
@@ -116,18 +114,21 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 
 	private void handleRepositoryChange(
 			GitResourceVariantTreeSubscriber subscriber, RepositoryMapping which) {
-		for (GitSynchronizeData gsd : gsds)
-			if (which.getRepository().equals(gsd.getRepository()))
-				updateRevs(gsd);
+		for (GitSynchronizeData gsd : gsds) {
+			if (which.getRepository().equals(gsd.getRepository())) {
+				try {
+					gsd.updateRevs();
+				} catch (IOException e) {
+					Activator
+							.logError(
+									CoreText.GitSubscriberMergeContext_FailedUpdateRevs,
+									e);
 
-		subscriber.reset(this.gsds);
-		ResourceTraversal[] traversals = getScopeManager().getScope()
-				.getTraversals();
-		try {
-			subscriber.refresh(traversals, new NullProgressMonitor());
-		} catch (TeamException e) {
-			Activator.logError(
-					CoreText.GitSubscriberMergeContext_FailedRefreshSyncView, e);
+					return;
+				}
+
+				subscriber.reset(this.gsds);
+			}
 		}
 	}
 
@@ -172,18 +173,10 @@ public class GitSubscriberMergeContext extends SubscriberMergeContext {
 			subscriber.refresh(files, IResource.DEPTH_ONE,
 					new NullProgressMonitor());
 		} catch (final CoreException e) {
-			Activator.logError(
-					CoreText.GitSubscriberMergeContext_FailedRefreshSyncView, e);
-		}
-	}
-
-	private void updateRevs(GitSynchronizeData gsd) {
-		try {
-			gsd.updateRevs();
-		} catch (IOException e) {
-			Activator.logError(
-					CoreText.GitSubscriberMergeContext_FailedUpdateRevs, e);
-			return;
+			Activator
+					.logError(
+							CoreText.GitSubscriberMergeContext_FailedRefreshSyncView,
+							e);
 		}
 	}
 
