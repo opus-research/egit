@@ -159,7 +159,7 @@ perl -pi~ -e '
 	}
 	s{<(egit-version)>[^<\$]*</\1>}{<${1}>'"$POM_V"'</${1}>};
 	' pom.xml
-	
+
 perl -pi~ -e '
 	if ($ARGV ne $old_argv) {
 		$seen_version = 0;
@@ -175,7 +175,6 @@ perl -pi~ -e '
 	if ($ARGV ne $old_argv) {
 		$seen_version = 0;
 		$seen_version2 = 0;
-		$seen_version3 = 0;
 		$old_argv = $ARGV;
 	}
 	if (!$seen_version) {
