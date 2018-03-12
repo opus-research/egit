@@ -3086,6 +3086,12 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
+	public static String CommitEditor_couldNotShowRepository;
+
+	/** */
+	public static String CommitEditor_showGitRepo;
+
+	/** */
 	public static String CommitEditor_TitleHeader;
 
 	/** */
@@ -3900,9 +3906,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
-
-	/** */
-	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
