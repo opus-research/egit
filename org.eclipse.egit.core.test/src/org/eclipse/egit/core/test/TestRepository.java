@@ -332,7 +332,7 @@ public class TestRepository {
 	 * @throws IOException
 	 */
 	public void appendFileContent(File file, String content) throws IOException {
-		appendFileContent(file, content, true);
+		appendFileContent(file, new String(content), true);
 	}
 
 	/**
