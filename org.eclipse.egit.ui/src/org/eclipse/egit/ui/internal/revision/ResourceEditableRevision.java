@@ -12,12 +12,9 @@ import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.operation.IRunnableContext;
@@ -56,16 +53,7 @@ public class ResourceEditableRevision extends EditableRevision {
 	@Override
 	public void setContent(final byte[] newContent) {
 		try {
-			// Don't fork: if we are called from a thread which locked
-			// workspace our *forked* operation will never complete because it
-			// requires file lock which cannot be acquired from another thread
-			ISchedulingRule rule = Job.getJobManager().currentRule();
-			boolean fork = true;
-			if (rule instanceof IResource) {
-				if (file.exists() && ((IResource) rule).isConflicting(file))
-					fork = false;
-			}
-			runnableContext.run(fork, false, new IRunnableWithProgress() {
+			runnableContext.run(false, false, new IRunnableWithProgress() {
 				public void run(IProgressMonitor myMonitor)
 						throws InvocationTargetException, InterruptedException {
 					try {

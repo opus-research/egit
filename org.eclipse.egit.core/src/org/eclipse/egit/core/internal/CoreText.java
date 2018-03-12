@@ -79,9 +79,6 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
-	public static String ContainerTreeIterator_DeletedFile;
-
-	/** */
 	public static String DeleteBranchOperation_TaskName;
 
 	/** */
@@ -178,9 +175,6 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
-	public static String RepositoryMapping_ExceptionSubmoduleWalk;
-
-	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
@@ -221,9 +215,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MoveDeleteHook_unmergedFileInFolderError;
-
-	/** */
-	public static String MoveDeleteHook_cannotAutoStageDeletion;
 
 	/** */
 	public static String Error_CanonicalFile;

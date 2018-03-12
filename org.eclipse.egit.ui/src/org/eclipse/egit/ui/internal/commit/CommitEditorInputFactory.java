@@ -97,18 +97,19 @@ public class CommitEditorInputFactory implements IElementFactory {
 		if (id == null)
 			return null;
 
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			RevCommit commit = walk.parseCommit(ObjectId.fromString(id));
 			for (RevCommit parent : commit.getParents())
 				walk.parseBody(parent);
 			RepositoryCommit repositoryCommit = new RepositoryCommit(
 					repository, commit);
-			Boolean isStash = memento.getBoolean(STASH);
-			if (isStash != null)
-				repositoryCommit.setStash(isStash.booleanValue());
+			repositoryCommit.setStash(memento.getBoolean(STASH).booleanValue());
 			return repositoryCommit;
 		} catch (IOException e) {
 			return null;
+		} finally {
+			walk.release();
 		}
 	}
 

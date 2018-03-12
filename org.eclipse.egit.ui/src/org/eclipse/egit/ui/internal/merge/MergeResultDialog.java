@@ -101,7 +101,7 @@ public class MergeResultDialog extends Dialog {
 	@Override
 	protected void createButtonsForButtonBar(final Composite parent) {
 		createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL,
-				true).setFocus();
+				true);
 	}
 
 	@Override
@@ -335,7 +335,7 @@ public class MergeResultDialog extends Dialog {
 		newShell.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				if (objectReader != null)
-					objectReader.close();
+					objectReader.release();
 			}
 		});
 	}

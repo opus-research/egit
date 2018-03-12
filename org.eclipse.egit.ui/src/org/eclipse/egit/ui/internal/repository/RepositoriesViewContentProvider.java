@@ -486,8 +486,9 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			Repository repo) {
 		List<RepositoryTreeNode<Ref>> nodes = new ArrayList<RepositoryTreeNode<Ref>>();
 
-		try (RevWalk walk = new RevWalk(repo)) {
-			walk.setRetainBody(true);
+		RevWalk walk = new RevWalk(repo);
+		walk.setRetainBody(true);
+		try {
 			Map<String, Ref> tagRefs = getRefs(repo, Constants.R_TAGS);
 			for (Ref tagRef : tagRefs.values()) {
 				ObjectId objectId = tagRef.getLeaf().getObjectId();
@@ -499,6 +500,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			}
 		} catch (IOException e) {
 			return handleException(e, parentNode);
+		} finally {
+			walk.release();
 		}
 
 		return nodes.toArray();
