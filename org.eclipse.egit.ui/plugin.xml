@@ -216,48 +216,6 @@
                label="%CompareWithRevisionAction_label"
                menubarPath="compareWithMenu/gitCompareWithGroup"/>
       </objectContribution>
-    <objectContribution
-            adaptable="true"
-            objectClass="org.eclipse.egit.core.GitFileRevisionReference"
-            id="org.eclipse.egit.ui.CommitFileContributions">
-
-        <action
-            class="org.eclipse.egit.ui.internal.actions.CompareSelectedWithParentAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.CompareSelectedWithParentAction"
-            label="%CompareSelectionWithParentAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.OpenFileAtRevisionAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.OpenFileAtRevisionAction"
-            label="%OpenFileSelectedVersionAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.CompareSelectedWithHeadAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.CompareSelectedWithHeadAction"
-            label="%CompareSelectionWithHeadAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.OpenFileAtHeadRevisionAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.OpenFileAtHeadRevisionAction"
-            label="%OpenFileHeadVersionAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.CompareSelectedWithWorkspaceAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.CompareSelectedWithWorkspaceAction"
-            label="%CompareSelectedWithWorkspaceAction_label">
-        </action>
-        <action
-            class="org.eclipse.egit.ui.internal.actions.OpenWorkspaceVersionAction"
-            enablesFor="1"
-            id="org.eclipse.egit.ui.internal.actions.OpenWorkspaceVersionAction"
-            label="%OpenWorkspaceVersionAction_label">
-        </action>
-    </objectContribution>
    </extension>
 
    <extension
@@ -2425,23 +2383,6 @@
             contentExtensionId="org.eclipse.egit.ui.changeSetContent"
             icon="$nl$/icons/obj16/changelog_obj.gif"
             modelProviderId="org.eclipse.egit.ui.changeSetModel"/>
-   </extension>
-   <extension point="org.eclipse.ui.navigator.viewer">
-       <viewer viewerId="org.eclipse.egit.ui.compareSynchronization">
-           <popupMenu
-                allowsPlatformContributions="false"
-                id="org.eclipse.egit.ui.compareSynchronizationMenu">
-             <insertionPoint name="gitActions" separator="true"/>
-             <insertionPoint name="file"/>
-             <insertionPoint name="file-bottom"/>
-             <insertionPoint name="edit" separator="true"/>
-             <insertionPoint name="synchronize"/>
-             <insertionPoint name="navigate" separator="true"/>
-             <insertionPoint name="modelTeam" separator="true"/>
-             <insertionPoint name="sort" separator="true"/>
-			 <insertionPoint name="additions" separator="true"/>
-          </popupMenu>
-       </viewer>
    </extension>
    <extension
          name="%TeamMenuCommandsLabel"
