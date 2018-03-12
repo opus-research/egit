@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.history.CommitFileDiffViewer;
 import org.eclipse.egit.ui.internal.history.FileDiff;
@@ -35,6 +34,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
@@ -321,7 +321,7 @@ public class CommitEditorPage extends FormPage {
 			message = replaceSignedOffByLine(message, committer);
 
 		SpellcheckableMessageArea textContent = new SpellcheckableMessageArea(
-				messageArea, message, toolkit.getBorderStyle()) {
+				messageArea, message, true, toolkit.getBorderStyle()) {
 
 			@Override
 			protected IAdaptable getDefaultTarget() {
@@ -343,7 +343,6 @@ public class CommitEditorPage extends FormPage {
 					FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 80).grab(true, true)
 				.applyTo(textContent);
-		textContent.getTextWidget().setEditable(false);
 
 		updateSectionClient(messageSection, messageArea, toolkit);
 	}
@@ -358,10 +357,14 @@ public class CommitEditorPage extends FormPage {
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 50)
 				.applyTo(branchViewer.getControl());
 		branchViewer.setSorter(new ViewerSorter());
-		branchViewer.setLabelProvider(new GitLabelProvider() {
+		branchViewer.setLabelProvider(new LabelProvider() {
+
+			public Image getImage(Object element) {
+				return CommitEditorPage.this.getImage(UIIcons.BRANCH);
+			}
 
 			public String getText(Object element) {
-				return Repository.shortenRefName(super.getText(element));
+				return Repository.shortenRefName(((Ref) element).getName());
 			}
 
 		});
