@@ -282,8 +282,7 @@ public class CommitUI  {
 		indexDiff = new IndexDiff(repo, Constants.HEAD, it);
 		indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(
 				UIText.CommitActionHandler_repository, repo.getDirectory()
-						.getPath()),
-				"Rename detection " + repo.getDirectory().getPath()); //$NON-NLS-1$
+						.getPath()));
 
 		includeList(indexDiff.getAdded(), indexChanges);
 		includeList(indexDiff.getChanged(), indexChanges);

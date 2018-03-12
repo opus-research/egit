@@ -104,10 +104,7 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		Set<String> added = indexDiffData.getAdded();
 		Set<String> removed = indexDiffData.getRemoved();
 		Set<String> changed = indexDiffData.getChanged();
-		Set<String> renamed = indexDiffData.getRenames().keySet();
-		if (renamed.contains(repoRelativePath))
-			staged = Staged.RENAMED;
-		else if (added.contains(repoRelativePath)) // added
+		if (added.contains(repoRelativePath)) // added
 			staged = Staged.ADDED;
 		else if (removed.contains(repoRelativePath)) // removed
 			staged = Staged.REMOVED;
