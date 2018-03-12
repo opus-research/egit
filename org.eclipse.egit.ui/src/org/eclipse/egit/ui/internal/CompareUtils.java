@@ -317,13 +317,13 @@ public class CompareUtils {
 			Repository repository,
 			CompareEditorInput input) {
 		if (GitPreferenceRoot.useExternalDiffTool()) {
-			openCompareToolExternal(repository, input);
+			openInCompareExternal(repository, input);
 		} else {
-			openCompareToolInternal(workBenchPage, input);
+			openInCompareInternal(workBenchPage, input);
 		}
 	}
 
-	private static void openCompareToolInternal(IWorkbenchPage workBenchPage,
+	private static void openInCompareInternal(IWorkbenchPage workBenchPage,
 			CompareEditorInput input) {
 		IEditorPart editor = findReusableCompareEditor(input, workBenchPage);
 		if (editor != null) {
@@ -349,22 +349,21 @@ public class CompareUtils {
 		}
 	}
 
-	private static void openCompareToolExternal(Repository repository,
+	private static void openInCompareExternal(Repository repository,
 			CompareEditorInput input) {
 		System.out.println(
-				"---------------- openCompareToolExternal ----------------"); //$NON-NLS-1$
+				"---------------- openInCompare with external tool ------------------"); //$NON-NLS-1$
 		GitCompareFileRevisionEditorInput gitCompareInput = (GitCompareFileRevisionEditorInput) input;
 		FileRevisionTypedElement leftRevision = gitCompareInput
 				.getLeftRevision();
 		IFile leftResource = (IFile) gitCompareInput.getAdapter(IFile.class);
 		FileRevisionTypedElement rightRevision = gitCompareInput
 				.getRightRevision();
-		String mergedAbsoluteFilePath = null;
-		String mergedRelativeFilePath = null;
-		String mergedFileName = null;
-		String localAbsoluteFilePath = null;
-		String remoteAbsoluteFilePath = null;
-		String baseAbsoluteFilePath = null;
+		String mergedCompareFilePath = null;
+		String mergedCompareFileName = null;
+		String localCompareFilePath = null;
+		String remoteCompareFilePath = null;
+		String baseCompareFilePath = null;
 		String diffCmd = null;
 		boolean prompt = false;
 		boolean writeToTemp = false;
@@ -373,16 +372,14 @@ public class CompareUtils {
 		File baseDir = null;
 		File tempDir = null;
 		if (leftResource != null) {
-			mergedAbsoluteFilePath = leftResource.getRawLocation().toOSString();
-			mergedFileName = leftResource.getName();
+			mergedCompareFilePath = leftResource.getRawLocation().toOSString();
+			mergedCompareFileName = leftResource.getName();
 			baseDir = leftResource.getRawLocation().toFile().getParentFile();
-			System.out.println("file: " //$NON-NLS-1$
-					+ mergedAbsoluteFilePath);
+			System.out.println("mergedCompareFilePath: " //$NON-NLS-1$
+					+ mergedCompareFilePath);
 		}
-		if (mergedAbsoluteFilePath != null
+		if (mergedCompareFilePath != null
 				&& rightRevision != null) {
-			// get the relative project path from right revision here
-			mergedRelativeFilePath = rightRevision.getPath();
 			// get the tool
 			ITool tool = GitPreferenceRoot.getExternalDiffTool();
 			if (tool != null) {
@@ -403,7 +400,7 @@ public class CompareUtils {
 					int response = ToolsUtils.askUserAboutToolExecution(
 							"difftool", //$NON-NLS-1$
 							"Comparing file: " //$NON-NLS-1$
-									+ mergedRelativeFilePath + "\n\nLaunch '" //$NON-NLS-1$
+									+ mergedCompareFilePath + "\n\nLaunch '" //$NON-NLS-1$
 									+ tool.getName() + "' ?"); //$NON-NLS-1$
 					if (response != SWT.YES) {
 						return;
@@ -415,37 +412,25 @@ public class CompareUtils {
 					baseDir = tempDir;
 				}
 				if (leftRevision != null) {
-					localAbsoluteFilePath = ToolsUtils.loadToTempFile(baseDir,
-							mergedFileName, "LOCAL", //$NON-NLS-1$
+					localCompareFilePath = ToolsUtils.loadToTempFile(baseDir,
+							mergedCompareFileName, "LOCAL", //$NON-NLS-1$
 							leftRevision, writeToTemp);
 				} else {
-					localAbsoluteFilePath = mergedAbsoluteFilePath;
+					localCompareFilePath = mergedCompareFilePath;
 					System.out.println("localCompareFilePath: " //$NON-NLS-1$
-							+ localAbsoluteFilePath);
+							+ localCompareFilePath);
 				}
-				remoteAbsoluteFilePath = ToolsUtils.loadToTempFile(baseDir,
-						mergedFileName, "REMOTE", //$NON-NLS-1$
+				remoteCompareFilePath = ToolsUtils.loadToTempFile(baseDir,
+						mergedCompareFileName, "REMOTE", //$NON-NLS-1$
 						rightRevision, writeToTemp);
 			}
 		}
 		// execute
-		int exitCode = -1;
-		try {
-			exitCode = ToolsUtils.executeTool(mergedAbsoluteFilePath,
-					localAbsoluteFilePath,
-					remoteAbsoluteFilePath, baseAbsoluteFilePath, diffCmd,
-					tempDir);
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
-			ToolsUtils.informUserAboutError("difftool - error", //$NON-NLS-1$
-					e.getMessage());
-		} finally {
-			System.out.println("exitCode: " //$NON-NLS-1$
-					+ Integer.toString(exitCode));
-			// delete temp
-			if (tempDir != null && !keepTemporaries) {
-				ToolsUtils.deleteDirectoryForTempFiles(tempDir);
-			}
+		ToolsUtils.executeTool(mergedCompareFilePath, localCompareFilePath,
+				remoteCompareFilePath, baseCompareFilePath, diffCmd, tempDir);
+		// delete temp
+		if (tempDir != null && !keepTemporaries) {
+			ToolsUtils.deleteDirectoryForTempFiles(tempDir);
 		}
 	}
 
@@ -533,7 +518,13 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
+		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					file.getLocation(), repository), null);
+			return;
+		}
+		String path = mapping.getRepoRelativePath(
 				file);
 		ITypedElement base = getHeadTypedElement(repository, path);
 		if (base == null)
@@ -581,6 +572,11 @@ public class CompareUtils {
 				}
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					return Activator.createErrorStatus(
+							NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+									file.getLocation(), repository));
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 				final ITypedElement base = SaveableCompareEditorInput
 						.createFileElement(file);
@@ -776,6 +772,11 @@ public class CompareUtils {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+							file.getLocation(), repository), null);
+					return;
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 
 				compareBetween(repository, gitPath, leftRev, rightRev, page);
@@ -1073,6 +1074,11 @@ public class CompareUtils {
 	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					baseFile.getLocation(), null), null);
+			return null;
+		}
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
 		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
