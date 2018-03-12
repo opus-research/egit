@@ -28,9 +28,4 @@ public class JobFamilies {
 	 * Job family for auto share job
 	 */
 	public static final Object AUTO_SHARE = new Object();
-
-	/**
-	 * Job family for auto ignore job
-	 */
-	public static final Object AUTO_IGNORE = new Object();
 }
