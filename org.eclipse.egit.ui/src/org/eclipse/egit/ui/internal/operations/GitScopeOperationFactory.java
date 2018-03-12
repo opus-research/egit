@@ -39,9 +39,8 @@ public class GitScopeOperationFactory {
 	 * @return the current factory
 	 */
 	public static synchronized GitScopeOperationFactory getFactory() {
-		if(instance == null) {
+		if(instance == null)
 			instance = new GitScopeOperationFactory();
-		}
 		return instance;
 	}
 
