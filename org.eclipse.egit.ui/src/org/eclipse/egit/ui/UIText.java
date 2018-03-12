@@ -592,9 +592,6 @@ public class UIText extends NLS {
 	public static String ProjectsPreferencePage_AutoShareProjects;
 
 	/** */
-	public static String ProjectsPreferencePage_RestoreBranchProjects;
-
-	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
 
 	/** */
@@ -1130,6 +1127,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SourceBranchPage_cannotCreateTemp;
+
+	/** */
+	public static String SourceBranchPage_CompositeTransportErrorMessage;
 
 	/** */
 	public static String CloneDestinationPage_title;
@@ -2566,6 +2566,12 @@ public class UIText extends NLS {
 	public static String CommitDialogPreferencePage_formatting;
 
 	/** */
+	public static String CommitDialogPreferencePage_includeUntrackedFiles;
+
+	/** */
+	public static String CommitDialogPreferencePage_includeUntrackedFilesTooltip;
+
+	/** */
 	public static String CommitDialogPreferencePage_signedOffBy;
 
 	/** */
@@ -2615,6 +2621,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingBranchName;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingBranchStatus;
 
 	/** */
 	public static String DecoratorPreferencesPage_bindingDirtyFlag;
