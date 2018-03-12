@@ -68,7 +68,7 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 		final Set<String> repositoryPaths = Collections.singleton(mapping
 				.getRepoRelativePath(eclipseFile));
 
-		assertEquals(1, repositoryPaths.size() );
+		assertTrue(repositoryPaths.size() == 1);
 		treeWalk.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
 
 		assertTrue(treeWalk.next());
