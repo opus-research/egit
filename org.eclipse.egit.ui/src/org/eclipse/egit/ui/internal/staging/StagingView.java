@@ -1754,7 +1754,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		stagedToolBarManager.update(true);
 	}
 
-	boolean isExpandAllowed() {
+	private boolean isExpandAllowed() {
 		StagingViewContentProvider contentProvider = getContentProvider(
 				stagedViewer);
 		if (contentProvider.getCount() > getMaxLimitForListMode()) {
@@ -2773,12 +2773,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 	 *
 	 * @return default is 10000
 	 */
-	int getMaxLimitForListMode() {
+	private int getMaxLimitForListMode() {
 		return Activator.getDefault().getPreferenceStore()
 				.getInt(UIPreferences.STAGING_VIEW_MAX_LIMIT_LIST_MODE);
 	}
 
-	static int getUnstaged(@Nullable IndexDiffData indexDiff) {
+	private static int getUnstaged(@Nullable IndexDiffData indexDiff) {
 		if (indexDiff == null) {
 			return 0;
 		}
@@ -2789,7 +2789,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		return size;
 	}
 
-	static int getStaged(@Nullable IndexDiffData indexDiff) {
+	private static int getStaged(@Nullable IndexDiffData indexDiff) {
 		if (indexDiff == null) {
 			return 0;
 		}
@@ -2807,7 +2807,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		return newSize;
 	}
 
-	void switchToCompactModeInternal(boolean auto) {
+	private void switchToCompactModeInternal(boolean auto) {
 		setPresentation(Presentation.COMPACT_TREE, auto);
 		listPresentationAction.setChecked(false);
 		treePresentationAction.setChecked(false);
