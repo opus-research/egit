@@ -65,6 +65,7 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
  */
 public class RemoveCommand extends
 		RepositoriesViewCommandHandler<RepositoryNode> {
+	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		removeRepository(event, false);
 		return null;
@@ -126,6 +127,7 @@ public class RemoveCommand extends
 						false };
 				Display.getDefault().syncExec(new Runnable() {
 
+					@Override
 					public void run() {
 						try {
 							confirmedCanceled[0] = confirmProjectDeletion(
@@ -188,6 +190,7 @@ public class RemoveCommand extends
 			IProgressMonitor monitor) {
 		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
 
+			@Override
 			public void run(IProgressMonitor actMonitor)
 			throws CoreException {
 
@@ -249,8 +252,7 @@ public class RemoveCommand extends
 
 	private static void closeSubmoduleRepositories(Repository repo)
 			throws IOException {
-		SubmoduleWalk walk = SubmoduleWalk.forIndex(repo);
-		try {
+		try (SubmoduleWalk walk = SubmoduleWalk.forIndex(repo)) {
 			while (walk.next()) {
 				Repository subRepo = walk.getRepository();
 				if (subRepo != null) {
@@ -266,8 +268,6 @@ public class RemoveCommand extends
 					}
 				}
 			}
-		} finally {
-			walk.release();
 		}
 	}
 
