@@ -103,11 +103,11 @@ public class GitCloneSourceProviderExtension {
 
 		private static final ImageDescriptor defaultImage = UIIcons.REPOSITORY;
 
-		private String label;
+		private final String label;
 
-		private IConfigurationElement repositoryServerProviderElement;
+		private final IConfigurationElement repositoryServerProviderElement;
 
-		private IConfigurationElement repositorySearchPageELement;
+		private final IConfigurationElement repositorySearchPageELement;
 
 		private boolean hasFixLocation = false;
 
@@ -154,9 +154,8 @@ public class GitCloneSourceProviderExtension {
 			Object object = repositoryServerProviderElement
 					.createExecutableExtension("class"); //$NON-NLS-1$
 			IRepositoryServerProvider provider = null;
-			if (object instanceof IRepositoryServerProvider) {
+			if (object instanceof IRepositoryServerProvider)
 				provider = (IRepositoryServerProvider) object;
-			}
 			return provider;
 		}
 
@@ -173,9 +172,8 @@ public class GitCloneSourceProviderExtension {
 					.createExecutableExtension("class"); //$NON-NLS-1$
 			WizardPage page = null;
 			if (object instanceof WizardPage
-					&& object instanceof IRepositorySearchResult) {
+					&& object instanceof IRepositorySearchResult)
 				page = (WizardPage) object;
-			}
 			return page;
 		}
 

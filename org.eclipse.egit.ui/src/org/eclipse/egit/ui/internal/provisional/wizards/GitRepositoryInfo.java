@@ -32,15 +32,15 @@ public class GitRepositoryInfo {
 	private UserPasswordCredentials credentials;
 	private boolean shouldSaveCredentialsInSecureStore;
 	private String repositoryName;
-	private boolean providesGerritConfiguration = false;
-	private List<String> fetchRefSpecs = new ArrayList<String>();
+	private final List<String> fetchRefSpecs = new ArrayList<String>();
 
-	/** */
+	/**
+	 * Describes settings for git push
+	 */
 	public static class PushInfo {
-		/** */
-		public String pushRefSpec;
-		/** */
-		public String pushUri;
+
+		private String pushRefSpec;
+		private String pushUri;
 
 		/**
 		 * @param pushRefSpec
@@ -50,25 +50,36 @@ public class GitRepositoryInfo {
 			this.pushRefSpec = pushRefSpec;
 			this.pushUri = pushUri;
 		}
+
+		/**
+		 * @return the push ref spec
+		 */
+		public String getPushRefSpec() {
+			return pushRefSpec;
+		}
+
+		/**
+		 * @return the push URI
+		 */
+		public String getPushUri() {
+			return pushUri;
+		}
 	}
 	private List<PushInfo> pushInfos = new ArrayList<PushInfo>();
 
 	/** */
 	public static class RepositoryConfigProperty {
-		/** */
-		public String section;
-		/** */
-		public String subsection;
-		/** */
-		public String name;
-		/** */
-		public String value;
+
+		private String section;
+		private String subsection;
+		private String name;
+		private String value;
 
 		/**
-		 * @param section
-		 * @param subsection
-		 * @param name
-		 * @param value
+		 * @param section the config section
+		 * @param subsection the config sub section
+		 * @param name the name of the config parameter
+		 * @param value the value of the config parameter
 		 */
 		public RepositoryConfigProperty(String section, String subsection, String name, String value) {
 			this.section = section;
@@ -76,8 +87,36 @@ public class GitRepositoryInfo {
 			this.name = name;
 			this.value = value;
 		}
+
+		/**
+		 * @return the config section
+		 */
+		public String getSection() {
+			return section;
+		}
+
+		/**
+		 * @return the config sub section
+		 */
+		public String getSubsection() {
+			return subsection;
+		}
+
+		/**
+		 * @return the name of the config parameter
+		 */
+		public String getName() {
+			return name;
+		}
+
+		/**
+		 * @return the value of the config parameter
+		 */
+		public String getValue() {
+			return value;
+		}
 	}
-	private List<RepositoryConfigProperty> repositoryConfigProperties = new ArrayList<RepositoryConfigProperty>();
+	private final List<RepositoryConfigProperty> repositoryConfigProperties = new ArrayList<RepositoryConfigProperty>();
 
 
 	/**
@@ -189,20 +228,6 @@ public class GitRepositoryInfo {
 	 */
 	public List<RepositoryConfigProperty> getRepositoryConfigProperties() {
 		return repositoryConfigProperties;
-	}
-
-	/**
-	 * @return whether the info contains configuration of a remote Gerrit server
-	 */
-	public boolean providesGerritConfiguration() {
-		return providesGerritConfiguration;
-	}
-
-	/**
-	 * @param providesGerritConfiguration whether the info contains configuration of a remote Gerrit server
-	 */
-	public void setProvidesGerritConfiguration(boolean providesGerritConfiguration) {
-		this.providesGerritConfiguration = providesGerritConfiguration;
 	}
 
 }
