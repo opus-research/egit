@@ -2,7 +2,6 @@
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2011-2012, IBM Corporation
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,9 +14,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -65,15 +64,14 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.util.IntList;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.BidiSegmentEvent;
-import org.eclipse.swt.custom.BidiSegmentListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -210,11 +208,7 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private final SourceViewer sourceViewer;
 
-	private BidiSegmentListener hardWrapSegmentListener;
-
-	private ActionHandler quickFixActionHandler;
-
-	private ActionHandler contentAssistActionHandler;
+	private ModifyListener hardWrapModifyListener;
 
 	/**
 	 * @param parent
@@ -263,22 +257,16 @@ public class SpellcheckableMessageArea extends Composite {
 		createMarginPainter();
 
 		configureHardWrap();
-		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent event) {
-				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						public void run() {
-							configureHardWrap();
-						}
-					});
-				}
-			}
-		};
-		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
 
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
 		if (isEditable(sourceViewer)) {
-			quickFixActionHandler = createQuickFixActionHandler(sourceViewer);
+			final IHandlerActivation handlerActivation = installQuickFixActionHandler();
+			getTextWidget().addDisposeListener(new DisposeListener() {
+
+				public void widgetDisposed(DisposeEvent e) {
+					getHandlerService().deactivateHandler(handlerActivation);
+				}
+			});
 		}
 
 		Document document = new Document(initialText);
@@ -302,8 +290,17 @@ public class SpellcheckableMessageArea extends Composite {
 					return null;
 				IContentAssistant assistant = createContentAssistant(viewer);
 				// Add content assist proposal handler if assistant exists
-				if (assistant != null)
-					contentAssistActionHandler = createContentAssistActionHandler(sourceViewer);
+				if (assistant != null) {
+					final IHandlerActivation activation = installContentAssistActionHandler();
+					viewer.getTextWidget().addDisposeListener(
+							new DisposeListener() {
+
+								public void widgetDisposed(DisposeEvent e) {
+									getHandlerService().deactivateHandler(
+											activation);
+								}
+							});
+				}
 				return assistant;
 			}
 
@@ -315,7 +312,6 @@ public class SpellcheckableMessageArea extends Composite {
 		getTextWidget().addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
-				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
 			}
 		});
 	}
@@ -326,27 +322,32 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private void configureHardWrap() {
 		if (shouldHardWrap()) {
-			if (hardWrapSegmentListener == null) {
-				StyledText textWidget = getTextWidget();
-				hardWrapSegmentListener = new BidiSegmentListener() {
-					public void lineGetSegments(BidiSegmentEvent e) {
-						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
-						if (segments != null) {
-							char[] segmentsChars = new char[segments.length];
-							Arrays.fill(segmentsChars, '\n');
-							e.segments = segments;
-							e.segmentsChars = segmentsChars;
-						}
+			if (hardWrapModifyListener == null) {
+				final StyledText textWidget = getTextWidget();
+
+				hardWrapModifyListener = new ModifyListener() {
+
+					private boolean active = true;
+
+					public void modifyText(ModifyEvent e) {
+						if (!active)
+							return;
+						String lineDelimiter = textWidget.getLineDelimiter();
+						List<WrapEdit> wrapEdits = calculateWrapEdits(
+								textWidget.getText(), MAX_LINE_WIDTH,
+								lineDelimiter);
+						// Prevent infinite loop because replaceTextRange causes a ModifyEvent
+						active = false;
+						for (WrapEdit wrapEdit : wrapEdits)
+							textWidget.replaceTextRange(wrapEdit.getStart(), wrapEdit.getLength(), lineDelimiter);
+						active = true;
 					}
 				};
-				textWidget.addBidiSegmentListener(hardWrapSegmentListener);
-				textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
+				textWidget.addModifyListener(hardWrapModifyListener);
 			}
-		} else if (hardWrapSegmentListener != null) {
-			StyledText textWidget = getTextWidget();
-			textWidget.removeBidiSegmentListener(hardWrapSegmentListener);
-			textWidget.setText(textWidget.getText()); // XXX: workaround for https://bugs.eclipse.org/384886
-			hardWrapSegmentListener = null;
+		} else if (hardWrapModifyListener != null) {
+			getTextWidget().removeModifyListener(hardWrapModifyListener);
+			hardWrapModifyListener = null;
 		}
 	}
 
@@ -477,14 +478,10 @@ public class SpellcheckableMessageArea extends Composite {
 			private IHandlerActivation selectAllHandlerActivation;
 			private IHandlerActivation undoHandlerActivation;
 			private IHandlerActivation redoHandlerActivation;
-			private IHandlerActivation quickFixHandlerActivation;
-			private IHandlerActivation contentAssistHandlerActivation;
 
 			public void focusGained(FocusEvent e) {
-				IHandlerService service = getHandlerService();
-				if (service == null)
-					return;
-
+				IHandlerService service = (IHandlerService) PlatformUI
+						.getWorkbench().getService(IHandlerService.class);
 				if (cutAction != null) {
 					cutAction.update();
 					cutHandlerActivation = service.activateHandler(
@@ -517,22 +514,10 @@ public class SpellcheckableMessageArea extends Composite {
 							IWorkbenchCommandConstants.EDIT_REDO,
 							new ActionHandler(redoAction),
 							new ActiveShellExpression(getParent().getShell()));
-				if (quickFixActionHandler != null)
-					quickFixHandlerActivation = getHandlerService().activateHandler(
-							quickFixActionHandler.getAction().getActionDefinitionId(),
-							quickFixActionHandler,
-							new ActiveShellExpression(getParent().getShell()));
-				if (contentAssistActionHandler != null)
-					contentAssistHandlerActivation = getHandlerService().activateHandler(
-							contentAssistActionHandler.getAction().getActionDefinitionId(),
-							contentAssistActionHandler,
-							new ActiveShellExpression(getParent().getShell()));
 			}
 
 			public void focusLost(FocusEvent e) {
-				IHandlerService service = getHandlerService();
-				if (service == null)
-					return;
+				IHandlerService service = (IHandlerService) PlatformUI.getWorkbench().getService(IHandlerService.class);
 
 				if (cutHandlerActivation != null)
 					service.deactivateHandler(cutHandlerActivation);
@@ -551,12 +536,6 @@ public class SpellcheckableMessageArea extends Composite {
 
 				if (redoHandlerActivation != null)
 					service.deactivateHandler(redoHandlerActivation);
-
-				if (quickFixHandlerActivation != null)
-					service.deactivateHandler(quickFixHandlerActivation);
-
-				if (contentAssistHandlerActivation != null)
-					service.deactivateHandler(contentAssistHandlerActivation);
 			}
 
 		});
@@ -635,18 +614,10 @@ public class SpellcheckableMessageArea extends Composite {
 		};
 	}
 
-	/**
-	 * Return <code>IHandlerService</code>. The default implementation uses the
-	 * workbench window's service locator. Subclasses may override to access the
-	 * service by using a local service locator.
-	 *
-	 * @return <code>IHandlerService</code> using the workbench window's service
-	 *         locator. Can be <code>null</code> if the service could not be
-	 *         found.
-	 */
-	protected IHandlerService getHandlerService() {
-		return (IHandlerService) PlatformUI.getWorkbench().getService(
-				IHandlerService.class);
+	private IHandlerService getHandlerService() {
+		final IHandlerService handlerService = (IHandlerService) PlatformUI
+		.getWorkbench().getService(IHandlerService.class);
+		return handlerService;
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {
@@ -702,6 +673,24 @@ public class SpellcheckableMessageArea extends Composite {
 		return sourceViewer.getTextWidget();
 	}
 
+	private IHandlerActivation installQuickFixActionHandler() {
+		ActionHandler handler = createQuickFixActionHandler(sourceViewer);
+		return addHandler(handler);
+	}
+
+	private IHandlerActivation installContentAssistActionHandler() {
+		ActionHandler handler = createContentAssistActionHandler(sourceViewer);
+		return addHandler(handler);
+	}
+
+	private IHandlerActivation addHandler(ActionHandler handler) {
+		ActiveShellExpression expression = new ActiveShellExpression(
+				sourceViewer.getTextWidget().getShell());
+		return getHandlerService().activateHandler(
+				handler.getAction().getActionDefinitionId(), handler,
+				expression);
+	}
+
 	private ActionHandler createQuickFixActionHandler(
 			final ITextOperationTarget textOperationTarget) {
 		Action quickFixAction = new Action() {
@@ -732,41 +721,20 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	/**
-	 * Returns the commit message, converting platform-specific line endings to '\n'
-	 * and hard-wrapping lines if necessary.
+	 * Return the commit message, converting platform-specific line endings.
 	 *
 	 * @return commit message
 	 */
 	public String getCommitMessage() {
 		String text = getText();
-		text = Utils.normalizeLineEndings(text);
-		if (shouldHardWrap())
-			text = hardWrap(text);
-		return text;
+		return Utils.normalizeLineEndings(text);
 	}
 
 	/**
-	 * Hard-wraps the given text.
-	 *
-	 * @param text the text to wrap, must use '\n' as line delimiter
-	 * @return the wrapped text
+	 * Reconfigure this widget if a preference has changed.
 	 */
-	public static String hardWrap(String text) {
-		int[] wrapOffsets = calculateWrapOffsets(text, MAX_LINE_WIDTH);
-		if (wrapOffsets != null) {
-			StringBuilder builder = new StringBuilder(text.length() + wrapOffsets.length);
-			int prev = 0;
-			for (int cur : wrapOffsets) {
-				builder.append(text.substring(prev, cur));
-				for (int j = cur; j > prev && builder.charAt(builder.length() - 1) == ' '; j--)
-					builder.deleteCharAt(builder.length() - 1);
-				builder.append('\n');
-				prev = cur;
-			}
-			builder.append(text.substring(prev));
-			return builder.toString();
-		}
-		return text;
+	public void reconfigure() {
+		configureHardWrap();
 	}
 
 	/**
@@ -828,62 +796,93 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	/**
-	 * Calculates wrap offsets for the given line, so that resulting lines are
-	 * no longer than <code>maxLineLength</code> if possible.
+	 * Calculate a list of {@link WrapEdit} which can be applied to the text to
+	 * get a new text that is wrapped at word boundaries. Existing line breaks
+	 * are left alone (text is not reflowed).
 	 *
-	 * @param line
-	 *            the line to wrap (can contain '\n', but no other line delimiters)
+	 * @param text
+	 *            the text to calculate the wrap edits for
 	 * @param maxLineLength
 	 *            the maximum line length
-	 * @return an array of offsets where hard-wraps should be inserted, or
-	 *         <code>null</code> if the line does not need to be wrapped
+	 * @param lineDelimiter
+	 *            line delimiter used in text and for wrapping
+	 * @return a list of {@link WrapEdit} objects which specify how the text
+	 *         should be edited to obtain the wrapped text. Offsets of later
+	 *         edits are already adjusted for the fact that wrapping a line may
+	 *         shift the text backwards. So the list can just be iterated and
+	 *         each edit applied in order.
 	 */
-	public static int[] calculateWrapOffsets(final String line, final int maxLineLength) {
-		if (line.length() == 0)
-			return null;
+	public static List<WrapEdit> calculateWrapEdits(final String text, final int maxLineLength, final String lineDelimiter) {
+		List<WrapEdit> wrapEdits = new LinkedList<WrapEdit>();
 
-		IntList wrapOffsets = new IntList();
-		int wordStart = 0;
-		int lineStart = 0;
-		boolean lastWasSpace = true;
-		boolean onlySpaces = true;
-		for (int i = 0; i < line.length(); i++) {
-			char ch = line.charAt(i);
-			if (ch == ' ') {
-				lastWasSpace = true;
-			} else if (ch == '\n') {
-				lineStart = i + 1;
-				wordStart = i + 1;
-				lastWasSpace = true;
-				onlySpaces = true;
-			} else { // a word character
-				if (lastWasSpace) {
-					lastWasSpace = false;
-					if (!onlySpaces) { // don't break line with <spaces><veryLongWord>
-						wordStart = i;
+		int offset = 0;
+		int lineDelimiterLength = lineDelimiter.length();
+
+		String[] chunks = text.split(lineDelimiter, -1);
+		for (int chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+			String chunk = chunks[chunkIndex];
+
+			String[] words = chunk.split(" ", -1); //$NON-NLS-1$
+			int lineLength = 0;
+
+			for (int wordIndex = 0; wordIndex < words.length; wordIndex++) {
+				String word = words[wordIndex];
+
+				int wordLength = word.length();
+				int newLineLength = lineLength + wordLength + 1 /* the space */;
+				if (newLineLength > maxLineLength) {
+					/* don't break before a single long word */
+					if (lineLength != 0) {
+						wrapEdits.add(new WrapEdit(offset, 1));
+						/* adjust for the shifting of text after the edit is applied */
+						offset += lineDelimiterLength;
 					}
-				} else {
-					onlySpaces = false;
+					lineLength = 0;
+				} else if (wordIndex != 0) {
+					lineLength += 1;
+					offset += 1;
 				}
-				if (i >= lineStart + maxLineLength) {
-					if (wordStart != lineStart) { // don't break before a single long word
-						wrapOffsets.add(wordStart);
-						lineStart = wordStart;
-						onlySpaces = true;
-					}
-				}
+				offset += wordLength;
+				lineLength += wordLength;
 			}
+
+			if (chunkIndex != chunks.length - 1)
+				offset += lineDelimiterLength;
 		}
 
-		int size = wrapOffsets.size();
-		if (size == 0) {
-			return null;
-		} else {
-			int[] result = new int[size];
-			for (int i = 0; i < size; i++) {
-				result[i] = wrapOffsets.get(i);
-			}
-			return result;
+		return wrapEdits;
+	}
+
+	/**
+	 * Edit for replacing a space with a line delimiter to wrap a long line.
+	 */
+	public static class WrapEdit {
+		private int start;
+		private int length;
+
+		/**
+		 * @param start see {@link #getStart()}
+		 * @param length see {@link #getLength()}
+		 */
+		public WrapEdit(int start, int length) {
+			this.start = start;
+			this.length = length;
+		}
+
+		/**
+		 * @return character offset of where the edit should be applied on the
+		 *         text
+		 */
+		public int getStart() {
+			return start;
+		}
+
+		/**
+		 * @return number of characters which should be replaced by the line
+		 *         delimiter
+		 */
+		public int getLength() {
+			return length;
 		}
 	}
 }

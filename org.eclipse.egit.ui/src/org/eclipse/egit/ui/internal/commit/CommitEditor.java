@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2012 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -56,15 +56,13 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.menus.IMenuService;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.UIJob;
 
 /**
  * Editor class to view a commit in a form editor.
  */
 public class CommitEditor extends SharedHeaderFormEditor implements
-		RefsChangedListener, IShowInSource {
+		RefsChangedListener {
 
 	/**
 	 * ID - editor id
@@ -82,40 +80,9 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	public static final IEditorPart open(RepositoryCommit commit)
 			throws PartInitException {
-		return open(commit, true);
-	}
-
-	/**
-	 * Open commit in editor
-	 *
-	 * @param commit
-	 * @param activateOnOpen <code>true</code> if the newly opened editor should be activated
-	 * @return opened editor part
-	 * @throws PartInitException
-	 * @since 2.1
-	 */
-	public static final IEditorPart open(RepositoryCommit commit, boolean activateOnOpen)
-			throws PartInitException {
 		CommitEditorInput input = new CommitEditorInput(commit);
 		return IDE.openEditor(PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getActivePage(), input, ID, activateOnOpen);
-	}
-
-	/**
-	 * Open commit in editor
-	 *
-	 * @param commit
-	 * @param activateOnOpen <code>true</code> if the newly opened editor should be activated
-	 * @return opened editor part or null if opening fails
-	 * @since 2.1
-	 */
-	public static final IEditorPart openQuiet(RepositoryCommit commit, boolean activateOnOpen) {
-		try {
-			return open(commit, activateOnOpen);
-		} catch (PartInitException e) {
-			Activator.logError(e.getMessage(), e);
-			return null;
-		}
+				.getActiveWorkbenchWindow().getActivePage(), input, ID);
 	}
 
 	/**
@@ -125,7 +92,12 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 * @return opened editor part or null if opening fails
 	 */
 	public static final IEditorPart openQuiet(RepositoryCommit commit) {
-		return openQuiet(commit, true);
+		try {
+			return open(commit);
+		} catch (PartInitException e) {
+			Activator.logError(e.getMessage(), e);
+			return null;
+		}
 	}
 
 	private CommitEditorPage commitPage;
@@ -245,15 +217,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		});
 	}
 
-	/**
-	 * @see org.eclipse.ui.forms.editor.SharedHeaderFormEditor#setFocus()
-	 * @since 2.0
-	 */
-	@Override
-	public void setFocus() {
-		commitPage.getPartControl().setFocus();
-	}
-
 	private void addContributions(IToolBarManager toolBarManager) {
 		IMenuService menuService = (IMenuService) getSite().getService(
 				IMenuService.class);
@@ -333,12 +296,5 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			};
 			job.schedule();
 		}
-	}
-
-	public ShowInContext getShowInContext() {
-		if (commitPage != null && commitPage.isActive())
-			return commitPage.getShowInContext();
-		else
-			return null;
 	}
 }

@@ -11,7 +11,6 @@
 package org.eclipse.egit.ui.internal.commit;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -35,7 +34,7 @@ import org.eclipse.swt.graphics.Image;
 /**
  * Commit proposal processor
  */
-public abstract class CommitProposalProcessor implements IContentAssistProcessor {
+public class CommitProposalProcessor implements IContentAssistProcessor {
 
 	/**
 	 * Replace all non single space whitespace characters with a single space
@@ -100,6 +99,33 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 		}
 	}
 
+	private final String[] messages;
+
+	private final Set<CommitFile> files = new TreeSet<CommitFile>();
+
+	/**
+	 * Create process with path proposals
+	 *
+	 * @param messages
+	 * @param paths
+	 */
+	public CommitProposalProcessor(String[] messages, String[] paths) {
+		if (messages != null)
+			this.messages = messages;
+		else
+			this.messages = new String[0];
+
+		for (String path : paths) {
+			String name = new Path(path).lastSegment();
+			if (name == null)
+				continue;
+			files.add(new CommitFile(name, name));
+			int lastDot = name.lastIndexOf('.');
+			if (lastDot > 0)
+				files.add(new CommitFile(name.substring(0, lastDot), name));
+		}
+	}
+
 	/**
 	 * Dispose of processor
 	 */
@@ -131,9 +157,6 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 			return NO_PROPOSALS;
 		}
 
-		Collection<String> messages = computeMessageProposals();
-		Set<CommitFile> files = computeFileProposals();
-
 		List<ICompletionProposal> proposals = new ArrayList<ICompletionProposal>();
 		if (prefix != null && prefix.length() > 0) {
 			int replacementLength = prefix.length();
@@ -160,31 +183,6 @@ public abstract class CommitProposalProcessor implements IContentAssistProcessor
 				proposals.add(file.createProposal(offset, 0));
 		}
 		return proposals.toArray(new ICompletionProposal[proposals.size()]);
-	}
-
-	/**
-	 * @return the file names which will be made available through content assist
-	 */
-	protected abstract Collection<String> computeFileNameProposals();
-
-	/**
-	 * @return the commit messages which will be made available through content assist
-	 */
-	protected abstract Collection<String> computeMessageProposals();
-
-	private Set<CommitFile> computeFileProposals() {
-		Collection<String> paths = computeFileNameProposals();
-		Set<CommitFile> files = new TreeSet<CommitFile>();
-		for (String path : paths) {
-			String name = new Path(path).lastSegment();
-			if (name == null)
-				continue;
-			files.add(new CommitFile(name, name));
-			int lastDot = name.lastIndexOf('.');
-			if (lastDot > 0)
-				files.add(new CommitFile(name.substring(0, lastDot), name));
-		}
-		return files;
 	}
 
 	public IContextInformation[] computeContextInformation(ITextViewer viewer,

@@ -44,11 +44,6 @@ public class JobFamilies {
 	public final static Object REPO_VIEW_REFRESH = new Object();
 
 	/**
-	 * Delete repository job
-	 */
-	public final static Object REPOSITORY_DELETE = new Object();
-
-	/**
 	 * Tag job
 	 */
 	public final static Object TAG = new Object();
@@ -94,10 +89,9 @@ public class JobFamilies {
 	public final static Object DISCONNECT = new Object();
 
 	/**
-	 * Discard Changes
+	 * Staging View refresh
 	 */
-	public final static Object DISCARD_CHANGES = new Object();
-
+	public static final Object STAGING_VIEW_REFRESH = new Object();
 
 	/**
 	 * Add to index job
