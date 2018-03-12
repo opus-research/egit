@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
+import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -32,10 +33,9 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.ui.IWorkbenchWindowPulldownDelegate;
 
 /**
- * A pulldown action to rebase the current branch, or continue, skip or abort an
- * active rebase.
+ * An action to rebase the current branch on top of selected one.
  *
- * @see RebaseActionHandler
+ * @see RebaseOperation
  */
 public class RebaseAction extends RepositoryAction implements
 		IWorkbenchWindowPulldownDelegate {
@@ -109,7 +109,10 @@ public class RebaseAction extends RepositoryAction implements
 			return false;
 
 		RepositoryState state = repo.getRepositoryState();
-		return RebaseActionHandler.isRebasing(state);
+		return state == RepositoryState.REBASING
+				|| state == RepositoryState.REBASING_INTERACTIVE
+				|| state == RepositoryState.REBASING_MERGE
+				|| state == RepositoryState.REBASING_REBASING;
 	}
 
 	private boolean canContinue(Repository repo) {
