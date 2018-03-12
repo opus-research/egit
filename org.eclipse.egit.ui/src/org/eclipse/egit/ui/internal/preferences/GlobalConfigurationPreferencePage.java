@@ -35,9 +35,6 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
  */
 public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		IWorkbenchPreferencePage {
-	/** The ID of this page */
-	public static final String ID = "org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"; //$NON-NLS-1$
-
 	private FileBasedConfig userConfig;
 
 	private FileBasedConfig sysConfig;

@@ -6,12 +6,15 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Stefan Lay (SAP AG) - initial implementation
- *    Mathias Kinzler (SAP AG) - move to command framework
+ *    Christian Halstrick (SAP AG) - initial implementation
+ *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Robin Rosenberg - Adoption for the history menu
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.repository.tree.command;
+
+package org.eclipse.egit.ui.internal.history.command;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -25,65 +28,56 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
- * Implements "Merge"
+ * Executes the Merge
  */
-public class MergeCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode> {
-	public Object execute(final ExecutionEvent event) throws ExecutionException {
+public class MergeHandler extends AbstractHistoryCommanndHandler {
+	private static final class BranchMessageDialog extends AmbiguosBranchDialog {
 
-		RepositoryTreeNode node = getSelectedNodes(event).get(0);
+		public BranchMessageDialog(Shell parentShell, List<RefNode> nodes) {
+			super(parentShell, nodes, UIText.MergeHandler_SelectBranchTitle,
+					UIText.MergeHandler_SelectBranchMessage);
+		}
 
-		final Repository repository = node.getRepository();
+	}
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+		RevCommit commit = (RevCommit) getSelection(getPage()).getFirstElement();
+		final Repository repository = getRepository(event);
+		if (repository == null)
+			return null;
 
 		if (!canMerge(repository))
 			return null;
 
-		String targetRef;
-		if (node instanceof RefNode) {
-			String refName = ((RefNode) node).getObject().getName();
-			try {
-				if (repository.getFullBranch().equals(refName))
-					targetRef = null;
-				else
-					targetRef = refName;
-			} catch (IOException e) {
-				targetRef = null;
-			}
-		} else if (node instanceof TagNode)
-			targetRef = ((TagNode) node).getObject().getName();
-		else
-			targetRef = null;
-
-		final String refName;
-		if (targetRef != null)
-			refName = targetRef;
+		List<RefNode> nodes = getRefNodes(commit, repository, Constants.R_REFS);
+		String refName;
+		if (nodes.isEmpty())
+			refName = commit.getName();
+		else if (nodes.size() == 1)
+			refName = nodes.get(0).getObject().getName();
 		else {
-			MergeTargetSelectionDialog mergeTargetSelectionDialog = new MergeTargetSelectionDialog(
-					getShell(event), repository);
-			if (mergeTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
-				refName = mergeTargetSelectionDialog.getRefName();
-			} else {
+			BranchMessageDialog dlg = new BranchMessageDialog(HandlerUtil
+					.getActiveShellChecked(event), nodes);
+			if (dlg.open() == Window.OK) {
+				refName = dlg.getSelectedNode().getObject().getName();
+			} else
 				return null;
-			}
 		}
-
 		String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 		final MergeOperation op = new MergeOperation(repository, refName);
 		Job job = new Job(jobname) {
@@ -101,8 +95,8 @@ public class MergeCommand extends
 		job.setRule(op.getSchedulingRule());
 		job.addJobChangeListener(new JobChangeAdapter() {
 			@Override
-			public void done(IJobChangeEvent jobEvent) {
-				IStatus result = jobEvent.getJob().getResult();
+			public void done(IJobChangeEvent cevent) {
+				IStatus result = cevent.getJob().getResult();
 				if (result.getSeverity() == IStatus.CANCEL) {
 					Display.getDefault().asyncExec(new Runnable() {
 						public void run() {
@@ -111,9 +105,11 @@ public class MergeCommand extends
 							// execution has been triggered.
 							Shell shell = PlatformUI.getWorkbench()
 									.getActiveWorkbenchWindow().getShell();
-							MessageDialog.openInformation(shell,
-									UIText.MergeAction_MergeCanceledTitle,
-									UIText.MergeAction_MergeCanceledMessage);
+							MessageDialog
+									.openInformation(
+											shell,
+											UIText.MergeAction_MergeCanceledTitle,
+											UIText.MergeAction_MergeCanceledMessage);
 						}
 					});
 				} else if (!result.isOK()) {
@@ -124,17 +120,20 @@ public class MergeCommand extends
 						public void run() {
 							Shell shell = PlatformUI.getWorkbench()
 									.getActiveWorkbenchWindow().getShell();
-							new MergeResultDialog(shell, repository, op.getResult()).open();
+							new MergeResultDialog(shell, repository, op
+									.getResult()).open();
 						}
 					});
 				}
 			}
 		});
 		job.schedule();
-
 		return null;
 	}
 
+	/* copy of {@link org.eclipse.egit.ui.internal.repository.tree.command.MergeCommand#canMerge(Repository)}
+	 * @param repository
+	 * @return true of merge is allowed */
 	private boolean canMerge(final Repository repository) {
 		String message = null;
 		Exception ex = null;
@@ -156,4 +155,13 @@ public class MergeCommand extends
 		}
 		return (message == null);
 	}
+
+	/**
+	 * @param event
+	 * @return the shell for the event
+	 */
+	public Shell getShell(ExecutionEvent event) {
+		return HandlerUtil.getActiveShell(event);
+	}
+
 }
