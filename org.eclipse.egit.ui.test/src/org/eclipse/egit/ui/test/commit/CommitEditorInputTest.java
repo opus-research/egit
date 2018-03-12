@@ -10,17 +10,17 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test.commit;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
 import java.io.File;
 
+import org.eclipse.core.runtime.AssertionFailedException;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
-import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter.DiffStyleRange;
-import org.eclipse.jface.text.Document;
-import org.eclipse.jface.text.IDocument;
+import org.eclipse.egit.ui.internal.commit.CommitEditorInput;
+import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -29,9 +29,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Unit tests for {@link DiffStyleRangeFormatter}
+ * Unit tests for {@link CommitEditorInput}
  */
-public class DiffStyleRangeFormatterTest extends LocalRepositoryTestCase {
+public class CommitEditorInputTest extends LocalRepositoryTestCase {
 
 	private static Repository repository;
 
@@ -49,31 +49,38 @@ public class DiffStyleRangeFormatterTest extends LocalRepositoryTestCase {
 		try {
 			commit = walk.parseCommit(repository.resolve(Constants.HEAD));
 			assertNotNull(commit);
-			walk.parseBody(commit.getParent(0));
 		} finally {
 			walk.release();
 		}
 	}
 
 	@Test
-	public void testRanges() throws Exception {
-		IDocument document = new Document();
-		DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
-				document);
-		formatter.setRepository(repository);
-		formatter.format(commit.getTree(), commit.getParent(0).getTree());
-		assertTrue(document.getLength() > 0);
-		DiffStyleRange[] ranges = formatter.getRanges();
-		assertNotNull(ranges);
-		assertTrue(ranges.length > 0);
-		for (DiffStyleRange range : ranges) {
-			assertNotNull(range);
-			assertNotNull(range.diffType);
-			assertTrue(range.start >= 0);
-			assertTrue(range.length >= 0);
-			assertTrue(range.start < document.getLength());
+	public void testConstructorAsserts() {
+		try {
+			assertNull(new CommitEditorInput(null));
+		} catch (AssertionFailedException afe) {
+			assertNotNull(afe);
 		}
+	}
 
+	@Test
+	public void testAdapters() {
+		RepositoryCommit repoCommit = new RepositoryCommit(repository, commit);
+		CommitEditorInput input = new CommitEditorInput(repoCommit);
+		assertEquals(repoCommit, input.getAdapter(RepositoryCommit.class));
+		assertEquals(repository, input.getAdapter(Repository.class));
+		assertEquals(commit, input.getAdapter(RevCommit.class));
+	}
+
+	@Test
+	public void testInput() {
+		RepositoryCommit repoCommit = new RepositoryCommit(repository, commit);
+		CommitEditorInput input = new CommitEditorInput(repoCommit);
+		assertNotNull(input.getImageDescriptor());
+		assertNotNull(input.getToolTipText());
+		assertNotNull(input.getName());
+		assertEquals(repoCommit, input.getCommit());
+		assertNotNull(input.getPersistable());
 	}
 
 }
