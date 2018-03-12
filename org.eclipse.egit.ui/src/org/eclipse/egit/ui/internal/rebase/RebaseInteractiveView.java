@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 SAP AG and others.
+ * Copyright (c) 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -188,8 +188,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		else if (o instanceof Repository)
 			repo = (Repository) o;
 		else if (o instanceof IAdaptable) {
-			IResource resource = (IResource) ((IAdaptable) o)
-					.getAdapter(IResource.class);
+			IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
@@ -241,6 +240,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				toolkit.dispose();
 			}
@@ -261,6 +261,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		createLocalDragandDrop();
 		planTreeViewer.addDoubleClickListener(new IDoubleClickListener() {
 
+			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				PlanElement element = (PlanElement) ((IStructuredSelection) event
 						.getSelection()).getFirstElement();
@@ -276,9 +277,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			private RepositoryCommit loadCommit(
 					AbbreviatedObjectId abbreviatedObjectId) {
 				if (abbreviatedObjectId != null) {
-					RevWalk walk = new RevWalk(
-							RebaseInteractiveView.this.currentRepository);
-					try {
+					try (RevWalk walk = new RevWalk(
+							RebaseInteractiveView.this.currentRepository)) {
 						Collection<ObjectId> resolved = walk.getObjectReader()
 								.resolve(abbreviatedObjectId);
 						if (resolved.size() == 1) {
@@ -290,8 +290,6 @@ public class RebaseInteractiveView extends ViewPart implements
 						}
 					} catch (IOException e) {
 						return null;
-					} finally {
-						walk.release();
 					}
 				}
 				return null;
@@ -299,6 +297,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		});
 
 		prefListener = new IPreferenceChangeListener() {
+			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
 				if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey()))
 					return;
@@ -312,6 +311,7 @@ public class RebaseInteractiveView extends ViewPart implements
 
 				// Unselect repository as it has been removed
 				Display.getDefault().asyncExec(new Runnable() {
+					@Override
 					public void run() {
 						currentRepository = null;
 						showRepository(null);
@@ -471,6 +471,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	private void setupRepositoryViewSelectionChangeListener() {
 		selectionChangedListener = new ISelectionListener() {
 
+			@Override
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
 				if (!listenOnRepositoryViewSelection
@@ -515,6 +516,7 @@ public class RebaseInteractiveView extends ViewPart implements
 	private class PlanViewerSelectionChangedListener implements
 			ISelectionChangedListener {
 
+		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			if (event == null)
 				return;
@@ -845,6 +847,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		if (!isReady())
 			return;
 		asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				Tree t = planTreeViewer.getTree();
 				if (t.isDisposed())
@@ -923,6 +926,7 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		MenuManager manager = new MenuManager();
 		manager.addMenuListener(new IMenuListener() {
+			@Override
 			public void menuAboutToShow(IMenuManager menuManager) {
 				boolean selectionNotEmpty = !planViewer.getSelection()
 						.isEmpty();
@@ -988,16 +992,19 @@ public class RebaseInteractiveView extends ViewPart implements
 		return dndEnabled;
 	}
 
+	@Override
 	public void planWasUpdatedFromRepository(final RebaseInteractivePlan plan) {
 		refresh();
 	}
 
+	@Override
 	public void planElementTypeChanged(
 			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
 			ElementAction oldType, ElementAction newType) {
 		planTreeViewer.refresh(element, true);
 	}
 
+	@Override
 	public void planElementsOrderChanged(
 			RebaseInteractivePlan rebaseInteractivePlan, PlanElement element,
 			int oldIndex, int newIndex) {
