@@ -144,6 +144,8 @@ public class CommitAction extends RepositoryAction {
 		commitDialog.setPreselectedFiles(getSelectedFiles());
 		commitDialog.setAuthor(author);
 		commitDialog.setCommitter(committer);
+		if(notTracked.size() == files.size())
+			commitDialog.setShowUntracked(true);
 
 		if (previousCommit != null) {
 			commitDialog.setPreviousCommitMessage(previousCommit.getMessage());
