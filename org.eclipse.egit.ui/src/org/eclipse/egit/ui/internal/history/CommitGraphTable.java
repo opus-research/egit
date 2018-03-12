@@ -6,7 +6,6 @@
  * Copyright (C) 2011-2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +44,6 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.AbstractHoverInformationControlManager;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.DefaultInformationControl;
@@ -160,8 +158,7 @@ class CommitGraphTable {
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
-	CommitGraphTable(Composite parent, final TableLoader loader,
-			final ResourceManager resources) {
+	CommitGraphTable(Composite parent, final TableLoader loader) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		tableLoader = loader;
@@ -205,7 +202,7 @@ class CommitGraphTable {
 
 		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
-		renderer = new SWTPlotRenderer(rawTable.getDisplay(), resources);
+		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
@@ -238,6 +235,8 @@ class CommitGraphTable {
 			public void widgetDisposed(DisposeEvent e) {
 				if (allCommits != null)
 					allCommits.dispose();
+				if (renderer != null)
+					renderer.dispose();
 				hoverManager.dispose();
 			}
 		});
@@ -248,9 +247,8 @@ class CommitGraphTable {
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
-			final MenuManager menuMgr, final TableLoader loader,
-			final ResourceManager resources) {
-		this(parent, loader, resources);
+			final MenuManager menuMgr, final TableLoader loader) {
+		this(parent, loader);
 
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
@@ -353,6 +351,7 @@ class CommitGraphTable {
 		return !table.getSelection().isEmpty();
 	}
 
+	@SuppressWarnings("unchecked")
 	private void doCopy() {
 		final ISelection s = table.getSelection();
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))

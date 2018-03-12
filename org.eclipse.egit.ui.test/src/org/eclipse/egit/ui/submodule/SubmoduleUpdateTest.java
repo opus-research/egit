@@ -44,7 +44,7 @@ public class SubmoduleUpdateTest extends GitRepositoriesViewTestBase {
 
 	private static final String UPDATE_SUBMODULE_CONTEXT_MENU_LABEL = "SubmoduleUpdateCommand.label";
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
 	@Before
 	public void before() throws Exception {

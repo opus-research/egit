@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,10 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
-import java.util.EnumSet;
-import java.util.Set;
-
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -32,54 +27,21 @@ public class StagingEntry implements IAdaptable {
 	 */
 	public static enum State {
 		/** added to the index, not in the tree */
-		ADDED(EnumSet.of(Action.UNSTAGE)),
-
+		ADDED,
 		/** changed from tree to index */
-		CHANGED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
-
+		CHANGED,
 		/** removed from index, but in tree */
-		REMOVED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
-
+		REMOVED,
 		/** in index, but not filesystem */
-		MISSING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
-
+		MISSING,
 		/** modified on disk relative to the index */
-		MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
-
+		MODIFIED,
 		/** partially staged, modified in workspace and in index */
-		PARTIALLY_MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
-
+		PARTIALLY_MODIFIED,
 		/** not ignored, and not in the index */
-		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE)),
-
+		UNTRACKED,
 		/** in conflict */
-		CONFLICTING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION,
-					Action.STAGE, Action.LAUNCH_MERGE_TOOL));
-
-		private final Set<Action> availableActions;
-
-		private State(Set<Action> availableActions) {
-			this.availableActions = availableActions;
-		}
-
-		/**
-		 * @return set of available actions for the current state
-		 */
-		public Set<Action> getAvailableActions() {
-			return availableActions;
-		}
-	}
-
-	/**
-	 * Possible actions available on a staging entry.
-	 */
-	enum Action {
-		REPLACE_WITH_FILE_IN_GIT_INDEX,
-		REPLACE_WITH_HEAD_REVISION,
-		STAGE,
-		UNSTAGE,
-		DELETE,
-		LAUNCH_MERGE_TOOL,
+		CONFLICTING;
 	}
 
 	private Repository repository;
@@ -137,25 +99,14 @@ public class StagingEntry implements IAdaptable {
 		return state;
 	}
 
-	Set<Action> getAvailableActions() {
-		return state.getAvailableActions();
-	}
-
-	/**
-	 * @return the file corresponding to the entry
-	 */
-	public IFile getFile() {
-		IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile resource = root.getFileForLocation(absolutePath);
-		if (resource == null)
-			resource = root.getFile(absolutePath);
-		return resource;
-	}
-
 	public Object getAdapter(Class adapter) {
 		if (adapter == IResource.class) {
-			return getFile();
+			IPath absolutePath = new Path(repository.getWorkTree().getAbsolutePath()).append(path);
+			IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+			IResource resource = root.getFileForLocation(absolutePath);
+			if (resource == null)
+				resource = root.getFile(absolutePath);
+			return resource;
 		}
 		return null;
 	}
