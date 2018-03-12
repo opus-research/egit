@@ -574,6 +574,9 @@ public class UIText extends NLS {
 	public static String GitProjectPropertyPage_LabelWorkdir;
 
 	/** */
+	public static String GitProjectPropertyPage_UnableToGetCommit;
+
+	/** */
 	public static String GitProjectPropertyPage_ValueEmptyRepository;
 
 	/** */
@@ -2260,13 +2263,7 @@ public class UIText extends NLS {
 	public static String FetchResultDialog_title;
 
 	/** */
-	public static String FetchResultTable_collapseAll;
-
-	/** */
 	public static String FetchResultTable_counterCommits;
-
-	/** */
-	public static String FetchResultTable_expandAll;
 
 	/** */
 	public static String FetchResultTable_statusDetailCouldntLock;
@@ -2966,6 +2963,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
+
+	/** */
+	public static String UIUtils_CollapseAll;
+
+	/** */
+	public static String UIUtils_ExpandAll;
 
 	/** */
 	public static String UIUtils_PressShortcutMessage;

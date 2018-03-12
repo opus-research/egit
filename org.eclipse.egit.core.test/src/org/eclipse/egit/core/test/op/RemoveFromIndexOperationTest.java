@@ -10,8 +10,8 @@
 package org.eclipse.egit.core.test.op;
 
 import static java.util.Arrays.asList;
+import static junit.framework.Assert.assertTrue;
 import static org.eclipse.egit.core.project.RepositoryMapping.getMapping;
-import static org.junit.Assert.assertFalse;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -66,7 +66,7 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 		new RemoveFromIndexOperation(repo, resources).execute(null);
 
 		// then
-		assertFalse(testRepo.inIndex(file1.getLocation()
+		assertTrue(testRepo.removedFromIndex(file1.getLocation()
 				.toPortableString()));
 	}
 
@@ -85,12 +85,12 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 		new RemoveFromIndexOperation(repo, resources).execute(null);
 
 		// then
-		assertFalse(testRepo.inIndex(file1.getLocation().toPortableString()));
-		assertFalse(testRepo.inIndex(file2.getLocation().toPortableString()));
+		assertTrue(testRepo.removedFromIndex(file1.getLocation().toPortableString()));
+		assertTrue(testRepo.removedFromIndex(file2.getLocation().toPortableString()));
 	}
 
 	@Test
-	public void shouldUnstageExistingFile() throws Exception {
+	public void shouldUnstExistingFile() throws Exception {
 		// given
 		IFile file1 = createFileInRepo("a.txt");
 		List<String> resources = new ArrayList<String>();
@@ -109,7 +109,7 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 		new RemoveFromIndexOperation(repo, resources).execute(null);
 
 		// then
-		assertFalse(testRepo.inIndex(file1.getLocation().toPortableString()));
+		assertTrue(testRepo.removedFromIndex(file1.getLocation().toPortableString()));
 	}
 
 	@Test
@@ -140,8 +140,8 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 		new RemoveFromIndexOperation(repo, resources).execute(null);
 
 		// then
-		assertFalse(testRepo.inIndex(file1.getLocation().toPortableString()));
-		assertFalse(testRepo.inIndex(file2.getLocation().toPortableString()));
+		assertTrue(testRepo.removedFromIndex(file1.getLocation().toPortableString()));
+		assertTrue(testRepo.removedFromIndex(file2.getLocation().toPortableString()));
 	}
 
 	@Test
@@ -172,8 +172,8 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 		new RemoveFromIndexOperation(repo, resources).execute(null);
 
 		// then
-		assertFalse(testRepo.inIndex(file1.getLocation().toPortableString()));
-		assertFalse(testRepo.inIndex(file2.getLocation().toPortableString()));
+		assertTrue(testRepo.removedFromIndex(file1.getLocation().toPortableString()));
+		assertTrue(testRepo.removedFromIndex(file2.getLocation().toPortableString()));
 	}
 
 	private IFile createFileInRepo(String fileName) throws Exception {
