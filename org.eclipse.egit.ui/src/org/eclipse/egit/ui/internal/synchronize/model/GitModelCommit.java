@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -38,7 +37,7 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	 */
 	public GitModelCommit(GitModelRepository parent, RevCommit commit,
 			int direction) throws IOException {
-		super(parent, null, commit, direction);
+		super(parent, commit, direction);
 	}
 
 	/**
@@ -47,7 +46,6 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	 * @param parent
 	 *            instance of repository model object that is parent for this
 	 *            commit
-	 * @param location ?
 	 * @param commit
 	 *            instance of commit that will be associated with this model
 	 *            object
@@ -56,9 +54,9 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	 *            determinate commit direction (is it incoming or outgoing)
 	 * @throws IOException
 	 */
-	protected GitModelCommit(GitModelObject parent, IPath location, RevCommit commit,
+	protected GitModelCommit(GitModelObject parent, RevCommit commit,
 			int direction) throws IOException {
-		super(parent, location, commit, direction);
+		super(parent, commit, direction);
 	}
 
 	@Override

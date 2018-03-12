@@ -57,7 +57,7 @@ public class GitModelRepository extends GitModelObject {
 	 */
 	public GitModelRepository(GitSynchronizeData data)
 			throws MissingObjectException, IOException {
-		super(null, null);
+		super(null);
 		repo = data.getRepository();
 		includeLocal = data.shouldIncludeLocal();
 		Set<IProject> projectSet = data.getProjects();

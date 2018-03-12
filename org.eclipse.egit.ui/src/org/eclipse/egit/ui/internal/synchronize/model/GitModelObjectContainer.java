@@ -63,14 +63,13 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	/**
 	 *
 	 * @param parent instance of parent object
-	 * @param location container location
 	 * @param commit commit connected with this container
 	 * @param direction indicate change direction
 	 * @throws IOException
 	 */
-	protected GitModelObjectContainer(GitModelObject parent, IPath location,
-			RevCommit commit, int direction) throws IOException {
-		super(parent, location);
+	protected GitModelObjectContainer(GitModelObject parent, RevCommit commit,
+			int direction) throws IOException {
+		super(parent);
 		kind = direction;
 		baseCommit = commit;
 		ancestorCommit = calculateAncestor(baseCommit);
@@ -231,14 +230,13 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		ObjectId objRemoteId = tw.getObjectId(actualNth);
 		ObjectId objAncestorId = tw.getObjectId(ancestorNth);
 		int objectType = tw.getFileMode(actualNth).getObjectType();
-		IPath childLocation = getLocation().append(objName);
 
 		if (objectType == Constants.OBJ_BLOB)
-			return new GitModelBlob(this, childLocation, getBaseCommit(),
-					objAncestorId, objBaseId, objRemoteId);
+			return new GitModelBlob(this, getBaseCommit(), objAncestorId,
+					objBaseId, objRemoteId, objName);
 		else if (objectType == Constants.OBJ_TREE)
-			return new GitModelTree(this, childLocation, getBaseCommit(),
-					objAncestorId, objBaseId, objRemoteId);
+			return new GitModelTree(this, getBaseCommit(), objAncestorId,
+					objBaseId, objRemoteId, objName);
 
 		return null;
 	}

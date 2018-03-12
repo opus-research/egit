@@ -40,8 +40,6 @@ public class GitModelTree extends GitModelCommit {
 	/**
 	 * @param parent
 	 *            parent of this tree
-	 * @param location
-	 *            tree location
 	 * @param commit
 	 *            commit associated with this tree
 	 * @param ancestorId
@@ -50,14 +48,16 @@ public class GitModelTree extends GitModelCommit {
 	 *            id of base tree
 	 * @param remoteId
 	 *            this tree id
+	 * @param name
+	 *            name resource associated with this tree
 	 * @throws IOException
 	 */
-	public GitModelTree(GitModelObjectContainer parent, IPath location,
-			RevCommit commit, ObjectId ancestorId, ObjectId baseId,
-			ObjectId remoteId) throws IOException {
+	public GitModelTree(GitModelObjectContainer parent, RevCommit commit,
+			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
+			throws IOException {
 		// only direction is important for us, therefore we mask rest of bits in kind
-		super(parent, location, commit, parent.getKind() & (LEFT | RIGHT));
-		this.name = location.lastSegment();
+		super(parent, commit, parent.getKind() & (LEFT | RIGHT));
+		this.name = name;
 		this.baseId = baseId;
 		this.remoteId = remoteId;
 		this.ancestorId = ancestorId;

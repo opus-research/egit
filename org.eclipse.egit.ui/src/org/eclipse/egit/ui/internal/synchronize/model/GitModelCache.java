@@ -18,8 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.dircache.DirCache;
@@ -44,7 +42,7 @@ public class GitModelCache extends GitModelObjectContainer {
 
 	private final FileModelFactory fileFactory;
 
-	private final Map<IPath, GitModelCacheTree> cacheTreeMap;
+	private final Map<String, GitModelCacheTree> cacheTreeMap;
 
 	private static final int BASE_NTH = 0;
 
@@ -62,18 +60,19 @@ public class GitModelCache extends GitModelObjectContainer {
 		 *
 		 * @param parent
 		 *            parent object
-		 * @param location file location
 		 * @param commit
 		 *            last {@link RevCommit} in repository
 		 * @param repoId
 		 *            {@link ObjectId} of blob in repository
 		 * @param cacheId
 		 *            {@link ObjectId} of blob in cache
+		 * @param name
+		 *            of blob
 		 * @return instance of {@link GitModelBlob}
 		 * @throws IOException
 		 */
-		GitModelBlob createFileModel(GitModelObjectContainer parent, IPath location,
-				RevCommit commit, ObjectId repoId, ObjectId cacheId)
+		GitModelBlob createFileModel(GitModelObjectContainer parent,
+				RevCommit commit, ObjectId repoId, ObjectId cacheId, String name)
 				throws IOException;
 	}
 
@@ -91,11 +90,11 @@ public class GitModelCache extends GitModelObjectContainer {
 		this(parent, baseCommit, new FileModelFactory() {
 
 			public GitModelBlob createFileModel(
-					GitModelObjectContainer modelParent, IPath location, RevCommit commit,
-					ObjectId repoId, ObjectId cacheId)
+					GitModelObjectContainer modelParent, RevCommit commit,
+					ObjectId repoId, ObjectId cacheId, String name)
 					throws IOException {
-				return new GitModelCacheFile(modelParent, location, commit,
-						repoId, cacheId);
+				return new GitModelCacheFile(modelParent, commit, repoId,
+						cacheId, name);
 			}
 		});
 	}
@@ -108,9 +107,9 @@ public class GitModelCache extends GitModelObjectContainer {
 	 */
 	protected GitModelCache(GitModelObject parent, RevCommit baseCommit,
 			FileModelFactory fileFactory) throws IOException {
-		super(parent, null, baseCommit, RIGHT);
+		super(parent, baseCommit, RIGHT);
 		this.fileFactory = fileFactory;
-		cacheTreeMap = new HashMap<IPath, GitModelCacheTree>();
+		cacheTreeMap = new HashMap<String, GitModelCacheTree>();
 	}
 
 	@Override
@@ -180,8 +179,8 @@ public class GitModelCache extends GitModelObjectContainer {
 			if (path.split("/").length > 1) //$NON-NLS-1$
 				return handleCacheTree(repoId, cacheId, path);
 
-			return fileFactory.createFileModel(this, new Path(path),
-					baseCommit, repoId, cacheId);
+			return fileFactory.createFileModel(this, baseCommit, repoId,
+					cacheId, path);
 		}
 
 		return null;
@@ -199,12 +198,12 @@ public class GitModelCache extends GitModelObjectContainer {
 
 	private GitModelObject handleCacheTree(ObjectId repoId, ObjectId cacheId,
 			String path) throws IOException {
-		IPath childLocation = new Path(path);
-		GitModelCacheTree cacheTree = cacheTreeMap.get(childLocation);
+		String pathKey = path.split("/")[0]; //$NON-NLS-1$
+		GitModelCacheTree cacheTree = cacheTreeMap.get(pathKey);
 		if (cacheTree == null) {
-			cacheTree = new GitModelCacheTree(this, childLocation, baseCommit,
-					repoId, cacheId, fileFactory);
-			cacheTreeMap.put(childLocation, cacheTree);
+			cacheTree = new GitModelCacheTree(this, baseCommit, repoId,
+					cacheId, pathKey, fileFactory);
+			cacheTreeMap.put(pathKey, cacheTree);
 		}
 
 		cacheTree.addChild(repoId, cacheId,
