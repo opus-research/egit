@@ -115,8 +115,6 @@ public class ResourcePropertyTester extends PropertyTester {
 					return true;
 				case REBASING_REBASING:
 					return true;
-				case REBASING_MERGE:
-					return true;
 				default:
 					return false;
 				}
