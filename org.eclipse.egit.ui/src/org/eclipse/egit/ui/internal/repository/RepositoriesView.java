@@ -41,7 +41,6 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
-import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -379,9 +378,9 @@ public class RepositoriesView extends CommonNavigator {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
 						.getFirstElement();
-				if (element instanceof FileNode
-						|| element instanceof StashedCommitNode)
+				if (element instanceof FileNode) {
 					executeOpenCommand();
+				}
 			}
 		});
 		// react on selection changes
