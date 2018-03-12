@@ -350,12 +350,6 @@ public class CoreText extends NLS {
 	/** */
 	public static String GitRemoteFolder_fetchingMembers;
 
-	/** */
-	public static String GitURI_InvalidSCMURL;
-
-	/** */
-	public static String GitURI_InvalidURI;
-
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
 	}

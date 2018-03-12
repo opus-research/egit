@@ -61,7 +61,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.ReflogEntry;
 import org.eclipse.swt.SWT;
@@ -194,38 +193,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		});
 
-		TreeViewerColumn commitMessageColumn = createColumn(layout,
-				UIText.ReflogView_CommitMessageColumnHeader, 30, SWT.LEFT);
-		commitMessageColumn.setLabelProvider(new ColumnLabelProvider() {
-
-			@Override
-			public String getText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				RevCommit c = getCommit(entry);
-				return c == null ? "" : c.getShortMessage(); //$NON-NLS-1$
-			}
-
-			private RevCommit getCommit(final ReflogEntry entry) {
-				RevWalk walk = new RevWalk(getRepository());
-				walk.setRetainBody(true);
-				RevCommit c = null;
-				try {
-					c = walk.parseCommit(entry.getNewId());
-				} catch (IOException ignored) {
-					// ignore
-				} finally {
-					walk.release();
-				}
-				return c;
-			}
-
-			@Override
-			public Image getImage(Object element) {
-				return branchImage;
-			}
-
-		});
-
 		TreeViewerColumn dateColumn = createColumn(layout,
 				UIText.ReflogView_DateColumnHeader, 15, SWT.LEFT);
 		dateColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -239,6 +206,12 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 
 			@Override
+			public String getToolTipText(Object element) {
+				final ReflogEntry entry = (ReflogEntry) element;
+				return entry.getNewId().name();
+			}
+
+			@Override
 			public Image getImage(Object element) {
 				return null;
 			}
@@ -246,7 +219,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 		});
 
 		TreeViewerColumn messageColumn = createColumn(layout,
-				UIText.ReflogView_MessageColumnHeader, 30, SWT.LEFT);
+				UIText.ReflogView_MessageColumnHeader, 50, SWT.LEFT);
 		messageColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			private ResourceManager resourceManager = new LocalResourceManager(
@@ -304,9 +277,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			@Override
 			public String getToolTipText(Object element) {
 				final ReflogEntry entry = (ReflogEntry) element;
-				final PersonIdent who = entry.getWho();
-				String email = who.getEmailAddress();
-				return who.getName() + " <" + email + ">";  //$NON-NLS-1$//$NON-NLS-2$
+				return entry.getNewId().name();
 			}
 
 			@Override
