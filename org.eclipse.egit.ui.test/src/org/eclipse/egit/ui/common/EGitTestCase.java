@@ -39,7 +39,6 @@ public abstract class EGitTestCase {
 			welcomePageClosed = true;
 		} catch (WidgetNotFoundException e) {
 			// somebody else probably closed it, lets not feel bad about it.
-			welcomePageClosed = true;
 		}
 	}
 
