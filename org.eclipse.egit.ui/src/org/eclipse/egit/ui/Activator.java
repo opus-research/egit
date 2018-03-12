@@ -350,7 +350,6 @@ public class Activator extends AbstractUIPlugin {
 
 	private void setupRepoChangeScanner() {
 		rcs = new RCS();
-		rcs.setSystem(true);
 		rcs.schedule(RCS.REPO_SCAN_INTERVAL);
 	}
 
