@@ -60,10 +60,8 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			setConflicts(baseState.hasConflicts());
 			setAssumeUnchanged(baseState.isAssumeUnchanged());
 			setStagingState(baseState.getStagingState());
-			if (resource.getType() == IResource.PROJECT
-					|| resource.equals(mapping.getContainer())) {
-				// We only need this very expensive info for project decoration,
-				// and for decorating folders that are submodule roots.
+			if (resource.getType() == IResource.PROJECT) {
+				// We only need this very expensive info for project decoration
 				repositoryName = DecoratableResourceHelper
 						.getRepositoryName(repository);
 				branch = DecoratableResourceHelper.getShortBranch(repository);

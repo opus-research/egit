@@ -427,15 +427,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 				break;
 			case IResource.FOLDER:
 			case DecoratableResourceMapping.RESOURCE_MAPPING:
-				// Use the project formatting if it's a submodule root
-				if (resource.getRepositoryName() != null
-						&& resource.getBranch() != null) {
-					format = store.getString(
-							UIPreferences.DECORATOR_PROJECTTEXT_DECORATION);
-				} else {
-					format = store.getString(
-							UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
-				}
+				format = store
+						.getString(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 				break;
 			case DecoratableResourceMapping.WORKING_SET:
 				// working sets will use the project formatting but only if the
