@@ -55,7 +55,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
-import org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot;
 import org.eclipse.egit.ui.internal.revision.EditableRevision;
 import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
@@ -84,9 +83,7 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.io.EolCanonicalizingInputStream;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IEditorInput;
@@ -297,39 +294,13 @@ public class CompareUtils {
 	public static void openInCompare(RevCommit commit1, RevCommit commit2,
 			String commit1Path, String commit2Path, Repository repository,
 			IWorkbenchPage workBenchPage) {
-		if (GitPreferenceRoot.useEclipseDiffTool()) {
-			openInCompareInternal(commit1, commit2, commit1Path, commit2Path,
-					repository, workBenchPage);
-		} else {
-			openInCompareExternal(commit1, commit2, commit1Path, commit2Path,
-					repository, workBenchPage);
-		}
-	}
-
-	private static void openInCompareInternal(RevCommit commit1,
-			RevCommit commit2, String commit1Path, String commit2Path,
-			Repository repository, IWorkbenchPage workBenchPage) {
-		final ITypedElement base = CompareUtils
-				.getFileRevisionTypedElement(commit1Path, commit1, repository);
-		final ITypedElement next = CompareUtils
-				.getFileRevisionTypedElement(commit2Path, commit2, repository);
+		final ITypedElement base = CompareUtils.getFileRevisionTypedElement(
+				commit1Path, commit1, repository);
+		final ITypedElement next = CompareUtils.getFileRevisionTypedElement(
+				commit2Path, commit2, repository);
 		CompareEditorInput in = new GitCompareFileRevisionEditorInput(base,
 				next, null);
 		CompareUtils.openInCompare(workBenchPage, in);
-	}
-
-	private static void openInCompareExternal(RevCommit commit1,
-			RevCommit commit2,
-			String commit1Path, String commit2Path, Repository repository,
-			IWorkbenchPage workBenchPage) {
-		// TODO
-		String diffCmd = GitPreferenceRoot.getExternalDiffToolCommand();
-
-		MessageBox mbox = new MessageBox(Display.getCurrent().getActiveShell(),
-                SWT.ICON_INFORMATION | SWT.OK);
-		mbox.setText("getExternalDiffToolCommand"); //$NON-NLS-1$
-		mbox.setMessage(diffCmd);
-		mbox.open();
 	}
 
 	/**
@@ -445,7 +416,13 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
+		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					file.getLocation(), repository), null);
+			return;
+		}
+		String path = mapping.getRepoRelativePath(
 				file);
 		ITypedElement base = getHeadTypedElement(repository, path);
 		if (base == null)
@@ -493,6 +470,11 @@ public class CompareUtils {
 				}
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					return Activator.createErrorStatus(
+							NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+									file.getLocation(), repository));
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 				final ITypedElement base = SaveableCompareEditorInput
 						.createFileElement(file);
@@ -685,6 +667,11 @@ public class CompareUtils {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+							file.getLocation(), repository), null);
+					return;
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 
 				compareBetween(repository, gitPath, leftRev, rightRev, page);
@@ -982,6 +969,11 @@ public class CompareUtils {
 	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					baseFile.getLocation(), null), null);
+			return null;
+		}
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
 		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
