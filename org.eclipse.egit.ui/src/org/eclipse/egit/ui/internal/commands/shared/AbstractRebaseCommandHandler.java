@@ -83,7 +83,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 
 	private void startRebaseJob(final RebaseOperation rebase,
 			final Repository repository, final RebaseCommand.Operation operation) {
-		JobUtil.scheduleUserWorkspaceJob(rebase, jobname, JobFamilies.REBASE,
+		JobUtil.scheduleUserJob(rebase, jobname, JobFamilies.REBASE,
 				new JobChangeAdapter() {
 					@Override
 					public void aboutToRun(IJobChangeEvent event) {
@@ -126,7 +126,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 							});
 						else if (result.isOK()) {
 							if (rebase.getResult().getStatus() == Status.UNCOMMITTED_CHANGES) {
-								handleUncommittedChanges(repository,
+								handleUncommittedChanges(rebase, repository,
 										rebase.getResult()
 												.getUncommittedChanges());
 							} else {
@@ -184,8 +184,8 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 				});
 	}
 
-	private void handleUncommittedChanges(final Repository repository,
-			final List<String> files) {
+	private void handleUncommittedChanges(final RebaseOperation rebase,
+			final Repository repository, final List<String> files) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()

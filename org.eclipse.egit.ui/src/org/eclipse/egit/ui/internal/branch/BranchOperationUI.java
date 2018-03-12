@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -71,8 +70,6 @@ public class BranchOperationUI {
 
 	private String target;
 
-	private String base;
-
 	/**
 	 * In the case of checkout conflicts, a dialog is shown to let the user
 	 * stash, reset or commit. After that, checkout is tried again. The second
@@ -111,19 +108,6 @@ public class BranchOperationUI {
 	 */
 	public static BranchOperationUI create(Repository repository) {
 		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
-		return op;
-	}
-
-	/**
-	 * Create an operation for creating a local branch with a given base reference
-	 *
-	 * @param repository
-	 * @param baseRef
-	 * @return the {@link BranchOperationUI}
-	 */
-	public static BranchOperationUI createWithRef(Repository repository, String baseRef) {
-		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
-		op.base = baseRef;
 		return op;
 	}
 
@@ -225,10 +209,9 @@ public class BranchOperationUI {
 		final BranchOperation bop = new BranchOperation(repository, target,
 				!restore);
 
-		Job job = new WorkspaceJob(jobname) {
-
+		Job job = new Job(jobname) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					if (restore) {
 						final BranchProjectTracker tracker = new BranchProjectTracker(
@@ -362,9 +345,7 @@ public class BranchOperationUI {
 		case MODE_CREATE:
 			CreateBranchWizard wiz;
 			try {
-				if (base == null)
-					base = repository.getFullBranch();
-				wiz = new CreateBranchWizard(repository, base);
+				wiz = new CreateBranchWizard(repository, repository.getFullBranch());
 			} catch (IOException e) {
 				wiz = new CreateBranchWizard(repository);
 			}
