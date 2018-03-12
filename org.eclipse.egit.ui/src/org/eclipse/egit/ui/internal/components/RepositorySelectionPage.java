@@ -26,6 +26,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.clone.GitCloneWizard;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
@@ -386,6 +387,12 @@ public class RepositorySelectionPage extends WizardPage {
 		return selection.equals(s);
 	}
 
+	@Override
+	public void performHelp() {
+		if (this.getWizard() instanceof GitCloneWizard)
+			GitCloneWizard.openCheatSheet();
+	}
+
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		panel.setLayout(new GridLayout());
@@ -548,9 +555,7 @@ public class RepositorySelectionPage extends WizardPage {
 		userText.setLayoutData(createFieldGridData());
 		userText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
-				Protocol protocol = getProtocol();
-				if (protocol != Protocol.HTTP && protocol != Protocol.HTTPS)
-					setURI(uri.setUser(nullString(userText.getText())));
+				setURI(uri.setUser(nullString(userText.getText())));
 				user = userText.getText();
 			}
 		});
@@ -866,19 +871,13 @@ public class RepositorySelectionPage extends WizardPage {
 	}
 
 	private void updateAuthGroup() {
-		Protocol p = getProtocol();
-		if (p != null) {
+		int idx = scheme.getSelectionIndex();
+		if (idx >= 0) {
+			Protocol p = Protocol.values()[idx];
 			hostText.setEnabled(p.hasHost());
 			portText.setEnabled(p.hasPort());
 			setEnabledRecursively(authGroup, p.canAuthenticate());
 		}
-	}
-
-	private Protocol getProtocol() {
-		int idx = scheme.getSelectionIndex();
-		if (idx >= 0)
-			return Protocol.values()[idx];
-		return null;
 	}
 
 	@Override

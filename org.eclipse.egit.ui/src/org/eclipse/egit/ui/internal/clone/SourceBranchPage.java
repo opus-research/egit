@@ -109,6 +109,12 @@ class SourceBranchPage extends WizardPage {
 		return availableRefs.size() == refsViewer.getCheckedElements().length;
 	}
 
+	@Override
+	public void performHelp() {
+		if (this.getWizard() instanceof GitCloneWizard)
+			GitCloneWizard.openCheatSheet();
+	}
+
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		final GridLayout layout = new GridLayout();
@@ -125,9 +131,7 @@ class SourceBranchPage extends WizardPage {
 		refsViewer.setLabelProvider(new LabelProvider() {
 			@Override
 			public String getText(Object element) {
-				if (((Ref)element).getName().startsWith(Constants.R_HEADS))
-					return ((Ref)element).getName().substring(Constants.R_HEADS.length());
-				return ((Ref)element).getName();
+				return ((Ref)element).getName().substring(Constants.R_HEADS.length());
 			}
 
 			@Override

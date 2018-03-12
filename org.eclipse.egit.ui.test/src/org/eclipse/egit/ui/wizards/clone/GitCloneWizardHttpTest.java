@@ -25,7 +25,7 @@ public class GitCloneWizardHttpTest extends GitCloneWizardTestBase {
 
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
-		destRepo = new File(ResourcesPlugin.getWorkspace()
+		File destRepo = new File(ResourcesPlugin.getWorkspace()
 				.getRoot().getLocation().toFile(), "test1");
 
 		importWizard.openWizard();

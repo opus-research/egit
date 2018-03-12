@@ -42,6 +42,7 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.cheatsheets.OpenCheatSheetAction;
 
 /**
  * Import Git Repository Wizard. A front end to a git clone operation.
@@ -52,6 +53,8 @@ public class GitCloneWizard extends Wizard {
 	 * Job family of the Clone Repository job.
 	 */
 	public static final Object CLONE_JOB_FAMILY = new Object();
+
+	private static final String CLONE_CHEATSHEET = "org.eclipse.egit.cheatsheets.clone"; //$NON-NLS-1$
 
 	private RepositorySelectionPage cloneSource;
 
@@ -150,6 +153,13 @@ public class GitCloneWizard extends Wizard {
 		}
 	}
 
+	/**
+	 * Display the clone wizard's cheat sheet
+	 */
+	public static void openCheatSheet() {
+		new OpenCheatSheetAction(CLONE_CHEATSHEET).run();
+	}
+
 	boolean performClone() {
 		final URIish uri = cloneSource.getSelection().getURI();
 		setWindowTitle(NLS.bind(UIText.GitCloneWizard_jobName, uri.toString()));
@@ -164,7 +174,7 @@ public class GitCloneWizard extends Wizard {
 			selectedBranches = validSource.getSelectedBranches();
 		}
 		final File workdir = cloneDestination.getDestinationFile();
-		final Ref ref = cloneDestination.getInitialBranch();
+		final String branch = cloneDestination.getInitialBranch();
 		final String remoteName = cloneDestination.getRemote();
 
 		workdir.mkdirs();
@@ -182,7 +192,7 @@ public class GitCloneWizard extends Wizard {
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, ref, remoteName, timeout);
+				selectedBranches, workdir, branch, remoteName, timeout);
 		UserPasswordCredentials credentials = cloneSource.getCredentials();
 		if (credentials != null)
 			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(

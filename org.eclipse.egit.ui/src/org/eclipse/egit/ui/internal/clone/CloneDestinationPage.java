@@ -22,11 +22,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ComboViewer;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -39,6 +34,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
@@ -59,7 +55,7 @@ class CloneDestinationPage extends WizardPage {
 
 	private Ref validatedHEAD;
 
-	private ComboViewer initialBranch;
+	private Combo initialBranch;
 
 	private Text directoryText;
 
@@ -68,6 +64,12 @@ class CloneDestinationPage extends WizardPage {
 	CloneDestinationPage() {
 		super(CloneDestinationPage.class.getName());
 		setTitle(UIText.CloneDestinationPage_title);
+	}
+
+	@Override
+	public void performHelp() {
+		if (this.getWizard() instanceof GitCloneWizard)
+			GitCloneWizard.openCheatSheet();
 	}
 
 	public void createControl(final Composite parent) {
@@ -87,7 +89,7 @@ class CloneDestinationPage extends WizardPage {
 	public void setVisible(final boolean visible) {
 		if (visible) {
 			if (this.availableRefs.isEmpty()) {
-				initialBranch.getCombo().setEnabled(false);
+				initialBranch.setEnabled(false);
 			}
 		}
 		super.setVisible(visible);
@@ -153,22 +155,14 @@ class CloneDestinationPage extends WizardPage {
 		});
 
 		newLabel(g, UIText.CloneDestinationPage_promptInitialBranch + ":"); //$NON-NLS-1$
-		initialBranch = new ComboViewer(g, SWT.DROP_DOWN | SWT.READ_ONLY);
-		initialBranch.getCombo().setLayoutData(createFieldGridData());
-		initialBranch.getCombo().addSelectionListener(new SelectionAdapter() {
+		initialBranch = new Combo(g, SWT.DROP_DOWN | SWT.READ_ONLY);
+		initialBranch.setLayoutData(createFieldGridData());
+		initialBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				checkPage();
 			}
 		});
-		initialBranch.setContentProvider(ArrayContentProvider.getInstance());
-		initialBranch.setLabelProvider(new LabelProvider(){
-			@Override
-			public String getText(Object element) {
-				if (((Ref)element).getName().startsWith(Constants.R_HEADS))
-					return ((Ref)element).getName().substring(Constants.R_HEADS.length());
-				return ((Ref)element).getName();
-			} });
 	}
 
 	private void createConfigGroup(final Composite parent) {
@@ -217,10 +211,11 @@ class CloneDestinationPage extends WizardPage {
 	/**
 	 * @return initial branch selected (includes refs/heads prefix).
 	 */
-	public Ref getInitialBranch() {
-		IStructuredSelection selection =
-			(IStructuredSelection)initialBranch.getSelection();
-		return (Ref)selection.getFirstElement();
+	public String getInitialBranch() {
+		final int ix = initialBranch.getSelectionIndex();
+		if (ix < 0)
+			return Constants.R_HEADS + Constants.MASTER;
+		return Constants.R_HEADS + initialBranch.getItem(ix);
 	}
 
 	/**
@@ -256,7 +251,7 @@ class CloneDestinationPage extends WizardPage {
 			return;
 		}
 		if (!availableRefs.isEmpty()
-			&& initialBranch.getCombo().getSelectionIndex() < 0) {
+				&& initialBranch.getSelectionIndex() < 0) {
 			setErrorMessage(UIText.CloneDestinationPage_errorInitialBranchRequired);
 			setPageComplete(false);
 			return;
@@ -316,12 +311,18 @@ class CloneDestinationPage extends WizardPage {
 		validatedSelectedBranches = branches;
 		validatedHEAD = head;
 
-		initialBranch.setInput(branches);
-		if (head != null && branches.contains(head))
-			initialBranch.setSelection(new StructuredSelection(head));
-		else
-			initialBranch
-					.setSelection(new StructuredSelection(branches.get(0)));
+		initialBranch.removeAll();
+		final Ref actHead = head;
+		int newix = 0;
+		for (final Ref r : branches) {
+			String name = r.getName();
+			if (name.startsWith(Constants.R_HEADS))
+				name = name.substring((Constants.R_HEADS).length());
+			if (actHead != null && actHead.getName().equals(r.getName()))
+				newix = initialBranch.getItemCount();
+			initialBranch.add(name);
+		}
+		initialBranch.select(newix);
 		checkPage();
 	}
 
