@@ -6,7 +6,7 @@
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
  *
@@ -35,9 +35,9 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
@@ -64,8 +64,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.DocumentEvent;
-import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
@@ -93,8 +91,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
@@ -326,6 +322,9 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
+
+	private static final String DIALOG_SETTINGS_SECTION_NAME = Activator
+			.getPluginId() + ".COMMIT_DIALOG_SECTION"; //$NON-NLS-1$
 
 	/**
 	 * A constant used for the 'commit and push button' button
@@ -585,6 +584,16 @@ public class CommitDialog extends TitleAreaDialog {
 		return help;
 	}
 
+	@Override
+	protected IDialogSettings getDialogBoundsSettings() {
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+		IDialogSettings section = settings
+				.getSection(DIALOG_SETTINGS_SECTION_NAME);
+		if (section == null)
+			section = settings.addNewSection(DIALOG_SETTINGS_SECTION_NAME);
+		return section;
+	}
+
 	/**
 	 * Add message drop down toolbar item
 	 *
@@ -668,24 +677,6 @@ public class CommitDialog extends TitleAreaDialog {
 		setTitle(UIText.CommitDialog_Title);
 		setMessage(UIText.CommitDialog_Message, IMessageProvider.INFORMATION);
 
-		ModifyListener validator = new ModifyListener() {
-
-			public void modifyText(ModifyEvent e) {
-				updateMessage();
-			}
-		};
-		commitText.getDocument().addDocumentListener(new IDocumentListener() {
-
-			public void documentChanged(DocumentEvent event) {
-				updateMessage();
-			}
-
-			public void documentAboutToBeChanged(DocumentEvent event) {
-				// Intentionally empty
-			}
-		});
-		authorText.addModifyListener(validator);
-		committerText.addModifyListener(validator);
 		filesViewer.addCheckStateListener(new ICheckStateListener() {
 
 			public void checkStateChanged(CheckStateChangedEvent event) {
@@ -977,11 +968,15 @@ public class CommitDialog extends TitleAreaDialog {
 			public void updateChangeIdToggleSelection(boolean selection) {
 				changeIdItem.setSelection(selection);
 			}
+
+			public void statusUpdated() {
+				updateMessage();
+			}
 		};
 
 		commitMessageComponent = new CommitMessageComponent(repository,
 				listener);
-		commitMessageComponent.enableListers(false);
+		commitMessageComponent.enableListeners(false);
 		commitMessageComponent.setDefaults();
 		commitMessageComponent.attachControls(commitText, authorText,
 				committerText);
@@ -1014,7 +1009,7 @@ public class CommitDialog extends TitleAreaDialog {
 		});
 
 		commitMessageComponent.updateUI();
-		commitMessageComponent.enableListers(true);
+		commitMessageComponent.enableListeners(true);
 
 		return messageAndPersonArea;
 	}
@@ -1031,6 +1026,10 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private void updateMessage() {
+		if (commitButton == null)
+			// Not yet fully initialized.
+			return;
+
 		String message = null;
 		int type = IMessageProvider.NONE;
 

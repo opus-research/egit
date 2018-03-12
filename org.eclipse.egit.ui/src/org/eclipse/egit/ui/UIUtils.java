@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -31,6 +32,8 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.bindings.Trigger;
 import org.eclipse.jface.bindings.TriggerSequence;
 import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
@@ -40,25 +43,38 @@ import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.hyperlink.IHyperlink;
+import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontMetrics;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Resource;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
@@ -695,6 +711,52 @@ public class UIUtils {
 		return showInSubMenu;
 	}
 
+	/**
+	 * Use hyperlink detectors to find a text viewer's hyperlinks and return the
+	 * style ranges to render them.
+	 *
+	 * @param textViewer
+	 * @param hyperlinkDetectors
+	 * @return the style ranges to render the detected hyperlinks
+	 */
+	public static StyleRange[] getHyperlinkDetectorStyleRanges(
+			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
+		HashSet<StyleRange> styleRangeList = new HashSet<StyleRange>();
+		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
+			IDocument doc = textViewer.getDocument();
+			for (int line = 0; line < doc.getNumberOfLines(); line++) {
+				try {
+					IRegion region = doc.getLineInformation(line);
+					for (IHyperlinkDetector hyperLinkDetector : hyperlinkDetectors) {
+						IHyperlink[] hyperlinks = hyperLinkDetector
+								.detectHyperlinks(textViewer, region, true);
+						if (hyperlinks != null) {
+							for (IHyperlink hyperlink : hyperlinks) {
+								StyleRange hyperlinkStyleRange = new StyleRange(
+										hyperlink.getHyperlinkRegion()
+												.getOffset(), hyperlink
+												.getHyperlinkRegion()
+												.getLength(), Display
+												.getDefault().getSystemColor(
+														SWT.COLOR_BLUE),
+										Display.getDefault().getSystemColor(
+												SWT.COLOR_WHITE));
+								hyperlinkStyleRange.underline = true;
+								styleRangeList.add(hyperlinkStyleRange);
+							}
+						}
+					}
+				} catch (BadLocationException e) {
+					Activator.logError(e.getMessage(), e);
+					break;
+				}
+			}
+		}
+		StyleRange[] styleRangeArray = new StyleRange[styleRangeList.size()];
+		styleRangeList.toArray(styleRangeArray);
+		return styleRangeArray;
+	}
+
 	private static String getShowInMenuLabel() {
 		IBindingService bindingService = (IBindingService) PlatformUI
 				.getWorkbench().getAdapter(IBindingService.class);
@@ -731,5 +793,26 @@ public class UIUtils {
 			return (KeyStroke) triggers[0];
 		else
 			return null;
+	}
+
+	/**
+	 * Copy from {@link org.eclipse.jface.dialogs.DialogPage} with changes to
+	 * accommodate the lack of a Dialog context.
+	 *
+	 * @param button
+	 *            the button to set the <code>GridData</code>
+	 */
+	public static void setButtonLayoutData(Button button) {
+		GC gc = new GC(button);
+		gc.setFont(JFaceResources.getDialogFont());
+		FontMetrics fontMetrics = gc.getFontMetrics();
+		gc.dispose();
+
+		GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL);
+		int widthHint = Dialog.convertHorizontalDLUsToPixels(fontMetrics,
+				IDialogConstants.BUTTON_WIDTH);
+		Point minSize = button.computeSize(SWT.DEFAULT, SWT.DEFAULT, true);
+		data.widthHint = Math.max(widthHint, minSize.x);
+		button.setLayoutData(data);
 	}
 }
