@@ -6,7 +6,7 @@
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2013, Tobias Pfeifer <to.pfeifer@sap.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
- * Copyright (C) 2015, Andre Bossert <anb0s@anbos.de>
+ * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -166,21 +166,6 @@ public class UIPreferences {
 
 	/** */
 	public static final String MERGE_MODE = "merge_mode"; //$NON-NLS-1$
-
-	/** */
-	public static final String MERGE_TOOL = "merge_tool"; //$NON-NLS-1$
-	/** */
-	public static final String MERGE_TOOL_CUSTOM = "merge_tool_custom"; //$NON-NLS-1$
-	/** */
-	public static final String MERGE_TOOL_AUTO_ADD_TO_INDEX = "merge_tool_auto_add"; //$NON-NLS-1$
-
-	/** */
-	public static final String DIFF_TOOL = "diff_tool"; //$NON-NLS-1$
-	/** */
-	public static final String DIFF_TOOL_CUSTOM = "diff_tool_custom"; //$NON-NLS-1$
-	/** */
-	public static final String BASH_PATH = "bash_path"; //$NON-NLS-1$
-
 	/** */
 	public static final String SHOW_REBASE_CONFIRM = "show_rebase_confirm"; //$NON-NLS-1$
 	/** */
@@ -206,6 +191,9 @@ public class UIPreferences {
 	/** */
 	public static final String HISTORY_MAX_BRANCH_LENGTH = "HistoryView_MaxBranchLength"; //$NON-NLS-1$
 	/** */
+	public static final String HISTORY_MAX_DIFF_LINES = "HistoryView_MaxDiffLines"; //$NON-NLS-1$
+
+	/** */
 	public static final String HISTORY_CUT_AT_START = "HistoryView_CutAtStart"; //$NON-NLS-1$
 	/** */
 	public static final String HISTORY_SHOW_TAG_SEQUENCE = "HistoryView_ShowTagSequence"; //$NON-NLS-1$
@@ -217,6 +205,8 @@ public class UIPreferences {
 	public static final String STAGING_VIEW_COLUMN_LAYOUT = "StagingView_ColumnLayout"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_SYNC_SELECTION = "StagingView_SyncWithSelection"; //$NON-NLS-1$
+	/**	 */
+	public static final String STAGING_VIEW_COMPARE_MODE = "StagingView_CompareMode"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_FILENAME_MODE = "StagingView_FileNameMode"; //$NON-NLS-1$
 	/** */

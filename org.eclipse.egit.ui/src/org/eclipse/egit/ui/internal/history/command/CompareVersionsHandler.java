@@ -62,12 +62,13 @@ public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
 						commit2Path, repo, workBenchPage);
 			} else if (input instanceof IResource) {
 				GitCompareEditorInput compareInput = new GitCompareEditorInput(
-						commit1.name(), commit2.name(), (IResource) input);
-				CompareUtils.openInCompare(workBenchPage, repo, compareInput);
+						commit1.name(), commit2.name(), repo,
+						(IResource) input);
+				CompareUtils.openInCompare(workBenchPage, compareInput);
 			} else if (input == null) {
 				GitCompareEditorInput compareInput = new GitCompareEditorInput(
 						commit1.name(), commit2.name(), repo);
-				CompareUtils.openInCompare(workBenchPage, repo, compareInput);
+				CompareUtils.openInCompare(workBenchPage, compareInput);
 			}
 		}
 		return null;

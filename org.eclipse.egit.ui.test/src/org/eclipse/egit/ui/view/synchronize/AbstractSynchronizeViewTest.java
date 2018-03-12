@@ -16,6 +16,7 @@ import static org.eclipse.egit.ui.test.TestUtil.waitUntilTreeHasNodeContainsText
 import static org.eclipse.jface.dialogs.MessageDialogWithToggle.NEVER;
 import static org.eclipse.jgit.lib.Constants.R_TAGS;
 import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE_PERSPECTIVE;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -45,6 +46,7 @@ import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jdt.ui.JavaUI;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -95,7 +97,7 @@ public abstract class AbstractSynchronizeViewTest extends
 				.getProject(EMPTY_PROJECT);
 		if (prj.exists()) {
 			prj.delete(false, false, null);
-			TestUtil.waitForJobs(100, 5000);
+			TestUtil.waitForJobs(50, 5000);
 		}
 	}
 
@@ -124,7 +126,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	protected void changeFilesInProject() throws Exception {
-		SWTBot packageExlBot = bot.viewByTitle("Package Explorer").bot();
+		SWTBot packageExlBot = bot.viewById(JavaUI.ID_PACKAGES).bot();
 		SWTBotTreeItem coreTreeItem = selectProject(PROJ1, packageExlBot.tree());
 		SWTBotTreeItem rootNode = coreTreeItem.expand().getNode(0)
 				.expand().select();
@@ -168,7 +170,8 @@ public abstract class AbstractSynchronizeViewTest extends
 			String dstRef, boolean includeLocal) throws IOException {
 		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
-		Repository repo = RepositoryMapping.getMapping(project).getRepository();
+		RepositoryMapping mapping = assertConnected(project);
+		Repository repo = mapping.getRepository();
 
 		GitSynchronizeData data = new GitSynchronizeData(repo, srcRef, dstRef,
 				includeLocal);
@@ -207,6 +210,8 @@ public abstract class AbstractSynchronizeViewTest extends
 				EMPTY_PROJECT).getPath()));
 		firstProject.create(desc, null);
 		firstProject.open(null);
+		assertTrue("Project is not accessible: " + firstProject,
+				firstProject.isAccessible());
 
 		IFolder folder = firstProject.getFolder(FOLDER);
 		folder.create(false, true, null);
@@ -216,9 +221,13 @@ public abstract class AbstractSynchronizeViewTest extends
 		IFile textFile2 = folder.getFile(FILE2);
 		textFile2.create(new ByteArrayInputStream("Some more content"
 				.getBytes(firstProject.getDefaultCharset())), false, null);
-		TestUtil.waitForJobs(100, 5000);
-
-		new ConnectProviderOperation(firstProject, gitDir).execute(null);
+		TestUtil.waitForJobs(50, 5000);
+		try {
+			new ConnectProviderOperation(firstProject, gitDir).execute(null);
+		} catch (Exception e) {
+			Activator.logError("Failed to connect project to repository", e);
+		}
+		assertConnected(firstProject);
 	}
 
 	protected SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {

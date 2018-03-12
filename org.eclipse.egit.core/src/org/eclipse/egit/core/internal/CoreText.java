@@ -80,6 +80,15 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
+	public static String ConnectProviderOperation_ConnectErrors;
+
+	/** */
+	public static String ConnectProviderOperation_NoRepositoriesError;
+
+	/** */
+	public static String ConnectProviderOperation_UnexpectedRepositoryError;
+
+	/** */
 	public static String ContainerTreeIterator_DeletedFile;
 
 	/** */
@@ -179,6 +188,9 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
+	public static String RepositoryFinder_ResourceDoesNotExist;
+
+	/** */
 	public static String RepositoryMapping_ExceptionSubmoduleWalk;
 
 	/** */
@@ -198,6 +210,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ResourceUtil_SaveLocalHistoryFailed;
+
+	/** */
+	public static String ResourceUtil_mapProjectJob;
 
 	/** */
 	public static String MergeOperation_InternalError;
