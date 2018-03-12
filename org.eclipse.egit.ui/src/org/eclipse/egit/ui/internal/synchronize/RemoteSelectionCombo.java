@@ -88,8 +88,9 @@ class RemoteSelectionCombo extends Composite {
 		int refSelectedIndex = refsCombo.getSelectionIndex();
 		int remoteSelectedIndex = remotesCombo.getSelectionIndex();
 
-		if (remoteSelectedIndex < 0 || refSelectedIndex < 0)
+		if (remoteSelectedIndex < 0 && refSelectedIndex < 0) {
 			return ""; //$NON-NLS-1$
+		}
 
 		return syncRepos.get(remoteSelectedIndex).getRefList().get(
 				refSelectedIndex).getValue();

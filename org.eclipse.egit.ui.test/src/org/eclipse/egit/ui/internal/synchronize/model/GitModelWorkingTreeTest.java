@@ -21,7 +21,8 @@ public class GitModelWorkingTreeTest extends GitModelTestCase {
 
 	@Test public void shouldReturnEqualsForTheSameInstance() throws Exception {
 		// given
-		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit());
+		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit(),
+				getCommit(leftRepoFile, HEAD));
 
 		// when
 		boolean actual = left.equals(left);
@@ -30,14 +31,32 @@ public class GitModelWorkingTreeTest extends GitModelTestCase {
 		assertFalse(!actual);
 	}
 
+	@Test public void shouldReturnNotEqualsForTheDifferentCommits()
+			throws Exception {
+		// given
+		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit(),
+				getCommit(leftRepoFile, HEAD));
+		GitModelWorkingTree right = new GitModelWorkingTree(
+				createModelCommit(),
+				getCommit(leftRepoFile, HEAD + "~1"));
+
+		// when
+		boolean actual = left.equals(right);
+
+		// then
+		assertFalse(actual);
+	}
+
 	@Test public void shouldReturnNotEqualsForTheDifferentParents()
 			throws Exception {
 		// given
 		File localRightRepoFile = createProjectAndCommitToRepository(REPO2);
 		GitModelRepository rightGsd = new GitModelRepository(
 				getGSD(lookupRepository(localRightRepoFile)));
-		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit());
-		GitModelWorkingTree right = new GitModelWorkingTree(rightGsd);
+		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit(),
+				getCommit(leftRepoFile, HEAD));
+		GitModelWorkingTree right = new GitModelWorkingTree(rightGsd,
+				getCommit(localRightRepoFile, HEAD));
 
 		// when
 		boolean actual = left.equals(right);
@@ -49,9 +68,10 @@ public class GitModelWorkingTreeTest extends GitModelTestCase {
 	@Test public void shouldReturnEqualsForTheSameCommits()
 			throws Exception {
 		// given
-		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit());
+		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit(),
+				getCommit(leftRepoFile, HEAD));
 		GitModelWorkingTree right = new GitModelWorkingTree(
-				createModelCommit());
+				createModelCommit(), getCommit(leftRepoFile, HEAD));
 
 		// when
 		boolean actual = left.equals(right);
@@ -63,7 +83,8 @@ public class GitModelWorkingTreeTest extends GitModelTestCase {
 	@Test public void shouldReturnNotEqualsWhenComparingWorkingTreeAndCache()
 			throws Exception {
 		// given
-		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit());
+		GitModelWorkingTree left = new GitModelWorkingTree(createModelCommit(),
+				getCommit(leftRepoFile, HEAD));
 		GitModelCache right = new GitModelCache(createModelCommit(),
 				getCommit(leftRepoFile, HEAD));
 
