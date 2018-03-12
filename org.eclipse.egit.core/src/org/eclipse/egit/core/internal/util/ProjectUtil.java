@@ -4,15 +4,11 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Stephan Hackstedt - Bug 477695
  *******************************************************************************/
 package org.eclipse.egit.core.internal.util;
 
@@ -38,7 +34,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
@@ -131,8 +127,8 @@ public class ProjectUtil {
 	public static void refreshValidProjects(IProject[] projects,
 			boolean delete, IProgressMonitor monitor) throws CoreException {
 		try {
-			SubMonitor progress = SubMonitor.convert(monitor,
-					CoreText.ProjectUtil_refreshingProjects, projects.length);
+			monitor.beginTask(CoreText.ProjectUtil_refreshingProjects,
+					projects.length);
 			for (IProject p : projects) {
 				if (monitor.isCanceled())
 					break;
@@ -144,9 +140,9 @@ public class ProjectUtil {
 				File projectFile = new File(projectFilePath);
 				if (projectFile.exists())
 					p.refreshLocal(IResource.DEPTH_INFINITE,
-							progress.newChild(1));
+							new SubProgressMonitor(monitor, 1));
 				else if (delete)
-					p.delete(false, true, progress.newChild(1));
+					p.delete(false, true, new SubProgressMonitor(monitor, 1));
 				else
 					closeMissingProject(p, projectFile, monitor);
 				monitor.worked(1);
@@ -170,7 +166,6 @@ public class ProjectUtil {
 	 */
 	static void closeMissingProject(IProject p, File projectFile,
 			IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor, 100);
 		// Don't close/delete if already closed
 		if (p.exists() && !p.isOpen())
 			return;
@@ -184,7 +179,7 @@ public class ProjectUtil {
 				if (!hasRoot)
 					FileUtils.mkdirs(projectRoot, true);
 				if (projectFile.createNewFile())
-					p.close(progress.newChild(100));
+					p.close(new SubProgressMonitor(monitor, 1));
 				else
 					closeFailed = true;
 			} catch (IOException e) {
@@ -210,7 +205,7 @@ public class ProjectUtil {
 			closeFailed = true;
 		// Delete projects that can't be closed
 		if (closeFailed)
-			p.delete(false, true, progress.newChild(100));
+			p.delete(false, true, new SubProgressMonitor(monitor, 1));
 	}
 
 	/**
@@ -224,14 +219,14 @@ public class ProjectUtil {
 	public static void refreshResources(IResource[] resources,
 			IProgressMonitor monitor) throws CoreException {
 		try {
-			SubMonitor progress = SubMonitor.convert(monitor,
-					CoreText.ProjectUtil_refreshing, resources.length);
+			monitor.beginTask(CoreText.ProjectUtil_refreshing,
+					resources.length);
 			for (IResource resource : resources) {
-				if (progress.isCanceled())
+				if (monitor.isCanceled())
 					break;
 				resource.refreshLocal(IResource.DEPTH_INFINITE,
-						progress.newChild(1));
-				progress.worked(1);
+						new SubProgressMonitor(monitor, 1));
+				monitor.worked(1);
 			}
 		} finally {
 			monitor.done();
