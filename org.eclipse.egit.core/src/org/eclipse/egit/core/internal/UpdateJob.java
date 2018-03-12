@@ -30,10 +30,12 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.GitIndex.Entry;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * This job updates the index with the content of all specified
@@ -50,7 +52,7 @@ public class UpdateJob extends Job {
 	 * @param rsrcList
 	 */
 	public UpdateJob(Collection rsrcList) {
-		super("Update index");
+		super(CoreText.UpdateJob_updatingIndex);
 		this.rsrcList = rsrcList;
 		setPriority(Job.LONG);
 	}
@@ -60,7 +62,7 @@ public class UpdateJob extends Job {
 			m = new NullProgressMonitor();
 		}
 
-		trace("running");
+		trace("running"); //$NON-NLS-1$
 		try {
 			final IdentityHashMap<RepositoryMapping, Boolean> tomerge = new IdentityHashMap<RepositoryMapping, Boolean>();
 			try {
@@ -82,7 +84,13 @@ public class UpdateJob extends Job {
 					}
 				}
 				long t1=System.currentTimeMillis();
-				System.out.println("Counted "+count[0]+" items to update in "+(t1-t0)/1000.0+"s");
+				// TODO is this the right location?
+				if (GitTraceLocation.CORE.isActive())
+					GitTraceLocation.getTrace().trace(
+							GitTraceLocation.CORE.getLocation(),
+							"Counted " + count[0] //$NON-NLS-1$
+									+ " items to update in " //$NON-NLS-1$
+									+ (t1 - t0) / 1000.0 + "s"); //$NON-NLS-1$
 				m.beginTask(CoreText.UpdateOperation_updating, count[0]);
 				final IProgressMonitor fm = m;
 				for (Object obj : rsrcList) {
@@ -104,7 +112,8 @@ public class UpdateJob extends Job {
 											fm.worked(1);
 										}
 									} catch (IOException e) {
-										e.printStackTrace();
+										if (GitTraceLocation.CORE.isActive())
+											GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 										throw Activator.error(CoreText.UpdateOperation_failed, e);
 									}
 									return true;
@@ -121,19 +130,23 @@ public class UpdateJob extends Job {
 					}
 				}
 				for (RepositoryMapping rm : tomerge.keySet()) {
-					m.setTaskName("Writing index for "+rm.getRepository().getDirectory());
+					m.setTaskName(NLS.bind(CoreText.UpdateJob_writingIndex, rm
+							.getRepository().getDirectory()));
 					rm.getRepository().getIndex().write();
 				}
 			} catch (NotSupportedException e) {
 				return Activator.error(e.getMessage(),e).getStatus();
 			} catch (RuntimeException e) {
-				e.printStackTrace();
+				if (GitTraceLocation.CORE.isActive())
+					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} catch (IOException e) {
-				e.printStackTrace();
+				if (GitTraceLocation.CORE.isActive())
+					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} catch (CoreException e) {
-				e.printStackTrace();
+				if (GitTraceLocation.CORE.isActive())
+					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} finally {
 				try {
@@ -144,13 +157,14 @@ public class UpdateJob extends Job {
 						r.fireRepositoryChanged();
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
+					if (GitTraceLocation.CORE.isActive())
+						GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
 				} finally {
 					m.done();
 				}
 			}
 		} finally {
-			trace("done");
+			trace("done");  //$NON-NLS-1$
 			m.done();
 		}
 
@@ -158,7 +172,10 @@ public class UpdateJob extends Job {
 	}
 
 	private void trace(final String m) {
-		Activator.trace("(UpdateJob)"+m);
+		// TODO is this the right location?
+		if (GitTraceLocation.CORE.isActive())
+			GitTraceLocation.getTrace().trace(
+					GitTraceLocation.CORE.getLocation(), "(UpdateJob)" + m);
 	}
 
 }
