@@ -23,23 +23,7 @@ import java.util.Map.Entry;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.ErrorNode;
-import org.eclipse.egit.ui.internal.repository.tree.FetchNode;
-import org.eclipse.egit.ui.internal.repository.tree.FileNode;
-import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
-import org.eclipse.egit.ui.internal.repository.tree.LocalBranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.PushNode;
-import org.eclipse.egit.ui.internal.repository.tree.RefNode;
-import org.eclipse.egit.ui.internal.repository.tree.RemoteBranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.RemoteNode;
-import org.eclipse.egit.ui.internal.repository.tree.RemotesNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.SymbolicRefNode;
-import org.eclipse.egit.ui.internal.repository.tree.SymbolicRefsNode;
-import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
-import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
+import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Constants;
@@ -80,8 +64,10 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 			List<RepositoryTreeNode<Repository>> nodes = new ArrayList<RepositoryTreeNode<Repository>>();
 
-			nodes.add(new LocalBranchesNode(node, repo));
-			nodes.add(new RemoteBranchesNode(node, repo));
+			nodes.add(new RepositoryTreeNode<Repository>(node,
+					RepositoryTreeNodeType.LOCALBRANCHES, repo, repo));
+			nodes.add(new RepositoryTreeNode<Repository>(node,
+					RepositoryTreeNodeType.REMOTEBRANCHES, repo, repo));
 
 			return nodes.toArray();
 		}
@@ -93,7 +79,9 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
 						.getRefs(Constants.R_HEADS).entrySet()) {
 					if (!refEntry.getValue().isSymbolic())
-						refs.add(new RefNode(node, repo, refEntry.getValue()));
+						refs.add(new RepositoryTreeNode<Ref>(node,
+								RepositoryTreeNodeType.REF, repo, refEntry
+										.getValue()));
 				}
 			} catch (IOException e) {
 				handleException(e, node);
@@ -109,7 +97,9 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
 						.getRefs(Constants.R_REMOTES).entrySet()) {
 					if (!refEntry.getValue().isSymbolic())
-						refs.add(new RefNode(node, repo, refEntry.getValue()));
+						refs.add(new RepositoryTreeNode<Ref>(node,
+								RepositoryTreeNodeType.REF, repo, refEntry
+										.getValue()));
 				}
 			} catch (IOException e) {
 				handleException(e, node);
@@ -123,7 +113,9 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 			try {
 				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
 						.getRefs(Constants.R_TAGS).entrySet()) {
-					refs.add(new TagNode(node, repo, refEntry.getValue()));
+					refs.add(new RepositoryTreeNode<Ref>(node,
+							RepositoryTreeNodeType.TAG, repo, refEntry
+									.getValue()));
 				}
 			} catch (IOException e) {
 				handleException(e, node);
@@ -139,8 +131,9 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
 						.getRefs(RefDatabase.ALL).entrySet()) {
 					if (refEntry.getValue().isSymbolic())
-						refs.add(new SymbolicRefNode(node, repo, refEntry
-								.getValue()));
+						refs.add(new RepositoryTreeNode<Ref>(node,
+								RepositoryTreeNodeType.SYMBOLICREF, repo,
+								refEntry.getValue()));
 				}
 			} catch (IOException e) {
 				handleException(e, node);
@@ -158,7 +151,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 					RepositoriesView.REMOTE);
 
 			for (String configName : configNames) {
-				remotes.add(new RemoteNode(node, repo, configName));
+				remotes.add(new RepositoryTreeNode<String>(node,
+						RepositoryTreeNodeType.REMOTE, repo, configName));
 			}
 
 			return remotes.toArray();
@@ -168,11 +162,23 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 
 			List<RepositoryTreeNode<? extends Object>> nodeList = new ArrayList<RepositoryTreeNode<? extends Object>>();
 
-			nodeList.add(new BranchesNode(node, repo));
-			nodeList.add(new TagsNode(node, repo));
-			nodeList.add(new SymbolicRefsNode(node, repo));
-			nodeList.add(new WorkingDirNode(node, repo));
-			nodeList.add(new RemotesNode(node, repo));
+			nodeList.add(new RepositoryTreeNode<Repository>(node,
+					RepositoryTreeNodeType.BRANCHES, node.getRepository(), node
+							.getRepository()));
+
+			nodeList.add(new RepositoryTreeNode<Repository>(node,
+					RepositoryTreeNodeType.TAGS, repo, repo));
+
+			nodeList.add(new RepositoryTreeNode<Repository>(node,
+					RepositoryTreeNodeType.SYMBOLICREFS, repo, repo));
+
+			nodeList.add(new RepositoryTreeNode<Repository>(node,
+					RepositoryTreeNodeType.WORKINGDIR, node.getRepository(),
+					node.getRepository()));
+
+			nodeList.add(new RepositoryTreeNode<Repository>(node,
+					RepositoryTreeNodeType.REMOTES, node.getRepository(), node
+							.getRepository()));
 
 			return nodeList.toArray();
 		}
@@ -203,9 +209,11 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 			});
 			for (File file : childFiles) {
 				if (file.isDirectory()) {
-					children.add(new FolderNode(node, repo, file));
+					children.add(new RepositoryTreeNode<File>(node,
+							RepositoryTreeNodeType.FOLDER, repo, file));
 				} else {
-					children.add(new FileNode(node, repo, file));
+					children.add(new RepositoryTreeNode<File>(node,
+							RepositoryTreeNodeType.FILE, repo, file));
 				}
 			}
 
@@ -233,9 +241,11 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 			});
 			for (File file : childFiles) {
 				if (file.isDirectory()) {
-					children.add(new FolderNode(node, repo, file));
+					children.add(new RepositoryTreeNode<File>(node,
+							RepositoryTreeNodeType.FOLDER, repo, file));
 				} else {
-					children.add(new FileNode(node, repo, file));
+					children.add(new RepositoryTreeNode<File>(node,
+							RepositoryTreeNodeType.FILE, repo, file));
 				}
 			}
 
@@ -257,17 +267,19 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 			}
 
 			if (!rc.getURIs().isEmpty())
-				children.add(new FetchNode(node, node.getRepository(), rc
-						.getURIs().get(0).toPrivateString()));
+				children.add(new RepositoryTreeNode<String>(node,
+						RepositoryTreeNodeType.FETCH, node.getRepository(), rc
+								.getURIs().get(0).toPrivateString()));
 
 			if (!rc.getPushURIs().isEmpty())
 				if (rc.getPushURIs().size() == 1)
-					children.add(new PushNode(node, node.getRepository(), rc
-							.getPushURIs().get(0).toPrivateString()));
+					children.add(new RepositoryTreeNode<String>(node,
+							RepositoryTreeNodeType.PUSH, node.getRepository(),
+							rc.getPushURIs().get(0).toPrivateString()));
 				else
-					children.add(new PushNode(node, node.getRepository(), rc
-							.getPushURIs().get(0).toPrivateString()
-							+ "...")); //$NON-NLS-1$
+					children.add(new RepositoryTreeNode<String>(node,
+							RepositoryTreeNodeType.PUSH, node.getRepository(),
+							rc.getPushURIs().get(0).toPrivateString() + "...")); //$NON-NLS-1$
 
 			return children.toArray();
 
@@ -297,7 +309,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 	private void handleException(Exception e, RepositoryTreeNode parentNode) {
 		Activator.handleError(e.getMessage(), e, false);
 		// add a node indicating that there was an Exception
-		new ErrorNode(parentNode, parentNode.getRepository(),
+		new RepositoryTreeNode<String>(parentNode,
+				RepositoryTreeNodeType.ERROR, parentNode.getRepository(),
 				UIText.RepositoriesViewContentProvider_ExceptionNodeText);
 	}
 

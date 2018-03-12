@@ -17,7 +17,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
@@ -160,7 +159,6 @@ public class CreateBranchPage extends WizardPage {
 
 		});
 
-		Dialog.applyDialogFont(main);
 		setControl(main);
 		nameText.setFocus();
 
