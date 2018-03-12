@@ -314,7 +314,7 @@ public class ConfigurationEditorComponent {
 					}
 
 					protected boolean canEdit(Object element) {
-						return editable;
+						return editable && element instanceof Entry;
 					}
 				});
 
@@ -650,7 +650,7 @@ public class ConfigurationEditorComponent {
 									index++));
 					}
 				}
-				return allChildren.toArray();
+				children = allChildren.toArray();
 			}
 			return children;
 		}
