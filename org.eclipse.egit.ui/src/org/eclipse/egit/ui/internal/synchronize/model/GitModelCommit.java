@@ -31,6 +31,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -41,7 +42,8 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
 /**
  * Git commit object representation in Git ChangeSet
  */
-public class GitModelCommit extends GitModelObject implements ISynchronizationCompareInput {
+public class GitModelCommit extends GitModelObject implements
+		ISynchronizationCompareInput {
 
 	private final RevCommit baseCommit;
 
@@ -161,12 +163,35 @@ public class GitModelCommit extends GitModelObject implements ISynchronizationCo
 
 	@Override
 	public boolean equals(Object obj) {
-		return remoteCommit.equals(obj);
+		if (obj instanceof GitModelCommit) {
+			GitModelCommit objCommit = (GitModelCommit) obj;
+
+			boolean equalsBaseCommit;
+			RevCommit objBaseCommit = objCommit.getBaseCommit();
+			if (objBaseCommit != null)
+				equalsBaseCommit = objBaseCommit.equals(baseCommit);
+			else
+				equalsBaseCommit = baseCommit == null;
+
+			// it is impossible to have different common ancestor commit if
+			// remote and base commit are equal, therefore we don't compare
+			// common ancestor's
+
+			return equalsBaseCommit
+					&& objCommit.getRemoteCommit().equals(remoteCommit)
+					&& objCommit.getLocation().equals(getLocation());
+		}
+
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return remoteCommit.hashCode();
+		int result = getLocation().hashCode() ^ remoteCommit.hashCode();
+		if (baseCommit != null)
+			result ^= baseCommit.hashCode();
+
+		return result;
 	}
 
 	public Image getImage() {
@@ -209,6 +234,11 @@ public class GitModelCommit extends GitModelObject implements ISynchronizationCo
 		// do nothing, we should disallow coping content between commits
 	}
 
+	@Override
+	public boolean isContainer() {
+		return true;
+	}
+
 	/**
 	 * @return SHA1 of ancestor object
 	 */
@@ -248,14 +278,21 @@ public class GitModelCommit extends GitModelObject implements ISynchronizationCo
 	private void getChildrenImpl() {
 		TreeWalk tw = createTreeWalk();
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
+
 		try {
-			int ancestorNth = tw.addTree(ancestorCommit.getTree());
+			RevTree actualTree = remoteCommit.getTree();
+			List<String> notIgnored = getNotIgnoredNodes(actualTree);
+
+			int actualNth = tw.addTree(actualTree);
 			int baseNth = -1;
 			if (baseCommit != null)
 				baseNth = tw.addTree(baseCommit.getTree());
-			int actualNth = tw.addTree(remoteCommit.getTree());
+			int ancestorNth = tw.addTree(ancestorCommit.getTree());
 
 			while (tw.next()) {
+				if (!notIgnored.contains(tw.getNameString()))
+					continue;
+
 				GitModelObject obj = getModelObject(tw, ancestorNth, baseNth,
 						actualNth);
 				if (obj != null)
@@ -320,8 +357,7 @@ public class GitModelCommit extends GitModelObject implements ISynchronizationCo
 	}
 
 	public String getFullPath() {
-		// TODO Auto-generated method stub
-		return null;
+		return getLocation().toPortableString();
 	}
 
 	public boolean isCompareInputFor(Object object) {
