@@ -8,7 +8,6 @@
             file="help/toc.xml"
             primary="true">
       </toc>
-      <index path="index"/>
    </extension>
    <extension
          point="org.eclipse.ui.intro.configExtension">
