@@ -174,7 +174,7 @@ public class GitRepositoriesViewTagHandlingTest extends
 				.getPluginLocalizedValue("CreateTagCommand"));
 		String branchName = repository.getBranch();
 		String shellTitle = NLS.bind(
-				UIText.CreateTagDialog_NewTag, branchName);
+				UIText.CreateTagDialog_questionNewTagTitle, branchName);
 		SWTBotShell createDialog = bot.shell(shellTitle).activate();
 		createDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName)
 				.setText(name);
