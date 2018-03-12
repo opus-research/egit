@@ -10,8 +10,6 @@
 package org.eclipse.egit.ui.internal;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,15 +30,6 @@ public class CommonUtilsTest {
 		assertSortedLike("a", "asdf");
 		assertSortedLike("aaa", "bbb");
 		assertSortedLike("1", "2");
-	}
-
-	@Test
-	public void sortingShouldWorkForEqualAndEmptyStrings() {
-		assertEquals(0, CommonUtils.STRING_ASCENDING_COMPARATOR.compare("", ""));
-		assertEquals(0,
-				CommonUtils.STRING_ASCENDING_COMPARATOR.compare("a", "a"));
-		assertTrue(CommonUtils.STRING_ASCENDING_COMPARATOR.compare("", "a") < 0);
-		assertTrue(CommonUtils.STRING_ASCENDING_COMPARATOR.compare("a", "") > 0);
 	}
 
 	@Test
@@ -67,22 +56,12 @@ public class CommonUtilsTest {
 	public void sortingShouldIgnoreLeadingZeros() {
 		assertSortedLike("00001", "2", "3");
 		assertSortedLike("a-01", "a-002");
-
-		assertNotEquals(0,
-				CommonUtils.STRING_ASCENDING_COMPARATOR.compare("01", "1"));
-		assertNotEquals(0,
-				CommonUtils.STRING_ASCENDING_COMPARATOR.compare("1", "01"));
-		assertTrue(CommonUtils.STRING_ASCENDING_COMPARATOR.compare("01x", "1") > 0);
-		assertTrue(CommonUtils.STRING_ASCENDING_COMPARATOR.compare("01", "1x") < 0);
 	}
 
 	@Test
 	public void sortingShouldIgnoreCase() {
 		assertSortedLike("a", "b", "z");
 		assertSortedLike("a", "B", "c", "D");
-
-		assertNotEquals(0,
-				CommonUtils.STRING_ASCENDING_COMPARATOR.compare("b1", "B1"));
 	}
 
 	/**
