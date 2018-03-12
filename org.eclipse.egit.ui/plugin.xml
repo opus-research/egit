@@ -358,6 +358,11 @@
          <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
          <adapter type="org.eclipse.core.resources.IResource"/>
       </factory>
+      <factory
+            adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode"
+            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+         <adapter type="org.eclipse.ui.model.IWorkbenchAdapter"/>
+      </factory>
    </extension>
 
    <extension point="org.eclipse.ui.preferencePages">
@@ -1264,6 +1269,26 @@
                   </adapt>
                </iterate>
             </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote">
+         <class
+               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
+         </class>
+         <activeWhen>
+             <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
+                     </instanceof>
+                  </iterate>
+               </and>
          </activeWhen>
       </handler>
    </extension>
@@ -2300,6 +2325,9 @@
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
                            </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                           </instanceof>
                         </or>
                      </and>
                   </iterate>
@@ -3129,7 +3157,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
             name="%DeleteRemoteCommand">
       </command>
