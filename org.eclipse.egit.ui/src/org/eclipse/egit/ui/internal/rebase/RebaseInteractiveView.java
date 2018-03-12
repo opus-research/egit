@@ -588,8 +588,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		int direction = (RebaseInteractivePreferences.isOrderReversed() ? SWT.DOWN
-				: SWT.UP);
+		boolean orderReversed = RebaseInteractivePreferences.isOrderReversed();
+		int direction = (orderReversed ? SWT.DOWN : SWT.UP);
 
 		Tree planTree = planTreeViewer.getTree();
 		planTree.setSortColumn(stepColumn.getColumn());
@@ -606,12 +606,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					case EDIT:
 						return UIIcons.getImage(resources, UIIcons.EDITCONFIG);
 					case FIXUP:
-						if (RebaseInteractivePreferences.isOrderReversed())
-							return UIIcons.getImage(resources,
-									UIIcons.FIXUP_DOWN);
-						else
-							return UIIcons.getImage(resources,
-									UIIcons.FIXUP_UP);
+						return UIIcons.getImage(resources, UIIcons.FIXUP);
 					case PICK:
 						return UIIcons.getImage(resources, UIIcons.CHERRY_PICK);
 					case REWORD:
@@ -619,12 +614,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					case SKIP:
 						return UIIcons.getImage(resources, UIIcons.REBASE_SKIP);
 					case SQUASH:
-						if (RebaseInteractivePreferences.isOrderReversed())
-							return UIIcons.getImage(resources,
-									UIIcons.SQUASH_DOWN);
-						else
-							return UIIcons.getImage(resources,
-									UIIcons.SQUASH_UP);
+						return UIIcons.getImage(resources, UIIcons.SQUASH);
 					default:
 						// fall through
 					}
@@ -881,11 +871,11 @@ public class RebaseInteractiveView extends ViewPart implements
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_SquashText,
-				UIIcons.SQUASH_UP, RebaseInteractivePlan.ElementAction.SQUASH,
+				UIIcons.SQUASH, RebaseInteractivePlan.ElementAction.SQUASH,
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_FixupText,
-				UIIcons.FIXUP_UP, RebaseInteractivePlan.ElementAction.FIXUP,
+				UIIcons.FIXUP, RebaseInteractivePlan.ElementAction.FIXUP,
 				planViewer, actionToolBarProvider));
 		contextMenuItems.add(new PlanContextMenuAction(
 				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
