@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -34,6 +36,8 @@ public class GitModelTree extends GitModelCommit {
 	private final ObjectId remoteId;
 
 	private final ObjectId ancestorId;
+
+	private GitModelObject[] children;
 
 	private IPath location;
 
@@ -52,7 +56,7 @@ public class GitModelTree extends GitModelCommit {
 	 *            name resource associated with this tree
 	 * @throws IOException
 	 */
-	public GitModelTree(GitModelObjectContainer parent, RevCommit commit,
+	public GitModelTree(GitModelCommit parent, RevCommit commit,
 			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
 			throws IOException {
 		// only direction is important for us, therefore we mask rest of bits in kind
@@ -64,8 +68,21 @@ public class GitModelTree extends GitModelCommit {
 	}
 
 	@Override
+	public GitModelObject[] getChildren() {
+		if (children == null)
+			getChildrenImpl();
+
+		return children;
+	}
+
+	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public IProject[] getProjects() {
+		return getParent().getProjects();
 	}
 
 	/**
@@ -95,7 +112,17 @@ public class GitModelTree extends GitModelCommit {
 		return location;
 	}
 
-	protected GitModelObject[] getChildrenImpl() {
+	@Override
+	protected ObjectId getBaseObjectId() {
+		return baseId;
+	}
+
+	@Override
+	protected ObjectId getRemoteObjectId() {
+		return remoteId;
+	}
+
+	private void getChildrenImpl() {
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
 		try {
@@ -111,7 +138,7 @@ public class GitModelTree extends GitModelCommit {
 				ancestorNth = tw.addTree(ancestorId);
 
 			while (tw.next()) {
-				GitModelObject obj = getModelObject(tw, ancestorNth, baseNth,
+				GitModelObject obj = createChildren(tw, ancestorNth, baseNth,
 						remoteNth);
 				if (obj != null)
 					result.add(obj);
@@ -120,7 +147,29 @@ public class GitModelTree extends GitModelCommit {
 			Activator.logError(e.getMessage(), e);
 		}
 
-		return result.toArray(new GitModelObject[result.size()]);
+		children = result.toArray(new GitModelObject[result.size()]);
+	}
+
+	private GitModelObject createChildren(TreeWalk tw, int ancestorNth,
+			int baseNth, int remoteNth) throws IOException {
+		ObjectId objRemoteId = tw.getObjectId(remoteNth);
+		if (objRemoteId.equals(zeroId()))
+			return null;
+
+		String objName = tw.getNameString();
+		ObjectId objBaseId = baseNth != -1 ? tw.getObjectId(baseNth) : zeroId();
+		ObjectId objAncestorId = ancestorNth != -1 ? tw
+				.getObjectId(ancestorNth) : zeroId();
+		int objectType = tw.getFileMode(remoteNth).getObjectType();
+
+		if (objectType == Constants.OBJ_BLOB)
+			return new GitModelBlob(this, getRemoteCommit(), objAncestorId,
+					objBaseId, objRemoteId, objName);
+		else if (objectType == Constants.OBJ_TREE)
+			return new GitModelTree(this, getRemoteCommit(), objAncestorId,
+					objBaseId, objRemoteId, objName);
+
+		return null;
 	}
 
 }
