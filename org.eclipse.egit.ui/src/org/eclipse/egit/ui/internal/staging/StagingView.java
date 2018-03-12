@@ -47,8 +47,10 @@ import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
+import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
+import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.commit.CommitUI;
-import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
+import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
@@ -108,8 +110,6 @@ import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -156,8 +156,6 @@ public class StagingView extends ViewPart {
 	private TableViewer stagedTableViewer;
 
 	private TableViewer unstagedTableViewer;
-
-	private ToggleableWarningLabel warningLabel;
 
 	private SpellcheckableMessageArea commitMessageText;
 
@@ -365,23 +363,35 @@ public class StagingView extends ViewPart {
 
 		Composite commitMessageComposite = toolkit
 				.createComposite(commitMessageSection);
+		toolkit.paintBordersFor(commitMessageComposite);
 		commitMessageSection.setClient(commitMessageComposite);
-		GridLayoutFactory.fillDefaults().numColumns(1).applyTo(commitMessageComposite);
+		GridLayoutFactory.fillDefaults().numColumns(1)
+				.extendedMargins(2, 2, 2, 2).applyTo(commitMessageComposite);
 
-		warningLabel = new ToggleableWarningLabel(commitMessageComposite, SWT.NONE);
-		GridDataFactory.fillDefaults().grab(true, false).exclude(true).applyTo(warningLabel);
+		final CommitProposalProcessor commitProposalProcessor = new CommitProposalProcessor() {
+			@Override
+			protected Collection<String> computeFileNameProposals() {
+				return getStagedFileNames();
+			}
 
-		Composite commitMessageTextComposite = toolkit.createComposite(commitMessageComposite);
-		toolkit.paintBordersFor(commitMessageTextComposite);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(commitMessageTextComposite);
-		GridLayoutFactory.fillDefaults().numColumns(1).extendedMargins(2, 2, 2, 2).
-				applyTo(commitMessageTextComposite);
-		commitMessageText = new SpellcheckableMessageArea(
-				commitMessageTextComposite, EMPTY_STRING, toolkit.getBorderStyle());
+			@Override
+			protected Collection<String> computeMessageProposals() {
+				return CommitMessageHistory.getCommitHistory();
+			}
+		};
+		commitMessageText = new CommitMessageArea(
+				commitMessageComposite, EMPTY_STRING, toolkit.getBorderStyle()) {
+			@Override
+			protected CommitProposalProcessor getCommitProposalProcessor() {
+				return commitProposalProcessor;
+			}
+		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(commitMessageText);
+		UIUtils.addBulbDecorator(commitMessageText.getTextWidget(),
+				UIText.CommitDialog_ContentAssist);
 
 		Composite composite = toolkit.createComposite(commitMessageComposite);
 		toolkit.paintBordersFor(composite);
@@ -499,14 +509,6 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.attachControls(commitMessageText, authorText,
 				committerText);
 
-		ModifyListener modifyListener = new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				updateMessage();
-			}
-		};
-		authorText.addModifyListener(modifyListener);
-		committerText.addModifyListener(modifyListener);
-
 		// react on selection changes
 		IWorkbenchPartSite site = getSite();
 		ISelectionService srv = (ISelectionService) site
@@ -583,7 +585,6 @@ public class StagingView extends ViewPart {
 
 			public void run() {
 				commitMessageComponent.setAmendingButtonSelection(isChecked());
-				updateMessage();
 			}
 		};
 		amendPreviousCommitAction.setImageDescriptor(UIIcons.AMEND_COMMIT);
@@ -685,6 +686,10 @@ public class StagingView extends ViewPart {
 		return (StagingViewLabelProvider) styled;
 	}
 
+	private StagingViewContentProvider getContentProvider(ContentViewer viewer) {
+		return (StagingViewContentProvider) viewer.getContentProvider();
+	}
+
 	private void updateSectionText() {
 		Integer stagedCount = Integer.valueOf(stagedTableViewer.getTable()
 				.getItemCount());
@@ -694,14 +699,6 @@ public class StagingView extends ViewPart {
 				.getItemCount());
 		unstagedSection.setText(MessageFormat.format(
 				UIText.StagingView_UnstagedChanges, unstagedCount));
-	}
-
-	private void updateMessage() {
-		String message = commitMessageComponent.getMessage();
-		if (message != null)
-			warningLabel.showMessage(message);
-		else
-			warningLabel.hideMessage();
 	}
 
 	private void compareWith(OpenEvent event) {
@@ -1206,7 +1203,6 @@ public class StagingView extends ViewPart {
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(indexDiffAvailable && helper.amendAllowed());
-		updateMessage();
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -1324,6 +1320,15 @@ public class StagingView extends ViewPart {
 			return repoName;
 	}
 
+	private Collection<String> getStagedFileNames() {
+		StagingViewContentProvider stagedContentProvider = getContentProvider(stagedTableViewer);
+		StagingEntry[] entries = stagedContentProvider.getStagingEntries();
+		List<String> files = new ArrayList<String>();
+		for (StagingEntry entry : entries)
+			files.add(entry.getPath());
+		return files;
+	}
+
 	private void commit() {
 		if (stagedTableViewer.getTable().getItemCount() == 0
 				&& !amendPreviousCommitAction.isChecked()) {
@@ -1335,12 +1340,13 @@ public class StagingView extends ViewPart {
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 		final Repository repository = currentRepository;
+		String commitMessage = commitMessageComponent.getCommitMessage();
 		CommitOperation commitOperation = null;
 		try {
 			commitOperation = new CommitOperation(repository,
 					commitMessageComponent.getAuthor(),
 					commitMessageComponent.getCommitter(),
-					commitMessageComponent.getCommitMessage());
+					commitMessage);
 		} catch (CoreException e) {
 			Activator.handleError(UIText.StagingView_commitFailed, e, true);
 			return;
@@ -1350,6 +1356,7 @@ public class StagingView extends ViewPart {
 		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
 		CommitUI.performCommit(currentRepository, commitOperation,
 				openNewCommitsAction.isChecked());
+		CommitMessageHistory.saveCommitHistory(commitMessage);
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
 	}
