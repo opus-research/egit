@@ -13,6 +13,8 @@ package org.eclipse.egit.ui.internal.preferences;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +27,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -121,7 +124,7 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 		sysTabItem.setText(UIText.GlobalConfigurationPreferencePage_systemSettingTabTitle);
 
 		Composite repoTab = new Composite(tabFolder, SWT.NONE);
-		repoTab.setLayout(new GridLayout(1, false));
+		GridLayoutFactory.swtDefaults().margins(0, 0).applyTo(repoTab);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(repoTab);
 		Composite repositoryComposite = new Composite(repoTab, SWT.NONE);
 		repositoryComposite.setLayout(new GridLayout(2, false));
@@ -193,7 +196,11 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 				ok = false;
 			}
 		}
-		for (Repository repository : dirtyRepositories) {
+		// Use array since calling save updates the dirty state which updates
+		// the set of dirty repositories that is being iterated over
+		final Repository[] repos = dirtyRepositories
+				.toArray(new Repository[dirtyRepositories.size()]);
+		for (Repository repository : repos) {
 			ConfigurationEditorComponent editor = repoConfigEditors.get(repository);
 			try {
 				editor.save();
@@ -230,21 +237,39 @@ public class GlobalConfigurationPreferencePage extends PreferencePage implements
 			List<String> repoPaths = Activator.getDefault().getRepositoryUtil().getConfiguredRepositories();
 			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator.getDefault().getRepositoryCache();
 			for (String repoPath : repoPaths) {
+				File gitDir = new File(repoPath);
+				if (!gitDir.exists())
+					continue;
 				try {
-					Repository repository = repositoryCache.lookupRepository(new File(repoPath));
-					repositories.add(repository);
+					repositories.add(repositoryCache.lookupRepository(gitDir));
 				} catch (IOException e) {
 					continue;
 				}
 			}
+			sortRepositoriesByName();
 		}
+	}
+
+	private String getName(final Repository repo) {
+		return Activator.getDefault().getRepositoryUtil()
+				.getRepositoryName(repo);
+	}
+
+	private void sortRepositoriesByName() {
+		Collections.sort(repositories, new Comparator<Repository>() {
+
+			public int compare(Repository repo1, Repository repo2) {
+				return getName(repo1).compareTo(getName(repo2));
+			}
+		});
 	}
 
 	private String[] getRepositoryComboItems() {
 		List<String> items = new ArrayList<String>();
 		for (Repository repository : repositories) {
-			String repoName = repository.getDirectory().getParentFile().getName();
-			items.add(repoName);
+			String repoName = getName(repository);
+			if (repoName.length() > 0)
+				items.add(repoName);
 		}
 		return items.toArray(new String[items.size()]);
 	}

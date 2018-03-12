@@ -18,10 +18,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.WeakHashMap;
 
 import org.eclipse.core.commands.IStateListener;
 import org.eclipse.core.commands.State;
@@ -48,16 +51,21 @@ import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemotesNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.egit.ui.internal.repository.tree.SubmodulesNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchHierarchyCommand;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jgit.events.ListenerHandle;
+import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.ui.PlatformUI;
@@ -74,6 +82,10 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 	private final State commandState;
 
 	private boolean branchHierarchyMode = false;
+
+	private Map<Repository, Map<String, Ref>> branchRefs = new WeakHashMap<Repository, Map<String, Ref>>();
+
+	private Map<Repository, ListenerHandle> refsChangedListeners = new WeakHashMap<Repository, ListenerHandle>();
 
 	/**
 	 * Constructs this instance
@@ -134,6 +146,9 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 	public void dispose() {
 		commandState.removeListener(this);
+		for (ListenerHandle handle : refsChangedListeners.values())
+			handle.remove();
+		refsChangedListeners.clear();
 	}
 
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
@@ -168,20 +183,19 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 						children.add(new RefNode(node, node.getRepository(),
 								ref));
 					}
-				} catch (IOException e) {
+				} catch (Exception e) {
 					return handleException(e, node);
 				}
 				return children.toArray();
 			} else {
 				List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
 				try {
-					for (Entry<String, Ref> refEntry : repo.getRefDatabase()
-							.getRefs(Constants.R_HEADS).entrySet()) {
+					for (Entry<String, Ref> refEntry : getRefs(repo, Constants.R_HEADS).entrySet()) {
 						if (!refEntry.getValue().isSymbolic())
 							refs.add(new RefNode(node, repo, refEntry
 									.getValue()));
 					}
-				} catch (IOException e) {
+				} catch (Exception e) {
 					return handleException(e, node);
 				}
 				return refs.toArray();
@@ -202,20 +216,19 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 						children.add(new RefNode(node, node.getRepository(),
 								ref));
 					}
-				} catch (IOException e) {
+				} catch (Exception e) {
 					return handleException(e, node);
 				}
 				return children.toArray();
 			} else {
 				List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
 				try {
-					for (Entry<String, Ref> refEntry : repo.getRefDatabase()
-							.getRefs(Constants.R_REMOTES).entrySet()) {
+					for (Entry<String, Ref> refEntry : getRefs(repo, Constants.R_REMOTES).entrySet()) {
 						if (!refEntry.getValue().isSymbolic())
 							refs.add(new RefNode(node, repo, refEntry
 									.getValue()));
 					}
-				} catch (IOException e) {
+				} catch (Exception e) {
 					return handleException(e, node);
 				}
 
@@ -258,8 +271,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		case ADDITIONALREFS: {
 			List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
 			try {
-				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
-						.getRefs(RefDatabase.ALL).entrySet()) {
+				for (Entry<String, Ref> refEntry : getRefs(repo, RefDatabase.ALL).entrySet()) {
 					String name=refEntry.getKey();
 					if (!(name.startsWith(Constants.R_HEADS) || name.startsWith(Constants.R_TAGS)|| name.startsWith(Constants.R_REMOTES)))
 						refs.add(new AdditionalRefNode(node, repo, refEntry
@@ -267,7 +279,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 				}
 				for (Ref r : repo.getRefDatabase().getAdditionalRefs())
 					refs.add(new AdditionalRefNode(node, repo, r));
-			} catch (IOException e) {
+			} catch (Exception e) {
 				return handleException(e, node);
 			}
 			return refs.toArray();
@@ -297,6 +309,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			nodeList.add(new AdditionalRefsNode(node, repo));
 			nodeList.add(new WorkingDirNode(node, repo));
 			nodeList.add(new RemotesNode(node, repo));
+			if (!repo.isBare())
+				nodeList.add(new SubmodulesNode(node, repo));
 
 			return nodeList.toArray();
 		}
@@ -388,7 +402,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 			// show push if either a fetch or push URI is specified and
 			// at least one push specification
-			if (uriCount > 0 && !rc.getPushRefSpecs().isEmpty()) {
+			if (uriCount > 0) {
 				URIish firstUri;
 				if (!rc.getPushURIs().isEmpty())
 					firstUri = rc.getPushURIs().get(0);
@@ -406,6 +420,20 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 
 		}
 
+		case SUBMODULES:
+			List<RepositoryNode> children = new ArrayList<RepositoryNode>();
+			try {
+				SubmoduleWalk walk = SubmoduleWalk.forIndex(node
+						.getRepository());
+				while (walk.next()) {
+					Repository subRepo = walk.getRepository();
+					if (subRepo != null)
+						children.add(new RepositoryNode(node, subRepo));
+				}
+			} catch (IOException e) {
+				handleException(e, node);
+			}
+			return children.toArray();
 		case FILE:
 			// fall through
 		case REF:
@@ -457,6 +485,8 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			return true;
 		case ADDITIONALREFS:
 			return true;
+		case SUBMODULES:
+			return true;
 		case TAGS:
 			try {
 				return !repo.getRefDatabase().getRefs(Constants.R_TAGS)
@@ -485,4 +515,33 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			Activator.handleError(e.getMessage(), e, false);
 		}
 	}
+
+	private synchronized Map<String, Ref> getRefs(final Repository repo, final String prefix) throws IOException {
+		Map<String, Ref> allRefs = branchRefs.get(repo);
+		if (allRefs == null) {
+			allRefs = repo.getRefDatabase().getRefs(RefDatabase.ALL);
+			branchRefs.put(repo, allRefs);
+			if (refsChangedListeners.get(repo) == null) {
+				RefsChangedListener listener = new RefsChangedListener() {
+					public void onRefsChanged(RefsChangedEvent event) {
+						synchronized (RepositoriesViewContentProvider.this) {
+							branchRefs.remove(repo);
+						}
+					}
+				};
+				refsChangedListeners.put(repo, repo.getListenerList()
+						.addRefsChangedListener(listener));
+			}
+		}
+		if (prefix.equals(RefDatabase.ALL))
+			return allRefs;
+
+		Map<String, Ref> filtered = new HashMap<String, Ref>();
+		for (Map.Entry<String, Ref> entry : allRefs.entrySet()) {
+			if (entry.getKey().startsWith(prefix))
+				filtered.put(entry.getKey(), entry.getValue());
+		}
+		return filtered;
+	}
+
 }

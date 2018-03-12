@@ -18,11 +18,13 @@ import java.io.File;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -88,14 +90,68 @@ public class GitRepositoriesViewTagHandlingTest extends
 		String newObject = getObjectIdOfCommit();
 		createTag("SecondTag", "The second tag");
 		refreshAndWait();
-		SWTBotTreeItem[] items = myRepoViewUtil.getTagsItem(tree,
-				repositoryFile).expand().getItems();
+		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
+				repositoryFile).expand();
+		SWTBotTreeItem[] items = tagsItem.getItems();
 		assertEquals("Wrong number of tags", initialCount + 2, items.length);
 
 		assertTrue("Wrong commit id", initialObjid
 				.equals(getCommitIdOfTag("FirstTag")));
 		assertTrue("Wrong commit id", newObject
 				.equals(getCommitIdOfTag("SecondTag")));
+	}
+
+	@Test
+	public void testDeleteTag() throws Exception {
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		int initialCount = myRepoViewUtil.getTagsItem(tree, repositoryFile)
+				.expand().rowCount();
+
+		createTag("Delete1", "The first tag");
+		refreshAndWait();
+		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
+				repositoryFile).expand();
+		SWTBotTreeItem[] items = tagsItem.getItems();
+		assertEquals("Wrong number of tags", initialCount + 1, items.length);
+		tagsItem.select("Delete1");
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("DeleteTagCommand.name"));
+		bot.shell(UIText.DeleteTagCommand_titleConfirm).bot()
+				.button(IDialogConstants.OK_LABEL).click();
+		TestUtil.joinJobs(JobFamilies.TAG);
+		refreshAndWait();
+		tagsItem = myRepoViewUtil.getTagsItem(tree, repositoryFile).expand();
+		items = tagsItem.getItems();
+		assertEquals("Wrong number of tags", initialCount, items.length);
+	}
+
+	@Test
+	public void testDeleteTags() throws Exception {
+		//TODO Remove once bug355200 has been fixed
+		if (Platform.OS_MACOSX.equals(Platform.getOS()))
+			return;
+
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		int initialCount = myRepoViewUtil.getTagsItem(tree, repositoryFile)
+				.expand().rowCount();
+
+		createTag("Delete2", "The first tag");
+		createTag("Delete3", "The second tag");
+		refreshAndWait();
+		SWTBotTreeItem tagsItem = myRepoViewUtil.getTagsItem(tree,
+				repositoryFile).expand();
+		SWTBotTreeItem[] items = tagsItem.getItems();
+		assertEquals("Wrong number of tags", initialCount + 2, items.length);
+		tagsItem.select("Delete2", "Delete3");
+		ContextMenuHelper.clickContextMenu(tree,
+				myUtil.getPluginLocalizedValue("DeleteTagCommand.name"));
+		bot.shell(UIText.DeleteTagCommand_titleConfirm).bot()
+				.button(IDialogConstants.OK_LABEL).click();
+		TestUtil.joinJobs(JobFamilies.TAG);
+		refreshAndWait();
+		tagsItem = myRepoViewUtil.getTagsItem(tree, repositoryFile).expand();
+		items = tagsItem.getItems();
+		assertEquals("Wrong number of tags", initialCount, items.length);
 	}
 
 	@Test
@@ -118,9 +174,8 @@ public class GitRepositoriesViewTagHandlingTest extends
 		SWTBotShell resetDialog = bot.shell(UIText.ResetCommand_WizardTitle);
 		resetDialog.bot().radio(
 				UIText.ResetTargetSelectionDialog_ResetTypeHardButton).click();
-		waitInUI();
 		resetDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-		waitInUI();
+		TestUtil.joinJobs(JobFamilies.RESET);
 
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
 				.button(IDialogConstants.YES_LABEL).click();
@@ -144,18 +199,17 @@ public class GitRepositoriesViewTagHandlingTest extends
 				.getPluginLocalizedValue("CreateTagCommand"));
 		String shellTitle = UIText.CreateTagDialog_NewTag;
 		SWTBotShell createDialog = bot.shell(shellTitle).activate();
-		waitInUI();
+		TestUtil.joinJobs(JobFamilies.FILL_TAG_LIST);
 		createDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName)
 				.setText(name);
 		createDialog.bot()
 				.styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText(message);
-		waitInUI();
 		createDialog.bot().button(IDialogConstants.OK_LABEL).click();
+		TestUtil.joinJobs(JobFamilies.TAG);
 	}
 
 	private String getObjectIdOfCommit() throws Exception {
-
 		String branch = repository.getFullBranch();
 		if (ObjectId.isId(branch))
 			return branch;

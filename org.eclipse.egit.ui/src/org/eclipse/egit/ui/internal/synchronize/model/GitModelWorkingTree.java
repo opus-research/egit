@@ -12,15 +12,18 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 import java.io.IOException;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Representation of working tree in EGit ChangeSet model
@@ -28,19 +31,35 @@ import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
 public class GitModelWorkingTree extends GitModelCache {
 
 	/**
+	 * Constructor used by JUnits
+	 *
 	 * @param parent
 	 *            parent of working tree instance
 	 * @throws IOException
 	 */
-	public GitModelWorkingTree(GitModelObject parent)
+	GitModelWorkingTree(GitModelObject parent) throws IOException {
+		this(parent, null);
+	}
+
+	/**
+	 * @param parent
+	 *            parent of working tree instance
+	 * @param pathFilter synchronize configuration
+	 * @throws IOException
+	 */
+	public GitModelWorkingTree(GitModelObject parent, TreeFilter pathFilter)
 			throws IOException {
-		super(parent, null, new FileModelFactory() {
+		super(parent, null, pathFilter, new FileModelFactory() {
 			public GitModelBlob createFileModel(
 					GitModelObjectContainer modelParent, RevCommit modelCommit,
 					ObjectId repoId, ObjectId cacheId, IPath location)
 					throws IOException {
 				return new GitModelWorkingFile(modelParent, modelCommit,
 						repoId, location);
+			}
+
+			public boolean isWorkingTree() {
+				return true;
 			}
 		});
 	}
@@ -61,12 +80,14 @@ public class GitModelWorkingTree extends GitModelCache {
 		if (obj == this)
 			return true;
 
-		if (obj instanceof GitModelWorkingTree) {
-			GitModelCache left = (GitModelCache) obj;
-			return left.getParent().equals(getParent());
-		}
+		if (obj == null)
+			return false;
 
-		return false;
+		if (obj.getClass() != getClass())
+			return false;
+
+		GitModelCache left = (GitModelCache) obj;
+		return left.getParent().equals(getParent());
 	}
 
 	@Override
@@ -85,10 +106,15 @@ public class GitModelWorkingTree extends GitModelCache {
 		tw.setRecursive(true);
 
 		Repository repo = getRepository();
-		int ftIndex = tw.addTree(new FileTreeIterator(repo));
+		int ftIndex = tw.addTree(new AdaptableFileTreeIterator(repo,
+				ResourcesPlugin.getWorkspace().getRoot()));
 		int dirCacheIteratorNth = tw.addTree(new DirCacheIterator(repo.readDirCache()));
 		IndexDiffFilter idf = new IndexDiffFilter(dirCacheIteratorNth, ftIndex, true);
-		tw.setFilter(idf);
+
+		if (pathFilter != null)
+			tw.setFilter(AndTreeFilter.create(pathFilter, idf));
+		else
+			tw.setFilter(idf);
 
 		return tw;
 	}

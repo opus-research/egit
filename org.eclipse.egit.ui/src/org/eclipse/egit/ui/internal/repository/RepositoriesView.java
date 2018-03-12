@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2011 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -37,7 +37,9 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
@@ -45,6 +47,12 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.resource.JFaceColors;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -61,8 +69,15 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StackLayout;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -71,10 +86,16 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.contexts.IContextService;
+import org.eclipse.ui.forms.events.HyperlinkAdapter;
+import org.eclipse.ui.forms.events.HyperlinkEvent;
+import org.eclipse.ui.forms.widgets.FormToolkit;
+import org.eclipse.ui.forms.widgets.Hyperlink;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.navigator.CommonViewer;
 import org.eclipse.ui.part.IPage;
@@ -124,6 +145,10 @@ public class RepositoriesView extends CommonNavigator {
 	private final RepositoryUtil repositoryUtil;
 
 	private final RepositoryCache repositoryCache;
+
+	private Composite emptyArea;
+
+	private StackLayout layout;
 
 	private long lastInputChange = 0L;
 
@@ -194,6 +219,122 @@ public class RepositoriesView extends CommonNavigator {
 		};
 	}
 
+	/**
+	 * Create area shown when no repositories are present
+	 *
+	 * @param parent
+	 */
+	protected void createEmptyArea(Composite parent) {
+		emptyArea = new Composite(parent, SWT.NONE);
+		emptyArea.setBackgroundMode(SWT.INHERIT_FORCE);
+		MenuManager manager = new MenuManager();
+		Menu menu = manager.createContextMenu(emptyArea);
+		emptyArea.setMenu(menu);
+		getSite().registerContextMenu(manager, getCommonViewer());
+		GridLayoutFactory.fillDefaults().applyTo(emptyArea);
+		Composite infoArea = new Composite(emptyArea, SWT.NONE);
+		infoArea.setMenu(menu);
+		GridDataFactory.swtDefaults().align(SWT.CENTER, SWT.CENTER)
+				.grab(true, true).applyTo(infoArea);
+		GridLayoutFactory.swtDefaults().applyTo(infoArea);
+		Label messageLabel = new Label(infoArea, SWT.WRAP);
+		messageLabel.setText(UIText.RepositoriesView_messsageEmpty);
+		messageLabel.setMenu(menu);
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL)
+				.grab(true, false).applyTo(messageLabel);
+		Composite optionsArea = new Composite(infoArea, SWT.NONE);
+		optionsArea.setMenu(menu);
+		GridLayoutFactory.swtDefaults().numColumns(2).applyTo(optionsArea);
+		GridDataFactory.swtDefaults().align(SWT.CENTER, SWT.CENTER)
+				.grab(true, true).applyTo(optionsArea);
+
+		final FormToolkit toolkit = new FormToolkit(emptyArea.getDisplay());
+		emptyArea.addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				toolkit.dispose();
+			}
+		});
+		final Color linkColor = JFaceColors.getHyperlinkText(emptyArea
+				.getDisplay());
+
+		Label addLabel = new Label(optionsArea, SWT.NONE);
+		addLabel.setImage(UIIcons.CREATE_REPOSITORY.createImage());
+		Hyperlink addLink = toolkit.createHyperlink(optionsArea,
+				UIText.RepositoriesView_linkAdd, SWT.WRAP);
+		addLink.setForeground(linkColor);
+		addLink.addHyperlinkListener(new HyperlinkAdapter() {
+			public void linkActivated(HyperlinkEvent e) {
+				IHandlerService service = (IHandlerService) getViewSite()
+						.getService(IHandlerService.class);
+				UIUtils.executeCommand(service,
+						"org.eclipse.egit.ui.RepositoriesViewAddRepository"); //$NON-NLS-1$
+			}
+		});
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL)
+				.grab(true, false).applyTo(addLink);
+
+		Label cloneLabel = new Label(optionsArea, SWT.NONE);
+		cloneLabel.setImage(UIIcons.CLONEGIT.createImage());
+		Hyperlink cloneLink = toolkit.createHyperlink(optionsArea,
+				UIText.RepositoriesView_linkClone, SWT.WRAP);
+		cloneLink.setForeground(linkColor);
+		cloneLink.addHyperlinkListener(new HyperlinkAdapter() {
+			public void linkActivated(HyperlinkEvent e) {
+				IHandlerService service = (IHandlerService) getViewSite()
+						.getService(IHandlerService.class);
+				UIUtils.executeCommand(service,
+						"org.eclipse.egit.ui.RepositoriesViewClone"); //$NON-NLS-1$
+			}
+		});
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL)
+				.grab(true, false).applyTo(cloneLink);
+
+		Label createLabel = new Label(optionsArea, SWT.NONE);
+		createLabel.setImage(UIIcons.NEW_REPOSITORY.createImage());
+		Hyperlink createLink = toolkit.createHyperlink(optionsArea,
+				UIText.RepositoriesView_linkCreate, SWT.WRAP);
+		createLink.setForeground(linkColor);
+		createLink.setText(UIText.RepositoriesView_linkCreate);
+		createLink.addHyperlinkListener(new HyperlinkAdapter() {
+			public void linkActivated(HyperlinkEvent e) {
+				IHandlerService service = (IHandlerService) getViewSite()
+						.getService(IHandlerService.class);
+				UIUtils.executeCommand(service,
+						"org.eclipse.egit.ui.RepositoriesViewCreateRepository"); //$NON-NLS-1$
+			}
+		});
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.FILL)
+				.grab(true, false).applyTo(createLink);
+	}
+
+	@SuppressWarnings("boxing")
+	@Override
+	public void createPartControl(Composite aParent) {
+		Composite displayArea = new Composite(aParent, SWT.NONE);
+		layout = new StackLayout();
+		displayArea.setLayout(layout);
+		createEmptyArea(displayArea);
+
+		super.createPartControl(displayArea);
+
+		IWorkbenchWindow w = PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow();
+		ICommandService csrv = (ICommandService) w
+				.getService(ICommandService.class);
+		Command command = csrv
+				.getCommand("org.eclipse.egit.ui.RepositoriesLinkWithSelection"); //$NON-NLS-1$
+		reactOnSelection = (Boolean) command.getState(
+				RegistryToggleState.STATE_ID).getValue();
+
+		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) getSite()
+				.getService(IWorkbenchSiteProgressService.class);
+		if (service != null) {
+			service.showBusyForFamily(JobFamilies.REPO_VIEW_REFRESH);
+			service.showBusyForFamily(JobFamilies.CLONE);
+		}
+	}
+
 	@Override
 	public Object getAdapter(Class adapter) {
 		// integrate with Properties view
@@ -213,7 +354,6 @@ public class RepositoriesView extends CommonNavigator {
 	 * @param reactOnSelection
 	 */
 	public void setReactOnSelection(boolean reactOnSelection) {
-		// TODO persist the state of the button somewhere
 		this.reactOnSelection = reactOnSelection;
 	}
 
@@ -221,30 +361,25 @@ public class RepositoriesView extends CommonNavigator {
 	protected CommonViewer createCommonViewer(Composite aParent) {
 		ConfigurationChecker.checkConfiguration();
 		CommonViewer viewer = super.createCommonViewer(aParent);
-		// handle the double-click event
+		// handle the double-click event for tags and branches
+		viewer.addDoubleClickListener(new IDoubleClickListener() {
+			public void doubleClick(DoubleClickEvent event) {
+				TreeSelection sel = (TreeSelection) event.getSelection();
+				RepositoryTreeNode element = (RepositoryTreeNode) sel
+						.getFirstElement();
+				if (element instanceof RefNode || element instanceof TagNode) {
+					executeOpenCommand();
+				}
+			}
+		});
+		// handle open event for the working directory
 		viewer.addOpenListener(new IOpenListener() {
-
 			public void open(OpenEvent event) {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
 						.getFirstElement();
-
-				if (element instanceof RefNode || element instanceof FileNode
-						|| element instanceof TagNode) {
-					IHandlerService srv = (IHandlerService) getViewSite()
-							.getService(IHandlerService.class);
-					ICommandService csrv = (ICommandService) getViewSite()
-							.getService(ICommandService.class);
-					Command openCommand = csrv
-							.getCommand("org.eclipse.egit.ui.RepositoriesViewOpen"); //$NON-NLS-1$
-					ExecutionEvent evt = srv.createExecutionEvent(openCommand,
-							null);
-
-					try {
-						openCommand.executeWithChecks(evt);
-					} catch (Exception e) {
-						Activator.handleError(e.getMessage(), e, false);
-					}
+				if (element instanceof FileNode) {
+					executeOpenCommand();
 				}
 			}
 		});
@@ -257,7 +392,25 @@ public class RepositoriesView extends CommonNavigator {
 				configurationListener);
 		initRepositoriesAndListeners();
 		activateContextService();
+
+		emptyArea.setBackground(viewer.getControl().getBackground());
+		if (!repositories.isEmpty())
+			layout.topControl = viewer.getControl();
+		else
+			layout.topControl = emptyArea;
+
 		return viewer;
+	}
+
+	private void executeOpenCommand() {
+		IHandlerService srv = (IHandlerService) getViewSite()
+				.getService(IHandlerService.class);
+
+		try {
+			srv.executeCommand("org.eclipse.egit.ui.RepositoriesViewOpen", null); //$NON-NLS-1$
+		} catch (Exception e) {
+			Activator.handleError(e.getMessage(), e, false);
+		}
 	}
 
 	private void activateContextService() {
@@ -392,6 +545,20 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
+	 * Reveals and shows the given repository in the view.
+	 *
+	 * @param repositoryToShow
+	 */
+	public void showRepository(Repository repositoryToShow) {
+		ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
+				.getContentProvider();
+		for (Object repo : cp.getElements(getCommonViewer().getInput())) {
+			RepositoryTreeNode node = (RepositoryTreeNode) repo;
+			if (repositoryToShow.getDirectory().equals(node.getRepository().getDirectory()))
+				selectReveal(new StructuredSelection(node));
+		}
+	}
+	/**
 	 * Refresh Repositories View
 	 */
 	public void refresh() {
@@ -440,6 +607,8 @@ public class RepositoriesView extends CommonNavigator {
 
 				Display.getDefault().asyncExec(new Runnable() {
 					public void run() {
+						if (tv.getTree().isDisposed())
+							return;
 						long start = 0;
 						boolean traceActive = GitTraceLocation.REPOSITORIESVIEW
 								.isActive();
@@ -461,7 +630,7 @@ public class RepositoriesView extends CommonNavigator {
 							tv.setInput(ResourcesPlugin.getWorkspace()
 									.getRoot());
 						} else
-							tv.refresh();
+							tv.refresh(true);
 						tv.setExpandedElements(expanded);
 
 						Object selected = sel.getFirstElement();
@@ -484,6 +653,11 @@ public class RepositoriesView extends CommonNavigator {
 											GitTraceLocation.REPOSITORIESVIEW
 													.getLocation(),
 											"Ending async update job after " + (System.currentTimeMillis() - start) + " ms"); //$NON-NLS-1$ //$NON-NLS-2$
+						if (!repositories.isEmpty())
+							layout.topControl = getCommonViewer().getControl();
+						else
+							layout.topControl = emptyArea;
+						emptyArea.getParent().layout(true, true);
 					}
 				});
 
@@ -544,6 +718,10 @@ public class RepositoriesView extends CommonNavigator {
 					}
 				}
 			}
+		}
+		if(context.getInput() instanceof IFileEditorInput) {
+			IFileEditorInput input = (IFileEditorInput) context.getInput();
+			showResource(input.getFile());
 		}
 		return false;
 	}

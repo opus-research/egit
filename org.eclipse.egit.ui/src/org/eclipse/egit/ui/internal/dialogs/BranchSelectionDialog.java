@@ -1,271 +1,228 @@
 /*******************************************************************************
- * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
- * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
- * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
+ * and other copyright owners as documented in the project's IP log.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Robin Rosenberg - Refactoring from CheckoutCommand
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import static org.eclipse.ui.ISources.ACTIVE_CURRENT_SELECTION_NAME;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.commands.IExecutionListener;
-import org.eclipse.core.commands.NotHandledException;
-import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
-import org.eclipse.jface.dialogs.InputDialog;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.window.Window;
-import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
+import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
+import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
+import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.CheckStateChangedEvent;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.ICheckStateListener;
+import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
-import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.dialogs.PatternFilter;
+import org.eclipse.ui.progress.WorkbenchJob;
 
 /**
- * The branch and reset selection dialog
+ * Allows to display some Branches for selection
+ * <p>
+ * In case of multi-selection, a checkbox tree is shown including a pattern
+ * filter, while in case of single selection, a simple table is used supporting
+ * double-click
+ *
+ * @param <T>
+ *            the type of node; either {@link Ref} or and {@link IAdaptable} for
+ *            {@link Ref}
  */
-public class BranchSelectionDialog extends AbstractBranchSelectionDialog {
+public class BranchSelectionDialog<T> extends MessageDialog {
 
-	private Button deleteteButton;
+	private final List<T> nodes;
 
-	private Button renameButton;
+	private TableViewer branchesList;
 
-	private Button newButton;
+	private FilteredCheckboxTree fTree;
+
+	private List<T> selected = new ArrayList<T>();
+
+	private final int style;
+
+	private final boolean multiMode;
 
 	/**
-	 * Construct a dialog to select a branch to reset to or check out
-	 *
 	 * @param parentShell
-	 * @param repo
+	 * @param nodes
+	 * @param title
+	 * @param message
+	 * @param style
+	 *            only {@link SWT#SINGLE} and {@link SWT#MULTI} are supported
 	 */
-	public BranchSelectionDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo);
-		setRootsToShow(true, true, true, false);
-	}
-
-	private InputDialog getRefNameInputDialog(String prompt,
-			final String refPrefix, String initialValue) {
-		InputDialog labelDialog = new InputDialog(getShell(),
-				UIText.BranchSelectionDialog_QuestionNewBranchTitle, prompt,
-				initialValue, ValidationUtils.getRefNameInputValidator(repo,
-						refPrefix, true));
-		labelDialog.setBlockOnOpen(true);
-		return labelDialog;
+	public BranchSelectionDialog(Shell parentShell, List<T> nodes, String title,
+			String message, int style) {
+		super(parentShell, title, null, message, MessageDialog.QUESTION,
+				new String[] { IDialogConstants.OK_LABEL,
+						IDialogConstants.CANCEL_LABEL }, 0);
+		this.nodes = nodes;
+		this.style = style;
+		this.multiMode = (this.style & SWT.MULTI) > 0;
 	}
 
 	@Override
-	protected void createButtonsForButtonBar(Composite parent) {
-		newButton = new Button(parent, SWT.PUSH);
-		newButton.setFont(JFaceResources.getDialogFont());
-		newButton.setText(UIText.BranchSelectionDialog_NewBranch);
-		setButtonLayoutData(newButton);
-		((GridLayout) parent.getLayout()).numColumns++;
+	protected Control createCustomArea(Composite parent) {
+		Composite area = new Composite(parent, SWT.NONE);
+		GridDataFactory.fillDefaults().grab(true, true).span(2, 1)
+				.applyTo(area);
+		area.setLayout(new GridLayout(1, false));
+		if (multiMode) {
+			fTree = new FilteredCheckboxTree(area, null, SWT.NONE,
+					new PatternFilter()) {
+				/*
+				 * Overridden to check page when refreshing is done.
+				 */
+				protected WorkbenchJob doCreateRefreshJob() {
+					WorkbenchJob refreshJob = super.doCreateRefreshJob();
+					refreshJob.addJobChangeListener(new JobChangeAdapter() {
+						public void done(IJobChangeEvent event) {
+							if (event.getResult().isOK()) {
+								getDisplay().asyncExec(new Runnable() {
+									public void run() {
+										checkPage();
+									}
+								});
+							}
+						}
+					});
+					return refreshJob;
+				}
+			};
 
-		renameButton = new Button(parent, SWT.PUSH);
-		renameButton.setFont(JFaceResources.getDialogFont());
-		renameButton.setText(UIText.BranchSelectionDialog_Rename);
-		setButtonLayoutData(renameButton);
-		((GridLayout) parent.getLayout()).numColumns++;
-
-		deleteteButton = new Button(parent, SWT.PUSH);
-		deleteteButton.setFont(JFaceResources.getDialogFont());
-		deleteteButton.setText(UIText.BranchSelectionDialog_Delete);
-		setButtonLayoutData(deleteteButton);
-		((GridLayout) parent.getLayout()).numColumns++;
-
-		renameButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-
-				String refName = refNameFromDialog();
-				String refPrefix;
-
-				if (refName.startsWith(Constants.R_HEADS))
-					refPrefix = Constants.R_HEADS;
-				else if (refName.startsWith(Constants.R_REMOTES))
-					refPrefix = Constants.R_REMOTES;
-				else if (refName.startsWith(Constants.R_TAGS))
-					refPrefix = Constants.R_TAGS;
-				else {
-					// the button should be disabled anyway, but we check again
-					return;
+			CachedCheckboxTreeViewer viewer = fTree.getCheckboxTreeViewer();
+			GridDataFactory.fillDefaults().grab(true, true).applyTo(fTree);
+			viewer.setContentProvider(new ITreeContentProvider() {
+				public void inputChanged(Viewer actViewer, Object oldInput,
+						Object newInput) {
+					// nothing
 				}
 
-				String branchName = refName.substring(refPrefix.length());
-
-				InputDialog labelDialog = getRefNameInputDialog(
-						NLS
-								.bind(
-										UIText.BranchSelectionDialog_QuestionNewBranchNameMessage,
-										branchName, refPrefix), refPrefix,
-						branchName);
-				if (labelDialog.open() == Window.OK) {
-					String newRefName = refPrefix + labelDialog.getValue();
-					try {
-						new Git(repo).branchRename().setOldName(refName)
-								.setNewName(labelDialog.getValue()).call();
-						branchTree.refresh();
-						markRef(newRefName);
-					} catch (Throwable e1) {
-						reportError(
-								e1,
-								UIText.BranchSelectionDialog_ErrorCouldNotRenameRef,
-								refName, newRefName, e1.getMessage());
-					}
+				public void dispose() {
+					// nothing
 				}
-			}
-		});
-		newButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				CreateBranchWizard wiz = new CreateBranchWizard(repo,
-						refFromDialog());
-				if (new WizardDialog(getShell(), wiz).open() == Window.OK) {
-					String newRefName = wiz.getNewBranchName();
-					try {
-						branchTree.refresh();
-						markRef(Constants.R_HEADS + newRefName);
-						if (repo.getBranch().equals(newRefName))
-							// close branch selection dialog when new branch was
-							// already checked out from new branch wizard
-							BranchSelectionDialog.this.okPressed();
-					} catch (Throwable e1) {
-						reportError(
-								e1,
-								UIText.BranchSelectionDialog_ErrorCouldNotCreateNewRef,
-								newRefName);
-					}
+
+				public boolean hasChildren(Object element) {
+					return false;
 				}
-			}
-		});
 
-		deleteteButton.addSelectionListener(new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent selectionEvent) {
-				IWorkbench workbench = PlatformUI.getWorkbench();
-				IWorkbenchWindow activeWorkbenchWindow = workbench
-						.getActiveWorkbenchWindow();
-				IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
-						.getService(IHandlerService.class);
-				// set selection in context
-				IEvaluationContext ctx = hsr.getCurrentState();
-				ctx.addVariable(ACTIVE_CURRENT_SELECTION_NAME,
-						branchTree.getSelection());
-
-				ICommandService commandService = (ICommandService) activeWorkbenchWindow
-						.getService(ICommandService.class);
-				Command deleteCommand = commandService
-						.getCommand("org.eclipse.egit.ui.RepositoriesViewDeleteBranch"); //$NON-NLS-1$
-
-				deleteCommand.addExecutionListener(new IExecutionListener() {
-					public void preExecute(String commandId,
-							ExecutionEvent event) {	/* do nothing */ }
-
-					public void postExecuteSuccess(String commandId,
-							Object returnValue) {
-						branchTree.refresh();
-					}
-
-					public void postExecuteFailure(String commandId,
-							ExecutionException exception) { /* do nothing */  }
-
-					public void notHandled(String commandId,
-							NotHandledException exception) { /* do nothing */ }
-				});
-
-				// launch deleteCommand
-				ExecutionEvent executionEvent = hsr.createExecutionEvent(
-						deleteCommand, null);
-				try {
-					deleteCommand.executeWithChecks(executionEvent);
-				} catch (Throwable e) {
-					reportError(
-							e,
-							UIText.BranchSelectionDialog_ErrorCouldNotDeleteRef,
-							refNameFromDialog());
+				public Object getParent(Object element) {
+					return null;
 				}
-			}
-		});
 
-		super.createButtonsForButtonBar(parent);
-		getButton(Window.OK).setText(UIText.BranchSelectionDialog_OkCheckout);
+				public Object[] getElements(Object inputElement) {
+					return ((List) inputElement).toArray();
+				}
 
-		// can't advance without a selection
-		getButton(Window.OK).setEnabled(!branchTree.getSelection().isEmpty());
+				public Object[] getChildren(Object parentElement) {
+					return null;
+				}
+			});
+
+			viewer.addCheckStateListener(new ICheckStateListener() {
+				public void checkStateChanged(CheckStateChangedEvent event) {
+					checkPage();
+				}
+			});
+
+			viewer.setLabelProvider(new GitLabelProvider());
+			viewer.setInput(nodes);
+		} else {
+			branchesList = new TableViewer(area, this.style | SWT.H_SCROLL
+					| SWT.V_SCROLL | SWT.BORDER);
+			GridDataFactory.fillDefaults().grab(true, true)
+					.applyTo(branchesList.getControl());
+			branchesList.setContentProvider(ArrayContentProvider.getInstance());
+			branchesList.setLabelProvider(new GitLabelProvider());
+			branchesList.setInput(nodes);
+			branchesList
+					.addSelectionChangedListener(new ISelectionChangedListener() {
+						public void selectionChanged(SelectionChangedEvent event) {
+							checkPage();
+						}
+					});
+			branchesList.addDoubleClickListener(new IDoubleClickListener() {
+				public void doubleClick(DoubleClickEvent event) {
+					buttonPressed(OK);
+				}
+			});
+		}
+		return area;
 	}
 
-	/**
-	 * @return the message shown above the refs tree
-	 */
-	protected String getMessageText() {
-		return UIText.BranchSelectionDialog_Refs;
+	private void checkPage() {
+		if (multiMode)
+			getButton(OK).setEnabled(
+					fTree.getCheckboxTreeViewer().getCheckedLeafCount() > 0);
+		else
+			getButton(OK).setEnabled(!branchesList.getSelection().isEmpty());
+
 	}
 
-	/**
-	 * Subclasses may add UI elements
-	 *
-	 * @param parent
-	 */
-	protected void createCustomArea(Composite parent) {
-		// do nothing
-	}
-
-	/**
-	 * Subclasses may change the title of the dialog
-	 *
-	 * @return the title of the dialog
-	 */
-	protected String getTitle() {
-		return NLS.bind(UIText.BranchSelectionDialog_TitleCheckout,
-				new Object[] { repo.getDirectory() });
+	@SuppressWarnings("unchecked")
+	@Override
+	protected void buttonPressed(int buttonId) {
+		if (buttonId == OK) {
+			if (multiMode) {
+				selected.clear();
+				Object[] checked = fTree.getCheckboxTreeViewer()
+						.getCheckedElements();
+				for (Object o : checked) {
+					selected.add((T) o);
+				}
+			} else {
+				selected = ((IStructuredSelection) branchesList.getSelection())
+						.toList();
+			}
+		}
+		super.buttonPressed(buttonId);
 	}
 
 	@Override
-	protected int getShellStyle() {
-		return super.getShellStyle() | SWT.RESIZE;
+	public void create() {
+		super.create();
+		getButton(OK).setEnabled(false);
 	}
 
-	private void reportError(Throwable e, String message, Object... args) {
-		String msg = NLS.bind(message, args);
-		Activator.handleError(msg, e, true);
+	/**
+	 * @return the selected entry (single mode)
+	 */
+	public T getSelectedNode() {
+		if (selected.isEmpty())
+			return null;
+		return selected.get(0);
 	}
 
-	@Override
-	protected void refNameSelected(String refName) {
-		boolean tagSelected = refName != null
-				&& refName.startsWith(Constants.R_TAGS);
-
-		boolean branchSelected = refName != null
-				&& (refName.startsWith(Constants.R_HEADS) || refName
-						.startsWith(Constants.R_REMOTES));
-
-		getButton(Window.OK).setEnabled(branchSelected || tagSelected);
-		newButton.setEnabled(branchSelected || tagSelected);
-
-		// we don't support rename on tags
-		renameButton.setEnabled(branchSelected && !tagSelected);
-		deleteteButton.setEnabled(branchSelected && !tagSelected);
+	/**
+	 * @return the selected entries (multi mode)
+	 */
+	public List<T> getSelectedNodes() {
+		return selected;
 	}
 }

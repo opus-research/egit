@@ -12,7 +12,10 @@ package org.eclipse.egit.ui.internal;
 import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.compare.CompareConfiguration;
+import org.eclipse.compare.CompareEditorInput;
+import org.eclipse.compare.ICompareContainer;
 import org.eclipse.compare.IEditableContent;
+import org.eclipse.compare.IResourceProvider;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.compare.structuremergeviewer.DiffNode;
 import org.eclipse.compare.structuremergeviewer.Differencer;
@@ -23,6 +26,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFileState;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IStorage;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -30,8 +34,16 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.team.internal.ui.Utils;
+import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter.ISharedDocumentAdapterListener;
+import org.eclipse.team.internal.ui.synchronize.LocalResourceSaveableComparison;
+import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
+import org.eclipse.ui.ISaveablesLifecycleListener;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.Saveable;
+import org.eclipse.ui.SaveablesLifecycleEvent;
 
 /**
  * The input provider for the compare editor when working on resources
@@ -103,9 +115,10 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		return false;
 	}
 
-	private IResource getResource(@SuppressWarnings("unused") ICompareInput input) {
-		if (getLocalElement() != null) {
-			return getLocalElement().getResource();
+	private IResource getResource() {
+		if (left instanceof IResourceProvider) {
+			IResourceProvider resourceProvider = (IResourceProvider) left;
+			return resourceProvider.getResource();
 		}
 		return null;
 	}
@@ -219,7 +232,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if (getLeftRevision() != null) {
 			String leftLabel = getFileRevisionLabel(getLeftRevision());
 			cc.setLeftLabel(leftLabel);
-		} else if (getResource(input) != null) {
+		} else if (getResource() != null) {
 			String label = NLS.bind(UIText.GitCompareFileRevisionEditorInput_LocalLabel, new Object[]{ input.getLeft().getName() });
 			cc.setLeftLabel(label);
 		} else {
@@ -271,10 +284,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	 */
 	public Object getAdapter(Class adapter) {
 		if (adapter == IFile.class || adapter == IResource.class) {
-			if (getLocalElement() != null) {
-				return getLocalElement().getResource();
-			}
-			return null;
+			return getResource();
 		}
 		return super.getAdapter(adapter);
 	}
@@ -283,8 +293,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if (element instanceof FileRevisionTypedElement){
 			FileRevisionTypedElement fileRevisionElement = (FileRevisionTypedElement) element;
 			return fileRevisionElement.getName();
-		}
-		else if (element instanceof LocalResourceTypedElement){
+		} else if (element instanceof LocalResourceTypedElement){
 			LocalResourceTypedElement typedContent = (LocalResourceTypedElement) element;
 			return typedContent.getResource().getName();
 		}
@@ -332,14 +341,8 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 	@Override
 	protected void fireInputChange() {
-		// nothing
-	}
-
-	private LocalResourceTypedElement getLocalElement() {
-		if (left instanceof LocalResourceTypedElement) {
-			return (LocalResourceTypedElement) left;
-		}
-		return null;
+		// have the diff node notify its listeners of a change
+		((NotifiableDiffNode) getCompareResult()).fireChange();
 	}
 
 	@Override
@@ -354,10 +357,22 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 		// The compare editor (Structure Compare) will show the diff filenames
 		// with their project relative path. So, no need to also show directory entries.
-		DiffNode flatDiffNode = new DiffNode(null,Differencer.CHANGE,null,left,right);
+		DiffNode flatDiffNode = new NotifiableDiffNode(null,
+				Differencer.CHANGE, null, left, right);
 		flatDiffView(flatDiffNode, (DiffNode) input);
 
 		return flatDiffNode;
+	}
+
+	@Override
+	protected Saveable createSaveable() {
+		// copied from
+		// org.eclipse.team.ui.synchronize.SaveableCompareEditorInput.createSaveable()
+		Object compareResult = getCompareResult();
+		Assert.isNotNull(compareResult,
+				"This method cannot be called until after prepareInput is called"); //$NON-NLS-1$
+		return new InternalResourceSaveableComparison(
+				(ICompareInput) compareResult, this);
 	}
 
 	private void flatDiffView(DiffNode rootNode, DiffNode currentNode) {
@@ -404,5 +419,98 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 	}
 
+	// copy of
+	// org.eclipse.team.ui.synchronize.SaveableCompareEditorInput.InternalResourceSaveableComparison
+	// we need to copy this private class to prevent NPE in
+	// org.eclipse.team.internal.ui.synchronize.LocalResourceSaveableComparison.propertyChange(PropertyChangeEvent)
+	// when moving and saving partial changes when comparing version from git
+	// index with HEAD
+	private class InternalResourceSaveableComparison extends
+			LocalResourceSaveableComparison implements
+			ISharedDocumentAdapterListener {
+		private LocalResourceTypedElement lrte;
+
+		private boolean connected = false;
+
+		public InternalResourceSaveableComparison(ICompareInput input,
+				CompareEditorInput editorInput) {
+			super(input, editorInput, left);
+			ITypedElement element = left;
+			if (element instanceof LocalResourceTypedElement) {
+				lrte = (LocalResourceTypedElement) element;
+				if (lrte.isConnected()) {
+					registerSaveable(true);
+				} else {
+					lrte.setSharedDocumentListener(this);
+				}
+			}
+		}
+
+		protected void fireInputChange() {
+			GitCompareFileRevisionEditorInput.this.fireInputChange();
+		}
+
+		public void dispose() {
+			super.dispose();
+			if (lrte != null)
+				lrte.setSharedDocumentListener(null);
+		}
+
+		public void handleDocumentConnected() {
+			if (connected)
+				return;
+			connected = true;
+			registerSaveable(false);
+			if (lrte != null)
+				lrte.setSharedDocumentListener(null);
+		}
+
+		private void registerSaveable(boolean init) {
+			ICompareContainer container = getContainer();
+			IWorkbenchPart part = container.getWorkbenchPart();
+			if (part != null) {
+				ISaveablesLifecycleListener lifecycleListener = getSaveablesLifecycleListener(part);
+				// Remove this saveable from the lifecycle listener
+				if (!init)
+					lifecycleListener
+							.handleLifecycleEvent(new SaveablesLifecycleEvent(
+									part, SaveablesLifecycleEvent.POST_CLOSE,
+									new Saveable[] { this }, false));
+				// Now fix the hashing so it uses the connected document
+				initializeHashing();
+				// Finally, add this saveable back to the listener
+				lifecycleListener
+						.handleLifecycleEvent(new SaveablesLifecycleEvent(part,
+								SaveablesLifecycleEvent.POST_OPEN,
+								new Saveable[] { this }, false));
+			}
+		}
+
+		private ISaveablesLifecycleListener getSaveablesLifecycleListener(
+				IWorkbenchPart part) {
+			ISaveablesLifecycleListener listener = (ISaveablesLifecycleListener) Utils
+					.getAdapter(part, ISaveablesLifecycleListener.class);
+			if (listener == null)
+				listener = (ISaveablesLifecycleListener) part.getSite()
+						.getService(ISaveablesLifecycleListener.class);
+			return listener;
+		}
+
+		public void handleDocumentDeleted() {
+			// Ignore
+		}
+
+		public void handleDocumentDisconnected() {
+			// Ignore
+		}
+
+		public void handleDocumentFlushed() {
+			// Ignore
+		}
+
+		public void handleDocumentSaved() {
+			// Ignore
+		}
+	}
 
 }

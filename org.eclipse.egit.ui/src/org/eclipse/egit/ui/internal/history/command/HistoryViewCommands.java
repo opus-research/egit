@@ -38,6 +38,9 @@ public class HistoryViewCommands {
 	/** "Create Branch" */
 	public static final String CREATE_BRANCH = "org.eclipse.egit.ui.history.CreateBranch"; //$NON-NLS-1$
 
+	/** "Delete Branch" */
+	public static final String DELETE_BRANCH = "org.eclipse.egit.ui.history.DeleteBranch"; //$NON-NLS-1$
+
 	/** "Create Patch" */
 	public static final String CREATE_PATCH = "org.eclipse.egit.ui.history.CreatePatch"; //$NON-NLS-1$
 
@@ -75,5 +78,8 @@ public class HistoryViewCommands {
 	public static final String MERGE = "org.eclipse.egit.ui.history.Merge"; //$NON-NLS-1$
 
 	/** rebase on top of commit */
-	public static final String REBASECURRENT = "org.eclipse.egit.ui.history.RebaseCurrent"; //$NON-NLS-1$
+	public static final String REBASECURRENT = "org.eclipse.egit.ui.RebaseCurrent"; //$NON-NLS-1$
+
+	/** Open in Commit Viewer */
+	public static final String OPEN_IN_COMMIT_VIEWER = "org.eclipse.egit.ui.history.OpenInCommitViewerCommand"; //$NON-NLS-1$
 }

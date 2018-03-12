@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 SAP AG.
+ * Copyright (c) 2011 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -35,6 +33,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -42,10 +41,11 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EditableRevision;
+import org.eclipse.egit.ui.internal.FileEditableRevision;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
+import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView.PathNode.Type;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -55,8 +55,6 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.util.IPropertyChangeListener;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ILabelProvider;
@@ -76,8 +74,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
@@ -189,7 +186,7 @@ public class CompareTreeView extends ViewPart {
 				UIPreferences.TREE_COMPARE_SHOW_EQUALS,
 				UIText.CompareTreeView_EqualFilesTooltip) {
 			@Override
-			void apply(boolean value) {
+			public void apply(boolean value) {
 				buildTrees(false);
 			}
 		};
@@ -221,49 +218,20 @@ public class CompareTreeView extends ViewPart {
 			return;
 		} else if (selected instanceof IFile) {
 			final IFile res = (IFile) selected;
-			left = new EditableRevision(new LocalFileRevision(res)) {
-				@Override
-				public void setContent(final byte[] newContent) {
-					try {
-						PlatformUI.getWorkbench().getProgressService().run(
-								false, false, new IRunnableWithProgress() {
-									public void run(IProgressMonitor myMonitor)
-											throws InvocationTargetException,
-											InterruptedException {
-										try {
-											res.setContents(
-													new ByteArrayInputStream(
-															newContent), false,
-													true, myMonitor);
-										} catch (CoreException e) {
-											throw new InvocationTargetException(
-													e);
-										}
-									}
-								});
-					} catch (InvocationTargetException e) {
-						Activator.handleError(e.getTargetException()
-								.getMessage(), e.getTargetException(), true);
-					} catch (InterruptedException e) {
-						// ignore here
-					}
-				}
-			};
+			LocalFileRevision revision = new LocalFileRevision(res);
+			left = new FileEditableRevision(revision, res, PlatformUI.getWorkbench().getProgressService());
 			GitFileRevision rightRevision = compareVersionMap.get(new Path(
 					repositoryMapping.getRepoRelativePath(res)));
-			if (rightRevision == null)
+			if (rightRevision == null) {
 				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
 						NLS
 								.bind(
 										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
 										res.getName(), getCompareVersion()));
-			else
-				right = new FileRevisionTypedElement(rightRevision);
-			GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
-					left, right, PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getActivePage());
-			CompareUtils.openInCompare(PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow().getActivePage(), compareInput);
+			} else {
+				String encoding = CompareCoreUtils.getResourceEncoding(res);
+				right = new FileRevisionTypedElement(rightRevision, encoding);
+			}
 		} else if (selected instanceof GitFileRevision) {
 			GitFileRevision rightRevision = (GitFileRevision) selected;
 			left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
@@ -605,19 +573,7 @@ public class CompareTreeView extends ViewPart {
 					if (relPath.length() > 0)
 						orFilters.add(PathFilter.create(relPath));
 				}
-				if (checkIgnored) {
-					if (orFilters.size() > 1) {
-						TreeFilter andFilter = AndTreeFilter.create(new NotIgnoredFilter(baseTreeIndex),
-								OrTreeFilter.create(orFilters));
-						tw.setFilter(andFilter);
-					} else if (orFilters.size() == 1) {
-						TreeFilter andFilter = AndTreeFilter.create(new NotIgnoredFilter(baseTreeIndex),
-								orFilters.get(0));
-						tw.setFilter(andFilter);
-					} else
-						tw.setFilter(new NotIgnoredFilter(baseTreeIndex));
-
-				} else if (orFilters.size() > 1)
+				if (orFilters.size() > 1)
 					tw.setFilter(OrTreeFilter.create(orFilters));
 				else if (orFilters.size() == 1)
 					tw.setFilter(orFilters.get(0));
@@ -634,6 +590,11 @@ public class CompareTreeView extends ViewPart {
 						compareTreeIndex, AbstractTreeIterator.class);
 				AbstractTreeIterator baseVersionIterator = tw.getTree(
 						baseTreeIndex, AbstractTreeIterator.class);
+				if (checkIgnored
+						&& baseVersionIterator != null
+						&& ((WorkingTreeIterator) baseVersionIterator)
+								.isEntryIgnored())
+					continue;
 				if (compareVersionIterator != null
 						&& baseVersionIterator != null) {
 					monitor.setTaskName(baseVersionIterator
@@ -927,16 +888,6 @@ public class CompareTreeView extends ViewPart {
 			for (Object child : children) {
 				IPath path = new Path(repositoryMapping
 						.getRepoRelativePath((IResource) child));
-				boolean isFile = ((IResource) child).getType() == IResource.FILE;
-
-				// each path that is not ignored creates an entry in either
-				// compareVersionMap or addedPaths, so we can check if a path
-				// was ignored by looking into these tables
-				if (isFile && !compareVersionMap.containsKey(path)
-						&& !addedPaths.contains(path)) {
-					rebuildArray = true;
-					continue;
-				}
 				if (!showEquals && equalContentPaths.contains(path)) {
 					rebuildArray = true;
 					continue;
@@ -965,47 +916,6 @@ public class CompareTreeView extends ViewPart {
 			if (rebuildArray)
 				return childList.toArray();
 			return children;
-		}
-	}
-
-	private static abstract class BooleanPrefAction extends Action implements
-			IPropertyChangeListener, IWorkbenchAction {
-		private final String prefName;
-
-		private final IPersistentPreferenceStore store;
-
-		BooleanPrefAction(final IPersistentPreferenceStore store,
-				final String pn, final String text) {
-			this.store = store;
-			setText(text);
-			prefName = pn;
-			store.addPropertyChangeListener(this);
-			setChecked(store.getBoolean(prefName));
-		}
-
-		public void run() {
-			store.setValue(prefName, isChecked());
-			if (store.needsSaving()) {
-				try {
-					store.save();
-				} catch (IOException e) {
-					Activator.handleError(e.getMessage(), e, false);
-				}
-			}
-		}
-
-		abstract void apply(boolean value);
-
-		public void propertyChange(final PropertyChangeEvent event) {
-			if (prefName.equals(event.getProperty())) {
-				setChecked(store.getBoolean(prefName));
-				apply(isChecked());
-			}
-		}
-
-		public void dispose() {
-			// stop listening
-			store.removePropertyChangeListener(this);
 		}
 	}
 
