@@ -71,14 +71,11 @@ public class RepositoryCache {
 	public synchronized Repository lookupRepository(final File gitDir)
 			throws IOException {
 		prune(repositoryCache);
-		// Make sure we have a normalized path without .. segments here.
-		File normalizedGitDir = new Path(gitDir.getAbsolutePath()).toFile();
-		Reference<Repository> r = repositoryCache.get(normalizedGitDir);
+		Reference<Repository> r = repositoryCache.get(gitDir);
 		Repository d = r != null ? r.get() : null;
 		if (d == null) {
-			d = FileRepositoryBuilder.create(normalizedGitDir);
-			repositoryCache.put(normalizedGitDir,
-					new WeakReference<Repository>(d));
+			d = FileRepositoryBuilder.create(gitDir);
+			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
 		}
 		return d;
 	}
