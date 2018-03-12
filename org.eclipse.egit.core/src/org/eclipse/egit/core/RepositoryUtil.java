@@ -45,6 +45,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -493,14 +494,10 @@ public class RepositoryUtil {
 		if (mapping == null)
 			return true; // Linked resources may not be mapped
 		Repository repository = mapping.getRepository();
-		WorkingTreeIterator treeIterator = IteratorService
-				.createInitialIterator(repository);
-		if (treeIterator == null)
-			return true;
 		String repoRelativePath = mapping.getRepoRelativePath(path);
 		TreeWalk walk = new TreeWalk(repository);
 		try {
-			walk.addTree(treeIterator);
+			walk.addTree(new FileTreeIterator(repository));
 			walk.setFilter(PathFilter.create(repoRelativePath));
 			while (walk.next()) {
 				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
