@@ -65,11 +65,9 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
 
-	private Image annotatedTagImage = resourceManager
-			.createImage(UIIcons.TAG_ANNOTATED);
+	private Image annotatedTagImage = UIIcons.TAG_ANNOTATED.createImage();
 
-	private Image gerritRepoImage = resourceManager
-			.createImage(UIIcons.REPOSITORY_GERRIT);
+	private Image gerritRepoImage = UIIcons.REPOSITORY_GERRIT.createImage();
 
 	private final State verboseBranchModeState;
 
@@ -131,7 +129,8 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 			Object object = node.getObject();
 			if (object instanceof Repository) {
 				Repository r = (Repository) object;
-				if (ResourcePropertyTester.hasGerritConfiguration(r))
+				if (ResourcePropertyTester.testRepositoryState(r,
+						"hasGerritConfiguration")) //$NON-NLS-1$
 					return gerritRepoImage;
 			}
 		}
@@ -157,6 +156,7 @@ public class RepositoriesViewLabelProvider extends GitLabelProvider implements
 		}
 		resourceManager.dispose();
 		decoratedImages.clear();
+		annotatedTagImage.dispose();
 		super.dispose();
 	}
 
