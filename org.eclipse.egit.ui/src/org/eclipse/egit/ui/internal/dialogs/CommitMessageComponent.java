@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RevUtils;
+import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
@@ -41,7 +42,6 @@ import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
-import org.eclipse.egit.ui.internal.gerrit.GerritUtil;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.DocumentEvent;
@@ -96,10 +96,12 @@ public class CommitMessageComponent {
 			this.type = type;
 		}
 
+		@Override
 		public String getMessage() {
 			return message;
 		}
 
+		@Override
 		public int getMessageType() {
 			return type;
 		}
@@ -496,6 +498,7 @@ public class CommitMessageComponent {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
 		authorText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				if (!listenersEnabled || !authorText.isEnabled())
 					return;
@@ -505,6 +508,7 @@ public class CommitMessageComponent {
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
+			@Override
 			public void modifyText(ModifyEvent e) {
 				if (!listenersEnabled || !committerText.isEnabled())
 					return;
@@ -524,6 +528,7 @@ public class CommitMessageComponent {
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
 		commitText.getDocument().addDocumentListener(new IDocumentListener() {
+			@Override
 			public void documentChanged(DocumentEvent event) {
 				if (!listenersEnabled || !commitText.isEnabled())
 					return;
@@ -531,6 +536,7 @@ public class CommitMessageComponent {
 				updateChangeIdButton();
 				listener.statusUpdated();
 			}
+			@Override
 			public void documentAboutToBeChanged(DocumentEvent event) {
 				// nothing to do
 			}
