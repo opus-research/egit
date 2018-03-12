@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -127,12 +126,6 @@ public class GitModelRepository extends GitModelObject {
 	@Override
 	public boolean isContainer() {
 		return true;
-	}
-
-	@Override
-	public int getKind() {
-		// we don't want to show any change indicator on repository node
-		return Differencer.NO_CHANGE;
 	}
 
 	@Override

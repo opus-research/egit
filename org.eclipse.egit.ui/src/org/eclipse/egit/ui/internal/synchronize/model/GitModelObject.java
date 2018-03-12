@@ -80,11 +80,6 @@ public abstract class GitModelObject extends PlatformObject {
 	public abstract boolean isContainer();
 
 	/**
-	 * @return kind
-	 */
-	public abstract int getKind();
-
-	/**
 	 *
 	 * @param parent
 	 *            of particular model object

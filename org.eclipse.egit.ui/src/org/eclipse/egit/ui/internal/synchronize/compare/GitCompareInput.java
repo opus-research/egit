@@ -8,8 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.compare;
 
-import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 import static org.eclipse.egit.core.internal.storage.GitFileRevision.INDEX;
+import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.ITypedElement;
@@ -20,7 +20,9 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.LocalResourceTypedElement;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
@@ -31,21 +33,66 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
  */
 public class GitCompareInput implements ISynchronizationCompareInput {
 
+	private final String name;
+
+	private final ObjectId ancestorId;
+
+	private final ObjectId baseId;
+
+	private final ObjectId remoteId;
+
+	private final RevCommit ancestorCommit;
+
+	private final RevCommit remoteCommit;
+
 	/**
-	 * Git resource that should be used for comparing
+	 * {@link RevCommit} instance of base commit associated with this compare
+	 * input
 	 */
-	protected final GitModelBlob resource;
+	protected final RevCommit baseCommit;
+
+	/**
+	 * {@link Repository} associated with this compare compare input
+	 */
+	protected final Repository repo;
+
+	/**
+	 * Git repository relative path of file associated with this compare input
+	 */
+	protected final String gitPath;
 
 	/**
 	 * Creates {@link GitCompareInput}
-	 * @param object
+	 *
+	 * @param repo
+	 *            repository that is connected with this object
+	 * @param ancestroDataSource
+	 *            data that should be use to obtain common ancestor object data
+	 * @param baseDataSource
+	 *            data that should be use to obtain base object data
+	 * @param remoteDataSource
+	 *            data that should be used to obtain remote object data
+	 * @param gitPath
+	 *            repository relative path of object
 	 */
-	public GitCompareInput(GitModelBlob object) {
-		this.resource = object;
+	public GitCompareInput(Repository repo,
+			ComparisonDataSource ancestroDataSource,
+			ComparisonDataSource baseDataSource,
+			ComparisonDataSource remoteDataSource, String gitPath) {
+		this.repo = repo;
+		this.gitPath = gitPath;
+		this.baseId = baseDataSource.getObjectId();
+		this.remoteId = remoteDataSource.getObjectId();
+		this.baseCommit = baseDataSource.getRevCommit();
+		this.ancestorId = ancestroDataSource.getObjectId();
+		this.remoteCommit = remoteDataSource.getRevCommit();
+		this.ancestorCommit = ancestroDataSource.getRevCommit();
+		this.name = gitPath.lastIndexOf('/') < 0 ? gitPath : gitPath
+				.substring(gitPath.lastIndexOf('/') + 1);
 	}
 
 	public String getName() {
-		return resource.getName();
+		return name;
 	}
 
 	public Image getImage() {
@@ -54,34 +101,26 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 	}
 
 	public int getKind() {
-		return resource.getKind();
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 	public ITypedElement getAncestor() {
-		return getRight();
+		if (objectExist(ancestorCommit, ancestorId))
+			return CompareUtils.getFileRevisionTypedElement(gitPath,
+					ancestorCommit, repo, ancestorId);
+
+		return null;
 	}
 
 	public ITypedElement getLeft() {
-		if ((resource.getKind() & RIGHT) == RIGHT)
-			return CompareUtils.getFileRevisionTypedElement(resource.getGitPath(),
-				resource.getBaseCommit(), resource.getRepository(),
-				resource.getBaseId());
-		else
-			return CompareUtils.getFileRevisionTypedElement(resource.getGitPath(),
-					resource.getRemoteCommit(), resource.getRepository(),
-					resource.getRemoteId());
+		return CompareUtils.getFileRevisionTypedElement(gitPath, baseCommit,
+				repo, baseId);
 	}
 
 	public ITypedElement getRight() {
-		if ((resource.getKind() & RIGHT) == RIGHT)
-			return CompareUtils.getFileRevisionTypedElement(resource.getGitPath(),
-					resource.getRemoteCommit(), resource.getRepository(),
-					resource.getRemoteId());
-		else
-			return CompareUtils.getFileRevisionTypedElement(resource.getGitPath(),
-				resource.getBaseCommit(), resource.getRepository(),
-				resource.getBaseId());
-
+		return CompareUtils.getFileRevisionTypedElement(gitPath, remoteCommit,
+				repo, remoteId);
 	}
 
 	public void addCompareInputChangeListener(
@@ -100,6 +139,10 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		// do nothing, we should disallow coping content between commits
 	}
 
+	private boolean objectExist(RevCommit commit, ObjectId id) {
+		return commit != null && id != null && !id.equals(zeroId());
+	}
+
 	public SaveableComparison getSaveable() {
 		// not used
 		return null;
@@ -109,17 +152,13 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 			IProgressMonitor monitor) throws CoreException {
 		configuration.setLeftLabel(getFileRevisionLabel(getLeft()));
 		configuration.setRightLabel(getFileRevisionLabel(getRight()));
-
-		// disable editing on both sides, since we can't edit checked in blobs
-		configuration.setLeftEditable(false);
-		configuration.setRightEditable(false);
 	}
 
 	public String getFullPath() {
-		return resource.getLocation().toOSString();
+		return gitPath;
 	}
 
-	public boolean isCompareInputFor(Object obj) {
+	public boolean isCompareInputFor(Object object) {
 		// not used
 		return false;
 	}

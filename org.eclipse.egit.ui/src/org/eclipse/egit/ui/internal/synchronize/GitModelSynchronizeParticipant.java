@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import static org.eclipse.jgit.lib.Repository.stripWorkDir;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,13 +25,9 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.synchronize.compare.GitCacheCompareInput;
+import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
 import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
-import org.eclipse.egit.ui.internal.synchronize.compare.GitLocalCompareInput;
-import org.eclipse.egit.ui.internal.synchronize.compare.GitWorkspaceCompareInput;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelCacheFile;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingFile;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -179,15 +173,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			GitSynchronizeData gsd = gsds.getData(file.getProject());
 			if (!gsd.shouldIncludeLocal())
 				return getFileFromGit(gsd, file.getLocation());
-		} else if (object instanceof GitModelCacheFile) {
-			// handle git index against HEAD comparison
-			return new GitCacheCompareInput((GitModelCacheFile) object);
-		} else if (object instanceof GitModelWorkingFile) {
-			// handle working file against git index comparison
-			return new GitLocalCompareInput((GitModelWorkingFile) object);
-		} else if (object instanceof GitModelBlob) {
-			// handle two blob objects comparison
-			return new GitCompareInput((GitModelBlob) object);
 		}
 
 		return super.asCompareInput(object);
@@ -196,7 +181,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	private ICompareInput getFileFromGit(GitSynchronizeData gsd, IPath location) {
 		Repository repo = gsd.getRepository();
 		File workTree = repo.getWorkTree();
-		String repoRelativeLocation = stripWorkDir(workTree,
+		String repoRelativeLocation = Repository.stripWorkDir(workTree,
 				location.toFile());
 
 		TreeWalk tw = new TreeWalk(repo);
@@ -210,9 +195,12 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			int remoteNth = tw.addTree(remoteCommit.getTree());
 
 			if (tw.next()) {
-				return new GitWorkspaceCompareInput(repo, baseCommit,
-						tw.getObjectId(baseNth), remoteCommit,
-						tw.getObjectId(remoteNth), repoRelativeLocation);
+				ComparisonDataSource baseData = new ComparisonDataSource(
+						baseCommit, tw.getObjectId(baseNth));
+				ComparisonDataSource remoteData = new ComparisonDataSource(
+						remoteCommit, tw.getObjectId(remoteNth));
+				return new GitCompareInput(repo, baseData, baseData,
+						remoteData, repoRelativeLocation);
 			}
 		} catch (IOException e) {
 			Activator.logError(e.getMessage(), e);

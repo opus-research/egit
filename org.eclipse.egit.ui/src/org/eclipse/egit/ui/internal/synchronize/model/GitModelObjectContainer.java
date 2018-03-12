@@ -17,18 +17,27 @@ import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import java.io.IOException;
 
+import org.eclipse.compare.CompareConfiguration;
+import org.eclipse.compare.ITypedElement;
+import org.eclipse.compare.structuremergeviewer.ICompareInputChangeListener;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
+import org.eclipse.team.ui.mapping.SaveableComparison;
 /**
  * An abstract class for all container models in change set.
  */
-public abstract class GitModelObjectContainer extends GitModelObject {
+public abstract class GitModelObjectContainer extends GitModelObject implements
+		ISynchronizationCompareInput {
 
 	/**
 	 * Describe what kind of change is connected with this object
@@ -74,6 +83,11 @@ public abstract class GitModelObjectContainer extends GitModelObject {
 			baseCommit = null;
 			remoteCommit = null;
 		}
+	}
+
+	public Image getImage() {
+		// currently itsn't used
+		return null;
 	}
 
 	/**
@@ -127,9 +141,56 @@ public abstract class GitModelObjectContainer extends GitModelObject {
 	@Override
 	public abstract IPath getLocation();
 
+	public ITypedElement getAncestor() {
+		return null;
+	}
+
+	public ITypedElement getLeft() {
+		return null;
+	}
+
+	public ITypedElement getRight() {
+		return null;
+	}
+
+	public void addCompareInputChangeListener(
+			ICompareInputChangeListener listener) {
+		// data in commit will never change, therefore change listeners are
+		// useless
+	}
+
+	public void removeCompareInputChangeListener(
+			ICompareInputChangeListener listener) {
+		// data in commit will never change, therefore change listeners are
+		// useless
+	}
+
+	public void copy(boolean leftToRight) {
+		// do nothing, we should disallow coping content between commits
+	}
+
 	@Override
 	public boolean isContainer() {
 		return true;
+	}
+
+	public SaveableComparison getSaveable() {
+		// currently not used
+		return null;
+	}
+
+	public void prepareInput(CompareConfiguration configuration,
+			IProgressMonitor monitor) throws CoreException {
+		// there is no needed configuration for commit object
+	}
+
+	public String getFullPath() {
+		return getLocation().toPortableString();
+	}
+
+	public boolean isCompareInputFor(Object object) {
+		// currently not used
+		return false;
 	}
 
 	/**
@@ -182,7 +243,7 @@ public abstract class GitModelObjectContainer extends GitModelObject {
 
 		if (objectType == Constants.OBJ_BLOB)
 			return new GitModelBlob(this, getBaseCommit(), ancestorCommit,
-					objBaseId, objRemoteId, path);
+					objAncestorId, objBaseId, objRemoteId, path);
 		else if (objectType == Constants.OBJ_TREE)
 			return new GitModelTree(this, getBaseCommit(), ancestorCommit,
 					objAncestorId, objBaseId, objRemoteId, path);
