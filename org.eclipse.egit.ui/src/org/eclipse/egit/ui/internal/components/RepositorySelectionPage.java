@@ -749,13 +749,10 @@ public class RepositorySelectionPage extends WizardPage {
 			if (uriText.getText().length() == 0) {
 				selectionIncomplete(null);
 				return;
-			} else if (uriText.getText().endsWith(" ")) { //$NON-NLS-1$
-				selectionIncomplete(UIText.RepositorySelectionPage_UriMustNotHaveTrailingSpacesMessage);
-				return;
 			}
 
 			try {
-				final URIish finalURI = new URIish(uriText.getText().trim());
+				final URIish finalURI = new URIish(uriText.getText());
 				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
