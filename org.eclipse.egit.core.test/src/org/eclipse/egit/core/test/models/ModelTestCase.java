@@ -56,6 +56,7 @@ import org.junit.Before;
 public abstract class ModelTestCase extends GitTestCase {
 	protected static final String SAMPLE_FILE_EXTENSION = SampleModelProvider.SAMPLE_FILE_EXTENSION;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -70,7 +71,7 @@ public abstract class ModelTestCase extends GitTestCase {
 			IFile targetFile, String newContents, String commitMessage)
 			throws Exception {
 		targetFile.setContents(
-				new ByteArrayInputStream(newContents.getBytes()),
+				new ByteArrayInputStream(newContents.getBytes("UTF-8")),
 				IResource.FORCE, new NullProgressMonitor());
 		testRepository.addToIndex(targetFile);
 		return testRepository.commit(commitMessage);

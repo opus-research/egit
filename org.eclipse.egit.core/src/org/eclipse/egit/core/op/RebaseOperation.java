@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler <mathias.kinzler@sap.com> - initial implementation
+ *    Laurent Delaigue (Obeo) - use of preferred merge strategy
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -28,15 +29,16 @@ import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand;
-import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.RebaseCommand.InteractiveHandler;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
+import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeStrategy;
 
 /**
  * This class implements rebase.
@@ -124,6 +126,7 @@ public class RebaseOperation implements IEGitOperation {
 		this.handler = handler;
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (result != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
@@ -135,10 +138,16 @@ public class RebaseOperation implements IEGitOperation {
 			monitor = m;
 		final IProject[] validProjects = ProjectUtil.getValidOpenProjects(repository);
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
+			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				RebaseCommand cmd = new Git(repository).rebase()
 						.setProgressMonitor(
 								new EclipseGitProgressTransformer(actMonitor));
+				MergeStrategy strategy = Activator.getDefault()
+						.getPreferredMergeStrategy();
+				if (strategy != null) {
+					cmd.setStrategy(strategy);
+				}
 				try {
 					if (handler != null)
 						cmd.runInteractively(handler, true);
@@ -176,6 +185,7 @@ public class RebaseOperation implements IEGitOperation {
 		return true;
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

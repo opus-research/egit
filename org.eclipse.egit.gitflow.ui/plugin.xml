@@ -16,9 +16,10 @@
 		<menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=group.gitflow">
 			<command
-                  commandId="org.eclipse.egit.gitflow.ui.command.init"
-                  label="%TeamGitFlowInit.name"
-                  style="push">
+         commandId="org.eclipse.egit.gitflow.ui.command.init"
+         icon="icons/obj16/git-flow_16x10.png"
+         label="%TeamGitFlowInit.name"
+         style="push">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -41,7 +42,8 @@
 		<menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=group.gitflow">
 			<menu
-               label="%TeamGitFlowMenu.name">
+         icon="icons/obj16/git-flow_16x10.png"
+         label="%TeamGitFlowMenu.name">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -482,6 +484,20 @@
 					</or>
 				</iterate>
 			</activeWhen>
+			<enabledWhen>
+				<iterate
+                  ifEmpty="false"
+                  operator="and">
+					<and>
+							<adapt type="org.eclipse.jgit.lib.Repository">
+								<test
+                           forcePluginActivation="true"
+                           property="GitFlowRepository.isInitialized">
+								</test>
+							</adapt>
+					</and>
+				</iterate>
+			</enabledWhen>
 		</handler>
 		<handler
             commandId="org.eclipse.egit.gitflow.ui.command.featureRebase">
@@ -617,7 +633,8 @@
 		<menuContribution
             locationURI="popup:team.main?after=group11">
 			<menu
-                  label="%TeamGitFlowMenu.name">
+         icon="icons/obj16/git-flow_16x10.png"
+         label="%TeamGitFlowMenu.name">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -709,9 +726,10 @@
 		<menuContribution
             locationURI="popup:team.main?after=group11">
 			<command
-                  commandId="org.eclipse.egit.gitflow.ui.command.init"
-                  label="%TeamGitFlowInit.name"
-                  style="push">
+         commandId="org.eclipse.egit.gitflow.ui.command.init"
+         icon="icons/obj16/git-flow_16x10.png"
+         label="%TeamGitFlowInit.name"
+         style="push">
 				<visibleWhen
                      checkEnabled="false">
 					<iterate
@@ -741,6 +759,7 @@
           allPopups="false"
           locationURI="popup:org.eclipse.egit.ui.historyPageContributions?after=additions">
        <menu
+             icon="icons/obj16/git-flow_16x10.png"
              label="%TeamGitFlowMenu.name">
           <dynamic
                 class="org.eclipse.egit.gitflow.ui.internal.menu.DynamicHistoryMenu"
@@ -749,4 +768,21 @@
        </menu>
     </menuContribution>
  </extension>
+   <extension point="org.eclipse.ui.decorators">
+      <decorator
+            lightweight="true"
+            adaptable="true"
+            label="%Decorator_name"
+            class="org.eclipse.egit.gitflow.ui.internal.decorators.GitFlowLightweightDecorator"
+            state="true"
+            location="TOP_RIGHT"
+            id="org.eclipse.egit.gitflow.ui.internal.decorators.GitflowLightweightDecorator">
+            <enablement>
+              <objectClass name="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode"/>
+            </enablement>
+         <description>
+            %Decorator_description
+         </description>
+      </decorator>
+   </extension>
 </plugin>
