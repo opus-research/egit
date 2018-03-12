@@ -445,13 +445,7 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
-		if (mapping == null) {
-			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-					file.getLocation(), repository), null);
-			return;
-		}
-		String path = mapping.getRepoRelativePath(
+		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
 				file);
 		ITypedElement base = getHeadTypedElement(repository, path);
 		if (base == null)
@@ -499,11 +493,6 @@ public class CompareUtils {
 				}
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
-				if (mapping == null) {
-					return Activator.createErrorStatus(
-							NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-									file.getLocation(), repository));
-				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 				final ITypedElement base = SaveableCompareEditorInput
 						.createFileElement(file);
@@ -696,11 +685,6 @@ public class CompareUtils {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
-				if (mapping == null) {
-					Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-							file.getLocation(), repository), null);
-					return;
-				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 
 				compareBetween(repository, gitPath, leftRev, rightRev, page);
@@ -998,11 +982,6 @@ public class CompareUtils {
 	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
-		if (mapping == null) {
-			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
-					baseFile.getLocation(), null), null);
-			return null;
-		}
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
 		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
