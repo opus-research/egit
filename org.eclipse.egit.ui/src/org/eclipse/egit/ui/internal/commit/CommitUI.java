@@ -49,7 +49,6 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -276,10 +275,8 @@ public class CommitUI  {
 				// ignore
 			}
 		}
-		WorkingTreeIterator it = IteratorService.createInitialIterator(repo);
-		if (it == null)
-			throw new OperationCanceledException(); // workspace is closed
-		indexDiff = new IndexDiff(repo, Constants.HEAD, it);
+		indexDiff = new IndexDiff(repo, Constants.HEAD,
+				IteratorService.createInitialIterator(repo));
 		indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(
 				UIText.CommitActionHandler_repository, repo.getDirectory()
 						.getPath()));
