@@ -14,23 +14,20 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,30 +39,12 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private Repository repository;
 	private Repository remoteRepository;
 
-	private final List<Repository> reposToDelete = new ArrayList<Repository>();
-
 	@Before
 	public void createRepositories() throws Exception {
 		File repositoryFile = createProjectAndCommitToRepository();
 		File remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		repository = lookupRepository(repositoryFile);
 		remoteRepository = lookupRepository(remoteRepositoryFile);
-		reposToDelete.add(repository);
-		reposToDelete.add(remoteRepository);
-	}
-
-	@After
-	public void deleteRepositories() throws Exception {
-		deleteAllProjects();
-		shutDownRepositories();
-		for (Repository r : reposToDelete) {
-			if (r.isBare())
-				FileUtils.delete(r.getDirectory(), FileUtils.RECURSIVE
-						| FileUtils.RETRY);
-			else
-				FileUtils.delete(r.getWorkTree(), FileUtils.RECURSIVE
-						| FileUtils.RETRY);
-		}
 	}
 
 	@Test
@@ -196,7 +175,6 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		Repository repo = FileRepositoryBuilder.create(gitDir);
 		repo.create();
 		assertTrue(repo.isBare());
-		reposToDelete.add(repo);
 		return repo;
 	}
 
@@ -206,8 +184,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotTree selectProject() {
-		SWTBotTree projectExplorerTree = bot
-				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		return projectExplorerTree;
 	}
@@ -215,8 +192,13 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private void assertBranchPushed(String branchName, Repository remoteRepo)
 			throws Exception {
 		ObjectId pushed = remoteRepo.resolve(branchName);
-		assertNotNull(pushed);
-		assertEquals(repository.resolve(branchName), pushed);
+		assertNotNull("Expected '" + branchName
+				+ "' to resolve to non-null ObjectId on remote repository",
+				pushed);
+		ObjectId local = repository.resolve(branchName);
+		assertEquals(
+				"Expected local branch to be the same as branch on remote after pushing",
+				local, pushed);
 	}
 
 	private void assertBranchConfig(String branchName, String remoteName,
