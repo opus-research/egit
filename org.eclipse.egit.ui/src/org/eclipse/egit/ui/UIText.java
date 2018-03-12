@@ -97,6 +97,9 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
+	public static String RemoveFromIndexAction_removingFiles;
+
+	/** */
 	public static String BlameInformationControl_Author;
 
 	/** */
@@ -3909,9 +3912,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
-
-	/** */
-	public static String HistoryPage_tagColumn;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
