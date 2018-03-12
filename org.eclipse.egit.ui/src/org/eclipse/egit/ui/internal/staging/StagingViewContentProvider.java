@@ -14,8 +14,7 @@ import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CONFLICTIN
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING_AND_CHANGED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED_AND_ADDED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED_AND_CHANGED;
+import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.PARTIALLY_MODIFIED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.UNTRACKED;
 
@@ -309,10 +308,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 					nodes.add(new StagingEntry(repository, MISSING, file));
 			for (String file : indexDiff.getModified())
 				if (indexDiff.getChanged().contains(file))
-					nodes.add(new StagingEntry(repository, MODIFIED_AND_CHANGED,
-							file));
-				else if (indexDiff.getAdded().contains(file))
-					nodes.add(new StagingEntry(repository, MODIFIED_AND_ADDED,
+					nodes.add(new StagingEntry(repository, PARTIALLY_MODIFIED,
 							file));
 				else
 					nodes.add(new StagingEntry(repository, MODIFIED, file));
