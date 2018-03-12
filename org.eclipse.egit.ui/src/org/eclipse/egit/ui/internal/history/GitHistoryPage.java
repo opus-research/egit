@@ -31,7 +31,6 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -89,7 +88,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.team.ui.history.HistoryPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
-import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
@@ -112,7 +111,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	// we need to keep track of these actions so that we can
 	// dispose them when the page is disposed (the history framework
 	// does not do this for us)
-	private final List<IWorkbenchAction> actionsToDispose = new ArrayList<IWorkbenchAction>();
+	private final List<BooleanPrefAction> actionsToDispose = new ArrayList<BooleanPrefAction>();
 
 	private final IPersistentPreferenceStore store = (IPersistentPreferenceStore) Activator
 			.getDefault().getPreferenceStore();
@@ -347,9 +346,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		};
 		actionsToDispose.add(compareModeAction);
 
-		CompareUtils.ReuseCompareEditorAction reuseCompareEditorAction = new CompareUtils.ReuseCompareEditorAction();
-		actionsToDispose.add(reuseCompareEditorAction);
-
 		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
 		compareModeAction.setToolTipText(UIText.GitHistoryPage_compareMode);
 
@@ -390,7 +386,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		viewMenuMgr.add(showAllResourceVersionsAction);
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(compareModeAction);
-		viewMenuMgr.add(reuseCompareEditorAction);
 		viewMenuMgr.add(showAllBranchesAction);
 
 		final IAction showCommentAction = createShowComment();
@@ -798,19 +793,19 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 
 		// dispose of the actions (the history framework doesn't do this for us)
-		for (IWorkbenchAction action : actionsToDispose)
+		for (BooleanPrefAction action : actionsToDispose)
 			action.dispose();
 		actionsToDispose.clear();
 		cancelRefreshJob();
 		if (popupMgr != null) {
 			for (final IContributionItem i : popupMgr.getItems()) {
-				if (i instanceof IWorkbenchAction)
-					((IWorkbenchAction) i).dispose();
+				if (i instanceof ActionFactory.IWorkbenchAction)
+					((ActionFactory.IWorkbenchAction) i).dispose();
 			}
 			for (final IContributionItem i : getSite().getActionBars()
 					.getMenuManager().getItems()) {
-				if (i instanceof IWorkbenchAction)
-					((IWorkbenchAction) i).dispose();
+				if (i instanceof ActionFactory.IWorkbenchAction)
+					((ActionFactory.IWorkbenchAction) i).dispose();
 			}
 		}
 		super.dispose();
@@ -1272,7 +1267,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	private abstract class BooleanPrefAction extends Action implements
-			IPropertyChangeListener, IWorkbenchAction {
+			IPropertyChangeListener, ActionFactory.IWorkbenchAction {
 		private final String prefName;
 
 		BooleanPrefAction(final String pn, final String text) {
@@ -1307,5 +1302,4 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			store.removePropertyChangeListener(this);
 		}
 	}
-
 }
