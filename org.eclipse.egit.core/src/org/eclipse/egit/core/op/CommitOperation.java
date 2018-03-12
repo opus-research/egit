@@ -12,7 +12,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -137,7 +136,9 @@ public class CommitOperation implements IEGitOperation {
 	private void setRepository(IFile file) throws CoreException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
 		if (mapping == null)
-			throw new CoreException(Activator.error(NLS.bind(CoreText.CommitOperation_couldNotFindRepositoryMapping, file), null));
+			throw new CoreException(Activator.error(NLS.bind(
+					CoreText.CommitOperation_couldNotFindRepositoryMapping,
+					file), null));
 		repo = mapping.getRepository();
 	}
 
@@ -149,7 +150,7 @@ public class CommitOperation implements IEGitOperation {
 	}
 
 	private Collection<String> buildFileList(Collection<IFile> files) throws CoreException {
-		Collection<String> result = new ArrayList<String>();
+		Collection<String> result = new HashSet<String>();
 		for (IFile file : files) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(file);
 			if (mapping == null)
@@ -200,7 +201,7 @@ public class CommitOperation implements IEGitOperation {
 			return;
 		AddCommand addCommand = new Git(repo).add();
 		boolean fileAdded = false;
-		for (String path:notTracked)
+		for (String path : notTracked)
 			if (commitFileList.contains(path)) {
 				addCommand.addFilepattern(path);
 				fileAdded = true;
