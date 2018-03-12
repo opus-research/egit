@@ -1,7 +1,5 @@
 /*******************************************************************************
  * Copyright (c) 2010 SAP AG.
- * Copyright (C) 2012, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
- *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,12 +7,10 @@
  *
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
- *    Tomasz Zarna (IBM) - merge squash, bug 382720
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -32,7 +28,6 @@ import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
@@ -54,8 +49,6 @@ public class MergeOperation implements IEGitOperation {
 	private final String refName;
 
 	private MergeStrategy mergeStrategy;
-
-	private boolean squash;
 
 	private MergeResult mergeResult;
 
@@ -80,13 +73,6 @@ public class MergeOperation implements IEGitOperation {
 		this.refName = refName;
 		if (mergeStrategy != null)
 			this.mergeStrategy = MergeStrategy.get(mergeStrategy);
-	}
-
-	/**
-	 * @param squash true to squash merge commits
-	 */
-	public void setSquash(boolean squash) {
-		this.squash = squash;
 	}
 
 	public void execute(IProgressMonitor m) throws CoreException {
@@ -115,7 +101,6 @@ public class MergeOperation implements IEGitOperation {
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
-				merge.setSquash(squash);
 				if (mergeStrategy != null) {
 					merge.setStrategy(mergeStrategy);
 				}
@@ -130,18 +115,6 @@ public class MergeOperation implements IEGitOperation {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedNoHead, e);
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
-				} catch (CheckoutConflictException e) {
-					StringBuilder builder = new StringBuilder();
-					for (String f : e.getConflictingPaths()) {
-						builder.append("\n"); //$NON-NLS-1$
-						builder.append(f);
-					}
-					throw new TeamException(
-								new Status(
-									IStatus.INFO,
-									Activator.getPluginId(),
-									MessageFormat.format(CoreText.MergeOperation_CheckoutConflict,
-									builder.toString())));
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {

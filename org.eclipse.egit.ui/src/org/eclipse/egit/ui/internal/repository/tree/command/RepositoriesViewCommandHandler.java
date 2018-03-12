@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, 2011 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,14 +9,10 @@
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza (dariusz@luksza.org) - add initial implementation of
  *    										enableWhenRepositoryHaveHead(Object)
- *    Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -24,17 +20,13 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jgit.lib.Constants;
@@ -59,13 +51,10 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 		return HandlerUtil.getActiveShell(event);
 	}
 
-	public List<T> getSelectedNodes(ExecutionEvent event)
-			throws ExecutionException {
-		ISelection selection = HandlerUtil.getCurrentSelectionChecked(event);
-		if (selection instanceof IStructuredSelection)
-			return ((IStructuredSelection) selection).toList();
-		else
-			return Collections.emptyList();
+	@SuppressWarnings("unchecked")
+	public List<T> getSelectedNodes(ExecutionEvent event) throws ExecutionException {
+		IStructuredSelection selection = (IStructuredSelection) HandlerUtil.getCurrentSelectionChecked(event);
+		return selection.toList();
 	}
 
 	public Shell getActiveShell(ExecutionEvent event) throws ExecutionException {
@@ -98,9 +87,11 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 			if (structuredSelection.size() > 0) {
 				if (all) {
 					// check that all the repositories have a valid head
-					for (Object element : structuredSelection.toArray())
-						if (!checkRepositoryHasHead(element))
+					for (Object element : structuredSelection.toArray()) {
+						if (!checkRepositoryHasHead(element)) {
 							return false;
+						}
+					}
 					return true;
 				}
 
@@ -174,14 +165,16 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 			}
 			if (!(object instanceof WorkingDirNode)) {
 				String path;
-				if (object instanceof FolderNode)
+				if (object instanceof FolderNode) {
 					path = ((FolderNode) object).getObject().getAbsolutePath();
-				else if (object instanceof FileNode)
-					path = ((FileNode) object).getObject()
-							.getAbsolutePath();
-				else {
-					setBaseEnabled(false);
-					return;
+				} else {
+					if (object instanceof FileNode) {
+						path = ((FileNode) object).getObject()
+								.getAbsolutePath();
+					} else {
+						setBaseEnabled(false);
+						return;
+					}
 				}
 				if (path.startsWith(repository.getDirectory().getAbsolutePath())) {
 					setBaseEnabled(false);
@@ -193,39 +186,4 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 		setBaseEnabled(true);
 	}
 
-	/**
-	 * Retrieve the current selection. The global selection is used if the menu
-	 * selection is not available.
-	 *
-	 * @param ctx
-	 * @return the selection
-	 */
-	protected Object getSelection(IEvaluationContext ctx) {
-		Object selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-		if (selection == null || !(selection instanceof ISelection))
-			selection = ctx.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
-		return selection;
-	}
-
-	protected Collection<IPath> getSelectedFileAndFolderPaths(ExecutionEvent event) throws ExecutionException {
-		Collection<IPath> paths = new ArrayList<IPath>();
-		for (Object selectedNode : getSelectedNodes(event)) {
-			IPath path = getPath((RepositoryTreeNode) selectedNode);
-			paths.add(path);
-		}
-		return paths;
-	}
-
-	protected IPath getPath(RepositoryTreeNode node) {
-		Repository repository = node.getRepository();
-		IPath path;
-		if (node.getType().equals(RepositoryTreeNodeType.FOLDER))
-			path = new Path(((FolderNode) node).getObject()
-					.getAbsolutePath());
-		else if (node.getType().equals(RepositoryTreeNodeType.FILE))
-			path = new Path(((FileNode) node).getObject().getAbsolutePath());
-		else
-			path = new Path(repository.getWorkTree().getAbsolutePath());
-		return path;
-	}
 }

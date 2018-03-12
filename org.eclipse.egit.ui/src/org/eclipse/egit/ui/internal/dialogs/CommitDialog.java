@@ -5,8 +5,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,27 +25,18 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.commit.CommitHelper;
-import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
-import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
-import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
-import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -55,28 +44,24 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.DocumentEvent;
-import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.contentassist.ContentAssistant;
+import org.eclipse.jface.text.contentassist.IContentAssistant;
+import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.BaseLabelProvider;
-import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
-import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
@@ -84,14 +69,16 @@ import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -127,12 +114,7 @@ import org.eclipse.ui.forms.widgets.Section;
  */
 public class CommitDialog extends TitleAreaDialog {
 
-	private static IPreferenceStore getPreferenceStore() {
-		return org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
-	}
-
-	static class CommitStatusLabelProvider extends BaseLabelProvider implements
-			IStyledLabelProvider {
+	static class CommitStatusLabelProvider extends ColumnLabelProvider {
 
 		private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
 				.getImage(ISharedImages.IMG_OBJ_FILE);
@@ -140,20 +122,15 @@ public class CommitDialog extends TitleAreaDialog {
 		private ResourceManager resourceManager = new LocalResourceManager(
 				JFaceResources.getResources());
 
-		private final Image SUBMODULE = UIIcons.REPOSITORY.createImage();
-
 		private Image getEditorImage(CommitItem item) {
-			if (!item.submodule) {
-				Image image = DEFAULT;
-				String name = new Path(item.path).lastSegment();
-				if (name != null) {
-					ImageDescriptor descriptor = PlatformUI.getWorkbench()
-							.getEditorRegistry().getImageDescriptor(name);
-					image = (Image) this.resourceManager.get(descriptor);
-				}
-				return image;
-			} else
-				return SUBMODULE;
+			Image image = DEFAULT;
+			String name = new Path(item.path).lastSegment();
+			if (name != null) {
+				ImageDescriptor descriptor = PlatformUI.getWorkbench()
+						.getEditorRegistry().getImageDescriptor(name);
+				image = (Image) this.resourceManager.get(descriptor);
+			}
+			return image;
 		}
 
 		private Image getDecoratedImage(Image base, ImageDescriptor decorator) {
@@ -162,8 +139,8 @@ public class CommitDialog extends TitleAreaDialog {
 			return (Image) this.resourceManager.get(decorated);
 		}
 
-		public StyledString getStyledText(Object element) {
-			return new StyledString();
+		public String getText(Object obj) {
+			return ""; //$NON-NLS-1$
 		}
 
 		public Image getImage(Object element) {
@@ -189,12 +166,15 @@ public class CommitDialog extends TitleAreaDialog {
 					decorator) : getEditorImage(item);
 		}
 
-		@Override
+		public String getToolTipText(Object element) {
+			return ((CommitItem) element).status.getText();
+		}
+
 		public void dispose() {
-			SUBMODULE.dispose();
 			resourceManager.dispose();
 			super.dispose();
 		}
+
 	}
 
 	static class CommitPathLabelProvider extends ColumnLabelProvider {
@@ -354,8 +334,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private Repository repository;
 
-	private boolean pushEnabled = false;
-
 	/**
 	 * @param parentShell
 	 */
@@ -420,9 +398,7 @@ public class CommitDialog extends TitleAreaDialog {
 		for (String path : paths) {
 			CommitItem item = new CommitItem();
 			item.status = getFileStatus(path, indexDiff);
-			item.submodule = FileMode.GITLINK == indexDiff.getIndexMode(path);
 			item.path = path;
-			item.problemSeverity = getProblemSeverity(repository, path);
 			items.add(item);
 		}
 
@@ -507,14 +483,6 @@ public class CommitDialog extends TitleAreaDialog {
 	 */
 	public boolean getCreateChangeId() {
 		return createChangeId;
-	}
-
-	/**
-	 * Returns whether we are pushing after the commit
-	 * @return pushing
-	 */
-	public boolean isPushEnabled() {
-		return pushEnabled;
 	}
 
 	@Override
@@ -632,22 +600,28 @@ public class CommitDialog extends TitleAreaDialog {
 
 		messageSection.setTextClient(headerArea);
 
-		final CommitProposalProcessor commitProposalProcessor = new CommitProposalProcessor() {
-			@Override
-			protected Collection<String> computeFileNameProposals() {
-				return getFileList();
+		commitText = new SpellcheckableMessageArea(messageArea, commitMessage,
+				SWT.NONE) {
+
+			protected IContentAssistant createContentAssistant(
+					ISourceViewer viewer) {
+				ContentAssistant assistant = new ContentAssistant();
+				assistant.enableAutoInsert(true);
+				Collection<String> paths = getFileList();
+				final CommitProposalProcessor processor = new CommitProposalProcessor(
+						paths.toArray(new String[paths.size()]));
+				viewer.getTextWidget().addDisposeListener(
+						new DisposeListener() {
+
+							public void widgetDisposed(DisposeEvent e) {
+								processor.dispose();
+							}
+						});
+				assistant.setContentAssistProcessor(processor,
+						IDocument.DEFAULT_CONTENT_TYPE);
+				return assistant;
 			}
 
-			@Override
-			protected Collection<String> computeMessageProposals() {
-				return CommitMessageHistory.getCommitHistory();
-			}
-		};
-		commitText = new CommitMessageArea(messageArea, commitMessage, SWT.NONE) {
-			@Override
-			protected CommitProposalProcessor getCommitProposalProcessor() {
-				return commitProposalProcessor;
-			}
 		};
 		commitText
 				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
@@ -660,6 +634,20 @@ public class CommitDialog extends TitleAreaDialog {
 
 		UIUtils.addBulbDecorator(commitText.getTextWidget(),
 				UIText.CommitDialog_ContentAssist);
+
+		// allow to commit with ctrl-enter
+		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent event) {
+				if (event.keyCode == SWT.CR
+						&& (event.stateMask & SWT.CONTROL) > 0) {
+					okPressed();
+				} else if (event.keyCode == SWT.TAB
+						&& (event.stateMask & SWT.SHIFT) == 0) {
+					event.doit = false;
+					commitText.traverse(SWT.TRAVERSE_TAB_NEXT);
+				}
+			}
+		});
 
 		Composite personArea = toolkit.createComposite(container);
 		toolkit.paintBordersFor(personArea);
@@ -789,17 +777,12 @@ public class CommitDialog extends TitleAreaDialog {
 
 		filesViewer = new CheckboxTableViewer(resourcesTable);
 		new TableViewerColumn(filesViewer, statCol)
-				.setLabelProvider(createStatusLabelProvider());
+				.setLabelProvider(new CommitStatusLabelProvider());
 		new TableViewerColumn(filesViewer, resourceCol)
 				.setLabelProvider(new CommitPathLabelProvider());
 		ColumnViewerToolTipSupport.enableFor(filesViewer);
 		filesViewer.setContentProvider(ArrayContentProvider.getInstance());
 		filesViewer.setUseHashlookup(true);
-		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
-				.getDialogSettings();
-		if (settings.get(SHOW_UNTRACKED_PREF) != null)
-			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
-					.booleanValue();
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items.toArray());
 		filesViewer.getTable().setMenu(getContextMenu());
@@ -816,6 +799,12 @@ public class CommitDialog extends TitleAreaDialog {
 		showUntrackedItem.setImage(showUntrackedImage);
 		showUntrackedItem
 				.setToolTipText(UIText.CommitDialog_ShowUntrackedFiles);
+		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
+				.getDialogSettings();
+		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
+			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
+					.booleanValue();
+		}
 		showUntrackedItem.setSelection(showUntracked);
 		showUntrackedItem.addSelectionListener(new SelectionAdapter() {
 
@@ -877,44 +866,13 @@ public class CommitDialog extends TitleAreaDialog {
 			filesViewer.setAllGrayed(true);
 			filesViewer.setAllChecked(true);
 		} else {
-			final boolean includeUntracked = getPreferenceStore().getBoolean(
-					UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED);
 			for (CommitItem item : items) {
-				if (!preselectAll && !preselectedFiles.contains(item.path))
-					continue;
-				if (item.status == Status.ASSUME_UNCHANGED)
-					continue;
-				if (!includeUntracked && item.status == Status.UNTRACKED)
-					continue;
-				filesViewer.setChecked(item, true);
+				if ((preselectAll || preselectedFiles.contains(item.path)) &&
+						item.status != Status.UNTRACKED &&
+						item.status != Status.ASSUME_UNCHANGED)
+					filesViewer.setChecked(item, true);
 			}
 		}
-
-		Section pushSection = toolkit.createSection(container,
-				ExpandableComposite.TITLE_BAR
-						| ExpandableComposite.CLIENT_INDENT);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(pushSection);
-		Composite pushArea = toolkit.createComposite(pushSection);
-		pushSection.setClient(pushArea);
-		toolkit.paintBordersFor(pushArea);
-		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
-				.applyTo(pushArea);
-		pushSection.setText(UIText.CommitDialog_PushSectionTitle);
-		final Button pushCheckbox = toolkit.createButton(pushArea,
-				UIText.CommitDialog_PushUpstream, SWT.CHECK);
-		pushCheckbox.setSelection(getPreferenceStore().getBoolean(
-					UIPreferences.COMMIT_DIALOG_PUSH_UPSTREAM));
-		pushEnabled = getPreferenceStore().getBoolean(
-				UIPreferences.COMMIT_DIALOG_PUSH_UPSTREAM);
-		pushCheckbox.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				pushEnabled = pushCheckbox.getSelection();
-				getPreferenceStore().setValue(
-						UIPreferences.COMMIT_DIALOG_PUSH_UPSTREAM, pushEnabled);
-			}
-		});
 
 		applyDialogFont(container);
 		statCol.pack();
@@ -933,16 +891,7 @@ public class CommitDialog extends TitleAreaDialog {
 				updateMessage();
 			}
 		};
-		commitText.getDocument().addDocumentListener(new IDocumentListener() {
-
-			public void documentChanged(DocumentEvent event) {
-				updateMessage();
-			}
-
-			public void documentAboutToBeChanged(DocumentEvent event) {
-				// Intentionally empty
-			}
-		});
+		commitText.getTextWidget().addModifyListener(validator);
 		authorText.addModifyListener(validator);
 		committerText.addModifyListener(validator);
 		filesViewer.addCheckStateListener(new ICheckStateListener() {
@@ -956,47 +905,13 @@ public class CommitDialog extends TitleAreaDialog {
 		return container;
 	}
 
-	private static CellLabelProvider createStatusLabelProvider() {
-		CommitStatusLabelProvider baseProvider = new CommitStatusLabelProvider();
-		ProblemLabelDecorator decorator = new ProblemLabelDecorator(null);
-		return new DecoratingStyledCellLabelProvider(baseProvider, decorator, null) {
-			@Override
-			public String getToolTipText(Object element) {
-				return ((CommitItem) element).status.getText();
-			}
-		};
-	}
-
 	private void updateMessage() {
-		String message = null;
-		int type = IMessageProvider.NONE;
-
-		String commitMsg = commitMessageComponent.getCommitMessage();
-		if (commitMsg == null || commitMsg.trim().length() == 0) {
-			message = UIText.CommitDialog_Message;
-			type = IMessageProvider.INFORMATION;
-		} else if (!isCommitWithoutFilesAllowed()) {
+		String message = commitMessageComponent.getMessage();
+		if (message == null && filesViewer.getCheckedElements().length == 0
+				&& !amendingItem.getSelection())
 			message = UIText.CommitDialog_MessageNoFilesSelected;
-			type = IMessageProvider.INFORMATION;
-		} else {
-			CommitStatus status = commitMessageComponent.getStatus();
-			message = status.getMessage();
-			type = status.getMessageType();
-		}
-
-		setMessage(message, type);
-		commitButton.setEnabled(type == IMessageProvider.WARNING
-				|| type == IMessageProvider.NONE);
-	}
-
-	private boolean isCommitWithoutFilesAllowed() {
-		if (filesViewer.getCheckedElements().length > 0)
-			return true;
-
-		if (amendingItem.getSelection())
-			return true;
-
-		return CommitHelper.isCommitWithoutFilesAllowed(repository);
+		setMessage(message, IMessageProvider.INFORMATION);
+		commitButton.setEnabled(message == null);
 	}
 
 	private Collection<String> getFileList() {
@@ -1039,7 +954,7 @@ public class CommitDialog extends TitleAreaDialog {
 				}
 				try {
 					addCommand.call();
-				} catch (Exception e) {
+				} catch (NoFilepatternException e) {
 					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 				}
 				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
@@ -1111,26 +1026,8 @@ public class CommitDialog extends TitleAreaDialog {
 		return Status.UNKNOWN;
 	}
 
-	private static int getProblemSeverity(Repository repository, String path) {
-		IFile file = ResourceUtil.getFileForLocation(repository, path);
-		if (file != null) {
-			try {
-				int severity = file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
-				return severity;
-			} catch (CoreException e) {
-				// Fall back to below
-			}
-		}
-		return IProblemDecoratable.SEVERITY_NONE;
-	}
-
 	@Override
 	protected void okPressed() {
-		if (!isCommitWithoutFilesAllowed()) {
-			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoItemsSelected, UIText.CommitDialog_ErrorNoItemsSelectedToBeCommitted);
-			return;
-		}
-
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
@@ -1145,10 +1042,14 @@ public class CommitDialog extends TitleAreaDialog {
 		committer = commitMessageComponent.getCommitter();
 		createChangeId = changeIdItem.getSelection();
 
+		if (selectedFiles.isEmpty() && !amending) {
+			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoItemsSelected, UIText.CommitDialog_ErrorNoItemsSelectedToBeCommitted);
+			return;
+		}
+
 		IDialogSettings settings = org.eclipse.egit.ui.Activator
 			.getDefault().getDialogSettings();
 		settings.put(SHOW_UNTRACKED_PREF, showUntracked);
-		CommitMessageHistory.saveCommitHistory(getCommitMessage());
 		super.okPressed();
 	}
 
@@ -1168,19 +1069,10 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 }
 
-class CommitItem implements IProblemDecoratable {
-
+class CommitItem {
 	Status status;
 
 	String path;
-
-	boolean submodule;
-
-	int problemSeverity;
-
-	public int getProblemSeverity() {
-		return problemSeverity;
-	}
 
 	/** The ordinal of this {@link Enum} is used to provide the "native" sorting of the list */
 	public static enum Status {
@@ -1252,6 +1144,7 @@ class CommitViewerComparator extends ViewerComparator {
 		super(comparator);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public int compare(Viewer viewer, Object e1, Object e2) {
 		return getComparator().compare(e1, e2);

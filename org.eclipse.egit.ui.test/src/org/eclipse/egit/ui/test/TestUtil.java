@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
-import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForView;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -18,11 +17,9 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -51,9 +48,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
-import org.eclipse.ui.IViewReference;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -82,7 +76,7 @@ public class TestUtil {
 	 * in menu items and field labels for keyboard shortcuts) will be filtered
 	 * out (see also {@link #getPluginLocalizedValue(String, boolean)} in order
 	 * to be able to reference these fields using SWTBot).
-	 *
+	 * 
 	 * @param key
 	 *            the key, must not be null
 	 * @return the localized value in the current default {@link Locale}, or
@@ -98,7 +92,7 @@ public class TestUtil {
 	/**
 	 * Allows access to the localized values of the EGit UI Plug-in
 	 * <p>
-	 *
+	 * 
 	 * @param key
 	 *            see {@link #getPluginLocalizedValue(String)}
 	 * @param keepAmpersands
@@ -377,11 +371,12 @@ public class TestUtil {
 			byte[] expectedContent = expectedfiles.get(path).getBytes();
 			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
 					.getBytes();
-			if (!Arrays.equals(repoContent, expectedContent))
+			if (!Arrays.equals(repoContent, expectedContent)) {
 				fail("File " + path + " has repository content "
 						+ new String(repoContent)
 						+ " instead of expected content "
 						+ new String(expectedContent));
+			}
 			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
@@ -399,20 +394,20 @@ public class TestUtil {
 		if ((args.length % 2) > 0)
 			throw new IllegalArgumentException("needs to be pairs");
 		HashMap<String, String> map = new HashMap<String, String>();
-		for (int i = 0; i < args.length; i += 2)
+		for (int i = 0; i < args.length; i += 2) {
 			map.put(args[i], args[i+1]);
+		}
 		return map;
 	}
 
 	/**
 	 * @param projectExplorerTree
-	 * @param projects
+	 * @param project
 	 *            name of a project
 	 * @return the project item pertaining to the project
 	 */
-	public SWTBotTreeItem[] getProjectItems(SWTBotTree projectExplorerTree,
-			String... projects) {
-		List<SWTBotTreeItem> items = new ArrayList<SWTBotTreeItem>();
+	public SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
+			String project) {
 		for (SWTBotTreeItem item : projectExplorerTree.getAllItems()) {
 			String itemText = item.getText();
 			StringTokenizer tok = new StringTokenizer(itemText, " ");
@@ -420,11 +415,10 @@ public class TestUtil {
 			// may be a dirty marker
 			if (name.equals(">"))
 				name = tok.nextToken();
-			for (String project : projects)
-				if (project.equals(name))
-					items.add(item);
+			if (project.equals(name))
+				return item;
 		}
-		return items.isEmpty() ? null : items.toArray(new SWTBotTreeItem[items.size()]);
+		return null;
 	}
 
 	/**
@@ -472,35 +466,6 @@ public class TestUtil {
 				ConfigConstants.CONFIG_KEY_NAME, TestUtil.TESTCOMMITTER_NAME);
 		config.setString(ConfigConstants.CONFIG_USER_SECTION, null,
 				ConfigConstants.CONFIG_KEY_EMAIL, TestUtil.TESTCOMMITTER_EMAIL);
-	}
-
-	public static void waitUntilViewWithGivenIdShows(final String viewId) {
-		waitForView(new BaseMatcher<IViewReference>() {
-			public boolean matches(Object item) {
-				if (item instanceof IViewReference)
-					return viewId.equals(((IViewReference) item).getId());
-				return false;
-			}
-
-			public void describeTo(Description description) {
-				description.appendText("Wait for view with ID=" + viewId);
-			}
-		});
-	}
-
-	public static void waitUntilViewWithGivenTitleShows(final String viewTitle) {
-		waitForView(new BaseMatcher<IViewReference>() {
-			public boolean matches(Object item) {
-				if (item instanceof IViewReference)
-					return viewTitle.equals(((IViewReference) item).getTitle());
-
-				return false;
-			}
-
-			public void describeTo(Description description) {
-				description.appendText("Wait for view with title " + viewTitle);
-			}
-		});
 	}
 
 }

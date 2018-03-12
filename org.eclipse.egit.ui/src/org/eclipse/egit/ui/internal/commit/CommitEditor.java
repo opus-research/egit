@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2012 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,10 +7,10 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Added context menu to the Commit Editor's header text
- *    Tomasz Zarna <Tomasz.Zarna@pl.ibm.com> - Add "Revert" action to Commit Editor
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
+
+import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -21,7 +21,6 @@ import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateTagHandler;
 import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
-import org.eclipse.egit.ui.internal.commit.command.RevertHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
@@ -80,40 +79,9 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	public static final IEditorPart open(RepositoryCommit commit)
 			throws PartInitException {
-		return open(commit, true);
-	}
-
-	/**
-	 * Open commit in editor
-	 *
-	 * @param commit
-	 * @param activateOnOpen <code>true</code> if the newly opened editor should be activated
-	 * @return opened editor part
-	 * @throws PartInitException
-	 * @since 2.1
-	 */
-	public static final IEditorPart open(RepositoryCommit commit, boolean activateOnOpen)
-			throws PartInitException {
 		CommitEditorInput input = new CommitEditorInput(commit);
 		return IDE.openEditor(PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getActivePage(), input, ID, activateOnOpen);
-	}
-
-	/**
-	 * Open commit in editor
-	 *
-	 * @param commit
-	 * @param activateOnOpen <code>true</code> if the newly opened editor should be activated
-	 * @return opened editor part or null if opening fails
-	 * @since 2.1
-	 */
-	public static final IEditorPart openQuiet(RepositoryCommit commit, boolean activateOnOpen) {
-		try {
-			return open(commit, activateOnOpen);
-		} catch (PartInitException e) {
-			Activator.logError(e.getMessage(), e);
-			return null;
-		}
+				.getActiveWorkbenchWindow().getActivePage(), input, ID);
 	}
 
 	/**
@@ -123,7 +91,12 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 * @return opened editor part or null if opening fails
 	 */
 	public static final IEditorPart openQuiet(RepositoryCommit commit) {
-		return openQuiet(commit, true);
+		try {
+			return open(commit);
+		} catch (PartInitException e) {
+			Activator.logError(e.getMessage(), e);
+			return null;
+		}
 	}
 
 	private CommitEditorPage commitPage;
@@ -170,7 +143,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	protected void createHeaderContents(IManagedForm headerForm) {
 		RepositoryCommit commit = getCommit();
 		ScrolledForm form = headerForm.getForm();
-		new HeaderText(form.getForm(), commit.getRevCommit().name());
+		new HeaderText(form.getForm(), MessageFormat.format(
+				UIText.CommitEditor_TitleHeader, commit.getRevCommit().name()));
 		form.setToolTipText(commit.getRevCommit().name());
 		getToolkit().decorateFormHeading(form.getForm());
 
@@ -218,7 +192,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
 		toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
 		toolbar.add(createCommandContributionItem(CherryPickHandler.ID));
-		toolbar.add(createCommandContributionItem(RevertHandler.ID));
 		addContributions(toolbar);
 		toolbar.update(true);
 		getSite().setSelectionProvider(new ISelectionProvider() {
@@ -241,15 +214,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 				// Ignored
 			}
 		});
-	}
-
-	/**
-	 * @see org.eclipse.ui.forms.editor.SharedHeaderFormEditor#setFocus()
-	 * @since 2.0
-	 */
-	@Override
-	public void setFocus() {
-		commitPage.getPartControl().setFocus();
 	}
 
 	private void addContributions(IToolBarManager toolBarManager) {
@@ -284,9 +248,10 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	public void init(IEditorSite site, IEditorInput input)
 			throws PartInitException {
-		if (input.getAdapter(RepositoryCommit.class) == null)
+		if (input.getAdapter(RepositoryCommit.class) == null) {
 			throw new PartInitException(
 					"Input could not be adapted to commit object"); //$NON-NLS-1$
+		}
 		super.init(site, input);
 		setPartName(input.getName());
 		setTitleToolTip(input.getToolTipText());

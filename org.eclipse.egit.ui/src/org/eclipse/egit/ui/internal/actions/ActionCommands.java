@@ -23,9 +23,6 @@ public class ActionCommands {
 	/** "Apply patch" action command id */
 	public static final String APPLY_PATCH = "org.eclipse.egit.ui.team.ApplyPatch"; //$NON-NLS-1$
 
-	/** "Create patch" action command id */
-	public static final String CREATE_PATCH = "org.eclipse.egit.ui.team.CreatePatch"; //$NON-NLS-1$
-
 	/** "Branch" action command id */
 	public static final String BRANCH_ACTION = "org.eclipse.egit.ui.team.Branch"; //$NON-NLS-1$
 
@@ -73,9 +70,6 @@ public class ActionCommands {
 
 	/** "Replace with Ref" action command id */
 	public static final String REPLACE_WITH_REF_ACTION = "org.eclipse.egit.ui.team.ReplaceWithRef"; //$NON-NLS-1$
-
-	/** "Replace with previous version id */
-	public static final String REPLACE_WITH_PREVIOUS_ACTION = "org.eclipse.egit.ui.team.ReplaceWithPrevious"; //$NON-NLS-1$
 
 	/** "Disconnect" action command id */
 	public static final String DISCONNECT_ACTION = "org.eclipse.egit.ui.internal.actions.Disconnect"; //$NON-NLS-1$

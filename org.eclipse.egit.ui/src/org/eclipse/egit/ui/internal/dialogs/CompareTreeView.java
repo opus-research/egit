@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2012 SAP AG and others.
+ * Copyright (c) 2011 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,13 +11,11 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,14 +35,12 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.FileEditableRevision;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
@@ -53,10 +49,6 @@ import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView.PathNode.Type;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -70,9 +62,7 @@ import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.jface.viewers.ITreeSelection;
 import org.eclipse.jface.viewers.OpenEvent;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -84,8 +74,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.NotIgnoredFilter;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
@@ -93,19 +82,12 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Menu;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
-import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.model.IWorkbenchAdapter;
 import org.eclipse.ui.model.WorkbenchContentProvider;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
-import org.eclipse.ui.navigator.ICommonMenuConstants;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 
 /**
@@ -124,7 +106,7 @@ import org.eclipse.ui.part.ViewPart;
  * This view can also show files and folders outside the Eclipse workspace when
  * a {@link Repository} is used as input.
  */
-public class CompareTreeView extends ViewPart implements IMenuListener, IShowInSource {
+public class CompareTreeView extends ViewPart {
 	/** The "magic" compare version to compare with the index */
 	public static final String INDEX_VERSION = "%%%INDEX%%%"; //$NON-NLS-1$
 
@@ -179,7 +161,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		GridLayoutFactory.fillDefaults().spacing(0, 0).applyTo(main);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
 
-		tree = new TreeViewer(main, SWT.MULTI);
+		tree = new TreeViewer(main, SWT.BORDER);
 		tree.setContentProvider(new PathNodeContentProvider());
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree.getTree());
 
@@ -190,9 +172,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		});
 		tree.getTree().setEnabled(false);
 		createActions();
-
-		getViewSite().setSelectionProvider(tree);
-		createContextMenu();
 	}
 
 	private void createActions() {
@@ -258,11 +237,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
 					.bind(UIText.CompareTreeView_ItemNotFoundInVersionMessage,
 							rightRevision.getName(), getBaseVersion()));
-			right = new FileRevisionTypedElement(rightRevision, null);
+			right = new FileRevisionTypedElement(rightRevision);
 		} else if (selected instanceof PathNode) {
 			PathNode node = (PathNode) selected;
-			String encoding = CompareCoreUtils.getResourceEncoding(
-					getRepository(), node.getRepoRelativePath());
 			switch (node.type) {
 			case FILE_BOTH_SIDES_DIFFER:
 				// fall through
@@ -270,16 +247,16 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				// open a compare editor with both sides filled
 				GitFileRevision rightRevision = compareVersionMap
 						.get(node.path);
-				right = new FileRevisionTypedElement(rightRevision, encoding);
+				right = new FileRevisionTypedElement(rightRevision);
 				GitFileRevision leftRevision = baseVersionMap.get(node.path);
-				left = new FileRevisionTypedElement(leftRevision, encoding);
+				left = new FileRevisionTypedElement(leftRevision);
 				break;
 			}
 			case FILE_DELETED: {
 				// open compare editor with left side empty
 				GitFileRevision rightRevision = compareVersionMap
 						.get(node.path);
-				right = new FileRevisionTypedElement(rightRevision, encoding);
+				right = new FileRevisionTypedElement(rightRevision);
 				left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
 						NLS
 								.bind(
@@ -291,7 +268,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			case FILE_ADDED: {
 				// open compare editor with right side empty
 				GitFileRevision leftRevision = baseVersionMap.get(node.path);
-				left = new FileRevisionTypedElement(leftRevision, encoding);
+				left = new FileRevisionTypedElement(leftRevision);
 				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
 						NLS
 								.bind(
@@ -314,9 +291,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			PathNodeAdapter node = (PathNodeAdapter) selected;
 			GitFileRevision rightRevision = compareVersionMap
 					.get(node.pathNode.path);
-			String encoding = CompareCoreUtils.getResourceEncoding(
-					getRepository(), node.pathNode.getRepoRelativePath());
-			right = new FileRevisionTypedElement(rightRevision, encoding);
+			right = new FileRevisionTypedElement(rightRevision);
 			left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
 					.bind(UIText.CompareTreeView_ItemNotFoundInVersionMessage,
 							node.pathNode.path.lastSegment(), getBaseVersion()));
@@ -598,19 +573,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 					if (relPath.length() > 0)
 						orFilters.add(PathFilter.create(relPath));
 				}
-				if (checkIgnored) {
-					if (orFilters.size() > 1) {
-						TreeFilter andFilter = AndTreeFilter.create(new NotIgnoredFilter(baseTreeIndex),
-								OrTreeFilter.create(orFilters));
-						tw.setFilter(andFilter);
-					} else if (orFilters.size() == 1) {
-						TreeFilter andFilter = AndTreeFilter.create(new NotIgnoredFilter(baseTreeIndex),
-								orFilters.get(0));
-						tw.setFilter(andFilter);
-					} else
-						tw.setFilter(new NotIgnoredFilter(baseTreeIndex));
-
-				} else if (orFilters.size() > 1)
+				if (orFilters.size() > 1)
 					tw.setFilter(OrTreeFilter.create(orFilters));
 				else if (orFilters.size() == 1)
 					tw.setFilter(orFilters.get(0));
@@ -627,6 +590,11 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 						compareTreeIndex, AbstractTreeIterator.class);
 				AbstractTreeIterator baseVersionIterator = tw.getTree(
 						baseTreeIndex, AbstractTreeIterator.class);
+				if (checkIgnored
+						&& baseVersionIterator != null
+						&& ((WorkingTreeIterator) baseVersionIterator)
+								.isEntryIgnored())
+					continue;
 				if (compareVersionIterator != null
 						&& baseVersionIterator != null) {
 					monitor.setTaskName(baseVersionIterator
@@ -758,10 +726,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		public PathNode(IPath path, Type type) {
 			this.path = path;
 			this.type = type;
-		}
-
-		public String getRepoRelativePath() {
-			return path.toString();
 		}
 
 		@Override
@@ -924,16 +888,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			for (Object child : children) {
 				IPath path = new Path(repositoryMapping
 						.getRepoRelativePath((IResource) child));
-				boolean isFile = ((IResource) child).getType() == IResource.FILE;
-
-				// each path that is not ignored creates an entry in either
-				// compareVersionMap or addedPaths, so we can check if a path
-				// was ignored by looking into these tables
-				if (isFile && !compareVersionMap.containsKey(path)
-						&& !addedPaths.contains(path)) {
-					rebuildArray = true;
-					continue;
-				}
 				if (!showEquals && equalContentPaths.contains(path)) {
 					rebuildArray = true;
 					continue;
@@ -1121,126 +1075,4 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			return null;
 		}
 	}
-
-	/*
-	 * @see org.eclipse.jface.action.IMenuListener#menuAboutToShow(org.eclipse.jface.action.IMenuManager)
-	 * @since 2.1
-	 */
-	public void menuAboutToShow(IMenuManager manager) {
-		ITreeSelection selection = (ITreeSelection) tree.getSelection();
-		if (selection.isEmpty())
-			return;
-
-		manager.add(new Separator(ICommonMenuConstants.GROUP_OPEN));
-		manager.add(new Separator(ICommonMenuConstants.GROUP_ADDITIONS));
-
-		IAction openAction = createOpenAction(selection);
-		if (openAction != null)
-			manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, openAction);
-
-		MenuManager showInSubMenu = new MenuManager(
-				UIText.CompareTreeView_ShowIn_label);
-		showInSubMenu.add(ContributionItemFactory.VIEWS_SHOW_IN
-				.create(getSite().getWorkbenchWindow()));
-		manager.appendToGroup(ICommonMenuConstants.GROUP_OPEN, showInSubMenu);
-	}
-
-	/*
-	 * @see org.eclipse.ui.part.IShowInSource#getShowInContext()
-	 * @since 2.1
-	 */
-	public ShowInContext getShowInContext() {
-		IPath repoPath = getRepositoryPath();
-		ITreeSelection selection = (ITreeSelection) tree.getSelection();
-		List<IResource> resources = new ArrayList<IResource>();
-		for (Iterator it = selection.iterator(); it.hasNext();) {
-			Object obj = it.next();
-			if (obj instanceof IResource)
-				resources.add((IResource) obj);
-			else if (obj instanceof PathNode && repoPath != null) {
-				PathNode pathNode = (PathNode) obj;
-				IResource resource = ResourceUtil
-						.getResourceForLocation(repoPath.append(pathNode
-								.getRepoRelativePath()));
-				if (resource != null)
-					resources.add(resource);
-			}
-		}
-		return new ShowInContext(null, new StructuredSelection(resources));
-	}
-
-	private void createContextMenu() {
-		MenuManager manager = new MenuManager("#PopupMenu"); //$NON-NLS-1$
-		manager.setRemoveAllWhenShown(true);
-		manager.addMenuListener(this);
-
-		Menu contextMenu = manager.createContextMenu(tree.getControl());
-		tree.getControl().setMenu(contextMenu);
-		getSite().registerContextMenu(manager, tree);
-	}
-
-	private void openFileInEditor(String filePath) {
-		IWorkbenchWindow window = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		File file = new File(filePath);
-		if (!file.exists()) {
-			String message = NLS.bind(UIText.CommitFileDiffViewer_FileDoesNotExist, filePath);
-			Activator.showError(message, null);
-		}
-		IWorkbenchPage page = window.getActivePage();
-		EgitUiEditorUtils.openEditor(file, page);
-	}
-
-	private IAction createOpenAction(ITreeSelection selection) {
-		final List<String> pathsToOpen = getSelectedPaths(selection);
-		if (pathsToOpen == null || pathsToOpen.isEmpty())
-			return null;
-
-		return new Action(
-				UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel) {
-			@Override
-			public void run() {
-				for (String filePath : pathsToOpen)
-					openFileInEditor(filePath);
-			}
-		};
-	}
-
-	private List<String> getSelectedPaths(ITreeSelection selection) {
-		IPath repoPath = getRepositoryPath();
-		List<String> pathsToOpen = new ArrayList<String>();
-		for (Iterator it = selection.iterator(); it.hasNext();) {
-			Object obj = it.next();
-			if (obj instanceof IFile) {
-				pathsToOpen.add(((IFile) obj).getLocation().toOSString());
-			} else if (obj instanceof PathNode && repoPath != null) {
-				PathNode pathNode = (PathNode) obj;
-				if (pathNode.type == PathNode.Type.FOLDER
-						|| pathNode.type == PathNode.Type.FILE_DELETED)
-					return null;
-				pathsToOpen.add(repoPath.append(pathNode.path).toOSString());
-			} else {
-				return null; // fail if one of the selected elements does not fit
-			}
-		}
-		return pathsToOpen;
-	}
-
-	private IPath getRepositoryPath() {
-		Repository repo = getRepository();
-		if (repo != null)
-			return new Path(repo.getWorkTree().getAbsolutePath());
-
-		return null;
-	}
-
-	private Repository getRepository() {
-		if (repositoryMapping != null)
-			return repositoryMapping.getRepository();
-		else if (input instanceof Repository)
-			return (Repository) input;
-
-		return null;
-	}
-
 }

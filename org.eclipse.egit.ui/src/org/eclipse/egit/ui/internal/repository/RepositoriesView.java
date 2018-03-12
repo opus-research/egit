@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, 2011 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,23 +9,18 @@
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Dariusz Luksza <dariusz@luksza.org> - add synchronization feature
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Don't reveal selection on refresh
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.commands.Command;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
@@ -37,20 +32,19 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.ConfigurationChecker;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
-import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.MenuManager;
@@ -80,7 +74,6 @@ import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
@@ -157,11 +150,11 @@ public class RepositoriesView extends CommonNavigator {
 
 	private StackLayout layout;
 
-	private volatile long lastInputChange = 0L;
+	private long lastInputChange = 0L;
 
-	private volatile long lastRepositoryChange = 0L;
+	private long lastRepositoryChange = 0L;
 
-	private volatile long lastInputUpdate = -1L;
+	private long lastInputUpdate = -1L;
 
 	private boolean reactOnSelection = false;
 
@@ -219,8 +212,9 @@ public class RepositoriesView extends CommonNavigator {
 						reactOnSelection(new StructuredSelection(
 								((IFileEditorInput) input).getFile()));
 
-				} else
+				} else {
 					reactOnSelection(selection);
+				}
 			}
 		};
 	}
@@ -265,9 +259,7 @@ public class RepositoriesView extends CommonNavigator {
 				.getDisplay());
 
 		Label addLabel = new Label(optionsArea, SWT.NONE);
-		Image addImage = UIIcons.CREATE_REPOSITORY.createImage();
-		UIUtils.hookDisposal(addLabel, addImage);
-		addLabel.setImage(addImage);
+		addLabel.setImage(UIIcons.CREATE_REPOSITORY.createImage());
 		Hyperlink addLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkAdd, SWT.WRAP);
 		addLink.setForeground(linkColor);
@@ -283,9 +275,7 @@ public class RepositoriesView extends CommonNavigator {
 				.grab(true, false).applyTo(addLink);
 
 		Label cloneLabel = new Label(optionsArea, SWT.NONE);
-		Image cloneImage = UIIcons.CLONEGIT.createImage();
-		UIUtils.hookDisposal(cloneLabel, cloneImage);
-		cloneLabel.setImage(cloneImage);
+		cloneLabel.setImage(UIIcons.CLONEGIT.createImage());
 		Hyperlink cloneLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkClone, SWT.WRAP);
 		cloneLink.setForeground(linkColor);
@@ -301,9 +291,7 @@ public class RepositoriesView extends CommonNavigator {
 				.grab(true, false).applyTo(cloneLink);
 
 		Label createLabel = new Label(optionsArea, SWT.NONE);
-		Image createImage = UIIcons.NEW_REPOSITORY.createImage();
-		UIUtils.hookDisposal(createLabel, createImage);
-		createLabel.setImage(createImage);
+		createLabel.setImage(UIIcons.NEW_REPOSITORY.createImage());
 		Hyperlink createLink = toolkit.createHyperlink(optionsArea,
 				UIText.RepositoriesView_linkCreate, SWT.WRAP);
 		createLink.setForeground(linkColor);
@@ -371,6 +359,7 @@ public class RepositoriesView extends CommonNavigator {
 
 	@Override
 	protected CommonViewer createCommonViewer(Composite aParent) {
+		ConfigurationChecker.checkConfiguration();
 		CommonViewer viewer = super.createCommonViewer(aParent);
 		// handle the double-click event for tags and branches
 		viewer.addDoubleClickListener(new IDoubleClickListener() {
@@ -378,8 +367,9 @@ public class RepositoriesView extends CommonNavigator {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
 						.getFirstElement();
-				if (element instanceof RefNode || element instanceof TagNode)
+				if (element instanceof RefNode || element instanceof TagNode) {
 					executeOpenCommand();
+				}
 			}
 		});
 		// handle open event for the working directory
@@ -388,9 +378,9 @@ public class RepositoriesView extends CommonNavigator {
 				TreeSelection sel = (TreeSelection) event.getSelection();
 				RepositoryTreeNode element = (RepositoryTreeNode) sel
 						.getFirstElement();
-				if (element instanceof FileNode
-						|| element instanceof StashedCommitNode)
+				if (element instanceof FileNode) {
 					executeOpenCommand();
+				}
 			}
 		});
 		// react on selection changes
@@ -481,55 +471,77 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
-	 * @see #showResources(List)
-	 * @param resource
-	 */
-	private void showResource(final IResource resource) {
-		showResources(Arrays.asList(resource));
-	}
-
-	/**
-	 * Opens the tree and marks the working directory files or folders that points
-	 * to a resources if possible
+	 * Opens the tree and marks the working directory file or folder that points
+	 * to a resource if possible
 	 *
-	 * @param resources
-	 *            the resources to show
+	 * @param resource
+	 *            the resource to show
 	 */
-	private void showResources(final List<IResource> resources) {
-		final List<RepositoryTreeNode> nodesToShow = new ArrayList<RepositoryTreeNode>();
+	@SuppressWarnings("unchecked")
+	private void showResource(final IResource resource) {
+		try {
+			IProject project = resource.getProject();
+			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
+			if (mapping == null)
+				return;
 
-		IResource[] r = resources.toArray(new IResource[resources.size()]);
-		Map<Repository, Collection<String>> resourcesByRepo = ResourceUtil.splitResourcesByRepository(r);
-		for (Map.Entry<Repository, Collection<String>> entry : resourcesByRepo.entrySet()) {
-			Repository repository = entry.getKey();
-			try {
-				boolean added = repositoryUtil.addConfiguredRepository(repository.getDirectory());
-				if (added)
-					scheduleRefresh(0);
-			} catch (IllegalArgumentException iae) {
-				Activator.handleError(iae.getMessage(), iae, false);
-				continue;
+			boolean added = repositoryUtil.addConfiguredRepository(mapping
+					.getRepository().getDirectory());
+			if (added) {
+				scheduleRefresh(0);
 			}
 
-			if (this.scheduledJob != null)
+			if (this.scheduledJob != null) {
 				try {
 					this.scheduledJob.join();
 				} catch (InterruptedException e) {
 					Activator.handleError(e.getMessage(), e, false);
 				}
-
-			for (String repoPath : entry.getValue()) {
-				final RepositoryTreeNode node = getNodeForPath(repository, repoPath);
-				if (node != null)
-					nodesToShow.add(node);
 			}
+
+			RepositoryTreeNode currentNode = null;
+			ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
+					.getContentProvider();
+			for (Object repo : cp.getElements(getCommonViewer().getInput())) {
+				RepositoryTreeNode node = (RepositoryTreeNode) repo;
+				// TODO equals implementation of Repository?
+				if (mapping.getRepository().getDirectory().equals(
+						((Repository) node.getObject()).getDirectory())) {
+					for (Object child : cp.getChildren(node)) {
+						RepositoryTreeNode childNode = (RepositoryTreeNode) child;
+						if (childNode.getType() == RepositoryTreeNodeType.WORKINGDIR) {
+							currentNode = childNode;
+							break;
+						}
+					}
+					break;
+				}
+			}
+
+			IPath relPath = new Path(mapping.getRepoRelativePath(resource));
+
+			for (String segment : relPath.segments()) {
+				for (Object child : cp.getChildren(currentNode)) {
+					RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
+					if (childNode.getObject().getName().equals(segment)) {
+						currentNode = childNode;
+						break;
+					}
+				}
+			}
+
+			final RepositoryTreeNode selNode = currentNode;
+
+			Display.getDefault().asyncExec(new Runnable() {
+
+				public void run() {
+					selectReveal(new StructuredSelection(selNode));
+				}
+			});
+
+		} catch (RuntimeException rte) {
+			Activator.handleError(rte.getMessage(), rte, false);
 		}
-
-		Display.getDefault().asyncExec(new Runnable() {
-			public void run() {
-				selectReveal(new StructuredSelection(nodesToShow));
-			}
-		});
 	}
 
 	/**
@@ -593,12 +605,9 @@ public class RepositoriesView extends CommonNavigator {
 				if (needsNewInput)
 					initRepositoriesAndListeners();
 
-				if (!UIUtils.isUsable(tv))
-					return Status.CANCEL_STATUS;
-				PlatformUI.getWorkbench().getDisplay()
-						.asyncExec(new Runnable() {
+				Display.getDefault().asyncExec(new Runnable() {
 					public void run() {
-						if (!UIUtils.isUsable(tv))
+						if (tv.getTree().isDisposed())
 							return;
 						long start = 0;
 						boolean traceActive = GitTraceLocation.REPOSITORIESVIEW
@@ -610,18 +619,23 @@ public class RepositoriesView extends CommonNavigator {
 											.getLocation(),
 									"Starting async update job"); //$NON-NLS-1$
 						}
-
+						// keep expansion state and selection so that we can
+						// restore the tree
+						// after update
+						Object[] expanded = tv.getExpandedElements();
+						IStructuredSelection sel = (IStructuredSelection) tv
+								.getSelection();
 
 						if (needsNewInput) {
-							// keep expansion state and selection so that we can
-							// restore the tree
-							// after update
-							Object[] expanded = tv.getExpandedElements();
 							tv.setInput(ResourcesPlugin.getWorkspace()
 									.getRoot());
-							tv.setExpandedElements(expanded);
 						} else
 							tv.refresh(true);
+						tv.setExpandedElements(expanded);
+
+						Object selected = sel.getFirstElement();
+						if (selected != null)
+							tv.reveal(selected);
 
 						IViewPart part = PlatformUI.getWorkbench()
 								.getActiveWorkbenchWindow().getActivePage()
@@ -693,16 +707,16 @@ public class RepositoriesView extends CommonNavigator {
 		ISelection selection = context.getSelection();
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
-			List<IResource> resources = new ArrayList<IResource>();
-			for (Iterator it = ss.iterator(); it.hasNext();) {
-				Object element = it.next();
-				IResource resource = AdapterUtils.adapt(element, IResource.class);
-				if (resource != null)
-					resources.add(resource);
-			}
-			if (!resources.isEmpty()) {
-				showResources(resources);
-				return true;
+			if (ss.size() == 1) {
+				Object element = ss.getFirstElement();
+				if (element instanceof IAdaptable) {
+					IResource resource = (IResource) ((IAdaptable) element)
+							.getAdapter(IResource.class);
+					if (resource != null) {
+						showResource(resource);
+						return true;
+					}
+				}
 			}
 		}
 		if(context.getInput() instanceof IFileEditorInput) {
@@ -726,41 +740,6 @@ public class RepositoriesView extends CommonNavigator {
 					showResource(adapted);
 			}
 		}
-	}
-
-	private RepositoryTreeNode getNodeForPath(Repository repository, String repoRelativePath) {
-		RepositoryTreeNode currentNode = null;
-		ITreeContentProvider cp = (ITreeContentProvider) getCommonViewer()
-				.getContentProvider();
-		for (Object repo : cp.getElements(getCommonViewer().getInput())) {
-			RepositoryTreeNode node = (RepositoryTreeNode) repo;
-			// TODO equals implementation of Repository?
-			if (repository.getDirectory().equals(
-					((Repository) node.getObject()).getDirectory())) {
-				for (Object child : cp.getChildren(node)) {
-					RepositoryTreeNode childNode = (RepositoryTreeNode) child;
-					if (childNode.getType() == RepositoryTreeNodeType.WORKINGDIR) {
-						currentNode = childNode;
-						break;
-					}
-				}
-				break;
-			}
-		}
-
-		IPath relPath = new Path(repoRelativePath);
-
-		for (String segment : relPath.segments())
-			for (Object child : cp.getChildren(currentNode)) {
-				@SuppressWarnings("unchecked")
-				RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
-				if (childNode.getObject().getName().equals(segment)) {
-					currentNode = childNode;
-					break;
-				}
-			}
-
-		return currentNode;
 	}
 
 	// TODO delete does not work because of file locks on .pack-files

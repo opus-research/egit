@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,11 +7,9 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Markus Keller <markus_keller@ch.ibm.com> - Show the repository name in the title of the Pull Result dialog
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.pull;
 
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.fetch.FetchResultDialog;
@@ -30,7 +28,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -51,7 +48,7 @@ public class PullResultDialog extends Dialog {
 
 	private final PullResult result;
 
-	private boolean persistSize;
+	private final boolean hasUpdates;
 
 	/**
 	 * @param shell
@@ -60,11 +57,11 @@ public class PullResultDialog extends Dialog {
 	 */
 	public PullResultDialog(Shell shell, Repository repo, PullResult result) {
 		super(shell);
-		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.SHELL_TRIM);
-		setBlockOnOpen(false);
+		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repo;
 		this.result = result;
-		persistSize = hasFetchResults() || hasMergeResults();
+		hasUpdates = hasFetchResults() || hasMergeResults()
+				|| hasRebaseResults();
 	}
 
 	private boolean hasFetchResults() {
@@ -123,18 +120,16 @@ public class PullResultDialog extends Dialog {
 		Group mergeResultGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		mergeResultGroup
 				.setText(UIText.PullResultDialog_MergeResultGroupHeader);
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(
+				mergeResultGroup);
 		if (hasMergeResults()) {
-			GridDataFactory.fillDefaults().grab(true, true).applyTo(
-					mergeResultGroup);
 			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
 			MergeResultDialog dlg = new MergeResultDialog(getParentShell(),
 					repo, result.getMergeResult());
 			dlg.createDialogArea(mergeResultGroup);
 		} else if (hasRebaseResults()) {
-			GridDataFactory.fillDefaults().grab(true, false).applyTo(
-					mergeResultGroup);
-			GridLayoutFactory.swtDefaults().applyTo(mergeResultGroup);
 			Status status = result.getRebaseResult().getStatus();
+			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
 			switch (status) {
 			case OK:
 				// fall through
@@ -159,8 +154,6 @@ public class PullResultDialog extends Dialog {
 			Text statusText = new Text(mergeResultGroup, SWT.READ_ONLY);
 			statusText.setText(status.name());
 		} else {
-			GridDataFactory.fillDefaults().grab(true, false).applyTo(
-					mergeResultGroup);
 			GridLayoutFactory.swtDefaults().applyTo(mergeResultGroup);
 			Label noResult = new Label(mergeResultGroup, SWT.NONE);
 			noResult
@@ -178,46 +171,11 @@ public class PullResultDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText(NLS.bind(
-				UIText.PullResultDialog_DialogTitle,
-				Activator.getDefault().getRepositoryUtil()
-						.getRepositoryName(repo)));
+		newShell.setText(UIText.PullResultDialog_DialogTitle);
 	}
 
 	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
-		return UIUtils.getDialogBoundSettings(getClass());
-	}
-
-	@Override
-	protected int getDialogBoundsStrategy() {
-		int strategy = DIALOG_PERSISTLOCATION;
-		if (persistSize)
-			strategy |= DIALOG_PERSISTSIZE;
-		return strategy;
-	}
-
-	@Override
-	protected Point getInitialSize() {
-		if (!persistSize) {
-			// For "small" dialogs with label-only results, use the default
-			// height and the persisted width
-			Point size = super.getInitialSize();
-			size.x = getPersistedSize().x;
-			return size;
-		}
-		return super.getInitialSize();
-	}
-
-	private Point getPersistedSize() {
-		boolean oldPersistSize = persistSize;
-		// This affects getDialogBoundsStrategy
-		persistSize = true;
-		try {
-			Point persistedSize = super.getInitialSize();
-			return persistedSize;
-		} finally {
-			persistSize = oldPersistSize;
-		}
+		return hasUpdates ? UIUtils.getDialogBoundSettings(getClass()) : null;
 	}
 }
