@@ -221,12 +221,12 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected Repository getRepository(boolean warn, ExecutionEvent event)
 			throws ExecutionException {
+		IStructuredSelection selection = getSelection(event);
 		if (warn) {
 			Shell shell = getShell(event);
-			IStructuredSelection selection = getSelection(event);
 			return SelectionUtils.getRepositoryOrWarn(selection, shell);
 		} else {
-			return SelectionUtils.getCurrentRepository();
+			return SelectionUtils.getRepository(selection);
 		}
 	}
 
@@ -237,7 +237,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 * @return repository for current project, or null
 	 */
 	protected Repository getRepository() {
-		return SelectionUtils.getCurrentRepository();
+		IStructuredSelection selection = getSelection();
+		return SelectionUtils.getRepository(selection);
 	}
 
 	/**
