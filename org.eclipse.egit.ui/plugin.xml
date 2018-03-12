@@ -523,22 +523,22 @@
         tooltip="%PullIntoCurrentBranch.tooltip">
   </action>
 		<action
-        class="org.eclipse.egit.ui.internal.actions.SimpleFetchAction"
-        definitionId="org.eclipse.egit.ui.team.SimpleFetch"
+        class="org.eclipse.egit.ui.internal.actions.FetchAction"
+        definitionId="org.eclipse.egit.ui.team.Fetch"
         icon="icons/obj16/fetch.gif"
         id="org.eclipse.egit.ui.actionfetch"
-        label="%FetchFromUpstreamAction.label"
+        label="%FetchAction_label"
         menubarPath="org.eclipse.egit.ui.gitmenu/repo"
         style="push"
         toolbarPath="org.eclipse.egit.ui"
         tooltip="%FetchAction_tooltip">
 		</action>
 		<action
-        class="org.eclipse.egit.ui.internal.actions.SimplePushAction"
-        definitionId="org.eclipse.egit.ui.team.SimplePush"
+        class="org.eclipse.egit.ui.internal.actions.PushAction"
+        definitionId="org.eclipse.egit.ui.team.Push"
         icon="icons/obj16/push.gif"
         id="org.eclipse.egit.ui.actionpush"
-        label="%PushToUpstreamAction.label"
+        label="%PushAction_label"
         menubarPath="org.eclipse.egit.ui.gitmenu/repo"
         style="push"
         toolbarPath="org.eclipse.egit.ui"
