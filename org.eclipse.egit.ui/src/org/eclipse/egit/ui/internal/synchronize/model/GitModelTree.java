@@ -97,15 +97,13 @@ public class GitModelTree extends GitModelCommit {
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelTree && !(obj instanceof GitModelCacheTree)) {
+			GitModelTree objTree = (GitModelTree) obj;
+			return objTree.location.equals(location)
+					&& objTree.baseCommit.equals(baseCommit);
+		}
 
-		if (obj.getClass() != getClass())
-			return false;
-
-		GitModelTree objTree = (GitModelTree) obj;
-		return objTree.location.equals(location)
-				&& objTree.baseCommit.equals(baseCommit);
+		return false;
 	}
 
 	@Override

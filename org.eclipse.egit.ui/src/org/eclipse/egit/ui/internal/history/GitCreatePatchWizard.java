@@ -11,30 +11,36 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -48,7 +54,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchPart;
@@ -60,11 +65,16 @@ public class GitCreatePatchWizard extends Wizard {
 
 	private RevCommit commit;
 
+	private TreeWalk walker;
+
 	private Repository db;
 
 	private LocationPage locationPage;
 
 	private OptionsPage optionsPage;
+
+	// the encoding for the currently processed file
+	private String currentEncoding = null;
 
 	// The initial size of this wizard.
 	private final static int INITIAL_WIDTH = 300;
@@ -75,12 +85,14 @@ public class GitCreatePatchWizard extends Wizard {
 	 *
 	 * @param part
 	 * @param commit
+	 * @param walker
 	 * @param db
 	 */
 	public static void run(IWorkbenchPart part, final RevCommit commit,
-			Repository db) {
+			TreeWalk walker, Repository db) {
 		final String title = UIText.GitCreatePatchWizard_CreatePatchTitle;
-		final GitCreatePatchWizard wizard = new GitCreatePatchWizard(commit, db);
+		final GitCreatePatchWizard wizard = new GitCreatePatchWizard(commit,
+				walker, db);
 		wizard.setWindowTitle(title);
 		WizardDialog dialog = new WizardDialog(part.getSite().getShell(),
 				wizard);
@@ -91,13 +103,15 @@ public class GitCreatePatchWizard extends Wizard {
 
 	/**
 	 * Creates a wizard which is used to export the changes introduced by a
-	 * commit.
+	 * commit, filtered by a TreeWalk
 	 *
 	 * @param commit
+	 * @param walker
 	 * @param db
 	 */
-	public GitCreatePatchWizard(RevCommit commit, Repository db) {
+	public GitCreatePatchWizard(RevCommit commit, TreeWalk walker, Repository db) {
 		this.commit = commit;
+		this.walker = walker;
 		this.db = db;
 	}
 
@@ -119,32 +133,59 @@ public class GitCreatePatchWizard extends Wizard {
 
 	@Override
 	public boolean performFinish() {
-		final CreatePatchOperation operation = new CreatePatchOperation(db,
-				commit);
-		boolean useGitFormat = optionsPage.gitFormat.getSelection();
-		operation.useGitFormat(useGitFormat);
-		operation.setContextLines(Integer.parseInt(optionsPage.contextLines.getText()));
-
+		final boolean isGit = optionsPage.gitFormat.getSelection();
 		final boolean isFile = locationPage.fsRadio.getSelection();
 		final String fileName = locationPage.fsPathText.getText();
 
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException {
-					try {
-						operation.execute(monitor);
+				public void run(IProgressMonitor monitor) {
+					final StringBuilder sb = new StringBuilder();
+					final DiffFormatter diffFmt = new DiffFormatter(
+							new BufferedOutputStream(new ByteArrayOutputStream() {
 
-						String content = operation.getPatchContent();
+						@Override
+						public synchronized void write(byte[] b, int off, int len) {
+							super.write(b, off, len);
+							if (currentEncoding == null)
+								sb.append(toString());
+							else try {
+								sb.append(toString(currentEncoding));
+							} catch (UnsupportedEncodingException e) {
+								sb.append(toString());
+							}
+							reset();
+						}
+
+					}));
+
+					if (isGit)
+						writeGitPatchHeader(sb);
+					try {
+						FileDiff[] diffs = FileDiff.compute(walker, commit);
+						for (FileDiff diff : diffs) {
+							currentEncoding = CompareUtils.
+								getResourceEncoding(db, diff.getPath());
+							diff.outputDiff(sb, db, diffFmt, isGit);
+							diffFmt.flush();
+						}
+
 						if (isFile) {
-							writeToFile(fileName, content);
+							Writer output = new BufferedWriter(new FileWriter(
+									fileName));
+							try {
+								// FileWriter always assumes default encoding is
+								// OK!
+								output.write(sb.toString());
+							} finally {
+								output.close();
+							}
 						} else {
-							copyToClipboard(content);
+							copyToClipboard(sb.toString());
 						}
 					} catch (IOException e) {
-						throw new InvocationTargetException(e);
-					} catch (CoreException e) {
-						throw new InvocationTargetException(e);
+						Activator
+							.logError("Patch file could not be written", e); //$NON-NLS-1$
 					}
 				}
 			});
@@ -161,6 +202,31 @@ public class GitCreatePatchWizard extends Wizard {
 		return true;
 	}
 
+	private void writeGitPatchHeader(StringBuilder sb) {
+
+		final SimpleDateFormat dtfmt;
+		dtfmt = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.US); //$NON-NLS-1$
+		dtfmt.setTimeZone(commit.getAuthorIdent().getTimeZone());
+		sb.append("From").append(" ") //$NON-NLS-1$ //$NON-NLS-2$
+				.append(commit.getId().getName()).append(" ") //$NON-NLS-1$
+				.append(dtfmt.format(Long.valueOf(System.currentTimeMillis())))
+				.append("\n"); //$NON-NLS-1$
+		sb.append("From") //$NON-NLS-1$
+				.append(": ") //$NON-NLS-1$
+				.append(commit.getAuthorIdent().getName())
+				.append(" <").append(commit.getAuthorIdent().getEmailAddress()) //$NON-NLS-1$
+				.append(">\n"); //$NON-NLS-1$
+		sb.append("Date").append(": ") //$NON-NLS-1$ //$NON-NLS-2$
+				.append(dtfmt.format(commit.getAuthorIdent().getWhen()))
+				.append("\n"); //$NON-NLS-1$
+		sb.append("Subject").append(": [PATCH] ") //$NON-NLS-1$ //$NON-NLS-2$
+				.append(commit.getShortMessage());
+
+		String message = commit.getFullMessage().substring(
+				commit.getShortMessage().length());
+		sb.append(message).append("\n\n"); //$NON-NLS-1$
+	}
+
 	private void copyToClipboard(final String content) {
 		getShell().getDisplay().syncExec(new Runnable() {
 			public void run() {
@@ -171,18 +237,6 @@ public class GitCreatePatchWizard extends Wizard {
 				clipboard.dispose();
 			}
 		});
-	}
-
-	private void writeToFile(final String fileName, String content)
-			throws IOException {
-		Writer output = new BufferedWriter(new FileWriter(fileName));
-		try {
-			// FileWriter always assumes default encoding is
-			// OK!
-			output.write(content);
-		} finally {
-			output.close();
-		}
 	}
 
 	/**
@@ -304,9 +358,23 @@ public class GitCreatePatchWizard extends Wizard {
 		}
 
 		private String createFileName() {
-			String suggestedFileName = CreatePatchOperation.suggestFileName(commit);
+			String name = commit.getShortMessage();
+
+			name = name.trim();
+			try {
+				name = URLEncoder.encode(name, "UTF-8"); //$NON-NLS-1$
+			} catch (UnsupportedEncodingException e) {
+				// We're pretty sure that UTF-8 will be supported in future
+			}
+			if (name.length() > 80)
+				name = name.substring(0, 80);
+			while (name.endsWith(".")) //$NON-NLS-1$
+				name = name.substring(0, name.length() - 1);
+			name = name.concat(".patch"); //$NON-NLS-1$
+
 			String defaultPath = db.getWorkTree().getAbsolutePath();
-			return (new File(defaultPath, suggestedFileName)).getPath();
+
+			return (new File(defaultPath, name)).getPath();
 		}
 
 		/**
@@ -379,8 +447,6 @@ public class GitCreatePatchWizard extends Wizard {
 	 */
 	public static class OptionsPage extends WizardPage {
 		private Button gitFormat;
-		private Text contextLines;
-		private Label contextLinesLabel;
 
 		/**
 		 *
@@ -395,60 +461,20 @@ public class GitCreatePatchWizard extends Wizard {
 
 		public void createControl(Composite parent) {
 			final Composite composite = new Composite(parent, SWT.NULL);
-			GridLayout gridLayout = new GridLayout(2, false);
+			GridLayout gridLayout = new GridLayout();
+			gridLayout.numColumns = 3;
 			composite.setLayout(gridLayout);
 			composite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
+			// clipboard
 			GridData gd = new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING);
-			gd.horizontalSpan = 2;
+			gd.horizontalSpan = 3;
 			gitFormat = new Button(composite, SWT.CHECK);
 			gitFormat.setText(UIText.GitCreatePatchWizard_GitFormat);
 			gitFormat.setLayoutData(gd);
 
-			contextLinesLabel = new Label(composite, SWT.NONE);
-			contextLinesLabel.setText(UIText.GitCreatePatchWizard_LinesOfContext);
-
-			contextLines = new Text(composite, SWT.BORDER | SWT.RIGHT);
-			contextLines.setText(String.valueOf(CreatePatchOperation.DEFAULT_CONTEXT_LINES));
-			contextLines.addModifyListener(new ModifyListener() {
-
-				public void modifyText(ModifyEvent e) {
-					validatePage();
-				}
-			});
-			GridDataFactory.swtDefaults().hint(30, SWT.DEFAULT).applyTo(contextLines);
-
 			Dialog.applyDialogFont(composite);
 			setControl(composite);
-		}
-
-		private void validatePage() {
-			boolean pageValid = true;
-			pageValid = validateContextLines();
-			if (pageValid) {
-				setMessage(null);
-				setErrorMessage(null);
-			}
-			setPageComplete(pageValid);
-		}
-
-		private boolean validateContextLines() {
-			String text = contextLines.getText();
-			if(text == null || text.trim().length() == 0) {
-				setErrorMessage(UIText.GitCreatePatchWizard_ContextMustBePositiveInt);
-				return false;
-			}
-
-			text = text.trim();
-
-			char[] charArray = text.toCharArray();
-			for (char c : charArray) {
-				if(!Character.isDigit(c)) {
-					setErrorMessage(UIText.GitCreatePatchWizard_ContextMustBePositiveInt);
-					return false;
-				}
-			}
-			return true;
 		}
 	}
 }
