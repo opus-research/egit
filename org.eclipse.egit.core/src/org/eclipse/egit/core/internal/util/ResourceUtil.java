@@ -38,17 +38,16 @@ public class ResourceUtil {
 		for (IResource resource : resources) {
 			RepositoryMapping repositoryMapping = RepositoryMapping
 					.getMapping(resource);
-			if (repositoryMapping == null)
-				continue;
-			Repository repository = repositoryMapping.getRepository();
-			Collection<String> resourcesList = result.get(repository);
-			if (resourcesList == null) {
-				resourcesList = new ArrayList<String>();
-				result.put(repository, resourcesList);
+			if (repositoryMapping != null) {
+				Repository repository = repositoryMapping.getRepository();
+				Collection<String> resourcesList = result.get(repository);
+				if (resourcesList == null) {
+					resourcesList = new ArrayList<String>();
+					result.put(repository, resourcesList);
+				}
+				resourcesList.add(repositoryMapping
+						.getRepoRelativePath(resource));
 			}
-			String path = repositoryMapping.getRepoRelativePath(resource);
-			if (path != null && path.length() > 0)
-				resourcesList.add(path);
 		}
 		return result;
 	}

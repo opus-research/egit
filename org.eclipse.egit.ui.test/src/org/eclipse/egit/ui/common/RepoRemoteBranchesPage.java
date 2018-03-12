@@ -11,13 +11,8 @@ package org.eclipse.egit.ui.common;
 
 import static org.eclipse.swtbot.swt.finder.SWTBotAssert.assertEnabled;
 import static org.eclipse.swtbot.swt.finder.SWTBotAssert.assertNotEnabled;
-import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.allOf;
-import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.widgetOfType;
-import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.withText;
 import static org.eclipse.swtbot.swt.finder.waits.Conditions.widgetIsEnabled;
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.waitForWidget;
 
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -49,7 +44,7 @@ public class RepoRemoteBranchesPage {
 	public void deselectAllBranches() {
 		SWTBotTree tree = bot.tree();
 
-		bot.waitUntil(widgetIsEnabled(tree), 60000);
+		bot.waitUntil(widgetIsEnabled(tree));
 
 		SWTBotTreeItem[] items = tree.getAllItems();
 		for (int i = 0; i < items.length; i++) {
@@ -57,11 +52,8 @@ public class RepoRemoteBranchesPage {
 		}
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void assertErrorMessage(String errorMessage) {
-		bot.waitUntil(
-				waitForWidget(allOf(widgetOfType(Text.class), withText(" "
-						+ errorMessage))), 20000);
+		bot.text(" " + errorMessage);
 	}
 
 	public void assertNextIsDisabled() {

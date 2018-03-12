@@ -39,11 +39,6 @@ public class ResetCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode<?>> implements
 		IHandler {
 
-	/**
-	 * Command id
-	 */
-	public static final String ID = "org.eclipse.egit.ui.team.Reset"; //$NON-NLS-1$
-
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 
 		final RepositoryTreeNode<?> node = getSelectedNodes(event).get(0);
@@ -65,8 +60,8 @@ public class ResetCommand extends
 
 			@Override
 			public void addPages() {
-				addPage(new SelectResetTypePage(repoName, node.getRepository(),
-						currentBranch, targetBranch));
+				addPage(new SelectResetTypePage(repoName, currentBranch,
+						targetBranch));
 				setWindowTitle(UIText.ResetCommand_WizardTitle);
 			}
 
@@ -74,13 +69,15 @@ public class ResetCommand extends
 			public boolean performFinish() {
 				final ResetType resetType = ((SelectResetTypePage) getPages()[0])
 						.getResetType();
-				if (resetType == ResetType.HARD)
+				if (resetType == ResetType.HARD) {
 					if (!MessageDialog
 							.openQuestion(
 									getShell(),
 									UIText.ResetTargetSelectionDialog_ResetQuestion,
-									UIText.ResetTargetSelectionDialog_ResetConfirmQuestion))
+									UIText.ResetTargetSelectionDialog_ResetConfirmQuestion)) {
 						return true;
+					}
+				}
 
 				try {
 					getContainer().run(false, true,

@@ -113,7 +113,7 @@ perl -pi~ -e '
 		$seen_version = 0;
 		$old_argv = $ARGV;
 	}
-	if ($seen_version < 2) {
+	if ($seen_version < 4) {
 		$seen_version++ if (!/<\?xml/ &&
 		s/(version=")[^"]*(")/${1}'"$OSGI_V"'${2}/);
 	}
@@ -169,7 +169,7 @@ perl -pi~ -e '
 		$seen_version++ if
 		s{<(version)>[^<\$]*</\1>}{<${1}>'"$POM_V"'</${1}>};
 	}
-	' org.eclipse.egit.repository/pom.xml
+	' org.eclipse.egit-updatesite/pom.xml
 
 perl -pi~ -e '
 	if ($ARGV ne $old_argv) {

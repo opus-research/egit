@@ -9,24 +9,17 @@
 package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 
 class GenerateHistoryJob extends Job {
 	private static final int BATCH_SIZE = 256;
@@ -44,21 +37,13 @@ class GenerateHistoryJob extends Job {
 
 	private boolean trace;
 
-	private final RevWalk walk;
-
-	GenerateHistoryJob(final GitHistoryPage ghp, Control control, RevWalk walk) {
+	GenerateHistoryJob(final GitHistoryPage ghp, final SWTCommitList list) {
 		super(NLS.bind(UIText.HistoryPage_refreshJob, Activator.getDefault()
 				.getRepositoryUtil().getRepositoryName(
 						ghp.getInputInternal().getRepository())));
 		page = ghp;
-		this.walk = walk;
-		allCommits = new SWTCommitList(control);
-		allCommits.source(walk);
+		allCommits = list;
 		trace = GitTraceLocation.HISTORYVIEW.isActive();
-	}
-
-	public RevWalk getWalk() {
-		return walk;
 	}
 
 	@Override
@@ -69,6 +54,9 @@ class GenerateHistoryJob extends Job {
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
 						GitTraceLocation.HISTORYVIEW.getLocation());
+			page.setErrorMessage(NLS.bind(
+					UIText.GenerateHistoryJob_BuildingListMessage, page
+							.getName()));
 			try {
 				for (;;) {
 					final int oldsz = allCommits.size();
@@ -81,20 +69,25 @@ class GenerateHistoryJob extends Job {
 					synchronized (allCommits) {
 						allCommits.fillTo(oldsz + BATCH_SIZE - 1);
 					}
-					if (monitor.isCanceled())
+					if (monitor.isCanceled()) {
+						page.setErrorMessage(NLS.bind(
+								UIText.GenerateHistoryJob_CancelMessage, page
+										.getName()));
 						return Status.CANCEL_STATUS;
+					}
+					if (allCommits.size() == 0) {
+						page.setErrorMessage(NLS.bind(
+								UIText.GenerateHistoryJob_NoCommits,
+								page.getName()));
+						break;
+					}
 					if (maxCommits > 0 && allCommits.size() > maxCommits)
 						incomplete = true;
 					if (incomplete || oldsz == allCommits.size())
 						break;
 
-					if (allCommits.size() != 1)
-						monitor.setTaskName(MessageFormat
-								.format(UIText.GenerateHistoryJob_taskFoundMultipleCommits,
-										Integer.valueOf(allCommits.size())));
-					else
-						monitor.setTaskName(UIText.GenerateHistoryJob_taskFoundSingleCommit);
-
+					monitor.setTaskName(NLS
+							.bind("Found {0} commits", Integer.valueOf(allCommits.size()))); //$NON-NLS-1$
 					final long now = System.currentTimeMillis();
 					if (now - lastUpdateAt < 2000 && lastUpdateCnt > 0)
 						continue;
@@ -125,37 +118,13 @@ class GenerateHistoryJob extends Job {
 
 			final SWTCommit[] asArray = new SWTCommit[allCommits.size()];
 			allCommits.toArray(asArray);
-			RevFlag highlightFlag = walk.newFlag("highlight"); //$NON-NLS-1$
-			page.showCommitList(this, allCommits, asArray, incomplete, highlightFlag);
+			page.showCommitList(this, allCommits, asArray, incomplete);
 			lastUpdateCnt = allCommits.size();
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
 						GitTraceLocation.HISTORYVIEW.getLocation());
 		}
-	}
-
-	void release() {
-		if (getState() == Job.NONE)
-			dispose();
-		else
-			addJobChangeListener(new JobChangeAdapter() {
-				@Override
-				public void done(final IJobChangeEvent event) {
-					dispose();
-				}
-			});
-
-	}
-
-	private void dispose() {
-		walk.release();
-		Display.getDefault().asyncExec(new Runnable() {
-
-			public void run() {
-				allCommits.dispose();
-			}
-		});
 	}
 
 	@Override

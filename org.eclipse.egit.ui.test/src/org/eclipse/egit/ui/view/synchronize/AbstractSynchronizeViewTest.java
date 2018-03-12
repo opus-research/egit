@@ -66,7 +66,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -87,12 +86,6 @@ public abstract class AbstractSynchronizeViewTest extends
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
-	}
-
-	@After
-	public void closeSynchronizeView() {
-		SWTBotView syncView = bot.viewByTitle("Synchronize");
-		syncView.close();
 	}
 
 	@BeforeClass public static void setupEnvironment() throws Exception {
@@ -203,7 +196,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected SWTBot setPresentationModel(String modelName,
 			String toolbarDropDownTooltip) throws Exception {
 		SWTBotView syncView = bot.viewByTitle("Synchronize");
-		for (SWTBotToolbarButton button : syncView.getToolbarButtons())
+		for (SWTBotToolbarButton button : syncView.getToolbarButtons()) {
 			if (button.getToolTipText().equals(toolbarDropDownTooltip)) {
 				SWTBotToolbarDropDownButton dropDown = (SWTBotToolbarDropDownButton) button;
 				dropDown.menuItem(modelName).click();
@@ -211,6 +204,7 @@ public abstract class AbstractSynchronizeViewTest extends
 				dropDown.pressShortcut(KeyStroke.getInstance("ESC"));
 
 			}
+		}
 
 		return syncView.bot();
 	}
@@ -335,7 +329,7 @@ public abstract class AbstractSynchronizeViewTest extends
 		op.execute(null);
 	}
 
-	protected void commit(String projectName) throws InterruptedException {
+	private void commit(String projectName) throws InterruptedException {
 		showDialog(projectName, "Team", CommitAction_commit);
 
 		bot.shell(CommitDialog_CommitChanges).bot().activeShell();
@@ -375,11 +369,12 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	private static SWTBotTreeItem selectProject(String projectName,
 			SWTBotTree tree) {
-		for (SWTBotTreeItem item : tree.getAllItems())
+		for (SWTBotTreeItem item : tree.getAllItems()) {
 			if (item.getText().contains(projectName)) {
 				item.select();
 				return item;
 			}
+		}
 
 		throw new RuntimeException("Poject with name " + projectName +
 				" was not found in given tree");
