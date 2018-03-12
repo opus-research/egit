@@ -313,8 +313,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	public void testImportWizardGeneralProjectWithWorkingSet() throws Exception {
 		deleteAllProjects();
 		assertProjectExistence(PROJ1, false);
-		String workingSetName = "myWorkingSet";
-		removeWorkingSet(workingSetName);
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		String wizardTitle = NLS.bind(
 				UIText.GitCreateProjectViaWizardWizard_WizardTitle,
@@ -346,6 +344,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell newDialog = bot.shell("New Working Set");
 		newDialog.bot().table().select("Java");
 		newDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
+		String workingSetName = "myWorkingSet";
 		newDialog.bot().text(0).setText(workingSetName);
 		newDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 		workingSetDialog.bot().table().getTableItem(workingSetName).check();
@@ -355,7 +354,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertProjectExistence(PROJ1, true);
 		assertProjectInWorkingSet(workingSetName, PROJ1);
 		assertProjectIsShared(PROJ1, true);
-		removeWorkingSet(workingSetName);
 	}
 
 	private void assertProjectInWorkingSet(String workingSetName,
@@ -370,14 +368,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		IProject project = (IProject) elements[0].getAdapter(IProject.class);
 		assertEquals("Wrong project in working set", projectName, project
 				.getName());
-	}
-
-	private void removeWorkingSet(String name) {
-		IWorkingSetManager workingSetManager = PlatformUI.getWorkbench()
-				.getWorkingSetManager();
-		IWorkingSet workingSet = workingSetManager.getWorkingSet(name);
-		if (workingSet != null)
-			workingSetManager.removeWorkingSet(workingSet);
 	}
 
 	private void assertProjectIsShared(String projectName,
