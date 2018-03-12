@@ -21,7 +21,6 @@ import org.eclipse.egit.ui.internal.push.PushWizard;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -57,11 +56,8 @@ public class PushActionHandler extends RepositoryActionHandler {
 	public boolean isEnabled() {
 		try {
 			Repository repository = getRepository();
-			if (repository == null) {
-				return false;
-			}
-			Ref ref = repository.getRef(Constants.HEAD);
-			return ref != null && ref.getObjectId() != null;
+			return repository != null
+					&& repository.getRef(Constants.HEAD).getObjectId() != null;
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, false);
 			return false;
