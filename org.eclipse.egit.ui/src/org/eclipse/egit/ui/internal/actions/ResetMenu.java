@@ -1,35 +1,30 @@
 /*******************************************************************************
- * Copyright (C) 2014, 2016 Konrad Kügler <swamblumat-eclipsebugs@yahoo.de> and others.
+ * Copyright (C) 2014, Konrad Kügler <swamblumat-eclipsebugs@yahoo.de> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 495777
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.text.MessageFormat;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.branch.LaunchFinder;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchSite;
+import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 
@@ -81,35 +76,26 @@ public class ResetMenu {
 	}
 
 	/**
-	 * @param shell
+	 * @param event
 	 * @param repo
 	 * @param commitId
-	 * @param resetType
+	 * @param resetMode
+	 * @throws ExecutionException
 	 */
-	public static void performReset(Shell shell,
-			final Repository repo, final ObjectId commitId,
-			ResetType resetType) {
+	public static void performReset(ExecutionEvent event,
+			final Repository repo, final ObjectId commitId, String resetMode)
+			throws ExecutionException {
+		final ResetType resetType = ResetType.valueOf(resetMode);
 
 		final String jobName;
 		switch (resetType) {
 		case HARD:
-			String question = UIText.ResetTargetSelectionDialog_ResetConfirmQuestion;
-			ILaunchConfiguration launch = LaunchFinder
-					.getRunningLaunchConfiguration(Collections.singleton(repo),
-							null);
-			if (launch != null) {
-				question = MessageFormat.format(question,
-						"\n\n" + MessageFormat.format( //$NON-NLS-1$
-								UIText.LaunchFinder_RunningLaunchMessage,
-								launch.getName()));
-			} else {
-				question = MessageFormat.format(question, ""); //$NON-NLS-1$
-			}
-			if (!MessageDialog.openQuestion(shell,
+			if (!MessageDialog.openQuestion(
+					HandlerUtil.getActiveShellChecked(event),
 					UIText.ResetTargetSelectionDialog_ResetQuestion,
-					question)) {
+					UIText.ResetTargetSelectionDialog_ResetConfirmQuestion))
 				return;
-			}
+
 			jobName = UIText.HardResetToRevisionAction_hardReset;
 			break;
 		case SOFT:

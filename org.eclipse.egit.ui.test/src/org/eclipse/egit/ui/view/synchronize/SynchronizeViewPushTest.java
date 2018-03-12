@@ -17,7 +17,6 @@ import org.eclipse.egit.core.op.FetchOperation;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.JobJoiner;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -71,7 +70,7 @@ public class SynchronizeViewPushTest extends AbstractSynchronizeViewTest {
 		SWTBotToolbarButton pushButton = viewBot.toolbarButton(UIText.GitActionContributor_Push);
 		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.PUSH, 30, TimeUnit.SECONDS);
 		pushButton.click();
-		TestUtil.openJobResultDialog(jobJoiner.join());
+		jobJoiner.join();
 
 		String destinationString = repositoryFile.getParentFile().getName() + " - " + "origin";
 		SWTBotShell resultDialog = bot.shell(NLS.bind(UIText.PushResultDialog_title, destinationString));
