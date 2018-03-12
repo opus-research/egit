@@ -646,7 +646,8 @@ public class CommitDialog extends TitleAreaDialog {
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent event) {
-				if (UIUtils.isSubmitKeyEvent(event)) {
+				if (event.keyCode == SWT.CR
+						&& (event.stateMask & SWT.CONTROL) > 0) {
 					okPressed();
 				} else if (event.keyCode == SWT.TAB
 						&& (event.stateMask & SWT.SHIFT) == 0) {
