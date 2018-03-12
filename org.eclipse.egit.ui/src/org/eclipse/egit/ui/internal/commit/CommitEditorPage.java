@@ -14,24 +14,17 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.PlatformObject;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.history.CommitFileDiffViewer;
@@ -45,7 +38,6 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -53,13 +45,14 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
+import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PartInitException;
@@ -74,14 +67,13 @@ import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Hyperlink;
-import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 
 /**
  * Commit editor page class displaying author, committer, parent commits,
  * message, and file information in form sections.
  */
-public class CommitEditorPage extends FormPage implements ISchedulingRule {
+public class CommitEditorPage extends FormPage {
 
 	private static final String SIGNED_OFF_BY = "Signed-off-by: {0} <{1}>"; //$NON-NLS-1$
 
@@ -98,10 +90,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	private Section branchSection;
 
 	private TableViewer branchViewer;
-
-	private Section diffSection;
-
-	private CommitFileDiffViewer diffViewer;
 
 	/**
 	 * Create commit editor page
@@ -276,17 +264,14 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		createTagsArea(userArea, toolkit, 2);
 	}
 
-	private List<Ref> getTags() {
+	private List<String> getTags() {
+		RevCommit commit = getCommit().getRevCommit();
 		Repository repository = getCommit().getRepository();
-		List<Ref> tags = new ArrayList<Ref>(repository.getTags().values());
-		Collections.sort(tags, new Comparator<Ref>() {
-
-			public int compare(Ref r1, Ref r2) {
-				return Repository.shortenRefName(r1.getName())
-						.compareToIgnoreCase(
-								Repository.shortenRefName(r2.getName()));
-			}
-		});
+		List<String> tags = new ArrayList<String>();
+		for (Ref tag : repository.getTags().values())
+			if (commit.equals(repository.peel(tag).getPeeledObjectId()))
+				tags.add(Repository.shortenRefName(tag.getName()));
+		Collections.sort(tags);
 		return tags;
 	}
 
@@ -299,37 +284,22 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		toolkit.createLabel(tagArea, UIText.CommitEditorPage_LabelTags)
 				.setForeground(
 						toolkit.getColors().getColor(IFormColors.TB_TOGGLE));
-		tagLabelArea = toolkit.createComposite(tagArea);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(tagLabelArea);
-		GridLayoutFactory.fillDefaults().spacing(1, 1).applyTo(tagLabelArea);
+		fillTags(tagArea, toolkit);
 	}
 
-	private void fillDiffs(FileDiff[] diffs) {
-		diffViewer.setInput(diffs);
-		diffSection.setText(MessageFormat.format(
-				UIText.CommitEditorPage_SectionFiles,
-				Integer.valueOf(diffs.length)));
-	}
-
-	private void fillTags(FormToolkit toolkit, List<Ref> tags) {
-		for (Control child : tagLabelArea.getChildren())
-			child.dispose();
-
-		GridLayoutFactory.fillDefaults().spacing(1, 1).numColumns(tags.size())
+	private void fillTags(Composite parent, FormToolkit toolkit) {
+		if (tagLabelArea != null)
+			tagLabelArea.dispose();
+		tagLabelArea = toolkit.createComposite(parent);
+		GridLayoutFactory.fillDefaults().spacing(1, 1).numColumns(4)
 				.applyTo(tagLabelArea);
-
-		for (Ref tag : tags) {
-			ObjectId id = tag.getPeeledObjectId();
-			boolean annotated = id != null;
-			if (id == null)
-				id = tag.getObjectId();
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(tagLabelArea);
+		List<String> tags = getTags();
+		for (String tag : tags) {
 			CLabel tagLabel = new CLabel(tagLabelArea, SWT.NONE);
 			toolkit.adapt(tagLabel, false, false);
-			if (annotated)
-				tagLabel.setImage(getImage(UIIcons.TAG_ANNOTATED));
-			else
-				tagLabel.setImage(getImage(UIIcons.TAG));
-			tagLabel.setText(Repository.shortenRefName(tag.getName()));
+			tagLabel.setImage(getImage(UIIcons.TAG));
+			tagLabel.setText(tag);
 		}
 	}
 
@@ -380,7 +350,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	private void createBranchesArea(Composite parent, FormToolkit toolkit,
 			int span) {
 		branchSection = createSection(parent, toolkit, span);
-		branchSection.setText(UIText.CommitEditorPage_SectionBranchesEmpty);
 		Composite branchesArea = createSectionClient(branchSection, toolkit);
 
 		branchViewer = new TableViewer(toolkit.createTable(branchesArea,
@@ -399,10 +368,34 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		branchViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
 
+		fillBranches();
+
 		updateSectionClient(branchSection, branchesArea, toolkit);
 	}
 
-	private void fillBranches(List<Ref> result) {
+	private void fillBranches() {
+		Repository repository = getCommit().getRepository();
+		RevCommit commit = getCommit().getRevCommit();
+		RevWalk revWalk = new RevWalk(repository);
+		List<Ref> result = new ArrayList<Ref>();
+		try {
+			Map<String, Ref> refsMap = new HashMap<String, Ref>();
+			refsMap.putAll(repository.getRefDatabase().getRefs(
+					Constants.R_HEADS));
+			refsMap.putAll(repository.getRefDatabase().getRefs(
+					Constants.R_REMOTES));
+			for (Ref ref : refsMap.values()) {
+				if (ref.isSymbolic())
+					continue;
+				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
+				RevCommit base = revWalk.parseCommit(commit);
+				if (revWalk.isMergedInto(base, headCommit))
+					result.add(ref);
+			}
+		} catch (IOException ignored) {
+			// Ignored
+		}
+
 		branchViewer.setInput(result);
 		branchSection.setText(MessageFormat.format(
 				UIText.CommitEditorPage_SectionBranches,
@@ -410,21 +403,38 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	}
 
 	private void createFilesArea(Composite parent, FormToolkit toolkit, int span) {
-		diffSection = createSection(parent, toolkit, span);
-		diffSection.setText(UIText.CommitEditorPage_SectionFilesEmpty);
-		Composite filesArea = createSectionClient(diffSection, toolkit);
+		Section files = createSection(parent, toolkit, span);
+		Composite filesArea = createSectionClient(files, toolkit);
+		GridLayout filesAreaLayout = (GridLayout) filesArea.getLayout();
+		filesAreaLayout.marginLeft = 0;
+		filesAreaLayout.marginRight = 0;
+		filesAreaLayout.marginTop = 0;
+		filesAreaLayout.marginBottom = 0;
 
-		diffViewer = new CommitFileDiffViewer(filesArea, getSite(), SWT.MULTI
-				| SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION
-				| toolkit.getBorderStyle());
-		diffViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+		CommitFileDiffViewer viewer = new CommitFileDiffViewer(filesArea,
+				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
+						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
+		// commit file diff viewer uses a nested composite with a stack layout
+		// and so margins need to be applied to have form toolkit style borders
+		toolkit.paintBordersFor(viewer.getTable().getParent());
+		viewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
+		StackLayout viewerLayout = (StackLayout) viewer.getControl()
+				.getParent().getLayout();
+		viewerLayout.marginHeight = 2;
+		viewerLayout.marginWidth = 2;
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 80)
-				.applyTo(diffViewer.getControl());
-		diffViewer.setContentProvider(ArrayContentProvider.getInstance());
-		diffViewer.setTreeWalk(getCommit().getRepository(), null);
+				.applyTo(viewer.getTable().getParent());
+		viewer.setContentProvider(ArrayContentProvider.getInstance());
+		viewer.setTreeWalk(getCommit().getRepository(), null);
 
-		updateSectionClient(diffSection, filesArea, toolkit);
+		FileDiff[] diffs = getCommit().getDiffs();
+		viewer.setInput(diffs);
+		files.setText(MessageFormat.format(
+				UIText.CommitEditorPage_SectionFiles,
+				Integer.valueOf(diffs.length)));
+
+		updateSectionClient(files, filesArea, toolkit);
 	}
 
 	private RepositoryCommit getCommit() {
@@ -457,98 +467,15 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		createMessageArea(displayArea, toolkit, 2);
 		createFilesArea(displayArea, toolkit, 1);
 		createBranchesArea(displayArea, toolkit, 1);
-
-		loadSections();
-	}
-
-	private List<Ref> loadTags() {
-		RepositoryCommit repoCommit = getCommit();
-		RevCommit commit = repoCommit.getRevCommit();
-		Repository repository = repoCommit.getRepository();
-		List<Ref> tags = new ArrayList<Ref>();
-		for (Ref tag : getTags()) {
-			tag = repository.peel(tag);
-			ObjectId id = tag.getPeeledObjectId();
-			if (id == null)
-				id = tag.getObjectId();
-			if (!commit.equals(id))
-				continue;
-			tags.add(tag);
-		}
-		return tags;
-	}
-
-	private List<Ref> loadBranches() {
-		Repository repository = getCommit().getRepository();
-		RevCommit commit = getCommit().getRevCommit();
-		RevWalk revWalk = new RevWalk(repository);
-		List<Ref> result = new ArrayList<Ref>();
-		try {
-			Map<String, Ref> refsMap = new HashMap<String, Ref>();
-			refsMap.putAll(repository.getRefDatabase().getRefs(
-					Constants.R_HEADS));
-			refsMap.putAll(repository.getRefDatabase().getRefs(
-					Constants.R_REMOTES));
-			for (Ref ref : refsMap.values()) {
-				if (ref.isSymbolic())
-					continue;
-				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
-				RevCommit base = revWalk.parseCommit(commit);
-				if (revWalk.isMergedInto(base, headCommit))
-					result.add(ref);
-			}
-		} catch (IOException ignored) {
-			// Ignored
-		}
-		return result;
-	}
-
-	private void loadSections() {
-		RepositoryCommit commit = getCommit();
-		Job refreshJob = new Job(MessageFormat.format(
-				UIText.CommitEditorPage_JobName, commit.getRevCommit().name())) {
-
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				final List<Ref> tags = loadTags();
-				final List<Ref> branches = loadBranches();
-				final FileDiff[] diffs = getCommit().getDiffs();
-
-				final ScrolledForm form = getManagedForm().getForm();
-				if (UIUtils.isUsable(form))
-					form.getDisplay().syncExec(new Runnable() {
-
-						public void run() {
-							if (!UIUtils.isUsable(form))
-								return;
-
-							fillTags(getManagedForm().getToolkit(), tags);
-							fillDiffs(diffs);
-							fillBranches(branches);
-							form.layout(true, true);
-						}
-					});
-
-				return Status.OK_STATUS;
-			}
-		};
-		refreshJob.setRule(this);
-		refreshJob.schedule();
 	}
 
 	/**
 	 * Refresh the editor page
 	 */
 	public void refresh() {
-		loadSections();
-	}
-
-	public boolean contains(ISchedulingRule rule) {
-		return rule == this;
-	}
-
-	public boolean isConflicting(ISchedulingRule rule) {
-		return rule == this;
+		fillTags(tagLabelArea.getParent(), getManagedForm().getToolkit());
+		fillBranches();
+		getManagedForm().getForm().layout(true, true);
 	}
 
 }

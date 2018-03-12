@@ -18,6 +18,7 @@ import java.io.File;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
@@ -30,7 +31,6 @@ import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
@@ -110,7 +110,6 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		assertEquals(3, dialog.bot().table().rowCount());
 		dialog.bot().table().select(0);
 		dialog.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.waitUntilViewWithGivenIdShows(CompareTreeView.ID);
 		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
 				.getAllItems().length);
 		// use the second (previous) -> should have a change
@@ -233,5 +232,4 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		SWTBotTree tree = bot.viewById(CompareTreeView.ID).bot().tree();
 		bot.waitUntil(Conditions.treeHasRows(tree, nodeCount), 10000);
 	}
-
 }

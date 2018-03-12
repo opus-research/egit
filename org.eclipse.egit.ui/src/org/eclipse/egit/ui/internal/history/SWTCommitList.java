@@ -13,14 +13,11 @@ import java.util.LinkedList;
 
 import org.eclipse.jgit.revplot.PlotCommitList;
 import org.eclipse.jgit.revplot.PlotLane;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 
-class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements DisposeListener {
+class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> {
 
 	private static final RGB[] COMMIT_RGB = new RGB[] { new RGB(133, 166, 214),
 			new RGB(221, 205, 93), new RGB(199, 134, 57),
@@ -39,25 +36,17 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 
 	private final LinkedList<Color> availableColors;
 
-	private final Control control;
-
-	SWTCommitList(final Control control) {
-		this.control = control;
-		Display d = control.getDisplay();
+	SWTCommitList(final Display d) {
 		allColors = new ArrayList<Color>(COMMIT_RGB.length);
 		for (RGB rgb : COMMIT_RGB)
 			allColors.add(new Color(d, rgb));
 		availableColors = new LinkedList<Color>();
 		repackColors();
-		control.addDisposeListener(this);
 	}
 
 	public void dispose() {
-		clear();
 		for (Color color : allColors)
 			color.dispose();
-		if (!control.isDisposed())
-			control.removeDisposeListener(this);
 	}
 
 	private void repackColors() {
@@ -78,13 +67,7 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 		availableColors.add(lane.color);
 	}
 
-	public void widgetDisposed(DisposeEvent e) {
-		dispose();
-	}
-
 	static class SWTLane extends PlotLane {
-		private static final long serialVersionUID = 1L;
-
 		Color color;
 		@Override
 		public boolean equals(Object o) {

@@ -13,12 +13,7 @@ package org.eclipse.egit.ui.internal.history;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
@@ -33,34 +28,17 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.ui.themes.ColorUtil;
 
 class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
-
-	private static final RGB OUTER_HEAD = new RGB(0, 128, 0);
-
-	private static final RGB INNER_HEAD = new RGB(188, 220, 188);
-
-	private static final RGB OUTER_TAG = new RGB(121, 120, 13);
-
-	private static final RGB INNER_TAG = new RGB(249, 255, 199);
-
-	private static final RGB OUTER_ANNOTATED = new RGB(104, 78, 0);
-
-	private static final RGB INNER_ANNOTATED = new RGB(255, 239, 192);
-
-	private static final RGB OUTER_REMOTE = new RGB(80, 80, 80);
-
-	private static final RGB INNER_REMOTE = new RGB(225, 225, 225);
-
-	private static final RGB OUTER_OTHER = new RGB(30, 30, 30);
-
-	private static final RGB INNER_OTHER = new RGB(250, 250, 250);
-
-	private static final int MAX_LABEL_LENGTH = 15;
 
 	private final Color sys_black;
 
 	private final Color sys_gray;
+
+	private final Color sys_yellow;
+
+	private final Color sys_green;
 
 	private final Color sys_white;
 
@@ -73,9 +51,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	private int textHeight;
 
 	private boolean enableAntialias = true;
-
-	private ResourceManager resources = new LocalResourceManager(
-			JFaceResources.getResources());
 
 	GC g;
 
@@ -92,6 +67,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	SWTPlotRenderer(final Display d) {
 		sys_black = d.getSystemColor(SWT.COLOR_BLACK);
 		sys_gray = d.getSystemColor(SWT.COLOR_GRAY);
+		sys_yellow = d.getSystemColor(SWT.COLOR_YELLOW);
+		sys_green = d.getSystemColor(SWT.COLOR_GREEN);
 		sys_white = d.getSystemColor(SWT.COLOR_WHITE);
 		commitDotFill = new Color(d, new RGB(220, 220, 220));
 		commitDotOutline = new Color(d, new RGB(110, 110, 110));
@@ -100,7 +77,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	void dispose() {
 		commitDotFill.dispose();
 		commitDotOutline.dispose();
-		resources.dispose();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -168,52 +144,33 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	protected int drawLabel(int x, int y, Ref ref) {
 		String txt;
 		String name = ref.getName();
-		boolean tag = false;
-		boolean branch = false;
-		RGB labelOuter;
-		RGB labelInner;
 		if (name.startsWith(Constants.R_HEADS)) {
-			branch = true;
-			labelOuter = OUTER_HEAD;
-			labelInner = INNER_HEAD;
+			g.setBackground(sys_green);
 			txt = name.substring(Constants.R_HEADS.length());
-		} else if (name.startsWith(Constants.R_REMOTES)) {
-			branch = true;
-			labelOuter = OUTER_REMOTE;
-			labelInner = INNER_REMOTE;
+		} else if (name.startsWith(Constants.R_REMOTES)){
+			g.setBackground(sys_gray);
 			txt = name.substring(Constants.R_REMOTES.length());
-		} else if (name.startsWith(Constants.R_TAGS)) {
-			tag = true;
-			if (ref.getPeeledObjectId() != null) {
-				labelOuter = OUTER_ANNOTATED;
-				labelInner = INNER_ANNOTATED;
-			} else {
-				labelOuter = OUTER_TAG;
-				labelInner = INNER_TAG;
-			}
-
+		} else if (name.startsWith(Constants.R_TAGS)){
+			g.setBackground(sys_yellow);
 			txt = name.substring(Constants.R_TAGS.length());
 		} else {
-			labelOuter = OUTER_OTHER;
-			labelInner = INNER_OTHER;
-
+			// Whatever this would be
+			g.setBackground(sys_white);
 			if (name.startsWith(Constants.R_REFS))
 				txt = name.substring(Constants.R_REFS.length());
 			else
 				txt = name; // HEAD and such
 		}
 
-		int maxLength;
-		if (tag)
-			maxLength = Activator.getDefault().getPreferenceStore()
-					.getInt(UIPreferences.HISTORY_MAX_TAG_LENGTH);
-		else if (branch)
-			maxLength = Activator.getDefault().getPreferenceStore()
-					.getInt(UIPreferences.HISTORY_MAX_BRANCH_LENGTH);
-		else
-			maxLength = MAX_LABEL_LENGTH;
-		if (txt.length() > maxLength)
-			txt = txt.substring(0, maxLength) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
+		// Make peeled objects, i.e. via annotated tags come out in a paler color
+		Color peeledColor = null;
+		if (ref.getPeeledObjectId() == null || !ref.getPeeledObjectId().equals(ref.getObjectId())) {
+			peeledColor = new Color(g.getDevice(), ColorUtil.blend(g.getBackground().getRGB(), sys_white.getRGB()));
+			g.setBackground(peeledColor);
+		}
+
+		if (txt.length() > 12)
+			txt = txt.substring(0,11) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
 
 		// highlight checked out branch
 		Font oldFont = g.getFont();
@@ -222,42 +179,42 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			g.setFont(CommitGraphTable.highlightFont());
 
 		Point textsz = g.stringExtent(txt);
-		int arc = textsz.y / 2;
+		int arc = textsz.y/2;
 		final int texty = (y * 2 - textsz.y) / 2;
 
 		// Draw backgrounds
-		g.setLineWidth(1);
-
-		g.setBackground(sys_white);
-		g.fillRoundRectangle(cellX + x + 1, cellY + texty, textsz.x + 6,
-				textsz.y + 1, arc, arc);
-
-		g.setBackground(resources.createColor(labelInner));
-		g.fillRoundRectangle(cellX + x + 2, cellY + texty + 1, textsz.x + 4,
-				textsz.y - 2, arc - 1, arc - 1);
-
-		g.setForeground(resources.createColor(labelOuter));
-		g.drawRoundRectangle(cellX + x, cellY + texty - 1, textsz.x + 7,
-				textsz.y + 1, arc, arc);
-
+		g.fillRoundRectangle(cellX + x + 1, cellY + texty -1, textsz.x + 3, textsz.y + 1, arc, arc);
 		g.setForeground(sys_black);
 
 		// Draw text
-		g.drawString(txt, cellX + x + 4, cellY + texty, true);
+		g.drawString(txt,cellX + x + 2, cellY + texty, true);
 
 		if (isHead)
 			g.setFont(oldFont);
+		g.setLineWidth(2);
 
+		// Add a two color shaded border, blend with whatever background there already is
+		g.setAlpha(128);
+		g.setForeground(sys_gray);
+		g.drawRoundRectangle(cellX + x, cellY + texty -2, textsz.x + 5, textsz.y + 3, arc, arc);
+		g.setLineWidth(2);
+		g.setForeground(sys_black);
+		g.drawRoundRectangle(cellX + x + 1, cellY + texty -1, textsz.x + 3, textsz.y + 1, arc, arc);
+		g.setAlpha(255);
+
+		if (peeledColor != null)
+			peeledColor.dispose();
 		labelCoordinates.put(name, new Point(x, x + textsz.x));
-		return 10 + textsz.x;
+		return 8 + textsz.x;
 	}
 
 	private boolean isHead(String name) {
 		boolean isHead = false;
 		if (headRef != null) {
 			String headRefName = headRef.getLeaf().getName();
-			if (name.equals(headRefName))
+			if (name.equals(headRefName)) {
 				isHead = true;
+			}
 		}
 		return isHead;
 	}

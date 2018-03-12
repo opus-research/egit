@@ -102,8 +102,7 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 		}
 
 		String repoRelativePath = mapping.getRepoRelativePath(resource);
-		if (repoRelativePath!= null)
-			filesToUpdate.add(repoRelativePath);
+		filesToUpdate.add(repoRelativePath);
 		resourcesToUpdate.add(resource);
 
 		return true;

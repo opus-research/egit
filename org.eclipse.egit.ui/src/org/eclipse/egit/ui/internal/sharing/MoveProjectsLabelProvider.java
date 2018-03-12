@@ -13,8 +13,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.ide.IDE.SharedImages;
 
 /**
  * A label provider for showing projects to be moved during sharing
@@ -24,11 +22,7 @@ public class MoveProjectsLabelProvider extends BaseLabelProvider implements
 	IPath targetFolder;
 
 	public Image getColumnImage(Object element, int columnIndex) {
-		if (columnIndex == 0)
-			return PlatformUI.getWorkbench().getSharedImages()
-					.getImage(SharedImages.IMG_OBJ_PROJECT);
-		else
-			return null;
+		return null;
 	}
 
 	public String getColumnText(Object element, int columnIndex) {
