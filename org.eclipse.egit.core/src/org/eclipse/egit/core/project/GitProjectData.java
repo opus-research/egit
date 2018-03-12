@@ -15,10 +15,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -36,14 +39,13 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.WindowCache;
 import org.eclipse.jgit.lib.WindowCacheConfig;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.team.core.RepositoryProvider;
 
 /**
  * This class keeps information about how a project is mapped to
@@ -51,6 +53,8 @@ import org.eclipse.team.core.RepositoryProvider;
  */
 public class GitProjectData {
 	private static final Map<IProject, GitProjectData> projectDataCache = new HashMap<IProject, GitProjectData>();
+
+	private static final Map<File, Reference<Repository>> repositoryCache = new HashMap<File, Reference<Repository>>();
 
 	private static Set<RepositoryChangeListener> repositoryChangeListeners = new HashSet<RepositoryChangeListener>();
 
@@ -209,6 +213,26 @@ public class GitProjectData {
 
 	private synchronized static GitProjectData lookup(final IProject p) {
 		return projectDataCache.get(p);
+	}
+
+	private synchronized static Repository lookupRepository(final File gitDir)
+			throws IOException {
+		Reference<Repository> r = repositoryCache.get(gitDir);
+		Repository d = r != null ? r.get() : null;
+		if (d == null) {
+			d = new Repository(gitDir);
+			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
+		}
+		prune(repositoryCache);
+		return d;
+	}
+
+	private static <K, V> void prune(Map<K, Reference<V>> map) {
+		for (final Iterator<Map.Entry<K, Reference<V>>> i = map.entrySet()
+				.iterator(); i.hasNext();) {
+			if (i.next().getValue().get() == null)
+				i.remove();
+		}
 	}
 
 	/**
@@ -446,7 +470,7 @@ public class GitProjectData {
 		}
 
 		try {
-			m.setRepository(RepositoryCache.lookupRepository(git));
+			m.setRepository(lookupRepository(git));
 		} catch (IOException ioe) {
 			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
 					new FileNotFoundException(m.getContainerPath().toString()));
