@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,9 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheCheckout;
+import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 
@@ -42,7 +46,7 @@ import org.eclipse.osgi.util.NLS;
  * resource all file resources in the sub tree are processed.
  * Untracked files are ignored.
  */
-public abstract class DiscardChangesOperation implements IEGitOperation {
+public class DiscardChangesOperation implements IEGitOperation {
 
 	IResource[] files;
 
@@ -148,12 +152,21 @@ public abstract class DiscardChangesOperation implements IEGitOperation {
 			return null;
 	}
 
-	/**
-	 * @param res
-	 * @param repository
-	 * @throws IOException
-	 */
-	protected abstract void discardChange(IResource res, Repository repository) throws IOException;
+	private void discardChange(IResource res, Repository repository)
+			throws IOException {
+		String resRelPath = RepositoryMapping.getMapping(res)
+				.getRepoRelativePath(res);
+		DirCache dc = repository.lockDirCache();
+		try {
+			DirCacheEntry entry = dc.getEntry(resRelPath);
+			if (entry != null) {
+				File file = new File(res.getLocationURI());
+				DirCacheCheckout.checkoutEntry(repository, file, entry);
+			}
+		} finally {
+			dc.unlock();
+		}
+	}
 
 	/**
 	 * @param res
