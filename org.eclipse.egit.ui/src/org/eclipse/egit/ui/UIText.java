@@ -751,12 +751,6 @@ public class UIText extends NLS {
 	public static String CompareTreeView_WorkspaceVersionText;
 
 	/** */
-	public static String CompareUtils_errorGettingEncoding;
-
-	/** */
-	public static String CompareUtils_errorGettingHeadCommit;
-
-	/** */
 	public static String MergeHandler_SelectBranchMessage;
 
 	/** */
@@ -3483,15 +3477,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
-
-	/** */
-	public static String CommitResultLabelProvider_SectionAuthor;
-
-	/** */
-	public static String CommitResultLabelProvider_SectionMessage;
-
-	/** */
-	public static String CommitResultLabelProvider_SectionRepository;
 
 	/** */
 	public static String CommitSearchQuery_Label;
