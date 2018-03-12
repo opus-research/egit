@@ -41,11 +41,6 @@ import org.eclipse.team.ui.synchronize.ModelSynchronizeParticipant;
 public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant {
 
 	/**
-	 * Key value for obtaining {@link GitSynchronizeDataSet} from {@link ISynchronizePageConfiguration}
-	 */
-	public static final String SYNCHRONIZATION_DATA = "GIT_SYNCHRONIZE_DATA_SET"; //$NON-NLS-1$
-
-	/**
 	 * Id of model compare participant
 	 */
 	public static final String ID = "org.eclipse.egit.ui.modelCompareParticipant"; //$NON-NLS-1$
@@ -93,9 +88,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		configuration.setProperty(
 				ModelSynchronizeParticipant.P_VISIBLE_MODEL_PROVIDER,
 				modelProvider);
-
-		configuration.setProperty(SYNCHRONIZATION_DATA, gsds);
-
 		super.initializeConfiguration(configuration);
 
 		configuration.addActionContribution(new GitActionContributor());
