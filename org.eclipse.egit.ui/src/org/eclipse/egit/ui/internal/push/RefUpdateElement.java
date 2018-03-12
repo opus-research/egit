@@ -26,7 +26,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.notes.NoteMap;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
@@ -201,16 +200,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 	}
 
 	/**
-	 * Shorten ref name
-	 *
-	 * @param ref
-	 * @return shortened ref name
-	 */
-	protected String shortenRef(String ref) {
-		return NoteMap.shortenRefName(Repository.shortenRefName(ref));
-	}
-
-	/**
 	 * Get styled text
 	 *
 	 * @return styled string
@@ -220,11 +209,12 @@ class RefUpdateElement extends WorkbenchAdapter {
 		final String remote = getDstRefName();
 		final String local = getSrcRefName();
 
-		styled.append(shortenRef(remote));
+		styled.append(Repository.shortenRefName(remote));
 
 		if (!tag) {
 			styled.append(": ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-			styled.append(shortenRef(local), StyledString.QUALIFIER_STYLER);
+			styled.append(Repository.shortenRefName(local),
+					StyledString.QUALIFIER_STYLER);
 		}
 		styled.append(' ');
 		// Include uri if more than one
