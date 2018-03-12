@@ -10,17 +10,12 @@ package org.eclipse.egit.ui.internal.components;
 
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -35,8 +30,8 @@ import org.eclipse.swt.widgets.Shell;
  * TableViewer. It is based on (workaround) snippets&tricks found on Internet.
  */
 public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
-	private static Image createCheckboxImage(final ResourceManager resourceManager,
-			final Control control, boolean checked, boolean enabled) {
+	private static Image createCheckboxImage(final Control control,
+			boolean checked, boolean enabled) {
 
 		String checkboxhack = System.getProperty("egit.swt.checkboxhack"); //$NON-NLS-1$
 		if (checkboxhack == null)
@@ -63,7 +58,7 @@ public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 		final Shell s = new Shell(control.getShell(), SWT.NO_TRIM);
 		// Hopefully no platform uses exactly this color because we'll make
 		// it transparent in the image.
-		final Color greenScreen = resourceManager.createColor(new RGB(222, 223, 224));
+		final Color greenScreen = new Color(control.getDisplay(), 222, 223, 224);
 
 		// otherwise we have a default gray color
 		s.setBackground(greenScreen);
@@ -93,10 +88,7 @@ public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 		final ImageData imageData = image.getImageData();
 		imageData.transparentPixel = imageData.palette.getPixel(greenScreen
 				.getRGB());
-		final Image checkboxImage = resourceManager.createImage(
-				ImageDescriptor.createFromImageData(imageData));
-		image.dispose();
-		return checkboxImage;
+		return new Image(control.getDisplay(), imageData);
 	}
 
 	private final Image imageCheckedEnabled;
@@ -107,8 +99,6 @@ public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 
 	private final Image imageUncheckedDisabled;
 
-	private final ResourceManager resourceManager;
-
 	/**
 	 * Create label provider for provided viewer.
 	 *
@@ -116,18 +106,19 @@ public abstract class CheckboxLabelProvider extends CenteredImageLabelProvider {
 	 *            viewer where label provided is used.
 	 */
 	public CheckboxLabelProvider(final Control control) {
-		resourceManager = new LocalResourceManager(JFaceResources.getResources());
-
-		imageCheckedEnabled = createCheckboxImage(resourceManager, control, true, true);
-		imageUncheckedEnabled = createCheckboxImage(resourceManager, control, false, true);
-		imageCheckedDisabled = createCheckboxImage(resourceManager, control, true, false);
-		imageUncheckedDisabled = createCheckboxImage(resourceManager, control, false, false);
+		imageCheckedEnabled = createCheckboxImage(control, true, true);
+		imageUncheckedEnabled = createCheckboxImage(control, false, true);
+		imageCheckedDisabled = createCheckboxImage(control, true, false);
+		imageUncheckedDisabled = createCheckboxImage(control, false, false);
 	}
 
 	@Override
 	public void dispose() {
 		super.dispose();
-		resourceManager.dispose();
+		imageCheckedEnabled.dispose();
+		imageUncheckedEnabled.dispose();
+		imageCheckedDisabled.dispose();
+		imageUncheckedDisabled.dispose();
 	}
 
 	@Override
