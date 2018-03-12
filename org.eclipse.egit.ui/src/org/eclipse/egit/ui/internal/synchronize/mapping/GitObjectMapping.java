@@ -13,11 +13,9 @@ import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingTree;
 
 /**
  * Maps Git's objects onto proper {@link ResourceMapping} instants. It allows
@@ -38,10 +36,6 @@ public abstract class GitObjectMapping extends ResourceMapping {
 			return new GitTreeMapping((GitModelTree) object);
 		if (object instanceof GitModelCommit)
 			return new GitCommitMapping((GitModelCommit) object);
-		if (object instanceof GitModelCache)
-			return new GitCommitMapping((GitModelCache) object);
-		if (object instanceof GitModelWorkingTree)
-			return new GitCommitMapping((GitModelWorkingTree) object);
 		if (object instanceof GitModelRepository)
 			return new GitRepositoryMapping((GitModelRepository) object);
 

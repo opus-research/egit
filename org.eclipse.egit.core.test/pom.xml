@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.core.test</artifactId>
@@ -35,8 +35,7 @@
             <!-- test mojo matches TestProject be default and treats it as PojoTest -->
             <exclude>**/Test*.class</exclude>
           </excludes>
-          <useUIHarness>false</useUIHarness>
-          <useUIThread>false</useUIThread>
+          <useUIHarness>true</useUIHarness>
         </configuration>
       </plugin>
     </plugins>

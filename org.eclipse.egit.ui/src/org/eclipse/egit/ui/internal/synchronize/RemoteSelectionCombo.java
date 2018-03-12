@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,73 +10,52 @@ package org.eclipse.egit.ui.internal.synchronize;
 
 import java.util.List;
 
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.synchronize.SyncRepoEntity.SyncRefEntity;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
 class RemoteSelectionCombo extends Composite {
 
-	private Combo refsCombo;
+	private final Combo refsCombo;
 
-	private Combo remotesCombo;
+	private final Combo remotesCombo;
 
 	private final List<SyncRepoEntity> syncRepos;
 
-	public RemoteSelectionCombo(Composite parent,
-			List<SyncRepoEntity> syncRepos, String remoteLabel, String refLabel) {
+	public RemoteSelectionCombo(Composite parent, List<SyncRepoEntity> syncRepos) {
 		super(parent, SWT.NONE);
 		this.syncRepos = syncRepos;
 
 		setLayout(GridLayoutFactory.swtDefaults().numColumns(2).create());
 
-		createRemoteGroup(remoteLabel);
-		createRefsGroup(refLabel);
-	}
+		new Label(this, SWT.NONE).setText(UIText.RemoteSelectionCombo_remoteName);
+		new Label(this, SWT.NONE).setText(UIText.RemoteSelectionCombo_remoteRef);
 
-	@Override
-	public void setEnabled(boolean enabled) {
-		refsCombo.setEnabled(enabled);
-		remotesCombo.setEnabled(enabled);
-		super.setEnabled(enabled);
-	}
+		remotesCombo = new Combo(this, SWT.NONE);
+		refsCombo = new Combo(this, SWT.NONE);
 
-	private void createRemoteGroup(String remoteLabel) {
-		Composite remoteComposite = new Composite(this, SWT.NONE);
-		remoteComposite.setLayout(new GridLayout());
-		remoteComposite.setLayoutData(GridDataFactory.fillDefaults()
+		remotesCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
+				false).hint(150, SWT.DEFAULT).create());
+		refsCombo.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).hint(150, SWT.DEFAULT).create());
-		new Label(remoteComposite, SWT.NONE).setText(remoteLabel);
-		remotesCombo = new Combo(remoteComposite, SWT.NONE);
-		remotesCombo.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).create());
+
 		for (SyncRepoEntity syncRepoEnt : syncRepos) {
 			remotesCombo.add(syncRepoEnt.getName());
 		}
+
 		remotesCombo.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				fillRefsCombo();
 			}
 		});
-	}
-
-	private void createRefsGroup(String refLabel) {
-		Composite refsComposite = new Composite(this, SWT.NONE);
-		refsComposite.setLayout(new GridLayout());
-		refsComposite.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).hint(150, SWT.DEFAULT).create());
-		Label ref = new Label(refsComposite, SWT.NONE);
-		ref.setText(refLabel);
-		refsCombo = new Combo(refsComposite, SWT.NONE);
-		refsCombo.setLayoutData(GridDataFactory.fillDefaults()
-				.grab(true, false).create());
 	}
 
 	public String getValue() {
@@ -92,7 +70,7 @@ class RemoteSelectionCombo extends Composite {
 				refSelectedIndex).getValue();
 	}
 
-	public void setDefaultValue(String remote, String ref) {
+	public void setDefautlValue(String remote, String ref) {
 		int i = 0;
 		for (; i < syncRepos.size(); i++)
 			if (syncRepos.get(i).getName().equals(remote))

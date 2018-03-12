@@ -21,8 +21,6 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
@@ -136,37 +134,18 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		new Eclipse().reset();
 		// cleanup
 		deleteAllProjects();
-		shutDownRepositories();
 		deleteRecursive(testDirectory);
-		Activator.getDefault().getRepositoryCache().clear();
 	}
 
-	private static void shutDownRepositories() {
-		RepositoryCache cache = Activator.getDefault().getRepositoryCache();
-		for(Repository repository:cache.getAllRepositories())
-			repository.close();
-		cache.clear();
-	}
-
-	protected static void deleteRecursive(File dirOrFile) throws IOException {
+	protected static void deleteRecursive(File dirOrFile) {
 		if (dirOrFile.isDirectory()) {
 			for (File file : dirOrFile.listFiles()) {
 				deleteRecursive(file);
 			}
 		}
-		boolean deleted = false;
-		for(int i=0; i<10; i++) {
-			deleted = dirOrFile.delete();
-			if (deleted)
-				break;
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// ignore
-			}
-		}
+		boolean deleted = dirOrFile.delete();
 		if (!deleted) {
-			throw new IOException("could not delete " + dirOrFile.getPath());
+			dirOrFile.deleteOnExit();
 		}
 	}
 
@@ -519,4 +498,16 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 		display.post(evt);
 	}
 
+	/**
+	 * Activates the item by "pressing" ALT + the character after '&'
+	 * 
+	 * @param shell
+	 * @param itemWithShortcut
+	 */
+	protected void activateItemByKeyboard(SWTBotShell shell,
+			String itemWithShortcut) {
+		int index = itemWithShortcut.indexOf('&');
+		if (index >= 0 && index < itemWithShortcut.length())
+			pressAltAndChar(shell, itemWithShortcut.charAt(index + 1));
+	}
 }

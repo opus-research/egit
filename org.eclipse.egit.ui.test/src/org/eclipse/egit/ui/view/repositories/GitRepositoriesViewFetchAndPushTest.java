@@ -13,8 +13,6 @@ package org.eclipse.egit.ui.view.repositories;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
@@ -31,8 +29,11 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.File;
 
 /**
  * SWTBot Tests for the Git Repositories View (mainly fetch and push)
@@ -55,8 +56,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		waitInUI();
 		// now let's clone the remote repository
-		URIish uri = new URIish("file:///" + remoteRepositoryFile.getPath());
-		File workdir = new File(testDirectory, "ClonedRepo");
+		URIish uri = new URIish(remoteRepositoryFile.getPath());
+		File workdir = new File(testDirectory, "Cloned");
 
 		CloneOperation op = new CloneOperation(uri, true, null, workdir,
 				"refs/heads/master", "origin");
@@ -66,7 +67,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		// now let's clone the remote repository
 		uri = new URIish(remoteRepositoryFile.getPath());
-		workdir = new File(testDirectory, "ClonedRepo2");
+		workdir = new File(testDirectory, "Cloned2");
 
 		op = new CloneOperation(uri, true, null, workdir, "refs/heads/master",
 				"origin");
@@ -82,6 +83,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testPushToOrigin() throws Exception {
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile);
@@ -93,7 +95,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// add the configuration for push
 		repository.getConfig().setString("remote", "origin", "push",
 				"refs/heads/*:refs/remotes/origin/*");
-		repository.getConfig().save();
 
 		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
 				"origin").expand().getNode(1).select();
@@ -166,6 +167,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testFetchFromOrigin() throws Exception {
 
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(

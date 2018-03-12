@@ -22,6 +22,7 @@ import org.eclipse.egit.core.synchronize.GitSubscriberResourceMappingContext;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.team.core.mapping.provider.SynchronizationContext;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizeParticipant;
@@ -63,7 +64,7 @@ public class GitModelSynchronize {
 				gsdSet);
 		SubscriberScopeManager manager = new SubscriberScopeManager(
 				subscriber.getName(), mappings, subscriber, remoteContext, true);
-		GitSubscriberMergeContext context = new GitSubscriberMergeContext(
+		SynchronizationContext context = new GitSubscriberMergeContext(
 				subscriber, manager, gsdSet);
 		GitModelSynchronizeParticipant participant = new GitModelSynchronizeParticipant(
 				context);
@@ -80,7 +81,7 @@ public class GitModelSynchronize {
 	}
 
 	/**
-	 * Based on org.eclipse.team.internal.ui.actions.TeamAction#getSelectedResourceMappings
+	 * Based on {@link org.eclipse.team.internal.ui.actions.TeamAction#getSelectedResourceMappings}
 	 *
 	 * @param elements
 	 * @return the resource mappings that contain resources associated with the

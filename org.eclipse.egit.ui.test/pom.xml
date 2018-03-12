@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui.test</artifactId>
@@ -36,20 +36,6 @@
       <url>${local-egit-site}</url>
     </repository>
   </repositories>
-
-  <profiles>
-    <profile>
-      <id>skip-ui-tests</id>
-      <activation>
-        <property>
-          <name>skip-ui-tests</name>
-        </property>
-      </activation>
-      <properties>
-        <maven.test.skip>true</maven.test.skip>
-      </properties>
-    </profile>
-  </profiles>
 
   <build>
     <plugins>
@@ -74,7 +60,7 @@
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.egit.feature.group</artifactId>
-              <version>[0.10.0,0.11.0)</version>
+              <version>[0.9.0,0.10.0)</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
@@ -84,7 +70,7 @@
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.jgit.feature.group</artifactId>
-              <version>[0.10.0,0.11.0)</version>
+              <version>[0.9.0,0.10.0)</version>
             </dependency>
            </dependencies>
         </configuration>
