@@ -25,51 +25,67 @@ import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
 import org.eclipse.egit.ui.internal.dialogs.CompareTargetSelectionDialog;
+import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * The "compare with ref" action. This action opens a diff editor comparing the
  * file as found in the working directory and the version in the selected ref.
  */
 public class CompareWithRefActionHandler extends RepositoryActionHandler {
-
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final IResource resource = getSelectedResources(event)[0];
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource
-				.getProject());
-		if (mapping == null || mapping.getRepository() == null)
+		final Repository repo = getRepository(true, event);
+		// assert all resources map to the same repository
+		if (repo == null)
 			return null;
-		final Repository repo = mapping.getRepository();
+		final IResource[] resources = getSelectedResources(event);
 
 		CompareTargetSelectionDialog dlg = new CompareTargetSelectionDialog(
-				getShell(event), repo, resource.getFullPath().toString());
+				getShell(event), repo, resources.length == 1 ? resources[0]
+						.getFullPath().toString() : null);
 		if (dlg.open() == Window.OK) {
 
-			final IFile baseFile = (IFile) resource;
+			if (resources.length == 1 && resources[0] instanceof IFile) {
+				final IFile baseFile = (IFile) resources[0];
 
-			final ITypedElement base = new FileRevisionTypedElement(
-					new LocalFileRevision(baseFile));
+				final ITypedElement base = new FileRevisionTypedElement(
+						new LocalFileRevision(baseFile));
 
-			final ITypedElement next;
-			try {
-				next = getElementForRef(mapping.getRepository(), mapping
-						.getRepoRelativePath(baseFile), dlg.getRefName());
-			} catch (IOException e) {
-				Activator.handleError(
-						UIText.CompareWithIndexAction_errorOnAddToIndex, e,
-						true);
-				return null;
+				final ITypedElement next;
+				try {
+					RepositoryMapping mapping = RepositoryMapping
+							.getMapping(resources[0]);
+					next = getElementForRef(mapping.getRepository(), mapping
+							.getRepoRelativePath(baseFile), dlg.getRefName());
+				} catch (IOException e) {
+					Activator.handleError(
+							UIText.CompareWithIndexAction_errorOnAddToIndex, e,
+							true);
+					return null;
+				}
+
+				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+						base, next, null);
+				in.getCompareConfiguration().setRightLabel(dlg.getRefName());
+				CompareUI.openCompareEditor(in);
+			} else {
+				CompareTreeView view;
+				try {
+					view = (CompareTreeView) PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getActivePage()
+							.showView(CompareTreeView.ID);
+					view.setInput(resources, dlg.getRefName());
+				} catch (PartInitException e) {
+					Activator.handleError(e.getMessage(), e, true);
+				}
 			}
-
-			final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-					base, next, null);
-			in.getCompareConfiguration().setRightLabel(dlg.getRefName());
-			CompareUI.openCompareEditor(in);
 		}
 		return null;
 	}
@@ -91,17 +107,6 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final IResource[] selectedResources = getSelectedResources();
-		if (selectedResources.length != 1)
-			return false;
-
-		final IResource resource = selectedResources[0];
-		if (!(resource instanceof IFile)) {
-			return false;
-		}
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource
-				.getProject());
-		return mapping != null;
+		return getRepository() != null;
 	}
-
 }
