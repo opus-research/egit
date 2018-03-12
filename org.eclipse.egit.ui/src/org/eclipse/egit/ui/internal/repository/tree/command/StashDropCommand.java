@@ -46,7 +46,6 @@ import org.eclipse.ui.PlatformUI;
 public class StashDropCommand extends
 		RepositoriesViewCommandHandler<StashedCommitNode> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final List<StashedCommitNode> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())
@@ -61,7 +60,6 @@ public class StashDropCommand extends
 		final Shell shell = getActiveShell(event);
 		shell.getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				String message;
 				if (nodes.size() > 1)
@@ -92,7 +90,6 @@ public class StashDropCommand extends
 				// selected nodes not match the indices in the repository
 				Collections.sort(nodes, new Comparator<StashedCommitNode>() {
 
-					@Override
 					public int compare(StashedCommitNode n1,
 							StashedCommitNode n2) {
 						return n1.getIndex() < n2.getIndex() ? 1 : -1;
@@ -127,7 +124,6 @@ public class StashDropCommand extends
 			private void tryToCloseEditor(final StashedCommitNode node) {
 				Display.getDefault().asyncExec(new Runnable() {
 
-					@Override
 					public void run() {
 						IWorkbenchPage activePage = PlatformUI.getWorkbench()
 								.getActiveWorkbenchWindow().getActivePage();

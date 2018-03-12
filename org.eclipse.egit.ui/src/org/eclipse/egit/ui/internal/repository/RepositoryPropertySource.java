@@ -332,12 +332,10 @@ public class RepositoryPropertySource implements IPropertySource {
 		return sb.toString();
 	}
 
-	@Override
 	public Object getEditableValue() {
 		return null;
 	}
 
-	@Override
 	public IPropertyDescriptor[] getPropertyDescriptors() {
 		try {
 			systemConfig.load();
@@ -420,7 +418,6 @@ public class RepositoryPropertySource implements IPropertySource {
 		return resultList.toArray(new IPropertyDescriptor[0]);
 	}
 
-	@Override
 	public Object getPropertyValue(Object id) {
 		String actId = ((String) id);
 		Object value = null;
@@ -440,17 +437,14 @@ public class RepositoryPropertySource implements IPropertySource {
 		return value;
 	}
 
-	@Override
 	public boolean isPropertySet(Object id) {
 		return false;
 	}
 
-	@Override
 	public void resetPropertyValue(Object id) {
 		// no editing here
 	}
 
-	@Override
 	public void setPropertyValue(Object id, Object value) {
 		// no editing here
 	}

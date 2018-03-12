@@ -101,7 +101,6 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	/**
 	 * @return the message shown above the refs tree
 	 */
-	@Override
 	protected String getMessageText() {
 		return UIText.RenameBranchDialog_DialogMessage;
 	}
@@ -111,7 +110,6 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 *
 	 * @param parent
 	 */
-	@Override
 	protected void createCustomArea(Composite parent) {
 		// do nothing
 	}
@@ -121,7 +119,6 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 *
 	 * @return the title of the dialog
 	 */
-	@Override
 	protected String getTitle() {
 		return UIText.RenameBranchDialog_DialogTitle;
 	}

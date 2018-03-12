@@ -234,7 +234,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		return true;
 	}
 
-	@Override
 	public int compareTo(RepositoryTreeNode otherNode) {
 		int typeDiff = this.myType.ordinal() - otherNode.getType().ordinal();
 		if (typeDiff != 0)
@@ -369,7 +368,6 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		return false;
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (Repository.class == adapter && myRepository != null)
 			return myRepository;

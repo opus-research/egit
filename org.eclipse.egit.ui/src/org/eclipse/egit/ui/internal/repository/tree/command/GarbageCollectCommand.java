@@ -43,7 +43,6 @@ public class GarbageCollectCommand extends
 	/**
 	 * Execute garbage collection
 	 */
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// get selected nodes
 		final List<RepositoryNode> selectedNodes;

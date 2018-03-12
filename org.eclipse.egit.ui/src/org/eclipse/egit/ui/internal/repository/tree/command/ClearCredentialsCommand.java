@@ -27,7 +27,6 @@ public class ClearCredentialsCommand extends
 	/**
 	 * Execute the command
 	 */
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RepositoryTreeNode<String> node = getSelectedNodes(event).get(0);
 		URIish uri;

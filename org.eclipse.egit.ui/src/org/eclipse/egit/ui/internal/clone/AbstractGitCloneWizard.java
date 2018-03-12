@@ -260,7 +260,6 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		if (cloneDestination.isImportProjects()) {
 			final IWorkingSet[] sets = cloneDestination.getWorkingSets();
 			op.addPostCloneTask(new PostCloneTask() {
-				@Override
 				public void execute(Repository repository,
 						IProgressMonitor monitor) throws CoreException {
 					importProjects(repository, sets);
@@ -362,7 +361,6 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		Job importJob = new WorkspaceJob(MessageFormat.format(
 				UIText.GitCloneWizard_jobImportProjects, repoName)) {
 
-			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				List<File> files = new ArrayList<File>();
 				ProjectUtil.findProjectFiles(files, repository.getWorkTree(),
@@ -393,7 +391,6 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	public void runCloneOperation(IWizardContainer container, final GitRepositoryInfo repositoryInfo) {
 		try {
 			container.run(true, true, new IRunnableWithProgress() {
-				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					executeCloneOperation(cloneOperation, repositoryInfo, monitor);

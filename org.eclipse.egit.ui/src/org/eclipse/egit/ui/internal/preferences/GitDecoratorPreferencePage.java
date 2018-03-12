@@ -191,7 +191,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	/**
 	 * @see PreferencePage#createContents(Composite)
 	 */
-	@Override
 	protected Control createContents(Composite parent) {
 
 		Composite composite = SWTUtils.createHVFillComposite(parent,
@@ -207,7 +206,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		tabFolder.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (navigatorPreview != null && changeSetPreview != null) {
 					if (UIText.DecoratorPreferencesPage_otherDecorations.equals(e.item.getData())) {
@@ -246,7 +244,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		// TODO: Add help text for this preference page
 
 		themeListener = new IPropertyChangeListener() {
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				navigatorPreview.refresh();
 				changeSetPreview.refresh();
@@ -312,32 +309,27 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			tabItem.setControl(composite);
 		}
 
-		@Override
 		public void initializeValues(IPreferenceStore store) {
 			recomputeAncestorDecorations.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			recomputeAncestorDecorations
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			store.setValue(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS,
 					recomputeAncestorDecorations.getSelection());
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			setChanged();
 			notifyObservers();
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			// Not interesting for us
 		}
@@ -384,28 +376,24 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			tabItem.setControl(composite);
 		}
 
-		@Override
 		public void initializeValues(IPreferenceStore store) {
 			fileTextFormat.initializeValue(store);
 			folderTextFormat.initializeValue(store);
 			projectTextFormat.initializeValue(store);
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			fileTextFormat.performDefaults(store);
 			folderTextFormat.performDefaults(store);
 			projectTextFormat.performDefaults(store);
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			fileTextFormat.performOk(store);
 			folderTextFormat.performOk(store);
 			projectTextFormat.performOk(store);
 		}
 
-		@Override
 		public void modifyText(ModifyEvent e) {
 			setChanged();
 			notifyObservers();
@@ -467,19 +455,16 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			}
 		}
 
-		@Override
 		public void initializeValues(IPreferenceStore store) {
 			changeSetLabelFormat.initializeValue(store);
 			dateFormat.setText(store.getString(UIPreferences.DATE_FORMAT));
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			changeSetLabelFormat.performDefaults(store);
 			dateFormat.setText(store.getDefaultString(UIPreferences.DATE_FORMAT));
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			changeSetLabelFormat.performOk(store);
 
@@ -488,7 +473,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			}
 		}
 
-		@Override
 		public void modifyText(ModifyEvent e) {
 			updateDateFormatPreview();
 			setChanged();
@@ -526,10 +510,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			text.addModifyListener(listener);
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			final ILabelProvider labelProvider = new LabelProvider() {
-				@Override
 				public String getText(Object element) {
 					return ((Map.Entry) element).getKey()
 					+ " - " + ((Map.Entry) element).getValue(); //$NON-NLS-1$
@@ -615,7 +597,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			tabItem.setControl(composite);
 		}
 
-		@Override
 		public void initializeValues(IPreferenceStore store) {
 			showTracked.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_SHOW_TRACKED_ICON));
@@ -632,7 +613,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			showTracked
 					.setSelection(store
@@ -654,7 +634,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			store.setValue(UIPreferences.DECORATOR_SHOW_TRACKED_ICON,
 					showTracked.getSelection());
@@ -670,13 +649,11 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					showDirty.getSelection());
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			setChanged();
 			notifyObservers();
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			// Not interesting for us
 		}
@@ -698,7 +675,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	/**
 	 * @see IWorkbenchPreferencePage#init(IWorkbench)
 	 */
-	@Override
 	public void init(IWorkbench workbench) {
 		// No-op
 	}
@@ -708,7 +684,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 *
 	 * @return whether it is okay to close the preference page
 	 */
-	@Override
 	public boolean performOk() {
 		IPreferenceStore store = getPreferenceStore();
 		final boolean okToClose = performOk(store);
@@ -744,7 +719,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 * Defaults was clicked. Restore the Git decoration preferences to their
 	 * default values
 	 */
-	@Override
 	protected void performDefaults() {
 		IPreferenceStore store = getPreferenceStore();
 		generalTab.performDefaults(store);
@@ -764,7 +738,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 *
 	 * @return the preference store for this plugin
 	 */
-	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
 	}
@@ -774,7 +747,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 *
 	 * @see org.eclipse.jface.dialogs.DialogPage#dispose()
 	 */
-	@Override
 	public void dispose() {
 		PlatformUI.getWorkbench().getThemeManager()
 				.removePropertyChangeListener(themeListener);
@@ -802,7 +774,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			fViewer.getControl().setLayoutData(SWTUtils.createHVFillGridData());
 		}
 
-		@Override
 		public void update(Observable o, Object arg) {
 			refresh();
 		}
@@ -844,7 +815,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					return super.getImage(element);
 				}
 
-				@Override
 				public String getText(Object element) {
 					if (element instanceof GitModelCommitMockup) {
 						String format = store.getString(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT);
@@ -858,32 +828,26 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			fViewer.setInput(new GitModelCommitMockup());
 		}
 
-		@Override
 		public Object[] getChildren(Object parentElement) {
 			return new Object[0];
 		}
 
-		@Override
 		public Object getParent(Object element) {
 			return null;
 		}
 
-		@Override
 		public boolean hasChildren(Object element) {
 			return false;
 		}
 
-		@Override
 		public Object[] getElements(Object inputElement) {
 			return new Object[] { inputElement };
 		}
 
-		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 			// No-op
 		}
 
-		@Override
 		public void refresh() {
 			store = new PreferenceStore();
 			performOk(store);
@@ -921,7 +885,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			fHelper = new DecorationHelper(store);
 		}
 
-		@Override
 		public void refresh() {
 			reloadDecorationHelper();
 			fViewer.refresh(true);
@@ -938,27 +901,22 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			}
 		}
 
-		@Override
 		public Object[] getChildren(Object parentElement) {
 			return ((PreviewResource) parentElement).children.toArray();
 		}
 
-		@Override
 		public Object getParent(Object element) {
 			return null;
 		}
 
-		@Override
 		public boolean hasChildren(Object element) {
 			return !((PreviewResource) element).children.isEmpty();
 		}
 
-		@Override
 		public Object[] getElements(Object inputElement) {
 			return ((Collection) inputElement).toArray();
 		}
 
-		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 			// No-op
 		}
@@ -971,7 +929,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private class ResLabelProvider extends LabelProvider {
 
-			@Override
 			public String getText(Object element) {
 				final DecorationResult decoration = getDecoration(element);
 				final StringBuilder buffer = new StringBuilder();
@@ -985,7 +942,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 				return buffer.toString();
 			}
 
-			@Override
 			public Image getImage(Object element) {
 				final String s;
 				switch (((PreviewResource) element).type) {
@@ -1079,57 +1035,46 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			this.assumeValid = assumeValid;
 		}
 
-		@Override
 		public String getName() {
 			return name;
 		}
 
-		@Override
 		public String getRepositoryName() {
 			return repositoryName;
 		}
 
-		@Override
 		public int getType() {
 			return type;
 		}
 
-		@Override
 		public String getBranch() {
 			return branch;
 		}
 
-		@Override
 		public String getBranchStatus() {
 			return branchStatus;
 		}
 
-		@Override
 		public boolean isTracked() {
 			return tracked;
 		}
 
-		@Override
 		public boolean isIgnored() {
 			return ignored;
 		}
 
-		@Override
 		public boolean isDirty() {
 			return dirty;
 		}
 
-		@Override
 		public Staged staged() {
 			return staged;
 		}
 
-		@Override
 		public boolean hasConflicts() {
 			return conflicts;
 		}
 
-		@Override
 		public boolean isAssumeValid() {
 			return assumeValid;
 		}

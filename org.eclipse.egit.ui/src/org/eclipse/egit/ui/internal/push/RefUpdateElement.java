@@ -131,7 +131,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 		return result.getPushResult(uri).getAdvertisedRef(getDstRefName());
 	}
 
-	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		switch (getStatus()) {
 		case OK:
@@ -161,7 +160,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
-	@Override
 	public String getLabel(Object object) {
 		return getStyledText(object).getString();
 	}
@@ -182,7 +180,6 @@ class RefUpdateElement extends WorkbenchAdapter {
 		}
 	}
 
-	@Override
 	public Object[] getChildren(Object object) {
 		if (children != null)
 			return children;

@@ -34,7 +34,6 @@ import org.eclipse.jgit.revwalk.RevWalk;
  */
 public class CreateBranchCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RepositoryTreeNode node = getSelectedNodes(event).get(0);
 

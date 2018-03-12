@@ -66,11 +66,9 @@ public class FetchResultDialog extends TitleAreaDialog {
 	public static void show(final Repository repository,
 			final FetchResult result, final String sourceString) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				PlatformUI.getWorkbench().getDisplay().asyncExec(
 						new Runnable() {
-							@Override
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
@@ -114,7 +112,6 @@ public class FetchResultDialog extends TitleAreaDialog {
 		if (buttonId == CONFIGURE) {
 			super.buttonPressed(IDialogConstants.OK_ID);
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					Dialog dlg = SimpleConfigureFetchDialog.getDialog(
 							PlatformUI.getWorkbench().getDisplay()
@@ -176,7 +173,6 @@ public class FetchResultDialog extends TitleAreaDialog {
 		this.hideConfigure = !show;
 	}
 
-	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
 		return UIUtils.getDialogBoundSettings(getClass());
 	}

@@ -85,7 +85,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 			super(parent, style);
 		}
 
-		@Override
 		public void setLayoutData(Object layoutData) {
 			// Prevent search dialog from overriding the locally set data
 			if (getLayoutData() == null)
@@ -161,7 +160,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 	 *
 	 * @see org.eclipse.search.ui.ISearchPage#performAction()
 	 */
-	@Override
 	public boolean performAction() {
 		NewSearchUI.runQueryInBackground(newQuery());
 		return true;
@@ -175,7 +173,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 		return patterns;
 	}
 
-	@Override
 	public void setVisible(boolean visible) {
 		if (visible && patternCombo != null) {
 			if (firstTime) {
@@ -215,7 +212,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 				|| this.searchTreeButton.getSelection();
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		readConfiguration();
 
@@ -256,7 +252,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 	private void addScopeControls(Composite parent) {
 		SelectionAdapter statusAdapter = new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				updateOKStatus();
 			}
@@ -319,7 +314,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 				.setInput(ResourcesPlugin.getWorkspace().getRoot());
 		this.repositoryViewer.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				updateOKStatus();
 				repositoryGroup.setText(getRepositoryText());
@@ -338,7 +332,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 		checkItem.setImage(checkImage);
 		checkItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				repositoryViewer.setAllChecked(true);
 				repositoryGroup.setText(getRepositoryText());
@@ -353,7 +346,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 		uncheckItem.setImage(uncheckImage);
 		uncheckItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				repositoryViewer.setAllChecked(false);
 				repositoryGroup.setText(getRepositoryText());
@@ -388,7 +380,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 		// Pattern combo
 		patternCombo = new Combo(group, SWT.SINGLE | SWT.BORDER);
 		patternCombo.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				handleWidgetSelected();
 				updateOKStatus();
@@ -396,7 +387,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 		});
 		// add some listeners for regex syntax checking
 		patternCombo.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				updateOKStatus();
 			}
@@ -434,7 +424,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 		isRegExButton = new Button(group, SWT.CHECK);
 		isRegExButton.setText(UIText.CommitSearchPage_RegularExpression);
 		isRegExButton.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				updateOKStatus();
 
@@ -540,7 +529,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 	 * @param container
 	 *            the container to set
 	 */
-	@Override
 	public void setContainer(ISearchPageContainer container) {
 		this.container = container;
 	}
@@ -553,7 +541,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 		return this.container.getSelection();
 	}
 
-	@Override
 	public void dispose() {
 		writeConfiguration();
 		super.dispose();

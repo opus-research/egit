@@ -173,7 +173,6 @@ class CommitGraphTable {
 		rawTable.setLinesVisible(false);
 		rawTable.setFont(nFont);
 		rawTable.addListener(SWT.SetData, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				if (tableLoader != null) {
 					TableItem item = (TableItem) event.item;
@@ -194,12 +193,10 @@ class CommitGraphTable {
 		createPaintListener(rawTable);
 
 		table = new TableViewer(rawTable) {
-			@Override
 			protected Widget doFindItem(final Object element) {
 				return element != null ? ((SWTCommit) element).widget : null;
 			}
 
-			@Override
 			protected void mapElement(final Object element, final Widget item) {
 				((SWTCommit) element).widget = item;
 			}
@@ -213,7 +210,6 @@ class CommitGraphTable {
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(final DisposeEvent e) {
 				clipboard.dispose();
 			}
@@ -224,7 +220,6 @@ class CommitGraphTable {
 		table.setUseHashlookup(true);
 
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection s = event.getSelection();
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -242,7 +237,6 @@ class CommitGraphTable {
 
 		table.getTable().addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				if (allCommits != null)
 					allCommits.dispose();
@@ -262,7 +256,6 @@ class CommitGraphTable {
 
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
-			@Override
 			public void focusLost(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), null);
@@ -271,7 +264,6 @@ class CommitGraphTable {
 				site.getActionBars().updateActionBars();
 			}
 
-			@Override
 			public void focusGained(FocusEvent e) {
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.SELECT_ALL.getId(), selectAll);
@@ -282,7 +274,6 @@ class CommitGraphTable {
 		});
 
 		getTableView().addOpenListener(new IOpenListener() {
-			@Override
 			public void open(OpenEvent event) {
 				if (input == null || !input.isSingleFile())
 					return;
@@ -473,7 +464,6 @@ class CommitGraphTable {
 		// Tell SWT we will completely handle painting for some columns.
 		//
 		rawTable.addListener(SWT.EraseItem, new Listener() {
-			@Override
 			public void handleEvent(final Event event) {
 				if (0 <= event.index && event.index <= 5)
 					event.detail &= ~SWT.FOREGROUND;
@@ -481,7 +471,6 @@ class CommitGraphTable {
 		});
 
 		rawTable.addListener(SWT.PaintItem, new Listener() {
-			@Override
 			public void handleEvent(final Event event) {
 				doPaint(event);
 			}
@@ -572,7 +561,6 @@ class CommitGraphTable {
 			event.doit = commit.getParentCount() == 1;
 		}
 
-		@Override
 		public void dragSetData(DragSourceEvent event) {
 			boolean isFileTransfer = FileTransfer.getInstance()
 					.isSupportedType(event.dataType);
@@ -687,7 +675,6 @@ class CommitGraphTable {
 			this.input = input;
 		}
 
-		@Override
 		public void menuDetected(MenuDetectEvent e) {
 			popupMgr.removeAll();
 
