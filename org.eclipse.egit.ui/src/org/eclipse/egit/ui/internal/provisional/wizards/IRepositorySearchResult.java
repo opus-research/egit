@@ -24,11 +24,7 @@ public interface IRepositorySearchResult {
 
 	/**
 	 * @return an object encapsulating info about a git repository
-	 * @throws NoRepositoryInfoException
-	 *             if an error occured when constructing a
-	 *             {@code GitRepositoryInfo} object
 	 */
-	public GitRepositoryInfo getGitRepositoryInfo()
-			throws NoRepositoryInfoException;
+	public GitRepositoryInfo getGitRepositoryInfo();
 
 }

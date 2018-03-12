@@ -4302,7 +4302,7 @@
      <source
            hasFixLocation="true"
            icon="/icons/obj16/editconfig.gif"
-           label="Custom URI">
+           label="URI">
      </source>
      <repositorySearchPage
            class="org.eclipse.egit.ui.internal.components.RepositorySelectionPage"></repositorySearchPage>
