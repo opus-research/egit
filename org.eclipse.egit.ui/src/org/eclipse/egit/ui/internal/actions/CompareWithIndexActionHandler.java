@@ -19,7 +19,6 @@ import org.eclipse.compare.IContentChangeNotifier;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
@@ -28,7 +27,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.EditableRevision;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.dircache.DirCacheEntry;
@@ -39,8 +37,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * The "compare with index" action. This action opens a diff editor comparing
@@ -52,7 +48,6 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final IResource resource = getSelectedResources(event)[0];
 
-		if (resource instanceof IFile){
 		final IFile baseFile = (IFile) resource;
 		final ITypedElement base = SaveableCompareEditorInput
 				.createFileElement(baseFile);
@@ -69,18 +64,6 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 				base, next, null);
 		CompareUI.openCompareEditor(in);
-		}
-		if (resource instanceof IContainer){
-			CompareTreeView view;
-			try {
-				view = (CompareTreeView) PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage()
-						.showView(CompareTreeView.ID);
-				view.setInput(resource, CompareTreeView.INDEX_VERSION);
-			} catch (PartInitException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
-		}
 		return null;
 	}
 
@@ -170,6 +153,9 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 			return false;
 
 		final IResource resource = selectedResources[0];
+		if (!(resource instanceof IFile)) {
+			return false;
+		}
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource
 				.getProject());
 		return mapping != null;

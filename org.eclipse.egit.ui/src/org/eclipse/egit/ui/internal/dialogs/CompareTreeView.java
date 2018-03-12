@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -36,6 +38,7 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.EditableRevision;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
@@ -65,7 +68,6 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -101,9 +103,6 @@ import org.eclipse.ui.part.ViewPart;
  * and folders is used based on {@link PathNode} instances.
  */
 public class CompareTreeView extends ViewPart {
-	/** The "magic" right-side version to compare with the index */
-	public static final String INDEX_VERSION = "%%%INDEX%%%"; //$NON-NLS-1$
-
 	/** The View ID */
 	public static final String ID = "org.eclipse.egit.ui.CompareTreeView"; //$NON-NLS-1$
 
@@ -294,16 +293,42 @@ public class CompareTreeView extends ViewPart {
 			tv.setExpandedState(selected, !tv.getExpandedState(selected));
 			return;
 		} else if (selected instanceof IFile) {
-			IFile res = (IFile) selected;
-			left = new FileRevisionTypedElement(new LocalFileRevision(res));
+			final IFile res = (IFile) selected;
+			left = new EditableRevision(new LocalFileRevision(res)) {
+				@Override
+				public void setContent(final byte[] newContent) {
+					try {
+						PlatformUI.getWorkbench().getProgressService().run(
+								false, false, new IRunnableWithProgress() {
+									public void run(IProgressMonitor myMonitor)
+											throws InvocationTargetException,
+											InterruptedException {
+										try {
+											res.setContents(
+													new ByteArrayInputStream(
+															newContent), false,
+													true, myMonitor);
+										} catch (CoreException e) {
+											throw new InvocationTargetException(
+													e);
+										}
+									}
+								});
+					} catch (InvocationTargetException e) {
+						Activator.handleError(e.getTargetException()
+								.getMessage(), e.getTargetException(), true);
+					} catch (InterruptedException e) {
+						// ignore here
+					}
+				}
+			};
 			GitFileRevision rightRevision = rightVersionMap.get(new Path(
 					repositoryMapping.getRepoRelativePath(res)));
 			if (rightRevision == null)
 				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-						NLS
-								.bind(
-										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-										res.getName(), getRightVersion()));
+						NLS.bind(
+								UIText.CompareTreeView_ItemNotFoundInVersionMessage,
+								res.getName(), getRightVersion()));
 			else
 				right = new FileRevisionTypedElement(rightRevision);
 			GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
@@ -335,11 +360,9 @@ public class CompareTreeView extends ViewPart {
 				GitFileRevision rightRevision = rightVersionMap.get(node.path);
 				right = new FileRevisionTypedElement(rightRevision);
 				left = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-						NLS
-								.bind(
-										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-										rightRevision.getName(),
-										getLeftVersion()));
+						NLS.bind(
+								UIText.CompareTreeView_ItemNotFoundInVersionMessage,
+								rightRevision.getName(), getLeftVersion()));
 				break;
 			}
 			case FILE_ADDED: {
@@ -347,11 +370,9 @@ public class CompareTreeView extends ViewPart {
 				GitFileRevision leftRevision = leftVersionMap.get(node.path);
 				left = new FileRevisionTypedElement(leftRevision);
 				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
-						NLS
-								.bind(
-										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
-										leftRevision.getName(),
-										getRightVersion()));
+						NLS.bind(
+								UIText.CompareTreeView_ItemNotFoundInVersionMessage,
+								leftRevision.getName(), getRightVersion()));
 				break;
 			}
 			case FOLDER:
@@ -395,8 +416,7 @@ public class CompareTreeView extends ViewPart {
 	 * @param input
 	 *            the {@link IResource} from which to build the tree
 	 * @param rightVersion
-	 *            a {@link Ref} name or {@link RevCommit} id or
-	 *            {@link #INDEX_VERSION}
+	 *            a {@link Ref} name or {@link RevCommit} id
 	 */
 	public void setInput(final IResource input, String rightVersion) {
 		this.input = input;
@@ -415,8 +435,7 @@ public class CompareTreeView extends ViewPart {
 	 * @param leftVersion
 	 *            a {@link Ref} name or {@link RevCommit} id
 	 * @param rightVersion
-	 *            a {@link Ref} name or {@link RevCommit} id or
-	 *            {@link #INDEX_VERSION}
+	 *            a {@link Ref} name or {@link RevCommit} id
 	 */
 	public void setInput(final IResource input, String leftVersion,
 			String rightVersion) {
@@ -457,8 +476,7 @@ public class CompareTreeView extends ViewPart {
 		else {
 			String name;
 			if (input instanceof IResource)
-				name = ((IResource) input).getFullPath().makeAbsolute()
-						.toString();
+				name = ((IResource) input).getFullPath().toString();
 			else if (input instanceof Repository)
 				name = Activator.getDefault().getRepositoryUtil()
 						.getRepositoryName(((Repository) input));
@@ -466,20 +484,12 @@ public class CompareTreeView extends ViewPart {
 				throw new IllegalStateException();
 			if (leftVersion == null)
 				setContentDescription(NLS
-						.bind(
-								UIText.CompareTreeView_ComparingWorkspaceVersionDescription,
-								name,
-								rightVersion.equals(INDEX_VERSION) ? UIText.CompareTreeView_IndexVersionText
-										: rightVersion));
+						.bind(UIText.CompareTreeView_ComparingWorkspaceVersionDescription,
+								name, rightVersion));
 			else
-				setContentDescription(NLS
-						.bind(
-								UIText.CompareTreeView_ComparingTwoVersionDescription,
-								new String[] {
-										leftVersion,
-										name,
-										rightVersion.equals(INDEX_VERSION) ? UIText.CompareTreeView_IndexVersionText
-												: rightVersion }));
+				setContentDescription(NLS.bind(
+						UIText.CompareTreeView_ComparingTwoVersionDescription,
+						new String[] { leftVersion, name, rightVersion }));
 		}
 	}
 
@@ -492,8 +502,7 @@ public class CompareTreeView extends ViewPart {
 		leftTree.setInput(null);
 
 		if (leftVersion == null) {
-			leftTree
-					.setContentProvider(new LocalWorkbenchTreeContentProvider());
+			leftTree.setContentProvider(new LocalWorkbenchTreeContentProvider());
 			leftTree.setLabelProvider(new AddingWorkbenchLabelProvider());
 
 			rightTree
@@ -533,7 +542,7 @@ public class CompareTreeView extends ViewPart {
 		RevWalk rw = new RevWalk(repo);
 		try {
 			ObjectId commitId = repo.resolve(rightVersion);
-			rightCommit = commitId != null ? rw.parseCommit(commitId) : null;
+			rightCommit = rw.parseCommit(commitId);
 			if (leftVersion == null)
 				leftCommit = null;
 			else {
@@ -562,8 +571,7 @@ public class CompareTreeView extends ViewPart {
 											public void run() {
 												leftTree.setInput(input);
 												rightTree.setInput(input);
-												leftTree
-														.setExpandedElements(wsExpaneded);
+												leftTree.setExpandedElements(wsExpaneded);
 												rightTree
 														.setExpandedElements(gitExpanded);
 												leftTree.setSelection(wsSel);
@@ -591,7 +599,6 @@ public class CompareTreeView extends ViewPart {
 			IProgressMonitor monitor) throws InterruptedException, IOException {
 		monitor.beginTask(UIText.CompareTreeView_AnalyzingRepositoryTaskText,
 				IProgressMonitor.UNKNOWN);
-		boolean useIndex = rightVersion.equals(INDEX_VERSION);
 		rightOnly.clear();
 		equalIds.clear();
 		leftVersionMap.clear();
@@ -607,13 +614,8 @@ public class CompareTreeView extends ViewPart {
 			else
 				leftTreeIndex = tw.addTree(new CanonicalTreeParser(null,
 						repository.newObjectReader(), leftCommit.getTree()));
-			int rightTreeIndex;
-			if (!useIndex)
-				rightTreeIndex = tw.addTree(new CanonicalTreeParser(null,
-						repository.newObjectReader(), rightCommit.getTree()));
-			else
-				rightTreeIndex = tw.addTree(new DirCacheIterator(repository
-						.readDirCache()));
+			int rightTreeIndex = tw.addTree(new CanonicalTreeParser(null,
+					repository.newObjectReader(), rightCommit.getTree()));
 			if (resource instanceof IResource) {
 				String relPath = repositoryMapping
 						.getRepoRelativePath((IResource) resource);
@@ -637,16 +639,10 @@ public class CompareTreeView extends ViewPart {
 							.getEntryPathString());
 					IPath currentPath = new Path(leftVersionIterator
 							.getEntryPathString());
-					if (!useIndex)
-						rightVersionMap.put(currentPath, GitFileRevision
-								.inCommit(repository, rightCommit,
-										leftVersionIterator
-												.getEntryPathString(), tw
-												.getObjectId(rightTreeIndex)));
-					else
-						rightVersionMap.put(currentPath, GitFileRevision
-								.inIndex(repository, leftVersionIterator
-										.getEntryPathString()));
+					rightVersionMap.put(currentPath, GitFileRevision.inCommit(
+							repository, rightCommit, leftVersionIterator
+									.getEntryPathString(), tw
+									.getObjectId(rightTreeIndex)));
 					if (leftCommit != null)
 						leftVersionMap.put(currentPath, GitFileRevision
 								.inCommit(repository, leftCommit,
