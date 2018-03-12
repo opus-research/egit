@@ -693,12 +693,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_Failed;
 
 	/** */
-	public static String RebaseResultDialog_JobNameAbortRebase;
-
-	/** */
-	public static String RebaseResultDialog_JobNameSkipCommit;
-
-	/** */
 	public static String RebaseResultDialog_NextSteps;
 
 	/** */
@@ -903,12 +897,6 @@ public class UIText extends NLS {
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
-	public static String CheckoutCommand_CheckoutLabel;
-
-	/** */
-	public static String CheckoutCommand_CheckoutLabelWithQuestion;
-
-	/** */
 	public static String CheckoutConflictDialog_conflictMessage;
 
 	/** */
@@ -916,9 +904,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CheckoutDialog_OkCheckout;
-
-	/** */
-	public static String CheckoutDialog_OkCheckoutWithQuestion;
 
 	/** */
 	public static String CheckoutDialog_Title;
@@ -2676,18 +2661,6 @@ public class UIText extends NLS {
 	public static String BranchConfigurationDialog_UpstreamBranchLabel;
 
 	/** */
-	public static String BranchOperationUI_CheckoutRemoteTrackingAsLocal;
-
-	/** */
-	public static String BranchOperationUI_CheckoutRemoteTrackingCommit;
-
-	/** */
-	public static String BranchOperationUI_CheckoutRemoteTrackingQuestion;
-
-	/** */
-	public static String BranchOperationUI_CheckoutRemoteTrackingTitle;
-
-	/** */
 	public static String BranchOperationUI_DetachedHeadTitle;
 
 	/** */
@@ -2742,7 +2715,7 @@ public class UIText extends NLS {
 	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
-	public static String BranchResultDialog_DetachedHeadWarningDontShowAgain;
+	public static String BranchResultDialog_dontShowAgain;
 
 	/** */
 	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
@@ -2931,13 +2904,7 @@ public class UIText extends NLS {
 	public static String DeleteBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteGitDirCheckbox;
-
-	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryConfirmMessage;
-
-	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryNoUndoWarning;
+	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
 
 	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryTitle;
@@ -4490,18 +4457,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_ColumnLayout;
-
-	/** */
-	public static String StagingView_RebaseAbort;
-
-	/** */
-	public static String StagingView_RebaseContinue;
-
-	/** */
-	public static String StagingView_RebaseLabel;
-
-	/** */
-	public static String StagingView_RebaseSkip;
 
 	/** */
 	public static String StagingView_Refresh;
