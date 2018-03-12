@@ -18,11 +18,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -100,8 +99,6 @@ public class RepositorySearchDialog extends WizardPage {
 
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
-
-	private boolean isUserModifiedTreeSelection;
 
 	private static final class ContentProvider implements ITreeContentProvider {
 
@@ -229,7 +226,7 @@ public class RepositorySearchDialog extends WizardPage {
 				false).hint(300, SWT.DEFAULT).applyTo(dir);
 		dir.setToolTipText(UIText.RepositorySearchDialog_EnterDirectoryToolTip);
 
-		String defaultRepoPath = UIUtils.getDefaultRepositoryDir();
+		String defaultRepoPath = RepositoryUtil.getDefaultRepositoryDir();
 
 		String initialPath = prefs.get(PREF_PATH, defaultRepoPath);
 
@@ -308,16 +305,10 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public boolean isElementVisible(Viewer viewer, Object element) {
-				boolean elementVisible = super
-						.isElementVisible(viewer, element);
-				// Only user selected elements are not searched.
 				if (getCheckedItems().contains(element)) {
-					if (!isUserModifiedTreeSelection)
-						fTreeViewer.setChecked(element, elementVisible);
-					else
 						return true;
 				}
-				return elementVisible;
+				return super.isElementVisible(viewer, element);
 			}
 		};
 
@@ -328,7 +319,6 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				isUserModifiedTreeSelection = true;
 				enableOk();
 			}
 		});
@@ -479,11 +469,7 @@ public class RepositorySearchDialog extends WizardPage {
 					findGitDirsRecursive(file, directories, monitor,
 							lookForNested);
 				} catch (Exception ex) {
-					Activator
-							.getDefault()
-							.getLog()
-							.log(new Status(IStatus.ERROR, Activator
-									.getPluginId(), ex.getMessage(), ex));
+					throw new InvocationTargetException(ex);
 				}
 				if (monitor.isCanceled()) {
 					throw new InterruptedException();
@@ -494,7 +480,8 @@ public class RepositorySearchDialog extends WizardPage {
 			getContainer().run(true, true, action);
 		} catch (InvocationTargetException e1) {
 			org.eclipse.egit.ui.Activator.handleError(
-					UIText.RepositorySearchDialog_errorOccurred, e1, true);
+					UIText.RepositorySearchDialog_errorOccurred, e1.getCause(),
+					true);
 		} catch (InterruptedException e1) {
 			// ignore
 		}
@@ -522,9 +509,6 @@ public class RepositorySearchDialog extends WizardPage {
 		uncheckAllItem.setEnabled(!validDirs.isEmpty());
 		fTree.clearFilter();
 		fTreeViewer.setInput(validDirs);
-		// this sets all to selected
-		fTreeViewer.setAllChecked(true);
-		isUserModifiedTreeSelection = false;
 		enableOk();
 	}
 

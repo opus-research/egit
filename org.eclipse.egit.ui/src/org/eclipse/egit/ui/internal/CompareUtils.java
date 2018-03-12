@@ -13,7 +13,6 @@
  *    Robin Stocker <robin@nibor.org>
  *    Laurent Goubet <laurent.goubet@obeo.fr>
  *    Gunnar Wagenknecht <gunnar@wagenknecht.org>
- *    Laurent Delaigue <laurent.delaigue@obeo.fr>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
@@ -46,7 +45,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
@@ -55,6 +53,7 @@ import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
 import org.eclipse.egit.ui.internal.revision.EditableRevision;
 import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
@@ -417,7 +416,13 @@ public class CompareUtils {
 	 */
 	public static void compareHeadWithWorkspace(Repository repository,
 			IFile file) {
-		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
+		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					file.getLocation(), repository), null);
+			return;
+		}
+		String path = mapping.getRepoRelativePath(
 				file);
 		ITypedElement base = getHeadTypedElement(repository, path);
 		if (base == null)
@@ -465,6 +470,11 @@ public class CompareUtils {
 				}
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					return Activator.createErrorStatus(
+							NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+									file.getLocation(), repository));
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 				final ITypedElement base = SaveableCompareEditorInput
 						.createFileElement(file);
@@ -657,6 +667,11 @@ public class CompareUtils {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
+				if (mapping == null) {
+					Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+							file.getLocation(), repository), null);
+					return;
+				}
 				final String gitPath = mapping.getRepoRelativePath(file);
 
 				compareBetween(repository, gitPath, leftRev, rightRev, page);
@@ -954,6 +969,11 @@ public class CompareUtils {
 	public static ITypedElement getIndexTypedElement(final IFile baseFile)
 			throws IOException {
 		final RepositoryMapping mapping = RepositoryMapping.getMapping(baseFile);
+		if (mapping == null) {
+			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
+					baseFile.getLocation(), null), null);
+			return null;
+		}
 		final Repository repository = mapping.getRepository();
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
 		final String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
@@ -1112,9 +1132,9 @@ public class CompareUtils {
 		 * be done by relying on the local model only.
 		 */
 		// Only builds the logical model if the preference holds true
-		if (InstanceScope.INSTANCE.getNode(
-				org.eclipse.egit.core.Activator.getPluginId()).getBoolean(
-				GitCorePreferences.core_enableLogicalModel, false)) {
+		if (Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
+
 			final ResourceMapping[] mappings = ResourceUtil
 					.getResourceMappings(file,
 							ResourceMappingContext.LOCAL_CONTEXT);
