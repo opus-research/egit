@@ -30,7 +30,6 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IInputValidator;
@@ -88,6 +87,8 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
  */
 public class CreateTagDialog extends TitleAreaDialog {
 
+	private static final int MAX_COMMIT_COUNT = 1000;
+
 	/**
 	 * Button id for a "Clear" button (value 22).
 	 */
@@ -132,9 +133,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 		private final Image IMG_LIGHTTAG;
 
 		private TagLabelProvider() {
-			IMG_TAG = UIIcons.TAG.createImage();
-			IMG_LIGHTTAG = SWTUtils.getDecoratedImage(IMG_TAG,
-					UIIcons.OVR_LIGHTTAG);
+			IMG_TAG = UIIcons.TAG_ANNOTATED.createImage();
+			IMG_LIGHTTAG = UIIcons.TAG.createImage();
 		}
 
 		public Image getColumnImage(Object element, int columnIndex) {
@@ -653,8 +653,18 @@ public class CreateTagDialog extends TitleAreaDialog {
 			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
 		}
 		// do the walk to get the commits
-		for (RevCommit commit : revWalk)
-			commits.add(commit);
+		RevCommit commit;
+		long count = 0;
+		try {
+			while ((commit = revWalk.next()) != null
+					&& count < MAX_COMMIT_COUNT) {
+				commits.add(commit);
+				count++;
+			}
+		} catch (IOException e) {
+			Activator.logError(UIText.TagAction_errorWhileGettingRevCommits, e);
+			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
+		}
 	}
 
 	/**
