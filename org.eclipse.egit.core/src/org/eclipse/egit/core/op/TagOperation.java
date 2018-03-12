@@ -17,20 +17,20 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectWriter;
+import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tag;
+import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 
 /**
- * Tags repository with given {@link Tag} object.
+ * Tags repository with given {@link TagBuilder} object.
  */
 public class TagOperation implements IEGitOperation {
 
-	private final Tag tag;
+	private final TagBuilder tag;
 	private final Repository repo;
 	private final boolean shouldMoveTag;
 
@@ -41,7 +41,7 @@ public class TagOperation implements IEGitOperation {
 	 * @param tag
 	 * @param shouldMoveTag if <code>true</code> it will replace tag with same name
 	 */
-	public TagOperation(Repository repo, Tag tag, boolean shouldMoveTag) {
+	public TagOperation(Repository repo, TagBuilder tag, boolean shouldMoveTag) {
 		this.tag = tag;
 		this.repo = repo;
 		this.shouldMoveTag = shouldMoveTag;
@@ -93,8 +93,13 @@ public class TagOperation implements IEGitOperation {
 
 		try {
 			repo.open(startPointRef);
-			ObjectWriter objWriter = new ObjectWriter(repo);
-			tag.setTagId(objWriter.writeTag(tag));
+			ObjectInserter inserter = repo.newObjectInserter();
+			try {
+				inserter.insert(tag);
+				inserter.flush();
+			} finally {
+				inserter.release();
+			}
 		} catch (IOException e) {
 			throw new TeamException(NLS.bind(CoreText.TagOperation_objectIdNotFound,
 					tag.getTag(), e.getMessage()), e);
