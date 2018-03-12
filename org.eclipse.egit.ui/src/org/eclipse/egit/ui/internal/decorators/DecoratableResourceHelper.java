@@ -26,6 +26,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 
 /**
@@ -146,15 +147,20 @@ class DecoratableResourceHelper {
 	static DecoratableResource decorateResource(
 			final DecoratableResource decoratableResource,
 			final TreeWalk treeWalk) throws IOException {
-		final ContainerTreeIterator workspaceIterator = treeWalk.getTree(
-				T_WORKSPACE, ContainerTreeIterator.class);
-		final ResourceEntry resourceEntry = workspaceIterator != null ? workspaceIterator
-				.getResourceEntry() : null;
+		final WorkingTreeIterator workingTreeIterator = treeWalk.getTree(
+				T_WORKSPACE, WorkingTreeIterator.class);
+		if (workingTreeIterator == null)
+			return null;
+		if (!(workingTreeIterator instanceof ContainerTreeIterator))
+			return null;
+		final ContainerTreeIterator workspaceIterator = (ContainerTreeIterator) workingTreeIterator;
+		final ResourceEntry resourceEntry = workspaceIterator
+				.getResourceEntry();
 
 		if (resourceEntry == null)
 			return null;
 
-		if (workspaceIterator != null && workspaceIterator.isEntryIgnored()) {
+		if (workspaceIterator.isEntryIgnored()) {
 			decoratableResource.ignored = true;
 			return decoratableResource;
 		}
@@ -195,8 +201,7 @@ class DecoratableResourceHelper {
 			decoratableResource.dirty = false;
 			decoratableResource.assumeValid = true;
 		} else {
-			if (workspaceIterator != null
-					&& workspaceIterator.isModified(indexEntry, true))
+			if (workspaceIterator.isModified(indexEntry, true))
 				decoratableResource.dirty = true;
 		}
 		return decoratableResource;
