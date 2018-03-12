@@ -29,7 +29,7 @@ class GraphLabelProvider extends BaseLabelProvider implements
 
 	private PersonIdent lastCommitter;
 
-	private Format format = Format.LOCALE;
+	private Format format;
 
 	GraphLabelProvider() {
 	}
