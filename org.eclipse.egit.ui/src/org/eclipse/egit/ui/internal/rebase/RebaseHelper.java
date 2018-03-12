@@ -58,7 +58,8 @@ public class RebaseHelper {
 				// repository state is safe
 				if (!repository.getRepositoryState().equals(
 						RepositoryState.SAFE))
-					throw new IllegalStateException("Can't nest rebase"); //$NON-NLS-1$
+					throw new IllegalStateException(
+							"Can't start rebase if repository state isn't SAFE"); //$NON-NLS-1$
 				try {
 					rebase.execute(monitor);
 				} catch (final CoreException e) {
