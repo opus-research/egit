@@ -129,10 +129,10 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 				}
 				if (rev != null) {
 					if (compareMode)
-						try (RevWalk rw = new RevWalk(repo)) {
+						try {
 							ITypedElement left = CompareUtils
 									.getFileRevisionTypedElement(gitPath,
-											rw.parseCommit(repo
+											new RevWalk(repo).parseCommit(repo
 													.resolve(Constants.HEAD)),
 											repo);
 							ITypedElement right = CompareUtils
