@@ -8,14 +8,13 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core;
+package org.eclipse.egit.ui;
 
-import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.CredentialsProviderUserInfo;
 import org.eclipse.jgit.transport.JschConfigSessionFactory;
 import org.eclipse.jgit.transport.OpenSshConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jsch.core.IJSchService;
+import org.eclipse.jsch.ui.UserInfoPrompter;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -60,9 +59,7 @@ class EclipseSshSessionFactory extends JschConfigSessionFactory {
 	@Override
 	protected void configure(final OpenSshConfig.Host hc, final Session session) {
 		UserInfo userInfo = session.getUserInfo();
-		if (!hc.isBatchMode() && userInfo == null) {
-			final CredentialsProvider cp = CredentialsProvider.getDefault();
-			session.setUserInfo(new CredentialsProviderUserInfo(session, cp));
-		}
+		if (!hc.isBatchMode() && userInfo == null)
+			new UserInfoPrompter(session);
 	}
 }
