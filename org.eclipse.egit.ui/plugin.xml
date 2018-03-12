@@ -50,7 +50,7 @@
                tooltip="%FetchAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.PushAction"
-               icon="$nl$/icons/obj16/commit.gif"
+               icon="$nl$/icons/obj16/push.gif"
                id="org.eclipse.egit.ui.internal.actions.PushAction"
                label="%PushAction_label"
                menubarPath="team.main/group1"
@@ -95,7 +95,7 @@
      </objectContribution>
      <objectContribution
             adaptable="true"
-            id="org.eclipse.egit.ui.resourceContributions"
+            id="org.eclipse.egit.ui.fileFolderContributions"
             objectClass="org.eclipse.core.resources.IResource">
          <filter name="projectPersistentProperty"
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
@@ -183,7 +183,7 @@
          </action>
 	  </objectContribution>
 	  <objectContribution
-         id="org.eclipse.egit.ui.revCommitContributions"
+         id="org.eclipse.egit.ui.resetto"
          objectClass="org.eclipse.jgit.revwalk.RevCommit">
          <action
                class="org.eclipse.egit.ui.internal.actions.SoftResetToRevisionAction"
@@ -239,7 +239,6 @@
      </groupMarker>
   </menu>
   <menu
-        icon="icons/obj16/reset.gif"
         id="org.eclipse.egit.ui.reset"
         label="%ResetMenuName"
         path="additions">
@@ -247,25 +246,6 @@
            name="reset">
      </groupMarker>
   </menu>
-  <action
-        class="org.eclipse.egit.ui.internal.actions.CheckoutCommitAction"
-        enablesFor="1"
-        icon="icons/obj16/checkout.gif"
-        id="org.eclipse.egit.ui.CheckoutCommitAction"
-        label="%CheckoutCommitActionLabel">
-  </action>
-  <action
-        class="org.eclipse.egit.ui.internal.actions.CreateBranchOnCommitAction"
-        icon="icons/obj16/branch_obj.gif"
-        id="org.eclipse.egit.ui.command.historyCreateBranchAction"
-        label="%CreateBranchOnCommitActionLabel">
-  </action>
-  <action
-        class="org.eclipse.egit.ui.internal.actions.CreateTagOnCommitAction"
-        icon="icons/obj16/version_rep.gif"
-        id="org.eclipse.egit.ui.command.historyCreateTagAction"
-        label="%CreateTagOnCommitActionLabel">
-  </action>
 	  </objectContribution>
    	  <objectContribution
          adaptable="true"
@@ -524,7 +504,7 @@
       </actionSet>
    </extension>
    <extension
-         name="%SharedCommandsLabel"
+         name="The shared commands"
          point="org.eclipse.ui.commands">
       <command
             defaultHandler="org.eclipse.egit.ui.internal.commands.ShareSingleProjectCommand"
@@ -539,19 +519,8 @@
          </commandParameter>
       </command>
       <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.CheckoutCommitActionHandler"
             id="org.eclipse.egit.ui.CheckoutCommand"
             name="%CheckoutCommand">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.CreateTagOnCommitActionHandler"
-            id="org.eclipse.egit.ui.command.historyCreateTag"
-            name="%HistoryCreateTagCommandLabel">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.actions.CreateBranchOnCommitActionHandler"
-            id="org.eclipse.egit.ui.command.historyCreateBranch"
-            name="%HistoryCreateBranchCommandLabel">
       </command>
    </extension>
    <extension
@@ -1275,7 +1244,7 @@
       </menuContribution>
    </extension>
    <extension
-         name="%RepositoryCommandsLabel"
+         name="The commands for the repositories view"
          point="org.eclipse.ui.commands">
       <command
             id="org.eclipse.egit.ui.RepositoriesViewAddRepository"
@@ -1286,6 +1255,11 @@
             id="org.eclipse.egit.ui.RepositoriesViewClone"
             name="%CloneRepositoryCommand"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CloneCommand">
+      </command>
+      <command
+            id="org.eclipse.egit.ui.RepositoriesViewCheckout"
+            name="%CheckoutCommand"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewCopyPath"
@@ -1438,7 +1412,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewPush"
-            icon="icons/obj16/commit.gif">
+            icon="icons/obj16/push.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
@@ -1467,18 +1441,6 @@
       <image
             commandId="org.eclipse.egit.ui.team.ShowHistory"
             icon="icons/obj16/history.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.command.historyCreateBranch"
-            icon="icons/obj16/branch_obj.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.command.historyCreateTag"
-            icon="icons/obj16/version_rep.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.CheckoutCommand"
-            icon="icons/obj16/checkout.gif">
       </image>
    </extension>
    <extension
@@ -1626,6 +1588,23 @@
                <iterate>
                   <instanceof
                         value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+                  </instanceof>
+               </iterate>
+            </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.CheckoutCommand">
+         <class
+               class="org.eclipse.egit.ui.internal.history.command.CheckoutHandler"></class>
+         <activeWhen>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+                  <instanceof
+                        value="org.eclipse.egit.ui.internal.history.SWTCommit">
                   </instanceof>
                </iterate>
             </and>
