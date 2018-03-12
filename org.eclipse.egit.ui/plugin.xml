@@ -392,11 +392,6 @@
             class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
          <adapter type="org.eclipse.ui.model.IWorkbenchAdapter"/>
       </factory>
-      <factory
-            adaptableType="org.eclipse.team.ui.history.IHistoryView"
-            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-         <adapter type="org.eclipse.ui.part.IShowInSource"/>
-      </factory>
    </extension>
 
    <extension point="org.eclipse.ui.preferencePages">
@@ -4710,20 +4705,6 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+#">
       </key>
-      <!-- Command+Shift+3 takes a screenshot on the Mac. Delete and redefine key binding: -->
-      <key
-            commandId=""
-            contextId="org.eclipse.ui.contexts.window"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+#">
-      </key>
-      <key
-            platform="carbon"
-            commandId="org.eclipse.egit.ui.team.Commit"
-            contextId="org.eclipse.ui.contexts.window"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="COMMAND+ALT+3">
-      </key>
       <key
             commandId="org.eclipse.egit.ui.RepositoriesViewPaste"
             contextId="org.eclipse.egit.ui.RepositoriesView"
@@ -4921,6 +4902,7 @@
       <context
             id="org.eclipse.egit.ui.ReflogView"
             name="%ReflogViewContext"
+            parentId="org.eclipse.ui.contexts.window">
             parentId="org.eclipse.ui.contexts.window">
       </context>
    </extension>
