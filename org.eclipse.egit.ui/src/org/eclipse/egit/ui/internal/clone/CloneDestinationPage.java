@@ -432,7 +432,7 @@ class CloneDestinationPage extends WizardPage {
 			} catch (CoreException e) {
 				parentDir = null;
 			}
-			if (parentDir == null)
+			if (parentDir == null || !parentDir.exists() || !parentDir.isDirectory())
 				parentDir = ResourcesPlugin.getWorkspace().getRoot().getRawLocation().toFile();
 			directoryText.setText(new File(parentDir, n).getAbsolutePath());
 		}

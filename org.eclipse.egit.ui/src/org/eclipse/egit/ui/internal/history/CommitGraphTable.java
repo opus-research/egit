@@ -62,13 +62,11 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -678,15 +676,7 @@ class CommitGraphTable {
 			IStructuredSelection selection = (IStructuredSelection) table
 					.getSelection();
 			RevCommit commit = (RevCommit) selection.getFirstElement();
-			RevWalk walk = new org.eclipse.jgit.revwalk.RevWalk(input.getRepository());
-			try {
-				return walk.parseCommit(commit.getId());
-			} catch (IOException e) {
-				throw new RuntimeException(
-						"Could not parse commit " + commit.getId(), e); //$NON-NLS-1$
-			} finally {
-				walk.release();
-			}
+			return commit;
 		}
 
 		private void writeToFile(final String fileName, String content)
@@ -757,24 +747,11 @@ class CommitGraphTable {
 							UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel));
 			}
 
-			if (selectionSize > 0) {
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
-						UIText.CommitGraphTable_OpenCommitLabel));
-			}
-
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (hasMultipleRefNodes()) {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel2));
-				} else {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel));
-				}
-
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.CHECKOUT,
+						UIText.GitHistoryPage_CheckoutMenuLabel));
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.PUSH_COMMIT,
 						UIText.GitHistoryPage_pushCommit));
@@ -868,26 +845,10 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
+					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
-		}
-
-		private boolean hasMultipleRefNodes() {
-			try {
-				Map<String, Ref> branches = input.getRepository()
-						.getRefDatabase().getRefs(Constants.R_HEADS);
-				int count = 0;
-				for (Ref branch : branches.values()) {
-					if (branch.getLeaf().getObjectId()
-							.equals(((RevCommit) ((IStructuredSelection) selectionProvider
-									.getSelection()).getFirstElement()).getId()))
-						count++;
-				}
-				return (count > 1);
-
-			} catch (IOException e) {
-				// ignore here
-			}
-			return false;
 		}
 
 		private CommandContributionItem getCommandContributionItem(
