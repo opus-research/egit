@@ -35,7 +35,6 @@ import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -199,8 +198,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 */
 	private void decorateResource(@NonNull IResource resource,
 			IDecoration decoration) throws CoreException {
-		if (resource.getType() == IResource.ROOT || !resource.isAccessible()
-				|| !ResourceUtil.isSharedWithGit(resource)) {
+		if (resource.getType() == IResource.ROOT || !resource.isAccessible()) {
 			return;
 		}
 		IndexDiffData indexDiffData = ResourceStateFactory.getInstance()
