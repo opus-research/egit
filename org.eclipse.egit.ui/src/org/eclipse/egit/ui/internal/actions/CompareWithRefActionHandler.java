@@ -27,7 +27,7 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * The "compare with ref" action. This action opens a diff editor comparing the
@@ -49,8 +49,8 @@ public class CompareWithRefActionHandler extends RepositoryActionHandler {
 
 		final String refName = dlg.getRefName();
 
-		IWorkbenchPage workBenchPage = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getActivePage();
+		IWorkbenchPage workBenchPage = HandlerUtil
+				.getActiveWorkbenchWindowChecked(event).getActivePage();
 		try {
 			CompareUtils
 					.compare(resources, repo, Constants.HEAD, refName, true, workBenchPage);

@@ -2061,9 +2061,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_CommitMessage;
 
 	/** */
-	public static String CommitDialog_CompareWithHeadRevision;
-
-	/** */
 	public static String CommitDialog_DeselectAll;
 
 	/** */
@@ -4781,9 +4778,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Find;
-
-	/** */
-	public static String StagingView_MergeTool;
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
