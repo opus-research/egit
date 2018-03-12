@@ -29,8 +29,9 @@ import org.junit.Test;
 public class GitChangeSetSorterTest {
 
 	/*
-	 * Tests for GitModelWorkingTree
+	 *		Tests for GitModelWorkingTree
 	 */
+
 	@Test public void workingTreeShouldBeLessThanCacheTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
@@ -88,9 +89,10 @@ public class GitChangeSetSorterTest {
 	}
 
 	/*
-	 * Tests for GitModelCache
+	 * 		Tests for GitModelCache
 	 */
-	@Test public void cacheTreeShouldBeGreaterThanWorkingTree() {
+
+	@Test public void cacheTreeShouldBeGreaterThenWorkingTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -104,7 +106,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void cacheTreeShouldBeLessThanCommit() {
+	@Test public void cacheTreeShouldBeLessThenCommit() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -118,7 +120,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual < 0);
 	}
 
-	@Test public void cacheTreeShouldBeLessThanTree() {
+	@Test public void cacheTreeShouldBeLessThenTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -132,7 +134,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual < 0);
 	}
 
-	@Test public void cacheTreeShouldBeLessThanBlob() {
+	@Test public void cacheTreeShouldBeLessThenBlob() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -147,9 +149,10 @@ public class GitChangeSetSorterTest {
 	}
 
 	/*
-	 * Tests for GitModelCommit
+	 * 		Tests for GitModelCommit
 	 */
-	@Test public void commitTreeShouldBeGreaterThanWorkingTree() {
+
+	@Test public void commitTreeShouldBeGreaterThenWorkingTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -163,7 +166,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void commitTreeShouldBeGreaterThanCache() {
+	@Test public void commitTreeShouldBeGreaterThenCache() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -177,7 +180,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void commitTreeShouldBeLessThanTree() {
+	@Test public void commitTreeShouldBeLessThenTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -191,7 +194,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual < 0);
 	}
 
-	@Test public void commitTreeShouldBeLessThanBlob() {
+	@Test public void commitTreeShouldBeLessThenBlob() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -206,9 +209,10 @@ public class GitChangeSetSorterTest {
 	}
 
 	/*
-	 * Tests for GitModelTree
+	 * 		Tests for GitModelTree
 	 */
-	@Test public void treeShouldBeGreaterThanWorkingTree() {
+
+	@Test public void treeShouldBeGreaterThenWorkingTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -222,7 +226,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void treeShouldBeGreaterThanCache() {
+	@Test public void treeShouldBeGreaterThenCache() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -236,7 +240,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void treeShouldBeGreaterThanCommit() {
+	@Test public void treeShouldBeGreaterThenCommit() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -250,7 +254,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void treeShouldBeLessThanBlob() {
+	@Test public void treeShouldBeLessThenBlob() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -265,9 +269,10 @@ public class GitChangeSetSorterTest {
 	}
 
 	/*
-	 * Tests for GitModelBlob
+	 * 		Tests for GitModelBlob
 	 */
-	@Test public void blobShouldBeGreaterThanWorkingTree() {
+
+	@Test public void blobShouldBeGreaterThenWorkingTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -281,7 +286,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void blobShouldBeGreaterThanCache() {
+	@Test public void blobShouldBeGreaterThenCache() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -295,7 +300,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void blobShouldBeGreaterThanCommit() {
+	@Test public void blobShouldBeGreaterThenCommit() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -309,7 +314,7 @@ public class GitChangeSetSorterTest {
 		assertTrue(actual > 0);
 	}
 
-	@Test public void blobShouldBeGreaterThanTree() {
+	@Test public void blobShouldBeGreaterThenTree() {
 		// given
 		Viewer viewer = mock(Viewer.class);
 		GitChangeSetSorter sorter = new GitChangeSetSorter();
@@ -324,8 +329,9 @@ public class GitChangeSetSorterTest {
 	}
 
 	/*
-	 * Tests for alphabetical order
+	 * 		Tests for alphabetical order
 	 */
+
 	@Test
 	public void shouldOrderTreesAlphabetically() {
 		// given
@@ -368,8 +374,9 @@ public class GitChangeSetSorterTest {
 	}
 
 	/*
-	 * Test for commit chronological order
+	 * 		Test for commit chronological order
 	 */
+
 	@Test public void shouldOrderCommitsByCommitDate() {
 		// given
 		Viewer viewer = mock(Viewer.class);
