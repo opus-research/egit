@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Tobias Pfeifer (SAP AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
@@ -18,7 +18,10 @@ import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.lib.Repository;
 
 /**
- * Implements "Abort Rebase"
+ * Implements the RebaseCommand that is used to start processing the steps. This
+ * command needs to be called the first time after a {@link RebaseOperation}
+ * stopped and returned with status
+ * {@link org.eclipse.jgit.api.RebaseResult.Status#INTERACTIVE_PREPARED}
  */
 public class ProcessStepsRebaseCommand extends AbstractRebaseCommandHandler {
 	/**
