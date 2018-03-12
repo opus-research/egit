@@ -25,7 +25,7 @@ import org.eclipse.egit.ui.common.WorkingCopyPage;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.osgi.util.NLS;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -225,8 +225,8 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 		// the integrity of the repository here. Only a few basic properties
 		// we'd expect from a clone made this way, that would possibly
 		// not hold true given other parameters in the GUI.
-		Repository repository = new RepositoryBuilder().setGitDir(
-				new File(destRepo, Constants.DOT_GIT)).build();
+		Repository repository = FileRepositoryBuilder.create(new File(destRepo,
+				Constants.DOT_GIT));
 		assertNotNull(repository.resolve("src/" + SampleTestRepository.FIX));
 		// we didn't clone that one
 		assertNull(repository.resolve("src/master"));
