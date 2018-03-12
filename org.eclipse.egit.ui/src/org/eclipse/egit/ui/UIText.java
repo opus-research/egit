@@ -88,6 +88,9 @@ public class UIText extends NLS {
 	public static String AddToIndexAction_addingFiles;
 
 	/** */
+	public static String AddToIndexCommand_addingFilesFailed;
+
+	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
@@ -1310,6 +1313,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResourceHistory_ShowTagSequence;
+
+	/** */
+	public static String ResourceHistory_toggleRelativeDate;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
@@ -3017,13 +3023,10 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_description;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_projects;
+	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_destination;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
+	public static String GitBranchSynchronizeWizardPage_branches;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
