@@ -15,7 +15,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.Collections;
 
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -49,10 +48,6 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 
 	private static final String TEST_FILE = "TestFile";
 
-	private static final String TEST_FOLDER = "TestFolder";
-	
-	private static final String SUB_FOLDER = "SubFolder";
-		
 	private File gitDir;
 
 	private Repository repository;
@@ -136,30 +131,6 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 	}
 
 	@Test
-	public void testDecorationNewFolder() throws Exception {
-		// Create new folder with sub folder
-		IFolder folder = project.getFolder(TEST_FOLDER);
-		folder.create(true, true, null);
-		IFolder subFolder = folder.getFolder(SUB_FOLDER);
-		subFolder.create(true, true, null);
-		
-		IDecoratableResource[] expectedDRs = new IDecoratableResource[] {
-				new TestDecoratableResource(project, true, false, false, false,
-						Staged.NOT_STAGED),
-				new TestDecoratableResource(folder, false, false, false, false,
-						Staged.NOT_STAGED),
-				new TestDecoratableResource(subFolder, false, false, false, false,
-						Staged.NOT_STAGED) };
-						
-		waitForIndexDiffUpdate(true);
-		IDecoratableResource[] actualDRs = DecoratableResourceHelper
-				.createDecoratableResources(new IResource[] { project, folder, subFolder });
-
-		for (int i = 0; i < expectedDRs.length; i++)
-			assertTrue(expectedDRs[i].equals(actualDRs[i]));
-	}
-
-	@Test
 	public void testDecorationNewFile() throws Exception {
 		// Create new file
 		write(new File(project.getLocation().toFile(), TEST_FILE), "Something");
@@ -178,8 +149,7 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
-	
-	
+
 	@Test
 	public void testDecorationAddedFile() throws Exception {
 		// Create new file
