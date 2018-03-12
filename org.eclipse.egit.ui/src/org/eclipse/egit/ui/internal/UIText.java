@@ -75,6 +75,9 @@ public class UIText extends NLS {
 	public static String Activator_scanningRepositories;
 
 	/** */
+	public static String Activator_setupFocusListener;
+
+	/** */
 	public static String AddConfigEntryDialog_AddConfigTitle;
 
 	/** */
@@ -1911,10 +1914,16 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_changeto_committer;
 
 	/** */
+	public static String HistoryPage_findbar_changeto_reference;
+
+	/** */
 	public static String HistoryPage_findbar_exceeded;
 
 	/** */
 	public static String HistoryPage_findbar_notFound;
+
+	/** */
+	public static String HistoryPage_findbar_reference;
 
 	/** */
 	public static String HistoryPreferencePage_MaxBranchLength;
