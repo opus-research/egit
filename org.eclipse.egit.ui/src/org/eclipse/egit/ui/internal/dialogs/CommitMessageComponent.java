@@ -539,7 +539,9 @@ public class CommitMessageComponent {
 		if (amending)
 			getHeadCommitInfo();
 
-		commitText.setText(calculateCommitMessage(filesToCommit));
+		String calculatedCommitMessage = calculateCommitMessage(filesToCommit);
+		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(calculatedCommitMessage) > 0;
+		commitText.setText(calculatedCommitMessage);
 		authorText.setText(getSafeString(author));
 		committerText.setText(getSafeString(committer));
 		if (amending) {
@@ -550,7 +552,8 @@ public class CommitMessageComponent {
 				originalChangeId = null;
 			}
 			refreshSignedOffBy();
-			refreshChangeIdText();
+			if (!calculatedMessageHasChangeId)
+				refreshChangeIdText();
 		}
 		updateSignedOffButton();
 		updateChangeIdButton();
@@ -659,7 +662,7 @@ public class CommitMessageComponent {
 					previousCommitMessage);
 			if (endOfChangeId < 0)
 				endOfChangeId = previousCommitMessage.length();
-			int sha1Offset = changeIdOffset + Text.DELIMITER.length() + "Change-Id: I".length(); //$NON-NLS-1$
+			int sha1Offset = changeIdOffset + "Change-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage
 						.substring(sha1Offset, endOfChangeId));
@@ -675,7 +678,7 @@ public class CommitMessageComponent {
 	}
 
 	private int findOffsetOfChangeIdLine(String message) {
-		return message.indexOf(Text.DELIMITER + "Change-Id: I"); //$NON-NLS-1$
+		return ChangeIdUtil.indexOfChangeId(message, Text.DELIMITER);
 	}
 
 	private void updateChangeIdButton() {
@@ -709,7 +712,7 @@ public class CommitMessageComponent {
 					cleanedText = text.substring(0, changeIdOffset);
 				else
 					cleanedText = text.substring(0, changeIdOffset)
-							+ text.substring(endOfChangeId);
+							+ text.substring(endOfChangeId + 1);
 				commitText.setText(cleanedText);
 			}
 		}
