@@ -4,6 +4,7 @@
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -216,9 +217,6 @@ public class UIIcons {
 	/** Rebase abort icon */
 	public final static ImageDescriptor REBASE_ABORT;
 
-	/** Rebase process steps icon */
-	public final static ImageDescriptor REBASE_PROCESS_STEPS;
-
 	/** Merge icon */
 	public final static ImageDescriptor MERGE;
 
@@ -233,6 +231,9 @@ public class UIIcons {
 
 	/** Stash icon */
 	public final static ImageDescriptor STASH;
+
+	/** Search commit icon */
+	public final static ImageDescriptor SEARCH_COMMIT;
 
 	/** Hierarchy layout icon */
 	public final static ImageDescriptor HIERARCHY;
@@ -317,7 +318,6 @@ public class UIIcons {
 		REBASE_CONTINUE = map("elcl16/continue.gif"); //$NON-NLS-1$
 		REBASE_SKIP = map("elcl16/skip.gif"); //$NON-NLS-1$
 		REBASE_ABORT = map("elcl16/progress_stop.gif"); //$NON-NLS-1$
-		REBASE_PROCESS_STEPS = map("elcl16/continue.gif"); //$NON-NLS-1$
 		OVR_ERROR = map("ovr/error.png"); //$NON-NLS-1$
 		MERGE = map("obj16/merge.gif"); //$NON-NLS-1$
 		TAG_ANNOTATED = map("obj16/annotated-tag.gif"); //$NON-NLS-1$
@@ -325,6 +325,7 @@ public class UIIcons {
 		SUBMODULES = map("obj16/submodules.gif"); //$NON-NLS-1$
 		CLEAN = map("obj16/clean_obj.gif"); //$NON-NLS-1$
 		STASH = map("obj16/stash.png"); //$NON-NLS-1$
+		SEARCH_COMMIT = map("obj16/search-commit.gif"); //$NON-NLS-1$
 		HIERARCHY = map("elcl16/hierarchicalLayout.gif"); //$NON-NLS-1$
 		FLAT = map("elcl16/flatLayout.gif"); //$NON-NLS-1$
 		COMPACT = map("elcl16/compactLayout.gif"); //$NON-NLS-1$

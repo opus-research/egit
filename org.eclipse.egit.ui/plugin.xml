@@ -382,8 +382,12 @@
             category="org.eclipse.team.ui.TeamPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot"
             id="org.eclipse.egit.ui.GitPreferences">
-	      <keywordReference
-	            id="org.eclipse.egit.ui.keyword.refresh"/>
+         <keywordReference
+               id="org.eclipse.egit.ui.keyword.git">
+         </keywordReference>
+         <keywordReference
+               id="org.eclipse.egit.ui.keyword.refresh">
+         </keywordReference>
       </page>
       <page name="%GitPreferences_ProjectPreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
@@ -741,7 +745,7 @@
            tooltip="%FetchAction_tooltip">
 		 </action>
 		 <action
-           class="org.eclipse.egit.ui.internal.actions.SimplePushAction"
+           class="org.eclipse.egit.ui.internal.actions.PushUpstreamOrBranchAction"
            definitionId="org.eclipse.egit.ui.team.SimplePush"
            icon="icons/obj16/push.gif"
            id="org.eclipse.egit.ui.actionpush"
@@ -749,7 +753,7 @@
            menubarPath="org.eclipse.egit.ui.gitmenu/repo"
            style="push"
            toolbarPath="org.eclipse.egit.ui"
-           tooltip="%PushAction_tooltip">
+           tooltip="%PushToUpstreamAction.tooltip">
 		 </action>
 		 <action
            class="org.eclipse.egit.ui.internal.actions.ResetAction"
@@ -879,6 +883,11 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.Push"
             name="%PushCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.PushBranch"
+            name="%PushBranchCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -1191,6 +1200,29 @@
                   </adapt>
                </iterate>
             </and>
+         </activeWhen>
+      </handler>
+      <handler
+            commandId="org.eclipse.egit.ui.team.PushBranch">
+         <class
+               class="org.eclipse.egit.ui.internal.actions.PushBranchActionHandler">
+         </class>
+         <activeWhen>
+            <or>
+               <reference
+                     definitionId="org.eclipse.egit.ui.gitProject">
+               </reference>
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+		             <instanceof
+		                   value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+		             </instanceof>
+                  </iterate>
+               </and>
+            </or>
          </activeWhen>
       </handler>
       <handler
@@ -1837,13 +1869,6 @@
             icon="icons/eview16/staging.png"
             id="org.eclipse.egit.ui.StagingView"
             name="%GitStagingView_name">
-      </view>
-      <view
-            category="org.eclipse.egit.ui.GitCategory"
-            class="org.eclipse.egit.ui.internal.rebase.RebaseInteractiveView"
-            id="org.eclipse.egit.ui.InteractiveRebaseView"
-            name="%GitInteractiveRebaseView_name">
-            <!--icon="icons/eview16/rebase.png"-->
       </view>
       <category
             id="org.eclipse.egit.ui.GitCategory"
@@ -2956,6 +2981,26 @@
             </visibleWhen>
          </command>
          <command
+               commandId="org.eclipse.egit.ui.team.PushBranch"
+               label="%PushBranchAction.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
                commandId="org.eclipse.egit.ui.team.Pull"
                icon="icons/obj16/pull.gif"
                label="%RepoViewPullMenu.label"
@@ -3668,6 +3713,17 @@
                   </reference>
                </visibleWhen>
             </command>
+            <command
+                  commandId="org.eclipse.egit.ui.team.PushBranch"
+                  label="%PushBranchAction.label"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="false">
+                  <reference
+                        definitionId="org.eclipse.egit.ui.gitProject">
+                  </reference>
+               </visibleWhen>
+            </command>
             <separator
                   name="org.eclipse.egit.ui.remoteSeparator"
                   visible="true">
@@ -3970,31 +4026,71 @@
                icon="icons/obj16/rebase.gif"
                label="%RebaseMenu.label">
 	           <command
-	                 commandId="org.eclipse.egit.ui.org.eclipse.egit.ui.AbortRebase" style="push" />
-	            <command
-	                 commandId="org.eclipse.egit.ui.SkipRebase" style="push" />
-	            <command
-	                 commandId="org.eclipse.egit.ui.ContinueRebase" style="push" />
-	           <visibleWhen checkEnabled="false">
-	              <and>
-	                 <iterate
-                        ifEmpty="false">
-	                    <and>
-	                       <adapt
-	                             type="org.eclipse.core.resources.IProject">
+                  commandId="org.eclipse.egit.ui.org.eclipse.egit.ui.AbortRebase"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="false">
+                  <and>
+                     <count
+                           value="1">
+                     </count>
+                     <iterate>
+                        <and>
+                           <adapt
+                                 type="org.eclipse.core.resources.IProject">
                               <test
-                                    property="GitResource.isShared">
+                                    property="GitResource.canAbortRebase">
                               </test>
-	                          <not>
-		                          <test
-		                                property="GitResource.isSafe">
-		                          </test>
-	                          </not>
-	                       </adapt>
-	                    </and>
-	                 </iterate>
-	              </and>
-	           </visibleWhen>
+                           </adapt>
+                        </and>
+                     </iterate>
+                  </and>
+               </visibleWhen>
+            </command>
+	            <command
+                   commandId="org.eclipse.egit.ui.SkipRebase"
+                   style="push">
+                <visibleWhen
+                      checkEnabled="false">
+                   <and>
+                      <count
+                            value="1">
+                      </count>
+                      <iterate>
+                         <and>
+                            <adapt
+                                  type="org.eclipse.core.resources.IProject">
+                               <test
+                                     property="GitResource.canAbortRebase">
+                               </test>
+                            </adapt>
+                         </and>
+                      </iterate>
+                   </and>
+                </visibleWhen>
+             </command>
+	            <command
+                   commandId="org.eclipse.egit.ui.ContinueRebase"
+                   style="push">
+                <visibleWhen
+                      checkEnabled="false">
+                   <and>
+                      <count
+                            value="1">
+                      </count>
+                      <iterate>
+                         <and>
+                            <adapt
+                                  type="org.eclipse.core.resources.IProject">
+                               <test
+                                     property="GitResource.canContinueRebase">
+                               </test>
+                            </adapt>
+                         </and>
+                      </iterate>
+                   </and>
+                </visibleWhen>
+             </command>
             </menu>
            <command
                  commandId="org.eclipse.egit.ui.team.Reset"
@@ -4453,6 +4549,10 @@
             icon="icons/obj16/push.gif">
       </image>
       <image
+            commandId="org.eclipse.egit.ui.team.PushBranch"
+            icon="icons/obj16/push.gif">
+      </image>
+      <image
             commandId="org.eclipse.egit.ui.FetchGerritChange"
             icon="icons/obj16/gerrit_fetch.gif">
       </image>
@@ -4594,7 +4694,7 @@
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,hasGerritConfiguration"
+            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
    </extension>
@@ -5166,9 +5266,6 @@
          </part>
          <part
                id="org.eclipse.egit.ui.ReflogView">
-         </part>
-         <part
-               id="org.eclipse.egit.ui.InteractiveRebaseView">
          </part>
          <part
                id="org.eclipse.egit.ui.commitEditor">
