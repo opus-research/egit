@@ -26,9 +26,8 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
+import org.eclipse.egit.ui.internal.history.CommitFileDiffViewer;
 import org.eclipse.egit.ui.internal.history.FileDiff;
-import org.eclipse.egit.ui.internal.history.FileDiffLabelProvider;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -46,11 +45,13 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
+import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -175,12 +176,13 @@ public class CommitEditorPage extends FormPage {
 
 		boolean signedOff = isSignedOffBy(person);
 
-		Text userText = toolkit
-				.createText(userArea, MessageFormat.format(
-						author ? UIText.CommitEditorPage_LabelAuthor
-								: UIText.CommitEditorPage_LabelCommitter,
-						person.getName(), person.getEmailAddress(), person
-								.getWhen()));
+		Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
+		userText.setText(MessageFormat.format(
+				author ? UIText.CommitEditorPage_LabelAuthor
+						: UIText.CommitEditorPage_LabelCommitter, person
+						.getName(), person.getEmailAddress(), person.getWhen()));
+		toolkit.adapt(userText, false, false);
+		userText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
 
 		GridDataFactory.fillDefaults().span(signedOff ? 1 : 2, 1)
 				.applyTo(userText);
@@ -319,7 +321,7 @@ public class CommitEditorPage extends FormPage {
 			message = replaceSignedOffByLine(message, committer);
 
 		SpellcheckableMessageArea textContent = new SpellcheckableMessageArea(
-				messageArea, message, SWT.NONE) {
+				messageArea, message, toolkit.getBorderStyle()) {
 
 			@Override
 			protected IAdaptable getDefaultTarget() {
@@ -336,8 +338,9 @@ public class CommitEditorPage extends FormPage {
 			}
 
 		};
-		textContent.setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TEXT_BORDER);
+		if ((toolkit.getBorderStyle() & SWT.BORDER) == 0)
+			textContent.setData(FormToolkit.KEY_DRAW_BORDER,
+					FormToolkit.TEXT_BORDER);
 		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, 80).grab(true, true)
 				.applyTo(textContent);
 		textContent.getTextWidget().setEditable(false);
@@ -367,6 +370,8 @@ public class CommitEditorPage extends FormPage {
 
 		});
 		branchViewer.setContentProvider(ArrayContentProvider.getInstance());
+		branchViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
 
 		fillBranches();
 
@@ -405,16 +410,28 @@ public class CommitEditorPage extends FormPage {
 	private void createFilesArea(Composite parent, FormToolkit toolkit, int span) {
 		Section files = createSection(parent, toolkit, span);
 		Composite filesArea = createSectionClient(files, toolkit);
+		GridLayout filesAreaLayout = (GridLayout) filesArea.getLayout();
+		filesAreaLayout.marginLeft = 0;
+		filesAreaLayout.marginRight = 0;
+		filesAreaLayout.marginTop = 0;
+		filesAreaLayout.marginBottom = 0;
 
-		TableViewer viewer = new TableViewer(toolkit.createTable(filesArea,
-				SWT.V_SCROLL | SWT.H_SCROLL));
+		CommitFileDiffViewer viewer = new CommitFileDiffViewer(filesArea,
+				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
+						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
+		// commit file diff viewer uses a nested composite with a stack layout
+		// and so margins need to be applied to have form toolkit style borders
+		toolkit.paintBordersFor(viewer.getTable().getParent());
+		viewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+		StackLayout viewerLayout = (StackLayout) viewer.getControl()
+				.getParent().getLayout();
+		viewerLayout.marginHeight = 2;
+		viewerLayout.marginWidth = 2;
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 80)
-				.applyTo(viewer.getControl());
-		viewer.setLabelProvider(new FileDiffLabelProvider());
+				.applyTo(viewer.getTable().getParent());
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
-		MenuManager manager = new MenuManager();
-		viewer.getTable().setMenu(manager.createContextMenu(viewer.getTable()));
-		getSite().registerContextMenu(manager, viewer);
+		viewer.setTreeWalk(getCommit().getRepository(), null);
 
 		FileDiff[] diffs = getCommit().getDiffs();
 		viewer.setInput(diffs);

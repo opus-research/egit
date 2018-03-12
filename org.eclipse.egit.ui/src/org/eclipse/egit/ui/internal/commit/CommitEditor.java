@@ -81,6 +81,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 
 	private DiffEditorPage diffPage;
 
+	private NotesEditorPage notePage;
+
 	private ListenerHandle refListenerHandle;
 
 	/**
@@ -90,9 +92,13 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		try {
 			commitPage = new CommitEditorPage(this);
 			addPage(commitPage);
-			if (getCommit().getRevCommit().getParentCount() == 1) {
+			if (getCommit().getRevCommit().getParentCount() <= 1) {
 				diffPage = new DiffEditorPage(this);
 				addPage(diffPage);
+			}
+			if (getCommit().getNotes().length > 0) {
+				notePage = new NotesEditorPage(this);
+				addPage(notePage);
 			}
 		} catch (PartInitException e) {
 			Activator.error("Error adding page", e); //$NON-NLS-1$
@@ -187,7 +193,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			UIJob job = new UIJob("Refreshing editor") { //$NON-NLS-1$
 
 				public IStatus runInUIThread(IProgressMonitor monitor) {
-					commitPage.refresh();
+					if (!getContainer().isDisposed())
+						commitPage.refresh();
 					return Status.OK_STATUS;
 				}
 			};
