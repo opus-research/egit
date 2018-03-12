@@ -89,6 +89,7 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		File gitDir = new File(new File(getTestDirectory(), REPO1),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = lookupRepository(gitDir);
 		myRepository.create();
 
@@ -231,7 +232,6 @@ public abstract class GitRepositoriesViewTestBase extends
 			shell.bot().tree().expandNode(gitCategory).getNode(viewName)
 					.select();
 			shell.bot().button(IDialogConstants.OK_LABEL).click();
-			TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
 
 			viewbot = bot.viewByTitle(viewName);
 
