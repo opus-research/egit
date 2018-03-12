@@ -2,11 +2,9 @@
 <feature
       id="org.eclipse.egit.gitflow.feature"
       label="%featureName"
-      version="4.2.0.qualifier"
+      version="4.2.0.201512141825-rc1"
       provider-name="%providerName"
-      plugin="org.eclipse.egit.gitflow"
-      license-feature="org.eclipse.license"
-      license-feature-version="0.0.0">
+      plugin="org.eclipse.egit.gitflow">
 
    <description url="http://www.eclipse.org/egit/">
       %description

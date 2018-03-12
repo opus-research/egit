@@ -94,10 +94,10 @@ public interface IResourceState {
 	boolean hasConflicts();
 
 	/**
-	 * Returns whether or not the resource is assumed unchanged.
+	 * Returns whether or not the resource is assumed valid.
 	 *
-	 * @return whether or not the resource is assumed unchanged
+	 * @return whether or not the resource is assumed valid
 	 */
-	boolean isAssumeUnchanged();
+	boolean isAssumeValid();
 
 }

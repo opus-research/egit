@@ -16,17 +16,13 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>4.2.0-SNAPSHOT</version>
+    <version>4.2.0.201512141825-rc1</version>
   </parent>
 
   <artifactId>org.eclipse.egit.mylyn.ui.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
   <name>EGit Mylyn UI Test Plug-in</name>
-
-  <properties>
-    <uitest.vmparams>-Xmx512m -XX:MaxPermSize=256m</uitest.vmparams>
-  </properties>
 
   <profiles>
     <profile>
@@ -49,7 +45,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>${uitest.vmparams} -XstartOnFirstThread</ui.test.vmargs>
+        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m -XstartOnFirstThread</ui.test.vmargs>
       </properties>
     </profile>
     <profile>
@@ -61,7 +57,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>${test.vmparams} ${uitest.vmparams}</ui.test.vmargs>
+        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m</ui.test.vmargs>
       </properties>
     </profile>
   </profiles>
