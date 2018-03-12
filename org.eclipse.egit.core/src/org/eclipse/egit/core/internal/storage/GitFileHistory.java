@@ -66,7 +66,7 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 			db = rm.getRepository();
 			walk = new KidWalk(db);
 			gitPath = rm.getRepoRelativePath(resource);
-			if (gitPath == null || gitPath.length() == 0) {
+			if(gitPath == null || gitPath.isEmpty()) {
 				walk.setTreeFilter(TreeFilter.ANY_DIFF);
 			} else {
 				walk.setTreeFilter(AndTreeFilter.create(PathFilterGroup

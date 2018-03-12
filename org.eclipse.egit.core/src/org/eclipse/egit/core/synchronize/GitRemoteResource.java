@@ -10,22 +10,32 @@ package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.internal.storage.CommitBlobStorage;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.CachedResourceVariant;
 
 abstract class GitRemoteResource extends CachedResourceVariant {
 
 	private final String path;
 
-	private final RevCommit commitId;
+	private final Repository repo;
 
 	private final ObjectId objectId;
 
-	GitRemoteResource(RevCommit commitId, ObjectId objectId, String path) {
+	private final RevCommit revCommit;
+
+	GitRemoteResource(Repository repo, RevCommit revCommit, ObjectId objectId,
+			String path) {
+		this.repo = repo;
 		this.path = path;
 		this.objectId = objectId;
-		this.commitId = commitId;
+		this.revCommit = revCommit;
 	}
 
 	public String getName() {
@@ -34,11 +44,21 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 	}
 
 	public String getContentIdentifier() {
-		return commitId.abbreviate(7).name() + "..."; //$NON-NLS-1$
+		return revCommit.abbreviate(7).name() + "..."; //$NON-NLS-1$
 	}
 
 	public byte[] asBytes() {
 		return getObjectId().name().getBytes();
+	}
+
+	@Override
+	protected void fetchContents(IProgressMonitor monitor) throws TeamException {
+		CommitBlobStorage content = new CommitBlobStorage(repo, path, objectId, revCommit);
+		try {
+			setContents(content.getContents(), monitor);
+		} catch (CoreException e) {
+			Activator.error("", e); //$NON-NLS-1$
+		}
 	}
 
 	@Override
@@ -52,15 +72,11 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 	}
 
 	boolean exists() {
-		return commitId != null;
-	}
-
-	RevCommit getCommitId() {
-		return commitId;
+		return objectId != null;
 	}
 
 	/**
-	 * @return object id, or {code {@link RevCommit#zeroId()} if object doesn't
+	 * @return object id, or {code {@link ObjectId#zeroId()} if object doesn't
 	 *         exist in repository
 	 */
 	ObjectId getObjectId() {
@@ -69,6 +85,14 @@ abstract class GitRemoteResource extends CachedResourceVariant {
 
 	String getPath() {
 		return path;
+	}
+
+	Repository getRepo() {
+		return repo;
+	}
+
+	RevCommit getCommit() {
+		return revCommit;
 	}
 
 }
