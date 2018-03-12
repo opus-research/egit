@@ -42,11 +42,11 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
@@ -201,7 +201,8 @@ public class GitProjectData {
 	public synchronized static GitProjectData get(final IProject p) {
 		try {
 			GitProjectData d = lookup(p);
-			if (d == null && ResourceUtil.isSharedWithGit(p)) {
+			if (d == null && RepositoryProvider.getProvider(p,
+					GitProvider.ID) != null) {
 				d = new GitProjectData(p).load();
 				cache(p, d);
 			}

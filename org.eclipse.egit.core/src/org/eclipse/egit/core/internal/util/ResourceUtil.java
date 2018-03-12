@@ -27,7 +27,6 @@ import java.util.Set;
 import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -39,7 +38,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.RepositoryCache;
@@ -47,6 +45,8 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -56,10 +56,6 @@ import org.eclipse.team.core.RepositoryProvider;
  *
  */
 public class ResourceUtil {
-	// The id used to associate a provider with a project, see
-	// TeamPlugin.PROVIDER_PROP_KEY
-	private final static QualifiedName PROVIDER_PROP_KEY = new QualifiedName(
-			"org.eclipse.team.core", "repository"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	/**
 	 * Return the corresponding resource if it exists and has the Git repository
@@ -72,7 +68,8 @@ public class ResourceUtil {
 	 *            the path to check
 	 * @return the resources, or null
 	 */
-	public static IResource getResourceForLocation(IPath location) {
+	@Nullable
+	public static IResource getResourceForLocation(@NonNull IPath location) {
 		IFile file = getFileForLocation(location);
 		if (file != null) {
 			return file;
@@ -90,7 +87,8 @@ public class ResourceUtil {
 	 * @param location
 	 * @return the file, or null
 	 */
-	public static IFile getFileForLocation(IPath location) {
+	@Nullable
+	public static IFile getFileForLocation(@NonNull IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IFile file = root.getFileForLocation(location);
 		if (file == null) {
@@ -110,91 +108,15 @@ public class ResourceUtil {
 	 * @return true if the resource is shared with git, not a link and
 	 *         accessible in Eclipse
 	 */
-	private static boolean isValid(IResource resource) {
+	private static boolean isValid(@NonNull IResource resource) {
 		return resource.isAccessible()
 				&& !resource.isLinked(IResource.CHECK_ANCESTORS)
 				&& isSharedWithGit(resource);
 	}
 
-	/**
-	 * @param resource
-	 *            non null
-	 * @return true if the project is configured with git provider
-	 */
-	public static boolean isSharedWithGit(IResource resource) {
-		IProject project = resource.getProject();
-		if (!project.isAccessible()) {
-			return false;
-		}
-		try {
-			// Look for an existing provider
-			RepositoryProvider provider = lookupProviderProp(project);
-			if (provider != null) {
-				if (GitProvider.ID.equals(provider.getID())) {
-					return true;
-				} else {
-					return false;
-				}
-			}
-			// There isn't one so check the persistent property
-			String existingID = project
-					.getPersistentProperty(PROVIDER_PROP_KEY);
-			return GitProvider.ID.equals(existingID);
-		} catch (CoreException e) {
-			Activator.getDefault().getLog().log(e.getStatus());
-			return false;
-		}
-	}
-
-	/**
-	 * Returns a provider of type with the given id if associated with the given
-	 * project or <code>null</code> if the project is not associated with a
-	 * provider of that type or the nature id is that of a non-team repository
-	 * provider nature.
-	 *
-	 * @param project
-	 *            the project to query for a provider
-	 * @param mapIfNeeded
-	 *            true if the provider must be instantiated if not yet done.
-	 *            This requires locks and is not recommended.
-	 * @return the repository provider
-	 */
-	final public static GitProvider getGitProvider(IProject project,
-			boolean mapIfNeeded) {
-		if (!project.isAccessible()) {
-			return null;
-		}
-		try {
-			// Look for an existing provider
-			GitProvider provider = lookupProviderProp(project);
-			if (provider != null) {
-				if (GitProvider.ID.equals(provider.getID())) {
-					return provider;
-				} else {
-					return null;
-				}
-			}
-			if (!mapIfNeeded) {
-				return null;
-			}
-			return (GitProvider) RepositoryProvider.getProvider(project,
-					GitProvider.ID);
-		} catch (CoreException e) {
-			Activator.getDefault().getLog().log(e.getStatus());
-		}
-		return null;
-	}
-
-	/*
-	 * Return the provider mapped to project, or null if none;
-	 */
-	private static GitProvider lookupProviderProp(IProject project)
-			throws CoreException {
-		Object provider = project.getSessionProperty(PROVIDER_PROP_KEY);
-		if (provider instanceof GitProvider) {
-			return (GitProvider) provider;
-		}
-		return null;
+	private static boolean isSharedWithGit(@NonNull IResource resource) {
+		return RepositoryProvider.getProvider(resource.getProject(),
+				GitProvider.ID) != null;
 	}
 
 	/**
@@ -207,7 +129,8 @@ public class ResourceUtil {
 	 * @param location
 	 * @return the container, or null
 	 */
-	public static IContainer getContainerForLocation(IPath location) {
+	@Nullable
+	public static IContainer getContainerForLocation(@NonNull IPath location) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IContainer dir = root.getContainerForLocation(location);
 		if (dir == null) {
@@ -233,8 +156,9 @@ public class ResourceUtil {
 	 *            the repository-relative path of the file to search for
 	 * @return the IFile corresponding to this path, or null
 	 */
-	public static IFile getFileForLocation(Repository repository,
-			String repoRelativePath) {
+	@Nullable
+	public static IFile getFileForLocation(@NonNull Repository repository,
+			@NonNull String repoRelativePath) {
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
 		return getFileForLocation(path);
 	}
@@ -250,8 +174,9 @@ public class ResourceUtil {
 	 *            the repository-relative path of the container to search for
 	 * @return the IContainer corresponding to this path, or null
 	 */
-	public static IContainer getContainerForLocation(Repository repository,
-			String repoRelativePath) {
+	@Nullable
+	public static IContainer getContainerForLocation(
+			@NonNull Repository repository, @NonNull String repoRelativePath) {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IPath path = new Path(repository.getWorkTree().getAbsolutePath()).append(repoRelativePath);
 		return root.getContainerForLocation(path);
@@ -268,8 +193,8 @@ public class ResourceUtil {
 	 * @return {@code true} if the path in the given repository refers to a
 	 *         symbolic link
 	 */
-	public static boolean isSymbolicLink(Repository repository,
-			String repoRelativePath) {
+	public static boolean isSymbolicLink(@NonNull Repository repository,
+			@NonNull String repoRelativePath) {
 		try {
 			File f = new Path(repository.getWorkTree().getAbsolutePath())
 					.append((repoRelativePath)).toFile();
@@ -288,7 +213,8 @@ public class ResourceUtil {
 	 *            Path for which we need a resource handle.
 	 * @return The resource handle for the given path in the workspace.
 	 */
-	public static IResource getResourceHandleForLocation(IPath path) {
+	@NonNull
+	public static IResource getResourceHandleForLocation(@NonNull IPath path) {
 		final IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace()
 				.getRoot();
 
@@ -373,17 +299,18 @@ public class ResourceUtil {
 	 * @return {@code true} when given resource is not imported into workspace,
 	 *         {@code false} otherwise
 	 */
-	public static boolean isNonWorkspace(IResource resource) {
+	public static boolean isNonWorkspace(@NonNull IResource resource) {
 		return resource.getLocation() == null;
 	}
 
-	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
+	private static IFile getFileForLocationURI(@NonNull IWorkspaceRoot root,
+			@NonNull URI uri) {
 		IFile[] files = root.findFilesForLocationURI(uri);
 		return getExistingMappedResourceWithShortestPath(files);
 	}
 
 	private static IContainer getContainerForLocationURI(IWorkspaceRoot root,
-			URI uri) {
+			@NonNull URI uri) {
 		IContainer[] containers = root.findContainersForLocationURI(uri);
 		return getExistingMappedResourceWithShortestPath(containers);
 	}
@@ -409,8 +336,8 @@ public class ResourceUtil {
 		return shortestPath;
 	}
 
-	private static void addPathToMap(Repository repository,
-			String path, Map<Repository, Collection<String>> result) {
+	private static void addPathToMap(@NonNull Repository repository,
+			@Nullable String path, Map<Repository, Collection<String>> result) {
 		if (path != null) {
 			Collection<String> resourcesList = result.get(repository);
 			if (resourcesList == null) {
@@ -432,7 +359,8 @@ public class ResourceUtil {
 	 *            Context from which remote content could be retrieved.
 	 * @return All mappings available for that file.
 	 */
-	public static ResourceMapping[] getResourceMappings(IResource resource,
+	public static ResourceMapping[] getResourceMappings(
+			@NonNull IResource resource,
 			ResourceMappingContext context) {
 		final IModelProviderDescriptor[] modelDescriptors = ModelProvider
 				.getModelProviderDescriptors();
@@ -462,7 +390,7 @@ public class ResourceUtil {
 	 *
 	 * @param repository
 	 */
-	public static void saveLocalHistory(Repository repository) {
+	public static void saveLocalHistory(@NonNull Repository repository) {
 		IndexDiffCacheEntry indexDiffCacheEntry = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
 				.getIndexDiffCacheEntry(repository);
@@ -491,7 +419,7 @@ public class ResourceUtil {
 		}
 	}
 
-	private static void saveLocalHistory(IResource resource)
+	private static void saveLocalHistory(@NonNull IResource resource)
 			throws CoreException {
 		if (!resource.isSynchronized(IResource.DEPTH_ZERO))
 			resource.refreshLocal(IResource.DEPTH_ZERO, null);
