@@ -14,7 +14,6 @@ package org.eclipse.egit.ui.internal.actions;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -26,9 +25,6 @@ import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.mapping.ResourceMapping;
-import org.eclipse.core.resources.mapping.ResourceTraversal;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -58,7 +54,6 @@ import org.eclipse.ui.ide.ResourceUtil;
  * A helper class for Team Actions on Git controlled projects
  */
 abstract class RepositoryActionHandler extends AbstractHandler {
-	private IEvaluationContext evaluationContext;
 
 	private IStructuredSelection mySelection;
 
@@ -83,19 +78,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		for (IResource resource : (IResource[]) getSelectedAdaptables(
 				selection, IResource.class))
 			ret.add(resource.getProject());
-		ret.addAll(extractProjectsFromMappings(selection));
-
 		return ret.toArray(new IProject[ret.size()]);
-	}
-
-	private Set<IProject> extractProjectsFromMappings(IStructuredSelection selection) {
-		Set<IProject> ret = new HashSet<IProject>();
-		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
-				selection, ResourceMapping.class)) {
-			IProject[] projects = mapping.getProjects();
-			ret.addAll(Arrays.asList(projects));
-		}
-		return ret;
 	}
 
 	/**
@@ -260,24 +243,21 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *
 	 * @param event
 	 *
-	 * @return repositories for selection, or an empty array
+	 * @return repository for current project, or null
 	 * @throws ExecutionException
 	 */
 	protected Repository[] getRepositories(ExecutionEvent event)
 			throws ExecutionException {
 		IProject[] selectedProjects = getSelectedProjects(event);
-		return getRepositoriesFor(selectedProjects);
-	}
-
-	/**
-	 * Get the currently selected repositories. All selected projects must map
-	 * to a repository.
-	 *
-	 * @return repositories for selection, or an empty array
-	 */
-	protected Repository[] getRepositories() {
-		IProject[] selectedProjects = getSelectedProjects(getSelection());
-		return getRepositoriesFor(selectedProjects);
+		Set<Repository> repos = new HashSet<Repository>(selectedProjects.length);
+		for (IProject project : selectedProjects) {
+			RepositoryMapping repositoryMapping = RepositoryMapping
+					.getMapping(project);
+			if (repositoryMapping == null)
+				return new Repository[0];
+			repos.add(repositoryMapping.getRepository());
+		}
+		return repos.toArray(new Repository[repos.size()]);
 	}
 
 	/**
@@ -312,7 +292,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		// if the selection was set explicitly, use it
 		if (mySelection != null)
 			return mySelection;
-		return convertSelection(evaluationContext, null);
+		return convertSelection(getEvaluationContext(), null);
 	}
 
 	private IStructuredSelection convertSelection(IEvaluationContext aContext,
@@ -343,10 +323,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		if (selection instanceof IStructuredSelection)
 			return (IStructuredSelection) selection;
 		return StructuredSelection.EMPTY;
-	}
-
-	public void setEnabled(Object evaluationContext) {
-		this.evaluationContext = (IEvaluationContext) evaluationContext;
 	}
 
 	private IEvaluationContext getEvaluationContext() {
@@ -453,26 +429,8 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			IResource resource = (IResource) getAdapter(o, IResource.class);
 			if (resource != null)
 				result.add(resource);
-			else
-				extractResourcesFromMapping(result, o);
 		}
 		return result.toArray(new IResource[result.size()]);
-	}
-
-	private void extractResourcesFromMapping(Set<IResource> result, Object o) {
-		ResourceMapping mapping = (ResourceMapping) getAdapter(o, ResourceMapping.class);
-		if (mapping != null) {
-			ResourceTraversal[] traversals;
-			try {
-				traversals = mapping.getTraversals(null, null);
-				for (ResourceTraversal traversal : traversals) {
-					IResource[] resources = traversal.getResources();
-					result.addAll(Arrays.asList(resources));
-				}
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
 	}
 
 	/**
@@ -537,20 +495,5 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 					UIText.MergeAction_CannotMerge, message);
 		}
 		return (message == null);
-	}
-
-	/**
-	 *
-	 * @return {@code true} when {@link Constants#HEAD} can be resolved,
-	 *         {@code false} otherwise
-	 */
-	protected boolean containsHead() {
-		try {
-			return getRepository().resolve(Constants.HEAD) != null;
-		} catch (Exception e) {
-			// do nothing
-		}
-
-		return false;
 	}
 }

@@ -67,8 +67,6 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 	private Image repositoryImage = UIIcons.REPOSITORY.createImage();
 
-	private IProject[] selectProjects;
-
 	GitSynchronizeWizardPage() {
 		super(GitSynchronizeWizardPage.class.getName());
 		setTitle(UIText.GitBranchSynchronizeWizardPage_title);
@@ -157,7 +155,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 					treeViewer.refresh(element, true);
 				}
 
-				validatePage();
+				setPageComplete(selectedBranches.size() == selectedRepositories
+						.size());
 			}
 
 			@Override
@@ -252,10 +251,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 		final Object[] array = repositories.keySet().toArray();
 		treeViewer.setInput(array);
-		if (selectProjects == null)
-			treeViewer.setCheckedElements(array);
-		else
-			treeViewer.setCheckedElements(selectProjects);
+		treeViewer.setCheckedElements(array);
 		repositoriesColumn.getColumn().pack();
 
 		save();
@@ -266,7 +262,13 @@ class GitSynchronizeWizardPage extends WizardPage {
 				selectedProjects.clear();
 
 				save();
-				validatePage();
+
+				if (event.getChecked()) {
+					setPageComplete(selectedBranches.size() == selectedRepositories
+							.size());
+				} else if (treeViewer.getCheckedElements().length == 0) {
+					setPageComplete(false);
+				}
 			}
 		});
 
@@ -284,7 +286,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 			public void handleEvent(Event event) {
 				treeViewer.setCheckedElements(array);
 				save();
-				validatePage();
+				setPageComplete(selectedBranches.size() == selectedRepositories
+						.size());
 			}
 		});
 		selectAllBtn.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, false,
@@ -299,7 +302,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 				// clear all selection
 				selectedRepositories.clear();
 				selectedProjects.clear();
-				validatePage();
+				// mark page as being incomplete
+				setPageComplete(false);
 			}
 		});
 		deselectAllBtn.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING,
@@ -340,21 +344,6 @@ class GitSynchronizeWizardPage extends WizardPage {
 				selectedProjects.add((IProject) checkedElement);
 			}
 		}
-	}
-
-	private void validatePage() {
-		boolean complete = !selectedRepositories.isEmpty();
-		if (complete)
-			for (Repository repository : selectedRepositories)
-				if (!selectedBranches.containsKey(repository)) {
-					complete = false;
-					break;
-				}
-		setPageComplete(complete);
-	}
-
-	void selectProjects(IProject[] projs) {
-		this.selectProjects = projs;
 	}
 
 	Map<Repository, String> getSelectedBranches() {

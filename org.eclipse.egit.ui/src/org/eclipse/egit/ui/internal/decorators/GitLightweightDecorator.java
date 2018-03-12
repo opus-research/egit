@@ -273,8 +273,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		// Step 3: Perform more expensive tests
 
 		// Don't decorate ignored resources (e.g. bin folder content)
-		if (resource.getType() != IResource.PROJECT
-				&& Team.isIgnoredHint(resource))
+		if (Team.isIgnoredHint(resource))
 			return;
 
 		// Cannot decorate linked resources

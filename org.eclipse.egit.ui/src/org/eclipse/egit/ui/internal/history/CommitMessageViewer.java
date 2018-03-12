@@ -298,12 +298,6 @@ class CommitMessageViewer extends TextViewer implements
 		this.db = repository;
 	}
 
-	private Repository getRepository() {
-		if (db == null)
-			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
-		return db;
-	}
-
 	private void format() {
 		if (commit == null) {
 			setDocument(new Document(
@@ -321,7 +315,7 @@ class CommitMessageViewer extends TextViewer implements
 				.getAdapter(IWorkbenchSiteProgressService.class);
 		if (siteService == null)
 			return;
-		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(getRepository(),
+		FormatJob.FormatRequest formatRequest = new FormatJob.FormatRequest(db,
 				commit, fill, currentDiffs, SYS_LINKCOLOR, SYS_DARKGRAY,
 				SYS_HUNKHEADER_COLOR, SYS_LINES_ADDED_COLOR,
 				SYS_LINES_REMOVED_COLOR);

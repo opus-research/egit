@@ -30,14 +30,9 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.Resource;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.PlatformUI;
 
 /**
@@ -388,36 +383,4 @@ public class UIUtils {
 		adapter
 				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 	}
-
-	/**
-	 * Set enabled state of the control and all its children
-	 * @param control
-	 * @param enable
-	 */
-	public static void setEnabledRecursively(final Control control,
-			final boolean enable) {
-		control.setEnabled(enable);
-		if (control instanceof Composite)
-			for (final Control child : ((Composite) control).getChildren())
-				setEnabledRecursively(child, enable);
-	}
-
-	/**
-	 * Dispose of the resource when the widget is disposed
-	 *
-	 * @param widget
-	 * @param resource
-	 */
-	public static void hookDisposal(Widget widget, final Resource resource) {
-		if (widget == null || resource == null)
-			return;
-
-		widget.addDisposeListener(new DisposeListener() {
-
-			public void widgetDisposed(DisposeEvent e) {
-				resource.dispose();
-			}
-		});
-	}
-
 }

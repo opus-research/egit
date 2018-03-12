@@ -129,9 +129,9 @@ public class GitModelBlob extends GitModelCommit {
 			return kind;
 
 		int changeKind;
-		if (zeroId().equals(baseId))
+		if (zeroId().equals(remoteId))
 			changeKind = DELETION;
-		else if (zeroId().equals(remoteId) || remoteId == null)
+		else if (zeroId().equals(ancestorId))
 			changeKind = ADDITION;
 		else
 			changeKind = CHANGE;
