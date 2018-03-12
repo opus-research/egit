@@ -56,6 +56,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
+import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -250,7 +251,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		String compareWithHeadMenuLabel = util
 				.getPluginLocalizedValue("CompareWithHeadAction_label");
 		clickCompareWithAndWaitForSync(compareWithHeadMenuLabel);
-
+		closeFirstEmptySynchronizeDialog();
 		assertSynchronizeNoChange();
 
 		// change test file -> should have one change
@@ -330,19 +331,24 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 	private void assertSynchronizeNoChange() {
 		// 0 => title, 1 => ?, 2 => "no result" Label
-		SWTBotLabel syncViewLabel = bot.viewByTitle("Synchronize").bot()
-				.label(2);
+		SWTBotLabel syncViewLabel = bot.viewById(ISynchronizeView.VIEW_ID).bot()
+				.label(0);
 
 		String noResultLabel = syncViewLabel.getText();
-		assertTrue(noResultLabel.contains("No changes in 'Git (" + PROJ1
-				+ ")'."));
+		String expected = "No changes in 'Git (" + PROJ1 + ")'.";
+		if (!noResultLabel.contains(expected)) {
+			syncViewLabel = bot.viewById(ISynchronizeView.VIEW_ID).bot().label(2);
+			noResultLabel = syncViewLabel.getText();
+			assertTrue(noResultLabel.contains(expected));
+		}
 	}
 
 	private void assertSynchronizeFile1Changed() {
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertEquals(syncItems.length, 1);
-		assertTrue(syncItems[0].getText().contains(PROJ1));
+		String text = syncItems[0].getText();
+		assertTrue("Received unexpected text: " + text, text.contains(PROJ1));
 
 		syncItems[0].expand();
 		SWTBotTreeItem[] level1Children = syncItems[0].getItems();

@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011, 2015 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,6 +7,8 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
+ *    Laurent Delaigue (Obeo) - use of preferred merge strategy
+ *    Stephan Hackstedt <stephan.hackstedt@googlemail.com> - bug 477695
  *****************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -18,9 +20,9 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
@@ -30,6 +32,7 @@ import org.eclipse.jgit.api.RevertCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.TeamException;
 
@@ -40,7 +43,7 @@ public class RevertCommitOperation implements IEGitOperation {
 
 	private final Repository repo;
 
-	private final RevCommit commit;
+	private final List<RevCommit> commits;
 
 	private RevCommit newHead;
 
@@ -52,11 +55,12 @@ public class RevertCommitOperation implements IEGitOperation {
 	 * Create revert commit operation
 	 *
 	 * @param repository
-	 * @param commit
+	 * @param commits
+	 *            the commits to revert (in newest-first order)
 	 */
-	public RevertCommitOperation(Repository repository, RevCommit commit) {
+	public RevertCommitOperation(Repository repository, List<RevCommit> commits) {
 		this.repo = repository;
-		this.commit = commit;
+		this.commits = commits;
 	}
 
 	/**
@@ -73,16 +77,24 @@ public class RevertCommitOperation implements IEGitOperation {
 		return reverted;
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor = m != null ? m : new NullProgressMonitor();
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
+			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
-				pm.beginTask("", 2); //$NON-NLS-1$
-
-				pm.subTask(MessageFormat.format(
-						CoreText.RevertCommitOperation_reverting, commit.name()));
-				RevertCommand command = new Git(repo).revert().include(commit);
+				SubMonitor progress = SubMonitor.convert(pm, 2);
+				progress.subTask(MessageFormat.format(
+						CoreText.RevertCommitOperation_reverting,
+						Integer.valueOf(commits.size())));
+				RevertCommand command = new Git(repo).revert();
+				MergeStrategy strategy = Activator.getDefault()
+						.getPreferredMergeStrategy();
+				if (strategy != null) {
+					command.setStrategy(strategy);
+				}
+				for (RevCommit commit : commits)
+					command.include(commit);
 				try {
 					newHead = command.call();
 					reverted = command.getRevertedRefs();
@@ -91,19 +103,18 @@ public class RevertCommitOperation implements IEGitOperation {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
-				pm.worked(1);
+				progress.worked(1);
 
 				ProjectUtil.refreshValidProjects(
 						ProjectUtil.getValidOpenProjects(repo),
-						new SubProgressMonitor(pm, 1));
-
-				pm.done();
+						progress.newChild(1));
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+				IWorkspace.AVOID_UPDATE, m);
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
 	}

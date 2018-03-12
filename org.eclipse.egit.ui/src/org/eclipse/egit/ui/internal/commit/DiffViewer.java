@@ -85,6 +85,7 @@ public class DiffViewer extends SourceViewer {
 
 	private IPropertyChangeListener themeListener = new IPropertyChangeListener() {
 
+		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			String property = event.getProperty();
 			if (IThemeManager.CHANGE_CURRENT_THEME.equals(property)
@@ -106,6 +107,7 @@ public class DiffViewer extends SourceViewer {
 
 	private IPropertyChangeListener editorPrefListener = new IPropertyChangeListener() {
 
+		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			styleViewer();
 		}
@@ -115,15 +117,19 @@ public class DiffViewer extends SourceViewer {
 	 * @param parent
 	 * @param ruler
 	 * @param styles
+	 * @param showCursorLine
 	 */
-	public DiffViewer(Composite parent, IVerticalRuler ruler, int styles) {
+	public DiffViewer(Composite parent, IVerticalRuler ruler, int styles,
+			boolean showCursorLine) {
 		super(parent, ruler, styles);
 		setDocument(new Document());
 		SourceViewerDecorationSupport support = new SourceViewerDecorationSupport(
 				this, null, null, EditorsUI.getSharedTextColors());
-		support.setCursorLinePainterPreferenceKeys(
-				AbstractDecoratedTextEditorPreferenceConstants.EDITOR_CURRENT_LINE,
-				AbstractDecoratedTextEditorPreferenceConstants.EDITOR_CURRENT_LINE_COLOR);
+		if (showCursorLine) {
+			support.setCursorLinePainterPreferenceKeys(
+					AbstractDecoratedTextEditorPreferenceConstants.EDITOR_CURRENT_LINE,
+					AbstractDecoratedTextEditorPreferenceConstants.EDITOR_CURRENT_LINE_COLOR);
+		}
 		support.install(EditorsUI.getPreferenceStore());
 		if (ruler instanceof CompositeRuler) {
 			lineNumberRuler = new LineNumberRulerColumn();
@@ -133,6 +139,7 @@ public class DiffViewer extends SourceViewer {
 		initListeners();
 		getControl().addDisposeListener(new DisposeListener() {
 
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				EditorsUI.getPreferenceStore().removePropertyChangeListener(
 						editorPrefListener);
@@ -172,6 +179,7 @@ public class DiffViewer extends SourceViewer {
 				this.editorPrefListener);
 		getTextWidget().addLineBackgroundListener(new LineBackgroundListener() {
 
+			@Override
 			public void lineGetBackground(LineBackgroundEvent event) {
 				StyledText text = getTextWidget();
 				if (event.lineOffset < text.getCharCount()) {

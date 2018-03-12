@@ -6,6 +6,8 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  * Copyright (C) 2012, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -36,6 +38,7 @@ import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CloneOperation.PostCloneTask;
 import org.eclipse.egit.core.op.ConfigureFetchAfterCloneTask;
+import org.eclipse.egit.core.op.ConfigureGerritAfterCloneTask;
 import org.eclipse.egit.core.op.ConfigurePushAfterCloneTask;
 import org.eclipse.egit.core.op.SetRepositoryConfigPropertyTask;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
@@ -60,6 +63,7 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IWorkingSet;
@@ -244,20 +248,27 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		final CloneOperation op = new CloneOperation(uri, allSelected,
 				selectedBranches, workdir, ref != null ? ref.getName() : null,
 				remoteName, timeout);
-		if (credentials != null)
-			op.setCredentialsProvider(new EGitCredentialsProvider(
-					credentials.getUser(), credentials.getPassword()));
-		else
-			op.setCredentialsProvider(new EGitCredentialsProvider());
+		CredentialsProvider credentialsProvider = null;
+		if (credentials != null) {
+			credentialsProvider = new EGitCredentialsProvider(
+					credentials.getUser(), credentials.getPassword());
+		} else {
+			credentialsProvider = new EGitCredentialsProvider();
+		}
+		op.setCredentialsProvider(credentialsProvider);
 		op.setCloneSubmodules(cloneDestination.isCloneSubmodules());
 
+		rememberHttpHost(op, uri);
 		configureFetchSpec(op, gitRepositoryInfo, remoteName);
 		configurePush(op, gitRepositoryInfo, remoteName);
 		configureRepositoryConfig(op, gitRepositoryInfo);
+		configureGerrit(op, gitRepositoryInfo, credentialsProvider, remoteName,
+				timeout);
 
 		if (cloneDestination.isImportProjects()) {
 			final IWorkingSet[] sets = cloneDestination.getWorkingSets();
 			op.addPostCloneTask(new PostCloneTask() {
+				@Override
 				public void execute(Repository repository,
 						IProgressMonitor monitor) throws CoreException {
 					importProjects(repository, sets);
@@ -316,6 +327,16 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		}
 	}
 
+	private void rememberHttpHost(CloneOperation op, URIish uri) {
+		String scheme = uri.getScheme();
+		if (scheme != null && scheme.toLowerCase().startsWith("http")) { //$NON-NLS-1$
+			String host = uri.getHost();
+			if (host != null) {
+				op.addPostCloneTask(new RememberHostTask(host));
+			}
+		}
+	}
+
 	private void configureFetchSpec(CloneOperation op,
 			GitRepositoryInfo gitRepositoryInfo, String remoteName) {
 		for (String fetchRefSpec : gitRepositoryInfo.getFetchRefSpecs())
@@ -345,6 +366,16 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		}
 	}
 
+	private void configureGerrit(CloneOperation op,
+			GitRepositoryInfo gitRepositoryInfo,
+			CredentialsProvider credentialsProvider, String remoteName,
+			int timeout) {
+		ConfigureGerritAfterCloneTask task = new ConfigureGerritAfterCloneTask(
+				gitRepositoryInfo.getCloneUri(), remoteName,
+				credentialsProvider, timeout);
+		op.addPostCloneTask(task);
+	}
+
 	private void importProjects(final Repository repository,
 			final IWorkingSet[] sets) {
 		String repoName = Activator.getDefault().getRepositoryUtil()
@@ -352,6 +383,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		Job importJob = new WorkspaceJob(MessageFormat.format(
 				UIText.GitCloneWizard_jobImportProjects, repoName)) {
 
+			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				List<File> files = new ArrayList<File>();
 				ProjectUtil.findProjectFiles(files, repository.getWorkTree(),
@@ -382,6 +414,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	public void runCloneOperation(IWizardContainer container, final GitRepositoryInfo repositoryInfo) {
 		try {
 			container.run(true, true, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					executeCloneOperation(cloneOperation, repositoryInfo, monitor);
@@ -414,7 +447,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CLONE))
+				if (JobFamilies.CLONE.equals(family))
 					return true;
 				return super.belongsTo(family);
 			}

@@ -28,12 +28,9 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
@@ -181,6 +178,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree.getTree());
 
 		tree.addOpenListener(new IOpenListener() {
+			@Override
 			public void open(OpenEvent event) {
 				reactOnOpen(event);
 			}
@@ -267,9 +265,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 			if (compareMode) {
 				left = getTypedElement(fileNode, fileNode.leftRevision,
-						getBaseVersion());
+						getBaseVersionText());
 				right = getTypedElement(fileNode, fileNode.rightRevision,
-						getCompareVersion());
+						getCompareVersionText());
 
 				GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
 						left, right, PlatformUI.getWorkbench()
@@ -303,18 +301,18 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		}
 	}
 
-	private String getBaseVersion() {
+	private String getBaseVersionText() {
 		// null in case of Workspace compare
 		if (baseVersion == null)
 			return UIText.CompareTreeView_WorkspaceVersionText;
-		return baseVersion;
+		return CompareUtils.truncatedRevision(baseVersion);
 	}
 
-	private String getCompareVersion() {
+	private String getCompareVersionText() {
 		if (compareVersion.equals(INDEX_VERSION))
 			return UIText.CompareTreeView_IndexVersionText;
 		else
-			return compareVersion;
+			return CompareUtils.truncatedRevision(compareVersion);
 	}
 
 	@Override
@@ -427,17 +425,14 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				throw new IllegalStateException();
 			if (baseVersion == null)
 				setContentDescription(NLS
-						.bind(
-								UIText.CompareTreeView_ComparingWorkspaceVersionDescription,
-								name, getCompareVersion()));
+						.bind(UIText.CompareTreeView_ComparingWorkspaceVersionDescription,
+								name, getCompareVersionText()));
 			else
-				setContentDescription(NLS
-						.bind(
-								UIText.CompareTreeView_ComparingTwoVersionDescription,
-								new String[] {
-										baseVersion,
-										name,
-										getCompareVersion() }));
+				setContentDescription(NLS.bind(
+						UIText.CompareTreeView_ComparingTwoVersionDescription,
+						new String[] { name,
+								CompareUtils.truncatedRevision(baseVersion),
+								getCompareVersionText() }));
 		}
 	}
 
@@ -471,8 +466,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			return;
 		final RevCommit baseCommit;
 		final RevCommit compareCommit;
-		RevWalk rw = new RevWalk(repo);
-		try {
+		try (RevWalk rw = new RevWalk(repo)) {
 			ObjectId commitId = repo.resolve(compareVersion);
 			compareCommit = commitId != null ? rw.parseCommit(commitId) : null;
 			if (baseVersion == null)
@@ -484,14 +478,13 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
 			return;
-		} finally {
-			rw.release();
 		}
 		showBusy(true);
 		try {
 			// this does the hard work...
 			new ProgressMonitorDialog(getViewSite().getShell()).run(true, true,
 					new IRunnableWithProgress() {
+						@Override
 						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
@@ -501,6 +494,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 											monitor);
 								PlatformUI.getWorkbench().getDisplay()
 										.asyncExec(new Runnable() {
+											@Override
 											public void run() {
 												tree.setInput(input);
 												tree
@@ -534,13 +528,11 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 		fileNodes.clear();
 		containerNodes.clear();
 		boolean checkIgnored = false;
-		TreeWalk tw = new TreeWalk(repository);
-		try {
+		try (TreeWalk tw = new TreeWalk(repository)) {
 			int baseTreeIndex;
 			if (baseCommit == null) {
 				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
-						repository, ResourcesPlugin.getWorkspace().getRoot()));
+				baseTreeIndex = tw.addTree(new FileTreeIterator(repository));
 			} else
 				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
 						repository.newObjectReader(), baseCommit.getTree()));
@@ -560,8 +552,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				for (IResource resource : resources) {
 					String relPath = repositoryMapping
 							.getRepoRelativePath(resource);
-					if (relPath.length() > 0)
+					if (relPath != null && relPath.length() > 0) {
 						orFilters.add(PathFilter.create(relPath));
+					}
 				}
 				if (checkIgnored) {
 					if (orFilters.size() > 1) {
@@ -639,7 +632,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				if (type != Type.FILE_BOTH_SIDES_SAME) {
 
 					file = ResourceUtil.getFileForLocation(repository,
-						repoRelativePath);
+						repoRelativePath, false);
 				}
 
 				if (baseVersionIterator != null) {
@@ -692,7 +685,6 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				}
 			}
 		} finally {
-			tw.release();
 			monitor.done();
 		}
 	}
@@ -700,10 +692,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	private long getEntrySize(TreeWalk tw, AbstractTreeIterator iterator)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
-		if (iterator instanceof ContainerTreeIterator)
-			return ((ContainerTreeIterator) iterator).getEntryContentLength();
-		if (iterator instanceof FileTreeIterator)
+		if (iterator instanceof FileTreeIterator) {
 			return ((FileTreeIterator) iterator).getEntryContentLength();
+		}
 		try {
 			return tw.getObjectReader().getObjectSize(
 					iterator.getEntryObjectId(), Constants.OBJ_BLOB);
@@ -917,6 +908,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	 */
 	private final class PathNodeContentProvider implements ITreeContentProvider {
 
+		@Override
 		public Object[] getElements(Object inputElement) {
 			ContainerNode rootContainer = containerNodes.get(new Path("")); //$NON-NLS-1$
 			if (rootContainer.isOnlyEqualContent() && !showEquals)
@@ -939,6 +931,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				return new PathNode[] { rootContainer };
 		}
 
+		@Override
 		public Object[] getChildren(Object parentElement) {
 			if (parentElement instanceof ContainerNode) {
 				ContainerNode containerNode = (ContainerNode) parentElement;
@@ -947,6 +940,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				return new Object[] {};
 		}
 
+		@Override
 		public boolean hasChildren(Object element) {
 			if (element instanceof ContainerNode) {
 				ContainerNode containerNode = (ContainerNode) element;
@@ -955,6 +949,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				return false;
 		}
 
+		@Override
 		public Object getParent(Object element) {
 			if (element instanceof PathNode) {
 				PathNode pathNode = (PathNode) element;
@@ -967,10 +962,12 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				return null;
 		}
 
+		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 			// Do nothing
 		}
 
+		@Override
 		public void dispose() {
 			// Do nothing
 		}
@@ -984,6 +981,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 		private final WorkbenchLabelProvider workbenchLabelProvider = new WorkbenchLabelProvider();
 
+		@Override
 		public Image getImage(Object element) {
 			if (element instanceof String)
 				return null;
@@ -1015,6 +1013,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			return null;
 		}
 
+		@Override
 		public String getText(Object element) {
 			if (element instanceof String)
 				return (String) element;
@@ -1058,6 +1057,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	 * @see org.eclipse.jface.action.IMenuListener#menuAboutToShow(org.eclipse.jface.action.IMenuManager)
 	 * @since 2.1
 	 */
+	@Override
 	public void menuAboutToShow(IMenuManager manager) {
 		ITreeSelection selection = (ITreeSelection) tree.getSelection();
 		if (selection.isEmpty())
@@ -1079,6 +1079,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	 * @see org.eclipse.ui.part.IShowInSource#getShowInContext()
 	 * @since 2.1
 	 */
+	@Override
 	public ShowInContext getShowInContext() {
 		IPath repoPath = getRepositoryPath();
 		ITreeSelection selection = (ITreeSelection) tree.getSelection();
@@ -1091,7 +1092,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				PathNode pathNode = (PathNode) obj;
 				IResource resource = ResourceUtil
 						.getResourceForLocation(repoPath.append(pathNode
-								.getRepoRelativePath()));
+								.getRepoRelativePath()), false);
 				if (resource != null)
 					resources.add(resource);
 			}

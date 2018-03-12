@@ -5,6 +5,7 @@
  * Copyright (C) 2012, Markus Duft <markus.duft@salomon.at>
  * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2015, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +27,9 @@ public class CoreText extends NLS {
 	 * able to find the corresponding bundle file.
 	 */
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.internal.coretext"; //$NON-NLS-1$
+
+	/** */
+	public static String Activator_invalidPreferredMergeStrategy;
 
 	/** */
 	public static String Activator_autoIgnoreDerivedResources;
@@ -77,6 +81,18 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ConnectProviderOperation_ConnectingProject;
+
+	/** */
+	public static String ConnectProviderOperation_ConnectErrors;
+
+	/** */
+	public static String ConnectProviderOperation_NoRepositoriesError;
+
+	/** */
+	public static String ConnectProviderOperation_UnexpectedRepositoryError;
+
+	/** */
+	public static String ContainerTreeIterator_DeletedFile;
 
 	/** */
 	public static String DeleteBranchOperation_TaskName;
@@ -190,6 +206,12 @@ public class CoreText extends NLS {
 	public static String ResetOperation_performingReset;
 
 	/** */
+	public static String ResourceUtil_SaveLocalHistoryFailed;
+
+	/** */
+	public static String ResourceUtil_mapProjectJob;
+
+	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -202,6 +224,21 @@ public class CoreText extends NLS {
 	public static String MergeOperation_ProgressMerge;
 
 	/** */
+	public static String MergeStrategy_MissingName;
+
+	/** */
+	public static String MergeStrategy_DuplicateName;
+
+	/** */
+	public static String MergeStrategy_ReservedName;
+
+	/** */
+	public static String MergeStrategy_LoadError;
+
+	/** */
+	public static String MergeStrategy_UnloadError;
+
+	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
 
 	/** */
@@ -212,6 +249,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MoveDeleteHook_unmergedFileInFolderError;
+
+	/** */
+	public static String MoveDeleteHook_cannotAutoStageDeletion;
 
 	/** */
 	public static String Error_CanonicalFile;
@@ -232,13 +272,13 @@ public class CoreText extends NLS {
 	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
 
 	/** */
-	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
-
-	/** */
 	public static String CreatePatchOperation_couldNotFindProject;
 
 	/** */
 	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
+
+	/** */
+	public static String IndexDiffCacheEntry_cannotReadIndex;
 
 	/** */
 	public static String IndexDiffCacheEntry_errorCalculatingIndexDelta;
@@ -376,7 +416,13 @@ public class CoreText extends NLS {
 	public static String GitProjectData_repositoryChangedTaskName;
 
 	/** */
+	public static String GitProjectData_UnmapJobName;
+
+	/** */
 	public static String GitProjectData_UnmappingGoneResourceFailed;
+
+	/** */
+	public static String GitResourceVariantTreeSubscriber_name;
 
 	/** */
 	public static String GitResourceVariantTreeSubscriber_fetchTaskName;

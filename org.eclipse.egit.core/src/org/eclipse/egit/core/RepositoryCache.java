@@ -3,6 +3,7 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,22 +21,43 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
- * Central cache for Repository instances
- *
+ * Central cache for Repository instances.
  */
 public class RepositoryCache {
 	private final Map<File, Reference<Repository>> repositoryCache = new HashMap<File, Reference<Repository>>();
 
+	private final IPreferenceChangeListener configuredRepositoriesListener = new IPreferenceChangeListener() {
+
+		@Override
+		public void preferenceChange(PreferenceChangeEvent event) {
+			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey())) {
+				return;
+			}
+			prune(Activator.getDefault().getRepositoryUtil().getRepositories());
+		}
+
+	};
+
 	RepositoryCache() {
-		// package private constructor
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.addPreferenceChangeListener(configuredRepositoriesListener);
+	}
+
+	void dispose() {
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.removePreferenceChangeListener(configuredRepositoriesListener);
 	}
 
 	/**
@@ -49,11 +71,14 @@ public class RepositoryCache {
 	public synchronized Repository lookupRepository(final File gitDir)
 			throws IOException {
 		prune(repositoryCache);
-		Reference<Repository> r = repositoryCache.get(gitDir);
+		// Make sure we have a normalized path without .. segments here.
+		File normalizedGitDir = new Path(gitDir.getAbsolutePath()).toFile();
+		Reference<Repository> r = repositoryCache.get(normalizedGitDir);
 		Repository d = r != null ? r.get() : null;
 		if (d == null) {
-			d = FileRepositoryBuilder.create(gitDir);
-			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
+			d = FileRepositoryBuilder.create(normalizedGitDir);
+			repositoryCache.put(normalizedGitDir,
+					new WeakReference<Repository>(d));
 		}
 		return d;
 	}
@@ -100,25 +125,18 @@ public class RepositoryCache {
 	 * @since 3.2
 	 */
 	public Repository getRepository(final IPath location) {
-		Repository[] repositories = org.eclipse.egit.core.Activator
-				.getDefault().getRepositoryCache().getAllRepositories();
+		Repository[] repositories = getAllRepositories();
 		Repository repository = null;
 		int largestSegmentCount = 0;
 		for (Repository r : repositories) {
 			if (!r.isBare()) {
-				try {
-					IPath repoPath = new Path(r.getWorkTree()
-							.getCanonicalPath());
-					if (location != null && repoPath.isPrefixOf(location)) {
-						if (repository == null
-								|| repoPath.segmentCount() > largestSegmentCount) {
-							repository = r;
-							largestSegmentCount = repoPath.segmentCount();
-						}
+				IPath repoPath = new Path(r.getWorkTree().getAbsolutePath());
+				if (location != null && repoPath.isPrefixOf(location)) {
+					if (repository == null
+							|| repoPath.segmentCount() > largestSegmentCount) {
+						repository = r;
+						largestSegmentCount = repoPath.segmentCount();
 					}
-				} catch (IOException e) {
-					Activator
-							.error("looking up working tree path of git repository failed", e); //$NON-NLS-1$
 				}
 			}
 		}
@@ -129,9 +147,19 @@ public class RepositoryCache {
 		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = map.entrySet()
 				.iterator(); i.hasNext();) {
 			Repository repository = i.next().getValue().get();
-			if (repository == null
-					|| !repository.getDirectory().exists())
+			if (repository == null || !repository.getDirectory().exists()) {
 				i.remove();
+			}
+		}
+	}
+
+	private synchronized void prune(Set<String> configuredRepositories) {
+		Iterator<File> iterator = repositoryCache.keySet().iterator();
+		while (iterator.hasNext()) {
+			File gitDir = iterator.next();
+			if (!configuredRepositories.contains(gitDir.getAbsolutePath())) {
+				iterator.remove();
+			}
 		}
 	}
 
@@ -139,7 +167,7 @@ public class RepositoryCache {
 	 * TESTING ONLY!
 	 * Unit tests can use this method to get a clean beginning state
 	 */
-	public void clear() {
+	public synchronized void clear() {
 		repositoryCache.clear();
 	}
 

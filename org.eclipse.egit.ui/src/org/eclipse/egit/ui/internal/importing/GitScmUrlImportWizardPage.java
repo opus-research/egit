@@ -13,6 +13,7 @@ package org.eclipse.egit.ui.internal.importing;
 import java.net.URI;
 
 import org.eclipse.egit.core.internal.GitURI;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -58,6 +59,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		/* (non-Javadoc)
 		 * @see org.eclipse.jface.viewers.ILabelProvider#getImage(java.lang.Object)
 		 */
+		@Override
 		public Image getImage(Object element) {
 			return PlatformUI.getWorkbench().getSharedImages().getImage(IDE.SharedImages.IMG_OBJ_PROJECT);
 		}
@@ -65,6 +67,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		/* (non-Javadoc)
 		 * @see org.eclipse.jface.viewers.ILabelProvider#getText(java.lang.Object)
 		 */
+		@Override
 		public String getText(Object element) {
 			return getStyledText(element).getString();
 		}
@@ -72,6 +75,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		/* (non-Javadoc)
 		 * @see org.eclipse.jface.viewers.StyledCellLabelProvider#update(org.eclipse.jface.viewers.ViewerCell)
 		 */
+		@Override
 		public void update(ViewerCell cell) {
 			StyledString string = getStyledText(cell.getElement());
 			cell.setText(string.getString());
@@ -86,17 +90,23 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 				ScmUrlImportDescription description = (ScmUrlImportDescription) element;
 				String project = description.getProject();
 				URI scmUrl = description.getUri();
-				String version = getTag(scmUrl);
-				String host = getServer(scmUrl);
-				styledString.append(project);
-				if (version != null) {
+				try {
+					String version = getTag(scmUrl);
+					String host = getServer(scmUrl);
+					styledString.append(project);
+					if (version != null) {
+						styledString.append(' ');
+						styledString.append(version,
+								StyledString.DECORATIONS_STYLER);
+					}
 					styledString.append(' ');
-					styledString.append(version, StyledString.DECORATIONS_STYLER);
+					styledString.append('[', StyledString.DECORATIONS_STYLER);
+					styledString.append(host, StyledString.DECORATIONS_STYLER);
+					styledString.append(']', StyledString.DECORATIONS_STYLER);
+				} catch (IllegalArgumentException e) {
+					styledString.append(e.getMessage());
+					Activator.logError(e.getMessage(), e);
 				}
-				styledString.append(' ');
-				styledString.append('[', StyledString.DECORATIONS_STYLER);
-				styledString.append(host, StyledString.DECORATIONS_STYLER);
-				styledString.append(']', StyledString.DECORATIONS_STYLER);
 				return styledString;
 			}
 			styledString.append(element.toString());
@@ -115,6 +125,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 	/* (non-Javadoc)
 	 * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets.Composite)
 	 */
+	@Override
 	public void createControl(Composite parent) {
 		Composite comp = SWTUtils.createHVFillComposite(parent, SWTUtils.MARGINS_NONE, 1);
 		Composite group = SWTUtils.createHFillComposite(comp, SWTUtils.MARGINS_NONE, 1);
@@ -124,6 +135,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		useMaster = SWTUtils.createRadioButton(group,
 				UIText.GitScmUrlImportWizardPage_importMaster);
 		SelectionListener listener = new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				bundlesViewer.refresh(true);
 			}
@@ -160,6 +172,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 
 	}
 
+	@Override
 	public boolean finish() {
 		boolean head = false;
 		if (getControl() != null) {
@@ -188,10 +201,12 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 	/* (non-Javadoc)
 	 * @see org.eclipse.team.ui.IScmUrlImportWizardPage#getSelection()
 	 */
+	@Override
 	public ScmUrlImportDescription[] getSelection() {
 		return descriptions;
 	}
 
+	@Override
 	public void setSelection(ScmUrlImportDescription[] descriptions) {
 		this.descriptions = descriptions;
 		// fill viewer

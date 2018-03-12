@@ -31,6 +31,7 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
@@ -41,6 +42,7 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -122,6 +124,7 @@ public class CommitUI  {
 		try {
 			PlatformUI.getWorkbench().getProgressService().busyCursorWhile(new IRunnableWithProgress() {
 
+				@Override
 				public void run(IProgressMonitor monitor) throws InvocationTargetException,
 						InterruptedException {
 					try {
@@ -191,12 +194,20 @@ public class CommitUI  {
 		}
 		if (commitDialog.isAmending())
 			commitOperation.setAmending(true);
-		commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
+
+		final boolean gerritMode = commitDialog.getCreateChangeId();
+
+		PushMode pushMode = null;
+		if (commitDialog.isPushRequested()) {
+			pushMode = gerritMode ? PushMode.GERRIT : PushMode.UPSTREAM;
+		}
+
+		commitOperation.setComputeChangeId(gerritMode);
 		commitOperation.setCommitAll(commitHelper.isMergedResolved);
 		if (commitHelper.isMergedResolved)
 			commitOperation.setRepository(repo);
-		Job commitJob = new CommitJob(repo, commitOperation).
-				setPushUpstream(commitDialog.isPushRequested());
+		Job commitJob = new CommitJob(repo, commitOperation)
+				.setPushUpstream(pushMode);
 		commitJob.schedule();
 
 		return true;
@@ -252,7 +263,8 @@ public class CommitUI  {
 			} else {
 				// could be file outside of workspace
 				for (IResource resource : selectedResources) {
-					if(resource.getFullPath().toFile().equals(new File(uri))) {
+					IPath location = resource.getLocation();
+					if(location != null && location.toFile().equals(new File(uri))) {
 						preselectionCandidates.add(fileName);
 					}
 				}
@@ -297,6 +309,7 @@ public class CommitUI  {
 
 	static class CountingVisitor implements IResourceVisitor {
 		int count;
+		@Override
 		public boolean visit(IResource resource) throws CoreException {
 			count++;
 			return true;

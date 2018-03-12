@@ -47,6 +47,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTableItem;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarToggleButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.team.ui.history.IHistoryView;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -172,7 +173,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	private void initFilter(int filter) throws Exception {
 		getHistoryViewTable(PROJ1);
 		SWTBotView view = bot
-				.viewById("org.eclipse.team.ui.GenericHistoryView");
+				.viewById(IHistoryView.VIEW_ID);
 		SWTBotToolbarToggleButton folder = (SWTBotToolbarToggleButton) view
 				.toolbarButton(UIText.GitHistoryPage_AllInParentTooltip);
 		SWTBotToolbarToggleButton project = (SWTBotToolbarToggleButton) view
@@ -245,25 +246,23 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 			explorerItem = TestUtil.getChildNode(childItem.expand(), path[2]);
 		}
 		explorerItem.select();
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Show In",
-				"History");
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
+				"Show in History");
 		// join GenerateHistoryJob
 		Job.getJobManager().join(JobFamilies.GENERATE_HISTORY, null);
 		// join UI update triggered by GenerateHistoryJob
 		projectExplorerTree.widget.getDisplay().syncExec(new Runnable() {
-
+			@Override
 			public void run() {
 				// empty
 			}
 		});
+
 		return getHistoryViewBot().table();
 	}
 
 	private SWTBot getHistoryViewBot() {
-		String genericHistoryViewId = "org.eclipse.team.ui.GenericHistoryView";
-		TestUtil.waitUntilViewWithGivenIdShows(genericHistoryViewId);
-		SWTBot historyView = bot.viewById(genericHistoryViewId).bot();
-		return historyView;
+		return TestUtil.showHistoryView().bot();
 	}
 
 	@Test
@@ -281,6 +280,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		// for some reason, checkboxwithlabel doesn't seem to work
 		dialog.bot().checkBox().deselect();
 		dialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		assertNotNull(repo.resolve(Constants.R_HEADS + "NewBranch"));
 	}
 
@@ -294,6 +294,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				TableItem tableItem = table.widget.getSelection()[0];
 				ensureTableItemLoaded(tableItem);
@@ -351,6 +352,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				TableItem tableItem = table.widget.getSelection()[0];
 				ensureTableItemLoaded(tableItem);
@@ -412,6 +414,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				TableItem tableItem = table.widget.getSelection()[0];
 				ensureTableItemLoaded(tableItem);
@@ -438,7 +441,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	private void toggleShowAllBranchesButton(boolean checked) throws Exception{
 		getHistoryViewTable(PROJ1);
 		SWTBotView view = bot
-				.viewById("org.eclipse.team.ui.GenericHistoryView");
+				.viewById(IHistoryView.VIEW_ID);
 		SWTBotToolbarToggleButton showAllBranches = (SWTBotToolbarToggleButton) view
 				.toolbarButton(UIText.GitHistoryPage_showAllBranches);
 		boolean isChecked = showAllBranches.isChecked();

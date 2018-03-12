@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Greg Amerson <gregory.amerson@liferay.com>
+ * Copyright (C) 2011, 2015 Greg Amerson <gregory.amerson@liferay.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,10 +12,11 @@ import java.io.File;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -106,6 +107,7 @@ public class OpenWorkingFileAction extends SelectionListenerAction {
 	/*
 	 * (non-Javadoc) Method declared on IAction.
 	 */
+	@Override
 	public void run() {
 		IStructuredSelection selection = getStructuredSelection();
 
@@ -125,23 +127,20 @@ public class OpenWorkingFileAction extends SelectionListenerAction {
 		}
 	}
 
+	@Nullable
 	private IResource getExistingResource(IStructuredSelection selection) {
 		Object element = selection.getFirstElement();
-
-		if (element instanceof IAdaptable) {
-			IResource resource = (IResource) ((IAdaptable) element)
-					.getAdapter(IResource.class);
-
-			if (resource != null && resource.exists())
-				return resource;
+		IResource resource = AdapterUtils.adapt(element, IResource.class);
+		if (resource != null && resource.exists()) {
+			return resource;
 		}
-
 		return null;
 	}
 
 	/**
 	 * Enable the action only if the selection contains IFiles
 	 */
+	@Override
 	protected boolean updateSelection(IStructuredSelection selection) {
 		return super.updateSelection(selection)
 				&& selectionIsOfType(IResource.FILE);

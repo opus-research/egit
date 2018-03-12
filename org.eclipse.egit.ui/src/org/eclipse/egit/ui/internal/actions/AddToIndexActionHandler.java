@@ -31,6 +31,7 @@ import org.eclipse.ui.IWorkbenchPart;
  */
 public class AddToIndexActionHandler extends RepositoryActionHandler {
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final IResource[] sel = getSelectedResources(event);
 		if (sel.length == 0)
@@ -77,7 +78,7 @@ public class AddToIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return getProjectsInRepositoryOfSelectedResources().length > 0;
+		return haveSelectedResourcesWithRepository();
 	}
 
 }

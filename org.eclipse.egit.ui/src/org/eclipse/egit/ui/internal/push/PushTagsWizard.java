@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
@@ -48,6 +49,7 @@ public class PushTagsWizard extends Wizard {
 	public static void openWizardDialog(final Repository repository,
 			final String... tagNames) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -76,6 +78,7 @@ public class PushTagsWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
+		setDefaultPageImageDescriptor(UIIcons.WIZBAN_PUSH);
 	}
 
 	@Override

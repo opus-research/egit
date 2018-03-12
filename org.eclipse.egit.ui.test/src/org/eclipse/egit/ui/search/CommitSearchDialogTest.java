@@ -26,6 +26,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.search2.internal.ui.InternalSearchUI;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.results.Result;
@@ -55,32 +56,38 @@ public class CommitSearchDialogTest extends LocalRepositoryTestCase {
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repository.getDirectory());
 
-		RevWalk walk = new RevWalk(repository);
-		try {
+		try (RevWalk walk = new RevWalk(repository)) {
 			commit = walk.parseCommit(repository.resolve(Constants.HEAD));
 			assertNotNull(commit);
 			walk.parseBody(commit.getParent(0));
-		} finally {
-			walk.release();
 		}
 	}
 
 	@Test
 	public void openCommitTabOnSearchDialog() throws Exception {
 		bot.menu("Search").menu("Search...").click();
-		SWTBotShell shell = bot.activeShell();
+		SWTBotShell shell = bot.shell("Search");
+		if (!shell.isActive()) {
+			shell.activate();
+		}
+		TestUtil.processUIEvents();
 		shell.bot().tabItem("Git Search").activate();
 		shell.bot().comboBox().setText(commit.name());
 		SWTBotButton search = shell.bot().button("Search");
 		assertTrue(search.isEnabled());
 		search.click();
+		TestUtil.waitForJobs(500, 5000);
+
 		TestUtil.joinJobs(InternalSearchUI.FAMILY_SEARCH);
-		bot.viewByTitle("Search").show();
+		bot.viewById(NewSearchUI.SEARCH_VIEW_ID).show();
+		TestUtil.processUIEvents();
+
 		final SWTBotTreeItem[] repos = bot.activeView().bot().tree()
 				.getAllItems();
 		assertEquals(1, repos.length);
 		Object repoData = UIThreadRunnable.syncExec(new Result<Object>() {
 
+			@Override
 			public Object run() {
 				return repos[0].widget.getData();
 			}
@@ -92,6 +99,7 @@ public class CommitSearchDialogTest extends LocalRepositoryTestCase {
 		assertEquals(1, commits.length);
 		Object commitData = UIThreadRunnable.syncExec(new Result<Object>() {
 
+			@Override
 			public Object run() {
 				return commits[0].widget.getData();
 			}

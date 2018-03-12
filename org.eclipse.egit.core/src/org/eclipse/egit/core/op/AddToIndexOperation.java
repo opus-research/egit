@@ -14,14 +14,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -60,6 +58,7 @@ public class AddToIndexOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -91,20 +90,21 @@ public class AddToIndexOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
 	 */
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	private void addToCommand(IResource resource, Map<RepositoryMapping, AddCommand> addCommands) {
-		IProject project = resource.getProject();
-		RepositoryMapping map = RepositoryMapping.getMapping(project);
+		RepositoryMapping map = RepositoryMapping.getMapping(resource);
+		if (map == null) {
+			return;
+		}
 		AddCommand command = addCommands.get(map);
 		if (command == null) {
 			Repository repo = map.getRepository();
 			Git git = new Git(repo);
-			AdaptableFileTreeIterator it = new AdaptableFileTreeIterator(repo,
-					resource.getWorkspace().getRoot());
-			command = git.add().setWorkingTreeIterator(it);
+			command = git.add();
 			addCommands.put(map, command);
 		}
 		String filepattern = map.getRepoRelativePath(resource);

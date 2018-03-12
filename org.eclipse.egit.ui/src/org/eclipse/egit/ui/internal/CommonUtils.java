@@ -3,6 +3,9 @@
  * Copyright (C) 2011, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2013, Michael Keppler <michael.keppler@gmx.de>
+ * Copyright (C) 2014, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
+ * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
+ * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +17,8 @@ package org.eclipse.egit.ui.internal;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ParameterizedCommand;
@@ -27,11 +32,20 @@ import org.eclipse.ui.ISources;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * Class containing all common utils
  */
 public class CommonUtils {
+
+	/**
+	 * Pattern to figure out where the footer lines in a commit are.
+	 *
+	 * @see org.eclipse.jgit.revwalk.RevCommit#getFooterLines()
+	 */
+	private static final Pattern FOOTER_PATTERN = Pattern
+			.compile("(?:\n(?:[A-Za-z0-9-]+:[^\n]*))+\\s*$"); //$NON-NLS-1$
 
 	private CommonUtils() {
 		// non-instantiable utility class
@@ -45,6 +59,7 @@ public class CommonUtils {
 	 * string1.equals(String2) returns false
 	 */
 	public static final Comparator<String> STRING_ASCENDING_COMPARATOR = new Comparator<String>() {
+		@Override
 		public int compare(String o1, String o2) {
 			if (o1.length() == 0 || o2.length() == 0)
 				return o1.length() - o2.length();
@@ -91,6 +106,7 @@ public class CommonUtils {
 	 * {@link CommonUtils#STRING_ASCENDING_COMPARATOR}.
 	 */
 	public static final Comparator<Ref> REF_ASCENDING_COMPARATOR = new Comparator<Ref>() {
+		@Override
 		public int compare(Ref o1, Ref o2) {
 			return STRING_ASCENDING_COMPARATOR.compare(o1.getName(), o2.getName());
 		}
@@ -101,6 +117,7 @@ public class CommonUtils {
 	 * {@link IResource#getName()}.
 	 */
 	public static final Comparator<IResource> RESOURCE_NAME_COMPARATOR = new Comparator<IResource>() {
+		@Override
 		public int compare(IResource r1, IResource r2) {
 			return Policy.getComparator().compare(r1.getName(), r2.getName());
 		}
@@ -118,14 +135,14 @@ public class CommonUtils {
 	 */
 	public static boolean runCommand(String commandId,
 			IStructuredSelection selection) {
-		ICommandService commandService = (ICommandService) PlatformUI
-				.getWorkbench().getService(ICommandService.class);
+		ICommandService commandService = CommonUtils.getService(PlatformUI
+				.getWorkbench(), ICommandService.class);
 		Command cmd = commandService.getCommand(commandId);
 		if (!cmd.isDefined())
 			return false;
 
-		IHandlerService handlerService = (IHandlerService) PlatformUI
-				.getWorkbench().getService(IHandlerService.class);
+		IHandlerService handlerService = CommonUtils.getService(PlatformUI
+				.getWorkbench(), IHandlerService.class);
 		EvaluationContext c = null;
 		if (selection != null) {
 			c = new EvaluationContext(
@@ -146,6 +163,25 @@ public class CommonUtils {
 			// Ignored
 		}
 		return false;
+	}
+
+	/**
+	 * Retrieves the service corresponding to the given API.
+	 * <p>
+	 * Workaround for "Unnecessary cast" errors, see bug 441615. Can be removed
+	 * when EGit depends on Eclipse 4.5 or higher.
+	 *
+	 * @param locator
+	 *            the service locator, must not be null
+	 * @param api
+	 *            the interface the service implements, must not be null
+	 * @return the service, or null if no such service could be found
+	 * @see IServiceLocator#getService(Class)
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T getService(IServiceLocator locator, Class<T> api) {
+		Object service = locator.getService(api);
+		return (T) service;
 	}
 
 	private static LinkedList<String> splitIntoDigitAndNonDigitParts(
@@ -170,5 +206,47 @@ public class CommonUtils {
 			if (input.charAt(i) != '0')
 				return input.substring(i);
 		return ""; //$NON-NLS-1$
+	}
+
+	/**
+	 * Assuming that the string {@code commitMessage} is a commit message,
+	 * returns the offset in the string of the footer of the commit message, if
+	 * one can found, or -1 otherwise.
+	 * <p>
+	 * A footer of a commit message is defined to be the non-empty lines
+	 * following the last empty line in the commit message if they have the
+	 * format "key: value" as defined by
+	 * {@link org.eclipse.jgit.revwalk.RevCommit#getFooterLines()}, like
+	 * Change-Id: I000... or Signed-off-by: ... Empty lines at the end of the
+	 * commit message are ignored.
+	 * </p>
+	 *
+	 * @param commitMessage
+	 *            text of the commit message, assumed to use '\n' as line
+	 *            delimiter
+	 * @return the index of the beginning of the footer, if any, or -1
+	 *         otherwise.
+	 */
+	public static int getFooterOffset(String commitMessage) {
+		if (commitMessage == null) {
+			return -1;
+		}
+		Matcher matcher = FOOTER_PATTERN.matcher(commitMessage);
+		if (matcher.find()) {
+			int start = matcher.start();
+			// Check that the line that ends at start is empty.
+			int i = start - 1;
+			while (i >= 0) {
+				char ch = commitMessage.charAt(i--);
+				if (ch == '\n') {
+					return start + 1;
+				} else if (!Character.isWhitespace(ch)) {
+					return -1;
+				}
+			}
+			// No \n but only whitespace: first line is empty
+			return start + 1;
+		}
+		return -1;
 	}
 }

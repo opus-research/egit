@@ -23,6 +23,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -54,7 +55,8 @@ class GenerateHistoryJob extends Job {
 
 	private int forcedRedrawsAfterListIsCompleted = 0;
 
-	GenerateHistoryJob(final GitHistoryPage ghp, Control control, RevWalk walk,
+	GenerateHistoryJob(final GitHistoryPage ghp, Control control,
+			@NonNull RevWalk walk,
 			ResourceManager resources) {
 		super(NLS.bind(UIText.HistoryPage_refreshJob, Activator.getDefault()
 				.getRepositoryUtil().getRepositoryName(
@@ -185,9 +187,10 @@ class GenerateHistoryJob extends Job {
 	}
 
 	private void dispose() {
-		walk.release();
+		walk.close();
 		Display.getDefault().asyncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				loadedCommits.dispose();
 			}
@@ -196,7 +199,7 @@ class GenerateHistoryJob extends Job {
 
 	@Override
 	public boolean belongsTo(Object family) {
-		if (family.equals(JobFamilies.GENERATE_HISTORY))
+		if (JobFamilies.GENERATE_HISTORY.equals(family))
 			return true;
 		return super.belongsTo(family);
 	}
