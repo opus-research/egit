@@ -38,6 +38,7 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
+import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
@@ -68,6 +69,37 @@ import org.eclipse.ui.PlatformUI;
  * of the toggle selections.
  */
 public class CommitMessageComponent {
+
+	/**
+	 * Status provider for whether a commit operation should be enabled or not
+	 */
+	public static class CommitStatus implements IMessageProvider {
+
+		private static final CommitStatus OK = new CommitStatus();
+
+		private final String message;
+
+		private final int type;
+
+		private CommitStatus() {
+			message = null;
+			type = NONE;
+		}
+
+		private CommitStatus(String message, int type) {
+			this.message = message;
+			this.type = type;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public int getMessageType() {
+			return type;
+		}
+	}
+
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
@@ -103,6 +135,10 @@ public class CommitMessageComponent {
 	private boolean signedOff = false;
 
 	private boolean amending = false;
+
+	private boolean commitAllowed = true;
+
+	private String cannotCommitMessage = null;
 
 	private boolean amendAllowed = false;
 
@@ -254,6 +290,25 @@ public class CommitMessageComponent {
 		this.amending = amending;
 	}
 
+
+	/**
+	 * Set whether commit is allowed at the moment.
+	 *
+	 * @param commitAllowed
+	 */
+	public void setCommitAllowed(boolean commitAllowed) {
+		this.commitAllowed = commitAllowed;
+	}
+
+	/**
+	 * Set the message to be shown about why the commit is not allowed.
+	 *
+	 * @param cannotCommitMessage
+	 */
+	public void setCannotCommitMessage(String cannotCommitMessage) {
+		this.cannotCommitMessage = cannotCommitMessage;
+	}
+
 	/**
 	 * Set whether the previous commit may be amended
 	 *
@@ -331,27 +386,42 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * Get an informational message about the state of the commit message
-	 * component input. This method checks the current state of the widgets and
-	 * must always be called from the UI-thread.
+	 * Get the status of whether the commit operation should be enabled or
+	 * disabled.
+	 * <p>
+	 * This method checks the current state of the widgets and must always be
+	 * called from the UI-thread.
+	 * <p>
+	 * The returned status includes a message and type denoting why committing
+	 * cannot be completed.
 	 *
-	 * @return information message or null if none
+	 * @return non-null commit status
 	 */
-	public String getMessage() {
+	public CommitStatus getStatus() {
+		if (!commitAllowed)
+			return new CommitStatus(cannotCommitMessage, IMessageProvider.ERROR);
+
 		String authorValue = authorText.getText();
 		if (authorValue.length() == 0
 				|| RawParseUtils.parsePersonIdent(authorValue) == null)
-			return UIText.CommitMessageComponent_MessageInvalidAuthor;
+			return new CommitStatus(
+					UIText.CommitMessageComponent_MessageInvalidAuthor,
+					IMessageProvider.ERROR);
 
 		String committerValue = committerText.getText();
 		if (committerValue.length() == 0
-				|| RawParseUtils.parsePersonIdent(committerValue) == null)
-			return UIText.CommitMessageComponent_MessageInvalidCommitter;
+				|| RawParseUtils.parsePersonIdent(committerValue) == null) {
+			return new CommitStatus(
+					UIText.CommitMessageComponent_MessageInvalidCommitter,
+					IMessageProvider.ERROR);
+		}
 
 		if (amending && amendingCommitInRemoteBranch)
-			return UIText.CommitMessageComponent_AmendingCommitInRemoteBranch;
+			return new CommitStatus(
+					UIText.CommitMessageComponent_AmendingCommitInRemoteBranch,
+					IMessageProvider.WARNING);
 
-		return null;
+		return CommitStatus.OK;
 	}
 
 	/**
@@ -770,5 +840,4 @@ public class CommitMessageComponent {
 	public ObjectId getHeadCommit() {
 		return headCommitId;
 	}
-
 }

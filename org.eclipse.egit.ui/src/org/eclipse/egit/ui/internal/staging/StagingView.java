@@ -731,7 +731,7 @@ public class StagingView extends ViewPart {
 	}
 
 	private void updateMessage() {
-		String message = commitMessageComponent.getMessage();
+		String message = commitMessageComponent.getStatus().getMessage();
 		boolean needsRedraw = false;
 		if (message != null) {
 			warningLabel.showMessage(message);
@@ -1045,12 +1045,16 @@ public class StagingView extends ViewPart {
 				add.call();
 			} catch (NoFilepatternException e1) {
 				// cannot happen
+			} catch (Exception e2) {
+				Activator.error(e2.getMessage(), e2);
 			}
 		if (rm != null)
 			try {
 				rm.call();
 			} catch (NoFilepatternException e) {
 				// cannot happen
+			} catch (Exception e2) {
+				Activator.error(e2.getMessage(), e2);
 			}
 	}
 
@@ -1266,6 +1270,8 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
+		commitMessageComponent.setCommitAllowed(helper.canCommit());
+		commitMessageComponent.setCannotCommitMessage(helper.getCannotCommitMessage());
 		boolean amendAllowed = helper.amendAllowed();
 		commitMessageComponent.setAmendAllowed(amendAllowed);
 		if (!amendAllowed)
@@ -1293,6 +1299,8 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
+		commitMessageComponent.setCommitAllowed(helper.canCommit());
+		commitMessageComponent.setCannotCommitMessage(helper.getCannotCommitMessage());
 		commitMessageComponent.setAmendAllowed(helper.amendAllowed());
 		commitMessageComponent.setAmending(false);
 		// set the defaults for change id and signed off buttons.

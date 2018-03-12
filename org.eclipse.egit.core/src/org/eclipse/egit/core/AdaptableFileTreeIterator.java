@@ -78,19 +78,9 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 	public AbstractTreeIterator createSubtreeIterator(ObjectReader repo)
 			throws IncorrectObjectTypeException, IOException {
 		final File currentFile = ((FileEntry) current()).getFile();
-
-		// findContainer checks whether the container is a project anyway.
-		// Limiting the lookup to directories containing a .project skips the
-		// expensive checks if not a project anyway. Sub-directories of GIT
-		// managed projects will not need the check anyway, as the iterator will
-		// be converted to a ContainerIterator if a project is found.
-		final File dotProject = new File(currentFile, ".project"); //$NON-NLS-1$
-		if (dotProject.exists()) {
-			IContainer container = IteratorService.findContainer(root,
-					currentFile);
-			if (container != null)
-				return new ContainerTreeIterator(this, container);
-		}
+		IContainer container = IteratorService.findContainer(root, currentFile);
+		if (container != null)
+			return new ContainerTreeIterator(this, container);
 		return new AdaptableFileTreeIterator(this, currentFile, root);
 	}
 
