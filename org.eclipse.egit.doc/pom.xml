@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>4.0.0-SNAPSHOT</version>
+    <version>3.6.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.doc</artifactId>
@@ -39,10 +39,10 @@
           <execution>
             <phase>generate-sources</phase>
             <configuration>
-                <target if="update.egit.doc">
+                <tasks if="update.egit.doc">
                 <property name="compile_classpath" refid="maven.compile.classpath"/>
                 <ant target="all" inheritRefs="true" antfile="build-help.xml"/>
-              </target>
+              </tasks>
             </configuration>
             <goals>
               <goal>run</goal>

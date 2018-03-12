@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,9 +19,9 @@ import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED_A
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.UNTRACKED;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,10 +34,13 @@ import java.util.TreeSet;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.staging.StagingView.Presentation;
 import org.eclipse.egit.ui.internal.staging.StagingView.StagingViewUpdate;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.ui.model.WorkbenchContentProvider;
 
 /**
@@ -326,8 +329,14 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 				nodes.add(new StagingEntry(repository, REMOVED, file));
 		}
 
-		setSymlinkFileMode(indexDiff, nodes);
-		setSubmoduleFileMode(indexDiff, nodes);
+		try {
+		SubmoduleWalk walk = SubmoduleWalk.forIndex(repository);
+		while(walk.next())
+			for (StagingEntry entry : nodes)
+				entry.setSubmodule(entry.getPath().equals(walk.getPath()));
+		} catch(IOException e) {
+			Activator.error(UIText.StagingViewContentProvider_SubmoduleError, e);
+		}
 
 		content = nodes.toArray(new StagingEntry[nodes.size()]);
 		Arrays.sort(content, comparator);
@@ -401,38 +410,4 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		}
 	}
 
-	/**
-	 * Set the symlink file mode of the given StagingEntries.
-	 *
-	 * @param indexDiff
-	 *            the index diff
-	 * @param entries
-	 *            the given StagingEntries
-	 */
-	private void setSymlinkFileMode(IndexDiffData indexDiff,
-			Collection<StagingEntry> entries) {
-		final Set<String> symlinks = indexDiff.getSymlinks();
-		for (StagingEntry stagingEntry : entries) {
-			if (symlinks.contains(stagingEntry.getPath()))
-				stagingEntry.setSymlink(true);
-		}
-	}
-
-	/**
-	 * Set the submodule file mode (equivalent to FileMode.GITLINK) of the given
-	 * StagingEntries.
-	 *
-	 * @param indexDiff
-	 *            the index diff
-	 * @param entries
-	 *            the given StagingEntries
-	 */
-	private void setSubmoduleFileMode(IndexDiffData indexDiff,
-			Collection<StagingEntry> entries) {
-		final Set<String> submodules = indexDiff.getSubmodules();
-		for (StagingEntry stagingEntry : entries) {
-			if (submodules.contains(stagingEntry.getPath()))
-				stagingEntry.setSubmodule(true);
-		}
-	}
 }
