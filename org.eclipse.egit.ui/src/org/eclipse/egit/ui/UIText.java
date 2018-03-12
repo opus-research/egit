@@ -2156,9 +2156,6 @@ public class UIText extends NLS {
 	public static String SelectSynchronizeResourceDialog_includeUncommitedChnages;
 
 	/** */
-	public static String SelectUriWiazrd_Title;
-
-	/** */
 	public static String SynchronizeWithAction_localRepoName;
 
 	static {
