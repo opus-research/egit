@@ -664,15 +664,6 @@ public class UIText extends NLS {
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
-	public static String CheckoutDialog_Message;
-
-	/** */
-	public static String CheckoutDialog_Title;
-
-	/** */
-	public static String CheckoutDialog_WindowTitle;
-
-	/** */
 	public static String CheckoutHandler_SelectBranchMessage;
 
 	/** */
@@ -1480,9 +1471,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_AddFileOnDiskToIndex;
 
 	/** */
-	public static String CommitDialog_PasteFileNameToCommitMSG;
-
-	/** */
 	public static String CommitDialog_AddSOB;
 
 	/** */
@@ -1778,18 +1766,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ContinueRebaseCommand_JobName;
-
-	/** */
-	public static String CreateBranchDialog_DialogTitle;
-
-	/** */
-	public static String CreateBranchDialog_OKButtonText;
-
-	/** */
-	public static String CreateBranchDialog_SelectRefMessage;
-
-	/** */
-	public static String CreateBranchDialog_WindowTitle;
 
 	/** */
 	public static String CreateBranchPage_BranchNameLabel;
@@ -2230,6 +2206,39 @@ public class UIText extends NLS {
 	public static String BranchResultDialog_CheckoutConflictsTitle;
 
 	/** */
+	public static String BranchSelectionDialog_TitleCheckout;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotDeleteRef;
+
+	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String BranchSelectionDialog_QuestionNewBranchTitle;
+
+	/** */
+	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
+
+	/** */
+	public static String BranchSelectionDialog_NewBranch;
+
+	/** */
+	public static String BranchSelectionDialog_OkCheckout;
+
+	/** */
+	public static String BranchSelectionDialog_Refs;
+
+	/** */
+	public static String BranchSelectionDialog_Rename;
+
+	/** */
+	public static String BranchSelectionDialog_Delete;
+
+	/** */
 	public static String CommitDialogPreferencePage_title;
 
 	/** */
@@ -2237,6 +2246,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialogPreferencePage_hardWrapMessageTooltip;
+
+	/** */
+	public static String CommitDialogPreferencePage_createChangeId;
+
+	/** */
+	public static String CommitDialogPreferencePage_createChangeIdTooltip;
 
 	/** */
 	public static String CommitDialogPreferencePage_footers;
@@ -2363,15 +2378,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
-
-	/** */
-	public static String DeleteBranchDialog_DialogMessage;
-
-	/** */
-	public static String DeleteBranchDialog_DialogTitle;
-
-	/** */
-	public static String DeleteBranchDialog_WindowTitle;
 
 	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
@@ -2900,6 +2906,12 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
+	public static String CommitEditorInput_Name;
+
+	/** */
+	public static String CommitEditorInput_ToolTip;
+
+	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
 
 	/** */
@@ -3096,27 +3108,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchCommand_WrongNameMessage;
-
-	/** */
-	public static String RenameBranchDialog_DialogMessage;
-
-	/** */
-	public static String RenameBranchDialog_DialogTitle;
-
-	/** */
-	public static String RenameBranchDialog_NewNameInputDialogPrompt;
-
-	/** */
-	public static String RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle;
-
-	/** */
-	public static String RenameBranchDialog_RenameButtonLabel;
-
-	/** */
-	public static String RenameBranchDialog_RenameErrorMessage;
-
-	/** */
-	public static String RenameBranchDialog_WindowTitle;
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
