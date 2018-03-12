@@ -26,9 +26,9 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.FileBasedConfig;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryConfig;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.ui.IActionBars;
@@ -65,9 +65,9 @@ public class RepositoryPropertySource implements IPropertySource,
 
 	private final FileBasedConfig userHomeConfig;
 
-	private final FileBasedConfig repositoryConfig;
+	private final StoredConfig repositoryConfig;
 
-	private final RepositoryConfig effectiveConfig;
+	private final StoredConfig effectiveConfig;
 
 	/**
 	 * @param rep
@@ -83,9 +83,13 @@ public class RepositoryPropertySource implements IPropertySource,
 
 		effectiveConfig = rep.getConfig();
 		userHomeConfig = SystemReader.getInstance().openUserConfig(FS.DETECTED);
-		// TODO constant?
-		File configFile = new File(rep.getDirectory(), "config"); //$NON-NLS-1$
-		repositoryConfig = new FileBasedConfig(configFile);
+
+		if (effectiveConfig instanceof FileBasedConfig) {
+			File configFile = ((FileBasedConfig) effectiveConfig).getFile();
+			repositoryConfig = new FileBasedConfig(configFile, rep.getFS());
+		} else {
+			repositoryConfig = effectiveConfig;
+		}
 
 		try {
 			effectiveConfig.load();
@@ -319,8 +323,12 @@ public class RepositoryPropertySource implements IPropertySource,
 					resultList.add(desc);
 				}
 			}
-			categoryString = UIText.RepositoryPropertySource_RepositoryConfigurationCategory
-					+ repositoryConfig.getFile().getAbsolutePath();
+
+			categoryString = UIText.RepositoryPropertySource_RepositoryConfigurationCategory;
+			if (repositoryConfig instanceof FileBasedConfig) {
+				categoryString += ((FileBasedConfig) repositoryConfig)
+						.getFile().getAbsolutePath();
+			}
 
 			boolean editable = true;
 
@@ -427,7 +435,7 @@ public class RepositoryPropertySource implements IPropertySource,
 		return isPropertySet(id);
 	}
 
-	private void setConfigValue(FileBasedConfig configuration, String key,
+	private void setConfigValue(StoredConfig configuration, String key,
 			String value) throws IOException {
 		// we un-set empty strings, as the config API does not allow to
 		// distinguish this case

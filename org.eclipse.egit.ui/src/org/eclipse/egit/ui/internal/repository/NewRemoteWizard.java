@@ -19,7 +19,7 @@ import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryConfig;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
@@ -29,7 +29,7 @@ import org.eclipse.jgit.transport.URIish;
  */
 public class NewRemoteWizard extends Wizard {
 
-	final RepositoryConfig myConfiguration;
+	final StoredConfig myConfiguration;
 
 	private SelectRemoteNamePage selNamePage;
 
@@ -53,8 +53,6 @@ public class NewRemoteWizard extends Wizard {
 		if (page == configureFetchSpecPage)
 			if (!selNamePage.configurePush.getSelection())
 				return null;
-			else
-				configurePushUriPage.setURI(configureFetchUriPage.getUri());
 
 		if (page == configureFetchUriPage)
 			configureFetchSpecPage.setSelection(new RepositorySelection(
@@ -62,7 +60,7 @@ public class NewRemoteWizard extends Wizard {
 
 		if (page == configurePushUriPage)
 			configurePushSpecPage.setSelection(new RepositorySelection(
-					configurePushUriPage.getAllUris().get(0), null));
+					configurePushUriPage.getUris().get(0), null));
 
 		return super.getNextPage(page);
 	}
@@ -93,13 +91,13 @@ public class NewRemoteWizard extends Wizard {
 		selNamePage = new SelectRemoteNamePage();
 		addPage(selNamePage);
 
-		configureFetchUriPage = new ConfigureUriPage(true, null);
+		configureFetchUriPage = new ConfigureUriPage(true);
 		addPage(configureFetchUriPage);
 
 		configureFetchSpecPage = new RefSpecPage(repository, false);
 		addPage(configureFetchSpecPage);
 
-		configurePushUriPage = new ConfigureUriPage(false, null);
+		configurePushUriPage = new ConfigureUriPage(false);
 		addPage(configurePushUriPage);
 
 		configurePushSpecPage = new RefSpecPage(repository, true);
@@ -113,7 +111,7 @@ public class NewRemoteWizard extends Wizard {
 	 * @return the configuration
 	 *
 	 */
-	public RepositoryConfig getConfiguration() {
+	public StoredConfig getConfiguration() {
 		return myConfiguration;
 	}
 
