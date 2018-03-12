@@ -36,6 +36,7 @@ import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.core.op.CloneOperation.PostCloneTask;
 import org.eclipse.egit.core.op.ConfigureFetchAfterCloneTask;
+import org.eclipse.egit.core.op.ConfigureGerritAfterCloneTask;
 import org.eclipse.egit.core.op.ConfigurePushAfterCloneTask;
 import org.eclipse.egit.core.op.SetRepositoryConfigPropertyTask;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
@@ -254,10 +255,12 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		configureFetchSpec(op, gitRepositoryInfo, remoteName);
 		configurePush(op, gitRepositoryInfo, remoteName);
 		configureRepositoryConfig(op, gitRepositoryInfo);
+		configureGerrit(op, gitRepositoryInfo, remoteName, timeout);
 
 		if (cloneDestination.isImportProjects()) {
 			final IWorkingSet[] sets = cloneDestination.getWorkingSets();
 			op.addPostCloneTask(new PostCloneTask() {
+				@Override
 				public void execute(Repository repository,
 						IProgressMonitor monitor) throws CoreException {
 					importProjects(repository, sets);
@@ -345,6 +348,13 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		}
 	}
 
+	private void configureGerrit(CloneOperation op,
+			GitRepositoryInfo gitRepositoryInfo, String remoteName, int timeout) {
+		ConfigureGerritAfterCloneTask task = new ConfigureGerritAfterCloneTask(
+				gitRepositoryInfo.getCloneUri(), remoteName, timeout);
+		op.addPostCloneTask(task);
+	}
+
 	private void importProjects(final Repository repository,
 			final IWorkingSet[] sets) {
 		String repoName = Activator.getDefault().getRepositoryUtil()
@@ -352,6 +362,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 		Job importJob = new WorkspaceJob(MessageFormat.format(
 				UIText.GitCloneWizard_jobImportProjects, repoName)) {
 
+			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				List<File> files = new ArrayList<File>();
 				ProjectUtil.findProjectFiles(files, repository.getWorkTree(),
@@ -382,6 +393,7 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 	public void runCloneOperation(IWizardContainer container, final GitRepositoryInfo repositoryInfo) {
 		try {
 			container.run(true, true, new IRunnableWithProgress() {
+				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
 					executeCloneOperation(cloneOperation, repositoryInfo, monitor);

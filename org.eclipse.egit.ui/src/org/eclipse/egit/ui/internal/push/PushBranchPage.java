@@ -12,6 +12,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -159,9 +160,18 @@ public class PushBranchPage extends WizardPage {
 		return forceUpdateSelected;
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		try {
 			this.remoteConfigs = RemoteConfig.getAllRemoteConfigs(repository.getConfig());
+			Collections.sort(remoteConfigs, new Comparator<RemoteConfig>() {
+
+				@Override
+				public int compare(RemoteConfig first, RemoteConfig second) {
+					return String.CASE_INSENSITIVE_ORDER.compare(
+							first.getName(), second.getName());
+				}
+			});
 		} catch (URISyntaxException e) {
 			this.remoteConfigs = new ArrayList<RemoteConfig>();
 			handleError(e);
@@ -192,7 +202,7 @@ public class PushBranchPage extends WizardPage {
 			branchIconLabel
 					.setLayoutData(new RowData(branchIcon.getBounds().width,
 							branchIcon.getBounds().height));
-			branchIconLabel.setBackgroundImage(branchIcon);
+			branchIconLabel.setImage(branchIcon);
 			Label localBranchLabel = new Label(sourceComposite, SWT.NONE);
 			localBranchLabel.setText(Repository.shortenRefName(this.ref
 					.getName()));
@@ -204,7 +214,7 @@ public class PushBranchPage extends WizardPage {
 		Image commitIcon = UIIcons.CHANGESET.createImage();
 		this.disposables.add(commitIcon);
 		Label commitIconLabel = new Label(sourceComposite, SWT.NONE);
-		commitIconLabel.setBackgroundImage(commitIcon);
+		commitIconLabel.setImage(commitIcon);
 		commitIconLabel.setLayoutData(new RowData(commitIcon.getBounds().width,
 				commitIcon.getBounds().height));
 
@@ -253,6 +263,7 @@ public class PushBranchPage extends WizardPage {
 		setRemoteConfigs();
 		remoteSelectionCombo
 				.addRemoteSelectionListener(new IRemoteSelectionListener() {
+					@Override
 					public void remoteSelected(RemoteConfig rc) {
 						remoteConfig = rc;
 						setRefAssist(rc);
@@ -282,6 +293,7 @@ public class PushBranchPage extends WizardPage {
 		UIUtils.addRefContentProposalToText(remoteBranchNameText,
 				this.repository, new IRefListProvider() {
 
+					@Override
 					public List<Ref> getRefList() {
 						if (PushBranchPage.this.assist != null) {
 							return PushBranchPage.this.assist
@@ -299,6 +311,7 @@ public class PushBranchPage extends WizardPage {
 							.indent(SWT.DEFAULT, 20).create());
 			upstreamConfigComponent
 					.addUpstreamConfigSelectionListener(new UpstreamConfigSelectionListener() {
+						@Override
 						public void upstreamConfigSelected(
 								UpstreamConfig newUpstreamConfig) {
 							upstreamConfig = newUpstreamConfig;
@@ -314,6 +327,7 @@ public class PushBranchPage extends WizardPage {
 		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).span(3, 1).create());
 		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				forceUpdateSelected = forceUpdateButton.getSelection();
 			}
@@ -347,6 +361,7 @@ public class PushBranchPage extends WizardPage {
 
 		// Add listener now to avoid setText above to already trigger it.
 		remoteBranchNameText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
