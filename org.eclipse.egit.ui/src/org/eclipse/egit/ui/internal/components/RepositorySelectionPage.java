@@ -12,33 +12,13 @@
 package org.eclipse.egit.ui.internal.components;
 
 import java.io.File;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.jface.fieldassist.ContentProposalAdapter;
-import org.eclipse.jface.fieldassist.ControlDecoration;
-import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
-import org.eclipse.jface.fieldassist.IContentProposal;
-import org.eclipse.jface.fieldassist.IContentProposalProvider;
-import org.eclipse.jface.fieldassist.TextContentAdapter;
-import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -53,21 +33,19 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.osgi.service.prefs.BackingStoreException;
-
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.util.FS;
 
 /**
  * Wizard page that allows the user entering the location of a remote repository
  * by specifying URL manually or selecting a preconfigured remote repository.
  */
 public class RepositorySelectionPage extends BaseWizardPage {
-	private final static String USED_URIS_PREF = "RepositorySelectionPage.UsedUris"; //$NON-NLS-1$
-	private final static String USED_URIS_LENGTH_PREF = "RepositorySelectionPage.UsedUrisLength"; //$NON-NLS-1$
-
 	private static final int REMOTE_CONFIG_TEXT_MAX_LENGTH = 80;
 
 	private static final int S_GIT = 0;
@@ -288,8 +266,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		final Group g = createGroup(parent,
 				UIText.RepositorySelectionPage_groupLocation);
 
-		g.setLayout(new GridLayout(3, false));
-
 		newLabel(g, UIText.RepositorySelectionPage_promptURI + ":"); //$NON-NLS-1$
 		uriText = new Text(g, SWT.BORDER);
 		uriText.setLayoutData(createFieldGridData());
@@ -343,44 +319,9 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 		});
 
-		addContentProposalToUriText(uriText);
-
-		Button browseButton = new Button(g, SWT.NULL);
-		browseButton.setText(UIText.RepositorySelectionPage_BrowseLocalFile);
-		browseButton.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				DirectoryDialog dialog = new DirectoryDialog(getShell());
-				// if a file-uri was selected before, let's try to open
-				// the directory dialog on the same directory
-				if (!uriText.getText().equals("")) { //$NON-NLS-1$
-					try {
-						URI testUri = URI.create(uriText.getText().replace(
-								'\\', '/'));
-						if (testUri.getScheme().equals("file")) { //$NON-NLS-1$
-							String path = testUri.getPath();
-							if (path.length() > 1 && path.startsWith("/")) //$NON-NLS-1$
-								path = path.substring(1);
-
-							dialog.setFilterPath(path);
-						}
-					} catch (IllegalArgumentException e1) {
-						// ignore here, we just' don't set the directory in the
-						// browser
-					}
-
-				}
-				String result = dialog.open();
-				if (result != null)
-					uriText.setText("file:///" + result); //$NON-NLS-1$
-			}
-
-		});
-
 		newLabel(g, UIText.RepositorySelectionPage_promptHost + ":"); //$NON-NLS-1$
 		hostText = new Text(g, SWT.BORDER);
-		GridDataFactory.fillDefaults().span(2, 1).applyTo(hostText);
+		hostText.setLayoutData(createFieldGridData());
 		hostText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setHost(nullString(hostText.getText())));
@@ -389,7 +330,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		newLabel(g, UIText.RepositorySelectionPage_promptPath + ":"); //$NON-NLS-1$
 		pathText = new Text(g, SWT.BORDER);
-		GridDataFactory.fillDefaults().span(2, 1).applyTo(pathText);
+		pathText.setLayoutData(createFieldGridData());
 		pathText.addModifyListener(new ModifyListener() {
 			public void modifyText(final ModifyEvent e) {
 				setURI(uri.setPath(nullString(pathText.getText())));
@@ -729,151 +670,5 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		super.setVisible(visible);
 		if (visible)
 			uriText.setFocus();
-	}
-
-	/**
-	 * Adds a URI string to the list of previously added ones
-	 *
-	 * @param stringToAdd
-	 */
-	public void saveUriInPrefs(String stringToAdd) {
-
-		Set<String> uriStrings = getUrisFromPrefs();
-
-		if (uriStrings.add(stringToAdd)) {
-
-			IEclipsePreferences prefs = new InstanceScope().getNode(Activator
-					.getPluginId());
-
-			StringBuilder sb = new StringBuilder();
-			StringBuilder lb = new StringBuilder();
-
-			// there is no "good" separator for URIish, so we
-			// keep track of the URI lengths separately
-			for (String uriString : uriStrings) {
-				sb.append(uriString);
-				lb.append(uriString.length());
-				lb.append(" "); //$NON-NLS-1$
-			}
-			prefs.put(USED_URIS_PREF, sb.toString());
-			prefs.put(USED_URIS_LENGTH_PREF, lb.toString());
-
-			try {
-				prefs.flush();
-			} catch (BackingStoreException e) {
-				// we simply ignore this here
-			}
-		}
-	}
-
-	/**
-	 * Gets the previously added URIs from the preferences
-	 *
-	 * @return a (possibly empty) list of URIs, never <code>null</code>
-	 */
-	public Set<String> getUrisFromPrefs() {
-
-		// use a TreeSet to get the same sorting always
-		Set<String> uriStrings = new TreeSet<String>();
-
-		IEclipsePreferences prefs = new InstanceScope().getNode(Activator
-				.getPluginId());
-		// since there is no "good" separator for URIish, so we
-		// keep track of the URI lengths separately
-		String uriLengths = prefs.get(USED_URIS_LENGTH_PREF, ""); //$NON-NLS-1$
-		String uris = prefs.get(USED_URIS_PREF, ""); //$NON-NLS-1$
-
-		StringTokenizer tok = new StringTokenizer(uriLengths, " "); //$NON-NLS-1$
-		int offset = 0;
-		while (tok.hasMoreTokens()) {
-			try {
-				int length = Integer.parseInt(tok.nextToken());
-				if (uris.length() >= (offset + length)) {
-					uriStrings.add(uris.substring(offset, offset + length));
-					offset += length;
-				}
-			} catch (NumberFormatException nfe) {
-				// ignore here
-			}
-
-		}
-
-		return uriStrings;
-	}
-
-	private void addContentProposalToUriText(Text uriTextField) {
-
-		ControlDecoration dec = new ControlDecoration(uriTextField, SWT.TOP
-				| SWT.LEFT);
-
-		if (Platform.isRunning()) {
-			dec.setImage(FieldDecorationRegistry.getDefault()
-					.getFieldDecoration(
-							FieldDecorationRegistry.DEC_CONTENT_PROPOSAL)
-					.getImage());
-		}
-		dec.setShowOnlyOnFocus(true);
-		dec.setShowHover(true);
-
-		dec.setDescriptionText(UIText.RepositorySelectionPage_ShowPreviousURIs_HoverText);
-
-		IContentProposalProvider cp = new IContentProposalProvider() {
-
-			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
-
-				// make the simplest possible pattern check: allow "*"
-				// for multiple characters
-				String patternString = contents.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
-				// make sure we add a (logical) * at the end
-				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
-					patternString = patternString + ".*"; //$NON-NLS-1$
-				}
-				// let's compile a case-insensitive pattern (assumes ASCII only)
-				Pattern pattern;
-				try {
-					pattern = Pattern.compile(patternString,
-							Pattern.CASE_INSENSITIVE);
-				} catch (PatternSyntaxException e) {
-					pattern = null;
-				}
-
-				Set<String> uriStrings = getUrisFromPrefs();
-				for (final String uriString : uriStrings) {
-
-					if (pattern!=null && !pattern.matcher(uriString).matches())
-						continue;
-
-					IContentProposal propsal = new IContentProposal() {
-
-						public String getLabel() {
-							return null;
-						}
-
-						public String getDescription() {
-							return null;
-						}
-
-						public int getCursorPosition() {
-							return 0;
-						}
-
-						public String getContent() {
-							return uriString;
-						}
-					};
-					resultList.add(propsal);
-				}
-
-				return resultList.toArray(new IContentProposal[resultList
-						.size()]);
-			}
-		};
-
-		// set the acceptance style to always replace the complete content
-		new ContentProposalAdapter(uriTextField, new TextContentAdapter(), cp,
-				null, null)
-				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
-
 	}
 }
