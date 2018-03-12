@@ -40,18 +40,21 @@ public abstract class AbstractOperationAction implements IObjectActionDelegate {
 
 	private IWorkspaceRunnable op;
 
-	private List selection;
-
 	public void selectionChanged(final IAction act, final ISelection sel) {
+		// work performed in setActivePart
+	}
+
+	public void setActivePart(final IAction act, final IWorkbenchPart part) {
+		wp = part;
+		ISelection sel = part.getSite().getPage().getSelection();
+		final List selection;
 		if (sel instanceof IStructuredSelection && !sel.isEmpty()) {
 			selection = ((IStructuredSelection) sel).toList();
 		} else {
 			selection = Collections.EMPTY_LIST;
 		}
-	}
-
-	public void setActivePart(final IAction act, final IWorkbenchPart part) {
-		wp = part;
+		op = createOperation(selection);
+		act.setEnabled(op != null && wp != null);
 	}
 
 	/**
@@ -70,7 +73,6 @@ public abstract class AbstractOperationAction implements IObjectActionDelegate {
 	}
 
 	public void run(final IAction act) {
-		op = createOperation(selection);
 		if (op != null) {
 			try {
 				try {
@@ -99,6 +101,7 @@ public abstract class AbstractOperationAction implements IObjectActionDelegate {
 
 				if (e instanceof CoreException) {
 					status = ((CoreException) e).getStatus();
+					e = status.getException();
 				} else {
 					status = new Status(IStatus.ERROR, Activator.getPluginId(),
 							1, msg, e);
