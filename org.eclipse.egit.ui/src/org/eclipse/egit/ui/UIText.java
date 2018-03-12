@@ -1144,9 +1144,6 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_errorRemoteNameRequired;
 
 	/** */
-	public static String CloneDestinationPage_importButton;
-
-	/** */
 	public static String RefContentProposal_blob;
 
 	/** */
