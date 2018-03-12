@@ -1741,6 +1741,15 @@ public class UIText extends NLS {
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
+	public static String CompareWithPreviousActionHandler_MessageRevisionNotFound;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TaskGeneratingInput;
+
+	/** */
+	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
 	public static String ConfirmationPage_cantConnectToAnyTitle;
 
 	/** */
@@ -2895,6 +2904,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_repository;
+
+	/** */
+	public static String CommitEditorInput_Name;
+
+	/** */
+	public static String CommitEditorInput_ToolTip;
 
 	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
