@@ -31,7 +31,6 @@ import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
 
@@ -51,7 +50,7 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 	 *            the project to connect to the Git team provider.
 	 */
 	public ConnectProviderOperation(final IProject proj) {
-		this(proj, new File(Constants.DOT_GIT));
+		this(proj, new File(".git"));
 	}
 
 	/**
@@ -127,16 +126,16 @@ public class ConnectProviderOperation implements IWorkspaceRunnable {
 
 	/**
 	 * @param repos
-	 *         available repositories
+	 *            available repositories
 	 * @param suggestedRepo
-	 *         relative path to git repository
+	 *            relative path to git repository
 	 * @return a repository mapping which corresponds to a suggested repository
 	 *         location, <code>null</code> otherwise
 	 */
 	private RepositoryMapping findActualRepository(
 			Collection<RepositoryMapping> repos, File suggestedRepo) {
 		for (RepositoryMapping rm : repos) {
-			if (rm.getGitDirAbsolutePath().equals(Path.fromOSString(suggestedRepo.getPath())))
+			if (Path.fromOSString(rm.getGitDir()).equals(Path.fromOSString(suggestedRepo.getPath())))
 				return rm;
 		}
 		return null;

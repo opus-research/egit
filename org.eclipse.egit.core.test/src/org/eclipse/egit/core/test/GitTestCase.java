@@ -10,13 +10,13 @@ package org.eclipse.egit.core.test;
 
 import java.io.File;
 import java.io.IOException;
-import org.eclipse.jgit.lib.Constants;
+import java.util.Collection;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.egit.core.project.RepositoryFinder;
+import org.eclipse.egit.core.project.RepositoryMapping;
 
 import junit.framework.TestCase;
-
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.jgit.junit.MockSystemReader;
-import org.eclipse.jgit.util.SystemReader;
 
 public abstract class GitTestCase extends TestCase {
 
@@ -26,13 +26,10 @@ public abstract class GitTestCase extends TestCase {
 
 	protected void setUp() throws Exception {
 		super.setUp();
-		((MockSystemReader) SystemReader.getInstance()).setProperty(
-				Constants.GIT_CEILING_DIRECTORIES_KEY, ResourcesPlugin
-						.getWorkspace().getRoot().getLocation().toFile()
-						.getAbsoluteFile().toString());
 		project = new TestProject(true);
+		checkNotNested();
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
-				.getRawLocation().toFile(), Constants.DOT_GIT);
+				.getRawLocation().toFile(), ".git");
 		rmrf(gitDir);
 	}
 
@@ -58,6 +55,13 @@ public abstract class GitTestCase extends TestCase {
 		if (!d.delete())
 			throw new IOException(d + " in use or undeletable");
 		assert !d.exists();
+	}
+
+	protected void checkNotNested() throws CoreException {
+		final Collection<RepositoryMapping> parentRepositories = new RepositoryFinder(
+				project.getProject()).find(null);
+		final int numOfRepositories = parentRepositories.size();
+		assertTrue("parent repository found", numOfRepositories == 0);
 	}
 
 }
