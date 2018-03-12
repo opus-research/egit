@@ -407,12 +407,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_SubMenuFilterLabel;
-
-	/** */
-	public static String GitHistoryPage_SubMenuShowLabel;
-
-	/** */
 	public static String GitPreferenceRoot_CloningRepoGroupHeader;
 
 	/** */

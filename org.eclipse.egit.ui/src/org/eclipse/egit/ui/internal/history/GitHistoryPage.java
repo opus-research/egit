@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -372,16 +371,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		showAllBranchesAction
 				.setToolTipText(UIText.GitHistoryPage_showAllBranches);
 
-		final IAction showCommentAction = createShowComment();
-		final IAction showFilesAction = createShowFiles();
-
-		wrapCommentAction = createCommentWrap();
-		fillCommentAction = createCommentFill();
-
-		wrapCommentAction.setEnabled(showCommentAction.isChecked());
-		fillCommentAction.setEnabled(showCommentAction.isChecked());
-
 		IToolBarManager mgr = getSite().getActionBars().getToolBarManager();
+		IMenuManager viewMenuMgr = getSite().getActionBars().getMenuManager();
+
 		mgr.add(findAction);
 		mgr.add(new Separator());
 		mgr.add(showAllRepoVersionsAction);
@@ -392,31 +384,31 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		mgr.add(compareModeAction);
 		mgr.add(showAllBranchesAction);
 
-		IMenuManager viewMenuMgr = getSite().getActionBars().getMenuManager();
 		viewMenuMgr.add(refreshAction);
-
+		viewMenuMgr.add(findAction);
 		viewMenuMgr.add(new Separator());
-		IMenuManager showSubMenuMgr = new MenuManager(
-				UIText.GitHistoryPage_SubMenuShowLabel);
-		viewMenuMgr.add(showSubMenuMgr);
-		showSubMenuMgr.add(showAllBranchesAction);
-		showSubMenuMgr.add(findAction);
-		showSubMenuMgr.add(showFilesAction);
-		showSubMenuMgr.add(showCommentAction);
-
-		IMenuManager filterSubMenuMgr = new MenuManager(
-				UIText.GitHistoryPage_SubMenuFilterLabel);
-		viewMenuMgr.add(filterSubMenuMgr);
-		filterSubMenuMgr.add(showAllRepoVersionsAction);
-		filterSubMenuMgr.add(showAllProjectVersionsAction);
-		filterSubMenuMgr.add(showAllFolderVersionsAction);
-		filterSubMenuMgr.add(showAllResourceVersionsAction);
-
+		viewMenuMgr.add(showAllRepoVersionsAction);
+		viewMenuMgr.add(showAllProjectVersionsAction);
+		viewMenuMgr.add(showAllFolderVersionsAction);
+		viewMenuMgr.add(showAllResourceVersionsAction);
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(compareModeAction);
 		viewMenuMgr.add(reuseCompareEditorAction);
+		viewMenuMgr.add(showAllBranchesAction);
+
+		final IAction showCommentAction = createShowComment();
+		final IAction showFilesAction = createShowFiles();
+		wrapCommentAction = createCommentWrap();
+		fillCommentAction = createCommentFill();
+
+		wrapCommentAction.setEnabled(showCommentAction.isChecked());
+		fillCommentAction.setEnabled(showCommentAction.isChecked());
+
+		viewMenuMgr.add(showFilesAction);
+		viewMenuMgr.add(showCommentAction);
 
 		viewMenuMgr.add(new Separator());
+
 		viewMenuMgr.add(wrapCommentAction);
 		viewMenuMgr.add(fillCommentAction);
 
