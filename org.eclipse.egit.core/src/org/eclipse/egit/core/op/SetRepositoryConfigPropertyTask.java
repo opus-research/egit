@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (C) 2012, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2011, Stefan Lay <stefan.lay@sap.com>
+ * Copyright (C) 2011, Sascha Scholz <sascha.scholz@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
