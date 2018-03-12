@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2013, Laurent Goubet <laurent.goubet@obeo.fr>
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,13 +14,11 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map.Entry;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.GitRemoteResource;
 import org.eclipse.osgi.util.NLS;
@@ -67,10 +64,8 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 		final RepositoryMapping rm = RepositoryMapping.getMapping(resource);
 		if (rm == null) {
-			IProject project = resource.getProject();
-			String projectName = project != null ? project.getName() : ""; //$NON-NLS-1$
 			Activator.logError(NLS.bind(CoreText.GitFileHistory_gitNotAttached,
-					projectName), null);
+					resource.getProject().getName()), null);
 			db = null;
 			walk = null;
 		} else {
@@ -98,11 +93,9 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		try {
 			final AnyObjectId headId = db.resolve(Constants.HEAD);
 			if (headId == null) {
-				IProject project = resource.getProject();
-				String projectName = project != null? project.getName() : ""; //$NON-NLS-1$
 				Activator.logError(NLS.bind(
 						CoreText.GitFileHistory_noHeadRevisionAvailable,
-						projectName), null);
+						resource.getProject().getName()), null);
 				return NO_REVISIONS;
 			}
 
@@ -124,10 +117,9 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 
 			walk.markStart(root);
 		} catch (IOException e) {
-			IProject project = resource.getProject();
-			String projectName = project != null? project.getName() : ""; //$NON-NLS-1$
 			Activator.logError(NLS.bind(
-					CoreText.GitFileHistory_invalidHeadRevision, projectName), e);
+					CoreText.GitFileHistory_invalidHeadRevision, resource
+							.getProject().getName()), e);
 			return NO_REVISIONS;
 		}
 
@@ -180,7 +172,6 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		}
 	}
 
-	@Override
 	public IFileRevision[] getContributors(final IFileRevision ifr) {
 		String path = getGitPath(ifr);
 		RevCommit commit = getRevCommit(ifr);
@@ -195,7 +186,6 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		return NO_REVISIONS;
 	}
 
-	@Override
 	public IFileRevision[] getTargets(final IFileRevision ifr) {
 		String path = getGitPath(ifr);
 		RevCommit commit = getRevCommit(ifr);
@@ -215,7 +205,8 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		if (revision instanceof CommitFileRevision)
 			return ((CommitFileRevision) revision).getGitPath();
 		else if (revision instanceof IAdaptable) {
-			final IResourceVariant variant = Utils.getAdapter(((IAdaptable) revision), IResourceVariant.class);
+			final IResourceVariant variant = (IResourceVariant) ((IAdaptable) revision)
+					.getAdapter(IResourceVariant.class);
 
 			if (variant instanceof GitRemoteResource)
 				return ((GitRemoteResource) variant).getPath();
@@ -228,7 +219,8 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		if (revision instanceof CommitFileRevision)
 			return ((CommitFileRevision) revision).getRevCommit();
 		else if (revision instanceof IAdaptable) {
-			final IResourceVariant variant = Utils.getAdapter(((IAdaptable) revision), IResourceVariant.class);
+			final IResourceVariant variant = (IResourceVariant) ((IAdaptable) revision)
+					.getAdapter(IResourceVariant.class);
 			if (variant instanceof GitRemoteResource) {
 				final RevCommit commit = ((GitRemoteResource) variant)
 						.getCommitId();
@@ -245,7 +237,6 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		return null;
 	}
 
-	@Override
 	public IFileRevision getFileRevision(final String id) {
 		if (id == null || id.equals("") //$NON-NLS-1$
 				|| GitFileRevision.WORKSPACE.equals(id))
@@ -261,14 +252,12 @@ class GitFileHistory extends FileHistory implements IAdaptable {
 		return null;
 	}
 
-	@Override
 	public IFileRevision[] getFileRevisions() {
 		final IFileRevision[] r = new IFileRevision[revisions.length];
 		System.arraycopy(revisions, 0, r, 0, r.length);
 		return r;
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
 		return null;
 	}

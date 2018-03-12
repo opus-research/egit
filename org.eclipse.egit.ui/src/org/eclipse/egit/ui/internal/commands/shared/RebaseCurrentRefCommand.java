@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -24,7 +24,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseInteractiveHandler;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -70,12 +69,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 		} else
 			ref = null;
 
-		Object context = event.getApplicationContext();
-		if (!(context instanceof IEvaluationContext))
-			return;
-
-		final Repository repository = SelectionUtils
-				.getRepository((IEvaluationContext) context);
+		final Repository repository = getRepository(event);
 		if (repository == null)
 			return;
 
@@ -91,7 +85,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 			if (rebaseTargetSelectionDialog.open() == IDialogConstants.OK_ID) {
 				String refName = rebaseTargetSelectionDialog.getRefName();
 				try {
-					ref = repository.findRef(refName);
+					ref = repository.getRef(refName);
 				} catch (IOException e) {
 					throw new ExecutionException(e.getMessage(), e);
 				}
@@ -110,15 +104,17 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 	public void setEnabled(Object evaluationContext) {
 		if (evaluationContext instanceof IEvaluationContext) {
 			IEvaluationContext ctx = (IEvaluationContext) evaluationContext;
-			Repository repo = SelectionUtils.getRepository(ctx);
-			if (repo != null) {
-				boolean enabled = isEnabledForState(repo,
-						repo.getRepositoryState());
-				setBaseEnabled(enabled);
-			} else {
-				setBaseEnabled(false);
+			Object selection = getSelection(ctx);
+			if (selection instanceof ISelection) {
+				Repository repo = getRepository((ISelection) selection, getActiveEditorInput(ctx));
+				if (repo != null) {
+					boolean enabled = isEnabledForState(repo,
+							repo.getRepositoryState());
+					setBaseEnabled(enabled);
+				} else
+					setBaseEnabled(false);
+				return;
 			}
-			return;
 		}
 		setBaseEnabled(true);
 	}
@@ -135,7 +131,7 @@ public class RebaseCurrentRefCommand extends AbstractRebaseCommandHandler {
 
 	private static boolean hasHead(Repository repo) {
 		try {
-			Ref headRef = repo.exactRef(Constants.HEAD);
+			Ref headRef = repo.getRef(Constants.HEAD);
 			return headRef != null && headRef.getObjectId() != null;
 		} catch (IOException e) {
 			return false;

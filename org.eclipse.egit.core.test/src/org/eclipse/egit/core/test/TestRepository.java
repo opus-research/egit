@@ -3,7 +3,6 @@
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
- * Copyright (C) 2015, Obeo
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -79,7 +78,11 @@ public class TestRepository {
 		tmpRepository.close();
 		// use repository instance from RepositoryCache!
 		repository = Activator.getDefault().getRepositoryCache().lookupRepository(gitDir);
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -93,7 +96,11 @@ public class TestRepository {
 	 */
 	public TestRepository(Repository repository) throws IOException {
 		this.repository = repository;
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -253,7 +260,6 @@ public class TestRepository {
 	public void trackAllFiles(IProject project) throws CoreException {
 		project.accept(new IResourceVisitor() {
 
-			@Override
 			public boolean visit(IResource resource) throws CoreException {
 				if (resource instanceof IFile) {
 					try {
@@ -310,7 +316,7 @@ public class TestRepository {
 			throws IOException {
 		RefUpdate updateRef;
 		updateRef = repository.updateRef(newRefName);
-		Ref startRef = repository.findRef(refName);
+		Ref startRef = repository.getRef(refName);
 		ObjectId startAt = repository.resolve(refName);
 		String startBranch;
 		if (startRef != null)
@@ -360,21 +366,6 @@ public class TestRepository {
 	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
 		String repoPath = getRepoRelativePath(resource.getLocation().toString());
 		new Git(repository).add().addFilepattern(repoPath).call();
-	}
-
-	/**
-	 * Remove the given resource form the index.
-	 *
-	 * @param file
-	 * @throws NoFilepatternException
-	 * @throws GitAPIException
-	 */
-	public void removeFromIndex(File file) throws NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(new Path(file.getPath())
-				.toString());
-		try (Git git = new Git(repository)) {
-			git.rm().addFilepattern(repoPath).call();
-		}
 	}
 
 	/**
@@ -446,10 +437,16 @@ public class TestRepository {
 	 */
 	public boolean inHead(String path) throws IOException {
 		ObjectId headId = repository.resolve(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository);
-				TreeWalk tw = TreeWalk.forPath(repository, path,
-						rw.parseTree(headId))) {
+		RevWalk rw = new RevWalk(repository);
+		TreeWalk tw = null;
+		try {
+			tw = TreeWalk.forPath(repository, path, rw.parseTree(headId));
 			return tw != null;
+		} finally {
+			rw.release();
+			rw.dispose();
+			if (tw != null)
+				tw.release();
 		}
 	}
 
@@ -462,15 +459,11 @@ public class TestRepository {
 		if (dc == null)
 			return true;
 
-		Ref ref = repository.exactRef(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository)) {
-			RevCommit c = rw.parseCommit(ref.getObjectId());
+		Ref ref = repository.getRef(Constants.HEAD);
+		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
+		TreeWalk tw = TreeWalk.forPath(repository, getRepoRelativePath(absolutePath), c.getTree());
 
-			try (TreeWalk tw = TreeWalk.forPath(repository,
-					getRepoRelativePath(absolutePath), c.getTree())) {
-				return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
-			}
-		}
+		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {
@@ -520,13 +513,12 @@ public class TestRepository {
 	 * Connect a project to this repository
 	 *
 	 * @param project
-	 * @throws Exception
+	 * @throws CoreException
 	 */
-	public void connect(IProject project) throws Exception {
+	public void connect(IProject project) throws CoreException {
 		ConnectProviderOperation op = new ConnectProviderOperation(project,
 				this.getRepository().getDirectory());
 		op.execute(null);
-		TestUtils.waitForJobs(50, 5000, null);
 	}
 
 	/**

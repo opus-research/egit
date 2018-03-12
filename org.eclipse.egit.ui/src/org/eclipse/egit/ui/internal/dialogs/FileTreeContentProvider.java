@@ -35,7 +35,7 @@ import org.eclipse.ui.ide.IDE.SharedImages;
 public class FileTreeContentProvider implements ITreeContentProvider {
 	private final Repository repository;
 
-	private final List<Node> rootNodes = new ArrayList<>();
+	private final List<Node> rootNodes = new ArrayList<Node>();
 
 	private List<String> input;
 
@@ -82,7 +82,7 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 		/**
 		 * Child list
 		 */
-		protected final List<Node> myChildren = new ArrayList<>();
+		protected final List<Node> myChildren = new ArrayList<Node>();
 
 		Node(Node parent, String name) {
 			myParent = parent;
@@ -212,32 +212,26 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 		this.mode = mode;
 	}
 
-	@Override
 	public Object[] getChildren(Object parent) {
 		return ((Node) parent).getChildren().toArray();
 	}
 
-	@Override
 	public Object getParent(Object child) {
 		return ((Node) child).getParent();
 	}
 
-	@Override
 	public boolean hasChildren(Object parent) {
 		return ((Node) parent).hasChildren();
 	}
 
-	@Override
 	public Object[] getElements(Object arg0) {
 		return rootNodes.toArray();
 	}
 
-	@Override
 	public void dispose() {
 		// nothing to dispose
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		rootNodes.clear();
@@ -275,8 +269,7 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 				String segment = path.segment(i);
 				Node foundNode = null;
 				for (Node node : parentNode.getChildren()) {
-					if (node.getName().equals(segment)
-							&& !(node instanceof FileNode)) {
+					if (node.getName().equals(segment)) {
 						foundNode = node;
 						break;
 					}
@@ -307,7 +300,7 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 
 	private List<IPath> getProjectPaths() {
 		if (projectPaths == null) {
-			projectPaths = new ArrayList<>();
+			projectPaths = new ArrayList<IPath>();
 			for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
 					.getProjects()) {
 				RepositoryMapping mapping = RepositoryMapping

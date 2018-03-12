@@ -70,7 +70,6 @@ public class GitProjectsImportPage extends WizardPage {
 	private final class ProjectLabelProvider extends GitLabelProvider implements
 			IColorProvider {
 
-		@Override
 		public Color getForeground(Object element) {
 			if (isProjectInWorkspace(((ProjectRecord) element).getProjectName()))
 				return PlatformUI.getWorkbench().getDisplay().getSystemColor(
@@ -78,7 +77,6 @@ public class GitProjectsImportPage extends WizardPage {
 			return null;
 		}
 
-		@Override
 		public Color getBackground(Object element) {
 			return null;
 		}
@@ -126,7 +124,6 @@ public class GitProjectsImportPage extends WizardPage {
 		setDescription(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 
 		initializeDialogUnits(parent);
@@ -212,7 +209,6 @@ public class GitProjectsImportPage extends WizardPage {
 		projectsList.getControl().setLayoutData(listData);
 		projectsList.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				ProjectRecord element = (ProjectRecord) event.getElement();
 				if (isProjectInWorkspace(element.getProjectName())) {
@@ -227,32 +223,26 @@ public class GitProjectsImportPage extends WizardPage {
 
 		projectsList.setContentProvider(new ITreeContentProvider() {
 
-			@Override
 			public Object[] getChildren(Object parentElement) {
 				return children;
 			}
 
-			@Override
 			public Object[] getElements(Object inputElement) {
 				return selectedProjects;
 			}
 
-			@Override
 			public boolean hasChildren(Object element) {
 				return false;
 			}
 
-			@Override
 			public Object getParent(Object element) {
 				return null;
 			}
 
-			@Override
 			public void dispose() {
 				// ignore
 			}
 
-			@Override
 			public void inputChanged(Viewer viewer, Object oldInput,
 					Object newInput) {
 				// ignore
@@ -261,7 +251,6 @@ public class GitProjectsImportPage extends WizardPage {
 		});
 
 		projectsList.getTree().addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				checkPageComplete();
 			}
@@ -292,7 +281,6 @@ public class GitProjectsImportPage extends WizardPage {
 		selectAll = new Button(buttonsComposite, SWT.PUSH);
 		selectAll.setText(UIText.WizardProjectsImportPage_selectAll);
 		selectAll.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				selectAllNewProjects();
 				enableSelectAllButtons();
@@ -305,7 +293,6 @@ public class GitProjectsImportPage extends WizardPage {
 		deselectAll = new Button(buttonsComposite, SWT.PUSH);
 		deselectAll.setText(UIText.WizardProjectsImportPage_deselectAll);
 		deselectAll.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				for (TreeItem item : projectsList.getTree().getItems())
 					projectsList.setChecked(item.getData(), false);
@@ -402,14 +389,13 @@ public class GitProjectsImportPage extends WizardPage {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 
-				@Override
 				public void run(IProgressMonitor monitor) {
 
 					monitor.beginTask(
 							UIText.WizardProjectsImportPage_SearchingMessage,
 							100);
 					selectedProjects = new ProjectRecord[0];
-					Collection<File> files = new ArrayList<>();
+					Collection<File> files = new ArrayList<File>();
 					monitor.worked(10);
 					if (directory.isDirectory()) {
 						boolean searchNested = nestedProjects;
@@ -435,7 +421,6 @@ public class GitProjectsImportPage extends WizardPage {
 						if (files.isEmpty())
 							// run in UI thread
 							Display.getDefault().syncExec(new Runnable() {
-								@Override
 								public void run() {
 									setErrorMessage(UIText.GitProjectsImportPage_NoProjectsMessage);
 								}
@@ -507,7 +492,7 @@ public class GitProjectsImportPage extends WizardPage {
 	 *         workspace
 	 */
 	public ProjectRecord[] getValidProjects() {
-		List<ProjectRecord> validProjects = new ArrayList<>();
+		List<ProjectRecord> validProjects = new ArrayList<ProjectRecord>();
 		for (int i = 0; i < selectedProjects.length; i++) {
 			if (!isProjectInWorkspace(selectedProjects[i].getProjectName())) {
 				validProjects.add(selectedProjects[i]);
@@ -541,7 +526,7 @@ public class GitProjectsImportPage extends WizardPage {
 	 * @return All the currently checked projects in the projectsList tree
 	 */
 	public Set<ProjectRecord> getCheckedProjects() {
-		HashSet<ProjectRecord> ret = new HashSet<>();
+		HashSet<ProjectRecord> ret = new HashSet<ProjectRecord>();
 		for (Object selected : projectsList.getCheckedElements())
 			ret.add((ProjectRecord) selected);
 

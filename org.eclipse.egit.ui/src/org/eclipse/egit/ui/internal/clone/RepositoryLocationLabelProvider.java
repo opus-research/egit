@@ -23,7 +23,7 @@ class RepositoryLocationLabelProvider extends LabelProvider {
 
 	private Image repoImage = UIIcons.CLONEGIT.createImage();
 
-	private List<Image> images = new ArrayList<>();
+	private List<Image> images = new ArrayList<Image>();
 
 	@Override
 	public String getText(Object element) {
@@ -46,7 +46,6 @@ class RepositoryLocationLabelProvider extends LabelProvider {
 		return null;
 	}
 
-	@Override
 	public void dispose() {
 		repoImage.dispose();
 		for (Image image  : images)

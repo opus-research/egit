@@ -16,9 +16,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.util.Arrays;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -27,12 +24,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.team.core.RepositoryProvider;
 import org.junit.After;
@@ -46,10 +42,6 @@ public class LinkedResourcesTest {
 	File project1Dir;
 
 	File project2Dir;
-
-	File otherFolder;
-
-	File rootFile;
 
 	TestRepository repository1;
 
@@ -71,27 +63,14 @@ public class LinkedResourcesTest {
 	public void setUp() throws Exception {
 		testUtils = new TestUtils();
 		// Create first repo and project
-		File rootDir = testUtils.createTempDir("FirstRepository");
-		project1 = testUtils.createProjectInLocalFileSystem(rootDir,
-				project1Name);
+		project1 = testUtils.createProjectInLocalFileSystem(project1Name);
 		project1Dir = project1.getRawLocation().toFile();
-		otherFolder = new File(rootDir, "other_folder");
-		assertTrue(otherFolder.mkdirs());
-		File otherFile = new File(otherFolder, "otherFile.txt");
-		rootFile = new File(rootDir, "rootFile.txt");
-		Files.write(otherFile.toPath(),
-				Arrays.<String> asList("Hello", "otherFile"),
-				Charset.defaultCharset());
-		Files.write(rootFile.toPath(), Arrays.<String> asList("Hi", "rootFile"),
-				Charset.defaultCharset());
-		repository1 = new TestRepository(new File(rootDir,
+		repository1 = new TestRepository(new File(project1Dir,
 				Constants.DOT_GIT));
 		testUtils.addFileToProject(project1,
 				"project1folder1/project1folder1file1.txt", "Hello world");
 		repository1.connect(project1);
 		repository1.trackAllFiles(project1);
-		repository1.track(otherFile);
-		repository1.track(rootFile);
 		repository1.commit("Initial commit");
 		// Create 2nd repo and project
 		project2 = testUtils.createProjectInLocalFileSystem(project2Name);
@@ -151,33 +130,16 @@ public class LinkedResourcesTest {
 						.getLocation(), 0, null);
 		// Make sure linked folder is refreshed
 		folder.refreshLocal(IResource.DEPTH_INFINITE, null);
-		project2.getFile("project2folder1/project2folder1file1.txt")
-				.touch(null);
 
 		// Links are written to the .project file
 		resourceDeltaTestHelper1
 				.assertChangedResources(new String[] { "/project1/.project" });
-
-
 		// Changes to linked resources are reported against their repository
 		resourceDeltaTestHelper2.assertChangedResources(new String[] {
-				"/project2/project2folder1/project2folder1file1.txt" });
-	}
-
-	@Test
-	public void testLinkTargetsInSameRepositoryNotIgnoredByGitResourceDeltaVisitor()
-			throws Exception {
-		IFile file = project1.getFile("link2rootFile");
-		file.createLink(Path.fromOSString(rootFile.getAbsolutePath()), 0, null);
-		IFolder folder = project1.getFolder("link2otherFolder");
-		folder.createLink(Path.fromOSString(otherFolder.getAbsolutePath()), 0,
-				null);
-		project1.refreshLocal(IResource.DEPTH_INFINITE, null);
-		project1.getFile("link2rootFile").touch(null);
-		project1.getFile("link2otherFolder/otherFile.txt").touch(null);
-		resourceDeltaTestHelper1.assertChangedResources(
-				new String[] { "/project1/.project", "/project1/link2rootFile",
-						"/project1/link2otherFolder/otherFile.txt" });
+						"/project1/link2project2/project2folder1",
+						"/project1/link2project2/.project",
+						"/project1/link2project2/project2folder1/project2folder1file1.txt",
+						"/project1/link2project2" });
 	}
 
 	@Test
@@ -213,7 +175,7 @@ public class LinkedResourcesTest {
 		// Test iterator
 		WorkingTreeIterator iterator = IteratorService
 				.createInitialIterator(repository1.repository);
-		assertTrue(iterator instanceof FileTreeIterator);
+		assertTrue(iterator instanceof ContainerTreeIterator);
 		while (!iterator.eof()) {
 			assertFalse(iterator.getEntryPathString().startsWith("link2"));
 			iterator.next(1);

@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,35 +29,27 @@ public enum RebaseInteractivePlanContentProvider implements ITreeContentProvider
 	private RebaseInteractivePlanContentProvider() {
 	}
 
-	@Override
 	public void dispose() {
 		// empty
 	}
 
-	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		// empty
 	}
 
-	@Override
 	public Object[] getElements(Object inputElement) {
 		return getChildren(inputElement);
 	}
 
-	@Override
 	public Object[] getChildren(Object parentElement) {
 		if (parentElement instanceof RebaseInteractivePlan) {
 			RebaseInteractivePlan plan = (RebaseInteractivePlan) parentElement;
-			List<RebaseInteractivePlan.PlanElement> linesToDisplay = new LinkedList<>();
+			List<RebaseInteractivePlan.PlanElement> linesToDisplay = new LinkedList<RebaseInteractivePlan.PlanElement>();
 			for (RebaseInteractivePlan.PlanElement line : plan.getList()) {
 				if (line.isComment())
 					continue;
 				linesToDisplay.add(line);
 			}
-
-			if (RebaseInteractivePreferences.isOrderReversed())
-				Collections.reverse(linesToDisplay);
-
 			return linesToDisplay.toArray();
 		}
 
@@ -71,12 +62,10 @@ public enum RebaseInteractivePlanContentProvider implements ITreeContentProvider
 		return new Object[0];
 	}
 
-	@Override
 	public Object getParent(Object element) {
 		return null;
 	}
 
-	@Override
 	public boolean hasChildren(Object element) {
 		return (element instanceof RebaseInteractivePlan);
 		// TODO:add children as touched files; grandchildren as hunks in files

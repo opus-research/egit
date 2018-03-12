@@ -2,7 +2,6 @@
  * Copyright (C) 2006, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,8 +12,6 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -72,16 +69,14 @@ public class HistoryPageInput {
 	public HistoryPageInput(final Repository repository, final File[] fileItems) {
 		this.repo = repository;
 		list = null;
-		if (fileItems.length == 1 && fileItems[0].isFile()
-				&& !inGitDir(repository, fileItems[0])) {
+		if (fileItems.length == 1 && fileItems[0].isFile()) {
 			singleItem = fileItems[0];
 			singleFile = fileItems[0];
-			files = Arrays.asList(fileItems);
 		} else {
 			singleItem = null;
 			singleFile = null;
-			files = filterFilesInGitDir(repository, fileItems);
 		}
+		files = Arrays.asList(fileItems);
 	}
 
 	/**
@@ -146,7 +141,7 @@ public class HistoryPageInput {
 	 */
 	public Ref getHead() {
 		try {
-			Ref h = repo.exactRef(Constants.HEAD);
+			Ref h = repo.getRef(Constants.HEAD);
 			if (h != null && h.isSymbolic())
 				return h;
 			return null;
@@ -156,48 +151,5 @@ public class HistoryPageInput {
 							.getDefault().getRepositoryUtil()
 							.getRepositoryName(repo)), e);
 		}
-	}
-
-	/**
-	 * Tests whether a file is in a repository's .git directory (or is that
-	 * directory itself).
-	 *
-	 * @param repository
-	 *            to test against
-	 * @param file
-	 *            to test
-	 * @return {@code true} if the file is in the .git directory of the
-	 *         repository, or is that directory itself.
-	 */
-	private boolean inGitDir(Repository repository, File file) {
-		return file.getAbsoluteFile().toPath().startsWith(
-				repository.getDirectory().getAbsoluteFile().toPath());
-	}
-
-	/**
-	 * Filters all files that are inside a repository's .git directory from the
-	 * given files.
-	 *
-	 * @param repository
-	 *            to test against
-	 * @param fileItems
-	 *            to test
-	 * @return a list of all files from {@code files} that are <em>not</em> in
-	 *         the .git directory of the repository, or {@code null} if there
-	 *         are none.
-	 */
-	private List<File> filterFilesInGitDir(Repository repository,
-			File[] fileItems) {
-		List<File> result = new ArrayList<>(fileItems.length);
-		Path gitDirPath = repository.getDirectory().getAbsoluteFile().toPath();
-		for (File f : fileItems) {
-			if (!f.getAbsoluteFile().toPath().startsWith(gitDirPath)) {
-				result.add(f);
-			}
-		}
-		if (result.isEmpty()) {
-			return null;
-		}
-		return result;
 	}
 }

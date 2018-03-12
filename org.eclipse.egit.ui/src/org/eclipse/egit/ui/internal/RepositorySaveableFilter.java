@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2012, 2015 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +15,6 @@ import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jgit.lib.Repository;
@@ -30,7 +29,7 @@ public class RepositorySaveableFilter extends SaveFilter {
 
 	private final IPath workDir;
 
-	private final List<Saveable> saveCandidates = new ArrayList<>();
+	private final List<Saveable> saveCandidates = new ArrayList<Saveable>();
 
 	/**
 	 * @param repository
@@ -41,7 +40,6 @@ public class RepositorySaveableFilter extends SaveFilter {
 		this.workDir = new Path(repository.getWorkTree().getAbsolutePath());
 	}
 
-	@Override
 	public boolean select(Saveable saveable, IWorkbenchPart[] containingParts) {
 		boolean selected = super.select(saveable, containingParts);
 		if (!selected)
@@ -52,7 +50,7 @@ public class RepositorySaveableFilter extends SaveFilter {
 	}
 
 	private boolean isTextFileBufferInWorkDir(Saveable saveable) {
-		IDocument document = AdapterUtils.adapt(saveable, IDocument.class);
+		IDocument document = (IDocument) saveable.getAdapter(IDocument.class);
 		if (document == null)
 			return true; // be conservative and assume this needs to be saved
 		ITextFileBuffer textFileBuffer = FileBuffers.getTextFileBufferManager()

@@ -65,13 +65,12 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 		}
 	}
 
-	@Override
 	public Object[] getElements(Object inputElement) {
 		if (inputElement instanceof ReflogInput) {
 			ReflogInput input = (ReflogInput) inputElement;
-			try (Git git = new Git(input.repository)) {
-				ReflogCommand command = git.reflog();
-				command.setRef(input.ref);
+			ReflogCommand command = new Git(input.repository).reflog();
+			command.setRef(input.ref);
+			try {
 				return command.call().toArray();
 			} catch (Exception e) {
 				Activator.logError("Error running reflog command", e); //$NON-NLS-1$
@@ -80,27 +79,22 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 		return new Object[0];
 	}
 
-	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		// TODO
 	}
 
-	@Override
 	public void dispose() {
 		// Do nothing
 	}
 
-	@Override
 	public Object[] getChildren(Object parentElement) {
 		return null;
 	}
 
-	@Override
 	public Object getParent(Object element) {
 		return null;
 	}
 
-	@Override
 	public boolean hasChildren(Object element) {
 		return false;
 	}

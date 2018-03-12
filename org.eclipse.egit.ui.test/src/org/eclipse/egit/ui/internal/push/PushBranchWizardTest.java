@@ -19,10 +19,7 @@ import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -61,23 +58,6 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 
 		assertBranchPushed("foo", remoteRepository);
 		assertBranchConfig("foo", "fetch", "refs/heads/foo", null);
-	}
-
-	@Test
-	public void pushHeadToExistingRemote() throws Exception {
-		try (Git git = new Git(repository)) {
-			AnyObjectId head = repository.resolve(Constants.HEAD);
-			git.checkout().setName(head.name()).call();
-		}
-
-		PushBranchWizardTester wizard = PushBranchWizardTester
-				.startWizard(selectProject(), Constants.HEAD);
-		wizard.selectRemote("fetch");
-		wizard.enterBranchName("foo");
-		wizard.next();
-		wizard.finish();
-
-		assertBranchPushed("foo", remoteRepository);
 	}
 
 	@Test
@@ -170,7 +150,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	public void pushWithRemoteUpstreamConfiguration() throws Exception {
+	public void pushWithExistingUpstreamConfiguration() throws Exception {
 		checkoutNewLocalBranch("foo");
 		// Existing configuration
 		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
@@ -206,35 +186,6 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		assertBranchConfig("foo", "fetch", "refs/heads/foo-on-remote", "true");
 	}
 
-	@Test
-	public void pushWithLocalUpstreamConfiguration() throws Exception {
-		checkoutNewLocalBranch("foo");
-		// Existing configuration
-		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				"foo", ConfigConstants.CONFIG_KEY_REMOTE, ".");
-		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				"foo", ConfigConstants.CONFIG_KEY_MERGE, "refs/heads/master");
-
-		PushBranchWizardTester wizard = PushBranchWizardTester.startWizard(
-				selectProject(), "foo");
-		wizard.selectRemote("fetch");
-		wizard.assertBranchName("foo");
-		wizard.assertMergeSelected();
-		assertTrue(wizard.isUpstreamConfigOverwriteWarningShown());
-		wizard.deselectConfigureUpstream();
-		assertFalse(wizard.isUpstreamConfigOverwriteWarningShown());
-		wizard.selectMerge();
-		wizard.next();
-		wizard.finish();
-
-		ObjectId remoteId = remoteRepository.resolve("foo");
-		ObjectId localId = repository.resolve("foo");
-		assertEquals(localId, remoteId);
-
-		// Newly configured
-		assertBranchConfig("foo", "fetch", "refs/heads/foo", null);
-	}
-
 	private void removeExistingRemotes() throws IOException {
 		StoredConfig config = repository.getConfig();
 		Set<String> remotes = config
@@ -248,7 +199,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private void checkoutNewLocalBranch(String branchName)
 			throws Exception {
 		CreateLocalBranchOperation createBranch = new CreateLocalBranchOperation(
-				repository, branchName, repository.findRef("master"),
+				repository, branchName, repository.getRef("master"),
 				UpstreamConfig.NONE);
 		createBranch.execute(null);
 		BranchOperation checkout = new BranchOperation(repository, branchName);
@@ -258,7 +209,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private Repository createRemoteRepository() throws IOException {
 		File gitDir = new File(getTestDirectory(), "pushbranchremote");
 		Repository repo = FileRepositoryBuilder.create(gitDir);
-		repo.create(true);
+		repo.create();
 		assertTrue(repo.isBare());
 		return repo;
 	}

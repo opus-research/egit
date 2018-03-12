@@ -28,7 +28,7 @@
 				<td style="width: 60%" align="center"></td>
 				<td style="width: 20%" align="right" valign="top">Reference</td>
 			</tr>
-		</table><hr class="navigation-separator"/>
+		</table><hr/>
 		<h1 id="Tasks">Tasks</h1>
 		<h2 id="Creating_Repositories">Creating Repositories</h2>
 		<h3 id="Considerations_for_Git_Repositories_to_be_used_in_Eclipse">Considerations for Git Repositories to be used in Eclipse</h3>
@@ -87,7 +87,7 @@
 			<a href="http://wiki.eclipse.org/EGit/User_Guide/Sharing#Adding_a_project_to_version_control" title="EGit/User Guide/Sharing#Adding_a_project_to_version_control" target="egit_external">Adding a project to version control</a>).
 		</p>
 		<p>You can also create a new empty Git Repository from the Git Repositories View (see 
-			<a href="#Creating_a_Repository" title="EGit/User_Guide#Creating_a_Repository">Creating a Repository</a>).
+			<a href="Creating_a_Repository" title="EGit/User_Guide#Creating_a_Repository">Creating a Repository</a>).
 		</p>
 		<h3 id="Creating_a_Git_Repository_for_multiple_Projects">Creating a Git Repository for multiple Projects</h3>
 		<p>You may create multiple projects under a common directory and then create a common repository for all projects in one go:</p>
@@ -106,9 +106,8 @@
 				<b>Finish</b>
 			</li>
 		</ul>
-		<p>
-			<br/>
-		</p>
+		<p>&lt;br 
+			/&gt;</p>
 		<h2 id="Starting_from_existing_Git_Repositories">Starting from existing Git Repositories</h2>
 		<p>In order to work with the content of a Git repository in the Eclipse workbench, the contained files and folders must be imported as projects. In principle, this import can be done using the generic "New Project" or "Import..." wizards, since the working directory of a Git Repository is just a normal directory in the local file system. However, the newly created projects would still have to be shared manually with Git. The "Import Projects from Git" wizard integrates project import and sharing and also offers some extra convenience.</p>
 		<h3 id="Starting_the_import_wizard">Starting the import wizard</h3>
@@ -129,7 +128,7 @@
 		<h4 id="Cloning_a_Repository">Cloning a Repository</h4>
 		<p>The first option is used if you start with a remote repository. The clone operation will copy that repository to your local file system. To start the Clone Wizard click 
 			<b>Clone...</b>. The Clone Wizard is described in more detail in 
-			<a href="#Cloning_Remote_Repositories" title="EGit/User Guide#Cloning_Remote_Repositories">Cloning Remote Repositories</a>. Upon successful completion of the clone operation, the newly cloned repository appears in the list automatically.
+			<a href="Cloning_Remote_Repositories" title="EGit/User Guide#Cloning_Remote_Repositories">Cloning Remote Repositories</a>. Upon successful completion of the clone operation, the newly cloned repository appears in the list automatically.
 		</p>
 		<h4 id="Adding_a_Repository">Adding a Repository</h4>
 		<p>The second option is useful if you already have a repository in your local file system, for example because you have cloned it earlier, you created it from scratch or you copied it from somewhere else. Click 
@@ -186,7 +185,7 @@
 			<b>File &gt; Import... &gt; Git &gt; Projects from Git &gt; Next &gt; Clone URI &gt; Next</b>
 		</p>
 		<p>or from the "Git Repositories View" (described in 
-			<a href="#Managing_Repositories" title="EGit/User_Guide#Managing_Repositories">Managing Repositories</a>) using the 
+			<a href="Managing_Repositories" title="EGit/User_Guide#Managing_Repositories">Managing Repositories</a>) using the 
 			<b>Clone a Git Repository</b> toolbar button or view menu.
 		</p>
 		<h4 id="Repository_Selection">Repository Selection</h4>
@@ -292,7 +291,7 @@
 		<p>You can press 
 			<b>Finish</b> on this page or press 
 			<b>Next</b> if you are working with 
-			<a href="https://www.gerritcodereview.com/" target="egit_external">Gerrit Code Review</a> and you want to configure your repository accordingly.
+			<a href="http://code.google.com/p/gerrit/" target="egit_external">Gerrit Code Review</a> and you want to configure your repository accordingly.
 		</p>
 		<h4 id="Cloning_from_specific_locations">Cloning from specific locations</h4>
 		<p>The Clone wizard of EGit can be extended by other plugins in order to search for repositories on specific backends which host git repositories. Currently such an extension is available for Github and soon will be available for Gerrit. For both you need to install the respective Mylyn connectors. The Gerrit Mylyn connector extension then will also configure the remote repository for the work with Gerrit. This can also be done or changed later from the Git Repositories View, see 
@@ -437,11 +436,17 @@
 				<b>adfdbfd2</b></tt> will be pushed.
 			</li>
 			<li>For refs which do not yet exist in the destination repository <tt>
-				<b>[new branch]</b></tt> or <tt>
-				<b>[new tag]</b></tt> is displayed.
+				<b>
+					<a href="new">branch</a>
+				</b></tt> or <tt>
+				<b>
+					<a href="new">tag</a>
+				</b></tt> is displayed.
 			</li>
 			<li>For refs which will be delete <tt>
-				<b>[deleted]</b></tt> is shown.
+				<b>
+					<a href="deleted">deleted</a>
+				</b></tt> is shown.
 			</li>
 		</ul>
 		<p>
@@ -597,11 +602,17 @@
 		<ul>
 			<li>For ref updates the list commits which have been fetched will be shown.</li>
 			<li>For refs which didn't exist before in the local repository <tt>
-				<b>[new branch]</b></tt> or <tt>
-				<b>[new tag]</b></tt> is displayed.
+				<b>
+					<a href="new">branch</a>
+				</b></tt> or <tt>
+				<b>
+					<a href="new">tag</a>
+				</b></tt> is displayed.
 			</li>
 			<li>For refs which have been deleted <tt>
-				<b>[deleted]</b></tt> is shown.
+				<b>
+					<a href="deleted">deleted</a>
+				</b></tt> is shown.
 			</li>
 		</ul>
 		<p>
@@ -633,19 +644,12 @@
 			<br/>
 		</p>
 		<h2 id="Working_with_Gerrit">Working with Gerrit</h2>
-		<p>If you are working with 
-			<a href="https://www.gerritcodereview.com/" target="egit_external">Gerrit Code Review</a>, EGit allows you to conveniently push and fetch changes to and from the Gerrit servers.
+		<p>If you are working with Gerrit (
+			<a href="http://code.google.com/p/gerrit/" target="egit_external">http://code.google.com/p/gerrit/</a>), EGit allows you to conveniently push and fetch changes to and from the Gerrit servers.
 		</p>
 		<h3 id="Enabling_Gerrit_for_a_repository">Enabling Gerrit for a repository</h3>
-		<p>When a repository is cloned in EGit from a Gerrit server using a <code>http</code>, <code>https</code>, or <code>ssh</code> URI, EGit will automatically set up the clone for use with Gerrit. The repository clone is configured such that</p>
-		<ul>
-			<li>fetching also fetches the review notes from Gerrit,</li>
-			<li>pushing by default pushes the commits for review, and</li>
-			<li>commit messages automatically get a Gerrit <code>Change-Id</code> unless they already have one.</li>
-		</ul>
-		<p>If a repository cloned from a Gerrit server outside of EGit is used in EGit, the clone may not be set up such that EGit recognizes it as a Gerrit repository. Gerrit operations in EGit will not appear in any menus unless you configure your repository first. To do that, open the Git Repositories view and browse down to the 
-			<b>Remote</b> that represents the Git repository server you want to use and select 
-			<b>Gerrit Configuration...</b>.
+		<p>Gerrit operation will not appear in any menus unless you configure your repository first. To do that open the Git Repositories view browse down to the 
+			<b>Remote</b> that the represent the Git repository server you want to use.
 		</p>
 		<h3 id="Pushing_a_change_to_a_Gerrit_Code_Review_Server">Pushing a change to a Gerrit Code Review Server</h3>
 		<p>Right-click on a project and select 
@@ -654,29 +658,17 @@
 		</p>
 		<p>A dialog will appear that lets you select or enter a URI and branch name:</p>
 		<p>
-			<img border="0" src="images/Egit-4.4-PushChangeToGerritDialog.png"/>
+			<img border="0" src="images/Egit-3.1-PushChangeToGerritDialog.png"/>
 		</p>
 		<ul>
 			<li>In the URI combo, select or enter the URI that points to your Gerrit instance; the combo will be pre-filled with all URIs defined in any remote of your current Repository; in addition you can type any URI into this field</li>
 			<li>In the Gerrit Branch field, enter the name of the branch to select the review queue your changes will be be pushed to</li>
-			<li>Optionally, enable the topic and enter a topic identifier. EGit proposes the last used topic for the local branch being pushed, or the local branch name.</li>
 		</ul>
 		<p>The dialog also offers a content assist for the Gerrit branch. Simply press "Ctrl+Space" to activate this (consult the tooltip that appears when hovering over the little bulb decorator near the Gerrit Branch field). The remote tracking branches for the current repository will be shown. Note that this content assist is filtered, so in order to see all proposals, you need to make sure to have the Gerrit Branch field empty before requesting the content assist.</p>
 		<p>Upon clicking 
 			<b>Finish</b>, the currently checked out commit will be pushed to the Gerrit branch specified. Also, the URI and Gerrit Branch values will be remembered and suggested again when the dialog is opened again later.
 		</p>
 		<p>This allows for more flexibility when working with different Gerrit branches in parallel (e.g. frequently switching between development and hotfixing).</p>
-		<h4 id="Editing_a_change">Editing a change</h4>
-		<p>When a change has been pushed to Gerrit and the reviewers suggest to make some improvements, a new patch set for the change has to be uploaded. First, edit the commit(s):</p>
-		<ul>
-			<li>In case you have one commit corresponding to one change, you can amend the commit (see 
-				<a href="#Amending_Commits">Amending Commits</a>).
-			</li>
-			<li>In case you have multiple dependent commits and need to edit a commit other than the last one, you can do an interactive rebase (see 
-				<a href="#Interactive_Rebase">Interactive Rebase</a>). Alternatively, check out the commit you want to edit, amend it and then cherry-pick the later commits on top (this is what interactive rebase does for you).
-			</li>
-		</ul>
-		<p>Then push again to the same branch. Gerrit will detect that you are updating existing changes and will add new patch sets.</p>
 		<h3 id="Fetching_a_change_from_a_Gerrit_Code_Review_Server">Fetching a change from a Gerrit Code Review Server</h3>
 		<p>Right-click on a project and select 
 			<b>Team &gt; Remote &gt; Fetch from Gerrit...</b> or right-click on a Repository node in the Repositories View and select 
@@ -708,49 +700,21 @@
 		<p>
 			<img border="0" src="images/Egit-3.1-GerritDownloadCommand.png"/>
 		</p>
-		<p>The Change field is also automatically filled in (and content assist is triggered) if the clipboard contains a web URL pointing to a Gerrit change, or the change number part of such a URL (numbers separated by "/"), or a plain change number.</p>
-		<h2 id="Working_with_Gitflow">Working with Gitflow</h2>
-		<p>If you are using Gitflow (
-			<a href="http://nvie.com/posts/a-successful-git-branching-model/" target="egit_external">http://nvie.com/posts/a-successful-git-branching-model/</a>), EGit allows you to work with Gitflow operations, managing feature, release and hotfix branches.
-		</p>
-		<h3 id="Enabling_Gitflow_for_a_repository">Enabling Gitflow for a repository</h3>
-		<p>Gitflow operations will not appear unless the selected repository is configured for Gitflow. To do that, open the context menu on a repository in the Git Repositories view and select 
-			<b>Init Git Flow</b>.
-
-			<img border="0" src="images/Egit-4.0-git_flow_init-repository_node_right_click.png"/>
-		</p>
-		<p>You can skip this step if your repository was already configured for Gitflow by another client.</p>
-		<h3 id="Starting_a_feature.2Frelease.2Fhotfix">Starting a feature/release/hotfix</h3>
-		<p>Right-click on a repository, select 
-			<b>Git Flow</b>, and select the appropriate start command.
-		</p>
-		<p>
-			<img border="0" src="images/Egit-4.0-git_flow-repository_node_right_click.png"/>
-
-			<img border="0" src="images/Egit-4.0-git_flow_submenu-repository_node_right_click.png"/>
-		</p>
-		<p>A dialog will appear that lets you enter a name for the Gitflow branch, adding the correct prefix automatically.</p>
-		<h3 id="Starting_release_from_a_commit_other_than_HEAD">Starting release from a commit other than HEAD</h3>
-		<p>Go to the EGit History view, and right-click the commit you want to start the release from.
-			In the context menu, go to 
-			<b>Git Flow</b>, and select 
-			<b>Start release from commit &lt;sha1&gt;</b>.
-
-			<img border="0" src="images/Egit-4.0-git_flow_start_release_from_history_view_context_menu.png"/>
-		</p>
 		<h2 id="Inspecting_the_state_of_the_Repository">Inspecting the state of the Repository</h2>
 		<h3 id="Label_Decorations">Label Decorations</h3>
-		<p>Label decorations show Git-specific information about resources under Git version control. They appear in all views showing model objects, like Package Explorer, Project Explorer, Navigator, and Hierarchy View.</p>
+		<p>Label decorations show Git specific information on resources under Git version control. They appear in all views showing model objects, like Package Explorer, Project Explorer, Navigator, Hierarchy View.</p>
 		<p>The Git label decorations can be switched on globally in the Preference Menu (
 			<b>Window &gt; Preferences</b>) under 
-			<b>General &gt; Appearance &gt; Label Decorations</b>, and more detailed settings can be modified in Preferences under 
+			<b>General &gt; Appearance &gt; Label Decorations</b>.
+		</p>
+		<p>More detailed settings can be done in the Preferences under 
 			<b>Team &gt; Git &gt; Label Decorations</b>.
 		</p>
 		<p>There are two different types of label decorations: text decorations and icon decorations.</p>
 		<h4 id="Text_Decorations">Text Decorations</h4>
 		<p>Text decorations appear on the left or right side of the text label. They can be configured on the Preferences dialog under 
-			<b>Team &gt; Git &gt; Label Decorations</b> on the 
-			<b>Text Decorations</b> tab. For example, the default for a dirty resource is a <tt>
+			<b>Team &gt; Git &gt; Label Decorations</b> on the tab 
+			<b>Text Decorations</b>. For example, the default for a dirty resource is a <tt>
 			<b>&gt;</b></tt> on the left side of its name.
 		</p>
 		<p>These are the default settings:</p>
@@ -758,8 +722,8 @@
 			<img border="0" src="images/01-TextDecorations.png"/>
 		</p>
 		<p>For files and folders there are the variables <tt>"name"</tt>, <tt>"dirty"</tt> and <tt>"staged"</tt>. <tt>"Dirty"</tt> and <tt>"staged"</tt> are flags; if they are true, the text after the colon is displayed.</p>
-		<p>For projects there are the additional variables <tt>"repository"</tt>, <tt>"branch"</tt> and <tt>"branch_status"</tt>. The <tt>"repository"</tt> variable displays the name of the repository.</p>
-		<p>The <tt>"branch"</tt> variable displays the name of the currently checked out branch. If no branch is checked out, the decoration shows the shortened name of the commit (first seven characters followed by ellipsis). If tags and/or remote branches are pointing to this commit, a "best guess" heuristic is applied to also show this information: tags take precedence over remote branches, and if several tags apply, the newest one is displayed. If there are several remote branches or tags that have no modification date, then alphabetic sorting is applied and the last one is shown. Example: the checked out commit <tt>
+		<p>For projects there are the additional variables <tt>"repository"</tt> and <tt>"branch"</tt>. The <tt>"repository"</tt> variable displays the name of the repository.</p>
+		<p>The <tt>"branch"</tt> variable displays the name of the currently checked out branch. If no branch is checked out, the decoration shows the shortened name of the commit (first seven characters followed by ellipsis). If tags and/or remote branches are pointing to this commit, a "best guess" heuristic is applied to also show this information: tags take precedence over remote branches, if several tags apply, the newest one is displayed; if there are several remote branches or tags have no modification date, then alphabetic sorting is applied and the last one is shown. Example: the checked out commit <tt>
 			<b>e49f576...</b></tt> refers to tag <tt>
 			<b>v.0.7.1</b></tt> of repository <tt>
 			<b>egit</b></tt>:
@@ -768,18 +732,6 @@
 		<p>
 			<img border="0" src="images/03-ExampleDecoration.png"/>
 		</p>
-		<p>The <tt>"branch_status"</tt> variable shows the status of the local branch compared to the remote-tracking branch that is set as upstream:</p>
-		<ul>
-			<li>↑N – The local branch has 
-				<i>N</i> commits that are not yet on the remote-tracking branch. This can be read as "N commits to push".
-			</li>
-			<li>↓M – The remote-tracking branch has 
-				<i>M</i> commits that are not on the local branch. This can be read as "M commits to merge/rebase".
-			</li>
-			<li>↑N↓M – The local branch and the remote-tracking branch have diverged (the two above apply both).</li>
-			<li>– Empty if the local branch and the remote-tracking branch have the same state.</li>
-		</ul>
-		<p>The status variable can be used with a leading space like this: <tt>{ branch_status}</tt>. This results in the space being added only when the status is not empty.</p>
 		<h4 id="Icon_Decorations">Icon Decorations</h4>
 		<p>Icon decorations appear on the lower right corner of the icon displayed in front of the label. They can be configured on the Preferences dialog under 
 			<b>Team &gt; Git &gt; Label Decorations</b> on the tab 
@@ -1050,8 +1002,7 @@
 			<img border="0" src="images/Egit-1.2-commit-dialog-path-assist.png"/>
 		</p>
 		<p>The commit message editor supports content assist for file names shown in Files section of the commit dialog, which can be activated pressing Ctrl+Space.</p>
-		<p><div id="Footer_Tags"></div>
-
+		<p>
 			<b>Footer Tags</b>
 
 			<br/>
@@ -1067,7 +1018,7 @@ Signed-off-by: William Shakespeare &lt;will.from@the.past&gt;
 		<ul>
 			<li>If there is an entry in a bug tracking system for the change to be committed it is a good idea to add it here as a bug tag</li>
 			<li>
-				<a href="https://www.gerritcodereview.com/" target="egit_external">Gerrit Code Review</a> uses the 
+				<a href="http://code.google.com/p/gerrit/" target="egit_external">Gerrit Code Review</a> uses the 
 				<i>Change-Id:</i> footer to correlate different patchsets of a change evolving during the review process towards the finally accepted patch. To generate a Gerrit Change-Id click 
 				<b>Compute Change-Id for Gerrit Code Review</b>; the ID will be generated on commit, until then a null Change-Id is shown as a placeholder. With the EGit configuration parameter 
 				<b>gerrit.createchangeid</b> set to true the corresponding checkbox in the Commit Dialog is always preselected. This parameter can be set on repository level, on system level or on user level. See 
@@ -1100,7 +1051,7 @@ Signed-off-by: William Shakespeare &lt;will.from@the.past&gt;
 			<b>Show untracked Files</b> is selected by default.
 		</p>
 		<h4 id="Amending_Commits">Amending Commits</h4>
-		<p>If you recognize that you missed something when committing a change you may fix this: open the staging view or commit dialog again and specify that the current commit shall "amend" the previous commit in the current branch. The new commit will then replace the previous one. This feature is often used to correct incorrect commits before they are published to other repositories.</p>
+		<p>If you recognize that you missed something when committing a change you may fix this: open the commit dialog again and specify that the current commit shall "amend" the previous commit in the current branch. The new commit will then replace the previous one. This feature is often used to correct incorrect commits before they are published to other repositories.</p>
 		<p>
 			<b>Note:</b> do not amend commits if they have already been published to a shared repository since this may disturb others if they already based their changes on the published change.
 		</p>
@@ -1116,11 +1067,8 @@ Signed-off-by: William Shakespeare &lt;will.from@the.past&gt;
 		<p>
 			<img border="0" src="images/EGit-Corrected.png"/>
 		</p>
-		<p>Then open the Staging View or Commit Dialog again and select the 
-			<b>Amend Previous Commit</b> icon in the toolbar.
-		</p>
-		<p>
-			<img border="0" src="images/EGit_Amend_Commit_Button.png"/>
+		<p>then open the Staging View or Commit Dialog again and select the option 
+			<b>Amend previous commit</b> in the toolbar.
 		</p>
 		<p>The commit message of your previous commit (the one you want to replace) is then filled into the "Commit Message" field. This gives you the chance not only to correct errors in the content of the version-controlled files but to also correct errors (e.g. typos) in the commit message describing your change.</p>
 		<p>As an alternative to amending you could just commit the corrected version as a subsequent commit. But the first commit containing the typo is of no use to anybody and in order not to clutter the history of your project with unneeded commits you should amend the commit.</p>
@@ -1352,19 +1300,14 @@ Signed-off-by: William Shakespeare &lt;will.from@the.past&gt;
 		<h3 id="Branch_Creation_Dialog">Branch Creation Dialog</h3>
 		<p>There are several actions available to create a local branch. All these actions use the Branch Creation dialog:</p>
 		<p>
-			<img border="0" src="images/Egit-3.5-CreateBranchDialog.png"/>
+			<img border="0" src="images/Egit-3.1-CreateBranchDialog.png"/>
 		</p>
-		<p>Enter the name of the local branch you want to create. If a source branch is selected which is a remote tracking branch EGit will suggest to create the new local branch with the same name.</p>
-		<p>Click 
-			<b>Select...</b> to select the source branch the new branch shall be based on. Typically, this is a remote tracking branch, but it could be any branch or commit in the repository (selecting a local branch is not recommended if you are working with a remote repository).
-			If you want to base the new branch on a commit no branch is referring to then click 
-			<b>Create Branch...</b> from the commit shown in the History View.
-		</p>
-		<p>When a source branch is selected you can configure the "upstream configuration" of the new branch which is helpful when fetching and pushing, but particularly when pulling. Depending on the selected option the following configuration can be chosen:</p>
+		<p>The combo in the upper part allows to select the branch or commit the new branch shall be based on. Typically, this is a remote tracking branch, but it could be any branch or commit in the repository (selecting a local branch is not recommended if you are working with a remote repository).</p>
+		<p>The "Pull Strategy" group is only visible when a branch is selected in the combo and allows to override the default setup for the "upstream configuration" which is helpful when fetching and pushing, but particularly when pulling. Depending on the selected option the following configuration can be chosen:</p>
 		<ul>
-			<li>"Merge upstream commits into local branch": When pulling, the changes will be fetched from upstream and the remote tracking branch will be updated. Then the current local branch will be merged with the new changes. This is the default if the new branch is based on a remote tracking branch (but this default may be overridden by specific repository configuration)</li>
-			<li>"Rebase commits of local branch onto upstream": When pulling, new changes will be fetched from upstream and the remote tracking branch will be updated. Then the current local branch will be rebased onto the updated remote tracking branch</li>
-			<li>if you uncheck the option "Configure upstream for push and pull"): When pulling, no specific upstream configuration will be done for the new branch; however, if a default remote exists (a remote with name "origin", pull will try to use the configuration of this remote; this is the default if the new branch is not based on a remote tracking branch</li>
+			<li>Rebase: When pulling, new changes will be fetched from upstream and the remote tracking branch will be updated. Then the current local branch will be rebased onto the updated remote tracking branch</li>
+			<li>Merge: When pulling, the changes will be fetched from upstream and the remote tracking branch will be updated. Then the current local branch will be merged with the new changes. This is the default if the new branch is based on a remote tracking branch (but this default may be overridden by specific repository configuration)</li>
+			<li>None: When pulling, no specific upstream configuration will be done for the new branch; however, if a default remote exists (a remote with name "origin", pull will try to use the configuration of this remote; this is the default if the new branch is not based on a remote tracking branch</li>
 		</ul>
 		<p>You may view and edit the upstream configuration in the 
 			<a href="#Repository_Configuration">repository configuration</a> or by selecting 
@@ -1372,15 +1315,6 @@ Signed-off-by: William Shakespeare &lt;will.from@the.past&gt;
 		</p>
 		<p>EGit also supports the git configuration parameter <code>branch.autosetuprebase</code>, set it to <code>always</code> if you want to use the rebase pull strategy by default. If you set this in the repository configuration this is used for all local branches created based on a remote tracking branch in this repository, if you set it in your user configuration it will be used for all your repositories.</p>
 		<p>In the lower part, you can decide whether the new branch shall be checked out immediately.</p>
-		<h3 id="Configure_Branch_Dialog">Configure Branch Dialog</h3>
-		<p>
-			<img border="0" src="images/Egit-3.5-ConfigureBranchDialog.png"/>
-		</p>
-		<p>Click 
-			<b>Configure Branch...</b> on a branch in the Repositories View in order to change the upstream configuration of a local branch.
-			Select which remote ("." means the local repository) and branch the selected local branch should track. Check "Rebase" if you want
-			pull to rebase the local branch onto new changes arriving for the tracked branch, otherwise pull will merge new changes arriving for the tracked branch.
-		</p>
 		<h2 id="Merging">Merging</h2>
 		<p>A merge incorporates changes from another branch or tag, since the time their histories diverged from the current branch, into the currently checked out branch.</p>
 		<h3 id="Merging_a_branch_or_a_tag_into_the_current_branch">Merging a branch or a tag into the current branch</h3>
@@ -1517,13 +1451,6 @@ Signed-off-by: William Shakespeare &lt;will.from@the.past&gt;
 		<p>A repository which contains conflicting files has the textual label decorator "|Conflicts" attached to the repository name. Conflicting resources and folders containing such conflicting resources get a conflict label decoration.</p>
 		<p>
 			<img border="0" src="images/Conflicts.png"/>
-		</p>
-		<p>Alternativley, it's easy to find a list of all conflicting files in the staging area. 
-			Open the 
-			<b>Git Staging</b> view. The conflicting files with decorators will be seen 
-			on the left.
-
-			<img border="0" src="images/Git_merge_conflict.png"/>
 		</p>
 		<h4 id="Editing_conflicting_files">Editing conflicting files</h4>
 		<p>In the file content, the area where a pair of conflicting changes happened is marked with markers &lt;&lt;&lt;&lt;&lt;&lt;&lt;, =======, and &gt;&gt;&gt;&gt;&gt;&gt;&gt;. The part before the ======= is typically your side, and the part afterwards is typically their side (see 
@@ -2312,7 +2239,7 @@ Sein oder nicht sein
 		<p>It is also possible to add, remove, or change Fetch/Push Specifications for an existing Remote configuration using the context menu.</p>
 		<h5 id="Gerrit_Configuration">Gerrit Configuration</h5>
 		<p>If you work with 
-			<a href="https://www.gerritcodereview.com/" target="egit_external">Gerrit Code Review</a> as remote repository server you can
+			<a href="http://code.google.com/p/gerrit/" target="egit_external">Gerrit Code Review</a> as remote repository server you can
 		</p>
 		<ul>
 			<li>specify the push configuration used to push changes to code review</li>
@@ -2515,7 +2442,7 @@ Sein oder nicht sein
 		</ul>
 		<h3 id="Checking_out_a_commit">Checking out a commit</h3>
 		<p>This checks out the commit displayed in the commit viewer. The commit will be checked out and 
-			<a href="#.22Detached.22_HEAD">HEAD will become detached</a>.
+			<a href="#&quot;Detached&quot;_HEAD">HEAD will become detached</a>.
 		</p>
 		<h3 id="Cherry_picking_a_commit">Cherry picking a commit</h3>
 		<p>Applies the change introduced by the commit displayed in the commit viewer on top of the currently checked out commit or branch.</p>
@@ -2667,7 +2594,7 @@ Sein oder nicht sein
 			<li>Path to the project to import (folder which contains <tt>.project</tt>), relative to the repository</li>
 		</ol>
 		<p>Each project has one entry. So for multiple projects in the same repository, create such an entry for each project with the same repository URL. The import is smart enough to only clone each repository once.</p>
-		<p>If the repository contains a project at the root, use <tt>.</tt> as the project path.</p><hr class="navigation-separator"/>
+		<p>If the repository contains a project at the root, use <tt>.</tt> as the project path.</p><hr/>
 		<table class="navigation" style="width: 100%;" border="0" summary="navigation">
 			<tr>
 				<td style="width: 20%" align="left">

@@ -26,7 +26,6 @@ import org.eclipse.swt.widgets.Shell;
  * Action for "Push to Upstream" or "Push Branch..." if not configured
  */
 public class PushUpstreamOrBranchActionHandler extends RepositoryActionHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		if (repository == null)
@@ -78,7 +77,7 @@ public class PushUpstreamOrBranchActionHandler extends RepositoryActionHandler {
 
 	private static Ref getHeadIfSymbolic(Repository repository) {
 		try {
-			Ref head = repository.exactRef(Constants.HEAD);
+			Ref head = repository.getRef(Constants.HEAD);
 			if (head != null && head.isSymbolic())
 				return head;
 			else

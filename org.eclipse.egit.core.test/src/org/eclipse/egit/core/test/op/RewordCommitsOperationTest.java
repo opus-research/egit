@@ -31,7 +31,6 @@ public class RewordCommitsOperationTest extends GitTestCase {
 
 	private RevCommit commit;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -46,7 +45,6 @@ public class RewordCommitsOperationTest extends GitTestCase {
 				"a commit");
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();

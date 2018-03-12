@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +17,12 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
@@ -56,7 +55,6 @@ public class ResetOperation implements IEGitOperation {
 		this.type = type;
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		if (type == ResetType.HARD)
 			return RuleUtil.getRule(repository);
@@ -64,34 +62,33 @@ public class ResetOperation implements IEGitOperation {
 			return null;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 		if (type == ResetType.HARD) {
 			IWorkspaceRunnable action = new IWorkspaceRunnable() {
-				@Override
 				public void run(IProgressMonitor actMonitor) throws CoreException {
 					reset(actMonitor);
 				}
 			};
 			// lock workspace to protect working tree changes
 			ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-					IWorkspace.AVOID_UPDATE, m);
+					IWorkspace.AVOID_UPDATE, monitor);
 		} else {
-			reset(m);
+			reset(monitor);
 		}
 	}
 
 	private void reset(IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor,
-				NLS.bind(CoreText.ResetOperation_performingReset,
-						type.toString().toLowerCase(), refName),
-				type == ResetType.HARD ? 2 : 1);
+		monitor.beginTask(NLS.bind(CoreText.ResetOperation_performingReset,
+				type.toString().toLowerCase(), refName), 2);
 
 		IProject[] validProjects = null;
-		if (type == ResetType.HARD) {
+		if (type == ResetType.HARD)
 			validProjects = ProjectUtil.getValidOpenProjects(repository);
-			ResourceUtil.saveLocalHistory(repository);
-		}
 
 		ResetCommand reset = Git.wrap(repository).reset();
 		reset.setMode(type);
@@ -101,12 +98,13 @@ public class ResetOperation implements IEGitOperation {
 		} catch (GitAPIException e) {
 			throw new TeamException(e.getLocalizedMessage(), e.getCause());
 		}
-		progress.worked(1);
+		monitor.worked(1);
 
 		// only refresh if working tree changes
-		if (type == ResetType.HARD) {
+		if (type == ResetType.HARD)
 			ProjectUtil.refreshValidProjects(validProjects,
-					progress.newChild(1));
-		}
+					new SubProgressMonitor(monitor, 1));
+
+		monitor.done();
 	}
 }

@@ -87,7 +87,7 @@ public class RebaseResultDialog extends MessageDialog {
 
 	private final Repository repo;
 
-	private final Set<String> conflictPaths = new HashSet<>();
+	private final Set<String> conflictPaths = new HashSet<String>();
 
 	private Button toggleButton;
 
@@ -115,7 +115,6 @@ public class RebaseResultDialog extends MessageDialog {
 
 		if(result.getStatus() == Status.CONFLICTS) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
@@ -135,7 +134,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return;
 		}
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
@@ -186,8 +184,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_StatusAborted;
 		case STOPPED:
 			return UIText.RebaseResultDialog_StatusStopped;
-		case EDIT:
-			return UIText.RebaseResultDialog_StatusEdit;
 		case FAILED:
 			return UIText.RebaseResultDialog_StatusFailed;
 		case CONFLICTS:
@@ -200,8 +196,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_StatusNothingToCommit;
 		case UNCOMMITTED_CHANGES:
 			return UIText.RebaseResultDialog_UncommittedChanges;
-		case INTERACTIVE_PREPARED:
-			return UIText.RebaseResultDialog_StatusInteractivePrepared;
 		case STASH_APPLY_CONFLICTS:
 			return UIText.RebaseResultDialog_SuccessfullyFinished + ".\n" + //$NON-NLS-1$
 					UIText.RebaseResultDialog_stashApplyConflicts;
@@ -353,7 +347,9 @@ public class RebaseResultDialog extends MessageDialog {
 
 		boolean conflictListFailure = false;
 		DirCache dc = null;
-		try (RevWalk rw = new RevWalk(repo)) {
+		RevWalk rw = null;
+		try {
+			rw = new RevWalk(repo);
 			// the commits might not have been fully loaded
 			RevCommit commit = rw.parseCommit(result.getCurrentCommit());
 			commitMessage.getTextWidget().setText(commit.getFullMessage());
@@ -371,6 +367,8 @@ public class RebaseResultDialog extends MessageDialog {
 			// the file list will be empty
 			conflictListFailure = true;
 		} finally {
+			if (rw != null)
+				rw.release();
 			if (dc != null)
 				dc.unlock();
 		}
@@ -444,7 +442,6 @@ public class RebaseResultDialog extends MessageDialog {
 		startMergeButton.setEnabled(mergeToolAvailable);
 		startMergeButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (startMergeButton.getSelection())
 					nextSteps
@@ -453,7 +450,6 @@ public class RebaseResultDialog extends MessageDialog {
 									UIText.RebaseResultDialog_NextStepsAfterResolveConflicts);
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -464,13 +460,11 @@ public class RebaseResultDialog extends MessageDialog {
 		skipCommitButton.setText(UIText.RebaseResultDialog_SkipCommitButton);
 		skipCommitButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (skipCommitButton.getSelection())
 					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -482,13 +476,11 @@ public class RebaseResultDialog extends MessageDialog {
 				.setText(UIText.RebaseResultDialog_AbortRebaseRadioText);
 		abortRebaseButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (abortRebaseButton.getSelection())
 					nextSteps.getTextWidget().setText(""); //$NON-NLS-1$
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -499,14 +491,12 @@ public class RebaseResultDialog extends MessageDialog {
 		doNothingButton.setText(UIText.RebaseResultDialog_DoNothingRadioText);
 		doNothingButton.addSelectionListener(new SelectionListener() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (doNothingButton.getSelection())
 					nextSteps.getTextWidget().setText(
 							UIText.RebaseResultDialog_NextStepsDoNothing);
 			}
 
-			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// nothing
 			}
@@ -568,7 +558,7 @@ public class RebaseResultDialog extends MessageDialog {
 						}
 					}
 				}
-				List<IPath> locationList = new ArrayList<>();
+				List<IPath> locationList = new ArrayList<IPath>();
 				IPath repoWorkdirPath = new Path(repo.getWorkTree().getPath());
 				for (String repoPath : conflictPaths) {
 					IPath location = repoWorkdirPath.append(repoPath);

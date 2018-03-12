@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2016, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,10 +33,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.storage.IndexFileRevision;
 import org.eclipse.egit.core.internal.storage.OpenWorkspaceVersionEnabled;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIText;
@@ -53,6 +50,7 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.core.history.IFileRevision;
+import org.eclipse.team.internal.ui.Utils;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter.ISharedDocumentAdapterListener;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceSaveableComparison;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
@@ -71,7 +69,6 @@ import org.eclipse.ui.texteditor.ITextEditor;
  * The input provider for the compare editor when working on resources
  * under Git control.
  */
-@SuppressWarnings("restriction")
 public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInput {
 
 	private ITypedElement left;
@@ -341,7 +338,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	/* (non-Javadoc)
 	 * @see org.eclipse.compare.CompareEditorInput#getToolTipText()
 	 */
-	@Override
 	public String getToolTipText() {
 		Object[] titleObject = new Object[3];
 		titleObject[0] = getLongName(left);
@@ -353,7 +349,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	/* (non-Javadoc)
 	 * @see org.eclipse.compare.CompareEditorInput#getTitle()
 	 */
-	@Override
 	public String getTitle() {
 		Object[] titleObject = new Object[3];
 		titleObject[0] = getShortName(left);
@@ -365,7 +360,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	/* (non-Javadoc)
 	 * @see org.eclipse.compare.CompareEditorInput#getAdapter(java.lang.Class)
 	 */
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (adapter == IFile.class || adapter == IResource.class) {
 			return getResource();
@@ -403,10 +397,10 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			if (fileObject instanceof LocalFileRevision){
 				try {
 					IStorage storage = ((LocalFileRevision) fileObject).getStorage(new NullProgressMonitor());
-					if (AdapterUtils.adapt(storage, IFileState.class) != null) {
+					if (CompareUtils.getAdapter(storage, IFileState.class) != null){
 						//local revision
 						return UIText.GitCompareFileRevisionEditorInput_LocalRevision;
-					} else if (AdapterUtils.adapt(storage, IFile.class) != null) {
+					} else if (CompareUtils.getAdapter(storage, IFile.class) != null) {
 						//current revision
 						return UIText.GitCompareFileRevisionEditorInput_CurrentRevision;
 					}
@@ -494,7 +488,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 						workspaceVersion.getGitPath());
 				if (workspaceFile.exists())
 					menu.addMenuListener(new IMenuListener() {
-						@Override
 						public void menuAboutToShow(IMenuManager manager) {
 							Action action = new OpenWorkspaceVersionAction(
 									UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel,
@@ -569,17 +562,14 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			this.name = name;
 		}
 
-		@Override
 		public Image getImage() {
 			return null;
 		}
 
-		@Override
 		public String getName() {
 			return name;
 		}
 
-		@Override
 		public String getType() {
 			return ITypedElement.UNKNOWN_TYPE;
 		}
@@ -613,19 +603,16 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 		}
 
-		@Override
 		protected void fireInputChange() {
 			GitCompareFileRevisionEditorInput.this.fireInputChange();
 		}
 
-		@Override
 		public void dispose() {
 			super.dispose();
 			if (lrte != null)
 				lrte.setSharedDocumentListener(null);
 		}
 
-		@Override
 		public void handleDocumentConnected() {
 			if (connected)
 				return;
@@ -658,44 +645,28 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 		private ISaveablesLifecycleListener getSaveablesLifecycleListener(
 				IWorkbenchPart part) {
-			ISaveablesLifecycleListener listener = AdapterUtils.adapt(part,
-					ISaveablesLifecycleListener.class);
+			ISaveablesLifecycleListener listener = (ISaveablesLifecycleListener) Utils
+					.getAdapter(part, ISaveablesLifecycleListener.class);
 			if (listener == null)
-				listener = CommonUtils.getService(part.getSite(), ISaveablesLifecycleListener.class);
+				listener = (ISaveablesLifecycleListener) part.getSite()
+						.getService(ISaveablesLifecycleListener.class);
 			return listener;
 		}
 
-		@Override
 		public void handleDocumentDeleted() {
 			// Ignore
 		}
 
-		@Override
 		public void handleDocumentDisconnected() {
 			// Ignore
 		}
 
-		@Override
 		public void handleDocumentFlushed() {
 			// Ignore
 		}
 
-		@Override
 		public void handleDocumentSaved() {
 			// Ignore
-		}
-
-		@Override
-		public void doSave(IProgressMonitor monitor) throws CoreException {
-			// SaveableComparison unconditionally resets the dirty flag to
-			// false, but LocalResourceSaveableComparison's performSave may not
-			// actually save: if the file has been changed outside the compare
-			// editor, it displays a dialog that the user may cancel.
-			if (isDirty()) {
-				performSave(monitor);
-				// LocalResourecSaveableComparison does already reset the dirty
-				// flag if it did save.
-			}
 		}
 	}
 

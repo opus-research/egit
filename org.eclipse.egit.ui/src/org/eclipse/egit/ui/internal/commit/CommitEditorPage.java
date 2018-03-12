@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2012 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -28,7 +28,6 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
@@ -130,7 +129,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	private void hookExpansionGrabbing(final Section section) {
 		section.addExpansionListener(new ExpansionAdapter() {
 
-			@Override
 			public void expansionStateChanged(ExpansionEvent e) {
 				((GridData) section.getLayoutData()).grabExcessVerticalSpace = e
 						.getState();
@@ -269,7 +267,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 							parentCommit.abbreviate(PARENT_LENGTH).name(),
 							SWT.NONE);
 			link.addHyperlinkListener(new HyperlinkAdapter() {
-				@Override
 				public void linkActivated(HyperlinkEvent e) {
 					try {
 						CommitEditor.open(new RepositoryCommit(getCommit()
@@ -292,10 +289,9 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	private List<Ref> getTags() {
 		Repository repository = getCommit().getRepository();
-		List<Ref> tags = new ArrayList<>(repository.getTags().values());
+		List<Ref> tags = new ArrayList<Ref>(repository.getTags().values());
 		Collections.sort(tags, new Comparator<Ref>() {
 
-			@Override
 			public int compare(Ref r1, Ref r2) {
 				return Repository.shortenRefName(r1.getName())
 						.compareToIgnoreCase(
@@ -385,7 +381,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 			@Override
 			protected IAdaptable getDefaultTarget() {
 				return new PlatformObject() {
-					@Override
 					public Object getAdapter(Class adapter) {
 						return Platform.getAdapterManager().getAdapter(
 								getEditorInput(), adapter);
@@ -393,7 +388,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 				};
 			}
 
-			@Override
 			protected void createMarginPainter() {
 				// Disabled intentionally
 			}
@@ -426,7 +420,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		branchViewer.setSorter(new ViewerSorter());
 		branchViewer.setLabelProvider(new GitLabelProvider() {
 
-			@Override
 			public String getText(Object element) {
 				return Repository.shortenRefName(super.getText(element));
 			}
@@ -465,18 +458,17 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	}
 
 	RepositoryCommit getCommit() {
-		return AdapterUtils.adapt(getEditor(), RepositoryCommit.class);
+		return (RepositoryCommit) getEditor()
+				.getAdapter(RepositoryCommit.class);
 	}
 
 	/**
 	 * @see org.eclipse.ui.forms.editor.FormPage#createFormContent(org.eclipse.ui.forms.IManagedForm)
 	 */
-	@Override
 	protected void createFormContent(IManagedForm managedForm) {
 		Composite body = managedForm.getForm().getBody();
 		body.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				resources.dispose();
 			}
@@ -507,7 +499,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		RepositoryCommit repoCommit = getCommit();
 		RevCommit commit = repoCommit.getRevCommit();
 		Repository repository = repoCommit.getRepository();
-		List<Ref> tags = new ArrayList<>();
+		List<Ref> tags = new ArrayList<Ref>();
 		for (Ref tag : getTags()) {
 			tag = repository.peel(tag);
 			ObjectId id = tag.getPeeledObjectId();
@@ -523,8 +515,9 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	private List<Ref> loadBranches() {
 		Repository repository = getCommit().getRepository();
 		RevCommit commit = getCommit().getRevCommit();
-		try (RevWalk revWalk = new RevWalk(repository)) {
-			Map<String, Ref> refsMap = new HashMap<>();
+		RevWalk revWalk = new RevWalk(repository);
+		try {
+			Map<String, Ref> refsMap = new HashMap<String, Ref>();
 			refsMap.putAll(repository.getRefDatabase().getRefs(
 					Constants.R_HEADS));
 			refsMap.putAll(repository.getRefDatabase().getRefs(
@@ -551,7 +544,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 				if (UIUtils.isUsable(form))
 					form.getDisplay().syncExec(new Runnable() {
 
-						@Override
 						public void run() {
 							if (!UIUtils.isUsable(form))
 								return;
@@ -578,12 +570,10 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		loadSections();
 	}
 
-	@Override
 	public boolean contains(ISchedulingRule rule) {
 		return rule == this;
 	}
 
-	@Override
 	public boolean isConflicting(ISchedulingRule rule) {
 		return rule == this;
 	}

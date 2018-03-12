@@ -26,7 +26,6 @@ import org.eclipse.compare.structuremergeviewer.IDiffContainer;
 import org.eclipse.compare.structuremergeviewer.IDiffElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -37,13 +36,13 @@ import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.revision.EditableRevision;
 import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.revision.LocalFileRevision;
 import org.eclipse.egit.ui.internal.revision.LocationEditableRevision;
 import org.eclipse.egit.ui.internal.revision.ResourceEditableRevision;
+import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput.EmptyTypedElement;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.dircache.DirCacheEntry;
@@ -67,7 +66,6 @@ import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
@@ -106,27 +104,6 @@ public class GitMergeEditorInput extends CompareEditorInput {
 	}
 
 	@Override
-	public Object getAdapter(Class adapter) {
-		if ((adapter == IFile.class || adapter == IResource.class)
-				&& isUIThread()) {
-			Object selectedEdition = getSelectedEdition();
-			if (selectedEdition instanceof DiffNode) {
-				DiffNode diffNode = (DiffNode) selectedEdition;
-				ITypedElement element = diffNode.getLeft();
-				if (element instanceof ResourceEditableRevision) {
-					ResourceEditableRevision resourceRevision = (ResourceEditableRevision) element;
-					return resourceRevision.getFile();
-				}
-			}
-		}
-		return super.getAdapter(adapter);
-	}
-
-	private static boolean isUIThread() {
-		return Display.getCurrent() != null;
-	}
-
-	@Override
 	protected Object prepareInput(IProgressMonitor monitor)
 			throws InvocationTargetException, InterruptedException {
 		// make sure all resources belong to the same repository
@@ -144,7 +121,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 								UIText.RepositoryAction_multiRepoSelection));
 			}
 			Repository repo = pathsByRepository.keySet().iterator().next();
-			List<String> filterPaths = new ArrayList<>(
+			List<String> filterPaths = new ArrayList<String>(
 					pathsByRepository.get(repo));
 
 			if (monitor.isCanceled())
@@ -199,7 +176,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			}
 
 			// try to obtain the common ancestor
-			List<RevCommit> startPoints = new ArrayList<>();
+			List<RevCommit> startPoints = new ArrayList<RevCommit>();
 			rw.setRevFilter(RevFilter.MERGE_BASE);
 			startPoints.add(rightCommit);
 			startPoints.add(headCommit);
@@ -271,7 +248,8 @@ public class GitMergeEditorInput extends CompareEditorInput {
 		monitor.setTaskName(UIText.GitMergeEditorInput_CalculatingDiffTaskName);
 		IDiffContainer result = new DiffNode(Differencer.CONFLICTING);
 
-		try (TreeWalk tw = new TreeWalk(repository)) {
+		TreeWalk tw = new TreeWalk(repository);
+		try {
 			int dirCacheIndex = tw.addTree(new DirCacheIterator(repository
 					.readDirCache()));
 			int fileTreeIndex = tw.addTree(new FileTreeIterator(repository));
@@ -283,7 +261,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					fileTreeIndex);
 			// filter by selected resources
 			if (filterPaths.size() > 1) {
-				List<TreeFilter> suffixFilters = new ArrayList<>();
+				List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
 				for (String filterPath : filterPaths)
 					suffixFilters.add(PathFilter.create(filterPath));
 				TreeFilter otf = OrTreeFilter.create(suffixFilters);
@@ -355,7 +333,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 						.getAbsolutePath());
 				IPath location = repositoryPath
 						.append(fit.getEntryPathString());
-				IFile file = ResourceUtil.getFileForLocation(location, false);
+				IFile file = ResourceUtil.getFileForLocation(location);
 				if (!conflicting || useWorkspace) {
 					if (file != null)
 						rev = new LocalFileRevision(file);
@@ -407,6 +385,8 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				new DiffNode(fileParent, kind, anc, leftEditable, right);
 			}
 			return result;
+		} finally {
+			tw.release();
 		}
 	}
 

@@ -19,7 +19,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.SubmoduleAddCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -51,11 +50,9 @@ public class SubmoduleAddOperation implements IEGitOperation {
 		this.uri = uri;
 	}
 
-	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
 				final SubmoduleAddCommand add = Git.wrap(repo).submoduleAdd();
 				add.setProgressMonitor(new EclipseGitProgressTransformer(pm));
@@ -78,8 +75,7 @@ public class SubmoduleAddOperation implements IEGitOperation {
 				monitor != null ? monitor : new NullProgressMonitor());
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repo);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 }

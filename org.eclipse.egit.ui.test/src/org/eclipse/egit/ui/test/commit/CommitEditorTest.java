@@ -19,7 +19,6 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
@@ -57,10 +56,13 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 				.lookupRepository(repoFile);
 		assertNotNull(repository);
 
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			commit = walk.parseCommit(repository.resolve(Constants.HEAD));
 			assertNotNull(commit);
 			walk.parseBody(commit.getParent(0));
+		} finally {
+			walk.release();
 		}
 	}
 
@@ -69,7 +71,6 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				RepositoryCommit repoCommit = new RepositoryCommit(repository,
 						commit);
@@ -79,8 +80,8 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		assertNotNull(editorRef.get());
 		IEditorPart editor = editorRef.get();
 		assertTrue(editor instanceof CommitEditor);
-		RepositoryCommit adaptedCommit = Utils.getAdapter(editor,
-				RepositoryCommit.class);
+		RepositoryCommit adaptedCommit = (RepositoryCommit) editor
+				.getAdapter(RepositoryCommit.class);
 		assertNotNull(adaptedCommit);
 		assertEquals(commit, adaptedCommit.getRevCommit());
 		assertEquals(repository.getDirectory(), adaptedCommit.getRepository()
@@ -101,7 +102,6 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				RepositoryCommit repoCommit = new RepositoryCommit(repository,
 						commit);

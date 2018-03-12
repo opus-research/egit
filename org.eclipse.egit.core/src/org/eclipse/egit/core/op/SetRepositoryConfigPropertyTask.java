@@ -39,7 +39,6 @@ public class SetRepositoryConfigPropertyTask implements PostCloneTask {
 		this.value = value;
 	}
 
-	@Override
 	public void execute(Repository repository, IProgressMonitor monitor)
 			throws CoreException {
 		try {

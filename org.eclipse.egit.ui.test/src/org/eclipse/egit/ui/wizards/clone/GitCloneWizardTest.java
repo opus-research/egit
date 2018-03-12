@@ -61,7 +61,7 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 		propertiesPage.setURI("git://user:hi@www.jgit.org/EGIT");
 		propertiesPage.assertSourceParams(
 				" User not supported on git protocol.", "www.jgit.org",
-				"/EGIT", "git", "", true, "", "", false, false);
+				"/EGIT", "git", "", true, "user", "hi", false, false);
 
 		// UI doesn't change URI even when password is entered in clear text as
 		// part of URI. Opinions on this may vary.
@@ -131,17 +131,17 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 
 		// change protocol to one without user/password capability
 		bot.comboBoxWithLabel("Protocol:").setSelection("git");
-		propertiesPage.assertURI("git://example.com:99/EGIT");
-		propertiesPage.assertSourceParams(null, "example.com", "/EGIT",
-				"git", "99", true, "", "", false, false);
+		propertiesPage.assertURI("git://gitney@example.com:99/EGIT");
+		propertiesPage.assertSourceParams(
+				" User not supported on git protocol.", "example.com", "/EGIT",
+				"git", "99", true, "gitney", "fsck", false, false);
 
 		// change protocol to one without host capability
 		bot.comboBoxWithLabel("Protocol:").setSelection("file");
-		propertiesPage.assertURI("file:///EGIT");
-		propertiesPage.assertSourceParams(" /EGIT does not exist.", "",
-				"/EGIT",
-				"file", "", false,
-				"", "", false, false);
+		propertiesPage.assertURI("file://gitney@example.com:99/EGIT");
+		propertiesPage.assertSourceParams(
+				" Host not supported on file protocol.", "example.com",
+				"/EGIT", "file", "99", false, "gitney", "fsck", false, false);
 
 		// Local protocol with file: prefix. We need to make sure the
 		// local path exists as a directory so we choose user.home as
@@ -286,30 +286,6 @@ public class GitCloneWizardTest extends GitCloneWizardTestBase {
 				.assertErrorMessage("git://www.example.com/EGIT: unknown host");
 		remoteBranches.assertCannotProceed();
 		remoteBranches.cancel();
-	}
-
-	@Test
-	public void acceptCloneCommandAsURI() throws Exception {
-		importWizard.openWizard();
-		RepoPropertiesPage propertiesPage = importWizard
-				.openRepoPropertiesPage();
-
-		// remove git clone command
-		propertiesPage.setURI("git clone git://www.jgit.org/EGIT");
-		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT", "git",
-				"", true, "", "", false, false);
-
-		// leading and trailing whitespace should be stripped automatically
-		propertiesPage.setURI(" git clone git://www.jgit.org/EGIT     ");
-		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT", "git",
-				"", true, "", "", false, false);
-
-		// assert trimming works fine in all other places
-		propertiesPage.setURI("   git clone    git://www.jgit.org/EGIT");
-		propertiesPage.assertSourceParams(null, "www.jgit.org", "/EGIT", "git",
-				"", true, "", "", false, false);
-
-		bot.button("Cancel").click();
 	}
 
 }

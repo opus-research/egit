@@ -37,7 +37,6 @@ import org.eclipse.swt.widgets.Shell;
  * Delete a branch pointing to a commit.
  */
 public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(event);
 		if (repository == null)
@@ -52,15 +51,13 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 					.size();
 			branchesOfCommit = getBranchesOfCommit(selection, repository, true);
 		} catch (IOException e) {
-			throw new ExecutionException(
-					UIText.AbstractHistoryCommitHandler_cantGetBranches,
-					e);
+			throw new ExecutionException("Could not obtain current Branch", e); //$NON-NLS-1$
 		}
 		// this should have been checked by isEnabled()
 		if (branchesOfCommit.isEmpty())
 			return null;
 
-		final List<Ref> unmergedBranches = new ArrayList<>();
+		final List<Ref> unmergedBranches = new ArrayList<Ref>();
 		final Shell shell = getPart(event).getSite().getShell();
 
 		final List<Ref> branchesToDelete;
@@ -70,7 +67,7 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		// delete instead of quietly deleting an unexpected one, for example a remote
 		// tracking branch
 		if (totalBranchCount > 1) {
-			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<>(
+			BranchSelectionDialog<Ref> dlg = new BranchSelectionDialog<Ref>(
 					shell,
 					branchesOfCommit,
 					UIText.DeleteBranchOnCommitHandler_SelectBranchDialogTitle,
@@ -83,10 +80,9 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 			branchesToDelete = branchesOfCommit;
 
 		try {
-			new ProgressMonitorDialog(shell).run(true, false,
+			new ProgressMonitorDialog(shell).run(false, false,
 					new IRunnableWithProgress() {
-						@Override
-						public void run(final IProgressMonitor monitor)
+						public void run(IProgressMonitor monitor)
 								throws InvocationTargetException,
 								InterruptedException {
 							try {
@@ -107,6 +103,16 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 									} else
 										monitor.worked(1);
 								}
+								if (!unmergedBranches.isEmpty()) {
+									MessageDialog messageDialog = new UnmergedBranchDialog<Ref>(
+											shell, unmergedBranches);
+									if (messageDialog.open() == Window.OK) {
+										for (Ref node : unmergedBranches) {
+											deleteBranch(repository, node, true);
+											monitor.worked(1);
+										}
+									}
+								}
 							} catch (CoreException ex) {
 								throw new InvocationTargetException(ex);
 							} finally {
@@ -120,43 +126,6 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 					e1.getCause(), true);
 		} catch (InterruptedException e1) {
 			// ignore
-		}
-
-		if (!unmergedBranches.isEmpty()) {
-			MessageDialog messageDialog = new UnmergedBranchDialog<>(shell,
-					unmergedBranches);
-			if (messageDialog.open() == Window.OK) {
-				try {
-					new ProgressMonitorDialog(shell).run(true, false,
-							new IRunnableWithProgress() {
-								@Override
-								public void run(final IProgressMonitor monitor)
-										throws InvocationTargetException,
-										InterruptedException {
-									try {
-										monitor.beginTask(
-												UIText.DeleteBranchCommand_DeletingBranchesProgress,
-												unmergedBranches.size());
-										for (Ref node : unmergedBranches) {
-											deleteBranch(repository, node, true);
-											monitor.worked(1);
-										}
-									} catch (CoreException ex) {
-										throw new InvocationTargetException(ex);
-									} finally {
-										monitor.done();
-									}
-								}
-							});
-				} catch (InvocationTargetException e1) {
-					Activator
-							.handleError(
-									UIText.RepositoriesView_BranchDeletionFailureMessage,
-									e1.getCause(), true);
-				} catch (InterruptedException e1) {
-					// ignore
-				}
-			}
 		}
 
 		return null;
@@ -182,9 +151,7 @@ public class DeleteBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 			branchesOfCommit = getBranchesOfCommit(getSelection(page),
 					repository, true);
 		} catch (IOException e) {
-			Activator.logError(
-					UIText.AbstractHistoryCommitHandler_cantGetBranches,
-					e);
+			Activator.logError("Could not calculate Enablement", e); //$NON-NLS-1$
 			return false;
 		}
 		return !branchesOfCommit.isEmpty();

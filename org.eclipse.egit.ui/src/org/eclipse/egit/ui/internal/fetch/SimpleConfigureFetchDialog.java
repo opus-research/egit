@@ -1,13 +1,10 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2016 Mathias Kinzler <mathias.kinzler@sap.com> and others
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
@@ -23,7 +20,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.gerrit.GerritDialogSettings;
 import org.eclipse.egit.ui.internal.push.RefSpecDialog;
 import org.eclipse.egit.ui.internal.push.RefSpecWizard;
 import org.eclipse.egit.ui.internal.repository.SelectUriWizard;
@@ -48,7 +44,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -167,7 +162,7 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			allRemotes = RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig());
 		} catch (URISyntaxException e) {
-			allRemotes = new ArrayList<>();
+			allRemotes = new ArrayList<RemoteConfig>();
 		}
 
 		RemoteConfig defaultConfig = null;
@@ -296,7 +291,6 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 		});
 
 		commonUriText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				deleteCommonUri
 						.setEnabled(commonUriText.getText().length() > 0);
@@ -420,7 +414,6 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 		});
 
 		specViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection sel = (IStructuredSelection) specViewer
 						.getSelection();
@@ -494,36 +487,25 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 	protected void buttonPressed(int buttonId) {
 		if (buttonId == DRY_RUN) {
 			try {
-				new ProgressMonitorDialog(getShell()).run(true, true,
+				new ProgressMonitorDialog(getShell()).run(false, true,
 						new IRunnableWithProgress() {
-							@Override
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
 								int timeout = Activator
 										.getDefault()
 										.getPreferenceStore()
-										.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-								final FetchOperationUI op = new FetchOperationUI(
+										.getInt(
+												UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+								FetchOperationUI op = new FetchOperationUI(
 										repository, config, timeout, true);
 								try {
-									final FetchResult result = op
-											.execute(monitor);
-									getShell().getDisplay().asyncExec(
-											new Runnable() {
-
-												@Override
-												public void run() {
-													FetchResultDialog dlg;
-													dlg = new FetchResultDialog(
-															getShell(),
-															repository,
-															result,
-															op.getSourceString());
-													dlg.showConfigureButton(false);
-													dlg.open();
-												}
-											});
+									FetchResultDialog dlg;
+									dlg = new FetchResultDialog(getShell(),
+											repository, op.execute(monitor), op
+													.getSourceString());
+									dlg.showConfigureButton(false);
+									dlg.open();
 								} catch (CoreException e) {
 									Activator.handleError(e.getMessage(), e,
 											true);
@@ -555,12 +537,10 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 			} catch (IOException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
-			GerritDialogSettings.updateRemoteConfig(repository, config);
 			if (buttonId == OK)
 				try {
-					new ProgressMonitorDialog(getShell()).run(true, true,
+					new ProgressMonitorDialog(getShell()).run(false, true,
 							new IRunnableWithProgress() {
-								@Override
 								public void run(IProgressMonitor monitor)
 										throws InvocationTargetException,
 										InterruptedException {
@@ -601,7 +581,7 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 				Ref source;
 				try {
 					// TODO better checks for wild-cards and such
-					source = repository.findRef(spec.getDestination());
+					source = repository.getRef(spec.getDestination());
 				} catch (IOException e1) {
 					source = null;
 				}
@@ -637,7 +617,7 @@ public class SimpleConfigureFetchDialog extends TitleAreaDialog {
 	private void addDefaultOriginWarningIfNeeded(Composite parent) {
 		if (!showBranchInfo)
 			return;
-		List<String> otherBranches = new ArrayList<>();
+		List<String> otherBranches = new ArrayList<String>();
 		String currentBranch;
 		try {
 			currentBranch = repository.getBranch();

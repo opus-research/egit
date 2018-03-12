@@ -25,11 +25,10 @@ import org.eclipse.team.core.RepositoryProvider;
  */
 public class ProjectNameParameterValues implements IParameterValues {
 
-	@Override
 	public Map getParameterValues() {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject[] projects = root.getProjects();
-		Map<String, String> paramValues = new HashMap<>();
+		Map<String, String> paramValues = new HashMap<String, String>();
 		for (IProject project : projects) {
 			final boolean notAlreadyShared = RepositoryProvider
 					.getProvider(project) == null;

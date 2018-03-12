@@ -48,7 +48,6 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		return true;
 	}
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IResource[] resources = getSelectedResources(event);
 		Map<Repository, Set<IResource>> containerMap = mapContainerResources(resources);
@@ -80,7 +79,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 
 	private Map<Repository, Set<IResource>> mapContainerResources(
 			IResource[] resources) {
-		Map<Repository, Set<IResource>> result = new HashMap<>();
+		Map<Repository, Set<IResource>> result = new HashMap<Repository, Set<IResource>>();
 
 		for (IResource resource : resources) {
 			RepositoryMapping rm = RepositoryMapping.getMapping(resource);
@@ -91,7 +90,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 			else if (resource instanceof IContainer) {
 				Set<IResource> containers = result.get(rm.getRepository());
 				if (containers == null) {
-					containers = new HashSet<>();
+					containers = new HashSet<IResource>();
 					result.put(rm.getRepository(), containers);
 					containers.add(resource);
 				} else if (containers.size() > 0)
@@ -124,7 +123,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		Ref ref;
 
 		try {
-			ref = repo.exactRef(HEAD);
+			ref = repo.getRef(HEAD);
 		} catch (IOException e) {
 			ref = null;
 		}

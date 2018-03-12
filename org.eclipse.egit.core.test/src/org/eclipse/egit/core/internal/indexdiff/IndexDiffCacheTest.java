@@ -14,7 +14,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.FileOutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,32 +42,15 @@ public class IndexDiffCacheTest extends GitTestCase {
 
 	private AtomicReference<IndexDiffData> indexDiffDataResult;
 
-	private IndexDiffChangedListener indexDiffListener;
-
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
 		testRepository = new TestRepository(gitDir);
 		repository = testRepository.getRepository();
-		listenerCalled = new AtomicBoolean(false);
-		indexDiffDataResult = new AtomicReference<>(null);
-		indexDiffListener = new IndexDiffChangedListener() {
-			@Override
-			public void indexDiffChanged(Repository repo,
-					IndexDiffData indexDiffData) {
-				listenerCalled.set(true);
-				indexDiffDataResult.set(indexDiffData);
-			}
-		};
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
-		IndexDiffCache indexDiffCache = Activator.getDefault()
-				.getIndexDiffCache();
-		indexDiffCache.removeIndexDiffChangedListener(indexDiffListener);
 		testRepository.dispose();
 		repository = null;
 		super.tearDown();
@@ -164,7 +146,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		IFile file = project.createFile("sub/ignore", new byte[] {});
 		testRepository.addToIndex(project.project);
 		testRepository.createInitialCommit("testRemoveIgnoredFile\n\nfirst commit\n");
-		IndexDiffCacheEntry entry = prepareCacheEntry();
+		prepareCacheEntry();
 
 		IndexDiffData data1 = waitForListenerCalled();
 		assertThat(data1.getIgnoredNotInIndex(), hasItem("Project-1/sub/ignore"));
@@ -178,105 +160,26 @@ public class IndexDiffCacheTest extends GitTestCase {
 
 		file.delete(false, null);
 
-		waitForListenerNotCalled();
-		entry.refresh(); // need explicit as ignored file shall not trigger.
 		IndexDiffData data3 = waitForListenerCalled();
 		assertThat(data3.getIgnoredNotInIndex(), not(hasItem("Project-1/sub/ignore")));
 	}
 
-	@Test
-	public void testAddAndRemoveGitIgnoreFileToIgnoredDir() throws Exception {
-		testRepository.connect(project.project);
-		project.createFile(".gitignore", "ignore\n".getBytes("UTF-8"));
-		project.createFolder("sub");
-		project.createFile("sub/ignore", new byte[] {});
-		testRepository.addToIndex(project.project);
-		testRepository
-				.createInitialCommit("testRemoveIgnoredFile\n\nfirst commit\n");
-		prepareCacheEntry();
-
-		IndexDiffData data1 = waitForListenerCalled();
-		assertThat(data1.getIgnoredNotInIndex(),
-				hasItem("Project-1/sub/ignore"));
-
-		project.createFile("sub/ignored", "Ignored".getBytes("UTF-8"));
-
-		// adding this file will trigger a refresh, so no manual refresh must be
-		// required.
-		project.createFile("sub/.gitignore", "ignored\n".getBytes("UTF-8"));
-
-		IndexDiffData data2 = waitForListenerCalled();
-		assertThat(data2.getIgnoredNotInIndex(),
-				hasItem("Project-1/sub/ignored"));
-
-		// removing must also trigger the listener
-		project.getProject().getFile("sub/.gitignore").delete(true, null);
-
-		IndexDiffData data3 = waitForListenerCalled();
-		assertThat(data3.getUntracked(), hasItem("Project-1/sub/ignored"));
-	}
-
-	@Test
-	public void testAddAndRemoveFileToIgnoredDir() throws Exception {
-		testRepository.connect(project.project);
-		project.createFile(".gitignore", "sub\n".getBytes("UTF-8"));
-		project.createFolder("sub");
-		project.createFile("sub/ignore", new byte[] {});
-		testRepository.addToIndex(project.project);
-		testRepository
-				.createInitialCommit("testRemoveIgnoredFile\n\nfirst commit\n");
-		prepareCacheEntry();
-
-		IndexDiffData data1 = waitForListenerCalled();
-		assertThat(data1.getIgnoredNotInIndex(), hasItem("Project-1/sub"));
-
-		// creating a file in an ignored directory will not trigger the listener
-		project.createFile("sub/ignored", "Ignored".getBytes("UTF-8"));
-		waitForListenerNotCalled();
-
-		// removing must also not trigger the listener
-		project.getProject().getFile("sub/ignored").delete(true, null);
-		waitForListenerNotCalled();
-	}
-
-	@Test
-	public void testModifyFileInIgnoredDir() throws Exception {
-		testRepository.connect(project.project);
-		project.createFile(".gitignore", "ignore\n".getBytes("UTF-8"));
-		project.createFolder("sub");
-		project.createFile("sub/ignore", new byte[] {});
-		testRepository.addToIndex(project.project);
-		testRepository
-				.createInitialCommit("testRemoveIgnoredFile\n\nfirst commit\n");
-		prepareCacheEntry();
-
-		IndexDiffData data1 = waitForListenerCalled();
-		assertThat(data1.getIgnoredNotInIndex(),
-				hasItem("Project-1/sub/ignore"));
-
-		IFile file = project.getProject().getFile("sub/ignore");
-		FileOutputStream str = new FileOutputStream(file.getLocation().toFile());
-		try {
-			str.write("other contents".getBytes("UTF-8"));
-		} finally {
-			str.close();
-		}
-
-		// no job should be triggered for that change.
-		waitForListenerNotCalled();
-	}
-
-	private IndexDiffCacheEntry prepareCacheEntry() {
-		listenerCalled.set(false);
-		indexDiffDataResult.set(null);
-
+	private void prepareCacheEntry() {
 		IndexDiffCache indexDiffCache = Activator.getDefault()
 				.getIndexDiffCache();
-		indexDiffCache.addIndexDiffChangedListener(indexDiffListener);
 		// This call should trigger an indexDiffChanged event
 		IndexDiffCacheEntry cacheEntry = indexDiffCache
 				.getIndexDiffCacheEntry(repository);
-		return cacheEntry;
+		listenerCalled = new AtomicBoolean(false);
+		indexDiffDataResult = new AtomicReference<IndexDiffData>(
+				null);
+		cacheEntry.addIndexDiffChangedListener(new IndexDiffChangedListener() {
+			public void indexDiffChanged(Repository repo,
+					IndexDiffData indexDiffData) {
+				listenerCalled.set(true);
+				indexDiffDataResult.set(indexDiffData);
+			}
+		});
 	}
 
 	private IndexDiffData waitForListenerCalled() throws InterruptedException {
@@ -288,16 +191,6 @@ public class IndexDiffCacheTest extends GitTestCase {
 		assertTrue("indexDiffChanged was not called after " + time + " ms", listenerCalled.get());
 		listenerCalled.set(false);
 		return indexDiffDataResult.get();
-	}
-
-	private void waitForListenerNotCalled() throws InterruptedException {
-		long time = 0;
-		while (!listenerCalled.get() && time < 1000) {
-			Thread.sleep(100);
-			time += 100;
-		}
-		assertTrue("indexDiffChanged was called where it shouldn't have been",
-				!listenerCalled.get());
 	}
 
 }
