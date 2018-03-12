@@ -39,7 +39,7 @@ import org.eclipse.jgit.lib.Tree;
 import org.eclipse.team.core.RepositoryProvider;
 import org.junit.Test;
 
-public class ConnectProviderOperationTest extends GitTestCase {
+public class T0001_ConnectProviderOperationTest extends GitTestCase {
 
 	@Test
 	public void testNoRepository() throws CoreException {

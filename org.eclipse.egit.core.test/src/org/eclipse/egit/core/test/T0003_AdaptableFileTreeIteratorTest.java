@@ -29,7 +29,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AdaptableFileTreeIteratorTest extends GitTestCase {
+public class T0003_AdaptableFileTreeIteratorTest extends GitTestCase {
 
 	private Repository repository;
 
