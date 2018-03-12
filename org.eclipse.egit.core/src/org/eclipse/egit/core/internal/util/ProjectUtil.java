@@ -271,7 +271,7 @@ public class ProjectUtil {
 		for (String member : fileList) {
 			File file = new File(workTree, member);
 
-			IContainer container = findContainerFast(file);
+			IContainer container = findContainer(file);
 			if (container instanceof IProject)
 				result.add((IProject) container);
 		}
@@ -289,7 +289,7 @@ public class ProjectUtil {
 	 * @return the IContainer (either IProject or IWorkspaceRoot) or
 	 *         <code>null</code> if not found.
 	 */
-	public static IContainer findContainerFast(File file) {
+	public static IContainer findContainer(File file) {
 		String absFile = file.getAbsolutePath();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject[] allProjects = root.getProjects();
