@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,18 +8,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import org.eclipse.egit.core.op.TrackOperation;
-
 /**
- * An action to add resources to the Git repository.
- *
- * @see TrackOperation
+ * An action to show the repositories view for a resource.
  */
-public class Track extends RepositoryAction {
+public class ShowRepositoriesViewAction extends RepositoryAction {
 	/**
 	 *
 	 */
-	public Track() {
-		super(ActionCommands.TRACK_ACTION);
+	public ShowRepositoriesViewAction() {
+		super(ActionCommands.SHOW_REPO_VIEW, new ShowRepositoriesViewActionHandler());
 	}
 }

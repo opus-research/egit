@@ -1,19 +1,22 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.commands;
+package org.eclipse.egit.ui.internal.actions;
+
 
 /**
- * Shared command IDs
+ * An action to show the history for a resource.
  */
-public class SharedCommands {
-	/** "Checkout" command id */
-	public static final String CHECKOUT = "org.eclipse.egit.ui.CheckoutCommand"; //$NON-NLS-1$
+public class ShowHistoryAction extends RepositoryAction {
+	/**
+	 *
+	 */
+	public ShowHistoryAction() {
+		super(ActionCommands.SHOW_HISTORY, new ShowHistoryActionHandler());
+	}
 }

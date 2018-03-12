@@ -22,12 +22,6 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_filterText;
 
 	/** */
-	public static String AbstractHitoryViewCommandHandler_CanNotGetCommitMessage;
-
-	/** */
-	public static String AbstractHitoryViewCommandHandler_NoRepositoryMessage;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -374,12 +368,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
-
-	/** */
-	public static String CheckoutHandler_SelectBranchMessage;
-
-	/** */
-	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
@@ -1075,6 +1063,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_DeselectAll;
 
 	/** */
+	public static String CommitDialog_ErrorAddingFiles;
+
+	/** */
 	public static String CommitDialog_ErrorInvalidAuthor;
 
 	/** */
@@ -1447,6 +1438,9 @@ public class UIText extends NLS {
 	public static String FileDiffContentProvider_errorGettingDifference;
 
 	/** */
+	public static String FileRevisionEditorInput_NameAndRevisionTitle;
+
+	/** */
 	public static String WindowCachePreferencePage_title;
 
 	/** */
@@ -1613,9 +1607,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String IgnoreAction_error;
-
-	/** */
-	public static String Track_addToVersionControl;
 
 	/** */
 	public static String RepositoriesView_ActionCanceled_Message;
@@ -1807,7 +1798,31 @@ public class UIText extends NLS {
 	public static String Disconnect_disconnect;
 
 	/** */
+	public static String GitCompareFileRevisionEditorInput_CompareInputTitle;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_CompareTooltip;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_CurrentRevision;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_CurrentTitle;
+
+	/** */
 	public static String GitCompareFileRevisionEditorInput_contentIdentifier;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_LocalHistoryLabel;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_LocalLabel;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_LocalRevision;
+
+	/** */
+	public static String GitCompareFileRevisionEditorInput_RevisionLabel;
 
 	/** */
 	public static String GitCreateGeneralProjectPage_DirLabel;
@@ -2193,6 +2208,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_deselectAll;
+
+	/** */
+	public static String LocalFileRevision_CurrentVersion;
+
+	/** */
+	public static String LocalFileRevision_currentVersionTag;
 
 	/** */
 	public static String RemoteSelectionCombo_remoteName;
