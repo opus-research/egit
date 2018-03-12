@@ -119,23 +119,21 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertTrue(bot.activeEditor().getTitle().equals(FILE1));
 		bot.activeEditor().close();
 		// open a branch (checkout)
-		checkoutWithDoubleClick(tree, "master");
+		item = myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile)
+				.expand().getNode("master").doubleClick();
+		refreshAndWait();
 		String contentMaster = getTestFileContent();
-		checkoutWithDoubleClick(tree, "stable");
+		item = myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile)
+				.expand().getNode("stable").doubleClick();
+		refreshAndWait();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		String contentStable = getTestFileContent();
 		assertTrue("Content of master and stable should differ", !contentMaster
 				.equals(contentStable));
-	}
 
-	private void checkoutWithDoubleClick(SWTBotTree tree, String branch)
-			throws Exception {
+		// checkout master again to restore original state before test
 		myRepoViewUtil.getLocalBranchesItem(tree, repositoryFile).expand()
-				.getNode(branch).doubleClick();
-		SWTBotShell shell = bot
-				.shell(UIText.RepositoriesView_CheckoutConfirmationTitle);
-		shell.bot().button(IDialogConstants.OK_LABEL).click();
-		refreshAndWait();
+				.getNode("master").doubleClick();
 	}
 
 	/**
