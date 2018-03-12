@@ -123,7 +123,6 @@ public class BranchResultDialog extends MessageDialog {
 		return main;
 	}
 
-	@Override
 	protected void buttonPressed(int buttonId) {
 		boolean shouldCheckout = false;
 		switch (buttonId) {
@@ -144,7 +143,6 @@ public class BranchResultDialog extends MessageDialog {
 			break;
 		case IDialogConstants.OK_ID:
 			super.buttonPressed(buttonId);
-			break;
 		}
 		if (shouldCheckout) {
 			super.buttonPressed(buttonId);

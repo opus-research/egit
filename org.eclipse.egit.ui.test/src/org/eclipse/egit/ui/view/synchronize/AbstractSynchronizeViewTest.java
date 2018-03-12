@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010,2011 Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -85,8 +85,6 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	static File repositoryFile;
 
-	protected static File childRepositoryFile;
-
 	@Before public void setupViews() {
 		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
 		bot.viewByTitle("Package Explorer").show();
@@ -108,7 +106,7 @@ public abstract class AbstractSynchronizeViewTest extends
 		repositoryFile = createProjectAndCommitToRepository();
 		createAndCommitDotGitignore();
 
-		childRepositoryFile = createChildRepository(repositoryFile);
+		createChildRepository(repositoryFile);
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);
 
