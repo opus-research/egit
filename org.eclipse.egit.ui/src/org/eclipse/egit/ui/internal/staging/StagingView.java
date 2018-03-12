@@ -228,8 +228,6 @@ public class StagingView extends ViewPart {
 
 	private Action refreshAction;
 
-	private String currentCommitMessage;
-
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
@@ -837,14 +835,11 @@ public class StagingView extends ViewPart {
 		if (selection.isEmpty())
 			return;
 
-		RevCommit headRev = null;
+		final RevCommit headRev;
 		try {
 			final Ref head = currentRepository.getRef(Constants.HEAD);
-			// head.getObjectId() is null if the repository does not contain any
-			// commit
-			if (head.getObjectId() != null)
-				headRev = new RevWalk(currentRepository).parseCommit(head
-						.getObjectId());
+			headRev = new RevWalk(currentRepository).parseCommit(head
+					.getObjectId());
 		} catch (IOException e1) {
 			// TODO fix text
 			MessageDialog.openError(getSite().getShell(),
@@ -1047,7 +1042,6 @@ public class StagingView extends ViewPart {
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(amendAllowed(helper));
-		currentCommitMessage = commitMessageComponent.getCommitMessage();
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -1099,7 +1093,6 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCreateChangeId(false);
 		commitMessageComponent.updateUI();
 		commitMessageComponent.enableListers(true);
-		currentCommitMessage = commitMessageComponent.getCommitMessage();
 	}
 
 	private boolean amendAllowed(CommitHelper commitHelper) {
@@ -1113,7 +1106,7 @@ public class StagingView extends ViewPart {
 		String message = commitMessageComponent.getCommitMessage();
 		if (message == null || message.trim().length() == 0)
 			return false;
-		return !message.equals(currentCommitMessage);
+		return true;
 	}
 
 	private ObjectId getCommitId(RevCommit commit) {
