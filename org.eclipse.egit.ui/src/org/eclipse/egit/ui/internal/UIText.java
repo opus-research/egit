@@ -4799,6 +4799,9 @@ public class UIText extends NLS {
 	public static String CommitHelper_couldNotFindMergeMsg;
 
 	/** */
+	public static String CommitJob_AbortedByHook;
+
+	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -5046,6 +5049,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Refresh;
+
+	/** */
+	public static String StagingView_GetRepo;
 
 	/** */
 	public static String StagingView_ReplaceWith;

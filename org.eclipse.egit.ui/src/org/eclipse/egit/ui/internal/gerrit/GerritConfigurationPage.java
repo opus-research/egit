@@ -19,6 +19,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.SWTUtils;
@@ -100,6 +101,7 @@ class GerritConfigurationPage extends WizardPage {
 
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		final GridLayout layout = new GridLayout();
@@ -126,6 +128,7 @@ class GerritConfigurationPage extends WizardPage {
 		new Label(uriGroup, SWT.NULL).setText(UIText.GerritConfigurationPage_UserLabel);
 		user = SWTUtils.createText(uriGroup);
 		user.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(final ModifyEvent e) {
 				eventDepth++;
 				try {
@@ -143,6 +146,7 @@ class GerritConfigurationPage extends WizardPage {
 		});
 
 		uriText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(final ModifyEvent e) {
 				eventDepth++;
 				try {
@@ -164,6 +168,7 @@ class GerritConfigurationPage extends WizardPage {
 			scheme.add(p.getDefaultScheme());
 		}
 		scheme.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				final int idx = scheme.getSelectionIndex();
 				pushURI = pushURI.setScheme(scheme.getItem(idx));
@@ -193,6 +198,7 @@ class GerritConfigurationPage extends WizardPage {
 
 		branch = SWTUtils.createText(pushConfigurationGroup);
 		branch.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(final ModifyEvent e) {
 				checkPage();
 			}
@@ -200,6 +206,7 @@ class GerritConfigurationPage extends WizardPage {
 
 		// give focus to the branch if label is activated using the mnemonic
 		branchLabel.addTraverseListener(new TraverseListener() {
+			@Override
 			public void keyTraversed(TraverseEvent e) {
 				branch.setFocus();
 				branch.selectAll();
@@ -309,6 +316,7 @@ class GerritConfigurationPage extends WizardPage {
 					stroke.format()));
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
+			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
@@ -380,18 +388,22 @@ class GerritConfigurationPage extends WizardPage {
 			myString = string;
 		}
 
+		@Override
 		public String getContent() {
 			return myString;
 		}
 
+		@Override
 		public int getCursorPosition() {
 			return 0;
 		}
 
+		@Override
 		public String getDescription() {
 			return myString;
 		}
 
+		@Override
 		public String getLabel() {
 			return myString;
 		}
