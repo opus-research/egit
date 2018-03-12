@@ -30,6 +30,7 @@ import org.eclipse.jgit.lib.Repository;
  * A staged/unstaged entry in the table
  */
 public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratableResource {
+
 	/**
 	 * State of the node
 	 */
@@ -90,24 +91,29 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		LAUNCH_MERGE_TOOL,
 	}
 
-	private Repository repository;
+	private final Repository repository;
+	private final State state;
+	private final String path;
+	private final IFile file;
 
-	private State state;
+	private String name;
 
-	private String path;
+	private StagingFolderEntry parent;
 
 	private boolean submodule;
 
 	/**
-	 *
-	 * @param repository TODO
-	 * @param modified
-	 * @param file
+	 * @param repository
+	 *            repository for this entry
+	 * @param state
+	 * @param path
+	 *            repo-relative path for this entry
 	 */
-	public StagingEntry(Repository repository, State modified, String file) {
+	public StagingEntry(Repository repository, State state, String path) {
 		this.repository = repository;
-		this.state = modified;
-		this.path = file;
+		this.state = state;
+		this.path = path;
+		this.file = ResourceUtil.getFileForLocation(repository, path);
 	}
 
 	/**
@@ -125,10 +131,17 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	/**
-	 * @return the full path for this node
+	 * @return the repo-relative path for this file
 	 */
 	public String getPath() {
 		return path;
+	}
+
+	/**
+	 * @return the repo-relative path of the parent
+	 */
+	public IPath getParentPath() {
+		return new Path(path).removeLastSegments(1);
 	}
 
 	/**
@@ -154,9 +167,7 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	 *         workspace, null otherwise.
 	 */
 	public IFile getFile() {
-		IPath absolutePath = getLocation();
-		IFile resource = ResourceUtil.getFileForLocation(absolutePath);
-		return resource;
+		return file;
 	}
 
 	/**
@@ -167,8 +178,22 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		return absolutePath;
 	}
 
+	/**
+	 * @return parent StagingFolderEntry
+	 */
+	public StagingFolderEntry getParent() {
+		return parent;
+	}
+
+	/**
+	 * @param parent
+	 *            StagingFolderEntry
+	 */
+	public void setParent(StagingFolderEntry parent) {
+		this.parent = parent;
+	}
+
 	public int getProblemSeverity() {
-		IFile file = getFile();
 		if (file == null)
 			return SEVERITY_NONE;
 
@@ -192,8 +217,11 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	public String getName() {
-		// Not used in StagingViewLabelProvider
-		return null;
+		if (name == null) {
+			IPath parsed = Path.fromOSString(getPath());
+			name = parsed.lastSegment();
+		}
+		return name;
 	}
 
 	public String getRepositoryName() {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, SAP AG
+ * Copyright (c) 2010, 2013 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -39,6 +39,7 @@ import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.SharingWizard;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.Eclipse;
+import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -54,6 +55,7 @@ import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -76,14 +78,16 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		SystemReader.setInstance(mockSystemReader);
 		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
-						.getAbsoluteFile().toString());
+						.getParentFile().getAbsoluteFile().toString());
 
-		if (bot.activeView().getTitle().equals("Welcome"))
-			bot.viewByTitle("Welcome").close();
-		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
-		bot.viewByTitle("Package Explorer").show();
+		TestUtil.showExplorerView();
 
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(IResource.DEPTH_INFINITE, null);
+	}
+
+	@AfterClass
+	public static void afterClass() {
+		SystemReader.setInstance(null);
 	}
 
 	private static String createProject(String projectName) {
@@ -143,8 +147,7 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 	@Before
 	public void setupViews() {
-		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
-		bot.viewByTitle("Package Explorer").show();
+		TestUtil.showExplorerView();
 		sharingWizard = new SharingWizard();
 	}
 
@@ -174,8 +177,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 		String repopath = workspace.getRoot().getProject(projectName0)
 				.getLocation().append(Constants.DOT_GIT).toOSString();
-		existingOrNewPage
-				.assertContents(true, projectName0, projectPath, repopath, "");
+		existingOrNewPage.assertContents(true, projectName0, projectPath,
+				".git", "");
 		existingOrNewPage.assertEnabling(false, false, true);
 
 		assertTrue((new File(repopath)).exists());
