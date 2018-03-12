@@ -12,9 +12,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdapterFactory;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.ui.history.IHistoryPage;
 import org.eclipse.team.ui.history.IHistoryView;
@@ -40,10 +37,6 @@ public class GitFlowAdapterFactory implements IAdapterFactory {
 			} else if (input instanceof IResource) {
 				repository = getRepository((IResource) input);
 			}
-		} else if (adaptableObject instanceof ISelection) {
-			IStructuredSelection structuredSelection = SelectionUtils
-					.getStructuredSelection((ISelection) adaptableObject);
-			repository = SelectionUtils.getRepository(structuredSelection);
 		} else {
 			throw new IllegalStateException();
 		}
@@ -59,6 +52,6 @@ public class GitFlowAdapterFactory implements IAdapterFactory {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Class[] getAdapterList() {
-		return new Class[] { Repository.class };
+		return new Class[] { IResource.class, IHistoryView.class };
 	}
 }
