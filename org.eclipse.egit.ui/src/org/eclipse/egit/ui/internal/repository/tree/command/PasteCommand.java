@@ -47,7 +47,6 @@ import org.eclipse.swt.dnd.TextTransfer;
 public class PasteCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// we check if the pasted content is a directory
 		// repository location and try to add this
@@ -106,8 +105,8 @@ public class PasteCommand extends
 	}
 
 	private URIish getCloneURI(String content) {
-		if (content.startsWith("git clone")) //$NON-NLS-1$
-			content = content.substring("git clone".length()); //$NON-NLS-1$
+		if (content != null && content.startsWith("git clone")) //$NON-NLS-1$
+			content = content.substring(9);
 		URIish finalURI;
 		try {
 			finalURI = new URIish(content.trim());

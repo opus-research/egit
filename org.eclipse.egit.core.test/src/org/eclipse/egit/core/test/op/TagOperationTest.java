@@ -59,8 +59,9 @@ public class TagOperationTest extends DualRepositoryTestCase {
 	public void tearDown() throws Exception {
 		project.close(null);
 		project.delete(false, false, null);
-		project = null;
-		// repositories and tempDirs are deleted in superclass
+		repository1.dispose();
+		repository1 = null;
+		testUtils.deleteTempDirs();
 	}
 
 	@Test
@@ -94,20 +95,18 @@ public class TagOperationTest extends DualRepositoryTestCase {
 			// expected
 		}
 		Ref tagRef = repository1.getRepository().getTags().get("TheNewTag");
-		try (RevWalk walk = new RevWalk(repository1.getRepository())) {
-			RevTag tag = walk.parseTag(repository1.getRepository().resolve(
-					tagRef.getName()));
+		RevWalk walk = new RevWalk(repository1.getRepository());
+		RevTag tag = walk.parseTag(
+				repository1.getRepository().resolve(tagRef.getName()));
 
-			newTag.setMessage("Another message");
-			assertFalse("Messages should differ",
-					tag.getFullMessage().equals(newTag.getMessage()));
-			top.execute(null);
-			tag = walk.parseTag(repository1.getRepository().resolve(
-					tagRef.getName()));
-			assertTrue("Messages be same",
-					tag.getFullMessage().equals(newTag.getMessage()));
-			walk.dispose();
-		}
+		newTag.setMessage("Another message");
+		assertFalse("Messages should differ", tag.getFullMessage().equals(
+				newTag.getMessage()));
+		top.execute(null);
+		tag = walk.parseTag(
+				repository1.getRepository().resolve(tagRef.getName()));
+		assertTrue("Messages be same", tag.getFullMessage().equals(
+				newTag.getMessage()));
 	}
 
 }

@@ -12,14 +12,19 @@
 package org.eclipse.egit.ui;
 
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.ProxySelector;
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.core.net.proxy.IProxyService;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -30,18 +35,12 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.egit.ui.internal.variables.GitTemplateVariableResolver;
-import org.eclipse.jdt.internal.ui.JavaPlugin;
-import org.eclipse.jface.text.templates.ContextTypeRegistry;
-import org.eclipse.jface.text.templates.TemplateContextType;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.events.IndexChangedEvent;
@@ -197,7 +196,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	private ListenerHandle refreshHandle;
 	private DebugOptions debugOptions;
 
-	private volatile boolean uiIsActive;
 	private IWindowListener focusListener;
 
 	/**
@@ -212,7 +210,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 
-	@Override
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
 
@@ -224,108 +221,55 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				props);
 
 		setupSSH(context);
+		setupProxy(context);
 		setupRepoChangeScanner();
 		setupRepoIndexRefresh();
 		setupFocusHandling();
 		setupCredentialsProvider();
 		ConfigurationChecker.checkConfiguration();
-
-		registerTemplateVariableResolvers();
 	}
 
 	private void setupCredentialsProvider() {
 		CredentialsProvider.setDefault(new EGitCredentialsProvider());
 	}
 
-	private void registerTemplateVariableResolvers() {
-		if (hasJavaPlugin()) {
-			final ContextTypeRegistry codeTemplateContextRegistry = JavaPlugin
-					.getDefault().getCodeTemplateContextRegistry();
-			final Iterator<?> ctIter = codeTemplateContextRegistry
-					.contextTypes();
-
-			while (ctIter.hasNext()) {
-				final TemplateContextType contextType = (TemplateContextType) ctIter
-						.next();
-				contextType
-						.addResolver(new GitTemplateVariableResolver(
-								"git_config", //$NON-NLS-1$
-								UIText.GitTemplateVariableResolver_GitConfigDescription));
-			}
-		}
-	}
-
-	/**
-	 * @return true if at least one Eclipse window is active
-	 */
 	static boolean isActive() {
-		return getDefault().uiIsActive;
+		final AtomicBoolean ret = new AtomicBoolean();
+		final Display display = PlatformUI.getWorkbench().getDisplay();
+		if (display.isDisposed())
+			return false;
+		display.syncExec(new Runnable() {
+			public void run() {
+				ret.set(display.getActiveShell() != null);
+			}
+		});
+		return ret.get();
 	}
-
 
 	private void setupFocusHandling() {
 		focusListener = new IWindowListener() {
 
-			private void updateUiState() {
-				Display.getCurrent().asyncExec(new Runnable() {
-					@Override
-					public void run() {
-						boolean wasActive = uiIsActive;
-						uiIsActive = Display.getCurrent().getActiveShell() != null;
-						if (uiIsActive != wasActive
-								&& GitTraceLocation.REPOSITORYCHANGESCANNER
-										.isActive())
-							traceUiIsActive();
-					}
-
-					private void traceUiIsActive() {
-						StringBuilder message = new StringBuilder(
-								"workbench is "); //$NON-NLS-1$
-						message.append(uiIsActive ? "active" : "inactive"); //$NON-NLS-1$//$NON-NLS-2$
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.REPOSITORYCHANGESCANNER
-										.getLocation(), message.toString());
-					}
-				});
-			}
-
-			@Override
 			public void windowOpened(IWorkbenchWindow window) {
-				updateUiState();
+				// nothing
 			}
 
-			@Override
 			public void windowDeactivated(IWorkbenchWindow window) {
-				updateUiState();
+				// nothing
 			}
 
-			@Override
 			public void windowClosed(IWorkbenchWindow window) {
-				updateUiState();
+				// nothing
 			}
 
-			@Override
 			public void windowActivated(IWorkbenchWindow window) {
-				updateUiState();
 				if (rcs.doReschedule)
 					rcs.schedule();
 				refreshJob.triggerRefresh();
 			}
 		};
-		Job job = new Job(UIText.Activator_setupFocusListener) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				if (PlatformUI.isWorkbenchRunning())
-					PlatformUI.getWorkbench().addWindowListener(focusListener);
-				else
-					schedule(1000L);
-				return Status.OK_STATUS;
-			}
-		};
-		job.schedule();
+		PlatformUI.getWorkbench().addWindowListener(focusListener);
 	}
 
-	@Override
 	public void optionsChanged(DebugOptions options) {
 		// initialize the trace stuff
 		debugOptions = options;
@@ -387,49 +331,30 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 		ResourceRefreshJob() {
 			super(UIText.Activator_refreshJobName);
-			setUser(false);
-			setSystem(true);
 		}
 
-		private Set<Repository> repositoriesChanged = new LinkedHashSet<Repository>();
+		private Set<IProject> projectsToScan = new LinkedHashSet<IProject>();
+		private Set<Repository> repositoriesChanged = new HashSet<Repository>();
 
 		@Override
 		public IStatus runInWorkspace(IProgressMonitor monitor) {
-			Set<Repository> repos;
-			synchronized (repositoriesChanged) {
-				if (repositoriesChanged.isEmpty()) {
-					return Status.OK_STATUS;
-				}
-				repos = new LinkedHashSet<>(repositoriesChanged);
-				repositoriesChanged.clear();
-			}
-			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
-					.getProjects();
-			Set<IProject> toRefresh = new LinkedHashSet<>();
-			for (IProject p : projects) {
-				if (!p.isAccessible()) {
-					continue;
-				}
-				RepositoryMapping mapping = RepositoryMapping.getMapping(p);
-				if (mapping != null
-						&& repos.contains(mapping.getRepository())) {
-					toRefresh.add(p);
-				}
-			}
-			monitor.beginTask(UIText.Activator_refreshingProjects,
-					toRefresh.size());
+			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+			monitor.beginTask(UIText.Activator_refreshingProjects, projects.length);
 
-			for (IProject p : toRefresh) {
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
+			while (projectsToScan.size() > 0) {
+				IProject p;
+				synchronized (projectsToScan) {
+					if (projectsToScan.size() == 0)
+						break;
+					Iterator<IProject> i = projectsToScan.iterator();
+					p = i.next();
+					i.remove();
 				}
 				ISchedulingRule rule = p.getWorkspace().getRuleFactory().refreshRule(p);
 				try {
 					getJobManager().beginRule(rule, monitor);
-					// handle missing projects after branch switch
-					if (p.isAccessible()) {
+					if(p.exists()) // handle missing projects after branch switch
 						p.refreshLocal(IResource.DEPTH_INFINITE, new SubProgressMonitor(monitor, 1));
-					}
 				} catch (CoreException e) {
 					handleError(UIText.Activator_refreshFailed, e, false);
 					return new Status(IStatus.ERROR, getPluginId(), e.getMessage());
@@ -437,24 +362,14 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 					getJobManager().endRule(rule);
 				}
 			}
-			if (!monitor.isCanceled()) {
-				// re-schedule if we got some changes in the meantime
-				synchronized (repositoriesChanged) {
-					if (!repositoriesChanged.isEmpty()) {
-						schedule(100);
-					}
-				}
-			}
 			monitor.done();
 			return Status.OK_STATUS;
 		}
 
-		@Override
 		public void onIndexChanged(IndexChangedEvent e) {
 			if (Activator.getDefault().getPreferenceStore()
-					.getBoolean(UIPreferences.REFESH_ON_INDEX_CHANGE)) {
+					.getBoolean(UIPreferences.REFESH_ON_INDEX_CHANGE))
 				mayTriggerRefresh(e);
-			}
 		}
 
 		/**
@@ -465,14 +380,11 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		 *            The {@link RepositoryEvent} that triggered this refresh
 		 */
 		private void mayTriggerRefresh(RepositoryEvent e) {
-			synchronized (repositoriesChanged) {
-				repositoriesChanged.add(e.getRepository());
-			}
+			repositoriesChanged.add(e.getRepository());
 			if (!Activator.getDefault().getPreferenceStore()
 					.getBoolean(UIPreferences.REFESH_ONLY_WHEN_ACTIVE)
-					|| isActive()) {
+					|| isActive())
 				triggerRefresh();
-			}
 		}
 
 		/**
@@ -480,12 +392,29 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		 * project to refresh and schedule the refresh as a job.
 		 */
 		void triggerRefresh() {
-			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 				GitTraceLocation.getTrace().trace(
 						GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
 						"Triggered refresh"); //$NON-NLS-1$
+			IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
+					.getProjects();
+			Set<IProject> toRefresh = new HashSet<IProject>();
+			synchronized (repositoriesChanged) {
+				for (IProject p : projects) {
+					RepositoryMapping mapping = RepositoryMapping.getMapping(p);
+					if (mapping != null
+							&& repositoriesChanged.contains(mapping
+									.getRepository())) {
+						toRefresh.add(p);
+					}
+				}
+				repositoriesChanged.clear();
 			}
-			schedule();
+			synchronized (projectsToScan) {
+				projectsToScan.addAll(toRefresh);
+			}
+			if (projectsToScan.size() > 0)
+				schedule();
 		}
 	}
 
@@ -493,7 +422,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * A Job that looks at the repository meta data and triggers a refresh of
 	 * the resources in the affected projects.
 	 */
-	static class RepositoryChangeScanner extends Job {
+	static class RepositoryChangeScanner extends WorkspaceJob {
 		RepositoryChangeScanner() {
 			super(UIText.Activator_repoScanJobName);
 		}
@@ -508,15 +437,9 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 
 		@Override
-		protected IStatus run(IProgressMonitor monitor) {
-			// The core plugin might have been stopped before we could cancel
-			// this job.
-			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
-					.getDefault().getRepositoryCache();
-			if (repositoryCache == null)
-				return Status.OK_STATUS;
-
-			Repository[] repos = repositoryCache.getAllRepositories();
+		public IStatus runInWorkspace(IProgressMonitor monitor) {
+			Repository[] repos = org.eclipse.egit.core.Activator.getDefault()
+					.getRepositoryCache().getAllRepositories();
 			if (repos.length == 0)
 				return Status.OK_STATUS;
 
@@ -575,7 +498,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		rcs.schedule(RepositoryChangeScanner.REPO_SCAN_INTERVAL);
 	}
 
-	@SuppressWarnings("unchecked")
 	private void setupSSH(final BundleContext context) {
 		final ServiceReference ssh;
 
@@ -586,7 +508,18 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 	}
 
-	@Override
+	private void setupProxy(final BundleContext context) {
+		final ServiceReference proxy;
+
+		proxy = context.getServiceReference(IProxyService.class.getName());
+		if (proxy != null) {
+			ProxySelector.setDefault(new EclipseProxySelector(
+					(IProxyService) context.getService(proxy)));
+			Authenticator.setDefault(new EclipseAuthenticator(
+					(IProxyService) context.getService(proxy)));
+		}
+	}
+
 	public void stop(final BundleContext context) throws Exception {
 		if (refreshHandle != null) {
 			refreshHandle.remove();
@@ -594,8 +527,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 
 		if (focusListener != null) {
-			if (PlatformUI.isWorkbenchRunning())
-				PlatformUI.getWorkbench().removeWindowListener(focusListener);
+			PlatformUI.getWorkbench().removeWindowListener(focusListener);
 			focusListener = null;
 		}
 
@@ -671,14 +603,4 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		return org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil();
 	}
 
-	/**
-	 * @return true if the Java Plugin is loaded
-	 */
-	public static final boolean hasJavaPlugin() {
-		try {
-			return Class.forName("org.eclipse.jdt.internal.ui.JavaPlugin") != null; //$NON-NLS-1$
-		} catch (ClassNotFoundException e) {
-			return false;
-		}
-	}
 }

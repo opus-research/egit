@@ -2,7 +2,6 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2013, Laurent Goubet <laurent.goubet@obeo.fr>
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +29,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.history.HistoryPageInput;
@@ -94,7 +92,8 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 				return repository;
 		}
 		if (input instanceof IAdaptable) {
-			IResource resource = CommonUtils.getAdapter(((IAdaptable) input), IResource.class);
+			IResource resource = (IResource) ((IAdaptable) input)
+					.getAdapter(IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
@@ -129,16 +128,15 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		Repository repo = getRepository(event);
 		Collection<Ref> revTags = repo.getTags().values();
 		List<RevTag> tags = new ArrayList<RevTag>();
-		try (RevWalk walk = new RevWalk(repo)) {
-			for (Ref ref : revTags) {
-				try {
-					tags.add(walk.parseTag(repo.resolve(ref.getName())));
-				} catch (IOException e) {
-					throw new ExecutionException(e.getMessage(), e);
-				}
+		RevWalk walk = new RevWalk(repo);
+		for (Ref ref : revTags) {
+			try {
+				tags.add(walk.parseTag(repo.resolve(ref.getName())));
+			} catch (IOException e) {
+				throw new ExecutionException(e.getMessage(), e);
 			}
-			return tags;
 		}
+		return tags;
 	}
 
 	protected GitHistoryPage getPage() {
@@ -240,7 +238,8 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		if (selection.isEmpty())
 			return Collections.emptyList();
 		List<RevCommit> commits = new ArrayList<RevCommit>();
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			for (Object element : selection.toList()) {
 				RevCommit commit = (RevCommit) element;
 				// Re-parse commit to clear effects of TreeFilter
@@ -249,6 +248,8 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			}
 		} catch (IOException e) {
 			throw new ExecutionException(e.getMessage(), e);
+		} finally {
+			walk.release();
 		}
 		return commits;
 	}
@@ -326,16 +327,5 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 
 		final Repository repository = input.getRepository();
 		return repository;
-	}
-
-	/**
-	 * Get renamed path in commit
-	 *
-	 * @param path
-	 * @param commit
-	 * @return path respecting renames
-	 */
-	protected String getRenamedPath(final String path, final ObjectId commit) {
-		return getPage().getRenamedPath(path, commit);
 	}
 }

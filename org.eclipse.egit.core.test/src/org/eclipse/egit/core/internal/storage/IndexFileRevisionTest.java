@@ -116,11 +116,14 @@ public class IndexFileRevisionTest extends GitTestCase {
 			throws IOException {
 		DirCacheEntry entry = new DirCacheEntry(path, stage);
 		entry.setFileMode(FileMode.REGULAR_FILE);
-		try (ObjectInserter inserter = repository.newObjectInserter()) {
+		ObjectInserter inserter = repository.newObjectInserter();
+		try {
 			ObjectId blob = inserter.insert(Constants.OBJ_BLOB,
 					data.getBytes("UTF-8"));
 			entry.setObjectId(blob);
 			inserter.flush();
+		} finally {
+			inserter.release();
 		}
 		return entry;
 	}

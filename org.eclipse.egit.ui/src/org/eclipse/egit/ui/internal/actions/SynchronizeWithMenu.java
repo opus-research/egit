@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -181,9 +181,9 @@ public class SynchronizeWithMenu extends ContributionItem implements
 		});
 	}
 
-	@Override
 	public void initialize(IServiceLocator serviceLocator) {
-		srv = CommonUtils.getService(serviceLocator, ISelectionService.class);
+		srv = (ISelectionService) serviceLocator
+				.getService(ISelectionService.class);
 	}
 
 	@Override
@@ -204,7 +204,8 @@ public class SynchronizeWithMenu extends ContributionItem implements
 
 		Object selected = ((IStructuredSelection) sel).getFirstElement();
 		if (selected instanceof IAdaptable)
-			return CommonUtils.getAdapter(((IAdaptable) selected), IResource.class);
+			return (IResource) ((IAdaptable) selected)
+					.getAdapter(IResource.class);
 
 		if (selected instanceof IResource)
 			return (IResource) selected;
@@ -222,7 +223,6 @@ public class SynchronizeWithMenu extends ContributionItem implements
 			} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
 			} finally {
-				rw.close();
 				rw.dispose();
 			}
 		}

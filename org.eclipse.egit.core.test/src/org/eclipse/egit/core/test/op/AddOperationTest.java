@@ -94,18 +94,17 @@ public class AddOperationTest extends GitTestCase {
 
 		testRepository.commit("first commit");
 
-		assertEquals(file1.getLocalTimeStamp() / 1000,
-				testRepository.lastModifiedInIndex(
-						file1.getLocation().toPortableString()) / 1000);
+		assertEquals(file1.getLocalTimeStamp(),
+				testRepository.lastModifiedInIndex(file1.getLocation()
+						.toPortableString()));
 
 		Thread.sleep(1000);
 		file1.setContents(
 				new ByteArrayInputStream("other text".getBytes(project.project
 						.getDefaultCharset())), 0, null);
 
-		assertFalse(file1.getLocalTimeStamp() / 1000 == testRepository
-				.lastModifiedInIndex(file1.getLocation().toPortableString())
-				/ 1000);
+		assertFalse(file1.getLocalTimeStamp() == testRepository
+				.lastModifiedInIndex(file1.getLocation().toPortableString()));
 
 		new AddToIndexOperation(resources).execute(null);
 
@@ -114,9 +113,8 @@ public class AddOperationTest extends GitTestCase {
 		// does not work yet due to the racy git problem: DirCache.writeTo
 		// smudges the
 		// timestamp of an added file
-		assertEquals(file1.getLocalTimeStamp() / 1000,
-				testRepository.lastModifiedInIndex(
-						file1.getLocation().toPortableString()) / 1000);
+		 assertEquals(file1.getLocalTimeStamp() / 10,
+				 testRepository.lastModifiedInIndex(file1.getLocation().toPortableString()) / 10);
 	}
 
 	@Test
