@@ -571,30 +571,21 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	public void buttonPressed(int buttonId) {
 		if (buttonId == DRY_RUN) {
 			try {
-				new ProgressMonitorDialog(getShell()).run(true, true,
+				new ProgressMonitorDialog(getShell()).run(false, true,
 						new IRunnableWithProgress() {
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
-								final PushOperationUI op = new PushOperationUI(
+								PushOperationUI op = new PushOperationUI(
 										repository, config, true);
 								try {
-									final PushOperationResult result = op
+									PushOperationResult result = op
 											.execute(monitor);
-									getShell().getDisplay().asyncExec(
-											new Runnable() {
-
-												public void run() {
-													PushResultDialog dlg = new PushResultDialog(
-															getShell(),
-															repository,
-															result,
-															op
+									PushResultDialog dlg = new PushResultDialog(
+											getShell(), repository, result, op
 													.getDestinationString());
-													dlg.showConfigureButton(false);
-													dlg.open();
-												}
-											});
+									dlg.showConfigureButton(false);
+									dlg.open();
 								} catch (CoreException e) {
 									Activator.handleError(e.getMessage(), e,
 											true);
