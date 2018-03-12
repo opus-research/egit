@@ -149,6 +149,8 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_Aborted;
 		case STOPPED:
 			return UIText.RebaseResultDialog_Stopped;
+		case EDIT:
+			return UIText.RebaseResultDialog_Edit;
 		case FAILED:
 			return UIText.RebaseResultDialog_Failed;
 		case UP_TO_DATE:
@@ -157,6 +159,10 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_FastForward;
 		case NOTHING_TO_COMMIT:
 			return UIText.RebaseResultDialog_NothingToCommit;
+		case INTERACTIVE_PREPARED:
+			return UIText.RebaseResultDialog_InteractivePrepared;
+		case UNCOMMITTED_CHANGES:
+			return UIText.RebaseResultDialog_UncommittedChanges;
 		default:
 			throw new IllegalStateException(status.name());
 		}
@@ -184,6 +190,8 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_StatusFastForward;
 		case NOTHING_TO_COMMIT:
 			return UIText.RebaseResultDialog_StatusNothingToCommit;
+		case UNCOMMITTED_CHANGES:
+			return UIText.RebaseResultDialog_UncommittedChanges;
 		}
 		return status.toString();
 	}
