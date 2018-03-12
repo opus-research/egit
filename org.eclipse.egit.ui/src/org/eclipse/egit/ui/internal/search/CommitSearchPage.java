@@ -14,7 +14,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,7 +56,6 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.fieldassist.ContentAssistCommandAdapter;
 import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
 
@@ -106,8 +104,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 	private Button searchAllBranchesButton;
 
 	private CLabel statusLabel;
-
-	private Group repositoryGroup;
 
 	private CheckboxTableViewer repositoryViewer;
 
@@ -274,14 +270,14 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 	}
 
 	private void addRepositoryControl(Composite parent) {
-		repositoryGroup = new Group(parent, SWT.NONE);
+		Group repoArea = new Group(parent, SWT.NONE);
+		repoArea.setText(UIText.CommitSearchPage_Repositories);
 		GridDataFactory.fillDefaults().grab(true, true).span(2, 1)
-				.applyTo(repositoryGroup);
-		GridLayoutFactory.swtDefaults().numColumns(2).applyTo(repositoryGroup);
+				.applyTo(repoArea);
+		GridLayoutFactory.swtDefaults().numColumns(1).applyTo(repoArea);
 
-		this.repositoryViewer = CheckboxTableViewer.newCheckList(
-				repositoryGroup, SWT.SINGLE | SWT.V_SCROLL | SWT.H_SCROLL
-						| SWT.BORDER);
+		this.repositoryViewer = CheckboxTableViewer.newCheckList(repoArea,
+				SWT.SINGLE | SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER);
 		this.repositoryViewer
 				.setLabelProvider(new DelegatingStyledCellLabelProvider(
 						new RepositoriesViewLabelProvider()));
@@ -293,37 +289,14 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				updateOKStatus();
-				repositoryGroup.setText(getRepositoryText());
 			}
 		});
-		GridDataFactory.fillDefaults().grab(true, true).span(2, 1)
+		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(this.repositoryViewer.getControl());
 
-		this.searchAllBranchesButton = new Button(repositoryGroup, SWT.CHECK);
+		this.searchAllBranchesButton = new Button(repoArea, SWT.CHECK);
 		this.searchAllBranchesButton
 				.setText(UIText.CommitSearchPage_SearchAllBranches);
-		GridDataFactory.swtDefaults().grab(true, false)
-				.applyTo(this.searchAllBranchesButton);
-
-		Button toggleButton = new Button(repositoryGroup, SWT.PUSH);
-		toggleButton.setText(UIText.CommitSearchPage_ToggleSelection);
-		toggleButton.addSelectionListener(new SelectionAdapter() {
-
-			public void widgetSelected(SelectionEvent e) {
-				for (TableItem item : repositoryViewer.getTable().getItems())
-					repositoryViewer.setChecked(item.getData(),
-							!item.getChecked());
-				repositoryGroup.setText(getRepositoryText());
-			}
-
-		});
-		repositoryGroup.setText(getRepositoryText());
-	}
-
-	private String getRepositoryText() {
-		return MessageFormat.format(UIText.CommitSearchPage_Repositories,
-				Integer.valueOf(repositoryViewer.getCheckedElements().length),
-				Integer.valueOf(repositoryViewer.getTable().getItemCount()));
 	}
 
 	private void addTextPatternControls(Composite group) {
@@ -432,7 +405,6 @@ public class CommitSearchPage extends DialogPage implements ISearchPage {
 				}
 		}
 		repositoryViewer.setCheckedElements(repositories.toArray());
-		repositoryGroup.setText(getRepositoryText());
 	}
 
 	private boolean initializePatternControl() {
