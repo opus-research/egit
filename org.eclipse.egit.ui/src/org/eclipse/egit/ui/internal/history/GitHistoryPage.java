@@ -813,7 +813,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			revInfoSplit.setMaximizedControl(commentViewer.getControl());
 		} else if (!showComment && showFiles) {
 			graphDetailSplit.setMaximizedControl(null);
-			revInfoSplit.setMaximizedControl(fileViewer.getControl());
+			// the parent of the control!
+			revInfoSplit.setMaximizedControl(fileViewer.getControl()
+					.getParent());
 		} else if (!showComment && !showFiles)
 			graphDetailSplit.setMaximizedControl(graph.getControl());
 		if (showFindToolbar)
@@ -1683,8 +1685,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				markStartAllRefs(Constants.R_TAGS);
 			}
 			if (store
-					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS))
+					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS)) {
 				markStartAdditionalRefs();
+			}
 			if (store
 					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES))
 				markStartAllRefs(Constants.R_NOTES);
