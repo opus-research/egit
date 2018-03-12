@@ -24,11 +24,9 @@ import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.compare.structuremergeviewer.IDiffContainer;
 import org.eclipse.compare.structuremergeviewer.IDiffElement;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -43,6 +41,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
@@ -66,9 +65,9 @@ public class GitCompareEditorInput extends CompareEditorInput {
 
 	private final IResource[] resources;
 
-	private final List<String> filterPathStrings = new ArrayList<String>();
+	private final List<String> filterPathStrings = new ArrayList<>();
 
-	private final Map<IPath, IDiffContainer> diffRoots = new HashMap<IPath, IDiffContainer>();
+	private final Map<IPath, IDiffContainer> diffRoots = new HashMap<>();
 
 	private Repository repository;
 
@@ -122,8 +121,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 					IProgressMonitor.UNKNOWN);
 
 			for (IResource resource : resources) {
-				RepositoryMapping map = RepositoryMapping
-						.getMapping(resource.getProject());
+				RepositoryMapping map = RepositoryMapping.getMapping(resource);
 				if (map == null) {
 					throw new InvocationTargetException(
 							new IllegalStateException(
@@ -244,7 +242,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 
 			// filter by selected resources
 			if (filterPathStrings.size() > 1) {
-				List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
+				List<TreeFilter> suffixFilters = new ArrayList<>();
 				for (String filterPath : filterPathStrings)
 					suffixFilters.add(PathFilter.create(filterPath));
 				TreeFilter otf = OrTreeFilter.create(suffixFilters);
@@ -261,8 +259,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 			if (baseCommit == null) {
 				// compare workspace with something
 				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
-						repository, ResourcesPlugin.getWorkspace().getRoot()));
+				baseTreeIndex = tw.addTree(new FileTreeIterator(repository));
 			} else
 				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
 						repository.newObjectReader(), baseCommit.getTree()));
@@ -453,9 +450,9 @@ public class GitCompareEditorInput extends CompareEditorInput {
 	private IResource[] convertResourceInput(final IResource[] input) {
 		if (input.length > 0) {
 			// we must make sure to only show the topmost resources as roots
-			List<IResource> resourceList = new ArrayList<IResource>(
+			List<IResource> resourceList = new ArrayList<>(
 					input.length);
-			List<IPath> allPaths = new ArrayList<IPath>(input.length);
+			List<IPath> allPaths = new ArrayList<>(input.length);
 			for (IResource originalInput : input) {
 				allPaths.add(originalInput.getFullPath());
 			}

@@ -29,6 +29,9 @@ public class CoreText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.internal.coretext"; //$NON-NLS-1$
 
 	/** */
+	public static String Activator_invalidPreferredMergeStrategy;
+
+	/** */
 	public static String Activator_autoIgnoreDerivedResources;
 
 	/** */
@@ -173,6 +176,9 @@ public class CoreText extends NLS {
 	public static String GitProjectData_failedToCacheRepoMapping;
 
 	/** */
+	public static String GitProjectData_failedToUnmapRepoMapping;
+
+	/** */
 	public static String GitProjectData_FailedToMarkTeamPrivate;
 
 	/** */
@@ -186,12 +192,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String RepositoryFinder_finding;
-
-	/** */
-	public static String RepositoryFinder_ResourceDoesNotExist;
-
-	/** */
-	public static String RepositoryMapping_ExceptionSubmoduleWalk;
 
 	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
@@ -225,6 +225,21 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MergeOperation_ProgressMerge;
+
+	/** */
+	public static String MergeStrategy_MissingName;
+
+	/** */
+	public static String MergeStrategy_DuplicateName;
+
+	/** */
+	public static String MergeStrategy_ReservedName;
+
+	/** */
+	public static String MergeStrategy_LoadError;
+
+	/** */
+	public static String MergeStrategy_UnloadError;
 
 	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
@@ -264,6 +279,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
+
+	/** */
+	public static String IndexDiffCacheEntry_cannotReadIndex;
 
 	/** */
 	public static String IndexDiffCacheEntry_errorCalculatingIndexDelta;

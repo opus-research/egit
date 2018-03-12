@@ -80,7 +80,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 
 	private Map<Repository, Set<IResource>> mapContainerResources(
 			IResource[] resources) {
-		Map<Repository, Set<IResource>> result = new HashMap<Repository, Set<IResource>>();
+		Map<Repository, Set<IResource>> result = new HashMap<>();
 
 		for (IResource resource : resources) {
 			RepositoryMapping rm = RepositoryMapping.getMapping(resource);
@@ -91,7 +91,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 			else if (resource instanceof IContainer) {
 				Set<IResource> containers = result.get(rm.getRepository());
 				if (containers == null) {
-					containers = new HashSet<IResource>();
+					containers = new HashSet<>();
 					result.put(rm.getRepository(), containers);
 					containers.add(resource);
 				} else if (containers.size() > 0)
@@ -124,7 +124,7 @@ public class SynchronizeWorkspaceActionHandler extends RepositoryActionHandler {
 		Ref ref;
 
 		try {
-			ref = repo.getRef(HEAD);
+			ref = repo.exactRef(HEAD);
 		} catch (IOException e) {
 			ref = null;
 		}

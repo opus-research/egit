@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 Maik Schreiber
+ * Copyright (c) 2014, 2015 Maik Schreiber and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,8 @@
  *
  * Contributors:
  *    Maik Schreiber - initial implementation
+ *    Laurent Delaigue (Obeo) - use of preferred merge strategy
+ *    Stephan Hackstedt <stephan.hackstedt@googlemail.com - Bug 477695
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -19,9 +21,9 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CommitUtil;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
@@ -34,6 +36,7 @@ import org.eclipse.jgit.errors.IllegalTodoFileModification;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.RebaseTodoLine;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.team.core.TeamException;
 
@@ -62,18 +65,20 @@ public class SquashCommitsOperation implements IEGitOperation {
 		this.messageHandler = messageHandler;
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor = m != null ? m : new NullProgressMonitor();
 
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
+			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
-				pm.beginTask("", 2); //$NON-NLS-1$
+				SubMonitor progress = SubMonitor.convert(pm, 2);
 
-				pm.subTask(MessageFormat.format(
+				progress.subTask(MessageFormat.format(
 						CoreText.SquashCommitsOperation_squashing,
 						Integer.valueOf(commits.size())));
 
 				InteractiveHandler handler = new InteractiveHandler() {
+					@Override
 					public void prepareSteps(List<RebaseTodoLine> steps) {
 						RevCommit firstCommit = commits.get(0);
 						for (RebaseTodoLine step : steps) {
@@ -99,32 +104,38 @@ public class SquashCommitsOperation implements IEGitOperation {
 						return false;
 					}
 
+					@Override
 					public String modifyCommitMessage(String oldMessage) {
 						return messageHandler.modifyCommitMessage(oldMessage);
 					}
 				};
-				try {
-					Git git = new Git(repository);
-					git.rebase().setUpstream(commits.get(0).getParent(0))
+				try (Git git = new Git(repository)) {
+					RebaseCommand command = git.rebase()
+							.setUpstream(commits.get(0).getParent(0))
 							.runInteractively(handler)
-							.setOperation(RebaseCommand.Operation.BEGIN).call();
+							.setOperation(RebaseCommand.Operation.BEGIN);
+					MergeStrategy strategy = Activator.getDefault()
+							.getPreferredMergeStrategy();
+					if (strategy != null) {
+						command.setStrategy(strategy);
+					}
+					command.call();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				}
-				pm.worked(1);
+				progress.worked(1);
 
 				ProjectUtil.refreshValidProjects(
 						ProjectUtil.getValidOpenProjects(repository),
-						new SubProgressMonitor(pm, 1));
-
-				pm.done();
+						progress.newChild(1));
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+				IWorkspace.AVOID_UPDATE, m);
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

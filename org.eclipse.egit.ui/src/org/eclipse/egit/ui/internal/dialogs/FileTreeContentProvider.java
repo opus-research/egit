@@ -35,7 +35,7 @@ import org.eclipse.ui.ide.IDE.SharedImages;
 public class FileTreeContentProvider implements ITreeContentProvider {
 	private final Repository repository;
 
-	private final List<Node> rootNodes = new ArrayList<Node>();
+	private final List<Node> rootNodes = new ArrayList<>();
 
 	private List<String> input;
 
@@ -82,7 +82,7 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 		/**
 		 * Child list
 		 */
-		protected final List<Node> myChildren = new ArrayList<Node>();
+		protected final List<Node> myChildren = new ArrayList<>();
 
 		Node(Node parent, String name) {
 			myParent = parent;
@@ -275,7 +275,8 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 				String segment = path.segment(i);
 				Node foundNode = null;
 				for (Node node : parentNode.getChildren()) {
-					if (node.getName().equals(segment)) {
+					if (node.getName().equals(segment)
+							&& !(node instanceof FileNode)) {
 						foundNode = node;
 						break;
 					}
@@ -306,7 +307,7 @@ public class FileTreeContentProvider implements ITreeContentProvider {
 
 	private List<IPath> getProjectPaths() {
 		if (projectPaths == null) {
-			projectPaths = new ArrayList<IPath>();
+			projectPaths = new ArrayList<>();
 			for (IProject project : ResourcesPlugin.getWorkspace().getRoot()
 					.getProjects()) {
 				RepositoryMapping mapping = RepositoryMapping

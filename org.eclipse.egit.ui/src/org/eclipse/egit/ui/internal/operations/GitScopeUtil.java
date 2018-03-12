@@ -21,14 +21,15 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.ui.IContributorResourceAdapter;
@@ -105,24 +106,19 @@ public class GitScopeUtil {
 		return manager;
 	}
 
+	@Nullable
 	private static ResourceMapping getResourceMapping(Object o) {
-		if (o instanceof ResourceMapping)
-			return (ResourceMapping) o;
+		ResourceMapping mapping = AdapterUtils.adapt(o, ResourceMapping.class);
+		if (mapping != null) {
+			return mapping;
+		}
 		if (o instanceof IAdaptable) {
-			IAdaptable adaptable = (IAdaptable) o;
-			Object adapted = CommonUtils.getAdapter(adaptable, ResourceMapping.class);
-			if (adapted instanceof ResourceMapping)
-				return (ResourceMapping) adapted;
-			adapted = CommonUtils.getAdapter(adaptable, IContributorResourceAdapter.class);
+			IContributorResourceAdapter adapted = AdapterUtils.adapt(o,
+					IContributorResourceAdapter.class);
 			if (adapted instanceof IContributorResourceAdapter2) {
 				IContributorResourceAdapter2 cra = (IContributorResourceAdapter2) adapted;
-				return cra.getAdaptedResourceMapping(adaptable);
+				return cra.getAdaptedResourceMapping((IAdaptable) o);
 			}
-		} else {
-			Object adapted = Platform.getAdapterManager().getAdapter(o,
-					ResourceMapping.class);
-			if (adapted instanceof ResourceMapping)
-				return (ResourceMapping) adapted;
 		}
 		return null;
 	}
@@ -134,7 +130,7 @@ public class GitScopeUtil {
 	 * @return ResourceMappings
 	 */
 	private static ResourceMapping[] getResourceMappings(IResource[] resources) {
-		List<ResourceMapping> result = new ArrayList<ResourceMapping>();
+		List<ResourceMapping> result = new ArrayList<>();
 		for (IResource resource : resources)
 			result.add(getResourceMapping(resource));
 		return result.toArray(new ResourceMapping[result.size()]);
@@ -144,7 +140,7 @@ public class GitScopeUtil {
 			final IResource[] selectedResources)
 			throws InvocationTargetException, InterruptedException {
 
-		final List<IResource> relatedChanges = new ArrayList<IResource>();
+		final List<IResource> relatedChanges = new ArrayList<>();
 		IRunnableWithProgress runnable = new IRunnableWithProgress() {
 			@Override
 			public void run(IProgressMonitor monitor)

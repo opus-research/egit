@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,8 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 479108
+ *    Simon Scholz <simon.scholz@vogella.com> - Bug 476505
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -18,11 +20,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -44,6 +45,7 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.util.FS;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -75,7 +77,7 @@ public class RepositorySearchDialog extends WizardPage {
 
 	private static final String PREF_PATH = "RepositorySearchDialogSearchPath"; //$NON-NLS-1$
 
-	private final Set<String> fExistingDirectories = new HashSet<String>();
+	private final Set<String> fExistingDirectories = new HashSet<>();
 
 	private final boolean fillSearch;
 
@@ -218,16 +220,18 @@ public class RepositorySearchDialog extends WizardPage {
 		Group searchGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		searchGroup.setText(UIText.RepositorySearchDialog_SearchCriteriaGroup);
 		searchGroup.setLayout(new GridLayout(4, false));
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(searchGroup);
+		GridDataFactory.fillDefaults().grab(true, false)
+				.minSize(SWT.DEFAULT, SWT.DEFAULT).applyTo(searchGroup);
 
 		Label dirLabel = new Label(searchGroup, SWT.NONE);
 		dirLabel.setText(UIText.RepositorySearchDialog_directory);
 		dir = new Text(searchGroup, SWT.BORDER);
-		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER).grab(true,
-				false).hint(300, SWT.DEFAULT).applyTo(dir);
+		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
+				.grab(true, false).hint(300, SWT.DEFAULT)
+				.minSize(100, SWT.DEFAULT).applyTo(dir);
 		dir.setToolTipText(UIText.RepositorySearchDialog_EnterDirectoryToolTip);
 
-		String defaultRepoPath = UIUtils.getDefaultRepositoryDir();
+		String defaultRepoPath = RepositoryUtil.getDefaultRepositoryDir();
 
 		String initialPath = prefs.get(PREF_PATH, defaultRepoPath);
 
@@ -300,7 +304,8 @@ public class RepositorySearchDialog extends WizardPage {
 		searchResultGroup
 				.setText(UIText.RepositorySearchDialog_SearchResultGroup);
 		searchResultGroup.setLayout(new GridLayout(2, false));
-		GridDataFactory.fillDefaults().applyTo(searchResultGroup);
+		GridDataFactory.fillDefaults().grab(true, true).minSize(SWT.DEFAULT, 0)
+				.applyTo(searchResultGroup);
 
 		PatternFilter filter = new PatternFilter() {
 
@@ -324,6 +329,8 @@ public class RepositorySearchDialog extends WizardPage {
 			}
 		});
 
+		// Set a reasonable minimum height here; otherwise the dialog comes up
+		// with a tree that has only a few rows visible.
 		GridDataFactory.fillDefaults().grab(true, true).minSize(0, 300)
 				.applyTo(fTree);
 
@@ -395,45 +402,41 @@ public class RepositorySearchDialog extends WizardPage {
 			});
 	}
 
-	private void findGitDirsRecursive(File root, Set<String> strings,
-			IProgressMonitor monitor, boolean lookForNestedRepositories) {
+	private void findGitDirsRecursive(File root, Set<File> gitDirs,
+			IProgressMonitor monitor, int depth) {
 
 		if (!root.exists() || !root.isDirectory()) {
 			return;
 		}
-		File[] children = root.listFiles();
-		// simply ignore null
-		if (children == null)
-			return;
 
-		for (File child : children) {
-			if (monitor.isCanceled())
-				return;
-			if (!child.isDirectory())
-				continue;
+		// check the root first
+		File resolved = FileKey.resolve(root, FS.DETECTED);
+		if (resolved != null) {
+			gitDirs.add(resolved.getAbsoluteFile());
+			monitor.setTaskName(NLS.bind(
+					UIText.RepositorySearchDialog_RepositoriesFound_message,
+					Integer.valueOf(gitDirs.size())));
+		}
 
-			if (FileKey.isGitRepository(child, FS.DETECTED)) {
-				strings.add(child.getAbsolutePath());
-				monitor.setTaskName(NLS
-						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
-								Integer.valueOf(strings.size())));
-			} else if (FileKey.isGitRepository(new File(child,
-					Constants.DOT_GIT), FS.DETECTED)) {
-				strings.add(new File(child, Constants.DOT_GIT)
-						.getAbsolutePath());
-				monitor.setTaskName(NLS
-						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
-								Integer.valueOf(strings.size())));
-			} else if (lookForNestedRepositories) {
-				monitor.subTask(child.getPath());
-				findGitDirsRecursive(child, strings, monitor,
-						lookForNestedRepositories);
+		// check depth and if we are not in private git folder ".git" itself
+		if ((depth != 0) && !root.equals(resolved)) {
+			File[] children = root.listFiles();
+			for (File child : children) {
+				if (monitor.isCanceled()) {
+					return;
+				}
+				// skip files and .git subfolders in root
+				if (child.isDirectory()
+						&& !Constants.DOT_GIT.equals(child.getName())) {
+					monitor.subTask(child.getPath());
+					findGitDirsRecursive(child, gitDirs, monitor, depth - 1);
+				}
 			}
 		}
 	}
 
 	private HashSet<String> getCheckedItems() {
-		HashSet<String> ret = new HashSet<String>();
+		HashSet<String> ret = new HashSet<>();
 		for (Object item : fTreeViewer.getCheckedLeafElements())
 			ret.add((String) item);
 		return ret;
@@ -443,7 +446,7 @@ public class RepositorySearchDialog extends WizardPage {
 		setMessage(UIText.RepositorySearchDialog_searchRepositoriesMessage);
 		setErrorMessage(null);
 		// perform the search...
-		final Set<String> directories = new HashSet<String>();
+		final Set<File> directories = new HashSet<>();
 		final File file = new File(dir.getText());
 		final boolean lookForNested = lookForNestedButton.getSelection();
 		if(!file.exists())
@@ -456,7 +459,7 @@ public class RepositorySearchDialog extends WizardPage {
 			// ignore here
 		}
 
-		final TreeSet<String> validDirs = new TreeSet<String>(getCheckedItems());
+		final TreeSet<String> validDirs = new TreeSet<>(getCheckedItems());
 
 		IRunnableWithProgress action = new IRunnableWithProgress() {
 
@@ -468,13 +471,9 @@ public class RepositorySearchDialog extends WizardPage {
 						IProgressMonitor.UNKNOWN);
 				try {
 					findGitDirsRecursive(file, directories, monitor,
-							lookForNested);
+							lookForNested ? -1 : 1);
 				} catch (Exception ex) {
-					Activator
-							.getDefault()
-							.getLog()
-							.log(new Status(IStatus.ERROR, Activator
-									.getPluginId(), ex.getMessage(), ex));
+					throw new InvocationTargetException(ex);
 				}
 				if (monitor.isCanceled()) {
 					throw new InterruptedException();
@@ -485,16 +484,20 @@ public class RepositorySearchDialog extends WizardPage {
 			getContainer().run(true, true, action);
 		} catch (InvocationTargetException e1) {
 			org.eclipse.egit.ui.Activator.handleError(
-					UIText.RepositorySearchDialog_errorOccurred, e1, true);
+					UIText.RepositorySearchDialog_errorOccurred, e1.getCause(),
+					true);
 		} catch (InterruptedException e1) {
 			// ignore
 		}
 
 		int foundOld = 0;
 
-		for (String foundDir : directories) {
-			if (!fExistingDirectories.contains(foundDir)) {
-				validDirs.add(foundDir);
+		for (File foundDir : directories) {
+			String absolutePath = foundDir.getAbsolutePath();
+			if (!fExistingDirectories.contains(absolutePath)
+					&& !fExistingDirectories.contains(FileUtils
+							.canonicalize(foundDir).getAbsolutePath())) {
+				validDirs.add(absolutePath);
 			} else {
 				foundOld++;
 			}
@@ -512,7 +515,15 @@ public class RepositorySearchDialog extends WizardPage {
 		checkAllItem.setEnabled(!validDirs.isEmpty());
 		uncheckAllItem.setEnabled(!validDirs.isEmpty());
 		fTree.clearFilter();
+		// Remove the minimum height that was set initially so that we get a
+		// scrollbar when the dialog is resized.
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(fTree);
 		fTreeViewer.setInput(validDirs);
+
+		if (!validDirs.isEmpty()) {
+			fTree.getFilterControl().setFocus();
+		}
+
 		enableOk();
 	}
 

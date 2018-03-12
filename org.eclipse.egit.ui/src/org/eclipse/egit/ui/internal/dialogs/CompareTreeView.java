@@ -28,12 +28,9 @@ import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
@@ -156,11 +153,11 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 	private IWorkbenchAction compareModeAction;
 
-	private Map<IPath, FileNode> fileNodes = new HashMap<IPath, FileNode>();
+	private Map<IPath, FileNode> fileNodes = new HashMap<>();
 
-	private Map<IPath, ContainerNode> containerNodes = new HashMap<IPath, ContainerNode>();
+	private Map<IPath, ContainerNode> containerNodes = new HashMap<>();
 
-	private List<IWorkbenchAction> actionsToDispose = new ArrayList<IWorkbenchAction>();
+	private List<IWorkbenchAction> actionsToDispose = new ArrayList<>();
 
 	private Object input;
 
@@ -343,8 +340,8 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	private void setResourceInput(final IResource[] input) {
 		if (input.length > 0) {
 			// we must make sure to only show the topmost resources as roots
-			List<IResource> resources = new ArrayList<IResource>(input.length);
-			List<IPath> allPaths = new ArrayList<IPath>(input.length);
+			List<IResource> resources = new ArrayList<>(input.length);
+			List<IPath> allPaths = new ArrayList<>(input.length);
 			for (IResource originalInput : input) {
 				allPaths.add(originalInput.getFullPath());
 			}
@@ -535,8 +532,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 			int baseTreeIndex;
 			if (baseCommit == null) {
 				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
-						repository, ResourcesPlugin.getWorkspace().getRoot()));
+				baseTreeIndex = tw.addTree(new FileTreeIterator(repository));
 			} else
 				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
 						repository.newObjectReader(), baseCommit.getTree()));
@@ -550,7 +546,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 			if (input instanceof IResource[]) {
 				IResource[] resources = (IResource[]) input;
-				List<TreeFilter> orFilters = new ArrayList<TreeFilter>(
+				List<TreeFilter> orFilters = new ArrayList<>(
 						resources.length);
 
 				for (IResource resource : resources) {
@@ -636,7 +632,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				if (type != Type.FILE_BOTH_SIDES_SAME) {
 
 					file = ResourceUtil.getFileForLocation(repository,
-						repoRelativePath);
+						repoRelativePath, false);
 				}
 
 				if (baseVersionIterator != null) {
@@ -696,10 +692,9 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	private long getEntrySize(TreeWalk tw, AbstractTreeIterator iterator)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
-		if (iterator instanceof ContainerTreeIterator)
-			return ((ContainerTreeIterator) iterator).getEntryContentLength();
-		if (iterator instanceof FileTreeIterator)
+		if (iterator instanceof FileTreeIterator) {
 			return ((FileTreeIterator) iterator).getEntryContentLength();
+		}
 		try {
 			return tw.getObjectReader().getObjectSize(
 					iterator.getEntryObjectId(), Constants.OBJ_BLOB);
@@ -815,7 +810,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	 */
 	static class ContainerNode extends PathNode {
 
-		private final List<PathNode> children = new ArrayList<PathNode>();
+		private final List<PathNode> children = new ArrayList<>();
 		private final IContainer resource;
 		private boolean onlyEqualContent = false;
 
@@ -1088,7 +1083,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 	public ShowInContext getShowInContext() {
 		IPath repoPath = getRepositoryPath();
 		ITreeSelection selection = (ITreeSelection) tree.getSelection();
-		List<IResource> resources = new ArrayList<IResource>();
+		List<IResource> resources = new ArrayList<>();
 		for (Iterator it = selection.iterator(); it.hasNext();) {
 			Object obj = it.next();
 			if (obj instanceof IResource)
@@ -1097,7 +1092,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 				PathNode pathNode = (PathNode) obj;
 				IResource resource = ResourceUtil
 						.getResourceForLocation(repoPath.append(pathNode
-								.getRepoRelativePath()));
+								.getRepoRelativePath()), false);
 				if (resource != null)
 					resources.add(resource);
 			}
@@ -1144,7 +1139,7 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 
 	private List<String> getSelectedPaths(ITreeSelection selection) {
 		IPath repoPath = getRepositoryPath();
-		List<String> pathsToOpen = new ArrayList<String>();
+		List<String> pathsToOpen = new ArrayList<>();
 		for (Iterator it = selection.iterator(); it.hasNext();) {
 			Object obj = it.next();
 			if (obj instanceof IFile) {

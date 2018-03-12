@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,9 +10,11 @@
  *    Dariusz Luksza (dariusz@luksza.org) - add initial implementation of
  *    										enableWhenRepositoryHaveHead(Object)
  *    Daniel Megert <daniel_megert@ch.ibm.com> - remove unnecessary @SuppressWarnings
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 482231
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,7 +106,7 @@ abstract class RepositoriesViewCommandHandler<T extends RepositoryTreeNode<?>>
 	private boolean repositoryHasHead(T treeNode) {
 		Repository repo = treeNode.getRepository();
 		try {
-			Ref ref = repo.getRef(Constants.HEAD);
+			Ref ref = repo.exactRef(Constants.HEAD);
 			return ref != null && ref.getObjectId() != null;
 		} catch (IOException e) {
 			// ignore and report false
@@ -168,17 +170,18 @@ abstract class RepositoriesViewCommandHandler<T extends RepositoryTreeNode<?>>
 				return false;
 			}
 			if (!(selectedNode instanceof WorkingDirNode)) {
-				String path;
+				File file;
 				if (selectedNode instanceof FolderNode)
-					path = ((FolderNode) selectedNode).getObject()
-							.getAbsolutePath();
+					file = ((FolderNode) selectedNode).getObject()
+							.getAbsoluteFile();
 				else if (selectedNode instanceof FileNode)
-					path = ((FileNode) selectedNode).getObject()
-							.getAbsolutePath();
+					file = ((FileNode) selectedNode).getObject()
+							.getAbsoluteFile();
 				else {
 					return false;
 				}
-				if (path.startsWith(repository.getDirectory().getAbsolutePath())) {
+				File gitDir = repository.getDirectory().getAbsoluteFile();
+				if (file.toPath().startsWith(gitDir.toPath())) {
 					return false;
 				}
 			}
@@ -188,7 +191,7 @@ abstract class RepositoriesViewCommandHandler<T extends RepositoryTreeNode<?>>
 	}
 
 	protected Collection<IPath> getSelectedFileAndFolderPaths(ExecutionEvent event) throws ExecutionException {
-		Collection<IPath> paths = new ArrayList<IPath>();
+		Collection<IPath> paths = new ArrayList<>();
 		for (Object selectedNode : getSelectedNodes(event)) {
 			RepositoryTreeNode treeNode = (RepositoryTreeNode) selectedNode;
 			IPath path = treeNode.getPath();
