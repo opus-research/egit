@@ -143,12 +143,15 @@
     <module>org.eclipse.egit.mylyn.ui</module>
     <module>org.eclipse.egit.mylyn-feature</module>
 
+    <module>org.eclipse.egit.psf-feature</module>
+
     <module>org.eclipse.egit.doc</module>
     <module>org.eclipse.egit-feature</module>
     <module>org.eclipse.egit-updatesite</module>
 
     <module>org.eclipse.egit.core.test</module>
     <module>org.eclipse.egit.ui.test</module>
+    <module>org.eclipse.egit.mylyn.ui.test</module>
 
     <module>org.eclipse.egit.source-feature</module>
    </modules>
@@ -156,7 +159,20 @@
   <pluginRepositories>
     <pluginRepository>
       <id>maven.eclipse.org</id>
-      <url>http://maven.eclipse.org/nexus/content/groups/public/</url>
+      <url>http://maven.eclipse.org/nexus/content/repositories/milestone-indigo</url>
+    </pluginRepository>
+    <!-- TODO: need 1.0.1.2-SNAPSHOT of the signing plugin until bugfix for
+         https://bugs.eclipse.org/bugs/show_bug.cgi?id=347591
+         is available in maven.eclipse.org -->
+    <pluginRepository>
+      <id>intalio-dash-signing-plugin</id>
+      <url>http://intalio.org/public/maven2</url>
+      <snapshots>
+       <enabled>true</enabled>
+      </snapshots>
+      <releases>
+       <enabled>true</enabled>
+      </releases>
     </pluginRepository>
   </pluginRepositories>
 
@@ -293,8 +309,11 @@
         </plugin>
         <plugin>
           <groupId>org.eclipse.dash.maven</groupId>
-          <artifactId>eclipse-signing-maven-plugin</artifactId>
-          <version>1.0.2</version>
+          <artifactId>eclipse-maven-signing-plugin</artifactId>
+          <!-- TODO: need 1.0.1.2-SNAPSHOT of the signing plugin until bugfix for
+               https://bugs.eclipse.org/bugs/show_bug.cgi?id=347591
+               is available in maven.eclipse.org -->
+          <version>1.0.1.2-SNAPSHOT</version>
         </plugin>
       </plugins>
     </pluginManagement>
