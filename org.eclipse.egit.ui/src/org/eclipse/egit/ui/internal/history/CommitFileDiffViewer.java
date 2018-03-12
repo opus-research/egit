@@ -490,41 +490,41 @@ public class CommitFileDiffViewer extends TableViewer {
 		final RevCommit c = d.getCommit();
 
 		// extract commits
-		final RevCommit oldCommit;
-		final ObjectId oldObjectId;
+		final RevCommit leftCommit;
+		final ObjectId baseObjectId;
 		if (d.getBlobs().length == 2 && !d.getChange().equals(ChangeType.ADD)) {
-			oldCommit = c.getParent(0);
-			oldObjectId = d.getBlobs()[0];
+			leftCommit = c.getParent(0);
+			baseObjectId = d.getBlobs()[0];
 		} else {
 			// Initial import
-			oldCommit = null;
-			oldObjectId = null;
+			leftCommit = null;
+			baseObjectId = null;
 		}
 
-		final RevCommit newCommit;
-		final ObjectId newObjectId;
+		final RevCommit rightCommit;
+		final ObjectId rightObjectId;
 		if (d.getChange().equals(ChangeType.DELETE)) {
-			newCommit = null;
-			newObjectId = null;
+			rightCommit = null;
+			rightObjectId = null;
 		} else {
-			newCommit = c;
-			newObjectId = d.getBlobs()[1];
+			rightCommit = c;
+			rightObjectId = d.getBlobs()[1];
 		}
 
 		IWorkbenchPage page = site.getWorkbenchWindow().getActivePage();
-		if (oldCommit != null && newCommit != null) {
+		if (leftCommit != null && rightCommit != null) {
 			IFile file = ResourceUtil.getFileForLocation(getRepository(), np);
 			try {
 				if (file != null) {
 					IResource[] resources = new IResource[] { file, };
 					CompareUtils.compare(resources, getRepository(),
-							newCommit.getName(), oldCommit.getName(), false,
+							leftCommit.getName(), rightCommit.getName(), false,
 							page);
 				} else {
 					IPath location = new Path(getRepository().getWorkTree()
 							.getAbsolutePath()).append(np);
 					CompareUtils.compare(location, getRepository(),
-							newCommit.getName(), oldCommit.getName(), false,
+							leftCommit.getName(), rightCommit.getName(), false,
 							page);
 				}
 			} catch (Exception e) {
@@ -535,12 +535,12 @@ public class CommitFileDiffViewer extends TableViewer {
 		}
 
 		// still happens on initial commits
-		final ITypedElement oldSide = createTypedElement(op, oldCommit,
-				oldObjectId);
-		final ITypedElement newSide = createTypedElement(np, newCommit,
-				newObjectId);
+		final ITypedElement base = createTypedElement(op, leftCommit,
+				baseObjectId);
+		final ITypedElement next = createTypedElement(np, rightCommit,
+				rightObjectId);
 		CompareUtils.openInCompare(page, new GitCompareFileRevisionEditorInput(
-				newSide, oldSide, null));
+				next, base, null));
 	}
 
 	private ITypedElement createTypedElement(final String path,

@@ -519,11 +519,11 @@ public class CompareUtils {
 	 *            we'll synchronize the whole repository).
 	 * @param repository
 	 *            The repository to load file revisions from.
-	 * @param newRev
-	 *            New revision of the comparison (or "left" side). Won't be used
-	 *            if <code>includeLocal</code> is <code>true</code>.
-	 * @param oldRev
-	 *            Old revision of the comparison ("right" side).
+	 * @param srcRev
+	 *            Source revision of the comparison (or "left" side). Won't be
+	 *            used if <code>includeLocal</code> is <code>true</code>.
+	 * @param dstRev
+	 *            Destination revision of the comparison ("right" side).
 	 * @param includeLocal
 	 *            If <code>true</code>, this will use the local data as the
 	 *            "left" side of the comparison.
@@ -533,24 +533,25 @@ public class CompareUtils {
 	 * @throws IOException
 	 */
 	public static void compare(IResource[] resources, Repository repository,
-			String newRev, String oldRev, boolean includeLocal,
+			String srcRev, String dstRev, boolean includeLocal,
 			IWorkbenchPage page) throws IOException {
 		if (resources.length == 1 && resources[0] instanceof IFile
 				&& canDirectlyOpenInCompare((IFile) resources[0])) {
 			if (includeLocal)
 				compareWorkspaceWithRef(repository, (IFile) resources[0],
-						oldRev, page);
+						dstRev, page);
 			else {
 				final IFile file = (IFile) resources[0];
 				final RepositoryMapping mapping = RepositoryMapping
 						.getMapping(file);
 				final String gitPath = mapping.getRepoRelativePath(file);
 
-				compareBetween(repository, gitPath, newRev, oldRev, page);
+				compareBetween(repository, gitPath, srcRev,
+						dstRev, page);
 			}
 		} else
-			GitModelSynchronize.synchronize(resources, repository, newRev,
-					oldRev, includeLocal);
+			GitModelSynchronize.synchronize(resources, repository, srcRev,
+					dstRev, includeLocal);
 	}
 
 	/**
@@ -560,11 +561,11 @@ public class CompareUtils {
 	 *            Location of the file to compare.
 	 * @param repository
 	 *            The repository to load file revisions from.
-	 * @param newRev
-	 *            New revision of the comparison (or "left" side). Won't be used
-	 *            if <code>includeLocal</code> is <code>true</code>.
-	 * @param oldRev
-	 *            Old revision of the comparison ("right" side).
+	 * @param srcRev
+	 *            Source revision of the comparison (or "left" side). Won't be
+	 *            used if <code>includeLocal</code> is <code>true</code>.
+	 * @param dstRev
+	 *            Destination revision of the comparison ("right" side).
 	 * @param includeLocal
 	 *            If <code>true</code>, this will use the local data as the
 	 *            "left" side of the comparison.
@@ -574,37 +575,37 @@ public class CompareUtils {
 	 * @throws IOException
 	 */
 	public static void compare(IPath location, Repository repository,
-			String newRev, String oldRev, boolean includeLocal,
+			String srcRev, String dstRev, boolean includeLocal,
 			IWorkbenchPage page) throws IOException {
 		if (includeLocal)
-			compareLocalWithRef(repository, location, oldRev, page);
+			compareLocalWithRef(repository, location, dstRev, page);
 		else {
 			final String gitPath = RepositoryMapping.getMapping(location)
 					.getRepoRelativePath(location);
-			compareBetween(repository, gitPath, newRev, oldRev, page);
+			compareBetween(repository, gitPath, srcRev, dstRev, page);
 		}
 	}
 
 	private static void compareBetween(Repository repository, String gitPath,
-			String newRev, String oldRev, IWorkbenchPage page)
+			String srcRev, String dstRev, IWorkbenchPage page)
 			throws IOException {
-		final ITypedElement newSide = getTypedElementFor(repository, gitPath,
-				newRev);
-		final ITypedElement oldSide = getTypedElementFor(repository, gitPath,
-				oldRev);
+		final ITypedElement src = getTypedElementFor(repository, gitPath,
+				srcRev);
+		final ITypedElement dst = getTypedElementFor(repository, gitPath,
+				dstRev);
 
 		final ITypedElement commonAncestor;
-		if (newSide != null && oldSide != null && !GitFileRevision.INDEX.equals(newRev)
-				&& !GitFileRevision.INDEX.equals(oldRev))
+		if (src != null && dst != null && !GitFileRevision.INDEX.equals(srcRev)
+				&& !GitFileRevision.INDEX.equals(dstRev))
 			commonAncestor = getTypedElementForCommonAncestor(repository,
-					gitPath, newRev, oldRev);
+					gitPath, srcRev, dstRev);
 		else
 			commonAncestor = null;
 
 		final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-				newSide, oldSide, commonAncestor, null);
-		in.getCompareConfiguration().setLeftLabel(newRev);
-		in.getCompareConfiguration().setRightLabel(oldRev);
+				src, dst, commonAncestor, null);
+		in.getCompareConfiguration().setLeftLabel(srcRev);
+		in.getCompareConfiguration().setRightLabel(dstRev);
 
 		if (page != null)
 			openInCompare(page, in);
