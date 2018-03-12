@@ -131,7 +131,7 @@ public class CompareUtils {
 			ObjectId blobId) {
 		ITypedElement right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
 				NLS.bind(UIText.GitHistoryPage_FileNotInCommit,
-						getName(gitPath), truncatedRevision(commit.name())));
+						getName(gitPath), commit));
 
 		try {
 			IFileRevision nextFile = getFileRevision(gitPath, commit, db,
