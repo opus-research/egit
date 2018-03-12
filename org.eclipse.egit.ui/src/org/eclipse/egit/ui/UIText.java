@@ -673,6 +673,18 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_NextStepsDoNothing;
 
 	/** */
+	public static String RebaseResultDialog_notInWorkspace;
+
+	/** */
+	public static String RebaseResultDialog_notInWorkspaceMessage;
+
+	/** */
+	public static String RebaseResultDialog_notShared;
+
+	/** */
+	public static String RebaseResultDialog_notSharedMessage;
+
+	/** */
 	public static String RebaseResultDialog_SkipCommitButton;
 
 	/** */
@@ -2671,6 +2683,18 @@ public class UIText extends NLS {
 	public static String DeleteBranchDialog_WindowTitle;
 
 	/** */
+	public static String DeleteBranchOnCommitHandler_ConfirmBranchDeletionDialogTitle;
+
+	/** */
+	public static String DeleteBranchOnCommitHandler_ConfirmBranchDeletionMessage;
+
+	/** */
+	public static String DeleteBranchOnCommitHandler_SelectBranchDialogMessage;
+
+	/** */
+	public static String DeleteBranchOnCommitHandler_SelectBranchDialogTitle;
+
+	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
 
 	/** */
@@ -3336,6 +3360,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
+
+	/** */
+	public static String CommitGraphTable_DeleteBranchAction;
 
 	/** */
 	public static String CommitGraphTable_messageColumn;
