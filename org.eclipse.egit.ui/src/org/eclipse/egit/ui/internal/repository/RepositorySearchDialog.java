@@ -62,6 +62,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.osgi.service.prefs.BackingStoreException;
@@ -100,6 +101,8 @@ public class RepositorySearchDialog extends WizardPage {
 
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
+
+	private boolean isUserModifiedTreeSelection;
 
 	private static final class ContentProvider implements ITreeContentProvider {
 
@@ -306,10 +309,16 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public boolean isElementVisible(Viewer viewer, Object element) {
+				boolean elementVisible = super
+						.isElementVisible(viewer, element);
+				// Only user selected elements are not searched.
 				if (getCheckedItems().contains(element)) {
+					if (!isUserModifiedTreeSelection)
+						fTreeViewer.setChecked(element, elementVisible);
+					else
 						return true;
 				}
-				return super.isElementVisible(viewer, element);
+				return elementVisible;
 			}
 		};
 
@@ -320,6 +329,7 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
+				isUserModifiedTreeSelection = true;
 				enableOk();
 			}
 		});
@@ -343,7 +353,9 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				fTreeViewer.setAllChecked(true);
+				for (TreeItem item : fTreeViewer.getTree().getItems()) {
+					fTreeViewer.setSubtreeChecked(item.getData(), true);
+				}
 				enableOk();
 			}
 
@@ -360,7 +372,9 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				fTreeViewer.setAllChecked(false);
+				for (TreeItem item : fTreeViewer.getTree().getItems()) {
+					fTreeViewer.setSubtreeChecked(item.getData(), false);
+				}
 				enableOk();
 			}
 
@@ -513,6 +527,9 @@ public class RepositorySearchDialog extends WizardPage {
 		uncheckAllItem.setEnabled(!validDirs.isEmpty());
 		fTree.clearFilter();
 		fTreeViewer.setInput(validDirs);
+		// this sets all to selected
+		fTreeViewer.setAllChecked(true);
+		isUserModifiedTreeSelection = false;
 		enableOk();
 	}
 

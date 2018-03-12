@@ -93,9 +93,8 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isFeature() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null
-				&& branch.startsWith(getConfig().getFeaturePrefix());
+		return repository.getBranch()
+				.startsWith(getConfig().getFeaturePrefix());
 	}
 
 	/**
@@ -103,8 +102,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isDevelop() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null && branch.equals(getConfig().getDevelop());
+		return repository.getBranch().equals(getConfig().getDevelop());
 	}
 
 	/**
@@ -112,8 +110,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isMaster() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null && branch.equals(getConfig().getMaster());
+		return repository.getBranch().equals(getConfig().getMaster());
 	}
 
 	/**
@@ -121,9 +118,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isRelease() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null
-				&& branch.startsWith(getConfig().getReleasePrefix());
+		return repository.getBranch().startsWith(getConfig().getReleasePrefix());
 	}
 
 	/**
@@ -131,9 +126,7 @@ public class GitFlowRepository {
 	 * @throws IOException
 	 */
 	public boolean isHotfix() throws IOException {
-		String branch = repository.getBranch();
-		return branch != null
-				&& branch.startsWith(getConfig().getHotfixPrefix());
+		return repository.getBranch().startsWith(getConfig().getHotfixPrefix());
 	}
 
 	/**
