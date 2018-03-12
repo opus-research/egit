@@ -15,6 +15,10 @@ import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -22,6 +26,8 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.Document;
+import org.eclipse.jgit.diff.DiffConfig;
+import org.eclipse.jgit.diff.DiffConfig.RenameDetectionType;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -52,6 +58,9 @@ class GitDocument extends Document implements RefsChangedListener {
 	private ObjectId lastBlob;
 
 	private ListenerHandle myRefsChangedHandle;
+
+	// Job that reloads the document when something has changed
+	private Job reloadJob;
 
 	private boolean disposed;
 
@@ -153,19 +162,24 @@ class GitDocument extends Document implements RefsChangedListener {
 			try {
 				reader = repository.newObjectReader();
 				baselineCommit = rw.parseCommit(commitId);
-				TreeWalk walk = new TreeWalk(repository);
-				CanonicalTreeParser baseLineIterator = new CanonicalTreeParser();
-				baseLineIterator.reset(reader, baselineCommit.getTree());
-				walk.addTree(baseLineIterator);
-				walk.addTree(new DirCacheIterator(repository.readDirCache()));
-				List<DiffEntry> diffs = DiffEntry.scan(walk, true);
-				RenameDetector renameDetector = new RenameDetector(repository);
-				renameDetector.addAll(diffs);
-				List<DiffEntry> renames = renameDetector.compute();
-				for (DiffEntry e : renames) {
-					if (e.getNewPath().equals(gitPath)) {
-						oldPath = e.getOldPath();
-						break;
+				DiffConfig diffConfig = repository.getConfig().get(
+						DiffConfig.KEY);
+				if (diffConfig.getRenameDetectionType() != RenameDetectionType.FALSE) {
+					TreeWalk walk = new TreeWalk(repository);
+					CanonicalTreeParser baseLineIterator = new CanonicalTreeParser();
+					baseLineIterator.reset(reader, baselineCommit.getTree());
+					walk.addTree(baseLineIterator);
+					walk.addTree(new DirCacheIterator(repository.readDirCache()));
+					List<DiffEntry> diffs = DiffEntry.scan(walk, true);
+					RenameDetector renameDetector = new RenameDetector(
+							repository);
+					renameDetector.addAll(diffs);
+					List<DiffEntry> renames = renameDetector.compute();
+					for (DiffEntry e : renames) {
+						if (e.getNewPath().equals(gitPath)) {
+							oldPath = e.getOldPath();
+							break;
+						}
 					}
 				}
 			} catch (IOException err) {
@@ -258,19 +272,31 @@ class GitDocument extends Document implements RefsChangedListener {
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
 		}
+		cancelReloadJob();
 		disposed = true;
 	}
 
-	public void onRefsChanged(final RefsChangedEvent e) {
-		Activator.getDefault().getWorkbench().getDisplay().asyncExec(new Runnable() {
-			public void run() {
+	public void onRefsChanged(final RefsChangedEvent event) {
+		cancelReloadJob();
+
+		reloadJob = new Job(UIText.GitDocument_ReloadJobName) {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					populate();
-				} catch (Exception e1) {
-					Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
+					return Status.OK_STATUS;
+				} catch (IOException e) {
+					return Activator.createErrorStatus(
+							UIText.GitDocument_ReloadJobError, e);
 				}
 			}
-		});
+		};
+		reloadJob.schedule();
+	}
+
+	private void cancelReloadJob() {
+		if (reloadJob != null && reloadJob.getState() != Job.NONE)
+			reloadJob.cancel();
 	}
 
 	private Repository getRepository() {

@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -45,6 +46,7 @@ import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
+import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo.PushInfo;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo.RepositoryConfigProperty;
@@ -59,7 +61,6 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IWorkingSet;
 
@@ -244,8 +245,10 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 				selectedBranches, workdir, ref != null ? ref.getName() : null,
 				remoteName, timeout);
 		if (credentials != null)
-			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
+			op.setCredentialsProvider(new EGitCredentialsProvider(
 					credentials.getUser(), credentials.getPassword()));
+		else
+			op.setCredentialsProvider(new EGitCredentialsProvider());
 		op.setCloneSubmodules(cloneDestination.isCloneSubmodules());
 
 		configureFetchSpec(op, gitRepositoryInfo, remoteName);
@@ -346,10 +349,10 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 			final IWorkingSet[] sets) {
 		String repoName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(repository);
-		Job importJob = new Job(MessageFormat.format(
+		Job importJob = new WorkspaceJob(MessageFormat.format(
 				UIText.GitCloneWizard_jobImportProjects, repoName)) {
 
-			protected IStatus run(IProgressMonitor monitor) {
+			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				List<File> files = new ArrayList<File>();
 				ProjectUtil.findProjectFiles(files, repository.getWorkTree(),
 						true, monitor);
