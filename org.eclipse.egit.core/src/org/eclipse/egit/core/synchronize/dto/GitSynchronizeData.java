@@ -9,7 +9,6 @@
 package org.eclipse.egit.core.synchronize.dto;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +16,6 @@ import java.util.Set;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -30,9 +28,9 @@ public class GitSynchronizeData {
 
 	private final Repository repo;
 
-	private final Ref srcRev;
+	private final String srcRev;
 
-	private final Ref dstRev;
+	private final String dstRev;
 
 	private final Set<IProject> projects;
 
@@ -47,13 +45,12 @@ public class GitSynchronizeData {
 	 * @param includeLocal
 	 *            <code>true</code> if local changes should be included in
 	 *            comparison
-	 * @throws IOException
 	 */
 	public GitSynchronizeData(Repository repository, String srcRev,
-			String dstRev, boolean includeLocal) throws IOException {
+			String dstRev, boolean includeLocal) {
 		repo = repository;
-		this.srcRev = repo.getRef(srcRev);
-		this.dstRev = repo.getRef(dstRev);
+		this.srcRev = srcRev;
+		this.dstRev = dstRev;
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();
 
@@ -78,14 +75,14 @@ public class GitSynchronizeData {
 	/**
 	 * @return synchronize source rev name
 	 */
-	public Ref getSrcRev() {
+	public String getSrcRev() {
 		return srcRev;
 	}
 
 	/**
 	 * @return synchronize destination rev name
 	 */
-	public Ref getDstRev() {
+	public String getDstRev() {
 		return dstRev;
 	}
 
