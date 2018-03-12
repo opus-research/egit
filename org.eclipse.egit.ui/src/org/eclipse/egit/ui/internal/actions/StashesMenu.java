@@ -19,7 +19,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.stash.StashCreateUI;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -129,7 +128,7 @@ public class StashesMenu extends CompoundContributionItem implements
 			return null;
 
 		IEvaluationContext evaluationContext = handlerService.getCurrentState();
-		return SelectionUtils.getRepository(evaluationContext);
+		return RepositoryActionHandler.getRepository(evaluationContext);
 	}
 
 	private static ActionContributionItem createStashItem(
