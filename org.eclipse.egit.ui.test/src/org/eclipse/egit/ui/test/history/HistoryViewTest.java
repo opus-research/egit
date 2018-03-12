@@ -30,7 +30,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -285,9 +284,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
-				TableItem tableItem = table.widget.getSelection()[0];
-				ensureTableItemLoaded(tableItem);
-				commit[0] = (RevCommit) tableItem.getData();
+				commit[0] = (RevCommit) table.widget.getSelection()[0]
+						.getData();
 			}
 		});
 
@@ -316,9 +314,8 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		Display.getDefault().syncExec(new Runnable() {
 
 			public void run() {
-				TableItem tableItem = table.widget.getSelection()[0];
-				ensureTableItemLoaded(tableItem);
-				commit[0] = (RevCommit) tableItem.getData();
+				commit[0] = (RevCommit) table.widget.getSelection()[0]
+						.getData();
 			}
 		});
 
@@ -327,15 +324,5 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		waitInUI();
 		assertEquals(commit[0].getId().name(), repo.getBranch());
-	}
-	
-	/**
-	 * Workaround to ensure that the TableItem of a SWT table with style
-	 * SWT_VIRTUAL is loaded.
-	 * 
-	 * @param item
-	 */
-	private static void ensureTableItemLoaded(TableItem item) {
-		item.setText(item.getText()); // TODO: is there a better solution?
 	}
 }
