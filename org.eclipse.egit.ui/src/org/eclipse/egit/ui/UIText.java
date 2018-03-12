@@ -674,9 +674,6 @@ public class UIText extends NLS {
 	public static String CompareTargetSelectionDialog_WindowTitle;
 
 	/** */
-	public static String CompareTreeView_AddedOnlyTooltip;
-
-	/** */
 	public static String CompareTreeView_AnalyzingRepositoryTaskText;
 
 	/** */
@@ -687,9 +684,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_ComparingWorkspaceVersionDescription;
-
-	/** */
-	public static String CompareTreeView_DeletedOnlyTooltip;
 
 	/** */
 	public static String CompareTreeView_EqualFilesTooltip;
@@ -1859,16 +1853,13 @@ public class UIText extends NLS {
 	public static String FetchAction_wrongURIMessage;
 
 	/** */
-	public static String FetchConfiguredRemoteAction_FetchJobName;
-
-	/** */
 	public static String FetchConfiguredRemoteAction_NoSpecsDefinedMessage;
 
 	/** */
 	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
 
 	/** */
-	public static String FetchConfiguredRemoteAction_TransportErrorDuringFetchMessage;
+	public static String FetchOperationUI_FetchJobName;
 
 	/** */
 	public static String FetchResultDialog_labelEmptyResult;
@@ -2384,55 +2375,16 @@ public class UIText extends NLS {
 	public static String GitSelectRepositoryPage_PleaseSelectMessage;
 
 	/** */
-	public static String GitSelectWizardPage_AutoShareButton;
-
-	/** */
 	public static String GitSelectWizardPage_ImportAsGeneralButton;
 
 	/** */
 	public static String GitSelectWizardPage_ImportExistingButton;
 
 	/** */
-	public static String GitSelectWizardPage_InteractiveShareButton;
-
-	/** */
-	public static String GitSelectWizardPage_NoShareButton;
-
-	/** */
 	public static String GitSelectWizardPage_ProjectCreationHeader;
 
 	/** */
-	public static String GitSelectWizardPage_SharingProjectsHeader;
-
-	/** */
 	public static String GitSelectWizardPage_UseNewProjectsWizardButton;
-
-	/** */
-	public static String GitShareProjectsPage_AbortedMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NoNewProjectMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NoRepoForProjectMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NoRepoFoundMessage;
-
-	/** */
-	public static String GitShareProjectsPage_NothingSelectedMessage;
-
-	/** */
-	public static String GitShareProjectsPage_PageTitle;
-
-	/** */
-	public static String GitShareProjectsPage_ProjectAlreadySharedMessage;
-
-	/** */
-	public static String GitShareProjectsPage_ProjectNameLabel;
-
-	/** */
-	public static String GitShareProjectsPage_RepositoryLabel;
 
 	/** */
 	public static String MergeAction_CannotMerge;
