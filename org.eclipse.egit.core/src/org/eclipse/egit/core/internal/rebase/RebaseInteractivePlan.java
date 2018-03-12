@@ -471,7 +471,7 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 					return ElementType.DONE_CURRENT;
 				return ElementType.DONE;
 			}
-			throw new IllegalStateException();
+			return null;
 		}
 
 		private RebaseTodoLine getRebaseTodoLine() {
@@ -651,6 +651,11 @@ public class RebaseInteractivePlan implements IndexDiffChangedListener,
 		@Override
 		public int hashCode() {
 			return super.hashCode();
+		}
+
+		@Override
+		public String toString() {
+			return line.toString();
 		}
 	}
 
