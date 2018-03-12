@@ -665,9 +665,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_SecureStoreUseByDefault;
 
 	/** */
-	public static String GitPreferenceRoot_useLogicalModel;
-
-	/** */
 	public static String ProcessStepsRebaseCommand_CancelDialogMessage;
 
 	/** */
@@ -4066,6 +4063,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_DeleteBranchAction;
+
+	/** */
+	public static String CommitGraphTable_HoverAdditionalTags;
 
 	/** */
 	public static String CommitGraphTable_messageColumn;
