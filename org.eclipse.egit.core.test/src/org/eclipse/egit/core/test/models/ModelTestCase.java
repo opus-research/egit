@@ -10,11 +10,12 @@ package org.eclipse.egit.core.test.models;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Scanner;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -47,7 +48,7 @@ import org.eclipse.team.core.mapping.ResourceMappingMerger;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.junit.Before;
 
-public class ModelTestCase extends GitTestCase {
+public abstract class ModelTestCase extends GitTestCase {
 	protected static final String SAMPLE_FILE_EXTENSION = SampleModelProvider.SAMPLE_FILE_EXTENSION;
 
 	@Before
@@ -61,33 +62,28 @@ public class ModelTestCase extends GitTestCase {
 	}
 
 	protected RevCommit setContentsAndCommit(TestRepository testRepository,
-			String repoRelativePath, IFile targetFile, String newContents,
-			String commitMessage) throws Exception {
+			IFile targetFile, String newContents, String commitMessage)
+			throws Exception {
 		targetFile.setContents(
 				new ByteArrayInputStream(newContents.getBytes()),
 				IResource.FORCE, new NullProgressMonitor());
-		new Git(testRepository.getRepository()).add()
-				.addFilepattern(repoRelativePath).call();
 		testRepository.addToIndex(targetFile);
 		return testRepository.commit(commitMessage);
 	}
 
 	protected void assertContentEquals(IFile file, String expectedContents)
 			throws Exception {
-		Scanner scanner = null;
-		try {
-			scanner = new Scanner(file.getContents()).useDelimiter("\\A");
-
-			String fileContent = "";
-			if (scanner.hasNext()) {
-				fileContent = scanner.next();
-			}
-
-			assertEquals(expectedContents, fileContent);
-		} finally {
-			if (scanner != null)
-				scanner.close();
+		BufferedReader reader = new BufferedReader(new InputStreamReader(
+				file.getContents()));
+		StringBuilder contentsBuilder = new StringBuilder();
+		String line = reader.readLine();
+		while (line != null) {
+			contentsBuilder.append(line);
+			contentsBuilder.append('\n');
+			line = reader.readLine();
 		}
+		reader.close();
+		assertEquals(expectedContents, contentsBuilder.toString());
 	}
 
 	protected void merge(Repository repository, String refName)
