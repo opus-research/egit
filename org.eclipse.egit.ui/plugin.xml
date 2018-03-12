@@ -2412,7 +2412,7 @@
            </or>
          </enablement>
          <commonSorter
-               class="org.eclipse.egit.ui.internal.synchronize.mapping.GitCommitChangeSetSorter"/>
+               class="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetSorter"/>
        </navigatorContent>
    </extension>
    <extension
@@ -2810,10 +2810,10 @@
                         <and>
                            <adapt
                                  type="org.eclipse.core.resources.IProject">
+								<test
+									property="GitResource.isShared">
+								</test>
                            </adapt>
-                           <test
-                                 property="GitResource.isShared">
-                           </test>
                         </and>
                      </iterate>
                   </and>
