@@ -10,19 +10,15 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -33,25 +29,17 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tag;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.team.ui.history.IHistoryView;
-import org.eclipse.ui.ISources;
+import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.handlers.IHandlerService;
 
 /**
  * A helper class for Team Actions on Git controlled projects
  */
-abstract class RepositoryActionHandler extends AbstractHandler {
+public abstract class RepositoryActionHandler extends AbstractHandler {
 
 	/**
 	 * @param event
@@ -62,7 +50,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			throws ExecutionException {
 		Set<IProject> ret = new HashSet<IProject>();
 		for (IResource resource : (IResource[]) getSelectedAdaptables(
-				getSelection(event), IResource.class, event))
+				getSelection(event), IResource.class))
 			ret.add(resource.getProject());
 		return ret.toArray(new IProject[ret.size()]);
 	}
@@ -188,16 +176,16 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		if (event != null)
 			selection = HandlerUtil.getCurrentSelectionChecked(event);
 		else {
-			IWorkbenchWindow activeWorkbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-			if (activeWorkbenchWindow == null) // During Eclipse shutdown there is no active window
-				return new StructuredSelection();
-			IHandlerService hsr = (IHandlerService) activeWorkbenchWindow.getService(IHandlerService.class);
-			IEvaluationContext ctx = hsr.getCurrentState();
-			selection = (ISelection) ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (selection == null)
+			// the event is sometimes null, in particular, during
+			// isEnabled()
+			ISelectionService srv = (ISelectionService) PlatformUI
+					.getWorkbench().getActiveWorkbenchWindow().getService(
+							ISelectionService.class);
+			if (srv == null)
 				throw new ExecutionException(
 						UIText.RepositoryActionHandler_CouldNotGetSelection_message);
-
+			else
+				selection = srv.getSelection();
 		}
 		if (selection instanceof IStructuredSelection)
 			return (IStructuredSelection) selection;
@@ -210,19 +198,16 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 *
 	 * @param selection
 	 * @param c
-	 * @param event
 	 * @return the selected adaptables
-	 * @throws ExecutionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected Object[] getSelectedAdaptables(ISelection selection, Class c,
-			ExecutionEvent event) throws ExecutionException {
+	protected Object[] getSelectedAdaptables(ISelection selection, Class c) {
 		ArrayList result = null;
 		if (selection != null && !selection.isEmpty()) {
 			result = new ArrayList();
 			Iterator elements = ((IStructuredSelection) selection).iterator();
 			while (elements.hasNext()) {
-				Object adapter = getAdapter(elements.next(), c, event);
+				Object adapter = getAdapter(elements.next(), c);
 				if (c.isInstance(adapter)) {
 					result.add(adapter);
 				}
@@ -235,8 +220,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		return (Object[]) Array.newInstance(c, 0);
 	}
 
-	private Object getAdapter(Object adaptable, Class c, ExecutionEvent event)
-			throws ExecutionException {
+	private Object getAdapter(Object adaptable, Class c) {
 		if (c.isInstance(adaptable)) {
 			return adaptable;
 		}
@@ -246,10 +230,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			if (c.isInstance(adapter)) {
 				return adapter;
 			}
-		}
-		if (adaptable instanceof RevCommit) {
-			IHistoryView view = (IHistoryView) getPart(event);
-			return getAdapter(view.getHistoryPage().getInput(), c, event);
 		}
 		return null;
 	}
@@ -278,7 +258,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			throws ExecutionException {
 		Set<IResource> result = new HashSet<IResource>();
 		for (Object o : getSelection(event).toList()) {
-			IResource resource = (IResource) getAdapter(o, IResource.class, event);
+			IResource resource = (IResource) getAdapter(o, IResource.class);
 			if (resource != null)
 				result.add(resource);
 		}
@@ -301,39 +281,6 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 	 */
 	protected IWorkbenchPage getPartPage(ExecutionEvent event)
 			throws ExecutionException {
-		return getPart(event).getSite().getPage();
-	}
-
-	/**
-	 * @param event
-	 * @return the page
-	 * @throws ExecutionException
-	 */
-	protected IWorkbenchPart getPart(ExecutionEvent event)
-			throws ExecutionException {
-		return HandlerUtil.getActivePartChecked(event);
-	}
-
-	/**
-	 * @param event
-	 * @return the tags
-	 * @throws ExecutionException
-	 */
-	protected List<Tag> getRevTags(ExecutionEvent event)
-			throws ExecutionException {
-		Repository repo = getRepository(false, event);
-		Collection<Ref> revTags = repo.getTags().values();
-		List<Tag> tags = new ArrayList<Tag>();
-		RevWalk walk = new RevWalk(repo);
-		for (Ref ref : revTags) {
-			try {
-				Tag tag = walk.parseTag(repo.resolve(ref.getName()))
-						.asTag(walk);
-				tags.add(tag);
-			} catch (IOException e) {
-				throw new ExecutionException(e.getMessage(), e);
-			}
-		}
-		return tags;
+		return HandlerUtil.getActivePartChecked(event).getSite().getPage();
 	}
 }
