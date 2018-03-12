@@ -202,7 +202,22 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
+	public static String GitHistoryPage_fileNotFound;
+
+	/** */
 	public static String GitHistoryPage_find;
+
+	/** */
+	public static String GitHistoryPage_notContainedInCommits;
+
+	/** */
+	public static String GitHistoryPage_open;
+
+	/** */
+	public static String GitHistoryPage_openFailed;
+
+	/** */
+	public static String GitHistoryPage_seeLog;
 
 	/** */
 	public static String GitProjectPropertyPage_LabelBranch;
@@ -850,6 +865,9 @@ public class UIText extends NLS {
 	public static String CommitAction_failedToUpdate;
 
 	/** */
+	public static String CommitAction_InternalError;
+
+	/** */
 	public static String CommitAction_noFilesToCommit;
 
 	/** */
@@ -913,6 +931,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_SelectAll;
 
 	/** */
+	public static String CommitDialog_ShowUntrackedFiles;
+
+	/** */
 	public static String CommitDialog_Status;
 
 	/** */
@@ -938,6 +959,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_StatusUnknown;
+
+	/** */
+	public static String CommitDialog_StatusUntracked;
 
 	/** */
 	public static String ConfigureKeysDialog_AddStandardButton;
@@ -1243,10 +1267,7 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef2;
 
 	/** */
-	public static String BranchSelectionDialog_BranchSelectionDialog_CreateBranchFailedTitle;
-
-	/** */
-	public static String BranchSelectionDialog_BranchSelectionDialog_CreateTagFailedTitle;
+	public static String BranchSelectionDialog_BranchSelectionDialog_CreateFailedTitle;
 
 	/** */
 	public static String BranchSelectionDialog_BranchSelectionDialog_RenamedFailedTitle;
@@ -1276,9 +1297,6 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_LocalBranches;
 
 	/** */
-	public static String BranchSelectionDialog_NoBranchSeletectTitle;
-
-	/** */
 	public static String BranchSelectionDialog_ReallyResetTitle;
 
 	/** */
@@ -1294,19 +1312,10 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
 
 	/** */
-	public static String BranchSelectionDialog_QuestionNewTagNameMessage;
-
-	/** */
 	public static String BranchSelectionDialog_QuestionNewBranchMessage;
 
 	/** */
-	public static String BranchSelectionDialog_QuestionNewTagMessage;
-
-	/** */
 	public static String BranchSelectionDialog_NewBranch;
-
-	/** */
-	public static String BranchSelectionDialog_NewTag;
 
 	/** */
 	public static String BranchSelectionDialog_ErrorAlreadyExists;
@@ -1322,9 +1331,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchSelectionDialog_OkCheckout;
-
-	/** */
-	public static String BranchSelectionDialog_NoBranchSeletectMessage;
 
 	/** */
 	public static String BranchSelectionDialog_Refs;
@@ -1571,27 +1577,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
-
-	/** */
-	public static String TagInputDialog_ErrorAlreadyExists;
-
-	/** */
-	public static String TagInputDialog_ErrorCouldNotResolve;
-
-	/** */
-	public static String TagInputDialog_ErrorInvalidRefName;
-
-	/** */
-	public static String TagInputDialog_QuestionNewTagTitle;
-
-	/** */
-	public static String TagInputDialog_TagMessage;
-
-	/** */
-	public static String TagInputDialog_ErrorNoMessage;
-
-	/** */
-	public static String TagInputDialog_ErrorMustEnterCommitMessage;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$
