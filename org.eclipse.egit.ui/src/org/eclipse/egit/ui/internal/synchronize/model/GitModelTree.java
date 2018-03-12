@@ -67,6 +67,11 @@ public class GitModelTree extends GitModelObjectContainer {
 	}
 
 	@Override
+	public boolean isContainer() {
+		return true;
+	}
+
+	@Override
 	public void dispose() {
 		if (children != null) {
 			for (GitModelObject object : children)

@@ -17,11 +17,8 @@ import java.util.List;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CompareUtils;
@@ -30,7 +27,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -90,22 +86,18 @@ public class ShowVersionsHandler extends AbstractHistoryCommandHandler {
 			if (revision == null)
 				ids.add(commit.getId());
 			else if (compareMode) {
-				final String dstRevCommit = commit.getId().getName();
-				IWorkbenchPage workBenchPage = HandlerUtil
-						.getActiveWorkbenchWindowChecked(event).getActivePage();
 				try {
-					if (input instanceof IFile) {
-						final IResource[] resources = new IResource[] { (IFile) input, };
-						CompareUtils.compare(resources, repository,
-								Constants.HEAD, dstRevCommit, true,
+					IWorkbenchPage workBenchPage = HandlerUtil
+							.getActiveWorkbenchWindowChecked(event)
+							.getActivePage();
+					if (input instanceof IFile)
+						CompareUtils.compareWorkspaceWithRef(repository,
+								(IFile) input, commit.getId().getName(),
 								workBenchPage);
-					} else {
-						IPath location = new Path(
-								((File) input).getAbsolutePath());
-						CompareUtils.compare(location, repository,
-								Constants.HEAD, dstRevCommit, true,
+					else
+						CompareUtils.compareLocalWithRef(repository,
+								(File) input, commit.getId().getName(),
 								workBenchPage);
-					}
 				} catch (IOException e) {
 					Activator.logError(UIText.GitHistoryPage_openFailed, e);
 					errorOccurred = true;

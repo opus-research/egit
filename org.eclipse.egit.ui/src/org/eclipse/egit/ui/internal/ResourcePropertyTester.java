@@ -128,11 +128,7 @@ public class ResourcePropertyTester extends PropertyTester {
 		return false;
 	}
 
-	/**
-	 * @param repository
-	 * @return {@code true} if repository has been configured for Gerrit
-	 */
-	public static boolean hasGerritConfiguration(Repository repository) {
+	private static boolean hasGerritConfiguration(Repository repository) {
 		Config config = repository.getConfig();
 		if (GerritUtil.getCreateChangeId(config))
 			return true;
