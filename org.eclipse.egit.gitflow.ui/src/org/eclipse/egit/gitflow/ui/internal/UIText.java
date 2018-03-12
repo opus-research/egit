@@ -239,7 +239,4 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
-
-	/** */
-	public static String GitFlowInit_name;
 }
