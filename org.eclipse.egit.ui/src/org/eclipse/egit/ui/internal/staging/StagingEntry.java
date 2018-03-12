@@ -2,7 +2,6 @@
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -36,27 +35,30 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	 * State of the node
 	 */
 	public static enum State {
-		/** added to the index, not in the tree */
+		/** in index, not in HEAD */
 		ADDED(EnumSet.of(Action.UNSTAGE)),
 
-		/** changed from tree to index */
+		/** changed in index compared to HEAD */
 		CHANGED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** removed from index, but in tree */
+		/** removed from index, but in HEAD */
 		REMOVED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** in index (unchanged), but not filesystem */
+		/** in index (unchanged), missing from working tree */
 		MISSING(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** in index (changed from tree to index), but not filesystem */
+		/** changed in index compared to HEAD, missing from working tree */
 		MISSING_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
 				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** modified on disk relative to the index */
+		/** modified in working tree compared to index */
 		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
-		/** partially staged, modified in workspace and in index */
-		PARTIALLY_MODIFIED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+		/** modified in working tree compared to index, changed in index compared to HEAD */
+		MODIFIED_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+
+		/** modified in working tree compared to index, added in index (not in HEAD) */
+		MODIFIED_AND_ADDED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.STAGE)),
 
 		/** not ignored, and not in the index */
 		UNTRACKED(EnumSet.of(Action.STAGE, Action.DELETE, Action.IGNORE)),
@@ -103,8 +105,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 
 	private boolean submodule;
 
-	private boolean symlink;
-
 	/**
 	 * @param repository
 	 *            repository for this entry
@@ -131,20 +131,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	 */
 	public boolean isSubmodule() {
 		return submodule;
-	}
-
-	/**
-	 * @param symlink
-	 */
-	public void setSymlink(boolean symlink) {
-		this.symlink = symlink;
-	}
-
-	/**
-	 * @return true if symlink, false otherwise
-	 */
-	public boolean isSymlink() {
-		return symlink;
 	}
 
 	/**
@@ -262,7 +248,8 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	public boolean isDirty() {
-		return state == State.MODIFIED || state == State.PARTIALLY_MODIFIED;
+		return state == State.MODIFIED || state == State.MODIFIED_AND_CHANGED
+				|| state == State.MODIFIED_AND_ADDED;
 	}
 
 	public Staged staged() {
@@ -287,6 +274,11 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 
 	public boolean isAssumeValid() {
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return "StagingEntry[" + state + " " + path + "]"; //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
 	}
 
 	@Override
