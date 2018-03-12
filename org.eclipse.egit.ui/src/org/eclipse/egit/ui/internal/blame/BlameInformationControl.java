@@ -10,7 +10,6 @@
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.blame;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 
@@ -24,16 +23,15 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.blame.BlameOperation.BlameHistoryPageInput;
 import org.eclipse.egit.ui.internal.blame.BlameRevision.Diff;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.resource.JFaceColors;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractInformationControl;
 import org.eclipse.jface.text.Document;
@@ -44,14 +42,17 @@ import org.eclipse.jface.text.source.IVerticalRulerInfo;
 import org.eclipse.jgit.diff.Edit;
 import org.eclipse.jgit.diff.EditList;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
@@ -60,7 +61,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -83,7 +83,7 @@ public class BlameInformationControl extends AbstractInformationControl
 
 	private Composite displayArea;
 
-	private Label commitLabel;
+	private StyledText commitLink;
 
 	private Label authorLabel;
 
@@ -149,31 +149,28 @@ public class BlameInformationControl extends AbstractInformationControl
 		displayArea.setBackgroundMode(SWT.INHERIT_FORCE);
 		GridLayoutFactory.swtDefaults().equalWidth(true).applyTo(displayArea);
 
-		Composite commitHeader = new Composite(displayArea, SWT.NONE);
-		commitHeader.setLayout(GridLayoutFactory.fillDefaults().numColumns(3)
-				.create());
-		GridDataFactory.fillDefaults().grab(true, false).applyTo(commitHeader);
+		commitLink = new StyledText(displayArea, SWT.READ_ONLY);
+		commitLink.addMouseListener(new MouseAdapter() {
 
-		commitLabel = new Label(commitHeader, SWT.READ_ONLY);
-		commitLabel.setFont(JFaceResources.getBannerFont());
-
-		Link openCommitLink = new Link(commitHeader, SWT.NONE);
-		openCommitLink.setText(UIText.BlameInformationControl_OpenCommitLink);
-		openCommitLink.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				openCommit();
+			public void mouseUp(MouseEvent e) {
+				if (commitLink.getSelectionText().length() != 0)
+					return;
+				try {
+					getShell().dispose();
+					CommitEditor.open(new RepositoryCommit(revision
+							.getRepository(), revision.getCommit()));
+				} catch (PartInitException pie) {
+					Activator.logError(pie.getLocalizedMessage(), pie);
+				}
 			}
 		});
-
-		Link showInHistoryLink = new Link(commitHeader, SWT.NONE);
-		showInHistoryLink.setText(UIText.BlameInformationControl_ShowInHistoryLink);
-		showInHistoryLink.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				showCommitInHistory();
-			}
-		});
+		commitLink.setFont(JFaceResources.getBannerFont());
+		commitLink.setForeground(JFaceColors.getHyperlinkText(commitLink
+				.getDisplay()));
+		Cursor handCursor = new Cursor(commitLink.getDisplay(), SWT.CURSOR_HAND);
+		UIUtils.hookDisposal(commitLink, handCursor);
+		commitLink.setCursor(handCursor);
+		GridDataFactory.fillDefaults().grab(true, false).applyTo(commitLink);
 
 		authorLabel = new Label(displayArea, SWT.NONE);
 		authorLabel.setForeground(parent.getForeground());
@@ -232,9 +229,11 @@ public class BlameInformationControl extends AbstractInformationControl
 		RevCommit commit = this.revision.getCommit();
 
 		String linkText = MessageFormat.format(
-				UIText.BlameInformationControl_Commit, commit.abbreviate(7)
-						.name());
-		commitLabel.setText(linkText);
+				UIText.BlameInformationControl_Commit, commit.name());
+		commitLink.setText(linkText);
+		StyleRange styleRange = new StyleRange(0, linkText.length(), null, null);
+		styleRange.underline = true;
+		commitLink.setStyleRange(styleRange);
 
 		PersonIdent author = commit.getAuthorIdent();
 		if (author != null) {
@@ -379,38 +378,6 @@ public class BlameInformationControl extends AbstractInformationControl
 			return revisionRulerLineNumber;
 	}
 
-	private void openCommit() {
-		try {
-			getShell().dispose();
-			CommitEditor.open(new RepositoryCommit(revision.getRepository(),
-					revision.getCommit()));
-		} catch (PartInitException pie) {
-			Activator.logError(pie.getLocalizedMessage(), pie);
-		}
-	}
-
-	private void showCommitInHistory() {
-		getShell().dispose();
-		IHistoryView part = (IHistoryView) PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getActivePage()
-				.findView(IHistoryView.VIEW_ID);
-		if (part == null)
-			return;
-
-		Repository repository = revision.getRepository();
-		if (!repository.isBare()) {
-			String sourcePath = revision.getSourcePath();
-			File file = new File(repository.getWorkTree(), sourcePath);
-			BlameHistoryPageInput input = new BlameHistoryPageInput(repository,
-					revision.getCommit(), file);
-			part.showHistoryFor(input);
-		} else {
-			HistoryPageInput input = new BlameHistoryPageInput(repository,
-					revision.getCommit());
-			part.showHistoryFor(input);
-		}
-	}
-
 	private void blameParent(RevCommit parent, Diff diff, Integer sourceLine) {
 		try {
 			String path = diff.getOldPath();
@@ -421,8 +388,8 @@ public class BlameInformationControl extends AbstractInformationControl
 			IWorkbenchPage page = PlatformUI.getWorkbench()
 					.getActiveWorkbenchWindow().getActivePage();
 			BlameOperation operation = new BlameOperation(
-					revision.getRepository(), storage, path, parent,
-					getShell(), page, line);
+					revision.getRepository(), storage, path,
+					parent.toObjectId(), getShell(), page, line);
 			JobUtil.scheduleUserJob(operation, UIText.ShowBlameHandler_JobName,
 					JobFamilies.BLAME);
 		} catch (IOException e) {
