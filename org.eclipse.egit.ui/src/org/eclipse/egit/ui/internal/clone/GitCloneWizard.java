@@ -14,7 +14,6 @@
 package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,13 +24,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
-import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
-import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -75,12 +72,11 @@ public class GitCloneWizard extends Wizard {
 
 			@Override
 			public void setVisible(boolean visible) {
-				if (visible) {
+				if (visible)
 					setSelection(cloneSource.getSelection());
-					setCredentials(cloneSource.getCredentials());
-				}
 				super.setVisible(visible);
 			}
+
 		};
 		cloneDestination = new CloneDestinationPage() {
 			@Override
@@ -149,35 +145,10 @@ public class GitCloneWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 		try {
-			if (!storeCredentials())
-				return false;
 			return performClone();
 		} finally {
 			setWindowTitle(UIText.GitCloneWizard_title);
 		}
-	}
-
-	private boolean storeCredentials() {
-		UserPasswordCredentials credentials = cloneSource.getCredentials();
-		if (credentials != null) {
-			URIish uri = cloneSource.getSelection().getURI();
-			try {
-				org.eclipse.egit.core.Activator.getDefault().getSecureStore().putCredentials(uri, credentials);
-			} catch (StorageException e) {
-				Activator
-						.handleError(
-								UIText.GitCloneWizard_writeToSecureStoreFailed,
-								e, true);
-				return false;
-			} catch (IOException e) {
-				Activator
-						.handleError(
-								UIText.GitCloneWizard_writeToSecureStoreFailed,
-								e, true);
-				return false;
-			}
-		}
-		return true;
 	}
 
 	boolean performClone() {
