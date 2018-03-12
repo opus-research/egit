@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
@@ -149,7 +150,7 @@ import org.eclipse.ui.progress.UIJob;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		ISchedulingRule, TableLoader, IShowInSource, IShowInTargetList {
+		TableLoader, IShowInSource, IShowInTargetList {
 
 	private static final int INITIAL_ITEM = -1;
 
@@ -623,6 +624,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
+	private static class HistoryPageRule implements ISchedulingRule {
+		@Override
+		public boolean contains(ISchedulingRule rule) {
+			return this == rule;
+		}
+
+		@Override
+		public boolean isConflicting(ISchedulingRule rule) {
+			return this == rule;
+		}
+	}
+
 	private static final String POPUP_ID = "org.eclipse.egit.ui.historyPageContributions"; //$NON-NLS-1$
 
 	private static final String DESCRIPTION_PATTERN = "{0} - {1}"; //$NON-NLS-1$
@@ -756,6 +769,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private Composite commentAndDiffComposite;
 
+	private volatile boolean resizing;
+
+	private final HistoryPageRule pageSchedulingRule;
+
 	/**
 	 * Determine if the input can be shown in this viewer.
 	 *
@@ -797,9 +814,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	public GitHistoryPage() {
 		trace = GitTraceLocation.HISTORYVIEW.isActive();
-		if (trace)
+		pageSchedulingRule = new HistoryPageRule();
+		if (trace) {
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation());
+		}
 	}
 
 	@Override
@@ -915,8 +934,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		commentAndDiffScrolledComposite.addControlListener(new ControlAdapter() {
 			@Override
 			public void controlResized(ControlEvent e) {
-				if (commentViewer.getTextWidget().getWordWrap())
+				if (!resizing && commentViewer.getTextWidget()
+						.getWordWrap()) {
 					resizeCommentAndDiffScrolledComposite();
+				}
 			}
 		});
 
@@ -1178,6 +1199,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					((IWorkbenchAction) i).dispose();
 		}
 		renameTracker.reset(null);
+		if (job != null) {
+			job.cancel();
+			job = null;
+		}
+		Job.getJobManager().cancel(JobFamilies.HISTORY_DIFF);
 		super.dispose();
 	}
 
@@ -1944,6 +1970,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void formatDiffs(final List<FileDiff> diffs) {
+		Job.getJobManager().cancel(JobFamilies.HISTORY_DIFF);
 		if (diffs.isEmpty()) {
 			if (UIUtils.isUsable(diffViewer)) {
 				IDocument document = new Document();
@@ -1957,16 +1984,26 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		Job formatJob = new Job(UIText.GitHistoryPage_FormatDiffJobName) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
+				if (monitor.isCanceled()) {
+					return Status.CANCEL_STATUS;
+				}
+				int maxLines = Activator.getDefault().getPreferenceStore()
+						.getInt(UIPreferences.HISTORY_MAX_DIFF_LINES);
 				final IDocument document = new Document();
 				final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
-						document);
+						document, document.getLength(), maxLines);
 
 				monitor.beginTask("", diffs.size()); //$NON-NLS-1$
 				for (FileDiff diff : diffs) {
-					if (monitor.isCanceled())
+					if (monitor.isCanceled()) {
 						break;
-					if (diff.getCommit().getParentCount() > 1)
+					}
+					if (diff.getCommit().getParentCount() > 1) {
 						break;
+					}
+					if (document.getNumberOfLines() > maxLines) {
+						break;
+					}
 					monitor.setTaskName(diff.getPath());
 					try {
 						formatter.write(repository, diff);
@@ -1975,10 +2012,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					}
 					monitor.worked(1);
 				}
+				if (monitor.isCanceled()) {
+					return Status.CANCEL_STATUS;
+				}
 				monitor.done();
 				UIJob uiJob = new UIJob(UIText.GitHistoryPage_FormatDiffJobName) {
 					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
+						if (uiMonitor.isCanceled()) {
+							return Status.CANCEL_STATUS;
+						}
 						if (UIUtils.isUsable(diffViewer)) {
 							diffViewer.setDocument(document);
 							diffViewer.setFormatter(formatter);
@@ -1986,12 +2029,24 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 						}
 						return Status.OK_STATUS;
 					}
+
+					@Override
+					public boolean belongsTo(Object family) {
+						return JobFamilies.HISTORY_DIFF.equals(family);
+					}
 				};
-				uiJob.schedule();
+				uiJob.setRule(pageSchedulingRule);
+				GitHistoryPage.this.schedule(uiJob);
 				return Status.OK_STATUS;
 			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				return JobFamilies.HISTORY_DIFF.equals(family);
+			}
 		};
-		formatJob.schedule();
+		formatJob.setRule(pageSchedulingRule);
+		schedule(formatJob);
 	}
 
 	private void setWrap(boolean wrap) {
@@ -2001,19 +2056,32 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	private void resizeCommentAndDiffScrolledComposite() {
-		int widthHint;
-		if (commentViewer.getTextWidget().getWordWrap()) {
-			widthHint = commentAndDiffScrolledComposite.getClientArea().width;
-			if (commentAndDiffScrolledComposite.getVerticalBar() != null
-					&& !commentAndDiffScrolledComposite.getVerticalBar().isVisible())
-				widthHint -= commentAndDiffScrolledComposite.getVerticalBar().getSize().x;
-		} else {
-			widthHint = SWT.DEFAULT;
+		resizing = true;
+		long start = 0;
+		int lines = 0;
+		if (trace) {
+			IDocument document = diffViewer.getDocument();
+			lines = document != null ? document.getNumberOfLines() : 0;
+			System.out.println("Lines: " + lines); //$NON-NLS-1$
+			if (lines > 1) {
+				new Exception("resizeCommentAndDiffScrolledComposite") //$NON-NLS-1$
+						.printStackTrace(System.out);
+			}
+			start = System.currentTimeMillis();
 		}
+
 		Point size = commentAndDiffComposite
-				.computeSize(widthHint, SWT.DEFAULT);
-		commentAndDiffComposite.setSize(size);
+				.computeSize(SWT.DEFAULT, SWT.DEFAULT);
 		commentAndDiffScrolledComposite.setMinSize(size);
+		resizing = false;
+
+		if (trace) {
+			long stop = System.currentTimeMillis();
+			long time = stop - start;
+			long lps = (lines * 1000) / (time + 1);
+			System.out
+					.println("Resize + diff: " + time + " ms, line/s: " + lps); //$NON-NLS-1$ //$NON-NLS-2$
+		}
 	}
 
 	private TreeWalk createFileWalker(RevWalk walk, Repository db, List<FilterPath> paths) {
@@ -2133,7 +2201,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	private void loadInitialHistory(@NonNull RevWalk walk) {
 		job = new GenerateHistoryJob(this, graph.getControl(), walk, resources);
-		job.setRule(this);
+		job.setRule(pageSchedulingRule);
 		job.setLoadHint(INITIAL_ITEM);
 		if (trace)
 			GitTraceLocation.getTrace().trace(
@@ -2253,16 +2321,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private boolean isShowingEmailAddresses() {
 		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES);
-	}
-
-	@Override
-	public boolean contains(ISchedulingRule rule) {
-		return this == rule;
-	}
-
-	@Override
-	public boolean isConflicting(ISchedulingRule rule) {
-		return this == rule;
 	}
 
 	@Override
