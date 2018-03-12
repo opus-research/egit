@@ -268,7 +268,8 @@ public class CommitMessageComponent {
 		} else {
 			getHeadCommitInfo();
 			saveOriginalChangeId();
-			setCommitTextNormalized(previousCommitMessage);
+			commitText.setText(previousCommitMessage.replaceAll(
+					"\n", Text.DELIMITER)); //$NON-NLS-1$
 			if (previousAuthor != null)
 				authorText.setText(previousAuthor);
 		}
@@ -532,8 +533,7 @@ public class CommitMessageComponent {
 					previousCommitMessage);
 			if (endOfChangeId < 0)
 				endOfChangeId = previousCommitMessage.length() - 1;
-			int sha1Offset = changeIdOffset
-					+ (Text.DELIMITER + "Change-Id: I").length(); //$NON-NLS-1$
+			int sha1Offset = changeIdOffset + "\nChange-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage
 						.substring(sha1Offset, endOfChangeId));
@@ -545,11 +545,11 @@ public class CommitMessageComponent {
 	}
 
 	private int findNextEOL(int oldPos, String message) {
-		return message.indexOf(Text.DELIMITER, oldPos + 1);
+		return message.indexOf("\n", oldPos + 1); //$NON-NLS-1$
 	}
 
 	private int findOffsetOfChangeIdLine(String message) {
-		return message.indexOf(Text.DELIMITER + "Change-Id: I"); //$NON-NLS-1$
+		return message.indexOf("\nChange-Id: I"); //$NON-NLS-1$
 	}
 
 	private void updateChangeIdButton() {
@@ -557,19 +557,20 @@ public class CommitMessageComponent {
 		if (!curText.endsWith(Text.DELIMITER))
 			curText += Text.DELIMITER;
 
-		createChangeId = findOffsetOfChangeIdLine(curText) != -1;
+		createChangeId = curText.indexOf(Text.DELIMITER + "Change-Id: ") != -1; //$NON-NLS-1$
 		listener.updateChangeIdToggleSelection(createChangeId);
 	}
 
 	private void refreshChangeIdText() {
-		String text = commitText.getText();
+		String text = commitText.getText().replaceAll(Text.DELIMITER, "\n"); //$NON-NLS-1$
 		if (createChangeId) {
 			String changedText = ChangeIdUtil.insertId(
 					text,
 					originalChangeId != null ? originalChangeId : ObjectId
 							.zeroId(), true);
 			if (!text.equals(changedText)) {
-				setCommitTextNormalized(changedText);
+				changedText = changedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(changedText);
 			}
 		} else {
 			int changeIdOffset = findOffsetOfChangeIdLine(text);
@@ -577,20 +578,10 @@ public class CommitMessageComponent {
 				int endOfChangeId = findNextEOL(changeIdOffset, text);
 				String cleanedText = text.substring(0, changeIdOffset)
 						+ text.substring(endOfChangeId);
-				setCommitTextNormalized(cleanedText);
+				cleanedText = cleanedText.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
+				commitText.setText(cleanedText);
 			}
 		}
-	}
-
-	/**
-	 * Text widget is working with platform dependent Text.DELIMITER hence
-	 * normalizing line endings on set
-	 *
-	 * @param text new commit message text
-	 */
-	private void setCommitTextNormalized(String text) {
-		text.replaceAll("\n", Text.DELIMITER); //$NON-NLS-1$
-		commitText.setText(text);
 	}
 
 	private String getSignedOff() {
