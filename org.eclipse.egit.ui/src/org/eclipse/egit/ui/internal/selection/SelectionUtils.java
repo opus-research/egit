@@ -138,27 +138,23 @@ public class SelectionUtils {
 	@NonNull
 	public static IPath[] getSelectedLocations(
 			@NonNull IStructuredSelection selection) {
-		Set<IPath> result = new LinkedHashSet<IPath>();
+		Set<IPath> result = new LinkedHashSet<>();
 		for (Object o : selection.toList()) {
-			ResourceMapping mapping = AdapterUtils.adapt(o,
-					ResourceMapping.class);
-			if (mapping != null) {
-				for (IResource r : extractResourcesFromMapping(mapping)) {
-					IPath l = r.getLocation();
-					if (l != null)
-						result.add(l);
-				}
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null) {
+				IPath location = resource.getLocation();
+				if (location != null)
+					result.add(location);
 			} else {
-				IResource resource = AdapterUtils.adapt(o, IResource.class);
-				if (resource != null) {
-					IPath location = resource.getLocation();
-					if (location != null)
-						result.add(location);
-				} else {
-					IPath location = AdapterUtils.adapt(o, IPath.class);
-					if (location != null)
-						result.add(location);
-				}
+				IPath location = AdapterUtils.adapt(o, IPath.class);
+				if (location != null)
+					result.add(location);
+				else
+					for (IResource r : extractResourcesFromMapping(o)) {
+						IPath l = r.getLocation();
+						if (l != null)
+							result.add(l);
+					}
 			}
 		}
 		return result.toArray(new IPath[result.size()]);
@@ -171,24 +167,19 @@ public class SelectionUtils {
 	@NonNull
 	public static IResource[] getSelectedResources(
 			@NonNull IStructuredSelection selection) {
-		Set<IResource> result = new LinkedHashSet<IResource>();
+		Set<IResource> result = new LinkedHashSet<>();
 		for (Object o : selection.toList()) {
-			ResourceMapping mapping = AdapterUtils.adapt(o,
-					ResourceMapping.class);
-			if (mapping != null) {
-				result.addAll(extractResourcesFromMapping(mapping));
-			} else {
-				IResource resource = AdapterUtils.adapt(o, IResource.class);
-				if (resource != null)
-					result.add(resource);
-			}
-
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
+			if (resource != null)
+				result.add(resource);
+			else
+				result.addAll(extractResourcesFromMapping(o));
 		}
 		return result.toArray(new IResource[result.size()]);
 	}
 
-	private static List<IResource> extractResourcesFromMapping(
-			ResourceMapping mapping) {
+	private static List<IResource> extractResourcesFromMapping(Object o) {
+		ResourceMapping mapping = AdapterUtils.adapt(o, ResourceMapping.class);
 		if (mapping == null)
 			return Collections.emptyList();
 
@@ -203,7 +194,7 @@ public class SelectionUtils {
 		if (traversals.length == 0)
 			return Collections.emptyList();
 
-		List<IResource> result = new ArrayList<IResource>();
+		List<IResource> result = new ArrayList<>();
 		for (ResourceTraversal traversal : traversals) {
 			IResource[] resources = traversal.getResources();
 			result.addAll(Arrays.asList(resources));

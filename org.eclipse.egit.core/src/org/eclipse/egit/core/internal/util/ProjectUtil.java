@@ -39,6 +39,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
@@ -70,19 +71,17 @@ public class ProjectUtil {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
-		final File parentFile = repository.getWorkTree();
+		final Path repositoryPath = new Path(
+				repository.getWorkTree().getAbsolutePath());
 		for (IProject p : projects) {
 			IPath projectLocation = p.getLocation();
-			if (!p.isOpen() || projectLocation == null)
+			if (!p.isOpen() || projectLocation == null
+					|| !repositoryPath.isPrefixOf(projectLocation))
 				continue;
-			String projectFilePath = projectLocation.append(
-					IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
-			File projectFile = new File(projectFilePath);
-			if (projectFile.exists()) {
-				final File file = p.getLocation().toFile();
-				if (file.getAbsolutePath().startsWith(
-						parentFile.getAbsolutePath()))
-					result.add(p);
+			IPath projectFilePath = projectLocation
+					.append(IProjectDescription.DESCRIPTION_FILE_NAME);
+			if (projectFilePath.toFile().exists()) {
+				result.add(p);
 			}
 		}
 		return result.toArray(new IProject[result.size()]);
@@ -400,13 +399,16 @@ public class ProjectUtil {
 	 *            absolute path under which to look for projects
 	 * @return projects located under the given path
 	 */
-	public static IProject[] getProjectsUnderPath(final IPath path) {
+	public static IProject[] getProjectsUnderPath(@NonNull final IPath path) {
 		IProject[] allProjects = getProjectsForContainerMatch(ResourcesPlugin
 				.getWorkspace().getRoot());
 		Set<IProject> projects = new HashSet<IProject>();
-		for (IProject p : allProjects)
-			if (path.isPrefixOf(p.getLocation()))
+		for (IProject p : allProjects) {
+			IPath loc = p.getLocation();
+			if (loc != null && path.isPrefixOf(loc)) {
 				projects.add(p);
+			}
+		}
 		return projects.toArray(new IProject[projects.size()]);
 	}
 

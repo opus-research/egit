@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2015 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2013 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -9,15 +9,12 @@
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    François Rey - gracefully ignore linked resources
  *    Laurent Goubet <laurent.goubet@obeo.fr>
- *    Stefan Dirix <sdirix@eclipsesource.com>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,7 +34,6 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -58,6 +54,9 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 		}
 
 		final IResource[] resources = getSelectedResources(event);
+		if (resources.length != 1) {
+			return null;
+		}
 
 		Job job = new Job(UIText.CompareUtils_jobName) {
 
@@ -70,16 +69,12 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 					IWorkbenchPage workBenchPage = HandlerUtil
 							.getActiveWorkbenchWindowChecked(event)
 							.getActivePage();
-
-					final RevCommit previous = getPreviousRevision(event,
-							resources);
-
+					final PreviousCommit previous = getPreviousRevision(event,
+							resources[0]);
 					if (previous != null) {
 						CompareUtils.compare(resources, repository,
-								Constants.HEAD, previous.getName(),
+								Constants.HEAD, previous.commit.getName(),
 								true, workBenchPage);
-					} else {
-						showNotFoundDialog(event, resources);
 					}
 				} catch (Exception e) {
 					Activator.handleError(
@@ -103,19 +98,20 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 				selectionMapsToSingleRepository();
 	}
 
-	private RevCommit getPreviousRevision(final ExecutionEvent event,
-			final IResource[] resources) throws IOException {
-		final List<RevCommit> previousList = findPreviousCommits(Arrays
-				.asList(resources));
+	private PreviousCommit getPreviousRevision(final ExecutionEvent event,
+			final IResource resource) throws IOException {
 
-		final AtomicReference<RevCommit> previous = new AtomicReference<RevCommit>();
+		final List<PreviousCommit> previousList = findPreviousCommits();
 
-		if (previousList.size() == 1)
+		final AtomicReference<PreviousCommit> previous = new AtomicReference<>();
+		if (previousList.size() == 0)
+			showNotFoundDialog(event, resource);
+		else if (previousList.size() == 1)
 			previous.set(previousList.get(0));
 		else {
-			final List<RevCommit> commits = new ArrayList<RevCommit>();
-			for (RevCommit pc : previousList)
-				commits.add(pc);
+			final List<RevCommit> commits = new ArrayList<>();
+			for (PreviousCommit pc : previousList)
+				commits.add(pc.commit);
 			HandlerUtil.getActiveShell(event).getDisplay()
 					.syncExec(new Runnable() {
 						@Override
@@ -123,8 +119,8 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 							CommitSelectDialog dlg = new CommitSelectDialog(
 									HandlerUtil.getActiveShell(event), commits);
 							if (dlg.open() == Window.OK)
-								for (RevCommit pc : previousList)
-									if (pc.equals(dlg
+								for (PreviousCommit pc : previousList)
+									if (pc.commit.equals(dlg
 											.getSelectedCommit())) {
 										previous.set(pc);
 										break;
@@ -137,20 +133,10 @@ public class CompareWithPreviousActionHandler extends RepositoryActionHandler {
 	}
 
 	private void showNotFoundDialog(final ExecutionEvent event,
-			IResource[] resources) {
-
-		final List<String> names = new LinkedList<String>();
-		for (IResource resource : resources) {
-			if (resource.getName() != null) {
-				names.add(resource.getName());
-			}
-		}
-
-		final String resourceNames = StringUtils.join(names, ",", "&"); //$NON-NLS-1$ //$NON-NLS-2$
-
+			IResource resource) {
 		final String message = MessageFormat
 				.format(UIText.CompareWithPreviousActionHandler_MessageRevisionNotFound,
-						resourceNames);
+						resource.getName());
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 
 			@Override
