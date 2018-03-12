@@ -121,7 +121,7 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 	 *         {@link Repository}
 	 */
 	public static RebaseInteractivePlan getPlan(Repository repo) {
-		RebaseInteractivePlan plan = planRegistry.get(repo);
+		RebaseInteractivePlan plan = planRegistry.get(repo.getDirectory());
 		if (plan == null) {
 			plan = new RebaseInteractivePlan(repo, false);
 			planRegistry.put(repo.getDirectory(), plan);
@@ -166,7 +166,7 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 	 */
 	public void dispose() {
 		myRefsChangedHandle.remove();
-		planRegistry.remove(this.repository);
+		planRegistry.remove(this.repository.getDirectory());
 		planList.clear();
 		planChangeListeners.clear();
 	}
@@ -212,7 +212,7 @@ public class RebaseInteractivePlan implements RefsChangedListener {
 
 	/**
 	 * Removes a {@link RebaseInteractivePlanChangeListener} from this
-	 * {@link RebaseInteractivePlan} it it has been registered before
+	 * {@link RebaseInteractivePlan} if it has been registered before
 	 *
 	 * @param listener
 	 *            the {@link RebaseInteractivePlanChangeListener} to be removed
