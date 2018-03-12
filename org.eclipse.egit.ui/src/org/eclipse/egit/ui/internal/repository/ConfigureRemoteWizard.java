@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
+import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Repository;
@@ -25,9 +26,13 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 
 /**
- *
+ * Allows to configure a "Remote".
+ * <p>
+ * Asks for a name and whether to configure fetch, push, or both. Depending on
+ * the user's decision about what to configure, the fetch, push, or both
+ * configurations are performed.
  */
-class ConfigureRemoteWizard extends Wizard {
+public class ConfigureRemoteWizard extends Wizard {
 
 	final RepositoryConfig myConfiguration;
 
@@ -155,6 +160,16 @@ class ConfigureRemoteWizard extends Wizard {
 
 		try {
 			myConfiguration.save();
+
+			// Save the uris in the RepositorySelectionPage preferences
+
+			for (URIish uri: myRemoteConfiguration.getURIs())
+				RepositorySelectionPage.saveUriInPrefs(uri.toPrivateString());
+
+			for (URIish uri: myRemoteConfiguration.getPushURIs())
+				RepositorySelectionPage.saveUriInPrefs(uri.toPrivateString());
+
+
 			return true;
 		} catch (IOException e) {
 			// TODO better Exception handling
