@@ -13,13 +13,12 @@ package org.eclipse.egit.core.op;
 import java.io.File;
 import java.io.IOException;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
@@ -108,7 +107,8 @@ public class ResetOperation implements IWorkspaceRunnable {
 
 		monitor.worked(1);
 
-		refreshProjects();
+		ProjectUtil.refreshProjects(repository, new SubProgressMonitor(monitor,
+				1));
 
 		monitor.done();
 	}
@@ -124,22 +124,6 @@ public class ResetOperation implements IWorkspaceRunnable {
 			index.write();
 		} catch (IOException e1) {
 			throw new TeamException(CoreText.ResetOperation_writingIndex, e1);
-		}
-	}
-
-	private void refreshProjects() {
-		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-		final File parentFile = repository.getWorkDir();
-		for (IProject p : projects) {
-			final File file = p.getLocation().toFile();
-			if (file.getAbsolutePath().startsWith(parentFile.getAbsolutePath())) {
-				try {
-					System.out.println("Refreshing " + p);  //$NON-NLS-1$
-					p.refreshLocal(IResource.DEPTH_INFINITE, null);
-				} catch (CoreException e) {
-					e.printStackTrace();
-				}
-			}
 		}
 	}
 
