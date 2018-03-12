@@ -212,11 +212,22 @@ public class PushWizard extends Wizard {
 				// obtain the push ref specs from the configuration
 				// use our own list here, as the config returns a non-modifiable
 				// list
-				final Collection<RefSpec> pushSpecs = new ArrayList<RefSpec>();
-				pushSpecs.addAll(config.getPushRefSpecs());
+				final Collection<RefSpec> fetchSpecs = new ArrayList<RefSpec>();
+				fetchSpecs.addAll(config.getPushRefSpecs());
+				if (fetchSpecs.isEmpty())
+					// add the default if there are no specs in the
+					// configuration
+					fetchSpecs.add(PushOperationUI.DEFAULT_PUSH_REF_SPEC);
 				final Collection<RemoteRefUpdate> updates = Transport
-						.findRemoteRefUpdatesFor(localDb, pushSpecs,
-								pushSpecs);
+						.findRemoteRefUpdatesFor(localDb, fetchSpecs,
+								fetchSpecs);
+				if (updates.isEmpty()) {
+					ErrorDialog.openError(getShell(),
+							UIText.PushWizard_missingRefsTitle, null,
+							new Status(IStatus.ERROR, Activator.getPluginId(),
+									UIText.PushWizard_missingRefsMessage));
+					return null;
+				}
 				spec = new PushOperationSpecification();
 				for (final URIish uri : repoPage.getSelection().getPushURIs())
 					spec.addURIRefUpdates(uri, ConfirmationPage
