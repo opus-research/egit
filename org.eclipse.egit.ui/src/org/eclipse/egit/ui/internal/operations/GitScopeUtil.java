@@ -129,6 +129,7 @@ public class GitScopeUtil {
 	 * @return ResourceMappings
 	 */
 	private static ResourceMapping[] getResourceMappings(IResource[] resources) {
+		// TODO Checks each call for prefrence
 		List<ResourceMapping> result = new ArrayList<ResourceMapping>();
 		for (IResource resource : resources)
 			result.add(getResourceMapping(resource));
@@ -168,14 +169,14 @@ public class GitScopeUtil {
 			IProgressMonitor monitor) throws InterruptedException,
 			InvocationTargetException {
 
-		SubscriberScopeManager manager = GitScopeUtil
-				.createScopeManager(selectedResources);
-		GitScopeOperation buildScopeOperation = GitScopeOperationFactory
-				.getFactory().createGitScopeOperation(part, manager);
+			SubscriberScopeManager manager = GitScopeUtil
+					.createScopeManager(selectedResources);
+			GitScopeOperation buildScopeOperation = GitScopeOperationFactory
+					.getFactory().createGitScopeOperation(part, manager);
 
-		buildScopeOperation.run(new SubProgressMonitor(monitor, 50));
+			buildScopeOperation.run(new SubProgressMonitor(monitor, 50));
 
-		return buildScopeOperation.getRelevantResources();
+			return buildScopeOperation.getRelevantResources();
 	}
 
 }

@@ -228,7 +228,7 @@ public class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				for (Iterator<FileDiff> it = iss.iterator(); it.hasNext();) {
-					String relativePath = it.next().getPath();
+					String relativePath = it.next().getNewPath();
 					String path = new Path(getRepository().getWorkTree()
 							.getAbsolutePath()).append(relativePath)
 							.toOSString();
@@ -328,20 +328,18 @@ public class CommitFileDiffViewer extends TableViewer {
 		if (!submoduleSelected) {
 			boolean oneOrMoreSelected = !sel.isEmpty();
 			open.setEnabled(oneOrMoreSelected);
+			openWorkingTreeVersion.setEnabled(oneOrMoreSelected);
 			compare.setEnabled(sel.size() == 1);
 			blame.setEnabled(oneOrMoreSelected);
 			if (sel.size() == 1) {
 				FileDiff diff = (FileDiff) sel.getFirstElement();
 				String path = new Path(getRepository().getWorkTree()
-						.getAbsolutePath()).append(diff.getPath())
-							.toOSString();
-				boolean workTreeFileExists = new File(path).exists();
-				compareWorkingTreeVersion.setEnabled(workTreeFileExists);
-				openWorkingTreeVersion.setEnabled(workTreeFileExists);
-			} else {
+						.getAbsolutePath()).append(diff.getNewPath())
+						.toOSString();
+				compareWorkingTreeVersion.setEnabled(new File(path).exists()
+						&& !submoduleSelected);
+			} else
 				compareWorkingTreeVersion.setEnabled(false);
-				openWorkingTreeVersion.setEnabled(oneOrMoreSelected);
-			}
 		} else {
 			open.setEnabled(false);
 			openWorkingTreeVersion.setEnabled(false);
@@ -563,7 +561,7 @@ public class CommitFileDiffViewer extends TableViewer {
 	}
 
 	void showWorkingDirectoryFileDiff(final FileDiff d) {
-		final String p = d.getPath();
+		final String p = d.getNewPath();
 		final RevCommit commit = d.getCommit();
 
 		if (commit == null) {
