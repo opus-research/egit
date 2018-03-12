@@ -28,12 +28,10 @@ public class SynchronizePreferencePage extends FieldEditorPreferencePage
 		super(FLAT);
 	}
 
-	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
 	}
 
-	@Override
 	public void init(final IWorkbench workbench) {
 		// Do nothing.
 	}
@@ -47,9 +45,6 @@ public class SynchronizePreferencePage extends FieldEditorPreferencePage
 		addField(new BooleanFieldEditor(
 				UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
 				UIText.GitPreferenceRoot_automaticallyEnableChangesetModel,
-				getFieldEditorParent()));
-		addField(new BooleanFieldEditor(UIPreferences.USE_LOGICAL_MODEL,
-				UIText.GitPreferenceRoot_useLogicalModel,
 				getFieldEditorParent()));
 	}
 }

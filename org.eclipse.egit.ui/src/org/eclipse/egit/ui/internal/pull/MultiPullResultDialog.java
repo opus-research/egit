@@ -79,7 +79,6 @@ public class MultiPullResultDialog extends Dialog {
 		private final RepositoryUtil utils = Activator.getDefault()
 				.getRepositoryUtil();
 
-		@Override
 		@SuppressWarnings("unchecked")
 		public Image getColumnImage(Object element, int columnIndex) {
 			if (columnIndex != 3)
@@ -98,7 +97,6 @@ public class MultiPullResultDialog extends Dialog {
 			return null;
 		}
 
-		@Override
 		@SuppressWarnings("unchecked")
 		public String getColumnText(Object element, int columnIndex) {
 			Entry<Repository, Object> item = (Entry<Repository, Object>) element;
@@ -187,7 +185,6 @@ public class MultiPullResultDialog extends Dialog {
 		tv.setContentProvider(ArrayContentProvider.getInstance());
 
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection sel = (IStructuredSelection) event
 						.getSelection();
@@ -200,17 +197,13 @@ public class MultiPullResultDialog extends Dialog {
 		});
 
 		tv.addOpenListener(new IOpenListener() {
-			@Override
 			public void open(OpenEvent event) {
 				buttonPressed(DETAIL_BUTTON);
 			}
 		});
 		tv.setLabelProvider(new LabelProvider());
 		Table table = tv.getTable();
-		int linesToShow = Math.min(Math.max(results.size(), 5), 15);
-		int heightHint = table.getItemHeight() * linesToShow;
-		GridDataFactory.fillDefaults().grab(true, true).hint(800, heightHint)
-				.applyTo(table);
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(table);
 		// repository
 		TableColumn col = new TableColumn(table, SWT.NONE);
 		col.setWidth(200);
@@ -308,7 +301,6 @@ public class MultiPullResultDialog extends Dialog {
 					};
 					dialog.create();
 					dialog.getShell().addShellListener(new ShellAdapter() {
-						@Override
 						public void shellActivated(org.eclipse.swt.events.ShellEvent e) {
 							dialogs.remove(dialog);
 							dialogs.add(dialog);

@@ -2,7 +2,6 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2013, Laurent Goubet <laurent.goubet@obeo.fr>
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +29,6 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.history.HistoryPageInput;
@@ -41,7 +39,6 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
@@ -94,7 +91,8 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 				return repository;
 		}
 		if (input instanceof IAdaptable) {
-			IResource resource = CommonUtils.getAdapter(((IAdaptable) input), IResource.class);
+			IResource resource = (IResource) ((IAdaptable) input)
+					.getAdapter(IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
@@ -148,16 +146,6 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		if (window.getActivePage() == null)
 			return null;
 		IWorkbenchPart part = window.getActivePage().getActivePart();
-		return getPageFromPart(part);
-	}
-
-	protected GitHistoryPage getPage(ExecutionEvent event)
-			throws ExecutionException {
-		IWorkbenchPart part = getPart(event);
-		return getPageFromPart(part);
-	}
-
-	private GitHistoryPage getPageFromPart(IWorkbenchPart part) {
 		if (!(part instanceof IHistoryView))
 			return null;
 		IHistoryView view = (IHistoryView) part;
@@ -170,76 +158,31 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	protected IStructuredSelection getSelection(GitHistoryPage page) {
 		if (page == null)
 			return StructuredSelection.EMPTY;
-		ISelection selection = page.getSelectionProvider().getSelection();
-		return getStructuredSelection(selection);
-	}
-
-	protected IStructuredSelection getSelection(ExecutionEvent event)
-			throws ExecutionException {
-		ISelection selection = HandlerUtil.getCurrentSelectionChecked(event);
-		return getStructuredSelection(selection);
-	}
-
-	private IStructuredSelection getStructuredSelection(ISelection selection) {
-		if (selection instanceof IStructuredSelection)
-			return (IStructuredSelection) selection;
+		ISelection pageSelection = page.getSelectionProvider().getSelection();
+		if (pageSelection instanceof IStructuredSelection)
+			return (IStructuredSelection) pageSelection;
 		else
 			return StructuredSelection.EMPTY;
-	}
-
-	/**
-	 * @param event
-	 * @return ID of selected commit
-	 * @throws ExecutionException
-	 *             if no or multiple commits were found
-	 */
-	protected ObjectId getSelectedCommitId(ExecutionEvent event)
-			throws ExecutionException {
-		IStructuredSelection selection = getSelection(event);
-		if (selection.size() != 1)
-			throw new ExecutionException(
-					UIText.AbstractHistoryCommandHandler_ActionRequiresOneSelectedCommitMessage);
-
-		RevCommit commit = (RevCommit) selection.getFirstElement();
-		return commit.getId();
-	}
-
-	/**
-	 * Gets the selected commit, re-parsed to have correct parent information
-	 * regardless of how history was walked.
-	 *
-	 * @param event
-	 * @return the selected commit, never null
-	 * @throws ExecutionException
-	 *             if no or multiple commits were found
-	 */
-	protected RevCommit getSelectedCommit(ExecutionEvent event)
-			throws ExecutionException {
-		List<RevCommit> commits = getSelectedCommits(event);
-		if (commits.size() != 1)
-			throw new ExecutionException(
-					UIText.AbstractHistoryCommandHandler_ActionRequiresOneSelectedCommitMessage);
-		return commits.get(0);
 	}
 
 	/**
 	 * Gets the selected commits, re-parsed to have correct parent information
 	 * regardless of how history was walked.
 	 *
-	 * @param event
 	 * @return the selected commits, or an empty list
 	 * @throws ExecutionException
 	 */
-	protected List<RevCommit> getSelectedCommits(ExecutionEvent event)
-			throws ExecutionException {
-		Repository repository = getRepository(event);
-		if (repository == null)
-			return Collections.emptyList();
-		IStructuredSelection selection = getSelection(event);
-		if (selection.isEmpty())
-			return Collections.emptyList();
+	protected List<RevCommit> getSelectedCommits() throws ExecutionException {
 		List<RevCommit> commits = new ArrayList<RevCommit>();
-		try (RevWalk walk = new RevWalk(repository)) {
+		GitHistoryPage page = getPage();
+		if (page == null)
+			return Collections.emptyList();
+		IStructuredSelection selection = getSelection(page);
+		HistoryPageInput input = page.getInputInternal();
+		if (input == null)
+			return Collections.emptyList();
+		RevWalk walk = new RevWalk(input.getRepository());
+		try {
 			for (Object element : selection.toList()) {
 				RevCommit commit = (RevCommit) element;
 				// Re-parse commit to clear effects of TreeFilter
@@ -248,6 +191,8 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			}
 		} catch (IOException e) {
 			throw new ExecutionException(e.getMessage(), e);
+		} finally {
+			walk.release();
 		}
 		return commits;
 	}
@@ -262,7 +207,7 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	 *            e.g. "refs/heads/" or ""
 	 * @return a list of RefNodes
 	 */
-	protected List<RefNode> getRefNodes(ObjectId commit, Repository repo,
+	protected List<RefNode> getRefNodes(RevCommit commit, Repository repo,
 			String... refPrefixes) {
 		List<Ref> availableBranches = new ArrayList<Ref>();
 		List<RefNode> nodes = new ArrayList<RefNode>();
@@ -271,7 +216,7 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			for (String refPrefix : refPrefixes)
 				branches.putAll(repo.getRefDatabase().getRefs(refPrefix));
 			for (Ref branch : branches.values()) {
-				if (branch.getLeaf().getObjectId().equals(commit))
+				if (branch.getLeaf().getObjectId().equals(commit.getId()))
 					availableBranches.add(branch);
 			}
 			RepositoryNode repoNode = new RepositoryNode(null, repo);
@@ -284,21 +229,21 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		return nodes;
 	}
 
-	protected List<Ref> getBranchesOfCommit(IStructuredSelection selection,
+	protected List<Ref> getBranchesOfCommit(GitHistoryPage page,
 			final Repository repo, boolean hideCurrentBranch)
 			throws IOException {
 		String head = repo.getFullBranch();
-		return getBranchesOfCommit(selection, head, hideCurrentBranch);
+		return getBranchesOfCommit(page, head, hideCurrentBranch);
 	}
 
-	protected List<Ref> getBranchesOfCommit(IStructuredSelection selection) {
-		return getBranchesOfCommit(selection, (String) null, false);
+	protected List<Ref> getBranchesOfCommit(GitHistoryPage page) {
+		return getBranchesOfCommit(page, (String) null, false);
 	}
 
-	private List<Ref> getBranchesOfCommit(IStructuredSelection selection,
-			String head,
+	private List<Ref> getBranchesOfCommit(GitHistoryPage page, String head,
 			boolean hideCurrentBranch) {
 		final List<Ref> branchesOfCommit = new ArrayList<Ref>();
+		IStructuredSelection selection = getSelection(page);
 		if (selection.isEmpty())
 			return branchesOfCommit;
 		PlotCommit commit = (PlotCommit) selection.getFirstElement();
@@ -325,16 +270,5 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 
 		final Repository repository = input.getRepository();
 		return repository;
-	}
-
-	/**
-	 * Get renamed path in commit
-	 *
-	 * @param path
-	 * @param commit
-	 * @return path respecting renames
-	 */
-	protected String getRenamedPath(final String path, final ObjectId commit) {
-		return getPage().getRenamedPath(path, commit);
 	}
 }

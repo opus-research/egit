@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, Obeo.
+ * Copyright (C) 2014, Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +10,6 @@ package org.eclipse.egit.core.internal.storage;
 
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.storage.GitBlobStorage;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -59,6 +58,6 @@ public class TreeParserResourceVariant extends AbstractGitResourceVariant {
 	}
 
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
-		return new GitBlobStorage(repository, path, objectId);
+		return new BlobStorage(repository, path, objectId);
 	}
 }

@@ -35,12 +35,10 @@ public class DialogsPreferencePage extends FieldEditorPreferencePage implements
 		super(GRID);
 	}
 
-	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
 	}
 
-	@Override
 	public void init(final IWorkbench workbench) {
 		// Do nothing.
 	}
@@ -70,10 +68,6 @@ public class DialogsPreferencePage extends FieldEditorPreferencePage implements
 		addField(new BooleanFieldEditor(
 				UIPreferences.SHOW_DETACHED_HEAD_WARNING,
 				UIText.DialogsPreferencePage_DetachedHeadCombo, confirmDialogsGroup));
-		addField(new BooleanFieldEditor(
-				UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
-				UIText.DialogsPreferencePage_RunningLaunchOnCheckout,
-				confirmDialogsGroup));
 		addField(new BooleanFieldEditor(
 				UIPreferences.CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG,
 				UIText.DialogsPreferencePage_ShowCloneFailedDialog,

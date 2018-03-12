@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -45,17 +45,13 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.osgi.service.localization.BundleLocalization;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
-import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -67,8 +63,6 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -164,25 +158,6 @@ public class TestUtil {
 	 */
 	public static void joinJobs(Object family) throws InterruptedException  {
 		Job.getJobManager().join(family, null);
-	}
-
-	/**
-	 * Process all queued UI events. If called from background thread, blocks
-	 * until all pending events are processed in UI thread.
-	 */
-	public static void processUIEvents() {
-		if (Display.getCurrent() != null) {
-			while (Display.getCurrent().readAndDispatch()) {
-				// process queued ui events
-			}
-		} else {
-			// synchronously refresh UI
-			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				public void run() {
-					processUIEvents();
-				}
-			});
-		}
 	}
 
 	/**
@@ -462,49 +437,30 @@ public class TestUtil {
 	}
 
 	/**
+	 * Retrieves a child node with the given childNodeText. Nodes with dirty
+	 * marker are also found (without specifying > in childNodeText), as well as
+	 * nodes with trailing text.
+	 *
 	 * @param node
 	 * @param childNodeText
-	 * @return child node containing childNodeText
-	 * @see #getNode(SWTBotTreeItem[], String)
+	 * @return child node
 	 */
 	public static SWTBotTreeItem getChildNode(SWTBotTreeItem node,
 			String childNodeText) {
-		return getNode(node.getItems(), childNodeText);
-	}
-
-	/**
-	 * Finds the node that contains the given text. Throws a nice message in
-	 * case the item is not found or more than one matching node was found.
-	 *
-	 * @param nodes
-	 * @param searchText
-	 * @return node containing the text
-	 */
-	public static SWTBotTreeItem getNode(SWTBotTreeItem[] nodes, String searchText) {
-		List<String> texts = new ArrayList<String>();
-		List<SWTBotTreeItem> matchingItems = new ArrayList<SWTBotTreeItem>();
-
-		for (SWTBotTreeItem item : nodes) {
-			String text = item.getText();
-			if (text.contains(searchText))
-				matchingItems.add(item);
-			texts.add(text);
+		for (SWTBotTreeItem item : node.getItems()) {
+			String itemText = item.getText();
+			StringTokenizer tok = new StringTokenizer(itemText, " ");
+			String name = tok.nextToken();
+			// may be a dirty marker
+			if (name.equals(">"))
+				name = tok.nextToken();
+			if (childNodeText.equals(name)
+					|| name.startsWith(childNodeText + " "))
+				return item;
 		}
-
-		if (matchingItems.isEmpty())
-			throw new WidgetNotFoundException(
-					"Tree item element containg text \"" + searchText
-							+ "\" was not found. Existing tree items:\n"
-							+ StringUtils.join(texts, "\n"));
-		else if (matchingItems.size() > 1)
-			throw new WidgetNotFoundException(
-					"Tree item element containg text \""
-							+ searchText
-							+ "\" could not be uniquely identified. All tree items:\n"
-							+ StringUtils.join(texts, "\n"));
-
-		return matchingItems.get(0);
+		return null;
 	}
+
 
 	public static RevCommit getHeadCommit(Repository repository)
 			throws Exception {
@@ -560,26 +516,6 @@ public class TestUtil {
 		});
 	}
 
-	public static SWTBotShell botForShellStartingWith(final String titlePrefix) {
-		SWTWorkbenchBot bot = new SWTWorkbenchBot();
-
-		Matcher<Shell> matcher = new TypeSafeMatcher<Shell>() {
-			@Override
-			protected boolean matchesSafely(Shell item) {
-				String title = item.getText();
-				return title != null && title.startsWith(titlePrefix);
-			}
-
-			public void describeTo(Description description) {
-				description.appendText("Shell with title starting with '"
-						+ titlePrefix + "'");
-			}
-		};
-
-		Shell shell = bot.widget(matcher);
-		return new SWTBotShell(shell);
-	}
-
 	public static SWTBotView showView(final String viewId) {
 		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
@@ -588,7 +524,6 @@ public class TestUtil {
 				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
 				try {
 					workbenchPage.showView(viewId);
-					processUIEvents();
 				} catch (PartInitException e) {
 					throw new RuntimeException("Showing view with ID " + viewId
 							+ " failed.", e);
@@ -601,27 +536,6 @@ public class TestUtil {
 		assertNotNull("View with ID " + viewId + " not found via SWTBot.",
 				viewbot);
 		return viewbot;
-	}
-
-	public static void hideView(final String viewId) {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow();
-				IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-				IViewReference[] views = workbenchPage.getViewReferences();
-				for (int i = 0; i < views.length; i++) {
-					IViewReference view = views[i];
-					if (viewId.equals(view.getId())) {
-						workbenchPage.hideView(view);
-					}
-				}
-			}
-		});
-	}
-
-	public static SWTBotView showHistoryView() {
-		return showView("org.eclipse.team.ui.GenericHistoryView");
 	}
 
 	public static SWTBotView showExplorerView() {
