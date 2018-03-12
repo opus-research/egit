@@ -562,9 +562,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_rebaseInteractiveMenuItem;
 
 	/** */
-	public static String GitHistoryPage_rewordMenuItem;
-
-	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
@@ -1058,9 +1055,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CleanRepositoryPage_message;
-
-	/** */
-	public static String CleanRepositoryPage_SelectFilesToClean;
 
 	/** */
 	public static String CleanRepositoryPage_title;
@@ -1994,9 +1988,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushBranchPage_ChooseRemoteError;
-
-	/** */
-	public static String PushBranchPage_ForceUpdateButton;
 
 	/** */
 	public static String PushBranchPage_InvalidBranchNameError;
@@ -5028,21 +5019,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebasePulldownAction_Abort;
-
-	/** */
-	public static String RewordHandler_CommitNotOnCurrentBranch;
-
-	/** */
-	public static String RewordHandler_Error_Title;
-
-	/** */
-	public static String RewordHandler_ErrorCheckingIfCommitIsOnCurrentBranch;
-
-	/** */
-	public static String RewordHandler_InternalError;
-
-	/** */
-	public static String RewordHandler_JobName;
 
 	/** */
 	public static String SynchronizeCommand_jobName;
