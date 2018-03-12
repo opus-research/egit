@@ -55,7 +55,6 @@ import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.commit.CommitUI;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
-import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
@@ -78,12 +77,9 @@ import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.ContentViewer;
-import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
-import org.eclipse.jface.viewers.DecorationContext;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
-import org.eclipse.jface.viewers.ILabelDecorator;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -111,6 +107,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
+import org.eclipse.swt.custom.VerifyKeyListener;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSourceAdapter;
 import org.eclipse.swt.dnd.DragSourceEvent;
@@ -122,6 +119,7 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -547,6 +545,20 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.attachControls(commitMessageText, authorText,
 				committerText);
 
+		// allow to commit with ctrl-enter
+		commitMessageText.getTextWidget().addVerifyKeyListener(new VerifyKeyListener() {
+			public void verifyKey(VerifyEvent event) {
+				if (UIUtils.isSubmitKeyEvent(event)) {
+					event.doit = false;
+					commit();
+				} else if (event.keyCode == SWT.TAB
+						&& (event.stateMask & SWT.SHIFT) == 0) {
+					event.doit = false;
+					authorText.setFocus();
+				}
+			}
+		});
+
 		ModifyListener modifyListener = new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateMessage();
@@ -664,6 +676,11 @@ public class StagingView extends ViewPart {
 			public void run() {
 				commit();
 			}
+
+			@Override
+			public String getToolTipText() {
+				return MessageFormat.format(UIText.StagingView_CommitToolTip, UIUtils.SUBMIT_KEY_STROKE.format());
+			}
 		};
 		commitAction.setImageDescriptor(UIIcons.COMMIT);
 		toolbar.add(commitAction);
@@ -724,16 +741,7 @@ public class StagingView extends ViewPart {
 		StagingViewLabelProvider baseProvider = new StagingViewLabelProvider();
 		baseProvider.setFileNameMode(getPreferenceStore().getBoolean(
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
-
-		ILabelDecorator decorator = PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator();
-
-		DecorationContext context = new DecorationContext();
-		// StagingViewLabelProvider already adds such decorations, so disable
-		// GitLightweightDecorator to not get duplicate decorations
-		// (e.g. "> > " for modified).
-		context.putProperty(GitLightweightDecorator.DISABLED, Boolean.TRUE);
-
-		return new DecoratingStyledCellLabelProvider(baseProvider, decorator, context);
+		return new DelegatingStyledCellLabelProvider(baseProvider);
 	}
 
 	private IPreferenceStore getPreferenceStore() {
@@ -1456,8 +1464,7 @@ public class StagingView extends ViewPart {
 	}
 
 	private void commit() {
-		if (stagedTableViewer.getTable().getItemCount() == 0
-				&& !amendPreviousCommitAction.isChecked()) {
+		if (!isCommitWithoutFilesAllowed()) {
 			MessageDialog.openError(getSite().getShell(),
 					UIText.StagingView_committingNotPossible,
 					UIText.StagingView_noStagedFiles);
@@ -1465,11 +1472,14 @@ public class StagingView extends ViewPart {
 		}
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
-		final Repository repository = currentRepository;
+
+		if (!UIUtils.saveAllEditors(currentRepository))
+			return;
+
 		String commitMessage = commitMessageComponent.getCommitMessage();
 		CommitOperation commitOperation = null;
 		try {
-			commitOperation = new CommitOperation(repository,
+			commitOperation = new CommitOperation(currentRepository,
 					commitMessageComponent.getAuthor(),
 					commitMessageComponent.getCommitter(),
 					commitMessage);
@@ -1485,6 +1495,16 @@ public class StagingView extends ViewPart {
 		CommitMessageHistory.saveCommitHistory(commitMessage);
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
+	}
+
+	private boolean isCommitWithoutFilesAllowed() {
+		if (stagedTableViewer.getTable().getItemCount() > 0)
+			return true;
+
+		if (amendPreviousCommitAction.isChecked())
+			return true;
+
+		return CommitHelper.isCommitWithoutFilesAllowed(currentRepository);
 	}
 
 	@Override

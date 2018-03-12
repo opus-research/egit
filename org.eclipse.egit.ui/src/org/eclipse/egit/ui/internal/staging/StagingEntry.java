@@ -14,22 +14,19 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.jgit.lib.Repository;
 
 
 /**
  * A staged/unstaged entry in the table
  */
-public class StagingEntry implements IAdaptable, IProblemDecoratable {
+public class StagingEntry implements IAdaptable {
 	/**
 	 * State of the node
 	 */
@@ -154,15 +151,6 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable {
 		if (resource == null)
 			resource = root.getFile(absolutePath);
 		return resource;
-	}
-
-	public int getProblemSeverity() {
-		try {
-			return getFile().findMaxProblemSeverity(IMarker.PROBLEM, true,
-					IResource.DEPTH_ONE);
-		} catch (CoreException e) {
-			return SEVERITY_NONE;
-		}
 	}
 
 	public Object getAdapter(Class adapter) {
