@@ -44,7 +44,6 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 			}
 		});
 		selectOptions();
-		bot.checkBox(UIText.FinishFeatureDialog_saveAsDefault).click();
 		bot.button("OK").click();
 		preFinish();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
