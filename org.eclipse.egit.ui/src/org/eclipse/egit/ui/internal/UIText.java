@@ -4065,9 +4065,6 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_DeleteBranchAction;
 
 	/** */
-	public static String CommitGraphTable_HoverAdditionalTags;
-
-	/** */
 	public static String CommitGraphTable_messageColumn;
 
 	/** */
