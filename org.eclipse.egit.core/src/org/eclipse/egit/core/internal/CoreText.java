@@ -190,9 +190,6 @@ public class CoreText extends NLS {
 	public static String ResetOperation_performingReset;
 
 	/** */
-	public static String ResourceUtil_SaveLocalHistoryFailed;
-
-	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -233,6 +230,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CreatePatchOperation_cannotCreatePatchForMergeCommit;
+
+	/** */
+	public static String CreatePatchOperation_cannotCreatePatchForFirstCommit;
 
 	/** */
 	public static String CreatePatchOperation_couldNotFindProject;

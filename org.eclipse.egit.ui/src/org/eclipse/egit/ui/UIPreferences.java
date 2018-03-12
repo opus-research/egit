@@ -194,8 +194,6 @@ public class UIPreferences {
 	/** */
 	public static final String HISTORY_CUT_AT_START = "HistoryView_CutAtStart"; //$NON-NLS-1$
 	/** */
-	public static final String HISTORY_HIGHLIGHT_INTERESTING_FILES = "HistoryView_HighlightInterestingFiles"; //$NON-NLS-1$
-	/** */
 	public static final String HISTORY_SHOW_TAG_SEQUENCE = "HistoryView_ShowTagSequence"; //$NON-NLS-1$
 	/** */
 	public static final String STAGING_VIEW_SHOW_NEW_COMMITS = "StagingView_ShowNewCommits"; //$NON-NLS-1$
@@ -217,8 +215,6 @@ public class UIPreferences {
 	public static final String CLONE_WIZARD_IMPORT_PROJECTS = "CloneWizard_ImportProjects"; //$NON-NLS-1$
 	/** */
 	public static final String CLONE_WIZARD_SHOW_DETAILED_FAILURE_DIALOG = "CloneWizard_ShowDetailedFailureDialog"; //$NON-NLS-1$
-	/** */
-	public final static String REBASE_INTERACTIVE_ORDER_REVERSE = "rebase_interactive_order_reverse"; //$NON-NLS-1$
 
 	/**
 	 * Converts a persisted String separated with commas to an integer array
