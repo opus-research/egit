@@ -307,9 +307,6 @@ public class UIText extends NLS {
 	public static String GitCloneWizard_title;
 
 	/** */
-	public static String GitCloneWizard_jobImportProjects;
-
-	/** */
 	public static String GitCloneWizard_jobName;
 
 	/** */
@@ -1145,9 +1142,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneDestinationPage_errorRemoteNameRequired;
-
-	/** */
-	public static String CloneDestinationPage_importButton;
 
 	/** */
 	public static String RefContentProposal_blob;
@@ -4095,6 +4089,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitModelSynchonize_fetchGitDataJobName;
+
+	/** */
+	public static String FetchChangeFromGerritCommand_noRepositorySelectedTitle;
+
+	/** */
+	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
