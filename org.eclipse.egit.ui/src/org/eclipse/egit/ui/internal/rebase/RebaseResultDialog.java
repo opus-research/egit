@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -157,11 +157,35 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_FastForward;
 		case NOTHING_TO_COMMIT:
 			return UIText.RebaseResultDialog_NothingToCommit;
-		case INTERACTIVE_PREPARED:
-			return UIText.RebaseResultDialog_InteractivePrepared;
 		default:
 			throw new IllegalStateException(status.name());
 		}
+	}
+
+	/**
+	 * @param status
+	 * @return text describing rebase status in short form
+	 */
+	public static String getStatusText(Status status) {
+		switch (status) {
+		case OK:
+			return UIText.RebaseResultDialog_StatusOK;
+		case ABORTED:
+			return UIText.RebaseResultDialog_StatusAborted;
+		case STOPPED:
+			return UIText.RebaseResultDialog_StatusStopped;
+		case FAILED:
+			return UIText.RebaseResultDialog_StatusFailed;
+		case CONFLICTS:
+			return UIText.RebaseResultDialog_StatusConflicts;
+		case UP_TO_DATE:
+			return UIText.RebaseResultDialog_StatusUpToDate;
+		case FAST_FORWARD:
+			return UIText.RebaseResultDialog_StatusFastForward;
+		case NOTHING_TO_COMMIT:
+			return UIText.RebaseResultDialog_StatusNothingToCommit;
+		}
+		return status.toString();
 	}
 
 	/**
@@ -217,7 +241,7 @@ public class RebaseResultDialog extends MessageDialog {
 		resultLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
 				false));
 		Text resultText = new Text(composite, SWT.READ_ONLY);
-		resultText.setText(result.getStatus().toString());
+		resultText.setText(getStatusText(result.getStatus()));
 		resultText.setSelection(resultText.getCaretPosition());
 		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		if (result.getStatus() == Status.FAILED) {
