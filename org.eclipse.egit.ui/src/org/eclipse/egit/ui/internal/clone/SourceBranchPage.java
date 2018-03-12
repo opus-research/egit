@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,16 +24,14 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.components.BaseWizardPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
+import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
+import org.eclipse.egit.ui.internal.components.SelectionChangeListener;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -47,9 +44,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.URIish;
 
-class SourceBranchPage extends WizardPage {
-	//private final RepositorySelectionPage sourcePage;
+class SourceBranchPage extends BaseWizardPage {
+	private final RepositorySelectionPage sourcePage;
 
 	private RepositorySelection validatedRepoSelection;
 
@@ -65,22 +66,24 @@ class SourceBranchPage extends WizardPage {
 
 	private String transportError;
 
-	private Button selectB;
-
-	private Button unselectB;
-
-	SourceBranchPage() {
+	SourceBranchPage(final RepositorySelectionPage sp) {
 		super(SourceBranchPage.class.getName());
+		sourcePage = sp;
 		setTitle(UIText.SourceBranchPage_title);
 		setDescription(UIText.SourceBranchPage_description);
+
+		sourcePage.addSelectionListener(new SelectionChangeListener() {
+			public void selectionChanged() {
+				if (!sourcePage.selectionEquals(validatedRepoSelection))
+					setPageComplete(false);
+				else
+					checkPage();
+			}
+		});
 	}
 
 	List<Ref> getSelectedBranches() {
 		return new ArrayList<Ref>(selectedRefs);
-	}
-
-	List<Ref> getAvailableBranches() {
-		return availableRefs;
 	}
 
 	Ref getHEAD() {
@@ -130,12 +133,14 @@ class SourceBranchPage extends WizardPage {
 				} else
 					selectedRefs.remove(ref);
 
+				notifySelectionChanged();
 				checkPage();
 			}
 		});
 
 		final Composite bPanel = new Composite(panel, SWT.NONE);
 		bPanel.setLayout(new RowLayout());
+		final Button selectB;
 		selectB = new Button(bPanel, SWT.PUSH);
 		selectB.setText(UIText.SourceBranchPage_selectAll);
 		selectB.addSelectionListener(new SelectionAdapter() {
@@ -144,28 +149,40 @@ class SourceBranchPage extends WizardPage {
 					refsTable.getItem(i).setChecked(true);
 				selectedRefs.clear();
 				selectedRefs.addAll(availableRefs);
+				notifySelectionChanged();
 				checkPage();
 			}
 		});
-		unselectB = new Button(bPanel, SWT.PUSH);
+		final Button unselectB = new Button(bPanel, SWT.PUSH);
 		unselectB.setText(UIText.SourceBranchPage_selectNone);
 		unselectB.addSelectionListener(new SelectionAdapter() {
 			public void widgetSelected(final SelectionEvent e) {
 				for (int i = 0; i < refsTable.getItemCount(); i++)
 					refsTable.getItem(i).setChecked(false);
 				selectedRefs.clear();
+				notifySelectionChanged();
 				checkPage();
 			}
 		});
 		bPanel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+
+		addSelectionListener(new SelectionChangeListener() {
+			public void selectionChanged() {
+				selectB.setEnabled(selectedRefs.size() != availableRefs.size());
+				unselectB.setEnabled(selectedRefs.size() != 0);
+			}
+		});
 
 		Dialog.applyDialogFont(panel);
 		setControl(panel);
 		checkPage();
 	}
 
-	public void setSelection(RepositorySelection selection){
-		revalidate(selection);
+	@Override
+	public void setVisible(final boolean visible) {
+		if (visible)
+			revalidate();
+		super.setVisible(visible);
 	}
 
 	/**
@@ -174,8 +191,6 @@ class SourceBranchPage extends WizardPage {
 	 */
 	private void checkPage() {
 		setMessage(null);
-		selectB.setEnabled(selectedRefs.size() != availableRefs.size());
-		unselectB.setEnabled(selectedRefs.size() != 0);
 		if (transportError != null) {
 			setErrorMessage(transportError);
 			setPageComplete(false);
@@ -193,17 +208,19 @@ class SourceBranchPage extends WizardPage {
 			setPageComplete(false);
 			return;
 		}
+
 		setErrorMessage(null);
 		setPageComplete(true);
 	}
 
-	private void revalidate(final RepositorySelection newRepoSelection) {
-		if (newRepoSelection.equals(validatedRepoSelection)) {
+	private void revalidate() {
+		if (sourcePage.selectionEquals(validatedRepoSelection)) {
 			// URI hasn't changed, no need to refill the page with new data
 			checkPage();
 			return;
 		}
 
+		final RepositorySelection newRepoSelection = sourcePage.getSelection();
 		label.setText(NLS.bind(UIText.SourceBranchPage_branchList,
 				newRepoSelection.getURI().toString()));
 		label.getParent().layout();
@@ -287,6 +304,7 @@ class SourceBranchPage extends WizardPage {
 			ti.setChecked(true);
 			selectedRefs.add(r);
 		}
+		notifySelectionChanged();
 		checkPage();
 	}
 
