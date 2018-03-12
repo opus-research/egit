@@ -4549,21 +4549,6 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
-	public static String GitLabelProvider_RefDescriptionFetchHead;
-
-	/** */
-	public static String GitLabelProvider_RefDescriptionHead;
-
-	/** */
-	public static String GitLabelProvider_RefDescriptionHeadSymbolic;
-
-	/** */
-	public static String GitLabelProvider_RefDescriptionOrigHead;
-
-	/** */
-	public static String GitLabelProvider_RefDescriptionStash;
-
-	/** */
 	public static String GitLabelProvider_UnableToRetrieveLabel;
 
 	/** */
@@ -4814,6 +4799,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneFailureDialog_checkList;
+
+	/** */
+	public static String CloneFailureDialog_checkList_git;
+
+	/** */
+	public static String CloneFailureDialog_checkList_ssh;
+
+	/** */
+	public static String CloneFailureDialog_checkList_https;
 
 	/** */
 	public static String GarbageCollectCommand_jobTitle;
