@@ -4,6 +4,7 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (c) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (c) 2012, IBM Corporation
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -46,7 +47,6 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -326,12 +326,12 @@ class SourceBranchPage extends WizardPage {
 			});
 		} catch (InvocationTargetException e) {
 			Throwable why = e.getCause();
-			transportError(why);
+			transportError(why.getMessage());
 			ErrorDialog.openError(getShell(),
 					UIText.SourceBranchPage_transportError,
 					UIText.SourceBranchPage_cannotListBranches, new Status(
 							IStatus.ERROR, Activator.getPluginId(), 0, why
-									.getMessage(), why));
+									.getMessage(), why.getCause()));
 			return;
 		} catch (IOException e) {
 			transportError(UIText.SourceBranchPage_cannotCreateTemp);
@@ -343,15 +343,20 @@ class SourceBranchPage extends WizardPage {
 
 		final Ref idHEAD = listRemoteOp.getRemoteRef(Constants.HEAD);
 		head = null;
+		boolean headIsMaster = false;
+		final String masterBranchRef = Constants.R_HEADS + Constants.MASTER;
 		for (final Ref r : listRemoteOp.getRemoteRefs()) {
 			final String n = r.getName();
 			if (!n.startsWith(Constants.R_HEADS))
 				continue;
 			availableRefs.add(r);
-			if (idHEAD == null || head != null)
+			if (idHEAD == null || headIsMaster)
 				continue;
-			if (r.getObjectId().equals(idHEAD.getObjectId()))
-				head = r;
+			if (r.getObjectId().equals(idHEAD.getObjectId())) {
+				headIsMaster = masterBranchRef.equals(r.getName());
+				if (head == null || headIsMaster)
+					head = r;
+			}
 		}
 		Collections.sort(availableRefs, new Comparator<Ref>() {
 			public int compare(final Ref o1, final Ref o2) {
@@ -370,17 +375,8 @@ class SourceBranchPage extends WizardPage {
 		checkForEmptyRepo();
 	}
 
-	private void transportError(final Throwable why) {
-		Throwable cause = why.getCause();
-		if (why instanceof TransportException && cause != null)
-			NLS.bind(UIText.SourceBranchPage_CompositeTransportErrorMessage,
-					why.getMessage(), cause.getMessage());
-		else
-			transportError(why.getMessage());
-	}
-
 	private void transportError(final String msg) {
-			transportError = msg;
-			checkPage();
+		transportError = msg;
+		checkPage();
 	}
 }
