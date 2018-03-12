@@ -114,13 +114,7 @@
 	       label="%CompareWithIndexAction_label"
 	       menubarPath="compareWithMenu/gitCompareWithGroup"
 	       tooltip="%CompareWithIndexAction_tooltip">
-		</action>
-		<action
-			class="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-			id="org.eclipse.egit.ui.internal.actions.IgnoreAction"
-			label="%IgnoreAction_label"
-			menubarPath="team.main/group1"
-			tooltip="%IgnoreAction_tooltip"/>
+	 </action>
 	  </objectContribution>
 	  <objectContribution
          id="org.eclipse.egit.ui.resetto"
@@ -390,5 +384,20 @@
 		       tooltip="%TrackAction_tooltip">
 		</action>
       </actionSet>
+   </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.commands.ShareSingleProjectCommand"
+            description="%ShareProjectCommand_desc"
+            id="org.eclipse.egit.ui.command.shareProject"
+            name="%ShareProjectCommand_name">
+         <commandParameter
+               id="org.eclipse.egit.ui.command.projectNameParameter"
+               name="Project"
+               optional="false"
+               values="org.eclipse.egit.ui.internal.commands.ProjectNameParameterValues">
+         </commandParameter>
+      </command>
    </extension>
 </plugin>
