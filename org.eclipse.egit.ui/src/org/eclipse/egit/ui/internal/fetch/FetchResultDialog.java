@@ -72,7 +72,6 @@ class FetchResultDialog extends Dialog {
 
 		getShell().setText(
 				NLS.bind(UIText.FetchResultDialog_title, sourceString));
-		applyDialogFont(composite);
 		return composite;
 	}
 }

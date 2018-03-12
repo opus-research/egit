@@ -13,12 +13,10 @@ package org.eclipse.egit.core.op;
 import java.io.File;
 import java.io.IOException;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.CoreText;
@@ -94,12 +92,7 @@ public class ResetOperation implements IEGitOperation {
 	/* (non-Javadoc)
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
-	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor;
-		if (m == null)
-			monitor = new NullProgressMonitor();
-		else
-			monitor = m;
+	public void execute(IProgressMonitor monitor) throws CoreException {
 		if (type == ResetType.HARD) {
 			IWorkspaceRunnable action = new IWorkspaceRunnable() {
 				public void run(IProgressMonitor monitor) throws CoreException {
@@ -117,9 +110,6 @@ public class ResetOperation implements IEGitOperation {
 		monitor.beginTask(NLS.bind(CoreText.ResetOperation_performingReset,
 				type.toString().toLowerCase(), refName), 7);
 
-		IProject[] validProjects = null;
-		if (type == ResetType.HARD)
-			validProjects = ProjectUtil.getValidProjects(repository);
 		mapObjects();
 		monitor.worked(1);
 
@@ -149,7 +139,7 @@ public class ResetOperation implements IEGitOperation {
 
 		if (type == ResetType.HARD)
 			// only refresh if working tree changes
-			ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
+			ProjectUtil.refreshProjects(repository, new SubProgressMonitor(
 					monitor, 1));
 
 		monitor.done();

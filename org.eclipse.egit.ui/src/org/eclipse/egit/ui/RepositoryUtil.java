@@ -12,45 +12,26 @@ package org.eclipse.egit.ui;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tag;
-import org.eclipse.jgit.lib.RepositoryCache.FileKey;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.util.FS;
-import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Utility class for handling Repositories in the UI.
  */
 public class RepositoryUtil {
 
-	/** The preferences to store the directories known to the Git Repositories view */
-	public static final String PREFS_DIRECTORIES = "GitRepositoriesView.GitDirectories"; //$NON-NLS-1$
-
 	private final Map<String, Map<String, String>> commitMappingCache = new HashMap<String, Map<String, String>>();
 
 	private final Map<String, String> repositoryNameCache = new HashMap<String, String>();
-
-	private final IEclipsePreferences prefs = new InstanceScope()
-			.getNode(Activator.getPluginId());
 
 	/**
 	 * Clients should obtain an instance from {@link Activator}
@@ -96,6 +77,7 @@ public class RepositoryUtil {
 	 */
 	public String mapCommitToRef(Repository repository, String commitId,
 			boolean refresh) {
+
 		synchronized (commitMappingCache) {
 
 			if (!ObjectId.isId(commitId)) {
@@ -119,12 +101,10 @@ public class RepositoryUtil {
 
 			Map<String, Date> tagMap = new HashMap<String, Date>();
 			try {
-				RevWalk rw = new RevWalk(repository);
 				Map<String, Ref> tags = repository.getRefDatabase().getRefs(
 						Constants.R_TAGS);
 				for (Ref tagRef : tags.values()) {
-					Tag tag = rw.parseTag(repository.resolve(tagRef.getName()))
-							.asTag(rw);
+					Tag tag = repository.mapTag(tagRef.getName());
 					if (tag.getObjId().name().equals(commitId)) {
 						Date timestamp;
 						if (tag.getTagger() != null) {
@@ -225,121 +205,15 @@ public class RepositoryUtil {
 			if (gitDir != null) {
 				String name = repositoryNameCache.get(gitDir.getPath()
 						.toString());
-				if (name != null)
+				if (name != null) {
 					return name;
+				}
 				name = gitDir.getParentFile().getName();
 				repositoryNameCache.put(gitDir.getPath().toString(), name);
 				return name;
 			}
 		}
 		return ""; //$NON-NLS-1$
-	}
-
-	/**
-	 * @return the underlying preferences
-	 */
-	public IEclipsePreferences getPreferences() {
-		return prefs;
-	}
-
-	/**
-	 *
-	 * @return the list of configured Repository paths; will be sorted
-	 */
-	public List<String> getConfiguredRepositories() {
-		synchronized (prefs) {
-			Set<String> configuredStrings = new HashSet<String>();
-
-			String dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
-			if (dirs != null && dirs.length() > 0) {
-				StringTokenizer tok = new StringTokenizer(dirs,
-						File.pathSeparator);
-				while (tok.hasMoreTokens()) {
-					String dirName = tok.nextToken();
-					configuredStrings.add(dirName);
-				}
-			}
-			List<String> result = new ArrayList<String>();
-			result.addAll(configuredStrings);
-			Collections.sort(result);
-			return result;
-		}
-	}
-
-	/**
-	 *
-	 * @param repositoryDir
-	 *            the Repository path
-	 * @return <code>true</code> if the repository path was not yet configured
-	 * @throws IllegalArgumentException
-	 *             if the path does not "look" like a Repository
-	 */
-	public boolean addConfiguredRepository(File repositoryDir)
-			throws IllegalArgumentException {
-		synchronized (prefs) {
-
-			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
-				throw new IllegalArgumentException();
-
-			String dirString;
-			try {
-				dirString = repositoryDir.getCanonicalPath();
-			} catch (IOException e) {
-				dirString = repositoryDir.getAbsolutePath();
-			}
-
-			List<String> dirStrings = getConfiguredRepositories();
-			if (dirStrings.contains(dirString)) {
-				return false;
-			} else {
-				Set<String> dirs = new HashSet<String>();
-				dirs.addAll(dirStrings);
-				dirs.add(dirString);
-				saveDirs(dirs);
-				return true;
-			}
-		}
-	}
-
-	/**
-	 * @param file
-	 * @return <code>true</code> if the configuration was changed by the remove
-	 */
-	public boolean removeDir(File file) {
-		synchronized (prefs) {
-
-			String dir;
-			try {
-				dir = file.getCanonicalPath();
-			} catch (IOException e1) {
-				dir = file.getAbsolutePath();
-			}
-
-			Set<String> dirStrings = new HashSet<String>();
-			dirStrings.addAll(getConfiguredRepositories());
-			if (dirStrings.remove(dir)) {
-				saveDirs(dirStrings);
-				return true;
-			}
-			return false;
-		}
-	}
-
-	private void saveDirs(Set<String> gitDirStrings) {
-		StringBuilder sb = new StringBuilder();
-		for (String gitDirString : gitDirStrings) {
-			sb.append(gitDirString);
-			sb.append(File.pathSeparatorChar);
-		}
-
-		prefs.put(PREFS_DIRECTORIES, sb.toString());
-		try {
-			prefs.flush();
-		} catch (BackingStoreException e) {
-			IStatus error = new Status(IStatus.ERROR, Activator.getPluginId(),
-					e.getMessage(), e);
-			Activator.getDefault().getLog().log(error);
-		}
 	}
 
 }

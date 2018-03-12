@@ -40,33 +40,6 @@ public class UIText extends NLS {
 	public static String Activator_scanningRepositories;
 
 	/** */
-	public static String AddConfigEntryDialog_AddConfigTitle;
-
-	/** */
-	public static String AddConfigEntryDialog_ConfigKeyTooltip;
-
-	/** */
-	public static String AddConfigEntryDialog_DialogMessage;
-
-	/** */
-	public static String AddConfigEntryDialog_EnterValueMessage;
-
-	/** */
-	public static String AddConfigEntryDialog_EntryExistsMessage;
-
-	/** */
-	public static String AddConfigEntryDialog_KeyComponentsMessage;
-
-	/** */
-	public static String AddConfigEntryDialog_KeyLabel;
-
-	/** */
-	public static String AddConfigEntryDialog_MustEnterKeyMessage;
-
-	/** */
-	public static String AddConfigEntryDialog_ValueLabel;
-
-	/** */
 	public static String AddToIndexAction_addingFiles;
 
 	/** */
@@ -140,12 +113,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SelectRemoteNamePage_SelectRemoteNameMessage;
-
-	/** */
-	public static String SelectResetTypePage_PageMessage;
-
-	/** */
-	public static String SelectResetTypePage_PageTitle;
 
 	/** */
 	public static String SetQuickdiffBaselineAction_setQuickdiffBaseline;
@@ -334,9 +301,6 @@ public class UIText extends NLS {
 	public static String RepositoryRemotePropertySource_RemotePushUrl_label;
 
 	/** */
-	public static String RepositorySearchDialog_AddGitRepositories;
-
-	/** */
 	public static String RepositorySearchDialog_DeepSearch_button;
 
 	/** */
@@ -346,28 +310,7 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_ScanningForRepositories_message;
 
 	/** */
-	public static String RepositorySearchDialog_DirectoryNotFoundMessage;
-
-	/** */
-	public static String RepositorySearchDialog_Search;
-
-	/** */
-	public static String RepositorySearchDialog_SearchCriteriaGroup;
-
-	/** */
-	public static String RepositorySearchDialog_SearchRecursiveToolTip;
-
-	/** */
-	public static String RepositorySearchDialog_SearchResultGroup;
-
-	/** */
-	public static String RepositorySearchDialog_SearchTitle;
-
-	/** */
-	public static String RepositorySearchDialog_SearchTooltip;
-
-	/** */
-	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
+	public static String RepositorySearchDialog_ToggleSelection_button;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
@@ -391,25 +334,13 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_directory;
 
 	/** */
-	public static String RepositorySearchDialog_EnterDirectoryToolTip;
-
-	/** */
 	public static String RepositorySearchDialog_errorOccurred;
-
-	/** */
-	public static String RepositorySearchDialog_NoSearchAvailableMessage;
-
-	/** */
-	public static String RepositorySearchDialog_NothingFoundMessage;
 
 	/** */
 	public static String RepositorySearchDialog_search;
 
 	/** */
-	public static String RepositorySearchDialog_searchRepositoriesMessage;
-
-	/** */
-	public static String RepositorySearchDialog_ToggleSelectionButton;
+	public static String RepositorySearchDialog_searchRepositories;
 
 	/** */
 	public static String RepositorySelectionPage_BrowseLocalFile;
@@ -476,27 +407,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_ShowPreviousURIs_HoverText;
-
-	/** */
-	public static String RepositorySelectionPage_tip_file;
-
-	/** */
-	public static String RepositorySelectionPage_tip_ftp;
-
-	/** */
-	public static String RepositorySelectionPage_tip_git;
-
-	/** */
-	public static String RepositorySelectionPage_tip_http;
-
-	/** */
-	public static String RepositorySelectionPage_tip_https;
-
-	/** */
-	public static String RepositorySelectionPage_tip_sftp;
-
-	/** */
-	public static String RepositorySelectionPage_tip_ssh;
 
 	/** */
 	public static String RepositorySelectionPage_uriChoice;
@@ -832,46 +742,10 @@ public class UIText extends NLS {
 	public static String ResetAction_reset;
 
 	/** */
-	public static String ResetCommand_ResetFailureMessage;
-
-	/** */
-	public static String ResetCommand_WizardTitle;
-
-	/** */
 	public static String ResetQuickdiffBaselineAction_resetQuickdiffBaseline;
 
 	/** */
 	public static String ResetQuickdiffBaselineHeadParentAction_0;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetConfirmQuestion;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetQuestion;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTitle;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeGroup;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeHardButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeMixedButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_ResetTypeSoftButton;
-
-	/** */
-	public static String ResetTargetSelectionDialog_SelectBranchForResetMessage;
-
-	/** */
-	public static String ResetTargetSelectionDialog_WindowTitle;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
@@ -1123,12 +997,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_StatusUntracked;
 
 	/** */
-	public static String CommitDialog_AddChangeIdLabel;
-
-	/** */
-	public static String CommitDialog_AddChangeIdTooltip;
-
-	/** */
 	public static String ConfigureKeysDialog_AddStandardButton;
 
 	/** */
@@ -1178,6 +1046,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigureUriPage_Remove_button;
+
+	/** */
+	public static String CommitDialog_ValueHelp_Message;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -1246,7 +1117,7 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_ChooseBranchAndNameMessage;
 
 	/** */
-	public static String CreateBranchPage_ChooseNameMessage;
+	public static String CreateBranchPage_ChosseNameMessage;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -1462,10 +1333,34 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_TitleCheckout;
 
 	/** */
+	public static String BranchSelectionDialog_TitleReset;
+
+	/** */
+	public static String BranchSelectionDialog_OkReset;
+
+	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
 
 	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
+
+	/** */
+	public static String BranchSelectionDialog_ResetType;
+
+	/** */
+	public static String BranchSelectionDialog_ResetTypeSoft;
+
+	/** */
+	public static String BranchSelectionDialog_ResetTypeMixed;
+
+	/** */
+	public static String BranchSelectionDialog_ResetTypeHard;
+
+	/** */
+	public static String BranchSelectionDialog_ReallyResetTitle;
+
+	/** */
+	public static String BranchSelectionDialog_ReallyResetMessage;
 
 	/** */
 	public static String BranchSelectionDialog_QuestionNewBranchTitle;
@@ -1516,12 +1411,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_addVariablesAction;
 
 	/** */
-	public static String DecoratorPreferencesPage_addVariablesAction2;
-
-	/** */
-	public static String DecoratorPreferencesPage_addVariablesAction3;
-
-	/** */
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorations;
 
 	/** */
@@ -1547,6 +1436,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_projectFormatLabel;
+
+	/** */
+	public static String DecoratorPreferencesPage_fileFormatDefault;
+
+	/** */
+	public static String DecoratorPreferencesPage_projectFormatDefault;
+
+	/** */
+	public static String DecoratorPreferencesPage_folderFormatDefault;
 
 	/** */
 	public static String DecoratorPreferencesPage_generalTabFolder;
@@ -1627,9 +1525,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_CheckingOutMessage;
 
 	/** */
-	public static String RepositoriesView_Synchronize_MenuItem;
-
-	/** */
 	public static String RepositoriesView_CheckOut_MenuItem;
 
 	/** */
@@ -1684,9 +1579,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_DeleteRepoDeterminProjectsMessage;
 
 	/** */
-	public static String RepositoriesView_DoFetchMenu;
-
-	/** */
 	public static String RepositoriesView_DoPushMenuItem;
 
 	/** */
@@ -1736,9 +1628,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_PasteRepoAlreadyThere;
-
-	/** */
-	public static String RepositoriesView_PushMenu;
 
 	/** */
 	public static String RepositoriesView_Refresh_Button;
@@ -1954,111 +1843,6 @@ public class UIText extends NLS {
 	public static String GitShareProjectsPage_RepositoryLabel;
 
 	/** */
-	public static String GlobalConfigurationPreferencePage_AddButton;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_ChangeButton;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_ConfigLocationLabel;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_EmptyStringNotAllowed;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_KeyColumnHeader;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_NewValueButton;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_NoEntrySelectedMessage;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_NoSectionSubsectionMessage;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_OpenEditorButton;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_OpenEditorTooltip;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_RemoveAllButton;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_RemoveAllTooltip;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_RemoveButton;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_RemoveSectionMessage;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_RemoveSectionTitle;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_RemoveSubsectionMessage;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_RemoveSubsectionTitle;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_ValueColumnHeader;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_ValueLabel;
-
-	/** */
-	public static String GlobalConfigurationPreferencePage_WrongNumberOfTokensMessage;
-
- 	/** */
-	public static String MergeAction_CannotMerge;
-
-	/** */
-	public static String MergeAction_ChangedFiles;
-
-	/** */
-	public static String MergeAction_ErrorMergeEnabling;
-
-	/** */
-	public static String MergeAction_HeadIsNoBranch;
-
-	/** */
-	public static String MergeAction_JobNameMerge;
-
-	/** */
-	public static String MergeAction_MergeCanceledMessage;
-
-	/** */
-	public static String MergeAction_MergeCanceledTitle;
-
-	/** */
-	public static String MergeAction_MergeResultTitle;
-
-	/** */
-	public static String MergeAction_ProblemMerge;
-
-	/** */
-	public static String MergeAction_UnableMerge;
-
-	/** */
-	public static String MergeAction_WrongRepositoryState;
-
-	/** */
-	public static String MergeTargetSelectionDialog_ButtonMerge;
-
-	/** */
-	public static String MergeTargetSelectionDialog_OnlyFastForward;
-
-	/** */
-	public static String MergeTargetSelectionDialog_SelectRef;
-
-	/** */
-	public static String MergeTargetSelectionDialog_TitleMerge;
-
-	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
 
 	/** */
@@ -2066,12 +1850,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
-
-	/** */
-	public static String UIUtils_PressShortcutMessage;
-
-	/** */
-	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
 	public static String Untrack_untrack;
@@ -2151,57 +1929,6 @@ public class UIText extends NLS {
 	 * able to find the corresponding bundle file.
 	 */
 	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
-
-	/** */
-	public static String CommitAction_commit;
-
-	/** */
-	public static String GitSynchronizeWizard_synchronize;
-
-	/** */
-	public static String GitSynchronizeWizard_gitResourceSynchronization;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_title;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_description;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_repositories;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_branches;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_selectAll;
-
-	/** */
-	public static String GitBranchSynchronizeWizardPage_deselectAll;
-
-	/** */
-	public static String RemoteSelectionCombo_remoteName;
-
-	/** */
-	public static String RemoteSelectionCombo_remoteRef;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_header;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_selectProject;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_srcRef;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_dstRef;
-
-	/** */
-	public static String SelectSynchronizeResourceDialog_includeUncommitedChnages;
-
-	/** */
-	public static String SynchronizeWithAction_localRepoName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
