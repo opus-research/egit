@@ -111,21 +111,23 @@ public class BranchSelectionAndEditDialog extends
 		if (((TreeSelection) branchTree.getSelection()).size() > 1) {
 			TreeSelection selection = (TreeSelection) branchTree
 					.getSelection();
-			deleteButton.setEnabled(onlyBranchesExcludingCurrentAreSelected(selection));
+			boolean onlyBranchesAreSelected = onlyBranchesAreSelected(selection);
+
+			// enable/disable buttons
+			deleteButton.setEnabled(onlyBranchesAreSelected);
 			renameButton.setEnabled(false);
 			if (newButton != null)
 				newButton.setEnabled(false);
-			setOkButtonEnabled(false);
 		} else {
+			setOkButtonEnabled(branchSelected || tagSelected);
+
 			// we don't support rename on tags
 			renameButton.setEnabled(branchSelected && !tagSelected);
-			deleteButton.setEnabled(branchSelected && !tagSelected
-					&& !isCurrentBranch(refName));
+			deleteButton.setEnabled(branchSelected && !tagSelected);
+
 			// new button should be always enabled
 			if (newButton != null)
 				newButton.setEnabled(true);
-			setOkButtonEnabled((branchSelected || tagSelected)
-					&& !isCurrentBranch(refName));
 		}
 
 		Button okButton = getButton(Window.OK);
@@ -135,12 +137,8 @@ public class BranchSelectionAndEditDialog extends
 			else
 				okButton.setText(UIText.CheckoutDialog_OkCheckout);
 		}
-	}
 
-	private boolean isCurrentBranch(String refName) {
-		if (refName != null)
-			return refName.equals(currentBranch);
-		return false;
+		setOkButtonEnabled(refName != null && !refName.equals(currentBranch));
 	}
 
 	@Override
@@ -294,8 +292,7 @@ public class BranchSelectionAndEditDialog extends
 		Activator.handleError(msg, e, true);
 	}
 
-	private boolean onlyBranchesExcludingCurrentAreSelected(
-			TreeSelection selection) {
+	private boolean onlyBranchesAreSelected(TreeSelection selection) {
 		Iterator selIterator = selection.iterator();
 		while (selIterator.hasNext()) {
 			Object sel = selIterator.next();
@@ -305,12 +302,10 @@ public class BranchSelectionAndEditDialog extends
 				if (!refName.startsWith(R_HEADS)
 						&& !refName.startsWith(R_REMOTES))
 					return false;
-				if (isCurrentBranch(refName))
-					return false;
 			} else
 				return false;
 		}
 		return true;
 	}
 
-}
+} 
