@@ -46,13 +46,11 @@ public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
 				IFile resource = (IFile) input;
 				final RepositoryMapping map = RepositoryMapping
 						.getMapping(resource);
-				if (map != null) {
-					final String gitPath = map.getRepoRelativePath(resource);
-					final String commit1Path = getRenamedPath(gitPath, commit1);
-					final String commit2Path = getRenamedPath(gitPath, commit2);
-					CompareUtils.openInCompare(commit1, commit2, commit1Path,
-							commit2Path, map.getRepository(), workBenchPage);
-				}
+				final String gitPath = map.getRepoRelativePath(resource);
+				final String commit1Path = getRenamedPath(gitPath, commit1);
+				final String commit2Path = getRenamedPath(gitPath, commit2);
+				CompareUtils.openInCompare(commit1, commit2, commit1Path,
+						commit2Path, map.getRepository(), workBenchPage);
 			} else if (input instanceof File) {
 				File fileInput = (File) input;
 				final String gitPath = getRepoRelativePath(repo, fileInput);
@@ -63,11 +61,11 @@ public class CompareVersionsHandler extends AbstractHistoryCommandHandler {
 			} else if (input instanceof IResource) {
 				GitCompareEditorInput compareInput = new GitCompareEditorInput(
 						commit1.name(), commit2.name(), (IResource) input);
-				CompareUtils.openInCompare(workBenchPage, compareInput);
+				CompareUtils.openInCompare(workBenchPage, repo, compareInput);
 			} else if (input == null) {
 				GitCompareEditorInput compareInput = new GitCompareEditorInput(
 						commit1.name(), commit2.name(), repo);
-				CompareUtils.openInCompare(workBenchPage, compareInput);
+				CompareUtils.openInCompare(workBenchPage, repo, compareInput);
 			}
 		}
 		return null;
