@@ -16,12 +16,11 @@ import java.util.Set;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.jgit.lib.Repository;
@@ -44,8 +43,12 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		/** removed from index, but in tree */
 		REMOVED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.UNSTAGE)),
 
-		/** in index, but not filesystem */
-		MISSING(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+		/** in index (unchanged), but not filesystem */
+		MISSING(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
+
+		/** in index (changed from tree to index), but not filesystem */
+		MISSING_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX,
+				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** modified on disk relative to the index */
 		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
@@ -147,12 +150,12 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 	}
 
 	/**
-	 * @return the file corresponding to the entry
+	 * @return the file corresponding to the entry, if it exists in the
+	 *         workspace, null otherwise.
 	 */
 	public IFile getFile() {
 		IPath absolutePath = getLocation();
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile resource = root.getFileForLocation(absolutePath);
+		IFile resource = ResourceUtil.getFileForLocation(absolutePath);
 		return resource;
 	}
 
@@ -226,6 +229,7 @@ public class StagingEntry implements IAdaptable, IProblemDecoratable, IDecoratab
 		case REMOVED:
 			return Staged.REMOVED;
 		case MISSING:
+		case MISSING_AND_CHANGED:
 			return Staged.REMOVED;
 		default:
 			return Staged.NOT_STAGED;
