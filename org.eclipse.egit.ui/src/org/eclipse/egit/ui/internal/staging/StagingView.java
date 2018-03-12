@@ -8,19 +8,19 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
-import static org.eclipse.egit.ui.internal.CommonUtils.runCommand;
-
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.ParameterizedCommand;
+import org.eclipse.core.commands.common.CommandException;
+import org.eclipse.core.expressions.EvaluationContext;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -48,10 +48,8 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.actions.ActionCommands;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
-import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitUI;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
@@ -89,7 +87,6 @@ import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
@@ -112,20 +109,22 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.team.core.Team;
-import org.eclipse.team.core.TeamException;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
+import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
@@ -801,6 +800,39 @@ public class StagingView extends ViewPart {
 		}
 	}
 
+	private static boolean runCommand(String commandId,
+			IStructuredSelection selection) {
+		ICommandService commandService = (ICommandService) PlatformUI
+				.getWorkbench().getService(ICommandService.class);
+		Command cmd = commandService.getCommand(commandId);
+		if (!cmd.isDefined()) {
+			return false;
+		}
+
+		IHandlerService handlerService = (IHandlerService) PlatformUI
+				.getWorkbench().getService(IHandlerService.class);
+		EvaluationContext c = null;
+		if (selection != null) {
+			c = new EvaluationContext(
+					handlerService.createContextSnapshot(false),
+					selection.toList());
+			c.addVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME, selection);
+			c.removeVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
+		}
+		try {
+			if (c != null) {
+				handlerService.executeCommandInContext(
+						new ParameterizedCommand(cmd, null), null, c);
+			} else {
+				handlerService.executeCommand(commandId, null);
+			}
+			return true;
+		} catch (CommandException ignored) {
+			// Ignored
+		}
+		return false;
+	}
+
 	private void reload(final Repository repository) {
 		final boolean repositoryChanged = currentRepository != repository;
 
@@ -1039,35 +1071,7 @@ public class StagingView extends ViewPart {
 			commitOperation = new CommitOperation(repository,
 					commitMessageComponent.getAuthor(),
 					commitMessageComponent.getCommitter(),
-					commitMessageComponent.getCommitMessage()) {
-
-				protected RevCommit commit() throws TeamException {
-					RevCommit commit = super.commit();
-					openNewCommit(commit);
-					return commit;
-				}
-
-				protected RevCommit commitAll(Date commitDate,
-						TimeZone timeZone, PersonIdent authorIdent,
-						PersonIdent committerIdent) throws TeamException {
-					RevCommit commit = super.commitAll(commitDate, timeZone,
-							authorIdent, committerIdent);
-					openNewCommit(commit);
-					return commit;
-				}
-
-				private void openNewCommit(final RevCommit newCommit) {
-					if (newCommit != null && openNewCommitsAction.isChecked())
-						asyncExec(new Runnable() {
-
-							public void run() {
-								CommitEditor.openQuiet(new RepositoryCommit(
-										repository, newCommit));
-							}
-						});
-				}
-
-			};
+					commitMessageComponent.getCommitMessage());
 		} catch (CoreException e) {
 			Activator.handleError(UIText.StagingView_commitFailed, e, true);
 			return;
@@ -1075,7 +1079,8 @@ public class StagingView extends ViewPart {
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
 		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
-		CommitUI.performCommit(currentRepository, commitOperation);
+		CommitUI.performCommit(currentRepository, commitOperation,
+				openNewCommitsAction.isChecked());
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
 	}

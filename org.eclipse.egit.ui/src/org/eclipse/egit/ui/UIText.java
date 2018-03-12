@@ -400,6 +400,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorParsingHead;
 
 	/** */
+	public static String GitHistoryPage_errorReadingAdditionalRefs;
+
+	/** */
 	public static String GitHistoryPage_errorSettingStartPoints;
 
 	/** */
@@ -500,6 +503,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
+
+	/** */
+	public static String GitPreferenceRoot_BlameGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_BlameIgnoreWhitespaceLabel;
 
 	/** */
 	public static String GitPreferenceRoot_fetchBeforeSynchronization;
@@ -3738,6 +3747,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_Pull;
+
+	/** */
+	public static String GitVariableResolver_InternalError;
+
+	/** */
+	public static String GitVariableResolver_NoSelectedResource;
+
+	/** */
+	public static String GitVariableResolver_VariableReferencesNonExistentResource;
 
 	/** */
 	public static String DecoratableResourceHelper_noHead;

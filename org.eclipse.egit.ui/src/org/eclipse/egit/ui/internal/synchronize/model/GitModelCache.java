@@ -232,7 +232,8 @@ public class GitModelCache extends GitModelObjectContainer {
 			cacheTreeMap.put(pathKey, cacheTree);
 		}
 
-		cacheTree.addChild(repoId, cacheId, path.substring(firstSlash + 1));
+		cacheTree.addChild(repoId, cacheId,
+				path.substring(firstSlash + 1));
 
 		return cacheTree;
 	}
