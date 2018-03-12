@@ -75,8 +75,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		this.ancestorId = ancestroDataSource.getObjectId();
 		this.remoteCommit = remoteDataSource.getRevCommit();
 		this.ancestorCommit = ancestroDataSource.getRevCommit();
-		this.name = gitPath.lastIndexOf('/') < 0 ? gitPath :
-			gitPath.substring(gitPath.lastIndexOf('/'));
+		this.name = gitPath.substring(gitPath.lastIndexOf('/'));
 	}
 
 	public String getName() {
