@@ -24,11 +24,13 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class TestUtil {
 
-	public static String TESTAUTHOR = "Test Author <test.author@test.com>";
-
-	public static String TESTCOMMITTER = "Test Committer <test.committer@test.com>";
-
 	private static final char AMPERSAND = '&';
+
+	private static final TestUtil INSTANCE = new TestUtil();
+
+	public static TestUtil getInstance() {
+		return INSTANCE;
+	}
 
 	private ResourceBundle myBundle;
 
@@ -39,7 +41,7 @@ public class TestUtil {
 	 * in menu items and field labels for keyboard shortcuts) will be filtered
 	 * out (see also {@link #getPluginLocalizedValue(String, boolean)} in order
 	 * to be able to reference these fields using SWTBot).
-	 * 
+	 *
 	 * @param key
 	 *            the key, must not be null
 	 * @return the localized value in the current default {@link Locale}, or
@@ -55,7 +57,7 @@ public class TestUtil {
 	/**
 	 * Allows access to the localized values of the EGit UI Plug-in
 	 * <p>
-	 * 
+	 *
 	 * @param key
 	 *            see {@link #getPluginLocalizedValue(String)}
 	 * @param keepAmpersands

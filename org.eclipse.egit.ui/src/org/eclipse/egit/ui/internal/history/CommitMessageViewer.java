@@ -336,16 +336,16 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			}
 		};
 
-		if (commit.getParentCount() > 1)
+		if (!(commit.getParentCount() == 1))
 			return;
 		try {
 			FileDiff[] diffs = FileDiff.compute(walker, commit);
 
 			for (FileDiff diff : diffs) {
-				if (diff.getBlobs().length == 2) {
-					String path = diff.getPath();
+				if (diff.blobs.length == 2) {
+					String path = diff.path;
 					d.append(formatPathLine(path)).append("\n"); //$NON-NLS-1$
-					diff.outputDiff(d, db, diffFmt, true);
+					diff.outputDiff(d, db, diffFmt, false, false);
 				}
 			}
 		} catch (IOException e) {
@@ -383,12 +383,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 
 		@Override
 		public boolean equals(Object object) {
-			return super.equals(object) && targetCommit.equals(((ObjectLink)object).targetCommit);
-		}
-
-		@Override
-		public int hashCode() {
-			return super.hashCode() ^ targetCommit.hashCode();
+			return super.equals(object) && targetCommit.equals((RevCommit)object);
 		}
 	}
 
@@ -412,7 +407,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 			IStructuredSelection sel = (IStructuredSelection)selection;
 			Object obj = sel.getFirstElement();
 			if (obj instanceof FileDiff) {
-				String path = ((FileDiff)obj).getPath();
+				String path = ((FileDiff)obj).path;
 				findAndSelect(0, formatPathLine(path), true, true, false, false);
 			}
 		}

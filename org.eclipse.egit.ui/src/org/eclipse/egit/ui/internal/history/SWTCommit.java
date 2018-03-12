@@ -8,15 +8,16 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
+import org.eclipse.swt.widgets.Widget;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.revplot.PlotCommit;
-import org.eclipse.swt.widgets.Widget;
+import org.eclipse.jgit.lib.Ref;
 
 class SWTCommit extends PlotCommit<SWTCommitList.SWTLane> {
 	Widget widget;
 
-	SWTCommit(final AnyObjectId id) {
-		super(id);
+	SWTCommit(final AnyObjectId id, final Ref[] tags) {
+		super(id, tags);
 	}
 
 	@Override

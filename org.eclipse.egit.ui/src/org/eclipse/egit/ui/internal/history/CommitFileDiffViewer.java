@@ -8,17 +8,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
@@ -29,11 +24,9 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
@@ -44,22 +37,11 @@ import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.team.core.history.IFileRevision;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
 
 class CommitFileDiffViewer extends TableViewer {
-
-	private static final String LINESEP = System.getProperty("line.separator"); //$NON-NLS-1$
-
-	private Repository db;
-
 	private TreeWalk walker;
 
 	private Clipboard clipboard;
-
-	private boolean compareMode;
 
 	CommitFileDiffViewer(final Composite parent) {
 		super(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER
@@ -82,11 +64,8 @@ class CommitFileDiffViewer extends TableViewer {
 					return;
 				final IStructuredSelection iss = (IStructuredSelection) s;
 				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (walker != null && d.getBlobs().length <= 2)
-					if (compareMode)
-						showTwoWayFileDiff(d);
-					else
-						openFileInEditor(d);
+				if (walker != null && d.blobs.length == 2)
+					showTwoWayFileDiff(d);
 			}
 		});
 
@@ -98,54 +77,19 @@ class CommitFileDiffViewer extends TableViewer {
 		});
 	}
 
-	private void openFileInEditor(FileDiff d) {
-		try {
-			IWorkbenchWindow window = PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow();
-			IWorkbenchPage page = window.getActivePage();
-			IFileRevision rev = CompareUtils.getFileRevision(d.getPath(),
-					d.getChange().equals(ChangeType.DELETE)?
-							d.getCommit().getParent(0) : d.getCommit(),
-					db, d.getChange().equals(ChangeType.DELETE)?
-							d.getBlobs()[0] : d.getBlobs()[1]);
-			if (rev != null)
-				EgitUiEditorUtils.openEditor(page, rev,
-						new NullProgressMonitor());
-			else {
-				String message = NLS.bind(
-						UIText.CommitFileDiffViewer_notContainedInCommit, d.getPath(),
-						d.getCommit().getId().getName());
-				Activator.showError(message, null);
-			}
-		} catch (IOException e) {
-			Activator.logError(UIText.GitHistoryPage_openFailed, e);
-			Activator.showError(UIText.GitHistoryPage_openFailed, null);
-		} catch (CoreException e) {
-			Activator.logError(UIText.GitHistoryPage_openFailed, e);
-			Activator.showError(UIText.GitHistoryPage_openFailed, null);
-		}
-	}
-
 	void showTwoWayFileDiff(final FileDiff d) {
 		final GitCompareFileRevisionEditorInput in;
 
-		final String p = d.getPath();
-		final RevCommit c = d.getCommit();
+		final Repository db = walker.getRepository();
+		final String p = d.path;
+		final RevCommit c = d.commit;
 		final ITypedElement base;
 		final ITypedElement next;
 
-		if (d.getBlobs().length == 2 && !d.getChange().equals(ChangeType.ADD))
-			base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.getBlobs()[0]);
-		else
-			// Initial import
-			base = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
+		base = CompareUtils.getFileRevisionTypedElement(p, c.getParent(0), db, d.blobs[0]);
+		next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.blobs[1]);
 
-		if (d.getChange().equals(ChangeType.DELETE))
-			next = new GitCompareFileRevisionEditorInput.EmptyTypedElement(""); //$NON-NLS-1$
-		else
-			next = CompareUtils.getFileRevisionTypedElement(p, c, db, d.getBlobs()[1]);
-
-		in = new GitCompareFileRevisionEditorInput(next, base, null);
+		in = new GitCompareFileRevisionEditorInput(base, next, null);
 		CompareUI.openCompareEditor(in);
 	}
 
@@ -153,8 +97,7 @@ class CommitFileDiffViewer extends TableViewer {
 		return walker;
 	}
 
-	void setTreeWalk(Repository repository, TreeWalk walk) {
-		db = repository;
+	void setTreeWalk(final TreeWalk walk) {
 		walker = walk;
 	}
 
@@ -171,7 +114,6 @@ class CommitFileDiffViewer extends TableViewer {
 		setSelection(new StructuredSelection(el));
 	}
 
-	@SuppressWarnings("unchecked")
 	void doCopy() {
 		final ISelection s = getSelection();
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -182,8 +124,8 @@ class CommitFileDiffViewer extends TableViewer {
 		while (itr.hasNext()) {
 			final FileDiff d = itr.next();
 			if (r.length() > 0)
-				r.append(LINESEP);
-			r.append(d.getPath());
+				r.append("\n"); //$NON-NLS-1$
+			r.append(d.path);
 		}
 
 		clipboard.setContents(new Object[] { r.toString() },
@@ -202,9 +144,5 @@ class CommitFileDiffViewer extends TableViewer {
 		path.setText(UIText.HistoryPage_pathnameColumn);
 		path.setWidth(250);
 		layout.addColumnData(new ColumnWeightData(20, true));
-	}
-
-	public void setCompareMode(boolean compareMode) {
-		this.compareMode = compareMode;
 	}
 }

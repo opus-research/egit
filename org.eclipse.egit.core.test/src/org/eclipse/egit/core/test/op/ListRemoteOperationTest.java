@@ -30,7 +30,7 @@ import org.eclipse.egit.core.test.DualRepositoryTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import org.junit.Before;
@@ -54,8 +54,8 @@ public class ListRemoteOperationTest extends DualRepositoryTestCase {
 	@Before
 	public void setUp() throws Exception {
 
-		workdir = testUtils.createTempDir("Repository1");
-		workdir2 = testUtils.createTempDir("Repository2");
+		workdir = testUtils.getTempDir("Repository1");
+		workdir2 = testUtils.getTempDir("Repository2");
 
 		repository1 = new TestRepository(new File(workdir, Constants.DOT_GIT));
 
@@ -95,7 +95,7 @@ public class ListRemoteOperationTest extends DualRepositoryTestCase {
 				"refs/heads/master", "origin");
 		clop.run(null);
 
-		repository2 = new TestRepository(new FileRepository(new File(workdir2,
+		repository2 = new TestRepository(new Repository(new File(workdir2,
 				Constants.DOT_GIT)));
 		// we push to branch "test" of repository2
 		RefUpdate createBranch = repository2.getRepository().updateRef(
@@ -109,7 +109,8 @@ public class ListRemoteOperationTest extends DualRepositoryTestCase {
 	public void tearDown() throws Exception {
 		repository1.dispose();
 		repository2.dispose();
-		testUtils.deleteTempDirs();
+		testUtils.deleteRecursive(workdir);
+		testUtils.deleteRecursive(workdir2);
 	}
 
 	/**

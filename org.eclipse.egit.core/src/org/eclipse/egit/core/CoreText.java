@@ -26,6 +26,15 @@ public class CoreText extends NLS {
 	public static String AssumeUnchangedOperation_writingIndex;
 
 	/** */
+	public static String UpdateOperation_writingIndex;
+
+	/** */
+	public static String UpdateOperation_updating;
+
+	/** */
+	public static String UpdateOperation_failed;
+
+	/** */
 	public static String CommitFileRevision_errorLookingUpPath;
 
 	/** */
@@ -72,6 +81,12 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String DisconnectProviderOperation_disconnecting;
+
+	/** */
+	public static String AddOperation_adding;
+
+	/** */
+	public static String AddOperation_failed;
 
 	/** */
 	public static String BlobStorage_blobNotFound;
@@ -263,19 +278,16 @@ public class CoreText extends NLS {
 	public static String TagOperation_objectIdNotFound;
 
 	/** */
-	public static String GitResourceVariantTree_couldNotFindResourceVariant;
+	public static String GitResourceVariantTree_couldNotFindBlob;
 
 	/** */
-	public static String GitResourceVariantTree_couldNotFetchMembers;
-
-	/** */
-	public static String GitFolderResourceVariant_fetchingMembers;
+	public static String GitResourceVariantTree_fetchingMembers;
 
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
 
 	/** */
-	public static String GitResourceVariantTree_couldNotFetchMembersOf;
+	public static String GitResourceVariantTree_unableToReadRepository;
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
@@ -286,24 +298,8 @@ public class CoreText extends NLS {
 	/** */
 	public static String OperationNotYetExecuted;
 
-	/** */
-	public static String IgnoreOperation_error;
-
-	/** */
-	public static String IgnoreOperation_parentOutsideRepo;
-
-	/** */
-	public static String IgnoreOperation_creatingFailed;
-
-	/** */
-	public static String IgnoreOperation_taskName;
-
-	/** */
-	public static String IgnoreOperation_updatingFailed;
-
 	static {
 		initializeMessages("org.eclipse.egit.core.coretext", //$NON-NLS-1$
 				CoreText.class);
 	}
-
 }

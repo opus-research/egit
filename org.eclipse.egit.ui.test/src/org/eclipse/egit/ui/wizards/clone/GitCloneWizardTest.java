@@ -16,6 +16,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.common.EGitTestCase;
@@ -25,15 +28,11 @@ import org.eclipse.egit.ui.common.RepoRemoteBranchesPage;
 import org.eclipse.egit.ui.common.WorkingCopyPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 public class GitCloneWizardTest extends EGitTestCase {
 
@@ -187,6 +186,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 		bot.button("Cancel").click();
 	}
 
+	@SuppressWarnings("boxing")
 	@Test
 	public void canCloneARemoteRepo() throws Exception {
 		File destRepo = new File(ResourcesPlugin.getWorkspace()
@@ -213,7 +213,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 		// the integrity of the repository here. Only a few basic properties
 		// we'd expect from a clone made this way, that would possibly
 		// not hold true given other parameters in the GUI.
-		Repository repository = new FileRepository(new File(destRepo, Constants.DOT_GIT));
+		Repository repository = new Repository(new File(destRepo, Constants.DOT_GIT));
 		// we always have an origin/master
 		assertNotNull(repository.resolve("origin/master"));
 		// and a local master initialized from origin/master (default!)
@@ -243,7 +243,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 				.nextToRemoteBranches(r.getUri());
 		remoteBranches.assertRemoteBranches(SampleTestRepository.FIX, Constants.MASTER);
 		WorkingCopyPage workingCopy = remoteBranches.nextToWorkingCopy();
-		workingCopy.assertWorkingCopyExists();
+		workingCopy.assertWorkingCopyExists(r.getUri());
 	}
 
 	@Test
@@ -273,7 +273,7 @@ public class GitCloneWizardTest extends EGitTestCase {
 		// the integrity of the repository here. Only a few basic properties
 		// we'd expect from a clone made this way, that would possibly
 		// not hold true given other parameters in the GUI.
-		Repository repository = new FileRepository(new File(destRepo, Constants.DOT_GIT));
+		Repository repository = new Repository(new File(destRepo, Constants.DOT_GIT));
 		assertNotNull(repository.resolve("src/" + SampleTestRepository.FIX));
 		// we didn't clone that one
 		assertNull(repository.resolve("src/master"));

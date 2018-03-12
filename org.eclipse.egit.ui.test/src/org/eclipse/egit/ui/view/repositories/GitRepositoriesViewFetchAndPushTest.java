@@ -22,7 +22,6 @@ import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -31,6 +30,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,8 +55,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		waitInUI();
 		// now let's clone the remote repository
-		URIish uri = new URIish("file:///" + remoteRepositoryFile.getPath());
-		File workdir = new File(testDirectory, "ClonedRepo");
+		URIish uri = new URIish(remoteRepositoryFile.getPath());
+		File workdir = new File(testDirectory, "Cloned");
 
 		CloneOperation op = new CloneOperation(uri, true, null, workdir,
 				"refs/heads/master", "origin");
@@ -66,7 +66,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		// now let's clone the remote repository
 		uri = new URIish(remoteRepositoryFile.getPath());
-		workdir = new File(testDirectory, "ClonedRepo2");
+		workdir = new File(testDirectory, "Cloned2");
 
 		op = new CloneOperation(uri, true, null, workdir, "refs/heads/master",
 				"origin");
@@ -82,6 +82,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testPushToOrigin() throws Exception {
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile);
@@ -94,8 +95,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		repository.getConfig().setString("remote", "origin", "push",
 				"refs/heads/*:refs/remotes/origin/*");
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(1).select();
+		getRemotesItem(tree, clonedRepositoryFile).expand().getNode("origin")
+				.expand().getNode(1).select();
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimplePushCommand"));
@@ -120,8 +121,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		confirmed.close();
 		assertTrue("New branch expected", newBranch);
 		// second time: expect up to date
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(1).select();
+		getRemotesItem(tree, clonedRepositoryFile).expand().getNode("origin")
+				.expand().getNode(1).select();
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimplePushCommand"));
@@ -142,10 +143,10 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		String objectIdBefore = repository.getRef("refs/heads/master")
 				.getLeaf().getObjectId().name();
 		objectIdBefore = objectIdBefore.substring(0, 7);
-		touchAndSubmit(null);
+		touchAndSubmit();
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(1).select();
+		getRemotesItem(tree, clonedRepositoryFile).expand().getNode("origin")
+				.expand().getNode(1).select();
 
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimplePushCommand"));
@@ -165,6 +166,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testFetchFromOrigin() throws Exception {
 
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
@@ -172,7 +174,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile2);
 
-		FileRepository repository = lookupRepository(clonedRepositoryFile2);
+		Repository repository = lookupRepository(clonedRepositoryFile2);
 		// add the configuration for push from cloned2
 		repository.getConfig().setString("remote", "origin", "push",
 				"refs/heads/*:refs/heads/*");
@@ -186,8 +188,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		String dialogTitle = NLS.bind(UIText.FetchResultDialog_title,
 				destinationString);
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(0).select();
+		getRemotesItem(tree, clonedRepositoryFile).expand().getNode("origin")
+				.expand().getNode(0).select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
@@ -201,7 +203,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		String objid = repository.getRef("refs/heads/master").getTarget()
 				.getObjectId().name();
 		objid = objid.substring(0, 7);
-		touchAndSubmit(null);
+		touchAndSubmit();
 		// push from other repository
 		PushConfiguredRemoteAction action = new PushConfiguredRemoteAction(
 				repository, "origin");
@@ -220,8 +222,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 
 		refreshAndWait();
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(0).select();
+		getRemotesItem(tree, clonedRepositoryFile).expand().getNode("origin")
+				.expand().getNode(0).select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
@@ -236,8 +238,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		assertTrue(found);
 		confirm.close();
 
-		myRepoViewUtil.getRemotesItem(tree, clonedRepositoryFile).expand().getNode(
-				"origin").expand().getNode(0).select();
+		getRemotesItem(tree, clonedRepositoryFile).expand().getNode("origin")
+				.expand().getNode(0).select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 

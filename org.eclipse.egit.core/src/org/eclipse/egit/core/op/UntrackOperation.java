@@ -27,6 +27,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -67,26 +68,23 @@ public class UntrackOperation implements IEGitOperation {
 	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor;
 		if (m == null)
-			monitor = new NullProgressMonitor();
-		else
-			monitor = m;
+			m = new NullProgressMonitor();
 
 		edits.clear();
 		mappings.clear();
 
-		monitor.beginTask(CoreText.UntrackOperation_adding, rsrcList.size() * 200);
+		m.beginTask(CoreText.AddOperation_adding, rsrcList.size() * 200);
 		try {
 			for (IResource obj : rsrcList) {
 				remove(obj);
-				monitor.worked(200);
+				m.worked(200);
 			}
 
 			for (Map.Entry<Repository, DirCacheEditor> e : edits.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCacheEditor editor = e.getValue();
-				monitor.setTaskName(NLS.bind(CoreText.UntrackOperation_writingIndex, db.getDirectory()));
+				m.setTaskName(NLS.bind(CoreText.UntrackOperation_writingIndex, db.getDirectory()));
 				editor.commit();
 			}
 		} catch (RuntimeException e) {
@@ -98,7 +96,7 @@ public class UntrackOperation implements IEGitOperation {
 				rm.fireRepositoryChanged();
 			edits.clear();
 			mappings.clear();
-			monitor.done();
+			m.done();
 		}
 	}
 
@@ -122,7 +120,7 @@ public class UntrackOperation implements IEGitOperation {
 		DirCacheEditor e = edits.get(db);
 		if (e == null) {
 			try {
-				e = db.lockDirCache().editor();
+				e = DirCache.lock(db).editor();
 			} catch (IOException err) {
 				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}
