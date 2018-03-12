@@ -9,7 +9,6 @@
 package org.eclipse.egit.gitflow.op;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -43,9 +42,9 @@ public class FeatureFinishOperationTest extends AbstractFeatureOperationTest {
 		assertEquals(null, findBranch(repository, branchName));
 
 		RevCommit developHead = gfRepo.findHead();
-		assertNotEquals(branchCommit, developHead);
+		assertEquals(branchCommit, developHead);
 
-		assertEquals(3, countCommits(repository));
+		assertEquals(2, countCommits(repository));
 		assertTrue(new File(repository.getDirectory() + "/../" + fileName).exists());
 	}
 

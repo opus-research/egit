@@ -33,7 +33,8 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 
 		new HotfixStartOperation(gfRepo, MY_HOTFIX).execute(null);
 
-		testRepository.createInitialCommit("testHotfixFinish\n\nbranch commit\n");
+		RevCommit branchCommit = testRepository
+				.createInitialCommit("testHotfixFinish\n\nbranch commit\n");
 
 		new HotfixFinishOperation(gfRepo).execute(null);
 
@@ -42,18 +43,16 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 		String branchName = gfRepo.getConfig().getHotfixBranchName(MY_HOTFIX);
 
 		// tag created?
-		RevCommit taggedCommit = gfRepo.findCommitForTag(MY_HOTFIX);
-		assertEquals(String.format("Merge branch '%s'", branchName),
-				taggedCommit.getFullMessage());
+		assertEquals(branchCommit, gfRepo.findCommitForTag(MY_HOTFIX));
 
 		// branch removed?
 		assertEquals(findBranch(repository, branchName), null);
 
-		RevCommit developHead = gfRepo.findHead();
-		assertNotEquals(developHead, taggedCommit);
+		RevCommit developHead = gfRepo.findHead(DEVELOP);
+		assertEquals(branchCommit, developHead);
 
 		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
-		assertEquals(masterHead, taggedCommit);
+		assertEquals(branchCommit, masterHead);
 	}
 
 	@Test
@@ -107,7 +106,7 @@ public class HotfixFinishOperationTest extends AbstractGitFlowOperationTest {
 
 		// merged on master
 		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
-		assertEquals(String.format("Merge branch '%s'", branchName), masterHead.getFullMessage());
+		assertEquals(hotfixCommit, masterHead);
 
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
 	}

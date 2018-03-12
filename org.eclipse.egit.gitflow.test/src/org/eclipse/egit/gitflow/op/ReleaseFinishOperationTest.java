@@ -15,7 +15,6 @@ import static org.eclipse.egit.gitflow.GitFlowDefaults.MASTER;
 import static org.eclipse.egit.gitflow.GitFlowDefaults.RELEASE_PREFIX;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
 import java.util.Iterator;
@@ -50,24 +49,23 @@ public class ReleaseFinishOperationTest extends AbstractGitFlowOperationTest {
 		GitFlowRepository gfRepo = new GitFlowRepository(repository);
 
 		new ReleaseStartOperation(gfRepo, MY_RELEASE).execute(null);
-		testRepository
+		RevCommit branchCommit = testRepository
 				.createInitialCommit("testReleaseFinish\n\nbranch commit\n");
 		new ReleaseFinishOperation(gfRepo).execute(null);
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
 
 		String branchName = gfRepo.getConfig().getReleaseBranchName(MY_RELEASE);
 		// tag created?
-		RevCommit taggedCommit = gfRepo.findCommitForTag(MY_VERSION_TAG + MY_RELEASE);
-		assertEquals(String.format("Merge branch '%s'", branchName), taggedCommit.getFullMessage());
-
+		assertEquals(branchCommit,
+				gfRepo.findCommitForTag(MY_VERSION_TAG + MY_RELEASE));
 		// branch removed?
 		assertEquals(findBranch(repository, branchName), null);
 
 		RevCommit developHead = gfRepo.findHead();
-		assertNotEquals(developHead, taggedCommit);
+		assertEquals(branchCommit, developHead);
 
 		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
-		assertEquals(masterHead, taggedCommit);
+		assertEquals(branchCommit, masterHead);
 	}
 
 	@Test
