@@ -45,7 +45,6 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -54,6 +53,7 @@ import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.Team;
 import org.eclipse.team.core.TeamException;
@@ -170,7 +170,6 @@ public class CommitAction extends RepositoryAction {
 			commitOperation.setAmending(true);
 			commitOperation.setPreviousCommit(previousCommit);
 			commitOperation.setRepos(repos);
-			commitOperation.setComputeChangeId(commitDialog.getCreateChangeId());
 		}
 		String jobname = UIText.CommitAction_CommittingChanges;
 		Job job = new Job(jobname) {
@@ -327,18 +326,10 @@ public class CommitAction extends RepositoryAction {
 				if (!filename.startsWith(repoRelativePath))
 					continue;
 				String projectRelativePath = filename.substring(repoRelativePath.length());
-				IResource member = project.getFile(projectRelativePath);
-				if (member != null && member instanceof IFile) {
-					if (!files.contains(member))
-						files.add((IFile) member);
-					category.add((IFile) member);
-				} else {
-					// TODO is this the right Location?
-					if (GitTraceLocation.UI.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.UI.getLocation(),
-								"Couldn't find " + filename); //$NON-NLS-1$
-				}
+				IFile member = project.getFile(projectRelativePath);
+				if (!files.contains(member))
+					files.add(member);
+				category.add(member);
 			} catch (Exception e) {
 				if (GitTraceLocation.UI.isActive())
 					GitTraceLocation.getTrace().trace(GitTraceLocation.UI.getLocation(), e.getMessage(), e);

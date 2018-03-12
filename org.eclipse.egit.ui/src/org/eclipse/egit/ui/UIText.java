@@ -40,6 +40,33 @@ public class UIText extends NLS {
 	public static String Activator_scanningRepositories;
 
 	/** */
+	public static String AddConfigEntryDialog_AddConfigTitle;
+
+	/** */
+	public static String AddConfigEntryDialog_ConfigKeyTooltip;
+
+	/** */
+	public static String AddConfigEntryDialog_DialogMessage;
+
+	/** */
+	public static String AddConfigEntryDialog_EnterValueMessage;
+
+	/** */
+	public static String AddConfigEntryDialog_EntryExistsMessage;
+
+	/** */
+	public static String AddConfigEntryDialog_KeyComponentsMessage;
+
+	/** */
+	public static String AddConfigEntryDialog_KeyLabel;
+
+	/** */
+	public static String AddConfigEntryDialog_MustEnterKeyMessage;
+
+	/** */
+	public static String AddConfigEntryDialog_ValueLabel;
+
+	/** */
 	public static String AddToIndexAction_addingFiles;
 
 	/** */
@@ -443,6 +470,27 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySelectionPage_ShowPreviousURIs_HoverText;
+
+	/** */
+	public static String RepositorySelectionPage_tip_file;
+
+	/** */
+	public static String RepositorySelectionPage_tip_ftp;
+
+	/** */
+	public static String RepositorySelectionPage_tip_git;
+
+	/** */
+	public static String RepositorySelectionPage_tip_http;
+
+	/** */
+	public static String RepositorySelectionPage_tip_https;
+
+	/** */
+	public static String RepositorySelectionPage_tip_sftp;
+
+	/** */
+	public static String RepositorySelectionPage_tip_ssh;
 
 	/** */
 	public static String RepositorySelectionPage_uriChoice;
@@ -1030,12 +1078,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_StatusUnknown;
 
 	/** */
-	public static String CommitDialog_AddChangeIdLabel;
-
-	/** */
-	public static String CommitDialog_AddChangeIdTooltip;
-
-	/** */
 	public static String CommitDialog_StatusUntracked;
 
 	/** */
@@ -1088,9 +1130,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigureUriPage_Remove_button;
-
-	/** */
-	public static String CommitDialog_ValueHelp_Message;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -1159,7 +1198,7 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_ChooseBranchAndNameMessage;
 
 	/** */
-	public static String CreateBranchPage_ChosseNameMessage;
+	public static String CreateBranchPage_ChooseNameMessage;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -1573,6 +1612,9 @@ public class UIText extends NLS {
 	public static String RepositoriesView_CheckingOutMessage;
 
 	/** */
+	public static String RepositoriesView_Synchronize_MenuItem;
+
+	/** */
 	public static String RepositoriesView_CheckOut_MenuItem;
 
 	/** */
@@ -1896,6 +1938,66 @@ public class UIText extends NLS {
 	/** */
 	public static String GitShareProjectsPage_RepositoryLabel;
 
+	/** */
+	public static String GlobalConfigurationPreferencePage_AddButton;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_ChangeButton;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_ConfigLocationLabel;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_EmptyStringNotAllowed;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_KeyColumnHeader;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_NewValueButton;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_NoEntrySelectedMessage;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_NoSectionSubsectionMessage;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_OpenEditorButton;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_OpenEditorTooltip;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_RemoveAllButton;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_RemoveAllTooltip;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_RemoveButton;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_RemoveSectionMessage;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_RemoveSectionTitle;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_RemoveSubsectionMessage;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_RemoveSubsectionTitle;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_ValueColumnHeader;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_ValueLabel;
+
+	/** */
+	public static String GlobalConfigurationPreferencePage_WrongNumberOfTokensMessage;
+
  	/** */
 	public static String MergeAction_CannotMerge;
 
@@ -1940,6 +2042,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
+
+	/** */
+	public static String UIUtils_PressShortcutMessage;
+
+	/** */
+	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
 	public static String Untrack_untrack;
@@ -2019,6 +2127,57 @@ public class UIText extends NLS {
 	 * able to find the corresponding bundle file.
 	 */
 	private static final String BUNDLE_NAME = "org.eclipse.egit.ui.uitext"; //$NON-NLS-1$
+
+	/** */
+	public static String CommitAction_commit;
+
+	/** */
+	public static String GitSynchronizeWizard_synchronize;
+
+	/** */
+	public static String GitSynchronizeWizard_gitResourceSynchronization;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_title;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_description;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_repositories;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_branches;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_selectAll;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_deselectAll;
+
+	/** */
+	public static String RemoteSelectionCombo_remoteName;
+
+	/** */
+	public static String RemoteSelectionCombo_remoteRef;
+
+	/** */
+	public static String SelectSynchronizeResourceDialog_header;
+
+	/** */
+	public static String SelectSynchronizeResourceDialog_selectProject;
+
+	/** */
+	public static String SelectSynchronizeResourceDialog_srcRef;
+
+	/** */
+	public static String SelectSynchronizeResourceDialog_dstRef;
+
+	/** */
+	public static String SelectSynchronizeResourceDialog_includeUncommitedChnages;
+
+	/** */
+	public static String SynchronizeWithAction_localRepoName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
