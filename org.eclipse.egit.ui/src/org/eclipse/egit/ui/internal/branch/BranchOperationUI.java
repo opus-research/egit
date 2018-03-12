@@ -70,8 +70,6 @@ public class BranchOperationUI {
 
 	private String target;
 
-	private String base;
-
 	/**
 	 * In the case of checkout conflicts, a dialog is shown to let the user
 	 * stash, reset or commit. After that, checkout is tried again. The second
@@ -110,19 +108,6 @@ public class BranchOperationUI {
 	 */
 	public static BranchOperationUI create(Repository repository) {
 		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
-		return op;
-	}
-
-	/**
-	 * Create an operation for creating a local branch with a given base reference
-	 *
-	 * @param repository
-	 * @param baseRef
-	 * @return the {@link BranchOperationUI}
-	 */
-	public static BranchOperationUI createWithRef(Repository repository, String baseRef) {
-		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
-		op.base = baseRef;
 		return op;
 	}
 
@@ -360,9 +345,7 @@ public class BranchOperationUI {
 		case MODE_CREATE:
 			CreateBranchWizard wiz;
 			try {
-				if (base == null)
-					base = repository.getFullBranch();
-				wiz = new CreateBranchWizard(repository, base);
+				wiz = new CreateBranchWizard(repository, repository.getFullBranch());
 			} catch (IOException e) {
 				wiz = new CreateBranchWizard(repository);
 			}

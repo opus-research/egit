@@ -29,7 +29,6 @@ import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.CheckoutEntry;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.ReflogEntry;
@@ -117,17 +116,7 @@ public class SwitchToMenu extends ContributionItem implements
 		newBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				String sourceRef = repository.getConfig().getString(
-						ConfigConstants.CONFIG_WORKFLOW_SECTION, null,
-						ConfigConstants.CONFIG_KEY_DEFBRANCHSTARTPOINT);
-				try {
-					if (repository.getRef(sourceRef) != null)
-						BranchOperationUI.createWithRef(repository, sourceRef).start();
-					else
-						BranchOperationUI.create(repository).start();
-				} catch (IOException e1) {
-					BranchOperationUI.create(repository).start();
-				}
+				BranchOperationUI.create(repository).start();
 			}
 		});
 		new MenuItem(menu, SWT.SEPARATOR);
