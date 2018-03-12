@@ -16,6 +16,7 @@ import java.io.File;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
+import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.util.FS;
 
@@ -47,7 +48,7 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_TOOLTIPS, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES, false);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS, true);
-		store.setDefault(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES, false);
+		store.setDefault(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES, true);
 		store.setDefault(UIPreferences.RESOURCEHISTORY_COMPARE_MODE, false);
 
 		store.setDefault(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS, true);
@@ -88,13 +89,15 @@ public class PluginPreferenceInitializer extends AbstractPreferenceInitializer {
 				UIPreferences.DEFAULT_CHANGESET_FORMAT);
 		store.setDefault(UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
 				false);
-		store.setDefault(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, false);
+		store.setDefault(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH, true);
 		store.setDefault(UIPreferences.DATE_FORMAT,
 				UIPreferences.DEFAULT_DATE_FORMAT);
 		store.setDefault(UIPreferences.HISTORY_MAX_NUM_COMMITS, 10000);
 		store.setDefault(UIPreferences.HISTORY_SHOW_TAG_SEQUENCE, false);
 		store.setDefault(UIPreferences.BLAME_IGNORE_WHITESPACE, false);
 		store.setDefault(UIPreferences.REMOTE_CONNECTION_TIMEOUT, 30 /* seconds */);
+		store.setDefault(UIPreferences.STAGING_VIEW_PRESENTATION,
+				StagingView.Presentation.LIST.name());
 		store.setDefault(UIPreferences.STAGING_VIEW_FILENAME_MODE, true);
 		store.setDefault(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE, false);
 		store.setDefault(UIPreferences.COMMIT_DIALOG_HISTORY_SIZE, 10);
