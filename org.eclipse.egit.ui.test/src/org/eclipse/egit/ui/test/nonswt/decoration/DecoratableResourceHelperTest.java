@@ -12,16 +12,16 @@ package org.eclipse.egit.ui.test.nonswt.decoration;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
@@ -33,6 +33,8 @@ import org.eclipse.egit.ui.internal.decorators.DecoratableResourceHelper;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
@@ -41,6 +43,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.team.core.RepositoryProvider;
+import org.eclipse.ui.PlatformUI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,14 +53,6 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 	private static final String TEST_PROJECT = "TestProject";
 
 	private static final String TEST_FILE = "TestFile";
-
-	private static final String TEST_FILE2 = "TestFolder2/TestFile2";
-
-	private static final String TEST_FOLDER = "TestFolder";
-
-	private static final String TEST_FOLDER2 = "TestFolder2";
-
-	private static final String SUB_FOLDER = "SubFolder";
 
 	private File gitDir;
 
@@ -86,10 +81,6 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 		project.create(null);
 		project.open(null);
 
-		project.getFolder(TEST_FOLDER2).create(true, true, null);
-		IFile testFile2 = project.getFile(TEST_FILE2);
-		testFile2.create(new ByteArrayInputStream("content".getBytes()), true, null);
-
 		RepositoryMapping mapping = new RepositoryMapping(project, gitDir);
 
 		GitProjectData projectData = new GitProjectData(project);
@@ -107,11 +98,17 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 		waitForIndexDiffUpdate(false);
 	}
 
-	private void waitForIndexDiffUpdate(final boolean refreshCache)
-			throws Exception {
-		if (refreshCache)
-			indexDiffCacheEntry.refresh();
-		TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+	private void waitForIndexDiffUpdate(final boolean refreshCache) throws Exception {
+		// Wait for index diff update outside UI thread
+		ModalContext.run(new IRunnableWithProgress() {
+
+			public void run(IProgressMonitor monitor) throws InvocationTargetException,
+					InterruptedException {
+				if (refreshCache)
+					indexDiffCacheEntry.refresh();
+				TestUtil.joinJobs(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+			}
+		}, true, new NullProgressMonitor(), PlatformUI.getWorkbench().getDisplay());
 	}
 
 	@After
@@ -140,45 +137,6 @@ public class DecoratableResourceHelperTest extends LocalDiskRepositoryTestCase {
 
 		IDecoratableResource[] actualDRs = DecoratableResourceHelper
 				.createDecoratableResources(new IResource[] { project });
-
-		for (int i = 0; i < expectedDRs.length; i++)
-			assertTrue(expectedDRs[i].equals(actualDRs[i]));
-	}
-
-	@Test
-	public void testDecorationNewFolder() throws Exception {
-		// Create new folder with sub folder
-		IFolder folder = project.getFolder(TEST_FOLDER);
-		folder.create(true, true, null);
-		IFolder subFolder = folder.getFolder(SUB_FOLDER);
-		subFolder.create(true, true, null);
-
-		IDecoratableResource[] expectedDRs = new IDecoratableResource[] {
-				new TestDecoratableResource(project, true, false, false, false,
-						Staged.NOT_STAGED),
-				new TestDecoratableResource(folder, false, false, false, false,
-						Staged.NOT_STAGED),
-				new TestDecoratableResource(subFolder, false, false, false, false,
-						Staged.NOT_STAGED) };
-
-		waitForIndexDiffUpdate(true);
-		IDecoratableResource[] actualDRs = DecoratableResourceHelper
-				.createDecoratableResources(new IResource[] { project, folder, subFolder });
-
-		for (int i = 0; i < expectedDRs.length; i++)
-			assertTrue(expectedDRs[i].equals(actualDRs[i]));
-	}
-
-	@Test
-	public void testDecorationFolderPrefixOfOtherFolder() throws Exception {
-		project.getFolder(TEST_FOLDER).create(true, true, null);
-		IFolder testFolder2 = project.getFolder(TEST_FOLDER2);
-
-		IDecoratableResource[] expectedDRs = new IDecoratableResource[] { new TestDecoratableResource(
-				testFolder2, true, false, false, false, Staged.NOT_STAGED) };
-		waitForIndexDiffUpdate(true);
-		IDecoratableResource[] actualDRs = DecoratableResourceHelper
-				.createDecoratableResources(new IResource[] { testFolder2 });
 
 		for (int i = 0; i < expectedDRs.length; i++)
 			assertTrue(expectedDRs[i].equals(actualDRs[i]));
