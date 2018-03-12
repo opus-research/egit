@@ -2013,7 +2013,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
-	static boolean isShowingRelativeDates() {
+	private boolean isShowingRelativeDates() {
 		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
 	}
 

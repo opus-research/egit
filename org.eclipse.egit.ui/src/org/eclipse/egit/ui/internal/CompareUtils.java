@@ -34,7 +34,6 @@ import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -49,7 +48,6 @@ import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
@@ -453,7 +451,7 @@ public class CompareUtils {
 	private static void compareLocalWithRef(Repository repository,
 			IPath location, String refName, IWorkbenchPage page)
 			throws IOException {
-		final String gitPath = getRepoRelativePath(location, repository);
+		final String gitPath = RepositoryMapping.getMapping(location).getRepoRelativePath(location);
 		final ITypedElement base = new LocalNonWorkspaceTypedElement(location);
 
 		CompareEditorInput in = prepareCompareInput(repository, gitPath, base,
@@ -588,7 +586,8 @@ public class CompareUtils {
 		if (includeLocal)
 			compareLocalWithRef(repository, location, rightRev, page);
 		else {
-			String gitPath = getRepoRelativePath(location, repository);
+			final String gitPath = RepositoryMapping.getMapping(location)
+					.getRepoRelativePath(location);
 			compareBetween(repository, gitPath, leftRev, rightRev, page);
 		}
 	}
@@ -618,19 +617,6 @@ public class CompareUtils {
 			openInCompare(page, in);
 		else
 			CompareUI.openCompareEditor(in);
-	}
-
-	private static String getRepoRelativePath(IPath location,
-			Repository repository) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(location);
-		final String gitPath;
-		if (mapping != null)
-			gitPath = mapping.getRepoRelativePath(location);
-		else {
-			IPath repoRoot = new Path(repository.getWorkTree().getPath());
-			gitPath = location.makeRelativeTo(repoRoot).toString();
-		}
-		return gitPath;
 	}
 
 	private static ITypedElement getTypedElementFor(Repository repository, String gitPath, String rev) throws IOException {
@@ -904,31 +890,23 @@ public class CompareUtils {
 		 * trying to determine if the local file can be compared alone, this can
 		 * be done by relying on the local model only.
 		 */
-		// Only builds the logical model if the preference holds true
-		if (Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
+		final ResourceMapping[] mappings = ResourceUtil.getResourceMappings(
+				file, ResourceMappingContext.LOCAL_CONTEXT);
 
-			final ResourceMapping[] mappings = ResourceUtil
-					.getResourceMappings(file,
-							ResourceMappingContext.LOCAL_CONTEXT);
-
-			for (ResourceMapping mapping : mappings) {
-				try {
-					final ResourceTraversal[] traversals = mapping
-							.getTraversals(
-									ResourceMappingContext.LOCAL_CONTEXT, null);
-					for (ResourceTraversal traversal : traversals) {
-						final IResource[] resources = traversal.getResources();
-						for (IResource resource : resources) {
-							if (!resource.equals(file))
-								return false;
-						}
+		for (ResourceMapping mapping : mappings) {
+			try {
+				final ResourceTraversal[] traversals = mapping.getTraversals(
+						ResourceMappingContext.LOCAL_CONTEXT, null);
+				for (ResourceTraversal traversal : traversals) {
+					final IResource[] resources = traversal.getResources();
+					for (IResource resource : resources) {
+						if (!resource.equals(file))
+							return false;
 					}
-				} catch (CoreException e) {
-					Activator.logError(e.getMessage(), e);
 				}
+			} catch (CoreException e) {
+				Activator.logError(e.getMessage(), e);
 			}
-
 		}
 		return true;
 	}

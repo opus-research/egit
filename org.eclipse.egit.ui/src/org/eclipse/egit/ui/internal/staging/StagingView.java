@@ -2046,7 +2046,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (form.isDisposed())
 			return;
 		if (repository == null) {
-			syncExec(new Runnable() {
+			asyncExec(new Runnable() {
 				public void run() {
 					clearRepository();
 				}
@@ -2059,7 +2059,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		final boolean repositoryChanged = currentRepository != repository;
 
-		syncExec(new Runnable() {
+		asyncExec(new Runnable() {
 
 			public void run() {
 				if (form.isDisposed())
@@ -2350,8 +2350,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
-		if (!UIUtils.saveAllEditors(currentRepository,
-				UIText.StagingView_cancelCommitAfterSaving))
+		if (!UIUtils.saveAllEditors(currentRepository))
 			return;
 
 		String commitMessage = commitMessageComponent.getCommitMessage();
@@ -2413,8 +2412,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 			refsChangedListener.remove();
 	}
 
-	private void syncExec(Runnable runnable) {
-		PlatformUI.getWorkbench().getDisplay().syncExec(runnable);
+	private void asyncExec(Runnable runnable) {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
 	}
 
 }

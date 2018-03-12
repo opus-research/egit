@@ -38,8 +38,8 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -827,8 +827,27 @@ class CommitGraphTable {
 						UIText.GitHistoryPage_rebaseInteractiveMenuItem));
 				popupMgr.add(new Separator());
 
-				MenuManager resetManager = ResetMenu.createMenu(site);
+				MenuManager resetManager = new MenuManager(
+						UIText.GitHistoryPage_ResetMenuLabel, UIIcons.RESET,
+						"Reset"); //$NON-NLS-1$
+
 				popupMgr.add(resetManager);
+
+				Map<String, String> parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Soft"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetSoftMenuLabel, parameters));
+				parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Mixed"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetMixedMenuLabel, parameters));
+				parameters = new HashMap<String, String>();
+				parameters.put(HistoryViewCommands.RESET_MODE, "Hard"); //$NON-NLS-1$
+				resetManager.add(getCommandContributionItem(
+						HistoryViewCommands.RESET,
+						UIText.GitHistoryPage_ResetHardMenuLabel, parameters));
 			} else if (selectionSize == 2) {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.COMPARE_VERSIONS,
@@ -870,15 +889,6 @@ class CommitGraphTable {
 					UIText.GitHistoryPage_ModifyMenuLabel, null, "Modify"); //$NON-NLS-1$
 
 			popupMgr.add(modifyManager);
-
-			if (selectionSize == 1) {
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.REWORD,
-						UIText.GitHistoryPage_rewordMenuItem));
-				modifyManager.add(getCommandContributionItem(
-						HistoryViewCommands.EDIT,
-						UIText.GitHistoryPage_editMenuItem));
-			}
 
 			if (selectionSize >= 2)
 				modifyManager.add(getCommandContributionItem(
