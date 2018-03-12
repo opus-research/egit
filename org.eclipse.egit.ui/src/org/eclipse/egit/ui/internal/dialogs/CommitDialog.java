@@ -117,7 +117,7 @@ public class CommitDialog extends Dialog {
 
 	}
 
-	static class CommitLabelProvider extends WorkbenchLabelProvider implements
+	class CommitLabelProvider extends WorkbenchLabelProvider implements
 			ITableLabelProvider {
 		public String getColumnText(Object obj, int columnIndex) {
 			CommitItem item = (CommitItem) obj;
