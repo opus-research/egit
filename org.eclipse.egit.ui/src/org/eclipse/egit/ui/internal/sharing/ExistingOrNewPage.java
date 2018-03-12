@@ -192,7 +192,9 @@ class ExistingOrNewPage extends WizardPage {
 		repositoryToCreate.setLayoutData(GridDataFactory.fillDefaults().grab(true, false).span(1,1).create());
 		repositoryToCreate.addListener(SWT.Modify, new Listener() {
 			public void handleEvent(Event e) {
-				IPath fromOSString = Path.fromOSString(repositoryToCreate.getText());
+				if (e.text == null)
+					return;
+				IPath fromOSString = Path.fromOSString(e.text);
 				button.setEnabled(minumumPath
 						.matchingFirstSegments(fromOSString) == fromOSString
 						.segmentCount());
