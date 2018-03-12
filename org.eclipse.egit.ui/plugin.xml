@@ -1434,10 +1434,16 @@
                               value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
                         </instanceof>
                         <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
+                        </instanceof>
+                        <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
                         </instanceof>
                         <instanceof
                               value="org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
                         </instanceof>
                      </or>
                   </iterate>
@@ -1892,41 +1898,8 @@
             </visibleWhen>
          </command>
          <separator
-               name="##Repo-0">
+               name="##Repo-1">
          </separator>
-         <menu 
-		 		label="%SwitchToMenu.label">
-               <dynamic
-                     class="org.eclipse.egit.ui.internal.actions.SwitchToMenu"
-                     id="org.eclipse.egit.ui.switchToMenu">
-               </dynamic>
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-					<or>
-	                     <instanceof
-	                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-	                     </instanceof>
-	                     <instanceof
-	                           value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
-	                     </instanceof>
-	                     <instanceof
-	                           value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
-	                     </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </menu> 
-         <separator
-               name="##Repo-1"
-               visible="true" />
          <command
                commandId="org.eclipse.egit.ui.team.Commit"
                icon="icons/obj16/commit.gif"
