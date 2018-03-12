@@ -29,7 +29,8 @@ public enum RepositoryTreeNodeType {
 	LOCAL(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
 			/** */
-	BRANCHHIERARCHY(UIIcons.REMOTE_SPEC.createImage()), //
+	BRANCHHIERARCHY(PlatformUI.getWorkbench().getSharedImages().getImage(
+			ISharedImages.IMG_OBJ_FOLDER)), //
 	/** */
 	REMOTETRACKING(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
@@ -59,10 +60,6 @@ public enum RepositoryTreeNodeType {
 	PUSH(UIIcons.PUSH.createImage()), //
 	/** */
 	SUBMODULES(UIIcons.SUBMODULES.createImage()),
-	/** */
-	STASH(UIIcons.STASH.createImage()),
-	/** */
-	STASHED_COMMIT(UIIcons.CHANGESET.createImage()),
 	/**	 */
 	WORKINGDIR(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
