@@ -374,15 +374,7 @@ public class RepositoryUtil {
 		return prefs;
 	}
 
-	/**
-	 * Returns the configured repositories.
-	 *
-	 * @return set of configured repositories' .git directories
-	 *
-	 * @since 4.2
-	 */
-	@NonNull
-	public Set<String> getRepositories() {
+	private Set<String> getRepositories() {
 		String dirs;
 		synchronized (prefs) {
 			dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$

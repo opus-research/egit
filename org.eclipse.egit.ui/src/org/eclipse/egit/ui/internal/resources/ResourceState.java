@@ -32,12 +32,6 @@ public class ResourceState implements IResourceState {
 	private boolean dirty;
 
 	/**
-	 * Flag indicating whether or not the resource has been deleted locally
-	 * (unstaged deletion).
-	 */
-	private boolean missing;
-
-	/**
 	 * Staged state of the resource
 	 */
 	@NonNull
@@ -49,9 +43,9 @@ public class ResourceState implements IResourceState {
 	private boolean conflicts;
 
 	/**
-	 * Flag indicating whether or not the resource is assumed unchanged
+	 * Flag indicating whether or not the resource is assumed valid
 	 */
-	private boolean assumeUnchanged;
+	private boolean assumeValid;
 
 	@Override
 	public boolean isTracked() {
@@ -66,11 +60,6 @@ public class ResourceState implements IResourceState {
 	@Override
 	public boolean isDirty() {
 		return dirty;
-	}
-
-	@Override
-	public boolean isMissing() {
-		return missing;
 	}
 
 	@Override
@@ -89,8 +78,8 @@ public class ResourceState implements IResourceState {
 	}
 
 	@Override
-	public boolean isAssumeUnchanged() {
-		return assumeUnchanged;
+	public boolean isAssumeValid() {
+		return assumeValid;
 	}
 
 	/**
@@ -144,23 +133,13 @@ public class ResourceState implements IResourceState {
 	}
 
 	/**
-	 * Sets the missing property.
+	 * Sets the assumeValid property.
 	 *
-	 * @param missing
+	 * @param assumeValid
 	 *            value to set.
 	 */
-	protected void setMissing(boolean missing) {
-		this.missing = missing;
-	}
-
-	/**
-	 * Sets the assumeUnchanged property.
-	 *
-	 * @param assumeUnchanged
-	 *            value to set.
-	 */
-	protected void setAssumeUnchanged(boolean assumeUnchanged) {
-		this.assumeUnchanged = assumeUnchanged;
+	protected void setAssumeValid(boolean assumeValid) {
+		this.assumeValid = assumeValid;
 	}
 
 }
