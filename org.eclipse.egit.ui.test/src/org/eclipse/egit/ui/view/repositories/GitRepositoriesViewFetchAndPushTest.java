@@ -30,6 +30,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -81,6 +82,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testPushToOrigin() throws Exception {
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile);
@@ -164,6 +166,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 	}
 
 	@Test
+	@Ignore
 	public void testFetchFromOrigin() throws Exception {
 
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
