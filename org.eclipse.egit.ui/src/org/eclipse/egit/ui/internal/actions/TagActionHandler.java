@@ -41,8 +41,10 @@ import org.eclipse.osgi.util.NLS;
  */
 public class TagActionHandler extends RepositoryActionHandler {
 
+	private Repository repo;
+
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final Repository repo = getRepository(true, event);
+		repo = getRepository(true, event);
 		if (repo == null)
 			return null;
 
@@ -79,7 +81,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 		RevObject tagTarget;
 		try {
-			tagTarget = getTagTarget(repo, dialog.getTagCommit());
+			tagTarget = getTagTarget(dialog.getTagCommit());
 		} catch (IOException e1) {
 			Activator.handleError(UIText.TagAction_unableToResolveHeadObjectId,
 					e1, true);
@@ -119,12 +121,11 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final Repository repo = getRepository();
+		Repository repo = getRepository();
 		return repo != null && containsHead(repo);
 	}
 
-	private RevObject getTagTarget(Repository repo, ObjectId objectId)
-			throws IOException {
+	private RevObject getTagTarget(ObjectId objectId) throws IOException {
 		RevWalk rw = new RevWalk(repo);
 		try {
 			if (objectId == null)
