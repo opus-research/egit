@@ -203,20 +203,6 @@
             </adapter>
          </factory>
          <factory
-               adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode"
-               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-            <adapter
-                  type="org.eclipse.team.ui.history.IHistoryPageSource">
-            </adapter>
-         </factory>
-         <factory
-               adaptableType="org.eclipse.egit.ui.internal.history.HistoryPageInput"
-               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-            <adapter
-                  type="org.eclipse.team.ui.history.IHistoryPageSource">
-            </adapter>
-         </factory>
-         <factory
 	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
@@ -304,6 +290,14 @@
             class="org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot"
             id="org.eclipse.egit.ui.GitPreferences" />
 
+      <page name="%GitPreferences_HistoryPreferencePage_name"
+	    category="org.eclipse.egit.ui.GitPreferences"
+            class="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage"
+	    id="org.eclipse.egit.ui.internal.preferences.HistoryPreferencePage" >
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.git">
+	    </keywordReference>
+	    </page>
       <page name="%GitPreferences_WindowCachePreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.WindowCachePreferencePage"
@@ -312,6 +306,15 @@
 		  id="org.eclipse.egit.ui.keyword.git">
 	    </keywordReference>
       </page>
+      <page name="%GitPreferences_RefreshPreferences_name"
+	    category="org.eclipse.egit.ui.GitPreferences"
+            class="org.eclipse.egit.ui.internal.preferences.RefreshPreferencesPage"
+	    id="org.eclipse.egit.ui.internal.preferences.RefreshPreferencesPage" >
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.git"/>
+	    <keywordReference
+		  id="org.eclipse.egit.ui.keyword.refresh"/>
+	    </page>
 	  <page name="%GitPreferences_DecoratorPreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitDecoratorPreferencePage"
@@ -325,6 +328,15 @@
          class="org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"
          id="org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"
          name="%ConfigurationPage.name">
+      <keywordReference
+            id="org.eclipse.egit.ui.keyword.git">
+      </keywordReference>
+   </page>
+   <page
+         category="org.eclipse.egit.ui.GitPreferences"
+         class="org.eclipse.egit.ui.internal.preferences.RemoteConnectionPreferencePage"
+         id="org.eclipse.egit.ui.page1"
+         name="Remote Connections">
       <keywordReference
             id="org.eclipse.egit.ui.keyword.git">
       </keywordReference>
@@ -1117,32 +1129,6 @@
                name="SecondGroup">
          </separator>
          <command
-               commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
-               label="Show in History"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FileNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.FolderNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
                commandId="org.eclipse.egit.ui.RepositoriesViewOpenInTextEditor"
                label="%RepoViewOpenInEditor.label"
                style="push">
@@ -1659,12 +1645,6 @@
                id="org.eclipse.ui.commands.toggleState">
          </state>
       </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ShowInHistoryCommand"
-            id="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
-            name="Show in History">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
@@ -1791,10 +1771,6 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesViewRemove"
             icon="icons/obj16/clear.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.RepositoriesView.ShowInHistoryCommand"
-            icon="icons/obj16/history.gif">
       </image>
    </extension>
    <extension
@@ -2072,16 +2048,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CheckoutCommitHandler"
             id="org.eclipse.egit.ui.history.CheckoutCommand"
             name="%CheckoutCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.OpenInTextEditorHandler"
-            id="org.eclipse.egit.ui.history.OpenInTextEditorCommand"
-            name="Open in Text Editor">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
-            id="org.eclipse.egit.ui.history.CherryPick"
-            name="%CherryPickCommand.name">
       </command>
    </extension>
    <extension

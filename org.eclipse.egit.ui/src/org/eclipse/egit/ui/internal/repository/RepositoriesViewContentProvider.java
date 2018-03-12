@@ -262,13 +262,10 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			try {
 				for (Entry<String, Ref> refEntry : repo.getRefDatabase()
 						.getRefs(RefDatabase.ALL).entrySet()) {
-					String name=refEntry.getKey();
-					if (!(name.startsWith(Constants.R_HEADS) || name.startsWith(Constants.R_TAGS)|| name.startsWith(Constants.R_REMOTES)))
+					if (refEntry.getValue().isSymbolic())
 						refs.add(new SymbolicRefNode(node, repo, refEntry
 								.getValue()));
 				}
-				for (Ref r : repo.getRefDatabase().getAdditionalRefs())
-					refs.add(new SymbolicRefNode(node, repo, r));
 			} catch (IOException e) {
 				return handleException(e, node);
 			}
