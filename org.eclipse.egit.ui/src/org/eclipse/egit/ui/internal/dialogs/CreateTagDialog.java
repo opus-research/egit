@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.dialogs;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.jface.dialogs.Dialog;
@@ -144,7 +143,7 @@ public class CreateTagDialog extends Dialog {
 			ITableLabelProvider {
 
 		public Image getColumnImage(Object element, int columnIndex) {
-			return UIIcons.TAG.createImage();
+			return null;
 		}
 
 		public String getColumnText(Object element, int columnIndex) {
