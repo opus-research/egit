@@ -35,7 +35,7 @@ public class ConfigureFetchCommand extends
 			return null;
 
 		WizardDialog dlg = new WizardDialog(
-				getShell(event), new ConfigureRemoteWizard(
+				getView(event).getSite().getShell(), new ConfigureRemoteWizard(
 						selectedNode.getRepository(), configName, false));
 		dlg.open();
 

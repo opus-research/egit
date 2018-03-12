@@ -37,8 +37,8 @@ public class GitResourceNode extends BufferedContent implements IStructureCompar
 	String contentIdentifier;
 
 	/**
-	 * Construct a resource not for a TreeEntry
-	 * @param e The TreeEntry
+	 * Construct a resource not for a {@link TreeEntry}
+	 * @param e The {@link TreeEntry}
 	 */
 	public GitResourceNode(TreeEntry e) {
 		entry = e;
