@@ -145,7 +145,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 		IDecoratableResource[] actualDRs = { new DecoratableResourceAdapter(
 				indexDiffCacheEntry.getIndexDiff(), project) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -171,7 +172,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new DecoratableResourceAdapter(indexDiffData, folder),
 				new DecoratableResourceAdapter(indexDiffData, subFolder) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -186,7 +188,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 		IDecoratableResource[] actualDRs = { new DecoratableResourceAdapter(
 				indexDiffData, testFolder2) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -207,7 +210,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new DecoratableResourceAdapter(indexDiffData, project),
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -307,7 +311,7 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
 		for (int i = 0; i < expectedDRs.length; i++)
-			assert(expectedDRs[i].equals(actualDRs[i]));
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -330,7 +334,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new DecoratableResourceAdapter(indexDiffData, project),
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -355,7 +360,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new DecoratableResourceAdapter(indexDiffData, project),
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -384,7 +390,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new DecoratableResourceAdapter(indexDiffData, project),
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 
 	@Test
@@ -433,7 +440,8 @@ public class DecoratableResourceAdapterTest extends LocalDiskRepositoryTestCase 
 				new DecoratableResourceAdapter(indexDiffData, project),
 				new DecoratableResourceAdapter(indexDiffData, file) };
 
-		assertArrayEquals(expectedDRs, actualDRs);
+		for (int i = 0; i < expectedDRs.length; i++)
+			assertTrue(expectedDRs[i].equals(actualDRs[i]));
 	}
 }
 
