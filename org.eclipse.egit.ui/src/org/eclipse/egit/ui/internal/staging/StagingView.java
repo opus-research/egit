@@ -2481,7 +2481,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		disposed = true;
 	}
 
-	boolean isDisposed() {
+	private boolean isDisposed() {
 		return disposed;
 	}
 
