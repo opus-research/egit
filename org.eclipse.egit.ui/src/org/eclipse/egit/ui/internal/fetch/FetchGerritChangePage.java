@@ -29,7 +29,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -384,33 +383,27 @@ public class FetchGerritChangePage extends WizardPage {
 				.applyTo(runInBackgroud);
 		runInBackgroud.setText(UIText.FetchGerritChangePage_RunInBackground);
 
-		// get all available Gerrit URIs from the repository
+		// get all available URIs from the repository
 		SortedSet<String> uris = new TreeSet<>();
 		try {
 			for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig())) {
-				if (GerritUtil.isGerritRemote(rc)) {
-					if (rc.getURIs().size() > 0) {
-						uris.add(rc.getURIs().get(0).toPrivateString());
-					}
-					for (URIish u : rc.getPushURIs()) {
-						uris.add(u.toPrivateString());
-					}
-				}
+				if (rc.getURIs().size() > 0)
+					uris.add(rc.getURIs().get(0).toPrivateString());
+				for (URIish u : rc.getPushURIs())
+					uris.add(u.toPrivateString());
 
 			}
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, false);
 			setErrorMessage(e.getMessage());
 		}
-		for (String aUri : uris) {
+		for (String aUri : uris)
 			uriCombo.add(aUri);
-		}
-		if (defaultUri != null) {
+		if (defaultUri != null)
 			uriCombo.setText(defaultUri);
-		} else {
+		else
 			selectLastUsedUri();
-		}
 		restoreRunInBackgroundSelection();
 		refText.setFocus();
 		Dialog.applyDialogFont(main);
