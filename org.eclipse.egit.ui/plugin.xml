@@ -358,11 +358,6 @@
          <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
          <adapter type="org.eclipse.core.resources.IResource"/>
       </factory>
-      <factory
-            adaptableType="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode"
-            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
-         <adapter type="org.eclipse.ui.model.IWorkbenchAdapter"/>
-      </factory>
    </extension>
 
    <extension point="org.eclipse.ui.preferencePages">
@@ -794,11 +789,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.team.DeleteTag"
-            name="%DeleteTagCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.Synchronize"
             name="%SynchronizeCommand.name">
       </command>
@@ -1106,24 +1096,6 @@
          </activeWhen>
       </handler>
       <handler
-            commandId="org.eclipse.egit.ui.team.DeleteTag">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.DeleteTagCommand">
-         </class>
-         <activeWhen>
-            <and>
-              <count
-                     value="+">
-              </count>
-              <iterate>
-                 <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
             commandId="org.eclipse.egit.ui.team.Merge">
          <class
                class="org.eclipse.egit.ui.internal.actions.MergeActionHandler">
@@ -1292,26 +1264,6 @@
                   </adapt>
                </iterate>
             </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate
-                        ifEmpty="false"
-                        operator="and">
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RemoteNode">
-                     </instanceof>
-                  </iterate>
-               </and>
          </activeWhen>
       </handler>
    </extension>
@@ -1620,24 +1572,6 @@
                            </test>
                         </not>
                      </and>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.team.DeleteTag"
-               label="%DeleteTagCommand.name"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2365,9 +2299,6 @@
                            </instanceof>
                            <instanceof
                                  value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                            </instanceof>
                         </or>
                      </and>
@@ -3198,6 +3129,7 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.RemoveRemoteCommand"
             id="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
             name="%DeleteRemoteCommand">
       </command>
@@ -3543,10 +3475,6 @@
       <image
             commandId="org.eclipse.egit.ui.team.RenameBranch"
             icon="icons/obj16/editconfig.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.DeleteTag"
-            icon="icons/obj16/delete_obj.gif">
       </image>
    </extension>
    <extension
