@@ -102,12 +102,12 @@ public class GitModelSynchronize {
 			}
 		} while (includedResources.addAll(newResources));
 
-		if (dstRev.equals(GitFileRevision.INDEX)) {
+		if (dstRev == GitFileRevision.INDEX) {
 			final IResource[] resourcesArray = includedResources
 					.toArray(new IResource[includedResources.size()]);
 			openGitTreeCompare(resourcesArray, srcRev,
 					CompareTreeView.INDEX_VERSION, includeLocal);
-		} else if (srcRev.equals(GitFileRevision.INDEX)) {
+		} else if (srcRev == GitFileRevision.INDEX) {
 			// Even git tree compare cannot handle index as source...
 			// Synchronize using the local data for now.
 			final ResourceMapping[] mappings = allMappings
