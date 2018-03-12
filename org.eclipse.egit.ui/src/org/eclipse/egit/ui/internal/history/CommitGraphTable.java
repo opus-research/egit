@@ -300,8 +300,8 @@ class CommitGraphTable {
 		final TableColumn commitId = new TableColumn(rawTable, SWT.NONE);
 		commitId.setResizable(true);
 		commitId.setText(UIText.CommitGraphTable_CommitId);
-		commitId.setWidth(50);
-		layout.addColumnData(new ColumnWeightData(3, true));
+		commitId.setWidth(100);
+		layout.addColumnData(new ColumnWeightData(5, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
 		committer.setResizable(true);
@@ -467,9 +467,6 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.CHERRYPICK,
 						UIText.GitHistoryPage_cherryPickMenuItem));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.REVERT,
-						UIText.GitHistoryPage_revertMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(
