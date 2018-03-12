@@ -880,10 +880,7 @@ public class UIText extends NLS {
 	public static String CommitAction_cannotCommit;
 
 	/** */
-	public static String CommitAction_CommittingChanges;
-
-	/** */
-	public static String CommitAction_CommittingFailed;
+	public static String CommitAction_errorCommittingChanges;
 
 	/** */
 	public static String CommitAction_errorComputingDiffs;
@@ -895,7 +892,16 @@ public class UIText extends NLS {
 	public static String CommitAction_errorOnCommit;
 
 	/** */
+	public static String CommitAction_errorPreparingTrees;
+
+	/** */
 	public static String CommitAction_errorRetrievingCommit;
+
+	/** */
+	public static String CommitAction_errorWritingTrees;
+
+	/** */
+	public static String CommitAction_failedToUpdate;
 
 	/** */
 	public static String CommitAction_InternalError;
@@ -1579,9 +1585,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_DeleteRepoDeterminProjectsMessage;
 
 	/** */
-	public static String RepositoriesView_DoFetchMenu;
-
-	/** */
 	public static String RepositoriesView_DoPushMenuItem;
 
 	/** */
@@ -1631,9 +1634,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_PasteRepoAlreadyThere;
-
-	/** */
-	public static String RepositoriesView_PushMenu;
 
 	/** */
 	public static String RepositoriesView_Refresh_Button;
