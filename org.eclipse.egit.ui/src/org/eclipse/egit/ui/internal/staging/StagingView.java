@@ -887,8 +887,9 @@ public class StagingView extends ViewPart {
 						menuMgr.add(new ReplaceAction(UIText.StagingView_replaceWithHeadRevision, selection, true));
 					else
 						menuMgr.add(createItem(ActionCommands.REPLACE_WITH_HEAD_ACTION, tableViewer));
-				if (addIgnore)
+				if (addIgnore) {
 					menuMgr.add(new IgnoreAction(selection));
+				}
 				if (addDelete) {
 					menuMgr.add(new DeleteAction(selection));
 				}

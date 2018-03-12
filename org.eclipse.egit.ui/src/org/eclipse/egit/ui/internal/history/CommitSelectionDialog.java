@@ -10,13 +10,9 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -39,14 +35,9 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.FollowFilter;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
@@ -63,8 +54,6 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 
 	private final Repository repository;
 
-	private final IResource[] filterResources;
-
 	private CommitGraphTable table;
 
 	private SWTCommitList allCommits;
@@ -78,24 +67,9 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 	 * @param repository
 	 */
 	public CommitSelectionDialog(Shell parentShell, Repository repository) {
-		this(parentShell, repository, null);
-	}
-
-	/**
-	 * Create a commit selection dialog which shows only commits which changed
-	 * the given resources.
-	 *
-	 * @param parentShell
-	 * @param repository
-	 * @param filterResources
-	 *            the resources to use to filter commits, null for no filter
-	 */
-	public CommitSelectionDialog(Shell parentShell, Repository repository,
-			IResource[] filterResources) {
 		super(parentShell);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repository = repository;
-		this.filterResources = filterResources;
 	}
 
 	@Override
@@ -154,7 +128,6 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 												UIText.CommitSelectionDialog_BuildingCommitListMessage,
 												IProgressMonitor.UNKNOWN);
 								SWTWalk currentWalk = new SWTWalk(repository);
-								currentWalk.setTreeFilter(createTreeFilter());
 								currentWalk
 										.sort(RevSort.COMMIT_TIME_DESC, true);
 								currentWalk.sort(RevSort.BOUNDARY, true);
@@ -247,27 +220,4 @@ public class CommitSelectionDialog extends TitleAreaDialog {
 		}
 	}
 
-	private TreeFilter createTreeFilter() {
-		if (filterResources == null)
-			return TreeFilter.ALL;
-
-		List<TreeFilter> filters = new ArrayList<TreeFilter>();
-		for (IResource resource : filterResources) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-			if (mapping != null) {
-				String path = mapping.getRepoRelativePath(resource);
-				if (resource.getType() == IResource.FILE)
-					filters.add(FollowFilter.create(path));
-				else
-					filters.add(AndTreeFilter.create(PathFilter.create(path), TreeFilter.ANY_DIFF));
-			}
-		}
-
-		if (filters.isEmpty())
-			return TreeFilter.ALL;
-		else if (filters.size() == 1)
-			return filters.get(0);
-		else
-			return OrTreeFilter.create(filters);
-	}
 }
