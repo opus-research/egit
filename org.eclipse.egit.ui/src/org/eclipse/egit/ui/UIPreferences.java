@@ -155,8 +155,6 @@ public class UIPreferences {
 	public static final String PAGE_COMMIT_PREFERENCES = "org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"; //$NON-NLS-1$
 	/** */
 	public static final String BLAME_IGNORE_WHITESPACE = "Blame_IgnoreWhitespace"; //$NON-NLS-1$
-	/** */
-	public static final String CLONE_WIZARD_STORE_SECURESTORE = "CloneWizard_StoreInSecureStore"; //$NON-NLS-1$
 
 
 	/**
