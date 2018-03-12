@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,18 +22,19 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.TagOpt;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.TagOpt;
+import org.eclipse.jgit.transport.URIish;
 
 /**
  * This wizard page allows user easy selection of specifications for push or
@@ -42,8 +42,11 @@ import org.eclipse.swt.widgets.Group;
  * <p>
  * Page is relying highly on {@link RefSpecPanel} component, see its description
  * for details.
+ * <p>
+ * Page is designed to be successor of {@link RepositorySelectionPage} in
+ * wizard.
  */
-public class RefSpecPage extends WizardPage {
+public class RefSpecPage extends BaseWizardPage {
 
 	private final Repository local;
 
@@ -111,11 +114,17 @@ public class RefSpecPage extends WizardPage {
 				new GridData(SWT.FILL, SWT.FILL, true, true));
 		specsPanel.addRefSpecTableListener(new SelectionChangeListener() {
 			public void selectionChanged() {
-				// notifySelectionChanged();
+				notifySelectionChanged();
 				checkPage();
 			}
 		});
 
+		final SelectionAdapter changesNotifier = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				notifySelectionChanged();
+			}
+		};
 		if (!pushPage) {
 			final Group tagsGroup = new Group(panel, SWT.NULL);
 			tagsGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
@@ -129,17 +138,28 @@ public class RefSpecPage extends WizardPage {
 			tagsFetchTagsButton
 					.setText(UIText.RefSpecPage_annotatedTagsFetchTags);
 			tagsNoTagsButton = new Button(tagsGroup, SWT.RADIO);
-			tagsNoTagsButton.setText(UIText.RefSpecPage_annotatedTagsNoTags);
+			tagsNoTagsButton
+					.setText(UIText.RefSpecPage_annotatedTagsNoTags);
+			tagsAutoFollowButton.addSelectionListener(changesNotifier);
+			tagsFetchTagsButton.addSelectionListener(changesNotifier);
+			tagsNoTagsButton.addSelectionListener(changesNotifier);
 		}
 
 		saveButton = new Button(panel, SWT.CHECK);
 		saveButton.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, true, false));
-		// saveButton.addSelectionListener(changesNotifier);
+		saveButton.addSelectionListener(changesNotifier);
 
 		Dialog.applyDialogFont(panel);
 		setControl(panel);
-		// notifySelectionChanged();
+		notifySelectionChanged();
 		checkPage();
+	}
+
+	@Override
+	public void setVisible(final boolean visible) {
+		if (visible)
+			revalidate();
+		super.setVisible(visible);
 	}
 
 	/**
@@ -196,8 +216,7 @@ public class RefSpecPage extends WizardPage {
 
 	private void revalidate() {
 
-		if (currentRepoSelection != null
-				&& currentRepoSelection.equals(validatedRepoSelection)) {
+		if (currentRepoSelection != null && currentRepoSelection.equals(validatedRepoSelection)) {
 			// nothing changed on previous page
 			checkPage();
 			return;
@@ -210,6 +229,7 @@ public class RefSpecPage extends WizardPage {
 		specsPanel.setEnable(false);
 		saveButton.setVisible(false);
 		saveButton.setSelection(false);
+		notifySelectionChanged();
 		validatedRepoSelection = null;
 		transportError = null;
 		getControl().getDisplay().asyncExec(new Runnable() {
