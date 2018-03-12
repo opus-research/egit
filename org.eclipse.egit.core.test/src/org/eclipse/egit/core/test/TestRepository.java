@@ -437,10 +437,16 @@ public class TestRepository {
 	 */
 	public boolean inHead(String path) throws IOException {
 		ObjectId headId = repository.resolve(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository);
-				TreeWalk tw = TreeWalk.forPath(repository, path,
-						rw.parseTree(headId))) {
+		RevWalk rw = new RevWalk(repository);
+		TreeWalk tw = null;
+		try {
+			tw = TreeWalk.forPath(repository, path, rw.parseTree(headId));
 			return tw != null;
+		} finally {
+			rw.release();
+			rw.dispose();
+			if (tw != null)
+				tw.release();
 		}
 	}
 

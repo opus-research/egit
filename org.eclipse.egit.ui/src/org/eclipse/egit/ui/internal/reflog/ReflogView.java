@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2015 Chris Aniszczyk <caniszczyk@gmail.com> and others.
+ * Copyright (c) 2011, 2014 Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -205,13 +205,17 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			}
 
 			private RevCommit getCommit(final ReflogEntry entry) {
-				try (RevWalk walk = new RevWalk(getRepository())) {
-					walk.setRetainBody(true);
-					return walk.parseCommit(entry.getNewId());
+				RevWalk walk = new RevWalk(getRepository());
+				walk.setRetainBody(true);
+				RevCommit c = null;
+				try {
+					c = walk.parseCommit(entry.getNewId());
 				} catch (IOException ignored) {
 					// ignore
-					return null;
+				} finally {
+					walk.release();
 				}
+				return c;
 			}
 		});
 
@@ -297,7 +301,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				Repository repo = getRepository();
 				if (repo == null)
 					return;
-				try (RevWalk walk = new RevWalk(repo)) {
+				RevWalk walk = new RevWalk(repo);
+				try {
 					for (Object element : ((IStructuredSelection)selection).toArray()) {
 						ReflogEntry entry = (ReflogEntry) element;
 						ObjectId id = entry.getNewId();
@@ -309,6 +314,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 					}
 				} catch (IOException e) {
 					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
+				} finally {
+					walk.release();
 				}
 			}
 		};
@@ -389,8 +396,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				selectedRepo = mapping.getRepository();
 		}
 		if (selectedRepo == null && first instanceof IAdaptable) {
-			IResource adapted = CommonUtils.getAdapter(((IAdaptable) ssel
-					.getFirstElement()), IResource.class);
+			IResource adapted = (IResource) ((IAdaptable) ssel
+					.getFirstElement()).getAdapter(IResource.class);
 			if (adapted != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(adapted);
