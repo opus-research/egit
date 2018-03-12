@@ -63,8 +63,8 @@ public class ProjectUtil {
 			IPath projectLocation = p.getLocation();
 			if (!p.isOpen() || projectLocation == null)
 				continue;
-			String projectFilePath = projectLocation
-					.append(".project").toOSString(); //$NON-NLS-1$
+			String projectFilePath = projectLocation.append(
+					IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
 			File projectFile = new File(projectFilePath);
 			if (projectFile.exists()) {
 				final File file = p.getLocation().toFile();
@@ -100,7 +100,11 @@ public class ProjectUtil {
 			for (IProject p : projects) {
 				if (monitor.isCanceled())
 					break;
-				String projectFilePath = p.getLocation().append(".project").toOSString();  //$NON-NLS-1$
+				IPath projectLocation = p.getLocation();
+				if (projectLocation == null)
+					continue;
+				String projectFilePath = projectLocation.append(
+						IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
 				File projectFile = new File(projectFilePath);
 				if (projectFile.exists())
 						p.refreshLocal(IResource.DEPTH_INFINITE,
@@ -177,13 +181,16 @@ public class ProjectUtil {
 	public static boolean findProjectFiles(final Collection<File> files,
 			final File directory, final Set<String> visistedDirs,
 			final IProgressMonitor monitor) {
+		if (directory == null)
+			return false;
+
 		IProgressMonitor pm = monitor;
 		if (pm == null)
 			pm = new NullProgressMonitor();
 		else if (pm.isCanceled())
 			return false;
 
-		monitor.subTask(NLS.bind(CoreText.ProjectUtil_taskCheckingDirectory,
+		pm.subTask(NLS.bind(CoreText.ProjectUtil_taskCheckingDirectory,
 				directory.getPath()));
 
 		final File[] contents = directory.listFiles();

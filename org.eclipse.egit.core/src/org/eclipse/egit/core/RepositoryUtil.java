@@ -265,27 +265,35 @@ public class RepositoryUtil {
 		return prefs;
 	}
 
+	private Set<String> getRepositories() {
+		String dirs;
+		synchronized (prefs) {
+			dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
+		}
+		if (dirs == null || dirs.length() == 0)
+			return Collections.emptySet();
+		Set<String> configuredStrings = new HashSet<String>();
+		StringTokenizer tok = new StringTokenizer(dirs, File.pathSeparator);
+		while (tok.hasMoreTokens())
+			configuredStrings.add(tok.nextToken());
+		return configuredStrings;
+	}
+
 	/**
 	 *
 	 * @return the list of configured Repository paths; will be sorted
 	 */
 	public List<String> getConfiguredRepositories() {
-		synchronized (prefs) {
-			Set<String> configuredStrings = new HashSet<String>();
+		final List<String> repos = new ArrayList<String>(getRepositories());
+		Collections.sort(repos);
+		return repos;
+	}
 
-			String dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
-			if (dirs != null && dirs.length() > 0) {
-				StringTokenizer tok = new StringTokenizer(dirs,
-						File.pathSeparator);
-				while (tok.hasMoreTokens()) {
-					String dirName = tok.nextToken();
-					configuredStrings.add(dirName);
-				}
-			}
-			List<String> result = new ArrayList<String>();
-			result.addAll(configuredStrings);
-			Collections.sort(result);
-			return result;
+	private String getPath(File repositoryDir) {
+		try {
+			return repositoryDir.getCanonicalPath();
+		} catch (IOException e) {
+			return repositoryDir.getAbsolutePath();
 		}
 	}
 
@@ -304,12 +312,7 @@ public class RepositoryUtil {
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
 				throw new IllegalArgumentException();
 
-			String dirString;
-			try {
-				dirString = repositoryDir.getCanonicalPath();
-			} catch (IOException e) {
-				dirString = repositoryDir.getAbsolutePath();
-			}
+			String dirString = getPath(repositoryDir);
 
 			List<String> dirStrings = getConfiguredRepositories();
 			if (dirStrings.contains(dirString)) {
@@ -331,12 +334,7 @@ public class RepositoryUtil {
 	public boolean removeDir(File file) {
 		synchronized (prefs) {
 
-			String dir;
-			try {
-				dir = file.getCanonicalPath();
-			} catch (IOException e1) {
-				dir = file.getAbsolutePath();
-			}
+			String dir = getPath(file);
 
 			Set<String> dirStrings = new HashSet<String>();
 			dirStrings.addAll(getConfiguredRepositories());
@@ -365,4 +363,26 @@ public class RepositoryUtil {
 		}
 	}
 
+	/**
+	 * Does the collection of repository returned by
+	 * {@link #getConfiguredRepositories()} contain the given repository?
+	 *
+	 * @param repository
+	 * @return true if contains repository, false otherwise
+	 */
+	public boolean contains(final Repository repository) {
+		return contains(getPath(repository.getDirectory()));
+	}
+
+	/**
+	 * Does the collection of repository returned by
+	 * {@link #getConfiguredRepositories()} contain the given repository
+	 * directory?
+	 *
+	 * @param repositoryDir
+	 * @return true if contains repository directory, false otherwise
+	 */
+	public boolean contains(final String repositoryDir) {
+		return getRepositories().contains(repositoryDir);
+	}
 }
