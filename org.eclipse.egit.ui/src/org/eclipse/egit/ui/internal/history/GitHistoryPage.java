@@ -594,7 +594,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	/** Job that is updating our history view, if we are refreshing. */
 	private GenerateHistoryJob job;
 
-	private boolean hasWalk = false;
+	/** Revision walker that allocated our graph's commit nodes. */
+	private SWTWalk currentWalk;
 
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
@@ -627,11 +628,19 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	};
 
+	/**
+	 * Highlight flag that can be applied to commits to make them stand out.
+	 * <p>
+	 * Allocated at the same time as {@link #currentWalk}. If the walk rebuilds,
+	 * so must this flag.
+	 */
+	private RevFlag highlightFlag;
 
 	/**
-	 * List of paths we used to limit the revwalk; null if no paths.
+	 * List of paths we used to limit {@link #currentWalk}; null if no paths.
 	 * <p>
-	 * Note that a change in this list requires that the history is redrawn
+	 * Note that a change in this list requires that {@link #currentWalk} and
+	 * all of its associated commits.
 	 */
 	private List<FilterPath> pathFilters;
 
@@ -1411,7 +1420,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	}
 
 	void showCommitList(final Job j, final SWTCommitList list,
-			final SWTCommit[] asArray, final boolean incomplete, final RevFlag highlightFlag) {
+			final SWTCommit[] asArray, final boolean incomplete) {
 		if (trace)
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation(),
@@ -1487,13 +1496,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				// not dispose of the SWTWalk, even if HEAD was reset to
 				// HEAD^1 and the old HEAD commit should not be visible.
 				//
-				SWTWalk newWalk = createNewWalk(db, headId);
-				setWalkStartPoints(newWalk, db, headId);
+				createNewWalk(db, headId);
+				setWalkStartPoints(db, headId);
 
-				setupFileViewer(newWalk, db, paths);
+				setupFileViewer(db, paths);
 				setupCommentViewer(db);
 
-				scheduleNewGenerateHistoryJob(newWalk);
+				scheduleNewGenerateHistoryJob();
 			} else
 				// needed for context menu and double click
 				graph.setHistoryPageInput(input);
@@ -1533,7 +1542,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 
 		return pathChanged
-			|| hasWalk == false || headChanged || repoChanged || allBranchesChanged
+			|| currentWalk == null || headChanged || repoChanged || allBranchesChanged
 			|| additionalRefsChange || showNotesChanged || followRenamesChanged;
 	}
 
@@ -1642,10 +1651,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return !o.equals(n);
 	}
 
-	private SWTWalk createNewWalk(Repository db, AnyObjectId headId) {
+	private void createNewWalk(Repository db, AnyObjectId headId) {
 		currentHeadId = headId;
-		SWTWalk currentWalk = new SWTWalk(db);
-		hasWalk = true;
+		currentWalk = new SWTWalk(db);
 		try {
 			if (store
 					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS))
@@ -1661,27 +1669,27 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 		currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 		currentWalk.sort(RevSort.BOUNDARY, true);
-		return currentWalk;
+		highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
 	}
 
-	private void setWalkStartPoints(RevWalk newWalk, Repository db, AnyObjectId headId) {
+	private void setWalkStartPoints(Repository db, AnyObjectId headId) {
 		try {
 			if (store
 					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES)) {
-				markStartAllRefs(newWalk, Constants.R_HEADS);
-				markStartAllRefs(newWalk, Constants.R_REMOTES);
-				markStartAllRefs(newWalk, Constants.R_TAGS);
+				markStartAllRefs(Constants.R_HEADS);
+				markStartAllRefs(Constants.R_REMOTES);
+				markStartAllRefs(Constants.R_TAGS);
 			}
 			if (store
 					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS))
-				markStartAdditionalRefs(newWalk);
+				markStartAdditionalRefs();
 			if (store
 					.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES))
-				markStartAllRefs(newWalk, Constants.R_NOTES);
+				markStartAllRefs(Constants.R_NOTES);
 			else
-				markUninteresting(newWalk, Constants.R_NOTES);
+				markUninteresting(Constants.R_NOTES);
 
-			newWalk.markStart(newWalk.parseCommit(headId));
+			currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorSettingStartPoints, Activator
@@ -1695,15 +1703,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		commentViewer.refresh();
 	}
 
-	private TreeWalk setupFileViewer(RevWalk newWalk, Repository db, List<FilterPath> paths) {
-		final TreeWalk fileWalker = createFileWalker(newWalk, db, paths);
+	private TreeWalk setupFileViewer(Repository db, List<FilterPath> paths) {
+		final TreeWalk fileWalker = createFileWalker(db, paths);
 		fileViewer.setTreeWalk(db, fileWalker);
 		fileViewer.refresh();
 		fileViewer.addSelectionChangedListener(commentViewer);
 		return fileWalker;
 	}
 
-	private TreeWalk createFileWalker(RevWalk newWalk, Repository db, List<FilterPath> paths) {
+	private TreeWalk createFileWalker(Repository db, List<FilterPath> paths) {
 		final TreeWalk fileWalker = new TreeWalk(db);
 		fileWalker.setRecursive(true);
 		fileWalker.setFilter(TreeFilter.ANY_DIFF);
@@ -1717,18 +1725,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				selectedPaths.add(filterPath.getPath());
 
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
-			newWalk.setTreeFilter(followFilter);
+			currentWalk.setTreeFilter(followFilter);
 		} else if (paths.size() > 0) {
 			pathFilters = paths;
 			List<String> stringPaths = new ArrayList<String>(paths.size());
 			for (FilterPath p : paths)
 				stringPaths.add(p.getPath());
 
-			newWalk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
+			currentWalk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
 					.createFromStrings(stringPaths), TreeFilter.ANY_DIFF));
 		} else {
 			pathFilters = null;
-			newWalk.setTreeFilter(TreeFilter.ALL);
+			currentWalk.setTreeFilter(TreeFilter.ALL);
 		}
 		return fileWalker;
 	}
@@ -1765,7 +1773,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return true;
 	}
 
-	private void scheduleNewGenerateHistoryJob(RevWalk currentWalk) {
+	private void scheduleNewGenerateHistoryJob() {
 		final GenerateHistoryJob rj = new GenerateHistoryJob(this,
 				graph.getControl(), currentWalk);
 		rj.setRule(this);
@@ -1817,7 +1825,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	/**
 	 * {@link RevWalk#markStart(RevCommit)} all refs with given prefix to mark
 	 * start of graph traversal using currentWalker
-	 * @param newWalk the walk to be configured
 	 *
 	 * @param prefix
 	 *            prefix of refs to be marked
@@ -1825,42 +1832,42 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 * @throws MissingObjectException
 	 * @throws IncorrectObjectTypeException
 	 */
-	private void markStartAllRefs(RevWalk newWalk, String prefix) throws IOException,
+	private void markStartAllRefs(String prefix) throws IOException,
 			MissingObjectException, IncorrectObjectTypeException {
 		for (Entry<String, Ref> refEntry : input.getRepository()
 				.getRefDatabase().getRefs(prefix).entrySet()) {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			markStartRef(newWalk, ref);
+			markStartRef(ref);
 		}
 	}
 
-	private void markStartAdditionalRefs(RevWalk newWalk) throws IOException {
+	private void markStartAdditionalRefs() throws IOException {
 		List<Ref> additionalRefs = input.getRepository().getRefDatabase()
 				.getAdditionalRefs();
 		for (Ref ref : additionalRefs)
-			markStartRef(newWalk, ref);
+			markStartRef(ref);
 	}
 
-	private void markStartRef(RevWalk newWalk, Ref ref) throws MissingObjectException,
+	private void markStartRef(Ref ref) throws MissingObjectException,
 			IOException, IncorrectObjectTypeException {
-		Object refTarget = newWalk.parseAny(ref.getLeaf().getObjectId());
+		Object refTarget = currentWalk.parseAny(ref.getLeaf().getObjectId());
 		if (refTarget instanceof RevCommit)
-			newWalk.markStart((RevCommit) refTarget);
+			currentWalk.markStart((RevCommit) refTarget);
 	}
 
-	private void markUninteresting(RevWalk newWalk, String prefix) throws IOException,
+	private void markUninteresting(String prefix) throws IOException,
 			MissingObjectException, IncorrectObjectTypeException {
 		for (Entry<String, Ref> refEntry : input.getRepository()
 				.getRefDatabase().getRefs(prefix).entrySet()) {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			Object refTarget = newWalk
+			Object refTarget = currentWalk
 					.parseAny(ref.getLeaf().getObjectId());
 			if (refTarget instanceof RevCommit)
-				newWalk.markUninteresting((RevCommit) refTarget);
+				currentWalk.markUninteresting((RevCommit) refTarget);
 		}
 	}
 
