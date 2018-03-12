@@ -107,7 +107,6 @@ public class SharingWizardTest {
 
 		// share project
 		bot.button("Finish").click();
-		Thread.sleep(1000);
 		assertEquals("org.eclipse.egit.core.GitProvider",
 				workspace.getRoot().getProject(projectName)
 						.getPersistentProperty(
