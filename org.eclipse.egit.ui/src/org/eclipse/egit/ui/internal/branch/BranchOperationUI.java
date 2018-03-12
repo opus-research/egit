@@ -358,8 +358,8 @@ public class BranchOperationUI {
 	private String getTargetWithCheckoutRemoteTrackingDialog() {
 		String[] buttons = new String[] {
 				UIText.BranchOperationUI_CheckoutRemoteTrackingAsLocal,
-				IDialogConstants.CANCEL_LABEL,
-				UIText.BranchOperationUI_CheckoutRemoteTrackingCommit };
+				UIText.BranchOperationUI_CheckoutRemoteTrackingCommit,
+				IDialogConstants.CANCEL_LABEL };
 		MessageDialog questionDialog = new MessageDialog(
 				getShell(),
 				UIText.BranchOperationUI_CheckoutRemoteTrackingTitle,
@@ -376,11 +376,11 @@ public class BranchOperationUI {
 			createBranchDialog.open();
 			return null;
 		} else if (result == 1) {
-			// Cancel
-			return null;
-		} else {
 			// Check out commit
 			return target;
+		} else {
+			// Cancel
+			return null;
 		}
 	}
 
