@@ -13,7 +13,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -94,7 +93,7 @@ public class GitResourceVariantTreeSubscriberTest1 extends GitTestCase {
 	}
 
 	private GitResourceVariantTreeSubscriber createGitResourceVariantTreeSubscriber(
-			String src, String dst) throws IOException {
+			String src, String dst) {
 		GitSynchronizeData gsd = new GitSynchronizeData(repo, src, dst, false);
 		GitSynchronizeDataSet gsds = new GitSynchronizeDataSet(gsd);
 		new GitResourceVariantTreeSubscriber(gsds);
