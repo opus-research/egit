@@ -46,8 +46,7 @@ public class RebaseCurrentHandler extends AbstractHistoryCommandHandler {
 		String jobname = NLS.bind(
 				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName,
 				currentBranch, ref.getName());
-		RebaseHelper.runRebaseJob(repository, jobname, ref,
-				RebaseHelper.DEFAULT_CANCEL_DIALOG_MESSAGE);
+		RebaseHelper.runRebaseJob(repository, jobname, ref);
 		return null;
 	}
 

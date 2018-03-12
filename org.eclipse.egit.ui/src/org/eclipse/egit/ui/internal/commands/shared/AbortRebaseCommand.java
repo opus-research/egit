@@ -10,11 +10,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
-import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
-import org.eclipse.jgit.lib.Ref;
 
 /**
  * Implements "Abort Rebase"
@@ -25,11 +22,6 @@ public class AbortRebaseCommand extends AbstractRebaseCommandHandler {
 	 */
 	public AbortRebaseCommand() {
 		super(Operation.ABORT, UIText.AbortRebaseCommand_JobName,
-				UIText.AbortRebaseCommand_CancelDialogMessage, true);
-	}
-
-	@Override
-	protected Ref getRef(ExecutionEvent event) throws ExecutionException {
-		return null;
+				UIText.AbortRebaseCommand_CancelDialogMessage);
 	}
 }
