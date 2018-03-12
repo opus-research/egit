@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.indexdiff;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -344,16 +343,10 @@ public class IndexDiffCacheEntry {
 	}
 
 	private boolean checkRepository() {
-		if (Activator.getDefault() == null) {
+		if (Activator.getDefault() == null)
 			return false;
-		}
-		if (repository == null) {
+		if (!repository.getDirectory().exists())
 			return false;
-		}
-		File directory = repository.getDirectory();
-		if (directory == null || !directory.exists()) {
-			return false;
-		}
 		return true;
 	}
 
@@ -609,20 +602,8 @@ public class IndexDiffCacheEntry {
 	public void dispose() {
 		indexChangedListenerHandle.remove();
 		refsChangedListenerHandle.remove();
-		if (resourceChangeListener != null) {
+		if (resourceChangeListener != null)
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
-		}
-		listeners.clear();
-		if (reloadJob != null) {
-			reloadJob.cancel();
-			reloadJob = null;
-		}
-		if (updateJob != null) {
-			updateJob.cleanupAndCancel();
-			updateJob = null;
-		}
-		indexDiffData = null;
-		lastIndex = null;
 	}
 
 }
