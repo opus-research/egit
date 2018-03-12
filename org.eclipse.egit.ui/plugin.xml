@@ -48,6 +48,12 @@
                menubarPath="team.main/group5">
          </action>
          <action
+               class="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspaceAction"
+               id="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspace"
+               icon="$nl$/icons/obj16/remotespec.gif"
+               label="%SynchronizeWorkspace_label"
+               menubarPath="team.main/group3"/>
+         <action
                class="org.eclipse.egit.ui.internal.actions.MergeAction"
                definitionId="org.eclipse.egit.ui.team.Merge"
                icon="$nl$/icons/obj16/merge.gif"
@@ -78,19 +84,6 @@
                label="%FetchFromUpstreamAction.label"
                menubarPath="team.main/group1">
          </action>
-     </objectContribution>
-     <objectContribution id="org.eclipse.egit.ui.containerContributions"
-            objectClass="org.eclipse.core.resources.IContainer"
-            adaptable="true">
-         <filter name="projectPersistentProperty"
-               value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
-         </filter>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspaceAction"
-               id="org.eclipse.egit.ui.internal.actions.SynchronizeWorkspace"
-               icon="$nl$/icons/obj16/remotespec.gif"
-               label="%SynchronizeWorkspace_label"
-               menubarPath="team.main/group3"/>
      </objectContribution>
      <objectContribution
             adaptable="true"
@@ -1081,18 +1074,37 @@
                class="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand">
          </class>
          <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <and>
+	         <or>
+	            <and>
+	               <count
+	                     value="1">
+	               </count>
+	               <and>
+	                  <iterate>
+	                     <instanceof
+	                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+	                     </instanceof>
+	                  </iterate>
+	               </and>
+	            </and>
+	            <and>
+                  <count
+                        value="2">
+                  </count>
                   <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
-                     </instanceof>
+                     <and>
+                        <or>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                        </or>
+                     </and>
                   </iterate>
                </and>
-            </and>
+	         </or>
          </activeWhen>
       </handler>
       <handler
@@ -2671,7 +2683,7 @@
                   </visibleWhen>
                </command>
                <separator
-                  name="org.eclipse.egit.ui.SynchronizeWithSeparator"
+                  name="org.eclipse.egit.ui.SynchronizeWitchSeparator"
                   visible="true" />
                <menu
                   label="%SynchronizeWith_label"
@@ -2681,20 +2693,17 @@
                      id="org.eclipse.egit.ui.synchronize">
                   </dynamic>
                   <visibleWhen checkEnabled="false">
-                  <and>
-                     <count value="1" />
-                     <iterate>
-                        <and>
-                           <adapt type="org.eclipse.core.resources.IResource">
-                              <and>
-                                 <test property="GitResource.isShared" />
-                                 <test property="GitResource.isContainer" />
-                              </and>                           
-                           </adapt>
-                        </and>
-                     </iterate>
-                  </and>
-               </visibleWhen>
+                     <and>
+                        <count value="1" />
+                        <iterate>
+                           <and>
+                              <adapt type="org.eclipse.core.resources.IProject">
+                                <test property="GitResource.isShared" />
+                              </adapt>
+                           </and>
+                        </iterate>
+                     </and>
+                  </visibleWhen>
                </menu>
                <separator
                      name="org.eclipse.egit.ui.separator1"
@@ -3312,7 +3321,7 @@
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isSafe,isContainer"
+            properties="isShared,isSafe"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
    </extension>
