@@ -2120,10 +2120,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (viewer.getAutoExpandLevel() == AbstractTreeViewer.ALL_LEVELS)
 			return;
 
-		// No need to expand anything
-		if (getPresentation() == Presentation.LIST)
-			return;
-
 		Set<IPath> paths = new HashSet<IPath>(additionalPaths);
 		// Instead of just expanding the previous elements directly, also expand
 		// all parent paths. This makes it work in case of "re-folding" of
@@ -2131,29 +2127,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		for (Object element : previous)
 			if (element instanceof StagingFolderEntry)
 				addPathAndParentPaths(((StagingFolderEntry) element).getPath(), paths);
-		List<StagingFolderEntry> expand = new ArrayList<StagingFolderEntry>();
+		List<Object> expand = new ArrayList<Object>();
 		StagingViewContentProvider stagedContentProvider = getContentProvider(viewer);
-		calculateNodesToExpand(paths, stagedContentProvider.getElements(null),
-				expand);
-		viewer.setExpandedElements(expand.toArray());
-	}
-
-	private void calculateNodesToExpand(Set<IPath> paths, Object[] elements,
-			List<StagingFolderEntry> result) {
-		if (elements == null)
-			return;
-
-		for (Object element : elements) {
-			if (element instanceof StagingFolderEntry) {
-				StagingFolderEntry folder = (StagingFolderEntry) element;
-				if (paths.contains(folder.getPath())) {
-					result.add(folder);
-					// Only recurs if folder matched (i.e. don't try to expand
-					// children of unexpanded parents)
-					calculateNodesToExpand(paths, folder.getChildren(), result);
-				}
-			}
+		for (StagingFolderEntry folder : stagedContentProvider
+				.getStagingFolderEntries()) {
+			if (paths.contains(folder.getPath()))
+				expand.add(folder);
 		}
+		viewer.setExpandedElements(expand.toArray());
 	}
 
 	private void clearCommitMessageToggles() {
