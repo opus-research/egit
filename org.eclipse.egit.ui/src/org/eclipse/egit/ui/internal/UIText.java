@@ -13,6 +13,7 @@
  * Copyright (C) 2014, Red Hat Inc.
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
  * Copyright (C) 2015, SAP SE (Christian Georgi <christian.georgi@sap.com>)
+ * Copyright (C) 2015, Jan-Ove Weichel <ovi.weichel@gmail.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -2015,6 +2016,9 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_MaxBranchLength;
 
 	/** */
+	public static String HistoryPreferencePage_MaxDiffLines;
+
+	/** */
 	public static String HistoryPreferencePage_MaxTagLength;
 
 	/** */
@@ -3179,6 +3183,9 @@ public class UIText extends NLS {
 	public static String Decorator_exceptionMessage;
 
 	/** */
+	public static String Decorator_exceptionMessageCommon;
+
+	/** */
 	public static String DecoratorPreferencesPage_addVariablesTitle;
 
 	/** */
@@ -3915,45 +3922,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MultiPullResultDialog_WindowTitle;
-
-	/** */
-	public static String MultiPushResultDialog_DetailsButton;
-
-	/** */
-	public static String MultiPushResultDialog_ErrorsOccuredColumnHeader;
-	
-	/** */
-	public static String MultiPushResultDialog_FailedStatus;
-
-	/** */
-	public static String MultiPushResultDialog_NoErrors;
-
-	/** */
-	public static String MultiPushResultDialog_OkStatus;
-
-	/** */
-	public static String MultiPushResultDialog_OverallStatusColumnHeader;
-
-	/** */
-	public static String MultiPushResultDialog_RepositoryColumnHeader;
-
-	/** */
-	public static String MultiPushResultDialog_UnknownStatus;
-
-	/** */
-	public static String MultiPushResultDialog_WindowTitle;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_PushingTaskName;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_PushingMultipleTaskName;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_NotConfiguredRepository;
-
-	/** */
-	public static String PushUpstreamOrBranchActionHandler_NotTriedMessage;
 
 	/** */
 	public static String UIIcons_errorDeterminingIconBase;
@@ -5025,6 +4993,9 @@ public class UIText extends NLS {
 	public static String GitTemplateVariableResolver_GitConfigDescription;
 
 	/** */
+	public static String StagingView_CompareWithIndexMenuLabel;
+
+	/** */
 	public static String StagingView_UnstagedChanges;
 
 	/** */
@@ -5079,7 +5050,13 @@ public class UIText extends NLS {
 	public static String StagingView_noStagedFiles;
 
 	/** */
+	public static String StagingView_BareRepoSelection;
+
+	/** */
 	public static String StagingView_NoSelectionTitle;
+
+	/** */
+	public static String StagingView_CompareMode;
 
 	/** */
 	public static String StagingView_OpenNewCommits;
@@ -5158,9 +5135,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
-
-	/** */
-	public static String StagingViewLabelProvider_SymlinkError;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;
@@ -5386,6 +5360,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushMenu_PushBranch;
+
+	/** */
+	public static String DiffStyleRangeFormatter_diffTruncated;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

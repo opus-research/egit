@@ -66,6 +66,7 @@ public class FeatureStartFinishHandlerTest extends AbstractGitflowHandlerTest {
 				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
 			}
 		});
+		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}
 
@@ -73,7 +74,8 @@ public class FeatureStartFinishHandlerTest extends AbstractGitflowHandlerTest {
 		new InitOperation(repository).execute(null);
 	}
 
-	private void createFeature(String featureName) {
+	@Override
+	protected void createFeature(String featureName) {
 		final SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		final String[] menuPath = new String[] {
@@ -94,7 +96,8 @@ public class FeatureStartFinishHandlerTest extends AbstractGitflowHandlerTest {
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}
 
-	private void checkoutFeature(String featureName) {
+	@Override
+	public void checkoutFeature(String featureName) {
 		final SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		final String[] menuPath = new String[] {

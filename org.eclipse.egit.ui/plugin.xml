@@ -3019,7 +3019,7 @@
                   checkEnabled="false">
                <and>
                   <count
-                        value="+">
+                        value="1">
                   </count>
                   <iterate
                         ifEmpty="false"
@@ -3830,7 +3830,7 @@
                <visibleWhen
                      checkEnabled="false">
                   <test
-                        property="GitSelection.projectsWithRepositories">
+                        property="GitSelection.projectSingleRepository">
                   </test>
                </visibleWhen>
             </command>
@@ -4619,7 +4619,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
-            icon="icons/elcl16/synced.gif">
+            icon="icons/elcl16/synced.png">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.ShowRepositoriesView"
