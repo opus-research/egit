@@ -31,7 +31,6 @@ import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * This class implements rebase.
@@ -39,7 +38,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 public class RebaseOperation implements IEGitOperation {
 	private final Repository repository;
 
-	private final RevCommit onto;
+	private final Ref ref;
 
 	private final Operation operation;
 
@@ -53,13 +52,13 @@ public class RebaseOperation implements IEGitOperation {
 	 *
 	 * @param repository
 	 *            the {@link Repository}
-	 * @param onto
-	 *            the commit to rebase onto
+	 * @param ref
+	 *            the branch or tag
 	 */
-	public RebaseOperation(Repository repository, RevCommit onto) {
+	public RebaseOperation(Repository repository, Ref ref) {
 		this.repository = repository;
 		this.operation = Operation.BEGIN;
-		this.onto = onto;
+		this.ref = ref;
 	}
 
 	/**
@@ -75,7 +74,7 @@ public class RebaseOperation implements IEGitOperation {
 	public RebaseOperation(Repository repository, Operation operation) {
 		this.repository = repository;
 		this.operation = operation;
-		this.onto = null;
+		this.ref = null;
 	}
 
 	public void execute(IProgressMonitor m) throws CoreException {
@@ -95,7 +94,7 @@ public class RebaseOperation implements IEGitOperation {
 								new EclipseGitProgressTransformer(actMonitor));
 				try {
 					if (operation == Operation.BEGIN)
-						result = cmd.setUpstream(onto).call();
+						result = cmd.setUpstream(ref.getName()).call();
 					else
 						result = cmd.setOperation(operation).call();
 

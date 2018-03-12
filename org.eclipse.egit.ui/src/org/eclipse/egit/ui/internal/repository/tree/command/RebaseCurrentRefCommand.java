@@ -22,13 +22,9 @@ import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.ISources;
 
@@ -63,18 +59,8 @@ public class RebaseCurrentRefCommand extends
 		String jobname = NLS.bind(
 				UIText.RebaseCurrentRefCommand_RebasingCurrentJobName, ref
 						.getName());
-		RevWalk rw = new RevWalk(repository);
-		RevCommit commit;
-		try {
-			commit = rw.parseCommit(ref.getObjectId());
-		} catch (MissingObjectException e) {
-			throw new ExecutionException("Failed to resolve upstream " + ref, e); //$NON-NLS-1$ FIXME
-		} catch (IncorrectObjectTypeException e) {
-			throw new ExecutionException("Rebase failed " + ref, e); //$NON-NLS-1$ FIXME
-		} catch (IOException e) {
-			throw new ExecutionException("Rebase failed " + ref, e); //$NON-NLS-1$ FIXME
-		}
-		return RebaseHelper.basicExecute(repository, jobname, commit);
+		RebaseHelper.runRebaseJob(repository, jobname, ref);
+		return null;
 	}
 
 	@Override

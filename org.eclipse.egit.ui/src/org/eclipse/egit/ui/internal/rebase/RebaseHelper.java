@@ -22,8 +22,8 @@ import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -43,12 +43,11 @@ public class RebaseHelper {
 	 * <p>
 	 * @param repository
 	 * @param jobname
-	 * @param commit
-	 * @return the result to the core execute method
+	 * @param ref
 	 */
-	public static Object basicExecute(final Repository repository, String jobname,
-			RevCommit commit) {
-		final RebaseOperation rebase = new RebaseOperation(repository, commit);
+	public static void runRebaseJob(final Repository repository, String jobname,
+			Ref ref) {
+		final RebaseOperation rebase = new RebaseOperation(repository, ref);
 		Job job = new Job(jobname) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
@@ -93,6 +92,5 @@ public class RebaseHelper {
 			}
 		});
 		job.schedule();
-		return null;
 	}
 }

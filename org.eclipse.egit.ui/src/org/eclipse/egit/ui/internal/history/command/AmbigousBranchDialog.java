@@ -1,6 +1,15 @@
-/**
+/*******************************************************************************
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * and other copyright owners as documented in the project's IP log.
  *
- */
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Robin Rosenberg - Refactoring from CheckoutCommand
+ *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
 import java.util.List;
@@ -23,7 +32,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 
-abstract class AmbiguosBranchDialog extends MessageDialog {
+abstract class AmbigousBranchDialog extends MessageDialog {
 	static final class BranchLabelProvider extends LabelProvider {
 		@Override
 		public String getText(Object element) {
@@ -39,11 +48,11 @@ abstract class AmbiguosBranchDialog extends MessageDialog {
 
 	private final List<RefNode> nodes;
 
-	TableViewer branchesList;
+	private TableViewer branchesList;
 
-	RefNode selected;
+	private RefNode selected;
 
-	AmbiguosBranchDialog(Shell parentShell, List<RefNode> nodes, String title, String message) {
+	AmbigousBranchDialog(Shell parentShell, List<RefNode> nodes, String title, String message) {
 		super(parentShell, title, null,
 				message,
 				MessageDialog.QUESTION, new String[] {
