@@ -50,7 +50,7 @@ import org.eclipse.ui.services.IServiceLocator;
 public class SwitchToMenu extends ContributionItem implements
 		IWorkbenchContribution {
 	/** the maximum number of branches to show in the sub-menu */
-	static final int MAX_NUM_MENU_ENTRIES = 20;
+	private static final int MAX_NUM_MENU_ENTRIES = 20;
 
 	private ISelectionService srv;
 
