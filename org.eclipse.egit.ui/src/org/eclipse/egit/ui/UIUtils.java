@@ -29,6 +29,7 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
@@ -507,5 +508,50 @@ public class UIUtils {
 
 		});
 		return toolbar;
+	}
+
+	/**
+	 * Get dialog bound settings for given class using standard section name
+	 *
+	 * @param clazz
+	 * @return dialog setting
+	 */
+	public static IDialogSettings getDialogBoundSettings(final Class<?> clazz) {
+		return getDialogSettings(clazz.getName() + ".dialogBounds"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Get dialog settings for given section name
+	 *
+	 * @param sectionName
+	 * @return dialog settings
+	 */
+	public static IDialogSettings getDialogSettings(final String sectionName) {
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+		IDialogSettings section = settings.getSection(sectionName);
+		if (section == null)
+			section = settings.addNewSection(sectionName);
+		return section;
+	}
+
+	/**
+	 * Is viewer in a usable state?
+	 *
+	 * @param viewer
+	 * @return true if usable, false if null or underlying control is null or
+	 *         disposed
+	 */
+	public static boolean isUsable(final Viewer viewer) {
+		return viewer != null && isUsable(viewer.getControl());
+	}
+
+	/**
+	 * Is control usable?
+	 *
+	 * @param control
+	 * @return true if usable, false if null or disposed
+	 */
+	public static boolean isUsable(final Control control) {
+		return control != null && !control.isDisposed();
 	}
 }

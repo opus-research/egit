@@ -26,13 +26,13 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
-import org.eclipse.egit.core.internal.merge.StorageContentMerger;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.errors.DetachedHeadException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidConfigurationException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 
@@ -80,7 +80,6 @@ public class PullOperation implements IEGitOperation {
 						pull.setProgressMonitor(new EclipseGitProgressTransformer(
 								new SubProgressMonitor(mymonitor, 1)));
 						pull.setTimeout(timeout);
-						pull.mergeWith(new StorageContentMerger(repository));
 						results.put(repository, pull.call());
 					} catch (DetachedHeadException e) {
 						results.put(repository, Activator.error(
@@ -94,8 +93,11 @@ public class PullOperation implements IEGitOperation {
 						results.put(repository,
 								Activator.error(e.getMessage(), e));
 					} catch (JGitInternalException e) {
+						Throwable cause = e.getCause();
+						if (cause == null || !(cause instanceof TransportException))
+							cause = e;
 						results.put(repository,
-								Activator.error(e.getMessage(), e));
+								Activator.error(cause.getMessage(), cause));
 					} finally {
 						mymonitor.worked(1);
 					}

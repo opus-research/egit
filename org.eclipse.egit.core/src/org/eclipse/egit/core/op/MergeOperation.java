@@ -24,7 +24,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.merge.StorageContentMerger;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
@@ -105,7 +104,6 @@ public class MergeOperation implements IEGitOperation {
 				if (mergeStrategy != null) {
 					merge.setStrategy(mergeStrategy);
 				}
-				merge.mergeWith(new StorageContentMerger(repository));
 				try {
 					mergeResult = merge.call();
 					mymonitor.worked(1);
