@@ -29,6 +29,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.TagOperation;
@@ -297,7 +298,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
 				.button(IDialogConstants.YES_LABEL).click();
-		waitInUI();
+
+		Job.getJobManager().join(JobFamilies.RESET, null);
 		String reset = getTestFileContent();
 		assertEquals("Wrong content after reset", stable, reset);
 	}
@@ -313,6 +315,9 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertFalse(branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
 		branchName.setText("NewBranch");
+		// suppress checkout so that the dialog remains open
+		branchNameDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
+				.deselect();
 		branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 
 		assertEquals("New Branch should be selected", "NewBranch", bot.tree()
@@ -359,6 +364,9 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertFalse(branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
 		branchName.setText("Unrenamed");
+		// suppress checkout so that the dialog remains open
+		branchNameDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
+				.deselect();
 		branchNameDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 
 		assertEquals("New Branch should be selected", "Unrenamed", bot.tree()
