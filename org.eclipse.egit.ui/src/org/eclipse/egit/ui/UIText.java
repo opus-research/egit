@@ -1972,9 +1972,6 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
 
 	/** */
-	public static String ConfigureGerritWizard_title;
-
-	/** */
 	public static String GlobalConfigurationPreferencePage_systemSettingTabTitle;
 
 	/** */
