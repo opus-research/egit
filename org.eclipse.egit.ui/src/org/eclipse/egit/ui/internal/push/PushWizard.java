@@ -82,8 +82,8 @@ public class PushWizard extends Wizard {
 		this.localDb = localDb;
 		final List<RemoteConfig> remotes = RemoteConfig
 				.getAllRemoteConfigs(localDb.getConfig());
-		repoPage = new RepositorySelectionPage(false, remotes, null);
-		refSpecPage = new RefSpecPage(localDb, true);
+		repoPage = new RepositorySelectionPage(false, remotes);
+		refSpecPage = new RefSpecPage(localDb, true, repoPage);
 		confirmPage = new ConfirmationPage(localDb, repoPage, refSpecPage);
 		// TODO use/create another cool icon
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
@@ -95,14 +95,6 @@ public class PushWizard extends Wizard {
 		addPage(repoPage);
 		addPage(refSpecPage);
 		addPage(confirmPage);
-	}
-
-	@Override
-	public IWizardPage getNextPage(IWizardPage page) {
-		if (page == getPages()[0]){
-			refSpecPage.setSelection(repoPage.getSelection());
-		}
-		return super.getNextPage(page);
 	}
 
 	@Override
@@ -125,7 +117,7 @@ public class PushWizard extends Wizard {
 
 		job.setUser(true);
 		job.schedule();
-		repoPage.saveUriInPrefs();
+		repoPage.saveUriInPrefs(repoPage.getSelection().getURI().toString());
 
 		return true;
 	}

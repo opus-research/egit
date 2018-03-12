@@ -23,13 +23,13 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.FileBasedConfig;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
@@ -82,7 +82,7 @@ public class RepositoryPropertySource implements IPropertySource,
 		addActions();
 
 		effectiveConfig = rep.getConfig();
-		userHomeConfig = SystemReader.getInstance().openUserConfig(FS.DETECTED);
+		userHomeConfig = SystemReader.getInstance().openUserConfig();
 		// TODO constant?
 		File configFile = new File(rep.getDirectory(), "config"); //$NON-NLS-1$
 		repositoryConfig = new FileBasedConfig(configFile);
@@ -92,10 +92,13 @@ public class RepositoryPropertySource implements IPropertySource,
 			userHomeConfig.load();
 			repositoryConfig.load();
 		} catch (IOException e) {
-			showExceptionMessage(e);
+			// TODO refactor to a method and react on exceptions
+			e.printStackTrace();
 		} catch (ConfigInvalidException e) {
-			showExceptionMessage(e);
+			// TODO refactor to a method and react on exceptions
+			e.printStackTrace();
 		}
+
 	}
 
 	private void makeActions() {
@@ -457,7 +460,8 @@ public class RepositoryPropertySource implements IPropertySource,
 	}
 
 	private void showExceptionMessage(Exception e) {
-		org.eclipse.egit.ui.Activator.handleError(UIText.RepositoryPropertySource_ErrorHeader, e, true);
+		MessageDialog.openError(myPage.getSite().getShell(),
+				UIText.RepositoryPropertySource_ErrorHeader, e.getMessage());
 	}
 
 }

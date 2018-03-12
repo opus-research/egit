@@ -26,7 +26,6 @@ import org.eclipse.egit.ui.internal.components.RefSpecPage;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.egit.ui.internal.components.SelectionChangeListener;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
@@ -107,7 +106,6 @@ class ConfirmationPage extends WizardPage {
 		showOnlyIfChanged = new Button(panel, SWT.CHECK);
 		showOnlyIfChanged.setText(UIText.ConfirmationPage_showOnlyIfChanged);
 
-		Dialog.applyDialogFont(panel);
 		setControl(panel);
 	}
 
@@ -184,7 +182,7 @@ class ConfirmationPage extends WizardPage {
 			}
 
 			final PushOperationSpecification spec = new PushOperationSpecification();
-			for (final URIish uri : displayedRepoSelection.getAllURIs())
+			for (final URIish uri : displayedRepoSelection.getPushURIs())
 				spec.addURIRefUpdates(uri, copyUpdates(updates));
 
 			operation = new PushOperation(local, spec, true,

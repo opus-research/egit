@@ -364,12 +364,12 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					UIPreferences.DECORATOR_FILETEXT_DECORATION);
 			folderTextFormat = new FormatEditor(composite,
 					UIText.DecoratorPreferencesPage_folderFormatLabel,
-					UIText.DecoratorPreferencesPage_addVariablesAction2,
+					UIText.DecoratorPreferencesPage_addVariablesAction,
 					FILE_AND_FOLDER_BINDINGS,
 					UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 			projectTextFormat = new FormatEditor(composite,
 					UIText.DecoratorPreferencesPage_projectFormatLabel,
-					UIText.DecoratorPreferencesPage_addVariablesAction3,
+					UIText.DecoratorPreferencesPage_addVariablesAction,
 					PROJECT_BINDINGS,
 					UIPreferences.DECORATOR_PROJECTTEXT_DECORATION);
 
@@ -880,7 +880,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static class PreviewDecoration implements IDecoration {
+	private class PreviewDecoration implements IDecoration {
 
 		private List<String> prefixes = new ArrayList<String>();
 

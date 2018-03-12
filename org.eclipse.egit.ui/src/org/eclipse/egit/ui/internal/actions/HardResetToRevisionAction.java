@@ -10,25 +10,19 @@ package org.eclipse.egit.ui.internal.actions;
 
 import java.util.List;
 
-import org.eclipse.egit.core.op.IEGitOperation;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.egit.core.op.ResetOperation;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.lib.AnyObjectId;
 
 /**
  * Hard reset to selected revision
  */
-public class HardResetToRevisionAction extends AbstractRevCommitOperationAction {
+public class HardResetToRevisionAction extends AbstractRevObjectAction {
 
 	@Override
-	protected IEGitOperation createOperation(final List<RevCommit> commits) {
+	protected IWorkspaceRunnable createOperation(List selection) {
 		return new ResetOperation(getActiveRepository(),
-				commits.get(0).getName(),
+				((AnyObjectId) selection.get(0)).name(),
 				ResetOperation.ResetType.HARD);
-	}
-
-	@Override
-	protected String getJobName() {
-		return UIText.HardResetToRevisionAction_hardReset;
 	}
 }

@@ -9,8 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 
 import org.eclipse.core.resources.IFolder;
@@ -39,7 +37,6 @@ public class TestProject {
 	public IJavaProject javaProject;
 
 	private IPackageFragmentRoot sourceFolder;
-	private String location;
 
 	/**
 	 * @throws CoreException
@@ -61,7 +58,6 @@ public class TestProject {
 			project.delete(true, null);
 		project.create(null);
 		project.open(null);
-		location = project.getLocation().toOSString();
 		javaProject = JavaCore.create(project);
 		IFolder binFolder = createBinFolder();
 		setJavaNature();
@@ -105,12 +101,9 @@ public class TestProject {
 		return cu.getTypes()[0];
 	}
 
-	public void dispose() throws CoreException, IOException {
+	public void dispose() throws CoreException {
 		waitForIndexer();
-		if (project.exists())
-			project.delete(true, true, null);
-		else
-			TestUtils.rmrf(new File(location));
+		project.delete(true, true, null);
 	}
 
 	private IFolder createBinFolder() throws CoreException {
