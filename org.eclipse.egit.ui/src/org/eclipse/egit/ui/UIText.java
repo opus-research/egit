@@ -2605,7 +2605,7 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
 
 	/** */
-	public static String RepositoriesView_ClipboardContentNotDirectoryOrURIMessage;
+	public static String RepositoriesView_ClipboardContentNotDirectoryMessage;
 
 	/** */
 	public static String RepositoriesView_ConfirmBranchDeletionMessage;
@@ -2852,6 +2852,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitImportWizard_WizardTitle;
+
+	/** */
+	public static String GitScopeOperation_couldNotDetermineState;
+
+	/** */
+	public static String GitScopeOperation_GitScopeManager;
 
 	/** */
 	public static String GitSelectRepositoryPage_AddButton;
@@ -3126,6 +3132,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_calculatingChanges;
+
+	/** */
+	public static String CommitActionHandler_errorBuildingScope;
+
+	/** */
+	public static String CommitActionHandler_lookingForChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
