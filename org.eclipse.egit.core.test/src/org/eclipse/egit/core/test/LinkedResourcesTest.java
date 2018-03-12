@@ -128,6 +128,9 @@ public class LinkedResourcesTest {
 		file.createLink(
 				project2.getFile("project2folder1/project2folder1file1.txt")
 						.getLocation(), 0, null);
+		// Add file to project2
+		testUtils.addFileToProject(project2,
+				"project2folder1/project2folder1file2.txt", "Hello world");
 		// Make sure linked folder is refreshed
 		folder.refreshLocal(IResource.DEPTH_INFINITE, null);
 
@@ -137,9 +140,11 @@ public class LinkedResourcesTest {
 		// Changes to linked resources are reported against their repository
 		resourceDeltaTestHelper2.assertChangedResources(new String[] {
 						"/project1/link2project2/project2folder1",
+						"/project1/link2project2/project2folder1/project2folder1file2.txt",
 						"/project1/link2project2/.project",
 						"/project1/link2project2/project2folder1/project2folder1file1.txt",
-						"/project1/link2project2" });
+						"/project1/link2project2",
+				"/project2/project2folder1/project2folder1file2.txt" });
 	}
 
 	@Test
