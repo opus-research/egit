@@ -63,7 +63,6 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repositoryName = DecoratableResourceHelper
 					.getRepositoryName(repository);
 			branch = DecoratableResourceHelper.getShortBranch(repository);
-			branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
 
 			indexDiffData = Activator.getDefault().getIndexDiffCache()
 					.getIndexDiffCacheEntry(repository).getIndexDiff();
