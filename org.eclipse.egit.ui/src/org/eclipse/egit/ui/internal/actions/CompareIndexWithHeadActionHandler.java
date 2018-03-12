@@ -170,8 +170,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 		IPath workDir = new Path(repository.getWorkTree().getAbsolutePath());
 		String resRelPath = location.makeRelativeTo(workDir).toString();
 		// This action at the moment only works for files anyway
-		if (resRelPath.length() == 0
-				|| resRelPath.equals(location.toString())) {
+		if (resRelPath.length() == 0 || resRelPath.equals(location)) {
 			return false;
 		}
 
