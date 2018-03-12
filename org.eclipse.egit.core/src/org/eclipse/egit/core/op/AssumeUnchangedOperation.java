@@ -2,7 +2,6 @@
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2010, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -43,25 +42,17 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 
 	private final IdentityHashMap<RepositoryMapping, Object> mappings;
 
-	private boolean assumeUnchanged;
-
 	/**
 	 * Create a new operation to ignore changes in tracked files
 	 *
 	 * @param rsrcs
 	 *            collection of {@link IResource}s which should be ignored when
 	 *            looking for changes or committing.
-	 * @param assumeUnchanged
-	 *            {@code true} to set the assume-valid flag in the git index
-	 *            entry, {@code false} to unset the assume-valid flag in the git
-	 *            index entry
 	 */
-	public AssumeUnchangedOperation(
-			final Collection<? extends IResource> rsrcs, boolean assumeUnchanged) {
+	public AssumeUnchangedOperation(final Collection<? extends IResource> rsrcs) {
 		rsrcList = rsrcs;
 		caches = new IdentityHashMap<Repository, DirCache>();
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
-		this.assumeUnchanged = assumeUnchanged;
 	}
 
 	/* (non-Javadoc)
@@ -138,11 +129,11 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 		final String path = rm.getRepoRelativePath(resource);
 		if (resource instanceof IContainer) {
 			for (final DirCacheEntry ent : cache.getEntriesWithin(path))
-				ent.setAssumeValid(assumeUnchanged);
+				ent.setAssumeValid(true);
 		} else {
 			final DirCacheEntry ent = cache.getEntry(path);
 			if (ent != null)
-				ent.setAssumeValid(assumeUnchanged);
+				ent.setAssumeValid(true);
 		}
 	}
 }

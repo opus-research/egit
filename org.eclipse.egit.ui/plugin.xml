@@ -107,14 +107,7 @@
                label="%UntrackAction_label"
                menubarPath="team.main/group9"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedAction"
-               icon="icons/obj16/no-assume-unchanged.gif"
-               id="org.eclipse.egit.ui.internal.actions.NoAssumeUnchanged"
-               label="%NoAssumeUnchangedAction_label"
-               menubarPath="team.main/group9">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.AssumeUnchangedAction"
+               class="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
                icon="icons/obj16/assume-unchanged.gif"
                id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
                label="%AssumeUnchangedAction_label"
@@ -145,7 +138,6 @@
                menubarPath="team.main/group8"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-               definitionId="org.eclipse.egit.ui.team.AddToIndex"
                icon="$nl$/icons/obj16/add.gif"
                id="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
                label="%AddToIndexAction_label"
@@ -549,17 +541,6 @@
         style="push"
         toolbarPath="Normal/additions"
         tooltip="%CommitAction_tooltip">
-  </action>
-  <action
-        class="org.eclipse.egit.ui.internal.actions.AddToIndexAction"
-        definitionId="org.eclipse.egit.ui.team.AddToIndex"
-        icon="icons/obj16/add.gif"
-        id="org.eclipse.egit.ui.actionadd"
-        label="%AddToIndexAction_label"
-        menubarPath="org.eclipse.egit.ui.gitmenu/repositoryGroup"
-        style="push"
-        toolbarPath="Normal/additions"
-        tooltip="%AddToIndexAction_tooltip">
   </action>
       </actionSet>
    </extension>
@@ -1541,29 +1522,6 @@
                </and>
             </visibleWhen>
          </command>
-         <menu
-               label="Rebase">
-            <command
-                  commandId="org.eclipse.egit.ui.RepositoriesViewAbortRebase"
-                  label="Abort"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <and>
-                           <test
-                                 property="GitRepository.canAbortRebase">
-                           </test>
-                        </and>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </command>
-         </menu>
       </menuContribution>
       <menuContribution
             locationURI="toolbar:org.eclipse.egit.ui.RepositoriesView">
@@ -2049,7 +2007,7 @@
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewPropertyTester"
             id="org.eclipse.egit.ui.RepositoryTester"
             namespace="GitRepository"
-            properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,canAbortRebase"
+            properties="isBare,isSafe,isRefCheckedOut,isLocalBranch,fetchExists,pushExists,canMerge,isRebasing"
             type="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
       </propertyTester>
    </extension>
@@ -2136,12 +2094,6 @@
    <extension
          name="%TeamMenuCommandsLabel"
          point="org.eclipse.ui.commands">
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.AddToIndexActionHandler"
-            id="org.eclipse.egit.ui.team.AddToIndex"
-            name="%AddToIndexCommand.name">
-      </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.BranchActionHandler"

@@ -9,20 +9,34 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import java.util.List;
+
+import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.op.AddToIndexOperation;
+import org.eclipse.egit.core.op.IEGitOperation;
+import org.eclipse.egit.ui.UIText;
 
 /**
  * An action to add files to a Git index.
  *
  * @see AddToIndexOperation
  */
-public class AddToIndexAction extends RepositoryAction {
+public class AddToIndexAction extends AbstractResourceOperationAction {
+	private AddToIndexOperation operation = null;
 
-	/**
-	 * Constructs this action
-	 */
-	public AddToIndexAction() {
-		super(ActionCommands.ADD_TO_INDEX, new AddToIndexActionHandler());
+	protected IEGitOperation createOperation(final List<IResource> sel) {
+		if (sel.isEmpty()) {
+			return null;
+		} else {
+			operation = new AddToIndexOperation(sel);
+			return operation;
+		}
 	}
+
+	@Override
+	protected String getJobName() {
+		return UIText.AddToIndexAction_addingFiles;
+	}
+
 
 }

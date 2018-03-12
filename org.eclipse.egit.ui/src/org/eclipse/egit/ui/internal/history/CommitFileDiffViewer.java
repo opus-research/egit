@@ -392,9 +392,15 @@ class CommitFileDiffViewer extends TableViewer {
 	}
 
 	private void createColumns(final Table rawTable, final TableLayout layout) {
+		final TableColumn mode = new TableColumn(rawTable, SWT.NONE);
+		mode.setResizable(true);
+		mode.setWidth(5);
+		layout.addColumnData(new ColumnWeightData(1, true));
+
 		final TableColumn path = new TableColumn(rawTable, SWT.NONE);
 		path.setResizable(true);
 		path.setText(UIText.HistoryPage_pathnameColumn);
-		layout.addColumnData(new ColumnWeightData(1, true));
+		path.setWidth(250);
+		layout.addColumnData(new ColumnWeightData(20, true));
 	}
 }

@@ -56,7 +56,6 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 		setHelpAvailable(false);
 		currentConfig = config;
 		this.suggestedKey = suggestedKey;
-		setHelpAvailable(false);
 	}
 
 	@Override

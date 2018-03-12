@@ -249,11 +249,6 @@ public class PushOperationResult {
 		return true;
 	}
 
-	@Override
-	public int hashCode() {
-		return urisEntries.hashCode();
-	}
-
 	private static class Entry {
 		private String errorMessage;
 

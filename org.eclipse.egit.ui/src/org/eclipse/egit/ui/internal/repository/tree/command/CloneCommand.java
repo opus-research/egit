@@ -22,9 +22,8 @@ import org.eclipse.jface.wizard.WizardDialog;
 public class CloneCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		WizardDialog dlg = new WizardDialog(getShell(event),
-				new GitCloneWizard());
-		dlg.setHelpAvailable(false);
+		WizardDialog dlg = new WizardDialog(
+				getShell(event), new GitCloneWizard());
 		dlg.open();
 		return null;
 	}

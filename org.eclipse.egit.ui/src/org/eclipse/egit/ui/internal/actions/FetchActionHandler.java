@@ -43,9 +43,7 @@ public class FetchActionHandler extends RepositoryActionHandler {
 									.getMessage(), x));
 			return null;
 		}
-		WizardDialog dlg = new WizardDialog(getShell(event), fetchWizard);
-		dlg.setHelpAvailable(false);
-		dlg.open();
+		new WizardDialog(getShell(event), fetchWizard).open();
 		return null;
 	}
 

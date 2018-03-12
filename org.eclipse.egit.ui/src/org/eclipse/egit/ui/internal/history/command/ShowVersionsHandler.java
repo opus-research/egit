@@ -136,7 +136,7 @@ public class ShowVersionsHandler extends AbstractHistoryCommanndHandler {
 							final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 									left, right, null);
 							openInCompare(event, in);
-						} catch (IOException e) {
+						} catch (Exception e) {
 							errorOccured = true;
 						}
 					} else {
@@ -158,14 +158,14 @@ public class ShowVersionsHandler extends AbstractHistoryCommanndHandler {
 		if (errorOccured)
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);
 		if (ids.size() > 0) {
-			StringBuilder idList = new StringBuilder(""); //$NON-NLS-1$
+			String idList = ""; //$NON-NLS-1$
 			for (ObjectId objectId : ids) {
-				idList.append(objectId.getName()).append(' ');
+				idList += objectId.getName() + " "; //$NON-NLS-1$
 			}
 			MessageDialog.openError(getPart(event).getSite().getShell(),
 					UIText.GitHistoryPage_fileNotFound, NLS.bind(
 							UIText.GitHistoryPage_notContainedInCommits,
-							gitPath, idList.toString()));
+							gitPath, idList));
 		}
 		return null;
 	}
