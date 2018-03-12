@@ -6,24 +6,24 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *     Manuel Doninger <manuel.doninger@googlemail.com>
  *******************************************************************************/
 package org.eclipse.egit.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -51,7 +51,57 @@ import org.eclipse.team.core.TeamException;
  */
 public final class GitProjectSetCapability extends ProjectSetCapability {
 
+	private static final String SEPARATOR = ","; //$NON-NLS-1$
 	private static final String VERSION = "1.0"; //$NON-NLS-1$
+
+	private static final class ProjectReferenceComparator implements
+			Comparator<ProjectReference>, Serializable {
+		private static final long serialVersionUID = 1L;
+
+		public int compare(ProjectReference o1, ProjectReference o2) {
+			final boolean reposEqual = o1.repository.equals(o2.repository);
+			final boolean branchesEqual = o1.branch
+					.equals(o2.branch);
+			final boolean projectDirsEqual = o1.projectDir
+					.equals(o2.projectDir);
+			return reposEqual && branchesEqual && projectDirsEqual ? 0 : 1;
+		}
+	}
+
+	private static final class ProjectReference {
+
+		private static final String DEFAULT_BRANCH = Constants.MASTER;
+
+		/**
+		 * a relative path (from the repository root) to a project
+		 */
+		String projectDir;
+
+		/**
+		 * <code>repository</code> parameter
+		 */
+		URIish repository;
+
+		/**
+		 * the remote branch that will be checked out, see <code>--branch</code>
+		 * option
+		 */
+		String branch = DEFAULT_BRANCH;
+
+		@SuppressWarnings("boxing")
+		ProjectReference(final String reference) throws URISyntaxException, IllegalArgumentException {
+			final String[] tokens = reference.split(Pattern.quote(SEPARATOR));
+			if (tokens.length != 4)
+				throw new IllegalArgumentException(NLS.bind(
+						CoreText.GitProjectSetCapability_InvalidTokensCount, new Object[] {
+								4, tokens.length, tokens }));
+
+			this.repository = new URIish(tokens[1]);
+			if (!"".equals(tokens[2])) //$NON-NLS-1$
+				this.branch = tokens[2];
+			this.projectDir = tokens[3];
+		}
+	}
 
 	@Override
 	public String[] asReference(IProject[] projects,
@@ -90,11 +140,11 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(VERSION);
-		sb.append(ProjectReference.SEPARATOR);
+		sb.append(SEPARATOR);
 		sb.append(url);
-		sb.append(ProjectReference.SEPARATOR);
+		sb.append(SEPARATOR);
 		sb.append(branch);
-		sb.append(ProjectReference.SEPARATOR);
+		sb.append(SEPARATOR);
 		sb.append(projectPath);
 
 		return sb.toString();
@@ -111,16 +161,16 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 				final ProjectReference projectReference = new ProjectReference(
 						reference);
 				Map<String, Set<ProjectReference>> repositoryBranches = repositories
-						.get(projectReference.getRepository());
+						.get(projectReference.repository);
 				if (repositoryBranches == null) {
 					repositoryBranches = new HashMap<String, Set<ProjectReference>>();
-					repositories.put(projectReference.getRepository(),
+					repositories.put(projectReference.repository,
 							repositoryBranches);
 				}
-				Set<ProjectReference> projectReferences = repositoryBranches.get(projectReference.getBranch());
+				Set<ProjectReference> projectReferences = repositoryBranches.get(projectReference.branch);
 				if (projectReferences == null) {
-					projectReferences = new HashSet<ProjectReference>();
-					repositoryBranches.put(projectReference.getBranch(), projectReferences);
+					projectReferences = new TreeSet<ProjectReference>(new ProjectReferenceComparator());
+					repositoryBranches.put(projectReference.branch, projectReferences);
 				}
 
 				projectReferences.add(projectReference);
@@ -145,7 +195,7 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 					if (workDir.toFile().exists()) {
 						final Collection<String> projectNames = new LinkedList<String>();
 						for (final ProjectReference projectReference : projects)
-							projectNames.add(projectReference.getProjectDir());
+							projectNames.add(projectReference.projectDir);
 						throw new TeamException(NLS.bind(
 								CoreText.GitProjectSetCapability_CloneToExistingDirectory,
 								new Object[] { workDir, projectNames, gitUrl }));
@@ -167,7 +217,7 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 					final IWorkspaceRoot root = workspace.getRoot();
 					for (final ProjectReference projectToImport : projects) {
 						final IPath projectDir = workDir
-								.append(projectToImport.getProjectDir());
+								.append(projectToImport.projectDir);
 						final IProjectDescription projectDescription = workspace
 								.loadProjectDescription(projectDir
 										.append(IProjectDescription.DESCRIPTION_FILE_NAME));
