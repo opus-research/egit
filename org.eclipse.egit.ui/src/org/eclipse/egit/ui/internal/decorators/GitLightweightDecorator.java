@@ -159,13 +159,14 @@ public class GitLightweightDecorator extends LabelProvider implements
 			return;
 
 		final IResource resource = getResource(element);
-		try {
-			if (resource == null)
-				decorateResourceMapping(element, decoration);
-			else
+		if (resource == null)
+			decorateResourceMapping(element, decoration);
+		else {
+			try {
 				decorateResource(resource, decoration);
-		} catch (CoreException e) {
-			handleException(resource, e);
+			} catch(CoreException e) {
+				handleException(resource, e);
+			}
 		}
 	}
 
@@ -223,18 +224,12 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 *
 	 * @param element the element for which the decoration was initially called
 	 * @param decoration the decoration
-	 * @throws CoreException
 	 */
-	private void decorateResourceMapping(Object element, IDecoration decoration) throws CoreException {
+	private void decorateResourceMapping(Object element, IDecoration decoration) {
 		@SuppressWarnings("restriction")
 		ResourceMapping mapping = Utils.getResourceMapping(element);
 
-		IDecoratableResource decoRes;
-		try {
-			decoRes = new DecoratableResourceMapping(mapping);
-		} catch (IOException e) {
-			throw new CoreException(Activator.createErrorStatus(UIText.Decorator_exceptionMessage, e));
-		}
+		IDecoratableResource decoRes = new DecoratableResourceMapping(mapping);
 
 		/*
 		 *  don't render question marks on working sets. !isTracked() can have two reasons:
@@ -402,17 +397,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 			case DecoratableResourceMapping.RESOURCE_MAPPING:
 				format = store
 						.getString(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
-				break;
-			case DecoratableResourceMapping.WORKING_SET:
-				// working sets will use the project formatting but only if the
-				// repo and branch is available
-				if (resource.getRepositoryName() != null
-						&& resource.getBranch() != null)
-					format = store
-							.getString(UIPreferences.DECORATOR_PROJECTTEXT_DECORATION);
-				else
-					format = store
-							.getString(UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 				break;
 			case IResource.PROJECT:
 				format = store
