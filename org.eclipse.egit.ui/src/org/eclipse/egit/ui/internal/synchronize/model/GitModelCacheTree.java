@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache.FileModelFactory;
 import org.eclipse.jgit.lib.ObjectId;
@@ -49,12 +48,6 @@ public class GitModelCacheTree extends GitModelTree {
 		super(parent, commit, null, repoId, repoId, cacheId, location);
 		this.factory = factory;
 		cacheTreeMap = new HashMap<String, GitModelObject>();
-	}
-
-	@Override
-	public int getKind() {
-		// changes in working tree and cache are always outgoing modifications
-		return Differencer.RIGHT | Differencer.CHANGE;
 	}
 
 	@Override
