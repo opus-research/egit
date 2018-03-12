@@ -56,8 +56,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private static final int MAX_LABEL_LENGTH = 15;
 
-	private static final String ELLIPSIS = "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
-
 	private final Color sys_black;
 
 	private final Color sys_gray;
@@ -214,11 +212,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		else
 			maxLength = MAX_LABEL_LENGTH;
 		if (txt.length() > maxLength)
-			if (Activator.getDefault().getPreferenceStore()
-					.getBoolean(UIPreferences.HISTORY_CUT_AT_START))
-				txt = ELLIPSIS + txt.substring(txt.length() - maxLength);
-			else
-				txt = txt.substring(0, maxLength) + ELLIPSIS;
+			txt = txt.substring(0, maxLength) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
 
 		// highlight checked out branch
 		Font oldFont = g.getFont();
