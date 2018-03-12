@@ -1,27 +1,24 @@
 /*******************************************************************************
- * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core;
+package org.eclipse.egit.core.internal.indexdiff;
+
+import org.eclipse.jgit.lib.Repository;
 
 /**
- * Job families of EGit jobs. May be used in tests to join job execution.
- *
+ * This interface is used to notify clients about changes in index diffs. See
+ * also: {@link IndexDiffCache}
  */
-public class JobFamilies {
+public interface IndexDiffChangedListener {
 
 	/**
-	 * Job family for Repository changed job
+	 * @param repository
+	 * @param indexDiffData
 	 */
-	public static final Object REPOSITORY_CHANGED = new Object();
-
-	/**
-	 * Job family for Index Diff Cache update
-	 */
-	public static final Object INDEX_DIFF_CACHE_UPDATE = new Object();
-
+	void indexDiffChanged(Repository repository, IndexDiffData indexDiffData);
 }
