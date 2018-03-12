@@ -67,7 +67,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -677,15 +676,7 @@ class CommitGraphTable {
 			IStructuredSelection selection = (IStructuredSelection) table
 					.getSelection();
 			RevCommit commit = (RevCommit) selection.getFirstElement();
-			RevWalk walk = new org.eclipse.jgit.revwalk.RevWalk(input.getRepository());
-			try {
-				return walk.parseCommit(commit.getId());
-			} catch (IOException e) {
-				throw new RuntimeException(
-						"Could not parse commit " + commit.getId(), e); //$NON-NLS-1$
-			} finally {
-				walk.release();
-			}
+			return commit;
 		}
 
 		private void writeToFile(final String fileName, String content)
