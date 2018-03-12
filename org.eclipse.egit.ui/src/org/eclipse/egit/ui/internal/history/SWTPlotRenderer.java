@@ -19,7 +19,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
@@ -48,8 +47,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private int textHeight;
 
-	private boolean enableAntialias = true;
-
 	GC g;
 
 	int cellX;
@@ -75,14 +72,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	@SuppressWarnings("unchecked")
 	void paint(final Event event, Ref actHeadRef) {
 		g = event.gc;
-
-		if (this.enableAntialias)
-			try {
-				g.setAntialias(SWT.ON);
-			} catch (SWTException e) {
-				this.enableAntialias = false;
-			}
-
 		this.headRef = actHeadRef;
 		cellX = event.x;
 		cellY = event.y;
@@ -163,12 +152,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		if (txt.length() > 12)
 			txt = txt.substring(0,11) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
 
-		// highlight checked out branch
-		Font oldFont = g.getFont();
-		boolean isHead = isHead(name);
-		if (isHead)
-			g.setFont(CommitGraphTable.highlightFont());
-
 		Point textsz = g.stringExtent(txt);
 		int arc = textsz.y/2;
 		final int texty = (y * 2 - textsz.y) / 2;
@@ -177,14 +160,19 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		g.fillRoundRectangle(cellX + x + 1, cellY + texty -1, textsz.x + 3, textsz.y + 1, arc, arc);
 		g.setForeground(sys_black);
 
-		// Draw text
+		// highlight checked out branch
+		Font oldFont = g.getFont();
+		boolean isHead = isHead(name);
+		if (isHead)
+			g.setFont(CommitGraphTable.highlightFont());
+
 		g.drawString(txt,cellX + x + 2, cellY + texty, true);
 
 		if (isHead)
 			g.setFont(oldFont);
 		g.setLineWidth(2);
 
-		// Add a two color shaded border, blend with whatever background there already is
+		// And a two color shaded border, blend with whatever background there already is
 		g.setAlpha(128);
 		g.setForeground(sys_gray);
 		g.drawRoundRectangle(cellX + x, cellY + texty -2, textsz.x + 5, textsz.y + 3, arc, arc);
