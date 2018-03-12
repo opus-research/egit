@@ -85,7 +85,8 @@ public class ResourcePropertyTester extends PropertyTester {
 			return type == IResource.FOLDER || type == IResource.PROJECT;
 		}
 
-		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
+		RepositoryMapping mapping = RepositoryMapping.getMapping(res
+				.getProject());
 		if (mapping != null) {
 			Repository repository = mapping.getRepository();
 			return testRepositoryState(repository, property);
