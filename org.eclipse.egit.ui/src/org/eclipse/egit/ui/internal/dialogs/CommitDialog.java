@@ -26,15 +26,11 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -43,8 +39,6 @@ import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
-import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
-import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -63,19 +57,14 @@ import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.BaseLabelProvider;
-import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
-import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
@@ -132,8 +121,7 @@ public class CommitDialog extends TitleAreaDialog {
 		return org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
 	}
 
-	static class CommitStatusLabelProvider extends BaseLabelProvider implements
-			IStyledLabelProvider {
+	static class CommitStatusLabelProvider extends ColumnLabelProvider {
 
 		private Image DEFAULT = PlatformUI.getWorkbench().getSharedImages()
 				.getImage(ISharedImages.IMG_OBJ_FILE);
@@ -163,8 +151,8 @@ public class CommitDialog extends TitleAreaDialog {
 			return (Image) this.resourceManager.get(decorated);
 		}
 
-		public StyledString getStyledText(Object element) {
-			return new StyledString();
+		public String getText(Object obj) {
+			return ""; //$NON-NLS-1$
 		}
 
 		public Image getImage(Object element) {
@@ -190,12 +178,16 @@ public class CommitDialog extends TitleAreaDialog {
 					decorator) : getEditorImage(item);
 		}
 
-		@Override
+		public String getToolTipText(Object element) {
+			return ((CommitItem) element).status.getText();
+		}
+
 		public void dispose() {
 			SUBMODULE.dispose();
 			resourceManager.dispose();
 			super.dispose();
 		}
+
 	}
 
 	static class CommitPathLabelProvider extends ColumnLabelProvider {
@@ -421,7 +413,6 @@ public class CommitDialog extends TitleAreaDialog {
 			item.status = getFileStatus(path, indexDiff);
 			item.submodule = FileMode.GITLINK == indexDiff.getIndexMode(path);
 			item.path = path;
-			item.problemSeverity = getProblemSeverity(repository, path);
 			items.add(item);
 		}
 
@@ -793,7 +784,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 		filesViewer = new CheckboxTableViewer(resourcesTable);
 		new TableViewerColumn(filesViewer, statCol)
-				.setLabelProvider(createStatusLabelProvider());
+				.setLabelProvider(new CommitStatusLabelProvider());
 		new TableViewerColumn(filesViewer, resourceCol)
 				.setLabelProvider(new CommitPathLabelProvider());
 		ColumnViewerToolTipSupport.enableFor(filesViewer);
@@ -932,17 +923,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 		updateFileSectionText();
 		return container;
-	}
-
-	private static CellLabelProvider createStatusLabelProvider() {
-		CommitStatusLabelProvider baseProvider = new CommitStatusLabelProvider();
-		ProblemLabelDecorator decorator = new ProblemLabelDecorator(null);
-		return new DecoratingStyledCellLabelProvider(baseProvider, decorator, null) {
-			@Override
-			public String getToolTipText(Object element) {
-				return ((CommitItem) element).status.getText();
-			}
-		};
 	}
 
 	private void updateMessage() {
@@ -1089,19 +1069,6 @@ public class CommitDialog extends TitleAreaDialog {
 		return Status.UNKNOWN;
 	}
 
-	private static int getProblemSeverity(Repository repository, String path) {
-		IFile file = ResourceUtil.getFileForLocation(repository, path);
-		if (file != null) {
-			try {
-				int severity = file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
-				return severity;
-			} catch (CoreException e) {
-				// Fall back to below
-			}
-		}
-		return IProblemDecoratable.SEVERITY_NONE;
-	}
-
 	@Override
 	protected void okPressed() {
 		if (!isCommitWithoutFilesAllowed()) {
@@ -1146,19 +1113,12 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 }
 
-class CommitItem implements IProblemDecoratable {
-
+class CommitItem {
 	Status status;
 
 	String path;
 
 	boolean submodule;
-
-	int problemSeverity;
-
-	public int getProblemSeverity() {
-		return problemSeverity;
-	}
 
 	/** The ordinal of this {@link Enum} is used to provide the "native" sorting of the list */
 	public static enum Status {
