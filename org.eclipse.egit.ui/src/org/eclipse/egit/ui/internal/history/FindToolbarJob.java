@@ -139,10 +139,10 @@ public class FindToolbarJob extends Job {
 				continue;
 			}
 
-			if (findInAuthor
-					&& find(findPattern, revision.getAuthorIdent().getName())
+			if (findInAuthor && (find(findPattern,
+					revision.getAuthorIdent().getName())
 					|| find(findPattern,
-							revision.getAuthorIdent().getEmailAddress())) {
+							revision.getAuthorIdent().getEmailAddress()))) {
 				if (progress.isCanceled()) {
 					return Status.CANCEL_STATUS;
 				}
@@ -150,10 +150,10 @@ public class FindToolbarJob extends Job {
 				continue;
 			}
 
-			if (findInCommitter
-					&& find(findPattern, revision.getCommitterIdent().getName())
+			if (findInCommitter && (find(findPattern,
+					revision.getCommitterIdent().getName())
 					|| find(findPattern,
-							revision.getCommitterIdent().getEmailAddress())) {
+							revision.getCommitterIdent().getEmailAddress()))) {
 				if (progress.isCanceled()) {
 					return Status.CANCEL_STATUS;
 				}
