@@ -15,8 +15,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
@@ -29,22 +27,19 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.IPersonProvider;
-import org.eclipse.egit.ui.IPersonProvider.Person;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
-import org.eclipse.egit.ui.internal.preferences.PreferenceStorePersonProvider;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.fieldassist.ContentProposal;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalListener;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
+import org.eclipse.jface.fieldassist.SimpleContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
@@ -72,7 +67,6 @@ import org.eclipse.ui.fieldassist.ContentAssistCommandAdapter;
  * Push the current HEAD to Gerrit
  */
 class PushToGerritPage extends WizardPage {
-
 	private static final String PUSH_TO_GERRIT_PAGE_SECTION = "PushToGerritPage"; //$NON-NLS-1$
 
 	private static final String LAST_URI_POSTFIX = ".lastUri"; //$NON-NLS-1$
@@ -265,8 +259,8 @@ class PushToGerritPage extends WizardPage {
 					false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
 
-			// Construct git recive-pack message with reviewers
-			StringBuilder recivePack = new StringBuilder("git receive-pack"); //$NON-NLS-1$
+			// Construct git receive-pack message with reviewers
+			StringBuilder receivePack = new StringBuilder();
 			String[] reviewers = reviewersText.getText().split(
 					new Character(REVIEWERS_SEPARATOR).toString());
 
@@ -283,11 +277,13 @@ class PushToGerritPage extends WizardPage {
 				}
 
 				if (reviewer.length() > 0) {
-					recivePack.append(String.format(
+					receivePack.append(String.format(
 							" --reviewer='%s'", reviewer)); //$NON-NLS-1$
 				}
 			}
-			op.setReceivePack(recivePack.toString());
+			if (receivePack.length() > 0) {
+				op.setReceivePack("git receive-pack" + receivePack.toString()); //$NON-NLS-1$
+			}
 
 			PushOperationResult result = op.execute(monitor);
 			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
@@ -389,24 +385,15 @@ class PushToGerritPage extends WizardPage {
 		UIUtils.addBulbDecorator(reviewersText,
 				UIText.PushToGerritPage_ReviewersContentProposalText);
 
-		// Provider of reviewers proposal
-		IContentProposalProvider proposalProvider = new ReviewerProposalProvider(
-				new IPersonProvider() {
-					public Collection<Person> getPeople() {
-						return PreferenceStorePersonProvider.getInstance()
-								.getPeople();
-					}
-				});
-
 		ContentProposalAdapter proposalAdapter = new ContentAssistCommandAdapter(
-				reviewersText, new TextContentAdapter(), proposalProvider,
-				null, null, false);
+				reviewersText, new TextContentAdapter(),
+				new SimpleContentProposalProvider(new String[0]), null, null,
+				false);
 		proposalAdapter.setPropagateKeys(true);
 		proposalAdapter
 				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_IGNORE);
 
-		// Strategy how new proposal should be placed in text area (it is not
-		// just simple appending or replacing)
+		// Strategy how new proposal should be places in text area
 		proposalAdapter
 				.addContentProposalListener(new IContentProposalListener() {
 					public void proposalAccepted(IContentProposal proposal) {
@@ -472,66 +459,4 @@ class PushToGerritPage extends WizardPage {
 			return getContent();
 		}
 	}
-
-	/**
-	 * Proposal provider of Gerrit reviewers. Reviewers are obtained from
-	 * {@link IPersonProvider} and filtered with prefix entered by user. Both
-	 * person full name and login are taken into consideration when filtering.
-	 */
-	private static final class ReviewerProposalProvider implements
-			IContentProposalProvider {
-
-		/**
-		 * Collection of potential reviewers.
-		 */
-		private Collection<Person> people;
-
-		/**
-		 * Constructor.
-		 *
-		 * @param personProvider
-		 *            source of potential reviewers
-		 */
-		public ReviewerProposalProvider(IPersonProvider personProvider) {
-			people = personProvider.getPeople();
-		}
-
-		public IContentProposal[] getProposals(String contents, int position) {
-			// Determine reviewer's prefix
-			String prefix = null;
-
-			// Look for index of previous separator
-			int prevSeparator = position - 1;
-			while (prevSeparator >= 0
-					&& contents.charAt(prevSeparator) != REVIEWERS_SEPARATOR) {
-				prevSeparator--;
-			}
-
-			prefix = contents.substring(prevSeparator + 1, position);
-			prefix = prefix.trim();
-
-			// Look for candidates that matches prefix
-			String proposalContent = null;
-			List<IContentProposal> result = new LinkedList<IContentProposal>();
-			for (Person person : people) {
-				if (person.getLogin().startsWith(prefix)
-						|| (person.getName() != null && person.getName()
-								.startsWith(prefix))) {
-
-					// Create content of proposal
-					proposalContent = person.getName() != null ? //
-					String.format("%s %s%s%s", person.getName(), //$NON-NLS-1$
-							REVIEWERS_START_BRACKET, person.getLogin(),
-							REVIEWERS_STOP_BRACKET) //
-							: person.getLogin();
-
-					result.add(new ContentProposal(proposalContent));
-				}
-			}
-
-			return result.toArray(new IContentProposal[0]);
-		}
-
-	}
-
 }
