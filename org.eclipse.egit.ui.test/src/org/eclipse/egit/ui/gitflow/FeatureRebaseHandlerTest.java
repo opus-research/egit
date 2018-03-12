@@ -20,7 +20,6 @@ import org.eclipse.egit.gitflow.ui.Activator;
 import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.swtbot.eclipse.finder.waits.Conditions;
@@ -38,10 +37,6 @@ public class FeatureRebaseHandlerTest extends AbstractGitflowHandlerTest {
 
 	@Test
 	public void testRebase() throws Exception {
-		// if AUTOMATED_MODE is true, we wouldn't get the error
-		// dialog which is part of what we want to test here
-		ErrorDialog.AUTOMATED_MODE = false;
-
 		Git git = Git.wrap(repository);
 
 		init();
@@ -95,7 +90,7 @@ public class FeatureRebaseHandlerTest extends AbstractGitflowHandlerTest {
 				ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
 			}
 		});
+		bot.button().click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
-		bot.button("OK").click();
 	}
 }
