@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.StringTokenizer;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -487,7 +488,17 @@ public abstract class LocalRepositoryTestCase extends EGitTestCase {
 	 */
 	protected SWTBotTreeItem getProjectItem(SWTBotTree projectExplorerTree,
 			String project) {
-		return new TestUtil().getProjectItem(projectExplorerTree, project);
+		for (SWTBotTreeItem item : projectExplorerTree.getAllItems()) {
+			String itemText = item.getText();
+			StringTokenizer tok = new StringTokenizer(itemText, " ");
+			String name = tok.nextToken();
+			// may be a dirty marker
+			if (name.equals(">"))
+				name = tok.nextToken();
+			if (project.equals(name))
+				return item;
+		}
+		return null;
 	}
 
 	protected void pressAltAndChar(SWTBotShell shell, char charToPress) {
