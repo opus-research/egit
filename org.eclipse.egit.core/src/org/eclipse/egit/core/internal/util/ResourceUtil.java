@@ -44,11 +44,8 @@ public class ResourceUtil {
 
 	/**
 	 * Return the corresponding resource if it exists.
-	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
 	 *
-	 * @param location
-	 *            the path to check
+	 * @param location the path to check
 	 * @return the resources, or null
 	 */
 	public static IResource getResourceForLocation(IPath location) {
@@ -58,13 +55,14 @@ public class ResourceUtil {
 		if (file != null)
 			return file;
 		IContainer[] containers = root.findContainersForLocationURI(uri);
-		return getExistingResourceWithShortestPath(containers);
+		for (IContainer container : containers)
+			if (container.exists())
+				return container;
+		return null;
 	}
 
 	/**
 	 * Return the corresponding file if it exists.
-	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
 	 *
 	 * @param location
 	 * @return the file, or null
@@ -77,8 +75,6 @@ public class ResourceUtil {
 
 	/**
 	 * Get the {@link IFile} corresponding to the arguments if it exists.
-	 * <p>
-	 * The returned file will be relative to the most nested non-closed project.
 	 *
 	 * @param repository
 	 *            the repository of the file
@@ -156,24 +152,10 @@ public class ResourceUtil {
 
 	private static IFile getFileForLocationURI(IWorkspaceRoot root, URI uri) {
 		IFile[] files = root.findFilesForLocationURI(uri);
-		return getExistingResourceWithShortestPath(files);
-	}
-
-	private static <T extends IResource> T getExistingResourceWithShortestPath(
-			T[] resources) {
-		int shortestPathSegmentCount = Integer.MAX_VALUE;
-		T shortestPath = null;
-		for (T resource : resources) {
-			if (!resource.exists())
-				continue;
-			IPath fullPath = resource.getFullPath();
-			int segmentCount = fullPath.segmentCount();
-			if (segmentCount < shortestPathSegmentCount) {
-				shortestPath = resource;
-				shortestPathSegmentCount = segmentCount;
-			}
-		}
-		return shortestPath;
+		for (IFile file : files)
+			if (file.exists())
+				return file;
+		return null;
 	}
 
 	private static void addPathToMap(RepositoryMapping repositoryMapping,
