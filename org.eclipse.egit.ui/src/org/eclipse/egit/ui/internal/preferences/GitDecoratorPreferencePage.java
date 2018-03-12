@@ -25,9 +25,9 @@ import java.util.Observer;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource;
@@ -382,7 +382,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			}
 
 			final Scale scale = new Scale(composite, SWT.HORIZONTAL);
-			scale.setLayoutData(SWTUtils.createHFillGridData());
+			scale.setLayoutData(SWTUtils.createHVFillGridData());
 			scale.setMaximum(values.length - 1);
 			scale.setMinimum(0);
 			scale.setIncrement(1);
@@ -472,7 +472,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private final Label dateFormatPreview;
 
-		private final Date exampleDate = new Date();
+		private final Date exapmleDate = new Date();
 
 		private boolean formatValid;
 
@@ -510,7 +510,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			SimpleDateFormat sdf;
 			try {
 				sdf = new SimpleDateFormat(dateFormat.getText());
-				dateFormatPreview.setText(sdf.format(exampleDate));
+				dateFormatPreview.setText(sdf.format(exapmleDate));
 				formatValid = true;
 			} catch (Exception ex) {
 				dateFormatPreview.setText(UIText.DecoratorPreferencesPage_wrongDateFormat);
@@ -543,7 +543,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static final class FormatEditor extends SelectionAdapter {
+	private class FormatEditor extends SelectionAdapter {
 		private final Text text;
 
 		private final Map bindings;
@@ -868,27 +868,27 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		public ChangeSetPreview(Composite composite) {
 			super(composite);
 			fViewer.setContentProvider(this);
-			fViewer.setLabelProvider(new GitLabelProvider() {
+			fViewer.setLabelProvider(new LabelProvider() {
 
 				@Override
 				public Image getImage(Object element) {
-					if (element instanceof GitModelCommitMockup)
-						return getChangesetIcon();
+					if (element instanceof GitModelCommitMokeup)
+						return fImageCache.createImage(UIIcons.CHANGESET);
 
 					return super.getImage(element);
 				}
 
 				public String getText(Object element) {
-					if (element instanceof GitModelCommitMockup) {
+					if (element instanceof GitModelCommitMokeup) {
 						String format = store.getString(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT);
 						String dateFormat = store.getString(UIPreferences.DATE_FORMAT);
-						return ((GitModelCommitMockup)element).getMokeupText(format, dateFormat);
+						return ((GitModelCommitMokeup)element).getMokeupText(format, dateFormat);
 					}
 					return super.getText(element);
 				}
 			});
 			fViewer.setContentProvider(this);
-			fViewer.setInput(new GitModelCommitMockup());
+			fViewer.setInput(new GitModelCommitMokeup());
 		}
 
 		public Object[] getChildren(Object parentElement) {
@@ -1035,7 +1035,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		}
 	}
 
-	private static class GitModelCommitMockup {
+	private static class GitModelCommitMokeup {
 
 		private static final String message = "Commit message text"; //$NON-NLS-1$
 		private static final String author = "Author Name"; //$NON-NLS-1$

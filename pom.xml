@@ -2,7 +2,6 @@
 <!--
    Copyright (C) 2009, Igor Fedorenko <igor@ifedorenko.com>
    Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
-   Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
 
    All rights reserved. This program and the accompanying materials
    are made available under the terms of the Eclipse Public License v1.0
@@ -21,10 +20,10 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>0.12.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>EGit Parent</name>
+  <name>EGit Parent (Incubation)</name>
 
   <mailingLists>
     <mailingList>
@@ -62,16 +61,14 @@
   </licenses>
 
   <properties>
-    <egit-version>1.1.0-SNAPSHOT</egit-version>
-    <tycho-version>0.12.0</tycho-version>
+    <egit-version>0.12.0-SNAPSHOT</egit-version>
+    <tycho-version>0.10.0</tycho-version>
     <mockito-version>1.8.4</mockito-version>
     <junit-version>4.8.1</junit-version>
     <jgit-site>file:/${basedir}/../../jgit/org.eclipse.jgit.packaging/org.eclipse.jgit.updatesite/target/site</jgit-site>
     <jetty-site>http://download.eclipse.org/jetty/7.1.6.v20100715/repository/</jetty-site>
     <wikitext-site>http://download.eclipse.org/tools/mylyn/update/weekly</wikitext-site>
-    <orbit-site>http://download.eclipse.org/tools/orbit/downloads/drops/R20110523182458/repository</orbit-site>
-    <signer-input-directory>/home/data/httpd/download-staging.priv/egit</signer-input-directory>
-    <download-publish-path>/home/data/httpd/download.eclipse.org/egit/updates-nightly</download-publish-path>
+    <orbit-site>http://download.eclipse.org/tools/orbit/downloads/drops/S20110124210048/repository</orbit-site>
   </properties>
 
   <profiles>
@@ -118,21 +115,6 @@
         <swtbot-site>http://download.eclipse.org/technology/swtbot/helios/dev-build/update-site</swtbot-site>
       </properties>
     </profile>
-    <profile>
-      <id>static-checks</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>findbugs-maven-plugin</artifactId>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-pmd-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
   </profiles>
 
   <modules>
@@ -143,8 +125,6 @@
     <module>org.eclipse.egit.mylyn.ui</module>
     <module>org.eclipse.egit.mylyn-feature</module>
 
-    <module>org.eclipse.egit.psf-feature</module>
-
     <module>org.eclipse.egit.doc</module>
     <module>org.eclipse.egit-feature</module>
     <module>org.eclipse.egit-updatesite</module>
@@ -154,26 +134,6 @@
 
     <module>org.eclipse.egit.source-feature</module>
    </modules>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>maven.eclipse.org</id>
-      <url>http://maven.eclipse.org/nexus/content/repositories/milestone-indigo</url>
-    </pluginRepository>
-    <!-- TODO: need 1.0.1.2-SNAPSHOT of the signing plugin until bugfix for
-         https://bugs.eclipse.org/bugs/show_bug.cgi?id=347591
-         is available in maven.eclipse.org -->
-    <pluginRepository>
-      <id>intalio-dash-signing-plugin</id>
-      <url>http://intalio.org/public/maven2</url>
-      <snapshots>
-       <enabled>true</enabled>
-      </snapshots>
-      <releases>
-       <enabled>true</enabled>
-      </releases>
-    </pluginRepository>
-  </pluginRepositories>
 
   <repositories>
     <repository>
@@ -208,16 +168,26 @@
     </repository>
   </repositories>
 
+  <pluginRepositories>
+    <pluginRepository>
+      <!-- need maven-findbugs-2.3.2-SNAPSHOT, see
+           http://jira.codehaus.org/browse/MFINDBUGS-122
+           remove this when this version is released -->
+      <id>codehaus.snapshots</id>
+      <url>http://snapshots.repository.codehaus.org/</url>
+    </pluginRepository>
+  </pluginRepositories>
+
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.tycho</groupId>
+        <groupId>org.sonatype.tycho</groupId>
         <artifactId>tycho-maven-plugin</artifactId>
         <version>${tycho-version}</version>
         <extensions>true</extensions>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.tycho</groupId>
+        <groupId>org.sonatype.tycho</groupId>
         <artifactId>target-platform-configuration</artifactId>
         <version>${tycho-version}</version>
         <configuration>
@@ -229,8 +199,8 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.tycho</groupId>
-          <artifactId>tycho-compiler-plugin</artifactId>
+          <groupId>org.sonatype.tycho</groupId>
+          <artifactId>maven-osgi-compiler-plugin</artifactId>
           <version>${tycho-version}</version>
           <configuration>
             <encoding>UTF-8</encoding>
@@ -240,8 +210,8 @@
           <!-- TODO remove workaround when
              https://issues.sonatype.org/browse/TYCHO-473
              is fixed -->
-          <groupId>org.eclipse.tycho</groupId>
-          <artifactId>tycho-source-plugin</artifactId>
+          <groupId>org.sonatype.tycho</groupId>
+          <artifactId>maven-osgi-source-plugin</artifactId>
           <version>${tycho-version}</version>
           <executions>
             <execution>
@@ -269,7 +239,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>2.3.2-SNAPSHOT</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <failOnError>false</failOnError>
@@ -300,19 +270,6 @@
               </goals>
             </execution>
           </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.2-beta-4</version>
-        </plugin>
-        <plugin>
-          <groupId>org.eclipse.dash.maven</groupId>
-          <artifactId>eclipse-maven-signing-plugin</artifactId>
-          <!-- TODO: need 1.0.1.2-SNAPSHOT of the signing plugin until bugfix for
-               https://bugs.eclipse.org/bugs/show_bug.cgi?id=347591
-               is available in maven.eclipse.org -->
-          <version>1.0.1.2-SNAPSHOT</version>
         </plugin>
       </plugins>
     </pluginManagement>

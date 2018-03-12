@@ -45,9 +45,6 @@ public class UIIcons {
 	/** Decoration for lightweight tags **/
 	public final static ImageDescriptor OVR_LIGHTTAG;
 
-	/** Decoration for warning **/
-	public final static ImageDescriptor OVR_ERROR;
-
 	/** Find icon */
 	public final static ImageDescriptor ELCL16_FIND;
 	/** Compare / View icon */
@@ -110,9 +107,6 @@ public class UIIcons {
 	/** Import button */
 	public final static ImageDescriptor FETCH;
 
-	/** Import button */
-	public final static ImageDescriptor PULL;
-
 	/** Export button */
 	public final static ImageDescriptor PUSH;
 
@@ -146,14 +140,8 @@ public class UIIcons {
 	/** Tag icon */
 	public final static ImageDescriptor TAG;
 
-	/** Create Tag icon */
-	public final static ImageDescriptor CREATE_TAG;
-
 	/** Branch icon */
 	public final static ImageDescriptor BRANCH;
-
-	/** Create Branch icon */
-	public final static ImageDescriptor CREATE_BRANCH;
 
 	/** Clone Icon */
 	public final static ImageDescriptor CLONEGIT;
@@ -166,39 +154,6 @@ public class UIIcons {
 
 	/** Expand all icon */
 	public final static ImageDescriptor EXPAND_ALL;
-
-	/** Checkout icon */
-	public final static ImageDescriptor CHECKOUT;
-
-	/** Signed Off By icon */
-	public final static ImageDescriptor SIGNED_OFF;
-
-	/** Check all icon */
-	public final static ImageDescriptor CHECK_ALL;
-
-	/** Uncheck all icon */
-	public final static ImageDescriptor UNCHECK_ALL;
-
-	/** Amend commit icon */
-	public final static ImageDescriptor AMEND_COMMIT;
-
-	/** Untracked file icon */
-	public final static ImageDescriptor UNTRACKED_FILE;
-
-	/** Commit note icon */
-	public final static ImageDescriptor NOTE;
-
-	/** Show Annotation icon */
-	public final static ImageDescriptor ANNOTATE;
-
-	/** Commit icon */
-	public final static ImageDescriptor COMMIT;
-
-	/** Rebase icon */
-	public final static ImageDescriptor REBASE;
-
-	/** Merge icon */
-	public final static ImageDescriptor MERGE;
 
 	/** base URL */
 	public final static URL base;
@@ -241,7 +196,6 @@ public class UIIcons {
 		FILTERFOLDER = map("elcl16/filterfolder.gif"); //$NON-NLS-1$
 		FETCH = map("obj16/fetch.gif"); //$NON-NLS-1$
 		PUSH = map("obj16/push.gif"); //$NON-NLS-1$
-		PULL = map("obj16/pull.gif"); //$NON-NLS-1$
 		REPOSITORY = map("obj16/repository_rep.gif"); //$NON-NLS-1$
 		NEW_REPOSITORY = map("etool16/newlocation_wiz.gif"); //$NON-NLS-1$
 		REMOTE_REPOSITORY = map("obj16/remote_entry_tbl.gif"); //$NON-NLS-1$
@@ -250,27 +204,13 @@ public class UIIcons {
 		OVR_CHECKEDOUT = map("ovr/checkedout_ov.gif"); //$NON-NLS-1$
 		TAGS = map("obj16/tags.gif"); //$NON-NLS-1$
 		TAG = map("obj16/version_rep.gif"); //$NON-NLS-1$
-		CREATE_TAG = map("obj16/new_tag_obj.gif"); //$NON-NLS-1$
 		BRANCH = map("obj16/branch_obj.gif"); //$NON-NLS-1$
-		CREATE_BRANCH = map("obj16/new_branch_obj.gif"); //$NON-NLS-1$
 		COLLAPSEALL = map("elcl16/collapseall.gif"); //$NON-NLS-1$
 		CLONEGIT = map("obj16/cloneGit.gif"); //$NON-NLS-1$
 		RESET = map("obj16/reset.gif"); //$NON-NLS-1$
 		CHANGESET = map("obj16/changelog_obj.gif"); //$NON-NLS-1$
 		GERRIT = map("obj16/gerrit_obj.gif"); //$NON-NLS-1$
 		EXPAND_ALL = map("wizban/expandall.gif"); //$NON-NLS-1$
-		CHECKOUT = map("obj16/checkout.gif"); //$NON-NLS-1$
-		SIGNED_OFF = map("obj16/signed-off.png"); //$NON-NLS-1$
-		CHECK_ALL = map("obj16/check_all.gif"); //$NON-NLS-1$
-		UNCHECK_ALL = map("obj16/uncheck_all.gif"); //$NON-NLS-1$
-		AMEND_COMMIT = map("obj16/commit_amend.gif"); //$NON-NLS-1$
-		UNTRACKED_FILE = map("obj16/untracked_file.gif"); //$NON-NLS-1$
-		NOTE = map("obj16/note.png"); //$NON-NLS-1$
-		ANNOTATE = map("etool16/annotate.gif"); //$NON-NLS-1$
-		COMMIT = map("obj16/commit.gif"); //$NON-NLS-1$
-		REBASE = map("obj16/rebase.gif"); //$NON-NLS-1$
-		OVR_ERROR = map("ovr/error.png"); //$NON-NLS-1$
-		MERGE = map("obj16/merge.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

@@ -23,7 +23,6 @@ import java.util.Set;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
@@ -67,37 +66,30 @@ public class GitResourceVariantTreeSubscriber extends
 
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
-		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject()) && !isIgnoredHint(res)
-				&& shouldBeIncluded(res);
+		return gsds.contains(res.getProject()) && !isIgnoredHint(res);
 	}
 
-	/**
-	 * Returns all members of git repository (including those that are not
-	 * imported into workspace)
-	 *
-	 * @param res
-	 */
+
 	@Override
 	public IResource[] members(IResource res) throws TeamException {
-		if(res.getType() == IResource.FILE || !shouldBeIncluded(res))
+		if(res.getType() == IResource.FILE) {
 			return new IResource[0];
+		}
 
 		GitSynchronizeData gsd = gsds.getData(res.getProject());
 		Repository repo = gsd.getRepository();
-
 		String path = stripWorkDir(repo.getWorkTree(), res.getLocation()
 				.toFile());
 
 		TreeWalk tw = new TreeWalk(repo);
 		if (path.length() > 0)
 			tw.setFilter(PathFilter.create(path));
+		tw.setRecursive(true);
 
 		Set<IResource> gitMembers = new HashSet<IResource>();
 		Map<String, IResource> allMembers = new HashMap<String, IResource>();
 		try {
 			tw.addTree(new FileTreeIterator(repo));
-			enterFilteredPath(path, tw);
 			for (IResource member : ((IContainer) res).members())
 				allMembers.put(member.getName(), member);
 
@@ -120,11 +112,12 @@ public class GitResourceVariantTreeSubscriber extends
 
 	@Override
 	public IResource[] roots() {
-		if (roots == null)
-			roots = gsds.getAllProjects();
-		IResource[] result = new IResource[roots.length];
-		System.arraycopy(roots, 0, result, 0, roots.length);
-		return result;
+		if (roots != null) {
+			return roots;
+		}
+
+		roots = gsds.getAllProjects();
+		return roots;
 	}
 
 	/**
@@ -177,28 +170,6 @@ public class GitResourceVariantTreeSubscriber extends
 
 		info.init();
 		return info;
-	}
-
-	private void enterFilteredPath(String path, TreeWalk tw) throws IOException {
-		int subtreesLen = path.split("/").length; //$NON-NLS-1$
-		for (int i = 0; i < subtreesLen; i++) {
-			tw.next();
-			tw.enterSubtree();
-		}
-	}
-
-	private boolean shouldBeIncluded(IResource res) {
-		Set<IContainer> includedPaths = gsds.getData(res.getProject())
-				.getIncludedPaths();
-		if (includedPaths == null)
-			return true;
-
-		IPath path = res.getLocation();
-		for (IContainer container : includedPaths)
-			if (container.getLocation().isPrefixOf(path))
-				return true;
-
-		return false;
 	}
 
 }

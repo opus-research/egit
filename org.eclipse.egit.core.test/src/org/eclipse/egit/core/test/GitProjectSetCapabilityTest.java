@@ -54,12 +54,16 @@ public class GitProjectSetCapabilityTest {
 	@After
 	public void tearDown() throws Exception {
 		Activator.getDefault().getRepositoryCache().clear();
-		for (IProject project : createdProjects)
-			if (project.exists())
+		for (IProject project : createdProjects) {
+			if (project.exists()) {
 				project.delete(true, true, null);
-		for (File pathToClean : pathsToClean)
-			if (pathToClean.exists())
+			}
+		}
+		for (File pathToClean : pathsToClean) {
+			if (pathToClean.exists()) {
 				FileUtils.delete(pathToClean, FileUtils.RECURSIVE | FileUtils.RETRY);
+			}
+		}
 	}
 
 	@Test
@@ -80,14 +84,16 @@ public class GitProjectSetCapabilityTest {
 		File cRepo = createRepository(cProject.getLocation(), "http://example.org/repo-c", "stable");
 		connectProject(cProject, cRepo);
 
-		IProject[] projects = new IProject[] { aProject, baProject, bbProject, cProject };
-		String[] references = capability.asReference(
-				projects, new ProjectSetSerializationContext(), new NullProgressMonitor());
+		IProject[] projects = new IProject[] { aProject, baProject, bbProject,
+				cProject };
+		String[] references = capability
+				.asReference(projects, new ProjectSetSerializationContext(),
+						new NullProgressMonitor());
 		assertEquals(4, references.length);
-		assertEquals("1.0,http://example.org/repo-a,master,.", references[0]);
-		assertEquals("1.0,http://example.org/repo-b,master,ba", references[1]);
-		assertEquals("1.0,http://example.org/repo-b,master,bb", references[2]);
-		assertEquals("1.0,http://example.org/repo-c,stable,.", references[3]);
+		assertEquals("http://example.org/repo-a|master|.", references[0]);
+		assertEquals("http://example.org/repo-b|master|ba", references[1]);
+		assertEquals("http://example.org/repo-b|master|bb", references[2]);
+		assertEquals("http://example.org/repo-c|stable|.", references[3]);
 	}
 
 	@Test
@@ -113,13 +119,14 @@ public class GitProjectSetCapabilityTest {
 		createRepository(cPath, "notused", "stable");
 		cProject.delete(false, true, null);
 
-		String aReference = "1.0," + aPath.toFile().toURI().toString() + ",master,.";
-		String baReference = "1.0," + bPath.toFile().toURI().toString() + ",master,ba";
-		String bbReference = "1.0," + bPath.toFile().toURI().toString() + ",master,bb";
-		String cReference = "1.0," + cPath.toFile().toURI().toString() + ",stable,.";
+		String aReference = aPath.toFile().toURI().toString() + "|master|.";
+		String baReference = bPath.toFile().toURI().toString() + "|master|ba";
+		String bbReference = bPath.toFile().toURI().toString() + "|master|bb";
+		String cReference = cPath.toFile().toURI().toString() + "|stable|.";
 		String[] references = new String[] { aReference, baReference, bbReference, cReference };
 
-		capability.addToWorkspace(references,
+		capability
+				.addToWorkspace(references,
 						new ProjectSetSerializationContext(),
 						new NullProgressMonitor());
 
@@ -163,11 +170,12 @@ public class GitProjectSetCapabilityTest {
 		xaProject.delete(false, true, null);
 		xbProject.delete(false, true, null);
 
-		String xaMasterReference = "1.0," + xPath.toFile().toURI().toString() + ",master,xa";
-		String xbStableReference = "1.0," + xPath.toFile().toURI().toString() + ",stable,xb";
+		String xaMasterReference = xPath.toFile().toURI().toString() + "|master|xa";
+		String xbStableReference = xPath.toFile().toURI().toString() + "|stable|xb";
 		String[] references = new String[] { xaMasterReference, xbStableReference };
 
-		capability.addToWorkspace(references,
+		capability
+				.addToWorkspace(references,
 						new ProjectSetSerializationContext(),
 						new NullProgressMonitor());
 
@@ -225,8 +233,9 @@ public class GitProjectSetCapabilityTest {
 		Git git = new Git(repo);
 		git.add().addFilepattern(".").call();
 		git.commit().setMessage("initial").call();
-		if (!branch.equals("master"))
+		if (!branch.equals("master")) {
 			git.checkout().setName(branch).setCreateBranch(true).call();
+		}
 
 		pathsToClean.add(gitDirectory);
 		return gitDirectory;

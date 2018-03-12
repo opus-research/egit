@@ -17,12 +17,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -45,13 +43,12 @@ import org.eclipse.team.core.ProjectSetSerializationContext;
 import org.eclipse.team.core.TeamException;
 
 /**
- * Capability for exporting and importing projects shared with Git as part of a
- * team project set.
+ * Serializer/deserializer for references to projects.
  */
 public final class GitProjectSetCapability extends ProjectSetCapability {
 
-	private static final String SEPARATOR = ","; //$NON-NLS-1$
-	private static final String VERSION = "1.0"; //$NON-NLS-1$
+	// TODO: CVS and Subclipse use "," here, should we do the same?
+	private static final String SEPARATOR = "|"; //$NON-NLS-1$
 
 	private final class ProjectReferenceComparator implements
 			Comparator<ProjectReference> {
@@ -66,13 +63,10 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 	}
 
 	final class ProjectReference {
+		/** Separator char */
+		private static final String SEP_RE = "\\|"; //$NON-NLS-1$
 
 		private static final String DEFAULT_BRANCH = Constants.MASTER;
-
-		/**
-		 * the version of the reference string
-		 */
-		String version;
 
 		/**
 		 * a relative path (from the repository root) to a project
@@ -98,17 +92,17 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 
 		@SuppressWarnings("boxing")
 		ProjectReference(final String reference) throws URISyntaxException, IllegalArgumentException {
-			final String[] tokens = reference.split(Pattern.quote(SEPARATOR));
-			if (tokens.length != 4)
+			final String[] tokens = reference.split(SEP_RE);
+			if (tokens.length != 3) {
 				throw new IllegalArgumentException(NLS.bind(
-						CoreText.GitProjectSetCapability_InvalidTokensCount, new Object[] {
-								4, tokens.length, tokens }));
-
-			this.version = tokens[0];
-			this.repository = new URIish(tokens[1]);
-			if (!"".equals(tokens[2])) //$NON-NLS-1$
-				this.branch = tokens[2];
-			this.projectDir = tokens[3];
+						CoreText.PsfReference_InvalidTokensCount, new Object[] {
+								3, tokens.length, tokens }));
+			}
+			this.repository = new URIish(tokens[0]);
+			if (!"".equals(tokens[1])) { //$NON-NLS-1$
+				this.branch = tokens[1];
+			}
+			this.projectDir = tokens[2];
 		}
 	}
 
@@ -117,8 +111,10 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 			ProjectSetSerializationContext context, IProgressMonitor monitor)
 			throws TeamException {
 		String[] references = new String[projects.length];
-		for (int i = 0; i < projects.length; i++)
+		for (int i = 0; i < projects.length; i++) {
+			// TODO: Should we catch TeamException here and proceed with the rest of the projects?
 			references[i] = asReference(projects[i]);
+		}
 		return references;
 	}
 
@@ -128,28 +124,23 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 		try {
 			branch = mapping.getRepository().getBranch();
 		} catch (IOException e) {
-			throw new TeamException(NLS.bind(
-					CoreText.GitProjectSetCapability_ExportCouldNotGetBranch,
-					project.getName()));
+			throw new TeamException("Could not get branch", e); //$NON-NLS-1$
 		}
 		StoredConfig config = mapping.getRepository().getConfig();
-		String remote = config.getString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				branch, ConfigConstants.CONFIG_KEY_REMOTE);
-		String url = config.getString(ConfigConstants.CONFIG_REMOTE_SECTION,
-				remote, ConfigConstants.CONFIG_KEY_URL);
-		if (url == null)
-			throw new TeamException(NLS.bind(
-					CoreText.GitProjectSetCapability_ExportNoRemote,
-					project.getName()));
+		String remote = config.getString(ConfigConstants.CONFIG_BRANCH_SECTION, branch, ConfigConstants.CONFIG_KEY_REMOTE);
+		String url = config.getString(ConfigConstants.CONFIG_REMOTE_SECTION, remote, ConfigConstants.CONFIG_KEY_URL);
+		if (url == null) {
+			throw new TeamException("Could not get remote"); //$NON-NLS-1$
+		}
 
 		String projectPath = mapping.getRepoRelativePath(project);
-		if (projectPath.equals("")) //$NON-NLS-1$
+		if (projectPath.equals("")) { //$NON-NLS-1$
 			projectPath = "."; //$NON-NLS-1$
+		}
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(VERSION);
-		sb.append(SEPARATOR);
+		// TODO: Should we prepend a version string, as CVS and Subclipse do?
 		sb.append(url);
 		sb.append(SEPARATOR);
 		sb.append(branch);
@@ -163,8 +154,7 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 	public IProject[] addToWorkspace(final String[] referenceStrings,
 			final ProjectSetSerializationContext context,
 			final IProgressMonitor monitor) throws TeamException {
-		final Map<URIish, Map<String, Set<ProjectReference>>> repositories =
-				new LinkedHashMap<URIish, Map<String, Set<ProjectReference>>>();
+		final Map<URIish, Map<String, Set<ProjectReference>>> repositories = new HashMap<URIish, Map<String, Set<ProjectReference>>>();
 		for (final String reference : referenceStrings) {
 			try {
 				final ProjectReference projectReference = new ProjectReference(
@@ -200,23 +190,20 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 							branches.keySet());
 					if (workDir.toFile().exists()) {
 						final Collection<String> projectNames = new LinkedList<String>();
-						for (final ProjectReference projectReference : projects)
+						for (final ProjectReference projectReference : projects) {
 							projectNames.add(projectReference.projectDir);
+						}
 						throw new TeamException(NLS.bind(
-								CoreText.GitProjectSetCapability_CloneToExistingDirectory,
+								CoreText.PsfImport_CloneToExistingDirectory,
 								new Object[] { workDir, projectNames, gitUrl }));
 					}
-
-					int timeout = 60;
+					// TODO: Where to get the timeout?
+					int timeout = 0;
 					String refName = Constants.R_HEADS + branch;
 					final CloneOperation cloneOperation = new CloneOperation(
 							gitUrl, true, null, workDir.toFile(), refName,
 							Constants.DEFAULT_REMOTE_NAME, timeout);
 					cloneOperation.run(monitor);
-
-					final File repositoryPath = workDir.append(Constants.DOT_GIT_EXT).toFile();
-
-					Activator.getDefault().getRepositoryUtil().addConfiguredRepository(repositoryPath);
 
 					// import projects from the current repository to workspace
 					final IWorkspace workspace = ResourcesPlugin.getWorkspace();
@@ -233,6 +220,8 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 						importedProjects.add(project);
 
 						project.open(monitor);
+						final File repositoryPath = workDir.append(
+								Constants.DOT_GIT_EXT).toFile();
 						final ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
 								project, repositoryPath);
 						connectProviderOperation.execute(monitor);
@@ -259,14 +248,16 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 	 * @return the directory where the project should be checked out
 	 */
 	private static IPath getWorkingDir(URIish gitUrl, String branch, Set<String> allBranches) {
+		// TODO ask user where to checkout
 		final IPath workspaceLocation = ResourcesPlugin.getWorkspace()
 				.getRoot().getRawLocation();
 		final String humanishName = gitUrl.getHumanishName();
 		String extendedName;
-		if (allBranches.size() == 1 || branch.equals(Constants.MASTER))
+		if (allBranches.size() == 1 || branch.equals(Constants.MASTER)) {
 			extendedName = humanishName;
-		else
+		} else {
 			extendedName = humanishName + "_" + branch; //$NON-NLS-1$
+		}
 		final IPath workDir = workspaceLocation.append(extendedName);
 		return workDir;
 	}

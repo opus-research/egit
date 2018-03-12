@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.view.repositories;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -38,13 +39,16 @@ import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
@@ -60,14 +64,18 @@ public abstract class GitRepositoriesViewTestBase extends
 	// test utilities
 	protected static final TestUtil myUtil = new TestUtil();
 
-	// the human-readable view name
-	protected final static String viewName = myUtil
-			.getPluginLocalizedValue("GitRepositoriesView_name");
-
 	protected static final GitRepositoriesViewTestUtils myRepoViewUtil = new GitRepositoriesViewTestUtils();
 
 	// the "Git Repositories View" bot
 	private SWTBotView viewbot;
+
+	// the human-readable view name
+	protected final static String viewName = myUtil
+			.getPluginLocalizedValue("GitRepositoriesView_name");
+
+	// the human readable Git category
+	private final static String gitCategory = myUtil
+			.getPluginLocalizedValue("GitCategory_name");
 
 	/**
 	 * remove all configured repositories from the view
@@ -81,6 +89,7 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		File gitDir = new File(new File(getTestDirectory(), REPO1),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = lookupRepository(gitDir);
 		myRepository.create();
 
@@ -176,7 +185,8 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		myRepository.getConfig().save();
 		// and push
-		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
+		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
+		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
 		pa.execute(null);
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		try {
@@ -217,7 +227,15 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected SWTBotView getOrOpenView() throws Exception {
 		if (viewbot == null) {
-			viewbot = myRepoViewUtil.openRepositoriesView(bot);
+			bot.menu("Window").menu("Show View").menu("Other...").click();
+			SWTBotShell shell = bot.shell("Show View").activate();
+			shell.bot().tree().expandNode(gitCategory).getNode(viewName)
+					.select();
+			shell.bot().button(IDialogConstants.OK_LABEL).click();
+
+			viewbot = bot.viewByTitle(viewName);
+
+			assertNotNull("Repositories View should not be null", viewbot);
 		} else
 			viewbot.setFocus();
 		return viewbot;

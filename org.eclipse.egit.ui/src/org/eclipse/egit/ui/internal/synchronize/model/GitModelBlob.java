@@ -129,9 +129,9 @@ public class GitModelBlob extends GitModelCommit {
 			return kind;
 
 		int changeKind;
-		if (zeroId().equals(baseId))
+		if (zeroId().equals(remoteId))
 			changeKind = DELETION;
-		else if (zeroId().equals(remoteId) || remoteId == null)
+		else if (zeroId().equals(ancestorId))
 			changeKind = ADDITION;
 		else
 			changeKind = CHANGE;
@@ -153,23 +153,22 @@ public class GitModelBlob extends GitModelCommit {
 		if (obj == this)
 			return true;
 
-		if (obj == null)
-			return false;
+		if (obj instanceof GitModelBlob && !(obj instanceof GitModelCacheFile)
+				&& !(obj instanceof GitModelWorkingFile)) {
+			GitModelBlob objBlob = (GitModelBlob) obj;
 
-		if (obj.getClass() != getClass())
-			return false;
+			boolean equalsRemoteId;
+			ObjectId objRemoteId = objBlob.remoteId;
+			if (objRemoteId != null)
+				equalsRemoteId = objRemoteId.equals(remoteId);
+			else
+				equalsRemoteId = remoteId == null;
 
-		GitModelBlob objBlob = (GitModelBlob) obj;
+			return objBlob.baseId.equals(baseId) && equalsRemoteId
+					&& objBlob.location.equals(location);
+		}
 
-		boolean equalsRemoteId;
-		ObjectId objRemoteId = objBlob.remoteId;
-		if (objRemoteId != null)
-			equalsRemoteId = objRemoteId.equals(remoteId);
-		else
-			equalsRemoteId = remoteId == null;
-
-		return objBlob.baseId.equals(baseId) && equalsRemoteId
-				&& objBlob.location.equals(location);
+		return false;
 	}
 
 	@Override
