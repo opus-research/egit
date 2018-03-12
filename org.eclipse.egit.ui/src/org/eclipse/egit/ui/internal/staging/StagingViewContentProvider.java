@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,15 +14,13 @@ import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CONFLICTIN
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING_AND_CHANGED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED_AND_ADDED;
-import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED_AND_CHANGED;
+import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.PARTIALLY_MODIFIED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.UNTRACKED;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -62,12 +60,9 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 
 	private Repository repository;
 
-	private final EntryComparator comparator;
-
 	StagingViewContentProvider(StagingView stagingView, boolean unstagedSection) {
 		this.stagingView = stagingView;
 		this.unstagedSection = unstagedSection;
-		comparator = new EntryComparator();
 	}
 
 	public Object getParent(Object element) {
@@ -198,12 +193,12 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 					else if (child instanceof StagingFolderEntry)
 						((StagingFolderEntry) child).setParent(folderEntry);
 				}
-				Collections.sort(children, comparator);
+				Collections.sort(children, EntryComparator.INSTANCE);
 				folderEntry.setChildren(children.toArray());
 			}
 		}
 
-		Collections.sort(roots, comparator);
+		Collections.sort(roots, EntryComparator.INSTANCE);
 		return roots.toArray();
 	}
 
@@ -310,10 +305,7 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 					nodes.add(new StagingEntry(repository, MISSING, file));
 			for (String file : indexDiff.getModified())
 				if (indexDiff.getChanged().contains(file))
-					nodes.add(new StagingEntry(repository, MODIFIED_AND_CHANGED,
-							file));
-				else if (indexDiff.getAdded().contains(file))
-					nodes.add(new StagingEntry(repository, MODIFIED_AND_ADDED,
+					nodes.add(new StagingEntry(repository, PARTIALLY_MODIFIED,
 							file));
 				else
 					nodes.add(new StagingEntry(repository, MODIFIED, file));
@@ -330,19 +322,16 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 				nodes.add(new StagingEntry(repository, REMOVED, file));
 		}
 
-		setSymlinkFileMode(indexDiff, nodes);
-
 		try {
 		SubmoduleWalk walk = SubmoduleWalk.forIndex(repository);
 		while(walk.next())
 			for (StagingEntry entry : nodes)
 				entry.setSubmodule(entry.getPath().equals(walk.getPath()));
-		} catch (IOException e) {
+		} catch(IOException e) {
 			Activator.error(UIText.StagingViewContentProvider_SubmoduleError, e);
 		}
 
 		content = nodes.toArray(new StagingEntry[nodes.size()]);
-		Arrays.sort(content, comparator);
 
 		treeRoots = null;
 		compactTreeRoots = null;
@@ -362,36 +351,14 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 			return content.length;
 	}
 
-	/**
-	 * Set file name mode to be enabled or disabled, to keep proper sorting
-	 * order. This mode displays the names of the file first followed by the
-	 * path to the folder that the file is in.
-	 *
-	 * @param enable
-	 */
-	void setFileNameMode(boolean enable) {
-		comparator.fileNameMode = enable;
-		if (content != null) {
-			Arrays.sort(content, comparator);
-		}
-	}
-
 	private static class EntryComparator implements Comparator<Object> {
-		boolean fileNameMode;
+		public static EntryComparator INSTANCE = new EntryComparator();
 
 		public int compare(Object o1, Object o2) {
 			if (o1 instanceof StagingEntry) {
 				if (o2 instanceof StagingEntry) {
 					StagingEntry e1 = (StagingEntry) o1;
 					StagingEntry e2 = (StagingEntry) o2;
-					if (fileNameMode) {
-						int result = e1.getName().compareTo(e2.getName());
-						if (result != 0)
-							return result;
-						else
-							return e1.getParentPath().toString()
-									.compareTo(e2.getParentPath().toString());
-					}
 					return e1.getPath().compareTo(e2.getPath());
 				} else {
 					// Files should come after folders
@@ -413,20 +380,4 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 		}
 	}
 
-	/**
-	 * Set the symlink file mode of the given StagingEntries.
-	 *
-	 * @param indexDiff
-	 *            the index diff
-	 * @param entries
-	 *            the given StagingEntries
-	 */
-	private void setSymlinkFileMode(IndexDiffData indexDiff,
-			Collection<StagingEntry> entries) {
-		final Set<String> symlinks = indexDiff.getSymlinks();
-		for (StagingEntry stagingEntry : entries) {
-			if (symlinks.contains(stagingEntry.getPath()))
-				stagingEntry.setSymlink(true);
-		}
-	}
 }

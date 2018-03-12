@@ -63,7 +63,7 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.DISCARD_CHANGES.equals(family))
+				if (family.equals(JobFamilies.DISCARD_CHANGES))
 					return true;
 				return super.belongsTo(family);
 			}

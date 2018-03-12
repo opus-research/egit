@@ -39,7 +39,6 @@ import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 /**
  * Specialized resource node for non-workspace files
  */
-@SuppressWarnings("restriction")
 public class LocalNonWorkspaceTypedElement extends LocalResourceTypedElement {
 
 	private final IPath path;
