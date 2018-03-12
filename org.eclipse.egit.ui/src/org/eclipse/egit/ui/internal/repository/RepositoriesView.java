@@ -547,12 +547,11 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 					checkoutBranch(node, ref.getLeaf().getName());
 				}
 			});
+
 		}
 
-		if (node.getType() == RepositoryTreeNodeType.BRANCHES
-				|| node.getType() == RepositoryTreeNodeType.LOCALBRANCHES)
-			// offering this on the "Remote Branches" node would probably be
-			// confusing
+		if (node.getType() == RepositoryTreeNodeType.LOCALBRANCHES
+				|| node.getType() == RepositoryTreeNodeType.REMOTEBRANCHES)
 			createCreateBranchItem(men, node);
 
 		// for Repository: import existing projects, remove, (delete), open
@@ -1026,14 +1025,26 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 	}
 
 	private void createCreateBranchItem(Menu men, final RepositoryTreeNode node) {
+
+		final boolean remoteMode;
 		final Ref ref;
-		if (node.getType() == RepositoryTreeNodeType.REF)
+		if (node.getType() == RepositoryTreeNodeType.REF) {
+			remoteMode = node.getParent().getType() == RepositoryTreeNodeType.REMOTEBRANCHES;
 			ref = (Ref) node.getObject();
-		else
+		} else if (node.getType() == RepositoryTreeNodeType.LOCALBRANCHES) {
+			remoteMode = false;
 			ref = null;
+		} else if (node.getType() == RepositoryTreeNodeType.REMOTEBRANCHES) {
+			remoteMode = true;
+			ref = null;
+		} else
+			return;
 
 		MenuItem createLocal = new MenuItem(men, SWT.PUSH);
-		createLocal.setText(UIText.RepositoriesView_NewBranchMenu);
+		if (remoteMode)
+			createLocal.setText(UIText.RepositoriesView_NewRemoteBranchMenu);
+		else
+			createLocal.setText(UIText.RepositoriesView_NewLocalBranchMenu);
 
 		createLocal.addSelectionListener(new SelectionAdapter() {
 
@@ -1044,7 +1055,8 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 					@Override
 					public void addPages() {
-						addPage(new CreateBranchPage(node.getRepository(), ref));
+						addPage(new CreateBranchPage(node.getRepository(), ref,
+								remoteMode));
 						setWindowTitle(UIText.RepositoriesView_NewBranchTitle);
 					}
 
@@ -1088,6 +1100,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			}
 
 		});
+
 	}
 
 	private void createDeleteBranchItem(Menu men, final RepositoryTreeNode node) {
