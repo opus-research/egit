@@ -157,27 +157,23 @@ class PushToGerritPage extends WizardPage {
 		});
 		addRefContentProposalToText(branchText);
 
-		// get all available Gerrit URIs from the repository
-		SortedSet<String> uris = new TreeSet<String>();
+		// get all available URIs from the repository
+		SortedSet<String> uris = new TreeSet<>();
 		try {
 			for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(repository
 					.getConfig())) {
-				if (GerritUtil.isGerritRemote(rc)) {
-					if (rc.getURIs().size() > 0) {
-						uris.add(rc.getURIs().get(0).toPrivateString());
-					}
-					for (URIish u : rc.getPushURIs()) {
-						uris.add(u.toPrivateString());
-					}
-				}
+				if (rc.getURIs().size() > 0)
+					uris.add(rc.getURIs().get(0).toPrivateString());
+				for (URIish u : rc.getPushURIs())
+					uris.add(u.toPrivateString());
+
 			}
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, false);
 			setErrorMessage(e.getMessage());
 		}
-		for (String aUri : uris) {
+		for (String aUri : uris)
 			uriCombo.add(aUri);
-		}
 		selectLastUsedUri();
 		setLastUsedBranch();
 		branchText.setFocus();
@@ -302,7 +298,7 @@ class PushToGerritPage extends WizardPage {
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+				List<IContentProposal> resultList = new ArrayList<>();
 
 				// make the simplest possible pattern check: allow "*"
 				// for multiple characters
@@ -332,7 +328,7 @@ class PushToGerritPage extends WizardPage {
 					pattern = null;
 				}
 
-				Set<String> proposals = new TreeSet<String>(
+				Set<String> proposals = new TreeSet<>(
 						String.CASE_INSENSITIVE_ORDER);
 
 				try {
