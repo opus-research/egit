@@ -30,7 +30,6 @@ import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.CreatePatchOperation;
-import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
@@ -213,7 +212,11 @@ class CommitGraphTable {
 			@Override
 			public void mouseHover(MouseEvent e) {
 				synchronized (this) {
-					disposeHover();
+					if (hoverShell != null) {
+						hoverShell.setVisible(false);
+						hoverShell.dispose();
+						hoverShell = null;
+					}
 
 					TableItem item = table.getTable().getItem(
 							new Point(e.x, e.y));
@@ -260,7 +263,11 @@ class CommitGraphTable {
 		table.getTable().addMouseMoveListener(new MouseMoveListener() {
 			public void mouseMove(MouseEvent e) {
 				synchronized (this) {
-					disposeHover();
+					if (hoverShell == null || hoverShell.isDisposed())
+						return;
+					hoverShell.setVisible(false);
+					hoverShell.dispose();
+					hoverShell = null;
 				}
 			}
 		});
@@ -272,7 +279,6 @@ class CommitGraphTable {
 					allCommits.dispose();
 				if (renderer != null)
 					renderer.dispose();
-				disposeHover();
 			}
 		});
 
@@ -344,13 +350,6 @@ class CommitGraphTable {
 		c.setMenu(menuMgr.createContextMenu(c));
 		c.addMenuDetectListener(menuListener = new MenuListener(menuMgr,
 				getTableView(), site, copy));
-	}
-
-	void disposeHover() {
-		if (hoverShell == null)
-			return;
-		hoverShell.dispose();
-		hoverShell = null;
 	}
 
 	Control getControl() {
@@ -618,7 +617,7 @@ class CommitGraphTable {
 			Repository repository = input.getRepository();
 			CreatePatchOperation operation = new CreatePatchOperation(
 					repository, commit);
-			operation.setHeaderFormat(DiffHeaderFormat.EMAIL);
+			operation.useGitFormat(true);
 			operation.setContextLines(CreatePatchOperation.DEFAULT_CONTEXT_LINES);
 			try {
 				operation.execute(null);
