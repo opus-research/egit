@@ -54,8 +54,6 @@ import org.eclipse.team.core.Team;
  */
 public class IndexDiffCacheEntry {
 
-	private static final String GITIGNORE_NAME = ".gitignore"; //$NON-NLS-1$
-
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
 	private Repository repository;
@@ -280,8 +278,6 @@ public class IndexDiffCacheEntry {
 			public void resourceChanged(IResourceChangeEvent event) {
 				final Collection<String> filesToUpdate = new HashSet<String>();
 				final Collection<IFile> fileResourcesToUpdate = new HashSet<IFile>();
-				final boolean[] gitIgnoreChanged = new boolean[1];
-				gitIgnoreChanged[0] = false;
 
 				try {
 					event.getDelta().accept(new IResourceDeltaVisitor() {
@@ -309,10 +305,6 @@ public class IndexDiffCacheEntry {
 								// Ignore the change
 								return true;
 
-							if (resource.getName().equals(GITIGNORE_NAME)) {
-								gitIgnoreChanged[0] = true;
-								return false;
-							}
 							// Don't include ignored resources
 							if (Team.isIgnoredHint(resource))
 								return false;
@@ -330,9 +322,7 @@ public class IndexDiffCacheEntry {
 					return;
 				}
 
-				if (gitIgnoreChanged[0])
-					scheduleReloadJob();
-				else if (!filesToUpdate.isEmpty())
+				if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
 						scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
 					else
