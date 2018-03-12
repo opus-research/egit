@@ -687,8 +687,7 @@ public class CommitMessageComponent {
 						.getMessage(resourcesArray);
 			}
 		} catch (CoreException coreException) {
-			Activator.logError(coreException.getLocalizedMessage(),
-					coreException);
+			Activator.error(coreException.getLocalizedMessage(), coreException);
 		}
 		if (calculatedCommitMessage != null)
 			return calculatedCommitMessage;
