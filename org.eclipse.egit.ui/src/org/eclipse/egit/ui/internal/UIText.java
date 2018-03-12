@@ -1077,10 +1077,7 @@ public class UIText extends NLS {
 	public static String RepositoryAction_multiRepoSelectionTitle;
 
 	/** */
-	public static String RepositoryCommit_AuthorDate;
-
-	/** */
-	public static String RepositoryCommit_AuthorDateCommitter;
+	public static String RepositoryCommit_UserAndDate;
 
 	/** */
 	public static String RepositoryLocationPage_info;
