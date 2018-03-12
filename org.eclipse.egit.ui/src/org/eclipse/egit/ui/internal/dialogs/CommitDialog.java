@@ -64,10 +64,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
-import org.eclipse.mylyn.internal.team.ui.FocusedTeamUiPlugin;
-import org.eclipse.mylyn.tasks.core.ITask;
-import org.eclipse.mylyn.tasks.core.ITaskActivityManager;
-import org.eclipse.mylyn.tasks.ui.TasksUi;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -162,24 +158,6 @@ public class CommitDialog extends Dialog {
 		super(parentShell);
 	}
 
-	@SuppressWarnings("restriction")
-	private static String getCommitMessageFromCurrentTask() {
-		try {
-			// get active task
-			ITaskActivityManager tam = TasksUi.getTaskActivityManager();
-			ITask task = tam.getActiveTask();
-			if(task == null)
-				return ""; //$NON-NLS-1$
-
-			// get the commit dialog template
-			String template = FocusedTeamUiPlugin.getDefault().getPreferenceStore().getString(
-						FocusedTeamUiPlugin.COMMIT_TEMPLATE);
-			return FocusedTeamUiPlugin.getDefault().getCommitTemplateManager().generateComment(task, template);
-		} catch(Exception e) {
-			return ""; //$NON-NLS-1$
-		}
-	}
-
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		createButton(parent, IDialogConstants.SELECT_ALL_ID, UIText.CommitDialog_SelectAll, false);
@@ -224,8 +202,7 @@ public class CommitDialog extends Dialog {
 		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
 				.hint(size).minSize(size.x, minHeight).align(SWT.FILL, SWT.FILL).create());
-		commitText.setText(getCommitMessageFromCurrentTask()+Text.DELIMITER+commitMessage);
-		commitText.getTextWidget().setCaretOffset(commitText.getText().length());
+		commitText.setText(commitMessage);
 
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
