@@ -14,6 +14,7 @@
 package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +40,7 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -50,6 +52,8 @@ public class GitCloneWizard extends Wizard {
 	 * Job family of the Clone Repository job.
 	 */
 	public static final Object CLONE_JOB_FAMILY = new Object();
+
+	private static final String HELP_CONTEXT = "org.eclipse.egit.ui.GitCloneWizard"; //$NON-NLS-1$
 
 	private RepositorySelectionPage cloneSource;
 
@@ -71,6 +75,7 @@ public class GitCloneWizard extends Wizard {
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		setNeedsProgressMonitor(true);
 		cloneSource = new RepositorySelectionPage(true, null);
+		cloneSource.setHelpContext(HELP_CONTEXT);
 		validSource = new SourceBranchPage() {
 
 			@Override
@@ -82,6 +87,7 @@ public class GitCloneWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
+		validSource.setHelpContext(HELP_CONTEXT);
 		cloneDestination = new CloneDestinationPage() {
 			@Override
 			public void setVisible(boolean visible) {
@@ -92,6 +98,7 @@ public class GitCloneWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
+		cloneDestination.setHelpContext(HELP_CONTEXT);
 	}
 
 	/**
@@ -112,26 +119,14 @@ public class GitCloneWizard extends Wizard {
 					&& MessageDialog.openQuestion(getShell(),
 							UIText.GitCloneWizard_abortingCloneTitle,
 							UIText.GitCloneWizard_abortingCloneMsg)) {
-				deleteRecursively(new File(alreadyClonedInto));
+				try {
+					FileUtils.delete(test, FileUtils.RECURSIVE | FileUtils.RETRY);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
 		}
 		return true;
-	}
-
-	private void deleteRecursively(File f) {
-		File[] children = f.listFiles();
-		if (children != null)
-			for (File i : children) {
-				if (i.isDirectory()) {
-					deleteRecursively(i);
-				} else {
-					if (!i.delete()) {
-						i.deleteOnExit();
-					}
-				}
-			}
-		if (!f.delete())
-			f.deleteOnExit();
 	}
 
 	@Override
@@ -174,7 +169,7 @@ public class GitCloneWizard extends Wizard {
 			selectedBranches = validSource.getSelectedBranches();
 		}
 		final File workdir = cloneDestination.getDestinationFile();
-		final String branch = cloneDestination.getInitialBranch();
+		final Ref ref = cloneDestination.getInitialBranch();
 		final String remoteName = cloneDestination.getRemote();
 
 		workdir.mkdirs();
@@ -192,7 +187,7 @@ public class GitCloneWizard extends Wizard {
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, branch, remoteName, timeout);
+				selectedBranches, workdir, ref, remoteName, timeout);
 		UserPasswordCredentials credentials = cloneSource.getCredentials();
 		if (credentials != null)
 			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(

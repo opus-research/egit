@@ -10,13 +10,11 @@ package org.eclipse.egit.ui.internal.synchronize.model;
 
 import java.io.IOException;
 
-import org.eclipse.compare.ITypedElement;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.egit.ui.internal.synchronize.compare.ComparisonDataSource;
+import org.eclipse.egit.ui.internal.synchronize.compare.GitCompareInput;
+import org.eclipse.egit.ui.internal.synchronize.compare.GitLocalCompareInput;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.egit.ui.internal.LocalResourceTypedElement;
 
 class GitModelWorkingFile extends GitModelBlob {
 
@@ -26,11 +24,10 @@ class GitModelWorkingFile extends GitModelBlob {
 	}
 
 	@Override
-	public ITypedElement getLeft() {
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IFile file = root.getFileForLocation(getLocation());
-
-		return new LocalResourceTypedElement(file);
+	protected GitCompareInput getCompareInput(ComparisonDataSource baseData,
+			ComparisonDataSource remoteData, ComparisonDataSource ancestorData) {
+		return new GitLocalCompareInput(getRepository(), ancestorData,
+				baseData, remoteData, gitPath);
 	}
 
 }

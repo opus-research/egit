@@ -62,6 +62,9 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	@Override
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
+		addField(new BooleanFieldEditor(
+				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
+				UIText.GitPreferenceRoot_ShowInitialConfigDialogCheckbox, main));
 		Group cloningGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		cloningGroup.setText(UIText.GitPreferenceRoot_CloningRepoGroupHeader);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
@@ -142,6 +145,15 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 				UIText.GitPreferenceRoot_MergeModeTooltip);
 		addField(mergeMode);
 		updateMargins(mergeGroup);
+
+		Group confirmGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(confirmGroup);
+		confirmGroup.setText(UIText.GitPreferenceRoot_HideConfirmationGroup);
+		addField(new BooleanFieldEditor(UIPreferences.REBASE_HIDE_CONFIRM,
+				UIText.GitPreferenceRoot_HideRebaseConfirmationField,
+				confirmGroup));
+		updateMargins(confirmGroup);
 	}
 
 	private void updateMargins(Group group) {

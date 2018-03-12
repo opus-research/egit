@@ -14,8 +14,11 @@ import java.util.List;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
 
@@ -24,6 +27,8 @@ import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
  */
 public class GitModelCommit extends GitModelObjectContainer implements
 		ISynchronizationCompareInput {
+
+	private RevCommit ancestorCommit;
 
 	/**
 	 * @param parent
@@ -38,6 +43,8 @@ public class GitModelCommit extends GitModelObjectContainer implements
 	public GitModelCommit(GitModelRepository parent, RevCommit commit,
 			int direction) throws IOException {
 		super(parent, commit, direction);
+
+		this.ancestorCommit = calculateAncestor(commit);
 	}
 
 	/**
@@ -88,9 +95,9 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public int hashCode() {
-		int result = getLocation().hashCode() ^ remoteCommit.hashCode();
-		if (baseCommit != null)
-			result ^= baseCommit.hashCode();
+		int result = getLocation().hashCode() ^ baseCommit.hashCode();
+		if (remoteCommit != null)
+			result ^= remoteCommit.hashCode();
 
 		return result;
 	}
@@ -101,12 +108,12 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
 		try {
-			RevTree actualTree = remoteCommit.getTree();
+			RevTree actualTree = baseCommit.getTree();
 
 			int actualNth = tw.addTree(actualTree);
 			int baseNth = -1;
-			if (baseCommit != null)
-				baseNth = tw.addTree(baseCommit.getTree());
+			if (remoteCommit != null)
+				baseNth = tw.addTree(remoteCommit.getTree());
 			int ancestorNth = tw.addTree(ancestorCommit.getTree());
 
 			while (tw.next()) {
@@ -120,6 +127,29 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		}
 
 		return result.toArray(new GitModelObject[result.size()]);
+	}
+
+	/**
+	 * @return ancestor commit for this model node
+	 */
+	protected RevCommit getAncestorCommit() {
+		return ancestorCommit;
+	}
+
+
+	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
+		RevWalk rw = new RevWalk(getRepository());
+		rw.setRevFilter(RevFilter.MERGE_BASE);
+
+		for (RevCommit parent : actual.getParents()) {
+			RevCommit parentCommit = rw.parseCommit(parent.getId());
+			rw.markStart(parentCommit);
+		}
+
+		rw.markStart(rw.parseCommit(actual.getId()));
+
+		RevCommit result = rw.next();
+		return result != null ? result : rw.parseCommit(ObjectId.zeroId());
 	}
 
 }

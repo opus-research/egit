@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +31,17 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
 import org.eclipse.egit.core.op.AddToIndexOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
@@ -100,6 +105,12 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
  * selected portion of the tree are shown.
  */
 public class CommitDialog extends Dialog {
+
+
+	/**
+	* Constant for the extension point for the commit message provider
+	*/
+	private static final String COMMIT_MESSAGE_PROVIDER_ID = "org.eclipse.egit.ui.commitMessageProvider"; //$NON-NLS-1$
 
 	static class CommitLabelProvider extends WorkbenchLabelProvider implements
 			ITableLabelProvider {
@@ -202,7 +213,7 @@ public class CommitDialog extends Dialog {
 		int minHeight = commitText.getTextWidget().getLineHeight() * 3;
 		commitText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).grab(true, true)
 				.hint(size).minSize(size.x, minHeight).align(SWT.FILL, SWT.FILL).create());
-		commitText.setText(commitMessage);
+		commitText.setText(calculateCommitMessage());
 
 		// allow to commit with ctrl-enter
 		commitText.getTextWidget().addKeyListener(new KeyAdapter() {
@@ -265,7 +276,6 @@ public class CommitDialog extends Dialog {
 		if (amending) {
 			amendingButton.setSelection(amending);
 			amendingButton.setEnabled(false); // if already set, don't allow any changes
-			commitText.setText(previousCommitMessage);
 			authorText.setText(previousAuthor);
 			saveOriginalChangeId();
 		} else if (!amendAllowed) {
@@ -277,19 +287,16 @@ public class CommitDialog extends Dialog {
 			public void widgetSelected(SelectionEvent arg0) {
 				if (!amendingButton.getSelection()) {
 					originalChangeId = null;
+					authorText.setText(author);
 				}
 				else {
 					saveOriginalChangeId();
 					if (!alreadyAdded) {
 						alreadyAdded = true;
-						String curText = commitText.getText();
-						if (curText.length() > 0)
-							curText += Text.DELIMITER;
-						commitText.setText(curText
-								+ previousCommitMessage.replaceAll(
-										"\n", Text.DELIMITER)); //$NON-NLS-1$
-						authorText.setText(previousAuthor);
+						commitText.setText(previousCommitMessage.replaceAll(
+								"\n", Text.DELIMITER)); //$NON-NLS-1$
 					}
+					authorText.setText(previousAuthor);
 				}
 				refreshChangeIdText();
 			}
@@ -433,10 +440,67 @@ public class CommitDialog extends Dialog {
 		return container;
 	}
 
+	/**
+	 * @return the calculated commit message
+	 */
+	private String calculateCommitMessage() {
+		if(commitMessage != null) {
+			// special case for merge
+			return commitMessage;
+		}
+
+		if (amending)
+			return previousCommitMessage;
+
+		String calculatedCommitMessage = null;
+
+		Set<IResource> resources = new HashSet<IResource>();
+		for (CommitItem item : items) {
+			IResource resource = item.file.getProject();
+			resources.add(resource);
+		}
+		try {
+			ICommitMessageProvider messageProvider = getCommitMessageProvider();
+			if(messageProvider != null) {
+				IResource[] resourcesArray = resources.toArray(new IResource[0]);
+
+				calculatedCommitMessage = messageProvider.getMessage(resourcesArray);
+			}
+		} catch (CoreException coreException) {
+			Activator.error(coreException.getLocalizedMessage(),
+					coreException);
+		}
+		if (calculatedCommitMessage != null)
+			return calculatedCommitMessage;
+		else
+			return ""; //$NON-NLS-1$
+	}
+
+
+	private ICommitMessageProvider getCommitMessageProvider()
+			throws CoreException {
+		IExtensionRegistry registry = Platform.getExtensionRegistry();
+		IConfigurationElement[] config = registry
+				.getConfigurationElementsFor(COMMIT_MESSAGE_PROVIDER_ID);
+		if (config.length > 0) {
+			Object provider;
+			provider = config[0].createExecutableExtension("class");//$NON-NLS-1$
+			if (provider instanceof ICommitMessageProvider) {
+				return (ICommitMessageProvider) provider;
+			} else {
+				Activator.logError(UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
+						null);
+			}
+		}
+		return null;
+	}
+
 	private void saveOriginalChangeId() {
 		int changeIdOffset = findOffsetOfChangeIdLine(previousCommitMessage);
 		if (changeIdOffset > 0) {
 			int endOfChangeId = findNextEOL(changeIdOffset, previousCommitMessage);
+			if (endOfChangeId < 0)
+				endOfChangeId = previousCommitMessage.length()-1;
 			int sha1Offset = changeIdOffset + "\nChange-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage.substring(sha1Offset, endOfChangeId));
@@ -612,13 +676,12 @@ public class CommitDialog extends Dialog {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
 		String path = mapping.getRepoRelativePath(file);
 		Repository repo = mapping.getRepository();
-		AdaptableFileTreeIterator fileTreeIterator =
-			new AdaptableFileTreeIterator(repo.getWorkTree(),
-					ResourcesPlugin.getWorkspace().getRoot());
+		AdaptableFileTreeIterator fileTreeIterator = new AdaptableFileTreeIterator(
+				repo, ResourcesPlugin.getWorkspace().getRoot());
 		IndexDiff indexDiff = new IndexDiff(repo, Constants.HEAD, fileTreeIterator);
 		Set<String> repositoryPaths = Collections.singleton(path);
 		indexDiff.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
-		indexDiff.diff();
+		indexDiff.diff(null, 0, 0, ""); //$NON-NLS-1$
 		return getFileStatus(path, indexDiff);
 	}
 
@@ -637,7 +700,7 @@ public class CommitDialog extends Dialog {
 		this.commitMessage = s;
 	}
 
-	private String commitMessage = ""; //$NON-NLS-1$
+	private String commitMessage = null;
 	private String author = null;
 	private String committer = null;
 	private String previousAuthor = null;
