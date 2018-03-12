@@ -24,7 +24,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -129,7 +128,9 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	}
 
 	@Override
-	public abstract IPath getLocation();
+	public IPath getLocation() {
+		return getParent().getLocation();
+	}
 
 	public ITypedElement getAncestor() {
 		return null;
@@ -193,15 +194,16 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	/**
 	 *
 	 * @param tw instance of {@link TreeWalk} that should be used
+	 * @param ancestorCommit TODO
 	 * @param ancestorNth
 	 * @param baseNth
 	 * @param actualNth
 	 * @return {@link GitModelObject} instance of given parameters
 	 * @throws IOException
 	 */
-	protected GitModelObject getModelObject(TreeWalk tw, int ancestorNth,
-			int baseNth, int actualNth) throws IOException {
-		IPath path = new Path(getLocation() + "/" +tw.getPathString()); //$NON-NLS-1$
+	protected GitModelObject getModelObject(TreeWalk tw, RevCommit ancestorCommit,
+			int ancestorNth, int baseNth, int actualNth) throws IOException {
+		String objName = tw.getNameString();
 
 		ObjectId objBaseId;
 		if (baseNth > -1)
@@ -218,11 +220,11 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		int objectType = tw.getFileMode(actualNth).getObjectType();
 
 		if (objectType == Constants.OBJ_BLOB)
-			return new GitModelBlob(this, getBaseCommit(), objAncestorId,
-					objBaseId, objRemoteId, path);
+			return new GitModelBlob(this, getBaseCommit(), ancestorCommit,
+					objAncestorId, objBaseId, objRemoteId, objName);
 		else if (objectType == Constants.OBJ_TREE)
-			return new GitModelTree(this, getBaseCommit(), objAncestorId,
-					objBaseId, objRemoteId, path);
+			return new GitModelTree(this, getBaseCommit(), ancestorCommit,
+					objAncestorId, objBaseId, objRemoteId, objName);
 
 		return null;
 	}
