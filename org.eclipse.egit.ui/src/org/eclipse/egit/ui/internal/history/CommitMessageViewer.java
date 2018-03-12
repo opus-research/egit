@@ -123,11 +123,6 @@ class CommitMessageViewer extends TextViewer implements
 					return;
 				}
 
-				if (o >= t.getCharCount()) {
-					t.setCursor(sys_normalCursor);
-					return;
-				}
-
 				final StyleRange r = t.getStyleRangeAtOffset(o);
 				if (r instanceof ObjectLink)
 					t.setCursor(SYS_LINK_CURSOR);
@@ -150,9 +145,6 @@ class CommitMessageViewer extends TextViewer implements
 				} catch (IllegalArgumentException err) {
 					return;
 				}
-
-				if (o >= t.getCharCount())
-					return;
 
 				final StyleRange r = t.getStyleRangeAtOffset(o);
 				if (r instanceof ObjectLink) {
