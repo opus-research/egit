@@ -1045,6 +1045,24 @@ public class UIText extends NLS {
 	public static String HistoryPreferencePage_title;
 
 	/** */
+	public static String PullCurrentBranchActionHandler_PullCanceledMessage;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullCanceledTitle;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullJobname;
+
+	/** */
+	public static String PullResultDialog_DialogTitle;
+
+	/** */
+	public static String PullResultDialog_FetchResultGroupHeader;
+
+	/** */
+	public static String PullResultDialog_MergeResultGroupHeader;
+
+	/** */
 	public static String PushAction_wrongURIDescription;
 
 	/** */
@@ -2235,9 +2253,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_SelectOneCommitMessage;
-
-	/** */
-	public static String CommitGraphTable_CommitId;
 
 	/** */
 	public static String GitSynchronizeWizard_synchronize;
