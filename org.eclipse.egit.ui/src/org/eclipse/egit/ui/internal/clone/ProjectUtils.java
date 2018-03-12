@@ -56,11 +56,13 @@ public class ProjectUtils {
 						.getWorkbench().getWorkingSetManager();
 				try {
 					actMonitor.beginTask("", projectsToCreate.size()); //$NON-NLS-1$
-					if (actMonitor.isCanceled())
+					if (actMonitor.isCanceled()) {
 						throw new OperationCanceledException();
+					}
 					for (ProjectRecord projectRecord : projectsToCreate) {
-						if (actMonitor.isCanceled())
+						if (actMonitor.isCanceled()) {
 							throw new OperationCanceledException();
+						}
 						actMonitor.setTaskName(projectRecord.getProjectLabel());
 						IProject project = createExistingProject(projectRecord,
 								new SubProgressMonitor(actMonitor, 1));
@@ -95,12 +97,14 @@ public class ProjectUtils {
 					.getAbsolutePath());
 
 			// If it is under the root use the default location
-			if (Platform.getLocation().isPrefixOf(locationPath))
+			if (Platform.getLocation().isPrefixOf(locationPath)) {
 				record.getProjectDescription().setLocation(null);
-			else
+			} else {
 				record.getProjectDescription().setLocation(locationPath);
-		} else
+			}
+		} else {
 			record.getProjectDescription().setName(projectName);
+		}
 
 		try {
 			monitor.beginTask(
