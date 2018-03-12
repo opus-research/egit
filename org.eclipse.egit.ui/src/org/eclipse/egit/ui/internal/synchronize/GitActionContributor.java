@@ -154,5 +154,4 @@ class GitActionContributor extends SynchronizePageActionGroup {
 			configuration.setProperty(P_OPEN_ACTION, openInCompareAction);
 		}
 	}
-
 }
