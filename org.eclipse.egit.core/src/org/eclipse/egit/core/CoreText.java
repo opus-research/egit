@@ -54,6 +54,9 @@ public class CoreText extends NLS {
 	public static String CommitOperation_PerformingCommit;
 
 	/** */
+	public static String CommitOperation_couldNotFindRepositoryMapping;
+
+	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
@@ -85,9 +88,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String BlobStorage_errorReadingBlob;
-
-	/** */
-	public static String BranchOperation_CheckoutOnlyBranchOrTag;
 
 	/** */
 	public static String UntrackOperation_adding;
@@ -156,6 +156,9 @@ public class CoreText extends NLS {
 	public static String ResetOperation_resetMergeFailed;
 
 	/** */
+	public static String ResetOperation_resetCherryPickFailed;
+
+	/** */
 	public static String ResetOperation_updatingFailed;
 
 	/** */
@@ -210,22 +213,19 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
+	public static String PullOperation_DetachedHeadMessage;
+
+	/** */
+	public static String PullOperation_PullNotConfiguredMessage;
+
+	/** */
+	public static String PullOperation_TaskName;
+
+	/** */
 	public static String PushOperation_InternalExceptionOccurredMessage;
 
 	/** */
-	public static String PushConfiguredRemoteAction_PushJobName;
-
-	/** */
 	public static String PushOperation_resultCancelled;
-
-	/** */
-	public static String PushOperation_resultNotSupported;
-
-	/** */
-	public static String PushOperation_resultTransportError;
-
-	/** */
-	public static String PushOperation_resultNoServiceError;
 
 	/** */
 	public static String PushOperation_taskNameDryRun;

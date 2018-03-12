@@ -88,7 +88,7 @@ import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.part.IPageSite;
 
 class CommitGraphTable {
-	private static Font highlightFont() {
+	static Font highlightFont() {
 		final Font n, h;
 
 		n = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
@@ -134,6 +134,10 @@ class CommitGraphTable {
 
 	MenuListener menuListener;
 
+	private RevCommit commitToShow;
+
+	private GraphLabelProvider graphLabelProvider;
+
 	CommitGraphTable(Composite parent) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
@@ -161,7 +165,10 @@ class CommitGraphTable {
 				((SWTCommit) element).widget = item;
 			}
 		};
-		table.setLabelProvider(new GraphLabelProvider());
+
+		graphLabelProvider = new GraphLabelProvider();
+
+		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
 		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
@@ -242,11 +249,20 @@ class CommitGraphTable {
 				}
 			}
 		});
+
+		table.getTable().addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				allCommits.dispose();
+				renderer.dispose();
+			}
+		});
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
 			final MenuManager menuMgr) {
 		this(parent);
+
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
 			public void focusLost(FocusEvent e) {
@@ -312,14 +328,21 @@ class CommitGraphTable {
 		return table.getControl();
 	}
 
+	void selectCommitStored(final RevCommit c) {
+		commitToShow = c;
+		selectCommit(c);
+	}
+
 	void selectCommit(final RevCommit c) {
 		if (c instanceof PlotCommit) {
 			table.setSelection(new StructuredSelection(c));
 			table.reveal(c);
-		} else {
+		} else if (commitsMap != null) {
 			PlotCommit swtCommit = commitsMap.get(c.getId().name());
-			table.setSelection(new StructuredSelection(swtCommit));
-			table.reveal(swtCommit);
+			if (swtCommit != null) {
+				table.setSelection(new StructuredSelection(swtCommit));
+				table.reveal(swtCommit);
+			}
 		}
 	}
 
@@ -329,6 +352,10 @@ class CommitGraphTable {
 
 	void removeSelectionChangedListener(final ISelectionChangedListener l) {
 		table.removePostSelectionChangedListener(l);
+	}
+
+	boolean setRelativeDate(boolean booleanValue) {
+		return graphLabelProvider.setRelativeDate(booleanValue);
 	}
 
 	private boolean canDoCopy() {
@@ -369,6 +396,8 @@ class CommitGraphTable {
 		} else {
 			table.getTable().deselectAll();
 		}
+		if (commitToShow != null)
+			selectCommit(commitToShow);
 	}
 
 	void setHistoryPageInput(HistoryPageInput input) {
@@ -379,8 +408,12 @@ class CommitGraphTable {
 
 	private void initCommitsMap() {
 		commitsMap = new HashMap<String, PlotCommit>();
-		for (PlotCommit commit : allCommits)
-			commitsMap.put(commit.getId().name(), commit);
+		// ensure that filling (GenerateHistoryJob) and reading (here)
+		// the commit list is thread safe
+		synchronized (allCommits) {
+			for (PlotCommit commit : allCommits)
+				commitsMap.put(commit.getId().name(), commit);
+		}
 	}
 
 	private void createColumns(final Table rawTable, final TableLayout layout) {
@@ -440,7 +473,7 @@ class CommitGraphTable {
 			event.gc.setFont(nFont);
 
 		if (event.index == 0) {
-			renderer.paint(event);
+			renderer.paint(event, input == null ? null : input.getHead());
 			return;
 		}
 
@@ -637,6 +670,9 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
+					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
 		}
 

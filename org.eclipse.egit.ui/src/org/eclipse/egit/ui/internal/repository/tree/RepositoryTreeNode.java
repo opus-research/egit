@@ -299,8 +299,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case ADDITIONALREFS:
 			// fall through
-		case ERROR:
-			// fall through TODO fix this: Repository may be null
 		case WORKINGDIR:
 			return ((Repository) myObject).getDirectory().equals(
 					((Repository) otherObject).getDirectory());
@@ -316,6 +314,8 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case FILE:
 			return ((File) myObject).getPath().equals(
 					((File) otherObject).getPath());
+		case ERROR:
+			// fall through
 		case REMOTE:
 			// fall through
 		case FETCH:
@@ -330,4 +330,8 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		return false;
 	}
 
+	@Override
+	public String toString() {
+		return "RepositoryNode[" + myType + ", " + myObject.toString() + "]";   //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
+	}
 }

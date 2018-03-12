@@ -26,6 +26,8 @@ class RemoteSelectionCombo extends Composite {
 
 	private Label myRefLabel;
 
+	private Label myRemoteLabel;
+
 	private Combo refsCombo;
 
 	private Combo remotesCombo;
@@ -46,6 +48,7 @@ class RemoteSelectionCombo extends Composite {
 	@Override
 	public void setEnabled(boolean enabled) {
 		myRefLabel.setEnabled(enabled);
+		myRemoteLabel.setEnabled(enabled);
 		refsCombo.setEnabled(enabled);
 		remotesCombo.setEnabled(enabled);
 		super.setEnabled(enabled);
@@ -56,8 +59,8 @@ class RemoteSelectionCombo extends Composite {
 		remoteComposite.setLayout(new GridLayout());
 		remoteComposite.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).hint(150, SWT.DEFAULT).create());
-		myRefLabel = new Label(remoteComposite, SWT.NONE);
-		myRefLabel.setText(remoteLabel);
+		myRemoteLabel = new Label(remoteComposite, SWT.NONE);
+		myRemoteLabel.setText(remoteLabel);
 		remotesCombo = new Combo(remoteComposite, SWT.NONE | SWT.READ_ONLY);
 		remotesCombo.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).create());
@@ -77,8 +80,8 @@ class RemoteSelectionCombo extends Composite {
 		refsComposite.setLayout(new GridLayout());
 		refsComposite.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).hint(150, SWT.DEFAULT).create());
-		Label ref = new Label(refsComposite, SWT.NONE);
-		ref.setText(refLabel);
+		myRefLabel = new Label(refsComposite, SWT.NONE);
+		myRefLabel.setText(refLabel);
 		refsCombo = new Combo(refsComposite, SWT.NONE | SWT.READ_ONLY);
 		refsCombo.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).create());
@@ -95,14 +98,24 @@ class RemoteSelectionCombo extends Composite {
 				refSelectedIndex).getValue();
 	}
 
-	public void setDefaultValue(String remote, String ref) {
+	/**
+	 * Preselects given value in widgets.
+	 *
+	 * @param remote
+	 *            name of remote repository that should be selected
+	 * @param ref
+	 *            name of ref in {@code remote} that should be selected
+	 * @return {@code true} when given element was successfully selected, or
+	 *         {@code false} otherwise.
+	 */
+	public boolean setDefaultValue(String remote, String ref) {
 		int i = 0;
 		for (; i < syncRepos.size(); i++)
 			if (syncRepos.get(i).getName().equals(remote))
 				break;
 
 		if (i == syncRepos.size())
-			return;	// repository name not found
+			return false; // repository name not found
 
 		remotesCombo.select(i);
 		fillRefsCombo();
@@ -114,8 +127,10 @@ class RemoteSelectionCombo extends Composite {
 				break;
 
 		if (i == syncRepos.size())
-			return;	// ref name not found
+			return false; // ref name not found
 		refsCombo.select(i);
+
+		return true;
 	}
 
 	private void fillRefsCombo() {
