@@ -40,12 +40,6 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
-	public static String Activator_DefaultRepoFolderIsFile;
-
-	/** */
-	public static String Activator_DefaultRepoFolderNotCreated;
-
-	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -3041,7 +3035,10 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_branches;
+	public static String GitBranchSynchronizeWizardPage_destination;
+
+	/** */
+	public static String GitBranchSynchronizeWizardPage_includeUncommitedChanges;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_selectAll;
