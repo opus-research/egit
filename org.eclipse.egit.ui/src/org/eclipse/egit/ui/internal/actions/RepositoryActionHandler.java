@@ -458,10 +458,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		List<PreviousCommit> result = new ArrayList<PreviousCommit>();
 		Repository repository = getRepository();
 		IResource resource = getSelectedResources()[0];
-		if (resource == null) {
-			return result;
-		}
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
+		RepositoryMapping mapping = RepositoryMapping.getMapping(resource.getProject());
 		if (mapping == null) {
 			return result;
 		}
