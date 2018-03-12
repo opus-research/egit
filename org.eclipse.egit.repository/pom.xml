@@ -18,7 +18,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>3.5.0-SNAPSHOT</version>
+    <version>4.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.repository</artifactId>
@@ -41,7 +41,7 @@
                    <goal>run</goal>
                  </goals>
                  <configuration>
-                   <tasks>
+                   <target>
                      <delete includeemptydirs="false">
                        <fileset
                          dir="${download-publish-path}">
@@ -54,7 +54,7 @@
                          <include name="**" />
                        </fileset>
                      </copy>
-                   </tasks>
+                   </target>
                  </configuration>
                </execution>
              </executions>
@@ -64,4 +64,42 @@
     </profile>
   </profiles>
 
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jboss-public-repository-group</id>
+      <name>JBoss Public Repository Group</name>
+      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jboss.tools.tycho-plugins</groupId>
+        <artifactId>repository-utils</artifactId>
+        <executions>
+          <execution>
+            <id>generate-facade</id>
+            <phase>package</phase>
+            <goals>
+              <goal>generate-repository-facade</goal>
+            </goals>
+            <configuration>
+              <siteTemplateFolder>siteTemplate/</siteTemplateFolder>
+              <!-- Symbols are used while expanding index.html template -->
+              <symbols>
+                <update.site.name>EGit p2 Repository</update.site.name>
+                <update.site.description>Use this URL in Eclipse to install EGit and JGit</update.site.description>
+                <update.site.version>${project.version}</update.site.version>
+                <target.eclipse.version>3.8.2 / 4.2.2 (Juno) or newer</target.eclipse.version>
+              </symbols>
+              <p2StatsUrl>http://download.eclipse.org/stats/egit/${project.artifactId}/${project.version}</p2StatsUrl>
+              <associateSites>
+                <site>http://download.eclipse.org/e4/snapshots/org.eclipse.e4.ui</site>
+              </associateSites>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

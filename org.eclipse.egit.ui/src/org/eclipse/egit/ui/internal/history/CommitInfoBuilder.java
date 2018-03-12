@@ -13,14 +13,9 @@
 
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -31,14 +26,11 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.CommitMessageViewer.ObjectLink;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
@@ -51,7 +43,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.RevWalkUtils;
-import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
@@ -76,34 +67,24 @@ public class CommitInfoBuilder {
 
 	private final boolean fill;
 
-	// set by selecting files in the file list
-	private final List<FileDiff> currentDiffs;
-
 	private Color linkColor;
 
 	private Color darkGrey;
-
-	private Color hunkheaderColor;
-
-	private Color linesAddedColor;
-
-	private Color linesRemovedColor;
 
 	private final Collection<Ref> allRefs;
 
 	/**
 	 * @param db the repository
 	 * @param commit the commit the info should be shown for
-	 * @param currentDiffs list of current diffs
 	 * @param fill whether to fill the available space
 	 * @param allRefs all Ref's to examine regarding marge bases
 	 */
-	public CommitInfoBuilder(Repository db, PlotCommit commit, List<FileDiff> currentDiffs, boolean fill, Collection<Ref> allRefs) {
+	public CommitInfoBuilder(Repository db, PlotCommit commit, boolean fill,
+			Collection<Ref> allRefs) {
 		this.db = db;
 		this.commit = commit;
 		this.fill = fill;
 		this.allRefs = allRefs;
-		this.currentDiffs = new ArrayList<FileDiff>(currentDiffs);
 	}
 
 	/**
@@ -111,16 +92,10 @@ public class CommitInfoBuilder {
 	 *
 	 * @param linkColor
 	 * @param darkGrey
-	 * @param hunkheaderColor
-	 * @param linesAddedColor
-	 * @param linesRemovedColor
 	 */
-	public void setColors(Color linkColor, Color darkGrey, Color hunkheaderColor, Color linesAddedColor, Color linesRemovedColor) {
+	public void setColors(Color linkColor, Color darkGrey) {
 		this.linkColor = linkColor;
 		this.darkGrey = darkGrey;
-		this.hunkheaderColor = hunkheaderColor;
-		this.linesAddedColor = linesAddedColor;
-		this.linesRemovedColor = linesRemovedColor;
 	}
 
 	/**
@@ -192,30 +167,33 @@ public class CommitInfoBuilder {
 			d.append(LF);
 		}
 
-		try {
-			List<Ref> branches = getBranches(commit, allRefs, db);
-			if (!branches.isEmpty()) {
-				d.append(UIText.CommitMessageViewer_branches);
-				d.append(": "); //$NON-NLS-1$
-				int count = 0;
-				for (Iterator<Ref> i = branches.iterator(); i.hasNext();) {
-					Ref head = i.next();
-					RevCommit p;
-					p = new RevWalk(db).parseCommit(head.getObjectId());
-					addLink(d, formatHeadRef(head), styles, p);
-					if (i.hasNext()) {
-						if (count++ <= MAXBRANCHES) {
-							d.append(", "); //$NON-NLS-1$
-						} else {
-							d.append(NLS.bind(UIText.CommitMessageViewer_MoreBranches, Integer.valueOf(branches.size() - MAXBRANCHES)));
-							break;
+		if(Activator.getDefault().getPreferenceStore().getBoolean(
+				UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE)) {
+			try (RevWalk rw = new RevWalk(db)) {
+				List<Ref> branches = getBranches(commit, allRefs, db);
+				if (!branches.isEmpty()) {
+					d.append(UIText.CommitMessageViewer_branches);
+					d.append(": "); //$NON-NLS-1$
+					int count = 0;
+					for (Iterator<Ref> i = branches.iterator(); i.hasNext();) {
+						Ref head = i.next();
+						RevCommit p;
+						p = rw.parseCommit(head.getObjectId());
+						addLink(d, formatHeadRef(head), styles, p);
+						if (i.hasNext()) {
+							if (count++ <= MAXBRANCHES) {
+								d.append(", "); //$NON-NLS-1$
+							} else {
+								d.append(NLS.bind(UIText.CommitMessageViewer_MoreBranches, Integer.valueOf(branches.size() - MAXBRANCHES)));
+								break;
+							}
 						}
 					}
+					d.append(LF);
 				}
-				d.append(LF);
+			} catch (IOException e) {
+				Activator.logError(e.getMessage(), e);
 			}
-		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
 		}
 
 		String tagsString = getTagsString();
@@ -228,13 +206,13 @@ public class CommitInfoBuilder {
 
 		if (Activator.getDefault().getPreferenceStore().getBoolean(
 				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE)) {
-			try {
+			try (RevWalk rw = new RevWalk(db)) {
 				monitor.setTaskName(UIText.CommitMessageViewer_GettingPreviousTagTaskName);
 				Ref followingTag = getNextTag(false, monitor);
 				if (followingTag != null) {
 					d.append(UIText.CommitMessageViewer_follows);
 					d.append(": "); //$NON-NLS-1$
-					RevCommit p = new RevWalk(db).parseCommit(followingTag
+					RevCommit p = rw.parseCommit(followingTag
 							.getObjectId());
 					addLink(d, formatTagRef(followingTag), styles, p);
 					d.append(LF);
@@ -243,13 +221,13 @@ public class CommitInfoBuilder {
 				Activator.logError(e.getMessage(), e);
 			}
 
-			try {
+			try (RevWalk rw = new RevWalk(db)) {
 				monitor.setTaskName(UIText.CommitMessageViewer_GettingNextTagTaskName);
 				Ref precedingTag = getNextTag(true, monitor);
 				if (precedingTag != null) {
 					d.append(UIText.CommitMessageViewer_precedes);
 					d.append(": "); //$NON-NLS-1$
-					RevCommit p = new RevWalk(db).parseCommit(precedingTag
+					RevCommit p = rw.parseCommit(precedingTag
 							.getObjectId());
 					addLink(d, formatTagRef(precedingTag), styles, p);
 					d.append(LF);
@@ -281,9 +259,6 @@ public class CommitInfoBuilder {
 			styles.add(new StyleRange(h0 + matcher.start(), matcher.end()
 					- matcher.start(), null, null, SWT.ITALIC));
 		}
-
-		if (!currentDiffs.isEmpty())
-			buildDiffs(d, styles, monitor, trace);
 
 		if (trace)
 			GitTraceLocation.getTrace().traceExit(
@@ -321,12 +296,9 @@ public class CommitInfoBuilder {
 			Collection<Ref> allRefs, Repository db)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
-		RevWalk revWalk = new RevWalk(db);
-		try {
+		try (RevWalk revWalk = new RevWalk(db)) {
 			revWalk.setRetainBody(false);
 			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, allRefs);
-		} finally {
-			revWalk.dispose();
 		}
 	}
 
@@ -368,90 +340,6 @@ public class CommitInfoBuilder {
 		}
 	}
 
-
-	private void buildDiffs(final StringBuilder d,
-			final List<StyleRange> styles, IProgressMonitor monitor,
-			boolean trace) throws OperationCanceledException,
-			IOException {
-
-		// the encoding for the currently processed file
-		final String[] currentEncoding = new String[1];
-
-		if (trace)
-			GitTraceLocation.getTrace().traceEntry(
-					GitTraceLocation.HISTORYVIEW.getLocation());
-		if (commit.getParentCount() > 1) {
-			d.append(UIText.CommitMessageViewer_CanNotRenderDiffMessage);
-			return;
-		}
-
-		try {
-			monitor.beginTask(UIText.CommitMessageViewer_BuildDiffListTaskName,
-					currentDiffs.size());
-			BufferedOutputStream bos = new SafeBufferedOutputStream(
-					new ByteArrayOutputStream() {
-						@Override
-						public synchronized void write(byte[] b, int off,
-								int len) {
-							super.write(b, off, len);
-							try {
-								if (currentEncoding[0] == null)
-									d.append(toString("UTF-8")); //$NON-NLS-1$
-								else
-									d.append(toString(currentEncoding[0]));
-							} catch (UnsupportedEncodingException e) {
-								d.append(toString());
-							}
-							reset();
-						}
-
-					});
-			final DiffFormatter diffFmt = new MessageViewerFormatter(bos,
-					styles, d, hunkheaderColor, linesAddedColor, linesRemovedColor);
-
-			for (FileDiff currentDiff : currentDiffs) {
-				if (monitor.isCanceled())
-					throw new OperationCanceledException();
-				if (currentDiff.getBlobs().length == 2) {
-					String path = currentDiff.getNewPath();
-					monitor.setTaskName(NLS.bind(
-							UIText.CommitMessageViewer_BuildDiffTaskName, path));
-					currentEncoding[0] = CompareCoreUtils.getResourceEncoding(db,
-							path);
-					d.append(LF);
-					int start = d.length();
-					String pathLine = formatPathLine(path);
-					int len = pathLine.length();
-					d.append(pathLine).append(LF);
-					styles.add(new StyleRange(start, len, darkGrey, null));
-					currentDiff.outputDiff(d, db, diffFmt, true);
-					diffFmt.flush();
-				}
-				monitor.worked(1);
-			}
-
-		} finally {
-			monitor.done();
-			if (trace)
-				GitTraceLocation.getTrace().traceExit(
-						GitTraceLocation.HISTORYVIEW.getLocation());
-		}
-	}
-
-	private String formatPathLine(String path) {
-		int n = 80 - path.length() - 2;
-		if (n < 0)
-			return path;
-		final StringBuilder d = new StringBuilder();
-		int i = 0;
-		for (; i < n / 2; i++)
-			d.append("-"); //$NON-NLS-1$
-		d.append(SPACE).append(path).append(SPACE);
-		for (; i < n - 1; i++)
-			d.append("-"); //$NON-NLS-1$
-		return d.toString();
-	}
-
 	private String getTagsString() {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Ref> tagsMap = db.getTags();
@@ -466,60 +354,6 @@ public class CommitInfoBuilder {
 			}
 		}
 		return sb.toString();
-	}
-
-	private static final class MessageViewerFormatter extends DiffFormatter {
-		private final List<StyleRange> styles;
-
-		private final StringBuilder d;
-
-		private final Color hunkheaderColor;
-		private final Color linesAddedColor;
-		private final Color linesRemovedColor;
-
-		private MessageViewerFormatter(OutputStream out,
-				List<StyleRange> styles, StringBuilder d, Color hunkheaderColor, Color linesAddedColor, Color linesRemovedColor) {
-			super(out);
-			this.styles = styles;
-			this.hunkheaderColor = hunkheaderColor;
-			this.linesAddedColor = linesAddedColor;
-			this.linesRemovedColor = linesRemovedColor;
-			this.d = d;
-		}
-
-		@Override
-		protected void writeHunkHeader(int aCur, int aEnd, int bCur, int bEnd)
-				throws IOException {
-			flush();
-			int start = d.length();
-			super.writeHunkHeader(aCur, aEnd, bCur, bEnd);
-			flush();
-			int end = d.length();
-			styles.add(new StyleRange(start, end - start, hunkheaderColor,
-					null));
-		}
-
-		@Override
-		protected void writeAddedLine(RawText b, int bCur) throws IOException {
-			flush();
-			int start = d.length();
-			super.writeAddedLine(b, bCur);
-			flush();
-			int end = d.length();
-			styles.add(new StyleRange(start, end - start,
-					linesAddedColor, null));
-		}
-
-		@Override
-		protected void writeRemovedLine(RawText b, int bCur) throws IOException {
-			flush();
-			int start = d.length();
-			super.writeRemovedLine(b, bCur);
-			flush();
-			int end = d.length();
-			styles.add(new StyleRange(start, end - start,
-					linesRemovedColor, null));
-		}
 	}
 
 	/**
@@ -538,43 +372,48 @@ public class CommitInfoBuilder {
 			throws IOException, OperationCanceledException {
 		if (monitor.isCanceled())
 			throw new OperationCanceledException();
-		RevWalk revWalk = new RevWalk(db);
-		revWalk.setRetainBody(false);
-		Map<String, Ref> tagsMap = db.getTags();
-		Ref tagRef = null;
+		try (RevWalk revWalk = new RevWalk(db)) {
+			revWalk.setRetainBody(false);
+			Map<String, Ref> tagsMap = db.getTags();
+			Ref tagRef = null;
 
-		for (Ref ref : tagsMap.values()) {
-			if (monitor.isCanceled())
-				throw new OperationCanceledException();
-			// both RevCommits must be allocated using same RevWalk instance,
-			// otherwise isMergedInto returns wrong result!
-			RevCommit current = revWalk.parseCommit(commit);
-			// tags can point to any object, we only want tags pointing at
-			// commits
-			RevObject any = revWalk.peel(revWalk.parseAny(ref.getObjectId()));
-			if (!(any instanceof RevCommit))
-				continue;
-			RevCommit newTag = (RevCommit) any;
-			if (newTag.getId().equals(commit))
-				continue;
-
-			// check if newTag matches our criteria
-			if (isMergedInto(revWalk, newTag, current, searchDescendant)) {
+			for (Ref ref : tagsMap.values()) {
 				if (monitor.isCanceled())
 					throw new OperationCanceledException();
-				if (tagRef != null) {
-					RevCommit oldTag = revWalk
-							.parseCommit(tagRef.getObjectId());
+				// both RevCommits must be allocated using same RevWalk
+				// instance,
+				// otherwise isMergedInto returns wrong result!
+				RevCommit current = revWalk.parseCommit(commit);
+				// tags can point to any object, we only want tags pointing at
+				// commits
+				RevObject any = revWalk
+						.peel(revWalk.parseAny(ref.getObjectId()));
+				if (!(any instanceof RevCommit))
+					continue;
+				RevCommit newTag = (RevCommit) any;
+				if (newTag.getId().equals(commit))
+					continue;
 
-					// both oldTag and newTag satisfy search criteria, so taking
-					// the closest one
-					if (isMergedInto(revWalk, oldTag, newTag, searchDescendant))
+				// check if newTag matches our criteria
+				if (isMergedInto(revWalk, newTag, current, searchDescendant)) {
+					if (monitor.isCanceled())
+						throw new OperationCanceledException();
+					if (tagRef != null) {
+						RevCommit oldTag = revWalk
+								.parseCommit(tagRef.getObjectId());
+
+						// both oldTag and newTag satisfy search criteria, so
+						// taking
+						// the closest one
+						if (isMergedInto(revWalk, oldTag, newTag,
+								searchDescendant))
+							tagRef = ref;
+					} else
 						tagRef = ref;
-				} else
-					tagRef = ref;
+				}
 			}
+			return tagRef;
 		}
-		return tagRef;
 	}
 
 	/**

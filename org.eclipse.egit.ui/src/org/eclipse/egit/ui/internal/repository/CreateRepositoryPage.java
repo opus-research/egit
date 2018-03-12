@@ -14,7 +14,7 @@ import java.io.File;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -57,13 +57,14 @@ public class CreateRepositoryPage extends WizardPage {
 		setPageComplete(false);
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(3, false));
 		Label directoryLabel = new Label(main, SWT.NONE);
 		directoryLabel.setText(UIText.CreateRepositoryPage_DirectoryLabel);
 		directoryText = new Text(main, SWT.BORDER);
-		directoryText.setText(UIUtils.getDefaultRepositoryDir());
+		directoryText.setText(RepositoryUtil.getDefaultRepositoryDir());
 		GridDataFactory.fillDefaults().align(SWT.FILL, SWT.CENTER)
 				.grab(true, false).applyTo(directoryText);
 		Button browseButton = new Button(main, SWT.PUSH);
@@ -90,9 +91,11 @@ public class CreateRepositoryPage extends WizardPage {
 			GridDataFactory.fillDefaults().indent(10, 0).span(3, 1)
 					.applyTo(bareButton);
 			bareButton.addSelectionListener(new SelectionListener() {
+				@Override
 				public void widgetSelected(SelectionEvent e) {
 					checkPage();
 				}
+				@Override
 				public void widgetDefaultSelected(SelectionEvent e) {
 					checkPage();
 				}
@@ -100,6 +103,7 @@ public class CreateRepositoryPage extends WizardPage {
 		}
 
 		directoryText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}

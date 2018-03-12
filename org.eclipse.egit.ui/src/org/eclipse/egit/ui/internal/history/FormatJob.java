@@ -33,7 +33,7 @@ class FormatJob extends Job {
 
 	@Override
 	public boolean belongsTo(Object family) {
-		if (family.equals(JobFamilies.FORMAT_COMMIT_INFO))
+		if (JobFamilies.FORMAT_COMMIT_INFO.equals(family))
 			return true;
 		return super.belongsTo(family);
 	}
@@ -64,13 +64,11 @@ class FormatJob extends Job {
 			synchronized(lock) {
 				SWTCommit commit = (SWTCommit)formatRequest.getCommit();
 				commit.parseBody();
-				builder = new CommitInfoBuilder(formatRequest.getRepository(), commit,
-						formatRequest.getCurrentDiffs(), formatRequest.isFill(), formatRequest.getAllRefs());
+				builder = new CommitInfoBuilder(formatRequest.getRepository(),
+						commit, formatRequest.isFill(),
+						formatRequest.getAllRefs());
 				builder.setColors(formatRequest.getLinkColor(),
-						formatRequest.getDarkGrey(),
-						formatRequest.getHunkheaderColor(),
-						formatRequest.getLinesAddedColor(),
-						formatRequest.getLinesRemovedColor());
+						formatRequest.getDarkGrey());
 			}
 			commitInfo = builder.format(styles, monitor);
 		} catch (IOException e) {
@@ -79,6 +77,7 @@ class FormatJob extends Job {
 		final StyleRange[] arr = new StyleRange[styles.size()];
 		styles.toArray(arr);
 		Arrays.sort(arr, new Comparator<StyleRange>() {
+			@Override
 			public int compare(StyleRange o1, StyleRange o2) {
 				return o1.start - o2.start;
 			}
@@ -109,30 +108,6 @@ class FormatJob extends Job {
 			this.darkGrey = darkGrey;
 		}
 
-		public Color getHunkheaderColor() {
-			return hunkheaderColor;
-		}
-
-		public void setHunkheaderColor(Color hunkheaderColor) {
-			this.hunkheaderColor = hunkheaderColor;
-		}
-
-		public Color getLinesAddedColor() {
-			return linesAddedColor;
-		}
-
-		public void setLinesAddedColor(Color linesAddedColor) {
-			this.linesAddedColor = linesAddedColor;
-		}
-
-		public Color getLinesRemovedColor() {
-			return linesRemovedColor;
-		}
-
-		public void setLinesRemovedColor(Color linesRemovedColor) {
-			this.linesRemovedColor = linesRemovedColor;
-		}
-
 		public Collection<Ref> getAllRefs() {
 			return allRefs;
 		}
@@ -147,33 +122,20 @@ class FormatJob extends Job {
 
 		private boolean fill;
 
-		List<FileDiff> currentDiffs;
-
 		private Color linkColor;
 
 		private Color darkGrey;
 
-		private Color hunkheaderColor;
-
-		private Color linesAddedColor;
-
-		private Color linesRemovedColor;
-
 		private Collection<Ref> allRefs;
 
 		FormatRequest(Repository repository, PlotCommit<?> commit,
-				boolean fill, List<FileDiff> currentDiffs, Color linkColor,
-				Color darkGrey, Color hunkheaderColor, Color linesAddedColor,
-				Color linesRemovedColor, Collection<Ref> allRefs) {
+				boolean fill, Color linkColor, Color darkGrey,
+				Collection<Ref> allRefs) {
 			this.repository = repository;
 			this.commit = commit;
 			this.fill = fill;
-			this.currentDiffs = new ArrayList<FileDiff>(currentDiffs);
 			this.linkColor = linkColor;
 			this.darkGrey = darkGrey;
-			this.hunkheaderColor = hunkheaderColor;
-			this.linesAddedColor = linesAddedColor;
-			this.linesRemovedColor = linesRemovedColor;
 			this.allRefs = allRefs;
 		}
 
@@ -187,10 +149,6 @@ class FormatJob extends Job {
 
 		public boolean isFill() {
 			return fill;
-		}
-
-		public List<FileDiff> getCurrentDiffs() {
-			return currentDiffs;
 		}
 
 	}

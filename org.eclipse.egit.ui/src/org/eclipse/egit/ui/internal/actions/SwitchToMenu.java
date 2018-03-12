@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2011, 2014 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,31 +9,26 @@
 package org.eclipse.egit.ui.internal.actions;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
-import org.eclipse.egit.ui.internal.repository.tree.BranchesNode;
-import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
+import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.action.ContributionItem;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.CheckoutEntry;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.ReflogEntry;
+import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -41,7 +36,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.ui.ISelectionService;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.menus.IWorkbenchContribution;
 import org.eclipse.ui.services.IServiceLocator;
 
@@ -53,7 +48,7 @@ public class SwitchToMenu extends ContributionItem implements
 	/** the maximum number of branches to show in the sub-menu */
 	static final int MAX_NUM_MENU_ENTRIES = 20;
 
-	private ISelectionService srv;
+	private IHandlerService handlerService;
 
 	private final Image branchImage;
 
@@ -81,32 +76,11 @@ public class SwitchToMenu extends ContributionItem implements
 
 	@Override
 	public void fill(Menu menu, int index) {
-		if (srv == null)
+		if (handlerService == null)
 			return;
-		ISelection sel = srv.getSelection();
-		if (!(sel instanceof IStructuredSelection))
-			return;
-		Object selected = ((IStructuredSelection) sel).getFirstElement();
-		if (selected instanceof IAdaptable) {
-			Object adapter = ((IAdaptable) selected).getAdapter(IProject.class);
-			if (adapter != null)
-				selected = adapter;
-		}
 
-		Repository repository = null;
-		if (selected instanceof RepositoryNode)
-			repository = ((RepositoryNode) selected).getRepository();
-		else if (selected instanceof BranchesNode)
-			repository = ((BranchesNode) selected).getRepository();
-		else if (selected instanceof LocalNode)
-			repository = ((LocalNode) selected).getRepository();
-		else if ((selected instanceof IProject)) {
-			RepositoryMapping mapping = RepositoryMapping
-					.getMapping((IProject) selected);
-			if (mapping != null)
-				repository = mapping.getRepository();
-		}
-
+		Repository repository = SelectionUtils
+				.getRepository(handlerService.getCurrentState());
 		if (repository != null)
 			createDynamicMenu(menu, repository);
 	}
@@ -142,8 +116,14 @@ public class SwitchToMenu extends ContributionItem implements
 					CommonUtils.STRING_ASCENDING_COMPARATOR);
 
 			// Add the MAX_NUM_MENU_ENTRIES most recently used branches first
-			List<ReflogEntry> reflogEntries = repository.getReflogReader(
-					Constants.HEAD).getReverseEntries();
+			ReflogReader reflogReader = repository.getReflogReader(
+					Constants.HEAD);
+			List<ReflogEntry> reflogEntries;
+			if (reflogReader == null) {
+				reflogEntries = Collections.emptyList();
+			} else {
+				reflogEntries = reflogReader.getReverseEntries();
+			}
 			for (ReflogEntry entry : reflogEntries) {
 				CheckoutEntry checkout = entry.parseCheckout();
 				if (checkout != null) {
@@ -233,9 +213,9 @@ public class SwitchToMenu extends ContributionItem implements
 		return true;
 	}
 
+	@Override
 	public void initialize(IServiceLocator serviceLocator) {
-		srv = (ISelectionService) serviceLocator
-				.getService(ISelectionService.class);
+		handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
 	}
 
 	@Override

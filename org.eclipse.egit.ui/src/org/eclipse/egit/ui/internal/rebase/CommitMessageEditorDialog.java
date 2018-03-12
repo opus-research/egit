@@ -41,14 +41,28 @@ public class CommitMessageEditorDialog extends TitleAreaDialog {
 	private static final String DIALOG_SETTINGS_SECTION_NAME = Activator
 			.getPluginId() + ".COMMIT_MESSAGE_EDITOR_DIALOG_SECTION"; //$NON-NLS-1$
 
+	private String title;
+
 	/**
 	 * @param parentShell
 	 * @param commitMessage
 	 */
 	public CommitMessageEditorDialog(Shell parentShell,
 			String commitMessage) {
+		this(parentShell, commitMessage,
+				UIText.CommitMessageEditorDialog_EditCommitMessageTitle);
+	}
+
+	/**
+	 * @param parentShell
+	 * @param commitMessage
+	 * @param title
+	 */
+	public CommitMessageEditorDialog(Shell parentShell, String commitMessage,
+			String title) {
 		super(parentShell);
 		this.commitMessage = commitMessage;
+		this.title = title;
 	}
 
 	@Override
@@ -61,6 +75,7 @@ public class CommitMessageEditorDialog extends TitleAreaDialog {
 		toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				CommitMessageEditorDialog.this.commitMessage = messageArea
 						.getCommitMessage();
@@ -107,5 +122,11 @@ public class CommitMessageEditorDialog extends TitleAreaDialog {
 	 */
 	public String getCommitMessage() {
 		return this.commitMessage;
+	}
+
+	@Override
+	protected void configureShell(Shell newShell) {
+		super.configureShell(newShell);
+		newShell.setText(title);
 	}
 }

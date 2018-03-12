@@ -37,6 +37,7 @@ import org.eclipse.ui.IWorkbenchPart;
  */
 public class DiscardChangesActionHandler extends RepositoryActionHandler {
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 
 		IWorkbenchPart part = getPart(event);
@@ -63,7 +64,7 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.DISCARD_CHANGES))
+				if (JobFamilies.DISCARD_CHANGES.equals(family))
 					return true;
 				return super.belongsTo(family);
 			}

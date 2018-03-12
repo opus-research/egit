@@ -282,6 +282,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		});
 
 		commonUriText.addModifyListener(new ModifyListener() {
+			@Override
 			public void modifyText(ModifyEvent e) {
 				deleteCommonUri
 						.setEnabled(commonUriText.getText().length() > 0);
@@ -295,6 +296,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		pushUriArea.setExpanded(!config.getPushURIs().isEmpty());
 		pushUriArea.addExpansionListener(new ExpansionAdapter() {
 
+			@Override
 			public void expansionStateChanged(ExpansionEvent e) {
 				main.layout(true, true);
 				main.getShell().pack();
@@ -362,6 +364,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		});
 
 		uriViewer.addSelectionChangedListener(new ISelectionChangedListener() {
+			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				deleteUri.setEnabled(!uriViewer.getSelection().isEmpty());
 				changeUri.setEnabled(((IStructuredSelection) uriViewer
@@ -483,6 +486,7 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 		});
 
 		specViewer.addSelectionChangedListener(new ISelectionChangedListener() {
+			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				IStructuredSelection sel = (IStructuredSelection) specViewer
 						.getSelection();
@@ -571,21 +575,32 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 	public void buttonPressed(int buttonId) {
 		if (buttonId == DRY_RUN) {
 			try {
-				new ProgressMonitorDialog(getShell()).run(false, true,
+				new ProgressMonitorDialog(getShell()).run(true, true,
 						new IRunnableWithProgress() {
+							@Override
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
-								PushOperationUI op = new PushOperationUI(
+								final PushOperationUI op = new PushOperationUI(
 										repository, config, true);
 								try {
-									PushOperationResult result = op
+									final PushOperationResult result = op
 											.execute(monitor);
-									PushResultDialog dlg = new PushResultDialog(
-											getShell(), repository, result, op
+									getShell().getDisplay().asyncExec(
+											new Runnable() {
+
+												@Override
+												public void run() {
+													PushResultDialog dlg = new PushResultDialog(
+															getShell(),
+															repository,
+															result,
+															op
 													.getDestinationString());
-									dlg.showConfigureButton(false);
-									dlg.open();
+													dlg.showConfigureButton(false);
+													dlg.open();
+												}
+											});
 								} catch (CoreException e) {
 									Activator.handleError(e.getMessage(), e,
 											true);
@@ -618,8 +633,9 @@ public class SimpleConfigurePushDialog extends TitleAreaDialog {
 			}
 			if (buttonId == OK)
 				try {
-					new ProgressMonitorDialog(getShell()).run(false, true,
+					new ProgressMonitorDialog(getShell()).run(true, true,
 							new IRunnableWithProgress() {
+								@Override
 								public void run(IProgressMonitor monitor)
 										throws InvocationTargetException,
 										InterruptedException {

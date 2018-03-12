@@ -1,7 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2007, 2014 Shawn O. Pearce <spearce@spearce.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -18,6 +17,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.internal.job.JobUtil;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.op.DisconnectProviderOperation;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
@@ -29,12 +29,20 @@ import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
  * @see DisconnectProviderOperation
  */
 public class DisconnectActionHandler extends RepositoryActionHandler {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IProject[] projects = getProjectsForSelectedResources();
-		if (projects.length == 0)
+		IProject[] selectedProjects = getProjectsForSelectedResources();
+		List<IProject> projects = new ArrayList<IProject>(selectedProjects.length);
+		for (IProject project : selectedProjects) {
+			if (project.isOpen() && ResourceUtil.isSharedWithGit(project)) {
+				projects.add(project);
+			}
+		}
+		if (projects.isEmpty()) {
 			return null;
-		JobUtil.scheduleUserJob(new DisconnectProviderOperation(Arrays
-				.asList(projects)), UIText.Disconnect_disconnect,
+		}
+		JobUtil.scheduleUserJob(new DisconnectProviderOperation(projects),
+				UIText.Disconnect_disconnect,
 				JobFamilies.DISCONNECT, new JobChangeAdapter() {
 					@Override
 					public void done(IJobChangeEvent actEvent) {

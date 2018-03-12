@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.GarbageCollectOperation;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jgit.lib.Repository;
@@ -42,6 +43,7 @@ public class GarbageCollectCommand extends
 	/**
 	 * Execute garbage collection
 	 */
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// get selected nodes
 		final List<RepositoryNode> selectedNodes;
@@ -79,8 +81,7 @@ public class GarbageCollectCommand extends
 			}
 		};
 		IWorkbenchSite activeSite = HandlerUtil.getActiveSite(event);
-		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) activeSite
-				.getService(IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService service = CommonUtils.getService(activeSite, IWorkbenchSiteProgressService.class);
 		service.schedule(job);
 
 		return null;

@@ -150,7 +150,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	public void pushWithExistingUpstreamConfiguration() throws Exception {
+	public void pushWithRemoteUpstreamConfiguration() throws Exception {
 		checkoutNewLocalBranch("foo");
 		// Existing configuration
 		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
@@ -186,6 +186,35 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 		assertBranchConfig("foo", "fetch", "refs/heads/foo-on-remote", "true");
 	}
 
+	@Test
+	public void pushWithLocalUpstreamConfiguration() throws Exception {
+		checkoutNewLocalBranch("foo");
+		// Existing configuration
+		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
+				"foo", ConfigConstants.CONFIG_KEY_REMOTE, ".");
+		repository.getConfig().setString(ConfigConstants.CONFIG_BRANCH_SECTION,
+				"foo", ConfigConstants.CONFIG_KEY_MERGE, "refs/heads/master");
+
+		PushBranchWizardTester wizard = PushBranchWizardTester.startWizard(
+				selectProject(), "foo");
+		wizard.selectRemote("fetch");
+		wizard.assertBranchName("foo");
+		wizard.assertMergeSelected();
+		assertTrue(wizard.isUpstreamConfigOverwriteWarningShown());
+		wizard.deselectConfigureUpstream();
+		assertFalse(wizard.isUpstreamConfigOverwriteWarningShown());
+		wizard.selectMerge();
+		wizard.next();
+		wizard.finish();
+
+		ObjectId remoteId = remoteRepository.resolve("foo");
+		ObjectId localId = repository.resolve("foo");
+		assertEquals(localId, remoteId);
+
+		// Newly configured
+		assertBranchConfig("foo", "fetch", "refs/heads/foo", null);
+	}
+
 	private void removeExistingRemotes() throws IOException {
 		StoredConfig config = repository.getConfig();
 		Set<String> remotes = config
@@ -209,7 +238,7 @@ public class PushBranchWizardTest extends LocalRepositoryTestCase {
 	private Repository createRemoteRepository() throws IOException {
 		File gitDir = new File(getTestDirectory(), "pushbranchremote");
 		Repository repo = FileRepositoryBuilder.create(gitDir);
-		repo.create();
+		repo.create(true);
 		assertTrue(repo.isBare());
 		return repo;
 	}

@@ -36,6 +36,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -64,6 +65,7 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
  */
 public class RemoveCommand extends
 		RepositoriesViewCommandHandler<RepositoryNode> {
+	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		removeRepository(event, false);
 		return null;
@@ -79,8 +81,7 @@ public class RemoveCommand extends
 	protected void removeRepository(final ExecutionEvent event,
 			final boolean delete) {
 		IWorkbenchSite activeSite = HandlerUtil.getActiveSite(event);
-		IWorkbenchSiteProgressService service = (IWorkbenchSiteProgressService) activeSite
-				.getService(IWorkbenchSiteProgressService.class);
+		IWorkbenchSiteProgressService service = CommonUtils.getService(activeSite, IWorkbenchSiteProgressService.class);
 
 		// get selected nodes
 		final List<RepositoryNode> selectedNodes;
@@ -126,6 +127,7 @@ public class RemoveCommand extends
 						false };
 				Display.getDefault().syncExec(new Runnable() {
 
+					@Override
 					public void run() {
 						try {
 							confirmedCanceled[0] = confirmProjectDeletion(
@@ -188,6 +190,7 @@ public class RemoveCommand extends
 			IProgressMonitor monitor) {
 		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
 
+			@Override
 			public void run(IProgressMonitor actMonitor)
 			throws CoreException {
 
@@ -249,8 +252,7 @@ public class RemoveCommand extends
 
 	private static void closeSubmoduleRepositories(Repository repo)
 			throws IOException {
-		SubmoduleWalk walk = SubmoduleWalk.forIndex(repo);
-		try {
+		try (SubmoduleWalk walk = SubmoduleWalk.forIndex(repo)) {
 			while (walk.next()) {
 				Repository subRepo = walk.getRepository();
 				if (subRepo != null) {
@@ -266,29 +268,30 @@ public class RemoveCommand extends
 					}
 				}
 			}
-		} finally {
-			walk.release();
 		}
 	}
 
 	private boolean isTracked(File file, Repository repo) throws IOException {
 		ObjectId objectId = repo.resolve(Constants.HEAD);
 		RevTree tree;
-		if (objectId != null)
-			tree = new RevWalk(repo).parseTree(objectId);
-		else
-			tree = null;
+		try (RevWalk rw = new RevWalk(repo);
+				TreeWalk treeWalk = new TreeWalk(repo)) {
+			if (objectId != null)
+				tree = rw.parseTree(objectId);
+			else
+				tree = null;
 
-		TreeWalk treeWalk = new TreeWalk(repo);
-		treeWalk.setRecursive(true);
-		if (tree != null)
-			treeWalk.addTree(tree);
-		else
-			treeWalk.addTree(new EmptyTreeIterator());
-		treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
-		treeWalk.setFilter(PathFilterGroup.createFromStrings(Collections.singleton(
-				Repository.stripWorkDir(repo.getWorkTree(), file))));
-		return treeWalk.next();
+			treeWalk.setRecursive(true);
+			if (tree != null)
+				treeWalk.addTree(tree);
+			else
+				treeWalk.addTree(new EmptyTreeIterator());
+			treeWalk.addTree(new DirCacheIterator(repo.readDirCache()));
+			treeWalk.setFilter(PathFilterGroup
+					.createFromStrings(Collections.singleton(Repository
+							.stripWorkDir(repo.getWorkTree(), file))));
+			return treeWalk.next();
+		}
 
 	}
 

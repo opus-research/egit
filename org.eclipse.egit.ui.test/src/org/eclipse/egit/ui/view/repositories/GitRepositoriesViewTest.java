@@ -14,6 +14,7 @@ import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellCloses;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -27,6 +28,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
@@ -45,6 +47,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.IWorkingSetManager;
 import org.eclipse.ui.PlatformUI;
@@ -83,7 +86,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * First level should have 5 children
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -97,7 +100,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * Open (expand, file->editor, branch->checkout)
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -124,8 +127,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		checkoutWithDoubleClick(tree, "stable");
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		String contentStable = getTestFileContent();
-		assertTrue("Content of master and stable should differ", !contentMaster
-				.equals(contentStable));
+		assertNotEquals("Content of master and stable should differ",
+				contentMaster, contentStable);
 	}
 
 	private void checkoutWithDoubleClick(SWTBotTree tree, String branch)
@@ -158,7 +161,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * Checks the first level of the working directory
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -178,7 +181,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 	/**
 	 * Checks is some context menus are available, should be replaced with real
 	 * tests
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -210,7 +213,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		ContextMenuHelper.clickContextMenuSync(tree,
 				myUtil.getPluginLocalizedValue("ShowIn"),
 				"Properties");
-		SWTBotView propertieView = bot.viewById("org.eclipse.ui.views.PropertySheet");
+		SWTBotView propertieView = bot.viewById(IPageLayout.ID_PROP_SHEET);
 		assertTrue(propertieView.isActive());
 	}
 
@@ -380,7 +383,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		IAdaptable[] elements = workingSet.getElements();
 		assertEquals("Wrong number of projects in working set", 1,
 				elements.length);
-		IProject project = (IProject) elements[0].getAdapter(IProject.class);
+		IProject project = Utils.getAdapter(elements[0], IProject.class);
 		assertEquals("Wrong project in working set", projectName, project
 				.getName());
 	}
@@ -439,7 +442,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 
 	/**
 	 * Link with editor, both ways
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test
@@ -547,8 +550,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		localBranchesItem = myRepoViewUtil.getLocalBranchesItem(
 				tree, repositoryFile).expand();
 		localBranchesItem.getNode("abc").select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
-				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
+		ContextMenuHelper.clickContextMenuSync(tree,
+				myUtil.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 
 		refreshAndWait();
 		SWTBotTreeItem[] items = myRepoViewUtil.getLocalBranchesItem(tree,

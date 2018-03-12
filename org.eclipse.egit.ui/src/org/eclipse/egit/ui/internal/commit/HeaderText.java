@@ -12,7 +12,6 @@
 package org.eclipse.egit.ui.internal.commit;
 
 import java.lang.reflect.Field;
-import java.text.MessageFormat;
 
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
@@ -60,10 +59,12 @@ public class HeaderText {
 
 	/**
 	 * @param form
-	 * @param sha1String string form of the SHA-1, in lower case hexadecimal
+	 * @param text
+	 *            the displayed text
+	 * @param sha1String
+	 *            string form of the SHA-1, in lower case hexadecimal
 	 */
-	public HeaderText(Form form, String sha1String) {
-		String text= MessageFormat.format(UIText.CommitEditor_TitleHeader, sha1String);
+	public HeaderText(Form form, String text, String sha1String) {
 		try {
 			FormHeading heading = (FormHeading) form.getHead();
 			heading.setBusy(true);
@@ -88,6 +89,7 @@ public class HeaderText {
 			titleLabel.setForeground(heading.getForeground());
 			titleLabel.setFont(heading.getFont());
 			titleLabel.addFocusListener(new FocusAdapter() {
+				@Override
 				public void focusLost(FocusEvent e) {
 					titleLabel.setSelection(0);
 					Event selectionEvent= new Event();
@@ -104,12 +106,14 @@ public class HeaderText {
 			busyLabel.setImage(emptyImage);
 
 			busyLabel.addControlListener(new ControlAdapter() {
+				@Override
 				public void controlMoved(ControlEvent e) {
 					updateSizeAndLocations();
 				}
 			});
 			titleLabel.moveAbove(busyLabel);
 			titleRegion.addControlListener(new ControlAdapter() {
+				@Override
 				public void controlResized(ControlEvent e) {
 					updateSizeAndLocations();
 				}
@@ -141,6 +145,7 @@ public class HeaderText {
 		copySHA1MenuItem.setText(UIText.Header_contextMenu_copy_SHA1);
 		final Shell shell = styledText.getShell();
 		copySHA1MenuItem.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent event) {
 				copyToClipboard(sha1String, shell);
 			}
@@ -150,11 +155,13 @@ public class HeaderText {
 		copyMenuItem.setText(UIText.Header_contextMenu_copy);
 		copyMenuItem.setEnabled(false);
 		copyMenuItem.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent event) {
 				styledText.copy();
 			}
 		});
 		styledText.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				copyMenuItem.setEnabled(styledText.getSelectionCount() > 0);
 			}
