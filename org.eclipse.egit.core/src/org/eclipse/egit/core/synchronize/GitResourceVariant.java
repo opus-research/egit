@@ -11,12 +11,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.ObjectId;
@@ -28,7 +24,7 @@ import org.eclipse.team.core.variants.IResourceVariant;
 
 abstract class GitResourceVariant implements IResourceVariant {
 
-	private final String path;
+	private final String variantPath;
 
 	private final Repository repo;
 
@@ -39,9 +35,6 @@ abstract class GitResourceVariant implements IResourceVariant {
 	private String name;
 
 	private IPath fullPath;
-
-	private static final IWorkspaceRoot workspaceRoot = ResourcesPlugin
-			.getWorkspace().getRoot();
 
 	/**
 	 * Construct Git representation of {@link IResourceVariant}.
@@ -54,14 +47,16 @@ abstract class GitResourceVariant implements IResourceVariant {
 	 */
 	GitResourceVariant(Repository repo, RevCommit revCommit, String path)
 			throws IOException {
-		this.path = path;
 		this.repo = repo;
 		this.revCommit = revCommit;
 		TreeWalk tw = getTreeWalk(repo, revCommit.getTree(), path);
-		if (tw == null)
+		if (tw == null) {
 			objectId = null;
-		else
+			this.variantPath = null;
+		} else {
 			objectId = tw.getObjectId(0);
+			this.variantPath = new String(tw.getRawPath());
+		}
 	}
 
 	public String getContentIdentifier() {
@@ -69,12 +64,12 @@ abstract class GitResourceVariant implements IResourceVariant {
 	}
 
 	public String getName() {
-		if (name == null && path != null) {
-			int lastSeparator = path.lastIndexOf('/');
+		if (name == null && variantPath != null) {
+			int lastSeparator = variantPath.lastIndexOf('/');
 			if (lastSeparator > -1)
-				name = path.substring(lastSeparator + 1);
+				name = variantPath.substring(lastSeparator + 1);
 			else
-				name = path;
+				name = variantPath;
 		}
 
 		return name;
@@ -95,12 +90,12 @@ abstract class GitResourceVariant implements IResourceVariant {
 
 	@Override
 	public String toString() {
-		return path + "(" + objectId.getName() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+		return variantPath + "(" + objectId.getName() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/**
 	 *
-	 * @param repo
+	 * @param repository
 	 * @param revTree
 	 *            base commit
 	 * @param path
@@ -110,7 +105,7 @@ abstract class GitResourceVariant implements IResourceVariant {
 	 * @throws IOException
 	 *             when something goes wrong during tree walk initialization
 	 */
-	protected abstract TreeWalk getTreeWalk(Repository repo, RevTree revTree,
+	protected abstract TreeWalk getTreeWalk(Repository repository, RevTree revTree,
 			String path) throws IOException;
 
 	protected ObjectId getObjectId() {
@@ -126,25 +121,12 @@ abstract class GitResourceVariant implements IResourceVariant {
 	}
 
 	protected String getPath() {
-		return path;
+		return variantPath;
 	}
 
 	protected IPath getFullPath() {
-		if (fullPath == null) {
-			IResource resource;
-			IPath location = new Path(repo.getWorkTree() + File.separator
-					+ path);
-
-			if (isContainer())
-				resource = workspaceRoot.getContainerForLocation(location);
-			else
-				resource = workspaceRoot.getFileForLocation(location);
-
-			if (resource != null)
-				fullPath = resource.getFullPath();
-			else
-				fullPath = new Path(path);
-		}
+		if (fullPath == null)
+			fullPath = new Path(variantPath);
 
 		return fullPath;
 	}
