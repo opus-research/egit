@@ -38,6 +38,21 @@ public class CoreText extends NLS {
 	public static String CommitFileRevision_pathNotIn;
 
 	/** */
+	public static String CommitOperation_errorCommittingChanges;
+
+	/** */
+	public static String CommitOperation_errorPreparingTrees;
+
+	/** */
+	public static String CommitOperation_errorWritingTrees;
+
+	/** */
+	public static String CommitOperation_failedToUpdate;
+
+	/** */
+	public static String CommitOperation_PerformingCommit;
+
+	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
@@ -171,18 +186,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ResetOperation_writingIndex;
-
-	/** */
-	public static String MergeOperation_InternalError;
-
-	/** */
-	public static String MergeOperation_MergeFailedNoHead;
-
-	/** */
-	public static String MergeOperation_MergeFailedRefUpdate;
-
-	/** */
-	public static String MergeOperation_ProgressMerge;
 
 	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;

@@ -70,13 +70,6 @@
                menubarPath="team.main/group4"
                tooltip="%TagAction_tooltip"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.MergeAction"
-               icon="$nl$/icons/obj16/merge.gif"
-               id="org.eclipse.egit.ui.internal.actions.MergeAction"
-               label="%MergeAction_label"
-               menubarPath="team.main/group4"
-               tooltip="%MergeAction_tooltip"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.BranchAction"
                icon="$nl$/icons/obj16/branch_obj.gif"
                id="org.eclipse.egit.ui.internal.actions.BranchAction"
@@ -93,21 +86,21 @@
          </filter>
          <action
                class="org.eclipse.egit.ui.internal.actions.Track"
-               icon="$nl$/icons/obj16/add.gif"
+               icon="$nl$/icons/obj16/track.gif"
                id="org.eclipse.egit.ui.internal.actions.Track"
                label="%TrackAction_label"
                menubarPath="team.main/group9"
                tooltip="%TrackAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.Untrack"
-               icon="$nl$/icons/obj16/remove.gif"
+               icon="$nl$/icons/obj16/untrack.gif"
                id="org.eclipse.egit.ui.internal.actions.Untrack"
                label="%UntrackAction_label"
                menubarPath="team.main/group9"
                tooltip="%UntrackAction_tooltip"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
-               icon="$nl$/icons/obj16/add.gif"
+               icon="icons/obj16/assume-unchanged.gif"
                id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
                label="%AssumeUnchangedAction_label"
                menubarPath="team.main/group9"

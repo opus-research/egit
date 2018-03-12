@@ -310,7 +310,10 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_ScanningForRepositories_message;
 
 	/** */
-	public static String RepositorySearchDialog_ToggleSelection_button;
+	public static String RepositorySearchDialog_DeselectAll_button;
+
+	/** */
+	public static String RepositorySearchDialog_SelectAll_button;
 
 	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
@@ -341,6 +344,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_searchRepositories;
+
+	/** */
+	public static String RepositorySearchDialog_searchRepositoriesMessage;
 
 	/** */
 	public static String RepositorySelectionPage_BrowseLocalFile;
@@ -880,7 +886,10 @@ public class UIText extends NLS {
 	public static String CommitAction_cannotCommit;
 
 	/** */
-	public static String CommitAction_errorCommittingChanges;
+	public static String CommitAction_CommittingChanges;
+
+	/** */
+	public static String CommitAction_CommittingFailed;
 
 	/** */
 	public static String CommitAction_errorComputingDiffs;
@@ -892,16 +901,7 @@ public class UIText extends NLS {
 	public static String CommitAction_errorOnCommit;
 
 	/** */
-	public static String CommitAction_errorPreparingTrees;
-
-	/** */
 	public static String CommitAction_errorRetrievingCommit;
-
-	/** */
-	public static String CommitAction_errorWritingTrees;
-
-	/** */
-	public static String CommitAction_failedToUpdate;
 
 	/** */
 	public static String CommitAction_InternalError;
@@ -1585,6 +1585,9 @@ public class UIText extends NLS {
 	public static String RepositoriesView_DeleteRepoDeterminProjectsMessage;
 
 	/** */
+	public static String RepositoriesView_DoFetchMenu;
+
+	/** */
 	public static String RepositoriesView_DoPushMenuItem;
 
 	/** */
@@ -1634,6 +1637,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_PasteRepoAlreadyThere;
+
+	/** */
+	public static String RepositoriesView_PushMenu;
 
 	/** */
 	public static String RepositoriesView_Refresh_Button;
@@ -1847,42 +1853,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitShareProjectsPage_RepositoryLabel;
-
- 	/** */
-	public static String MergeAction_CannotMerge;
-
-	/** */
-	public static String MergeAction_ChangedFiles;
-
-	/** */
-	public static String MergeAction_ErrorMergeEnabling;
-
-	/** */
-	public static String MergeAction_HeadIsNoBranch;
-
-	/** */
-	public static String MergeAction_JobNameMerge;
-
-	/** */
-	public static String MergeAction_ProblemMerge;
-
-	/** */
-	public static String MergeAction_UnableMerge;
-
-	/** */
-	public static String MergeAction_WrongRepositoryState;
-
-	/** */
-	public static String MergeTargetSelectionDialog_ButtonMerge;
-
-	/** */
-	public static String MergeTargetSelectionDialog_OnlyFastForward;
-
-	/** */
-	public static String MergeTargetSelectionDialog_SelectRef;
-
-	/** */
-	public static String MergeTargetSelectionDialog_TitleMerge;
 
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
