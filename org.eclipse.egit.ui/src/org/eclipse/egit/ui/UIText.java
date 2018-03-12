@@ -3788,9 +3788,6 @@ public class UIText extends NLS {
 	public static String SimpleConfigureFetchDialog_AddRefSpecButton;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_AdvancedCompositeButton;
-
-	/** */
 	public static String SimpleConfigureFetchDialog_BranchLabel;
 
 	/** */
@@ -4353,6 +4350,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
+
+	/** */
+	public static String RebasePulldownAction_Continue;
+
+	/** */
+	public static String RebasePulldownAction_Skip;
+
+	/** */
+	public static String RebasePulldownAction_Abort;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

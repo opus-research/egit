@@ -1007,17 +1007,16 @@ public class StagingView extends ViewPart {
 
 				final IndexDiffData indexDiff = doReload(repository);
 
-				if(indexDiff ==  null)
-					return;
+				boolean indexDiffAvailable = indexDiff !=  null;
 
 				final StagingViewUpdate update = new StagingViewUpdate(currentRepository, indexDiff, null);
 				unstagedTableViewer.setInput(update);
 				stagedTableViewer.setInput(update);
-				enableCommitWidgets(true);
-				commitAction.setEnabled(repository.getRepositoryState()
+				enableCommitWidgets(indexDiffAvailable);
+				commitAction.setEnabled(indexDiffAvailable && repository.getRepositoryState()
 						.canCommit());
 				form.setText(StagingView.getRepositoryName(repository));
-				updateCommitMessageComponent(repositoryChanged);
+				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
 				updateSectionText();
 			}
 		});
@@ -1043,7 +1042,7 @@ public class StagingView extends ViewPart {
 		signedOffByAction.setChecked(false);
 	}
 
-	void updateCommitMessageComponent(boolean repositoryChanged) {
+	void updateCommitMessageComponent(boolean repositoryChanged, boolean indexDiffAvailable) {
 		CommitHelper helper = new CommitHelper(currentRepository);
 		CommitMessageComponentState oldState = null;
 		if (repositoryChanged) {
@@ -1067,7 +1066,7 @@ public class StagingView extends ViewPart {
 				loadInitialState(helper);
 		amendPreviousCommitAction.setChecked(commitMessageComponent
 				.isAmending());
-		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
+		amendPreviousCommitAction.setEnabled(indexDiffAvailable && helper.amendAllowed());
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -1122,11 +1121,8 @@ public class StagingView extends ViewPart {
 	private boolean userEnteredCommmitMessage() {
 		if (commitMessageComponent.getRepository() == null)
 			return false;
-		String message = commitMessageComponent.getCommitMessage().replace(UIText.StagingView_headCommitChanged, ""); //$NON-NLS-1$
+		String message = commitMessageComponent.getCommitMessage();
 		if (message == null || message.trim().length() == 0)
-			return false;
-		if(commitMessageComponent.getCreateChangeId() &&
-				message.trim().equals("Change-Id: I" + ObjectId.zeroId().name())) //$NON-NLS-1$
 			return false;
 		return true;
 	}
