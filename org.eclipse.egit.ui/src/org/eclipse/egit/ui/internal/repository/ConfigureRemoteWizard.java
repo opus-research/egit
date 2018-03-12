@@ -22,7 +22,6 @@ import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -68,6 +67,7 @@ public class ConfigureRemoteWizard extends Wizard {
 								configureFetchUriPage.getUri()
 										.toPrivateString());
 						monitor.beginTask(taskName, IProgressMonitor.UNKNOWN);
+						configureFetchSpecPage.setConfigName(myRemoteName);
 						configureFetchSpecPage
 								.setSelection(new RepositorySelection(
 										configureFetchUriPage.getUri(), null));
@@ -97,6 +97,7 @@ public class ConfigureRemoteWizard extends Wizard {
 										.toPrivateString());
 						monitor.beginTask(taskName, IProgressMonitor.UNKNOWN);
 						// use the first URI
+						configurePushSpecPage.setConfigName(myRemoteName);
 						configurePushSpecPage
 								.setSelection(new RepositorySelection(
 										configurePushUriPage.getAllUris()
@@ -132,8 +133,7 @@ public class ConfigureRemoteWizard extends Wizard {
 					remoteName);
 		} catch (URISyntaxException e) {
 			// handle this by trying to cleanup the configuration entries
-			myConfiguration.unsetSection(ConfigConstants.CONFIG_REMOTE_SECTION,
-					remoteName);
+			myConfiguration.unsetSection("remote", remoteName); //$NON-NLS-1$
 			// TODO Exception handling
 			try {
 				myRemoteConfiguration = new RemoteConfig(myConfiguration,

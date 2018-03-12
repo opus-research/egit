@@ -18,11 +18,9 @@ import java.util.Collection;
 
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.push.PushConfiguredRemoteAction;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -128,7 +126,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 				destinationString);
 
 		// first time: expect new branch
-		TestUtil.joinJobs(JobFamilies.PUSH);
 		SWTBotShell confirmed = bot.shell(dialogTitle);
 		SWTBotTable table = confirmed.bot().table();
 		int rowCount = table.rowCount();
@@ -248,7 +245,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("SimpleFetchCommand"));
 
-		TestUtil.joinJobs(JobFamilies.FETCH);
 		confirm = bot.shell(dialogTitle);
 		SWTBotTable table = confirm.bot().table();
 		boolean found = false;
