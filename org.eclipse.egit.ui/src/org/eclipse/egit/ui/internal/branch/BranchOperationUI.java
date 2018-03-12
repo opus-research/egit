@@ -12,16 +12,11 @@
 package org.eclipse.egit.ui.internal.branch;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -31,12 +26,8 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.egit.core.RepositoryUtil;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.BranchOperation;
-import org.eclipse.egit.core.op.IEGitOperation.PostExecuteTask;
-import org.eclipse.egit.core.op.IEGitOperation.PreExecuteTask;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
@@ -47,8 +38,6 @@ import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
-import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.annotations.NonNull;
@@ -57,7 +46,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
@@ -132,7 +120,8 @@ public class BranchOperationUI {
 				return null;
 			}
 
-			if (shouldCancelBecauseOfRunningLaunches(monitor)) {
+			if (LaunchFinder.shouldCancelBecauseOfRunningLaunches(repository,
+					monitor)) {
 				return null;
 			}
 
@@ -141,37 +130,30 @@ public class BranchOperationUI {
 		return target;
 	}
 
-	private BranchOperation getOperation(boolean restore) {
-		BranchOperation bop = new BranchOperation(repository, target, !restore);
-		if (restore) {
+	private void doCheckout(BranchOperation bop, boolean restore,
+			IProgressMonitor monitor)
+			throws CoreException {
+		SubMonitor progress = SubMonitor.convert(monitor, restore ? 10 : 1);
+		if (!restore) {
+			bop.execute(progress.newChild(1));
+		} else {
 			final BranchProjectTracker tracker = new BranchProjectTracker(
 					repository);
-			final AtomicReference<IMemento> memento = new AtomicReference<>();
-			bop.addPreExecuteTask(new PreExecuteTask() {
+			IMemento snapshot = tracker.snapshot();
+			bop.execute(progress.newChild(7));
+			tracker.save(snapshot);
+			IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 				@Override
-				public void preExecute(Repository pRepo,
-						IProgressMonitor pMonitor) throws CoreException {
-					// Snapshot current projects before checkout
-					// begins
-					memento.set(tracker.snapshot());
+				public void run(IProgressMonitor innerMonitor)
+						throws CoreException {
+					tracker.restore(innerMonitor);
 				}
-			});
-			bop.addPostExecuteTask(new PostExecuteTask() {
-
-				@Override
-				public void postExecute(Repository pRepo,
-						IProgressMonitor pMonitor) throws CoreException {
-					IMemento snapshot = memento.get();
-					if (snapshot != null) {
-						// Save previous branch's projects and restore
-						// current branch's projects
-						tracker.save(snapshot).restore(pMonitor);
-					}
-				}
-			});
+			};
+			ResourcesPlugin.getWorkspace().run(action,
+					ResourcesPlugin.getWorkspace().getRoot(),
+					IWorkspace.AVOID_UPDATE, progress.newChild(3));
 		}
-		return bop;
 	}
 
 	/**
@@ -186,52 +168,62 @@ public class BranchOperationUI {
 				.getRepositoryName(repository);
 		String jobname = NLS.bind(UIText.BranchAction_checkingOut, repoName,
 				target);
-
-		final boolean restore = Activator.getDefault().getPreferenceStore()
+		boolean restore = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.CHECKOUT_PROJECT_RESTORE);
-		final BranchOperation bop = getOperation(restore);
-
-		Job job = new WorkspaceJob(jobname) {
-
-			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
-				try {
-					bop.execute(monitor);
-				} catch (CoreException e) {
-					switch (bop.getResult().getStatus()) {
-					case CONFLICTS:
-					case NONDELETED:
-						break;
-					default:
-						return Activator.createErrorStatus(
-								UIText.BranchAction_branchFailed, e);
-					}
-				} finally {
-					GitLightweightDecorator.refresh();
-				}
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (JobFamilies.CHECKOUT.equals(family))
-					return true;
-				return super.belongsTo(family);
-			}
-		};
+		final CheckoutJob job = new CheckoutJob(jobname, restore);
 		job.setUser(true);
-		// Set scheduling rule to workspace because we may have to re-create
-		// projects using BranchProjectTracker.
-		if (restore) {
-			job.setRule(ResourcesPlugin.getWorkspace().getRoot());
-		}
 		job.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent cevent) {
-				show(bop.getResult());
+				show(job.getCheckoutResult());
 			}
 		});
 		job.schedule();
+	}
+
+	private class CheckoutJob extends Job {
+
+		private BranchOperation bop;
+
+		private final boolean restore;
+
+		public CheckoutJob(String jobName, boolean restore) {
+			super(jobName);
+			this.restore = restore;
+		}
+
+		@Override
+		public IStatus run(IProgressMonitor monitor) {
+			bop = new BranchOperation(repository, target, !restore);
+			try {
+				doCheckout(bop, restore, monitor);
+			} catch (CoreException e) {
+				switch (bop.getResult().getStatus()) {
+				case CONFLICTS:
+				case NONDELETED:
+					break;
+				default:
+					return Activator.createErrorStatus(
+							UIText.BranchAction_branchFailed, e);
+				}
+			} finally {
+				GitLightweightDecorator.refresh();
+				monitor.done();
+			}
+			return Status.OK_STATUS;
+		}
+
+		@Override
+		public boolean belongsTo(Object family) {
+			if (JobFamilies.CHECKOUT.equals(family))
+				return true;
+			return super.belongsTo(family);
+		}
+
+		@NonNull
+		public CheckoutResult getCheckoutResult() {
+			return bop.getResult();
+		}
 	}
 
 	/**
@@ -249,8 +241,8 @@ public class BranchOperationUI {
 		}
 		final boolean restore = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.CHECKOUT_PROJECT_RESTORE);
-		BranchOperation bop = getOperation(restore);
-		bop.execute(progress.newChild(80));
+		BranchOperation bop = new BranchOperation(repository, target, !restore);
+		doCheckout(bop, restore, progress.newChild(80));
 		show(bop.getResult());
 	}
 
@@ -393,82 +385,6 @@ public class BranchOperationUI {
 				}
 			}
 		});
-	}
-
-	private boolean shouldCancelBecauseOfRunningLaunches(
-			IProgressMonitor monitor) {
-		if (!showQuestionsBeforeCheckout) {
-			return false;
-		}
-		final IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		if (!store.getBoolean(
-				UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING)) {
-			return false;
-		}
-		final ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration(monitor);
-		if (launchConfiguration != null) {
-			final boolean[] dialogResult = new boolean[1];
-			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-				@Override
-				public void run() {
-					dialogResult[0] = showContinueDialogInUI(store,
-							launchConfiguration);
-				}
-			});
-			return dialogResult[0];
-		}
-		return false;
-	}
-
-	private boolean showContinueDialogInUI(final IPreferenceStore store,
-			final ILaunchConfiguration launchConfiguration) {
-		String[] buttons = new String[] { UIText.BranchOperationUI_Continue,
-				IDialogConstants.CANCEL_LABEL };
-		String message = NLS.bind(
-				UIText.BranchOperationUI_RunningLaunchMessage,
-				launchConfiguration.getName());
-		MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
-				getShell(), UIText.BranchOperationUI_RunningLaunchTitle, null,
-				message, MessageDialog.NONE, buttons, 0,
-				UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
-		int result = continueDialog.open();
-		// cancel
-		if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT)
-			return true;
-		boolean dontWarnAgain = continueDialog.getToggleState();
-		if (dontWarnAgain)
-			store.setValue(
-					UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
-					false);
-		return false;
-	}
-
-	private ILaunchConfiguration getRunningLaunchConfiguration(
-			IProgressMonitor monitor) {
-		final ILaunchConfiguration[] result = { null };
-		IRunnableWithProgress operation = new IRunnableWithProgress() {
-
-			@Override
-			public void run(IProgressMonitor m)
-					throws InvocationTargetException, InterruptedException {
-				Set<IProject> projects = new HashSet<>(
-						Arrays.asList(ProjectUtil.getProjects(repository)));
-				result[0] = LaunchFinder.findLaunch(projects, m);
-			}
-		};
-		try {
-			if (ModalContext.isModalContextThread(Thread.currentThread())) {
-				operation.run(monitor);
-			} else {
-				ModalContext.run(operation, true, monitor,
-						PlatformUI.getWorkbench().getDisplay());
-			}
-		} catch (InvocationTargetException e) {
-			// ignore
-		} catch (InterruptedException e) {
-			// ignore
-		}
-		return result[0];
 	}
 
 }

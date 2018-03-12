@@ -17,6 +17,7 @@
  * Copyright (C) 2015, Laurent Delaigue <laurent.delaigue@obeo.fr>
  * Copyright (C) 2015, Denis Zygann <d.zygann@web.de>
  * Copyright (C) 2016, Lars Vogel <Lars.Vogel@vogella.com>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -507,7 +508,10 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FindMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_FindTooltip;
+	public static String GitHistoryPage_FindShowTooltip;
+
+	/** */
+	public static String GitHistoryPage_FindHideTooltip;
 
 	/** */
 	public static String GitHistoryPage_FolderType;
@@ -1962,6 +1966,9 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_find;
 
 	/** */
+	public static String HistoryPage_findbar_find_msg;
+
+	/** */
 	public static String HistoryPage_findbar_next;
 
 	/** */
@@ -2169,7 +2176,10 @@ public class UIText extends NLS {
 	public static String ShowPushResultAction_name;
 
 	/** */
-	public static String PushWizard_cantConnectToAny;
+	public static String PushJob_cantConnectToAny;
+
+	/** */
+	public static String PushJob_unexpectedError;
 
 	/** */
 	public static String PushWizard_cantPrepareUpdatesMessage;
@@ -2191,9 +2201,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushWizard_missingRefsTitle;
-
-	/** */
-	public static String PushWizard_unexpectedError;
 
 	/** */
 	public static String PushWizard_windowTitleDefault;
@@ -3087,16 +3094,19 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_DetachedHeadMessage;
 
 	/** */
-	public static String BranchOperationUI_RunningLaunchDontShowAgain;
+	public static String LaunchFinder_RunningLaunchDontShowAgain;
 
 	/** */
-	public static String BranchOperationUI_RunningLaunchMessage;
+	public static String LaunchFinder_RunningLaunchMessage;
 
 	/** */
-	public static String BranchOperationUI_RunningLaunchTitle;
+	public static String LaunchFinder_RunningLaunchTitle;
 
 	/** */
-	public static String BranchOperationUI_SearchLaunchConfiguration;
+	public static String LaunchFinder_SearchLaunchConfiguration;
+
+	/** */
+	public static String LaunchFinder_ContinueQuestion;
 
 	/** */
 	public static String BranchRenameDialog_Message;
@@ -3235,6 +3245,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommittingPreferencePage_AlwaysUseStagingView;
+
+	/** */
+	public static String CommittingPreferencePage_AutoStageOnCommit;
+
+	/** */
+	public static String CommittingPreferencePage_general;
 
 	/** */
 	public static String DateFormatPreferencePage_title;
@@ -3499,6 +3515,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
+
+	/** */
+	public static String IgnoreActionHandler_manyFilesToBeIgnoredTitle;
+
+	/** */
+	public static String IgnoreActionHandler_manyFilesToBeIgnoredQuestion;
 
 	/** */
 	public static String RepositoriesView_BranchDeletionFailureMessage;
@@ -5222,6 +5244,9 @@ public class UIText extends NLS {
 	public static String StagingView_IgnoreItemMenuLabel;
 
 	/** */
+	public static String StagingView_IgnoreFolderMenuLabel;
+
+	/** */
 	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
@@ -5343,6 +5368,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SubmoduleUpdateCommand_UpdateError;
+
+	/** */
+	public static String SubmoduleUpdateCommand_UncommittedChanges;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
