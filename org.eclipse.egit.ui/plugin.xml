@@ -42,7 +42,7 @@
          <action
                class="org.eclipse.egit.ui.internal.actions.FetchAction"
                definitionId="org.eclipse.egit.ui.team.Fetch"
-               icon="$nl$/icons/obj16/pull.gif"
+               icon="$nl$/icons/obj16/fetch.gif"
                id="org.eclipse.egit.ui.internal.actions.FetchAction"
                label="%FetchAction_label"
                menubarPath="team.main/group2"/>
@@ -84,6 +84,14 @@
                id="org.eclipse.egit.ui.internal.actions.BranchAction"
                label="%BranchAction_label"
                menubarPath="team.main/group5"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.PullFromUpstreamConfigAction"
+               definitionId="org.eclipse.egit.ui.team.PullFromUpstreamConfig"
+               icon="$nl$/icons/obj16/pull.gif"
+               id="org.eclipse.egit.ui.team.PullCurrentBranchAction"
+               label="%PullIntoCurrentBranchMenuLabel"
+               menubarPath="team.main/group2">
+         </action>
      </objectContribution>
      <objectContribution
             adaptable="true"
@@ -320,6 +328,15 @@
          class="org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"
          id="org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage"
          name="%ConfigurationPage.name">
+      <keywordReference
+            id="org.eclipse.egit.ui.keyword.git">
+      </keywordReference>
+   </page>
+   <page
+         category="org.eclipse.egit.ui.GitPreferences"
+         class="org.eclipse.egit.ui.internal.preferences.RemoteConnectionPreferencePage"
+         id="org.eclipse.egit.ui.page1"
+         name="Remote Connections">
       <keywordReference
             id="org.eclipse.egit.ui.keyword.git">
       </keywordReference>
@@ -611,6 +628,14 @@
          <commonSorter
                class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewSorter">
          </commonSorter>
+         <dropAssistant
+               class="org.eclipse.egit.ui.internal.repository.DropAdapterAssistant"
+               id="org.eclipse.egit.ui.repositoriesView.dropAssistant">
+            <possibleDropTargets>
+               <instanceof
+                     value="org.eclipse.core.resources.IWorkspaceRoot">
+               </instanceof></possibleDropTargets>
+         </dropAssistant>
       </navigatorContent>
       <actionProvider
             class="org.eclipse.egit.ui.internal.repository.tree.RepositoriesViewActionProvider"
@@ -771,6 +796,36 @@
                <and>
                   <count
                         value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <or>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+                           </instanceof>
+                           <instanceof
+                                 value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+                           </instanceof>
+                        </or>
+                        <not>
+                           <test
+                                 property="GitRepository.isBare">
+                           </test>
+                        </not>
+                     </and>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.RepositoriesViewSynchronizeWithEachOther"
+               label="%RepoViewSynchronizeEachOther.label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <count
+                        value="2">
                   </count>
                   <iterate>
                      <and>
@@ -1531,6 +1586,12 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand"
             id="org.eclipse.egit.ui.RepositoriesViewSynchronize"
+            name="%SynchronizeCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.SynchronizeCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewSynchronizeWithEachOther"
             name="%SynchronizeCommand">
       </command>
       <command
