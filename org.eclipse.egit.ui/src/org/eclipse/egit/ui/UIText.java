@@ -1156,9 +1156,6 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_browseButton;
 
 	/** */
-	public static String CloneDestinationPage_cloneSubmodulesButton;
-
-	/** */
 	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
 
 	/** */
@@ -2545,9 +2542,6 @@ public class UIText extends NLS {
 	public static String CheckoutDialog_Delete;
 
 	/** */
-	public static String CommitDialogPreferencePage_commitMessageHistory;
-
-	/** */
 	public static String CommitDialogPreferencePage_title;
 
 	/** */
@@ -2588,6 +2582,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_recomputeAncestorDecorationsTooltip;
+
+	/** */
+	public static String DecoratorPreferencesPage_computeRecursiveLimit;
+
+	/** */
+	public static String DecoratorPreferencesPage_computeRecursiveLimitTooltip;
 
 	/** */
 	public static String DecoratorPreferencesPage_description;
@@ -2803,9 +2803,6 @@ public class UIText extends NLS {
 	public static String RepositoriesViewLabelProvider_RemoteTrackingNodetext;
 
 	/** */
-	public static String RepositoriesViewLabelProvider_SubmodulesNodeText;
-
-	/** */
 	public static String RepositoriesViewLabelProvider_SymbolicRefNodeText;
 
 	/** */
@@ -2921,12 +2918,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitCreateGeneralProjectPage_ProjectNameLabel;
-
-	/** */
-	public static String GitCreatePatchAction_cannotCreatePatch;
-
-	/** */
-	public static String GitCreatePatchAction_workingTreeClean;
 
 	/** */
 	public static String GitCreatePatchWizard_Browse;
@@ -3606,9 +3597,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertFailureDialog_Message;
-
-	/** */
-	public static String RevertFailureDialog_MessageNoFiles;
 
 	/** */
 	public static String RevertFailureDialog_ReasonChangesInIndex;
