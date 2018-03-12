@@ -56,13 +56,11 @@ public class SimplePushRefWizard extends Wizard {
 	 *            the repository the ref belongs to
 	 * @param refToPush
 	 *            the ref to push
-	 * @param title
-	 *            the wizard title
 	 * @throws URISyntaxException
 	 */
-	public SimplePushRefWizard(Repository repo, Ref refToPush, String title)
+	public SimplePushRefWizard(Repository repo, Ref refToPush)
 			throws URISyntaxException {
-		this(repo, refToPush.getObjectId(), refToPush.getName(), title);
+		this(repo, refToPush.getObjectId(), refToPush.getName());
 	}
 
 	/**
@@ -73,16 +71,14 @@ public class SimplePushRefWizard extends Wizard {
 	 *            the repository the object belongs to
 	 * @param objectId
 	 *            the object that should be pushed.
-	 * @param title
-	 *            the wizard title
 	 * @throws URISyntaxException
 	 */
-	public SimplePushRefWizard(Repository repo, ObjectId objectId, String title)
+	public SimplePushRefWizard(Repository repo, ObjectId objectId)
 			throws URISyntaxException {
-		this(repo, objectId, AbbreviatedObjectId.fromObjectId(objectId).name(), title);
+		this(repo, objectId, AbbreviatedObjectId.fromObjectId(objectId).name());
 	}
 
-	private SimplePushRefWizard(Repository repo, ObjectId objectId, String name, String title)
+	private SimplePushRefWizard(Repository repo, ObjectId objectId, String name)
 			throws URISyntaxException {
 		final List<RemoteConfig> remotes = RemoteConfig
 				.getAllRemoteConfigs(repo.getConfig());
@@ -115,7 +111,6 @@ public class SimplePushRefWizard extends Wizard {
 					}
 			}
 		};
-		setWindowTitle(title);
 	}
 
 	@Override
