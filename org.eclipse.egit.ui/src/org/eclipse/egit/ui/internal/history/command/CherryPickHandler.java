@@ -14,7 +14,6 @@ package org.eclipse.egit.ui.internal.history.command;
 
 import java.text.MessageFormat;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -126,9 +125,8 @@ public class CherryPickHandler extends AbstractHistoryCommandHandler {
 		MultiStatus result = new MultiStatus(Activator.getPluginId(),
 				IStatus.ERROR,
 				UIText.CherryPickHandler_CherryPickFailedMessage, null);
-		for (Entry<String, MergeFailureReason> entry : failingPaths.entrySet()) {
-			String path = entry.getKey();
-			String reason = getReason(entry.getValue());
+		for (String path : failingPaths.keySet()) {
+			String reason = getReason(failingPaths.get(path));
 			String errorMessage = NLS.bind(
 					UIText.CherryPickHandler_ErrorMsgTemplate, path, reason);
 			result.add(Activator.createErrorStatus(errorMessage));
