@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package org.eclipse.egit.core.test.op;
 
 import static org.junit.Assert.assertFalse;
@@ -34,15 +42,16 @@ public class TagOperationTest extends DualRepositoryTestCase {
 
 	String projectName = "TagTest";
 
+	IProject project;
+
 	@Before
 	public void setUp() throws Exception {
 
-		workdir = testUtils.getTempDir("Repository1");
+		workdir = testUtils.createTempDir("Repository1");
 
 		repository1 = new TestRepository(new File(workdir, Constants.DOT_GIT));
 
-		// now we create a project in repo1
-		IProject project = testUtils.createProjectInLocalFileSystem(workdir,
+		project = testUtils.createProjectInLocalFileSystem(workdir,
 				projectName);
 		testUtils.addFileToProject(project, "folder1/file1.txt", "Hello world");
 
@@ -70,9 +79,11 @@ public class TagOperationTest extends DualRepositoryTestCase {
 
 	@After
 	public void tearDown() throws Exception {
+		project.close(null);
+		project.delete(false, false, null);
 		repository1.dispose();
 		repository1 = null;
-		testUtils.deleteRecursive(workdir);
+		testUtils.deleteTempDirs();
 	}
 
 	@Test
@@ -82,7 +93,7 @@ public class TagOperationTest extends DualRepositoryTestCase {
 		Tag newTag = new Tag(repository1.getRepository());
 		newTag.setTag("TheNewTag");
 		newTag.setMessage("Well, I'm the tag");
-		newTag.setAuthor(new PersonIdent(TestUtils.AUTHOR));
+		newTag.setTagger(new PersonIdent(TestUtils.AUTHOR));
 		newTag.setObjId(repository1.getRepository()
 				.resolve("refs/heads/master"));
 		TagOperation top = new TagOperation(repository1.getRepository(),

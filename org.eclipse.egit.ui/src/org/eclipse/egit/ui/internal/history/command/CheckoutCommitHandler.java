@@ -1,12 +1,10 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
@@ -28,6 +26,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -44,6 +43,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
@@ -52,12 +52,12 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
- * Implements "Checkout" from history view
+ * Check out of a commit.
  */
-public class CheckoutHandler extends AbstractHistoryViewCommandHandler {
-
+public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 	private final class BranchMessageDialog extends MessageDialog {
 		private final List<RefNode> nodes;
 
@@ -113,7 +113,6 @@ public class CheckoutHandler extends AbstractHistoryViewCommandHandler {
 		public RefNode getSelectedNode() {
 			return selected;
 		}
-
 	}
 
 	private final class BranchLabelProvider extends LabelProvider {
@@ -130,8 +129,7 @@ public class CheckoutHandler extends AbstractHistoryViewCommandHandler {
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-
-		PlotCommit commit = getSingleCommit(event);
+		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
 		Repository repo = getRepository(event);
 		List<Ref> availableBranches = new ArrayList<Ref>();
 
@@ -159,8 +157,8 @@ public class CheckoutHandler extends AbstractHistoryViewCommandHandler {
 			for (Ref ref : availableBranches) {
 				nodes.add(new RefNode(repoNode, repo, ref));
 			}
-			BranchMessageDialog dlg = new BranchMessageDialog(getShell(event),
-					nodes);
+			BranchMessageDialog dlg = new BranchMessageDialog(HandlerUtil
+					.getActiveShellChecked(event), nodes);
 			if (dlg.open() == Window.OK) {
 				op = new BranchOperation(repo, dlg.getSelectedNode()
 						.getObject().getName());
@@ -201,8 +199,15 @@ public class CheckoutHandler extends AbstractHistoryViewCommandHandler {
 
 		job.setUser(true);
 		job.schedule();
-
 		return null;
 	}
 
+	@Override
+	public boolean isEnabled() {
+		GitHistoryPage page = getPage();
+		if (page == null)
+			return false;
+		IStructuredSelection sel = getSelection(page);
+		return sel.size() == 1 && sel.getFirstElement() instanceof RevCommit;
+	}
 }

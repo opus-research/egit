@@ -95,7 +95,7 @@
      </objectContribution>
      <objectContribution
             adaptable="true"
-            id="org.eclipse.egit.ui.fileFolderContributions"
+            id="org.eclipse.egit.ui.resourceContributions"
             objectClass="org.eclipse.core.resources.IResource">
          <filter name="projectPersistentProperty"
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
@@ -182,71 +182,6 @@
                menubarPath="team.main/group10">
          </action>
 	  </objectContribution>
-	  <objectContribution
-         id="org.eclipse.egit.ui.resetto"
-         objectClass="org.eclipse.jgit.revwalk.RevCommit">
-         <action
-               class="org.eclipse.egit.ui.internal.actions.SoftResetToRevisionAction"
-               id="org.eclipse.egit.ui.softresettorevision"
-               label="%Soft_Reset_label"
-               menubarPath="org.eclipse.egit.ui.reset/reset"
-               enablesFor="1"
-               tooltip="%Soft_Reset_tooltip">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.MixedResetToRevisionAction"
-               id="org.eclipse.egit.ui.mixedresettorevision"
-               label="%Mixed_Reset_label"
-               menubarPath="org.eclipse.egit.ui.reset/reset"
-               enablesFor="1"
-               tooltip="%Mixed_Reset_tooltip">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.HardResetToRevisionAction"
-               id="org.eclipse.egit.ui.hardresettorevision"
-               label="%Hard_Reset_label"
-               menubarPath="org.eclipse.egit.ui.reset/reset"
-               enablesFor="1"
-               tooltip="%Hard_Reset_tooltip">
-         </action>
-	 <action
-	       class="org.eclipse.egit.ui.internal.actions.SetQuickdiffBaselineAction"
-	       enablesFor="1"
-	       id="org.eclipse.egit.ui.setquickdiffbaseline"
-	       label="%Set_As_Quickdiff_Baseline_label"
-	       menubarPath="org.eclipse.egit.ui.quickdiffbaseline/quickdiff">
-	 </action>
-	 <action
-	       class="org.eclipse.egit.ui.internal.actions.ResetQuickdiffBaselineAction"
-	       enablesFor="*"
-	       id="org.eclipse.egit.ui.resetquickdiffbaseline"
-	       label="%Reset_Quickdiff_Baseline_To_HEAD_label"
-	       menubarPath="org.eclipse.egit.ui.quickdiffbaseline/quickdiff">
-	 </action>
-	 <action
-	       class="org.eclipse.egit.ui.internal.actions.ResetQuickdiffBaselineHeadParentAction"
-	       enablesFor="*"
-	       id="org.eclipse.egit.ui.resetquickdiffheadparentbaseline"
-	       label="%Reset_Quickdiff_Baseline_To_First_Parent_label"
-	       menubarPath="org.eclipse.egit.ui.quickdiffbaseline/quickdiff">
-	 </action>
-  <menu
-        id="org.eclipse.egit.ui.quickdiffbaseline"
-        label="%QuickDiffMenuName"
-        path="additions">
-     <groupMarker
-           name="quickdiff">
-     </groupMarker>
-  </menu>
-  <menu
-        id="org.eclipse.egit.ui.reset"
-        label="%ResetMenuName"
-        path="additions">
-     <groupMarker
-           name="reset">
-     </groupMarker>
-  </menu>
-	  </objectContribution>
    	  <objectContribution
          adaptable="true"
          id="org.eclipse.egit.ui.fileContributions"
@@ -277,6 +212,64 @@
                   type="org.eclipse.team.ui.history.IHistoryPageSource">
             </adapter>
          </factory>
+         <factory
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.ui.model.IWorkbenchAdapter"/>
+         </factory>
+         <factory
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.ui.model.IWorkbenchAdapter"/>
+         </factory>
+         <factory
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.ui.model.IWorkbenchAdapter"/>
+         </factory>
+         <factory
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelTree"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.ui.model.IWorkbenchAdapter"/>
+         </factory>
+         <factory
+	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.ui.model.IWorkbenchAdapter"/>
+         </factory>
+         <factory
+            adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelObject"
+            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+         <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
+         <adapter type="org.eclipse.core.resources.IResource"/>
+      </factory>
+      <factory
+            adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository"
+            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+         <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
+      </factory>
+      <factory
+            adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit"
+            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+         <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
+      </factory>
+      <factory
+            adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelTree"
+            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+         <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
+         <adapter type="org.eclipse.core.resources.IResource"/>
+      </factory>
+      <factory
+            adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob"
+            class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+         <adapter type="org.eclipse.core.resources.mapping.ResourceMapping"/>
+         <adapter type="org.eclipse.core.resources.IResource"/>
+      </factory>
    </extension>
 
    <extension point="org.eclipse.ui.preferencePages">
@@ -504,7 +497,7 @@
       </actionSet>
    </extension>
    <extension
-         name="The shared commands"
+         name="%SharedCommandsLabel"
          point="org.eclipse.ui.commands">
       <command
             defaultHandler="org.eclipse.egit.ui.internal.commands.ShareSingleProjectCommand"
@@ -517,10 +510,6 @@
                optional="false"
                values="org.eclipse.egit.ui.internal.commands.ProjectNameParameterValues">
          </commandParameter>
-      </command>
-      <command
-            id="org.eclipse.egit.ui.CheckoutCommand"
-            name="%CheckoutCommand">
       </command>
    </extension>
    <extension
@@ -744,6 +733,7 @@
          </command>
          <command
                commandId="org.eclipse.egit.ui.RepositoriesViewSynchronize"
+               icon="$nl$/icons/obj16/remotespec.gif"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -1076,7 +1066,7 @@
                   checkEnabled="false">
                <and>
                   <count
-                        value="1">
+                        value="+">
                   </count>
                   <iterate>
                      <and>
@@ -1244,7 +1234,7 @@
       </menuContribution>
    </extension>
    <extension
-         name="The commands for the repositories view"
+         name="%RepositoryCommandsLabel"
          point="org.eclipse.ui.commands">
       <command
             id="org.eclipse.egit.ui.RepositoriesViewAddRepository"
@@ -1255,11 +1245,6 @@
             id="org.eclipse.egit.ui.RepositoriesViewClone"
             name="%CloneRepositoryCommand"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CloneCommand">
-      </command>
-      <command
-            id="org.eclipse.egit.ui.RepositoriesViewCheckout"
-            name="%CheckoutCommand"
-            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.RepositoriesViewCopyPath"
@@ -1391,6 +1376,11 @@
             name="%ResetCommand"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ResetCommand">
       </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand"
+            id="org.eclipse.egit.ui.CheckoutCommand"
+            name="%CheckoutCommand">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
@@ -1442,6 +1432,30 @@
             commandId="org.eclipse.egit.ui.team.ShowHistory"
             icon="icons/obj16/history.gif">
       </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.CreateBranch"
+            icon="icons/obj16/branch_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.CheckoutCommand"
+            icon="icons/obj16/checkout.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewCreateBranch"
+            icon="icons/obj16/branch_obj.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewNewRemote"
+            icon="icons/obj16/remotespec.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.CreateTag"
+            icon="icons/obj16/version_rep.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.CheckoutCommand"
+            icon="icons/obj16/checkout.gif">
+      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -1470,6 +1484,18 @@
       </linkHelper>
     </extension>
     <extension
+         id="changeSetModel"
+         name="Git Change Set"
+         point="org.eclipse.core.resources.modelProviders">
+      <modelProvider
+            class="org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider"/>
+      <enablement>
+        <instanceof
+             value="org.eclipse.core.resources.IResource" />
+      </enablement>
+      <extends-model id="org.eclipse.core.resources.modelProvider"/>
+   </extension>
+    <extension
          point="org.eclipse.team.ui.synchronizeWizards">
       <wizard
             class="org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard"
@@ -1488,6 +1514,37 @@
             name="%Synchronize_Name"
             persistent="false">
       </participant>
+      <participant
+            class="org.eclipse.egit.ui.internal.synchronize.GitModelSynchronizeParticipant"
+            id="org.eclipse.egit.ui.modelCompareParticipant"
+            name="%Synchronize_ModelName"
+            persistent="false"/>
+   </extension>
+   <extension
+         point="org.eclipse.ui.navigator.navigatorContent">
+      <navigatorContent
+            activeByDefault="true"
+            contentProvider="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetContentProvider"
+            icon="$nl$/icons/obj16/changelog_obj.gif"
+            id="org.eclipse.egit.ui.changeSetContent"
+            labelProvider="org.eclipse.egit.ui.internal.synchronize.mapping.GitChangeSetLabelProvider"
+            name="%Synchronize_ChangeSet"
+            priority="normal">
+         <enablement>
+           <or>
+            <instanceof value="org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider"/>
+           </or>
+         </enablement>
+         <commonSorter
+               class="org.eclipse.egit.ui.internal.synchronize.mapping.GitCommitChangeSetSorter"/>
+       </navigatorContent>
+   </extension>
+   <extension
+         point="org.eclipse.team.ui.teamContentProviders">
+      <teamContentProvider
+            contentExtensionId="org.eclipse.egit.ui.changeSetContent"
+            icon="$nl$/icons/obj16/changelog_obj.gif"
+            modelProviderId="org.eclipse.egit.ui.changeSetModel"/>
    </extension>
    <extension
          name="%TeamMenuCommandsLabel"
@@ -1573,45 +1630,6 @@
       </command>
    </extension>
    <extension
-         name="The handlers for shared commands"
-         point="org.eclipse.ui.handlers">
-      <handler
-            commandId="org.eclipse.egit.ui.CheckoutCommand">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand">
-         </class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.CheckoutCommand">
-         <class
-               class="org.eclipse.egit.ui.internal.history.command.CheckoutHandler"></class>
-         <activeWhen>
-            <and>
-               <count
-                     value="1">
-               </count>
-               <iterate>
-                  <instanceof
-                        value="org.eclipse.egit.ui.internal.history.SWTCommit">
-                  </instanceof>
-               </iterate>
-            </and>
-         </activeWhen>
-      </handler>
-   </extension>
-   <extension
          point="org.eclipse.ui.bindings">
       <key
             commandId="org.eclipse.egit.ui.team.Commit"
@@ -1629,5 +1647,74 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+M3+M">
       </key>
+   </extension>
+   <extension
+         name="%HistoryViewCommands.extension.name"
+         point="org.eclipse.ui.commands">
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.CompareVersionsHandler"
+            id="org.eclipse.egit.ui.history.CompareVersions"
+            name="%CompareCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.CompareWithWorkingTreeHandler"
+            id="org.eclipse.egit.ui.history.CompareWithWorkingTree"
+            name="%CompareWithWorkTreeCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.ShowVersionsHandler"
+            id="org.eclipse.egit.ui.history.ShowVersions"
+            name="%OpenCommand.name">
+         <commandParameter
+               id="org.eclipse.egit.ui.history.CompareMode"
+               name="%CompareModeCommandParameter.name"
+               optional="true">
+         </commandParameter>
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.CreatePatchHandler"
+            id="org.eclipse.egit.ui.history.CreatePatch"
+            name="%CreatePatchCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateBranchOnCommitHandler"
+            id="org.eclipse.egit.ui.history.CreateBranch"
+            name="%CreateBranchCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"
+            id="org.eclipse.egit.ui.history.CreateTag"
+            name="%CreateTagCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.ResetHandler"
+            id="org.eclipse.egit.ui.history.Reset"
+            name="%ResetCommand.name">
+         <commandParameter
+               id="org.eclipse.egit.ui.history.ResetMode"
+               name="%ResetModeCommandParameter.name"
+               optional="false">
+         </commandParameter>
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.ResetQuickdiffBaselineHandler"
+            id="org.eclipse.egit.ui.history.ResetQuickdiffBaseline"
+            name="%ResetQuickdiffCommand.name">
+         <commandParameter
+               id="org.eclipse.egit.ui.history.ResetQuickdiffBaselineTarget"
+               name="%ResetTargetCommandParameter.name"
+               optional="false">
+         </commandParameter>
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.SetQuickdiffBaselineHandler"
+            id="org.eclipse.egit.ui.history.SetQuickdiffBaseline"
+            name="%SetQuickdiffBaselineCommand.name">
+      </command>
+      <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.CheckoutCommitHandler"
+            id="org.eclipse.egit.ui.history.CheckoutCommand"
+            name="Checkout">
+      </command>
    </extension>
 </plugin>
