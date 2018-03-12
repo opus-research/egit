@@ -32,7 +32,6 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
@@ -87,8 +86,6 @@ public class BranchSelectionDialog extends Dialog {
 
 	private Tree branchTree;
 
-	private Button confirmationBtn;
-
 	@Override
 	protected Composite createDialogArea(Composite base) {
 		parent = (Composite) super.createDialogArea(base);
@@ -96,15 +93,6 @@ public class BranchSelectionDialog extends Dialog {
 		new Label(parent, SWT.NONE).setText(UIText.BranchSelectionDialog_Refs);
 		branchTree = new Tree(parent, SWT.BORDER);
 		branchTree.setLayoutData(GridDataFactory.fillDefaults().grab(true,true).hint(500, 300).create());
-		branchTree.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				// calculate the user's selected ref
-				refNameFromDialog();
-				// make sure it's a valid selection
-				confirmationBtn.setEnabled(refName != null);
-			}
-		});
 
 		if (showResetType) {
 			buildResetGroup();
@@ -264,6 +252,13 @@ public class BranchSelectionDialog extends Dialog {
 	@Override
 	protected void okPressed() {
 		refNameFromDialog();
+		if (refName == null) {
+			MessageDialog.openWarning(getShell(),
+					UIText.BranchSelectionDialog_NoBranchSeletectTitle,
+					UIText.BranchSelectionDialog_NoBranchSeletectMessage);
+			return;
+		}
+
 		if (showResetType) {
 			if (resetType == ResetType.HARD) {
 				if (!MessageDialog.openQuestion(getShell(),
@@ -293,12 +288,6 @@ public class BranchSelectionDialog extends Dialog {
 				prompt,
 				null, new IInputValidator() {
 					public String isValid(String newText) {
-						if (newText.length() == 0) {
-							// nothing entered, just don't let the user proceed,
-							// no need to prompt them with an error message
-							return ""; //$NON-NLS-1$
-						}
-
 						String testFor = Constants.R_HEADS + newText;
 						try {
 							if (repo.resolve(testFor) != null)
@@ -323,15 +312,9 @@ public class BranchSelectionDialog extends Dialog {
 			Button newButton = new Button(parent, SWT.PUSH);
 			newButton.setFont(JFaceResources.getDialogFont());
 			newButton.setText(UIText.BranchSelectionDialog_NewBranch);
-			setButtonLayoutData(newButton);
 			((GridLayout)parent.getLayout()).numColumns++;
-
 			Button renameButton = new Button(parent, SWT.PUSH);
-			renameButton.setFont(JFaceResources.getDialogFont());
 			renameButton.setText(UIText.BranchSelectionDialog_Rename);
-			setButtonLayoutData(renameButton);
-			((GridLayout)parent.getLayout()).numColumns++;
-
 			renameButton.addSelectionListener(new SelectionListener() {
 				public void widgetSelected(SelectionEvent e) {
 					// check what ref name the user selected, if any.
@@ -431,13 +414,10 @@ public class BranchSelectionDialog extends Dialog {
 				}
 			});
 		}
-		confirmationBtn = createButton(parent, IDialogConstants.OK_ID,
+		createButton(parent, IDialogConstants.OK_ID,
 				showResetType ? UIText.BranchSelectionDialog_OkReset
 						: UIText.BranchSelectionDialog_OkCheckout, true);
 		createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);
-
-		// can't advance without a selection
-		confirmationBtn.setEnabled(branchTree.getSelectionCount() != 0);
 	}
 
 	@Override

@@ -865,9 +865,6 @@ public class UIText extends NLS {
 	public static String CommitAction_failedToUpdate;
 
 	/** */
-	public static String CommitAction_InternalError;
-
-	/** */
 	public static String CommitAction_noFilesToCommit;
 
 	/** */
@@ -931,9 +928,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_SelectAll;
 
 	/** */
-	public static String CommitDialog_ShowUntrackedFiles;
-
-	/** */
 	public static String CommitDialog_Status;
 
 	/** */
@@ -959,9 +953,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_StatusUnknown;
-
-	/** */
-	public static String CommitDialog_StatusUntracked;
 
 	/** */
 	public static String ConfigureKeysDialog_AddStandardButton;
@@ -1297,6 +1288,9 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_LocalBranches;
 
 	/** */
+	public static String BranchSelectionDialog_NoBranchSeletectTitle;
+
+	/** */
 	public static String BranchSelectionDialog_ReallyResetTitle;
 
 	/** */
@@ -1331,6 +1325,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchSelectionDialog_OkCheckout;
+
+	/** */
+	public static String BranchSelectionDialog_NoBranchSeletectMessage;
 
 	/** */
 	public static String BranchSelectionDialog_Refs;
