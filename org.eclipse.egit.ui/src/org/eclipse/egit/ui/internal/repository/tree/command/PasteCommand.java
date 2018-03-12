@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2011 SAP AG.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Nitin Dahyabhai (IBM Corporation) - bug 343309: Pasting remote git URL into Git Repositories view fails
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
@@ -37,8 +36,6 @@ import org.eclipse.swt.dnd.TextTransfer;
  */
 public class PasteCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
-	private static final String URIish_HINT = "://"; //$NON-NLS-1$
-
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// we check if the pasted content is a directory
 		// repository location and try to add this
@@ -53,9 +50,6 @@ public class PasteCommand extends
 				errorMessage = UIText.RepositoriesView_NothingToPasteMessage;
 				return null;
 			}
-
-			if (content.indexOf(URIish_HINT) > 2)
-				return new CloneCommand().execute(event);
 
 			File file = new File(content);
 			if (!file.exists() || !file.isDirectory()) {
