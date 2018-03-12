@@ -27,14 +27,13 @@ import org.eclipse.jface.resource.CompositeImageDescriptor;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
-import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.graphics.Image;
@@ -63,24 +62,17 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements
 		if (node.getType() == RepositoryTreeNodeType.TAG) {
 			// determine if we have a lightweight tag and
 			// use the corresponding icon
-			RevObject any;
 			try {
 				ObjectId id = node.getRepository().resolve(
 						((Ref) node.getObject()).getName());
-				any = new RevWalk(node.getRepository()).parseAny(id);
-			} catch (MissingObjectException e) {
-				Activator.logError(e.getMessage(), e);
-				return null;
-			} catch (IOException e) {
-				Activator.logError(e.getMessage(), e);
-				return null;
-			}
-			if (any instanceof RevCommit)
-				// lightweight tag
-				return decorateImage(lightweightTagImage, element);
-			else
-				// annotated or signed tag
+				new RevWalk(node.getRepository()).parseTag(id);
 				return decorateImage(node.getType().getIcon(), element);
+			} catch (AmbiguousObjectException e) {
+				// ignore
+				return decorateImage(node.getType().getIcon(), element);
+			} catch (IOException e) {
+				return decorateImage(lightweightTagImage, element);
+			}
 		} else
 			return decorateImage(node.getType().getIcon(), element);
 	}
