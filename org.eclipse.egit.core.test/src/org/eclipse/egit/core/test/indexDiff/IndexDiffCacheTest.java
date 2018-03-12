@@ -47,7 +47,6 @@ public class IndexDiffCacheTest extends GitTestCase {
 		super.setUp();
 		testRepository = new TestRepository(gitDir);
 		repository = testRepository.getRepository();
-		prepareCacheEntry();
 	}
 
 	@After
@@ -64,6 +63,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		// create first commit containing a dummy file
 		testRepository
 				.createInitialCommit("testBranchOperation\n\nfirst commit\n");
+		prepareCacheEntry();
 		waitForListenerCalled();
 		final String fileName = "aFile";
 		// This call should trigger an indexDiffChanged event (triggered via
@@ -88,6 +88,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		testRepository.connect(project.project);
 		testRepository.addToIndex(project.project);
 		testRepository.createInitialCommit("testAddFileFromUntrackedFolder\n\nfirst commit\n");
+		prepareCacheEntry();
 
 		project.createFolder("folder");
 		project.createFolder("folder/a");
@@ -116,6 +117,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		project.createFolder("sub");
 		testRepository.addToIndex(project.project);
 		testRepository.createInitialCommit("testAddFileInIgnoredFolder\n\nfirst commit\n");
+		prepareCacheEntry();
 
 		IndexDiffData data1 = waitForListenerCalled();
 		assertThat(data1.getIgnoredNotInIndex(), hasItem("Project-1/ignore"));
@@ -144,6 +146,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		IFile file = project.createFile("sub/ignore", new byte[] {});
 		testRepository.addToIndex(project.project);
 		testRepository.createInitialCommit("testRemoveIgnoredFile\n\nfirst commit\n");
+		prepareCacheEntry();
 
 		IndexDiffData data1 = waitForListenerCalled();
 		assertThat(data1.getIgnoredNotInIndex(), hasItem("Project-1/sub/ignore"));
