@@ -1,12 +1,15 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
- *
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Dariusz Luksza <dariusz@luksza.org> - initial implementation
+ *    Mathias Kinzler (SAP AG) - move to command framework
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.actions;
+package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,7 +29,7 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CreateTagDialog;
-import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.AnyObjectId;
@@ -41,21 +44,16 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * An action for creating tag.
- *
- * @see TagOperation
+ * Implements "Create Tag"
  */
-public class TagActionHandler extends RepositoryActionHandler {
-
-	private Repository repo;
-
+public class CreateTagCommand extends RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		repo = getRepository(true, event);
-		if (repo == null)
-			return null;
+		RepositoryTreeNode node = getSelectedNodes(event).get(0);
+
+		final Repository repo = node.getRepository();
 
 		if (!repo.getRepositoryState().canCheckout()) {
-			MessageDialog.openError(getShell(event),
+			MessageDialog.openError(getView(event).getSite().getShell(),
 					UIText.TagAction_cannotCheckout, NLS.bind(
 							UIText.TagAction_repositoryState, repo
 									.getRepositoryState().getDescription()));
@@ -66,22 +64,21 @@ public class TagActionHandler extends RepositoryActionHandler {
 		try {
 			currentBranchName = repo.getBranch();
 		} catch (IOException e) {
-			Activator
-					.handleError(UIText.TagAction_cannotGetBranchName, e, true);
-			return null;
+			Activator.handleError(e.getMessage(), e, true);
+			// TODO correct message
+			throw new ExecutionException(e.getMessage(), e);
 		}
 
-		CreateTagDialog dialog = new CreateTagDialog(getShell(event),
-				ValidationUtils
-						.getRefNameInputValidator(repo, Constants.R_TAGS),
-				currentBranchName);
+		CreateTagDialog dialog = new CreateTagDialog(getView(event).getSite()
+				.getShell(), ValidationUtils.getRefNameInputValidator(repo,
+				Constants.R_TAGS), currentBranchName);
 
 		// get and set commits
-		RevWalk revCommits = getRevCommits(event);
+		RevWalk revCommits = getRevCommits(repo);
 		dialog.setRevCommitList(revCommits);
 
 		// get and set existing tags
-		List<Tag> tags = getRevTags(event);
+		List<Tag> tags = getRevTags(repo);
 		dialog.setExistingTags(tags);
 
 		if (dialog.open() != IDialogConstants.OK_ID)
@@ -95,14 +92,7 @@ public class TagActionHandler extends RepositoryActionHandler {
 		tag.setTagger(personIdent);
 		tag.setMessage(dialog.getTagMessage());
 
-		ObjectId tagCommit;
-		try {
-			tagCommit = getTagCommit(dialog.getTagCommit());
-		} catch (IOException e1) {
-			Activator.handleError(UIText.TagAction_unableToResolveHeadObjectId,
-					e1, true);
-			return null;
-		}
+		ObjectId tagCommit = getTagCommit(dialog.getTagCommit(), repo);
 		tag.setObjId(tagCommit);
 
 		String tagJobName = NLS.bind(UIText.TagAction_creating, tagName);
@@ -126,21 +116,11 @@ public class TagActionHandler extends RepositoryActionHandler {
 
 		tagJob.setUser(true);
 		tagJob.schedule();
+
 		return null;
 	}
 
-	@Override
-	public boolean isEnabled() {
-		try {
-			return getRepository(false, null) != null;
-		} catch (ExecutionException e) {
-			Activator.handleError(e.getMessage(), e, false);
-			return false;
-		}
-	}
-
-	private List<Tag> getRevTags(ExecutionEvent event)
-			throws ExecutionException {
+	private List<Tag> getRevTags(Repository repo) throws ExecutionException {
 		Collection<Ref> revTags = repo.getTags().values();
 		List<Tag> tags = new ArrayList<Tag>();
 		for (Ref ref : revTags) {
@@ -148,42 +128,40 @@ public class TagActionHandler extends RepositoryActionHandler {
 				Tag tag = repo.mapTag(ref.getName());
 				tags.add(tag);
 			} catch (IOException e) {
-				ErrorDialog.openError(getShell(event),
-						UIText.TagAction_errorDuringTagging, NLS.bind(
-								UIText.TagAction_errorWhileMappingRevTag, ref
-										.getName()), new Status(IStatus.ERROR,
-								Activator.getPluginId(), e.getMessage(), e));
+				throw new ExecutionException(NLS
+						.bind(UIText.TagAction_errorWhileMappingRevTag, ref
+								.getName()), e);
 			}
 		}
 		return tags;
 	}
 
-	private RevWalk getRevCommits(ExecutionEvent event)
-			throws ExecutionException {
+	private RevWalk getRevCommits(Repository repo) throws ExecutionException {
 		RevWalk revWalk = new RevWalk(repo);
-		revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
-		revWalk.sort(RevSort.BOUNDARY, true);
-
 		try {
+			revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
+			revWalk.sort(RevSort.BOUNDARY, true);
 			AnyObjectId headId = repo.resolve(Constants.HEAD);
 			if (headId != null)
 				revWalk.markStart(revWalk.parseCommit(headId));
-		} catch (IOException e) {
-			ErrorDialog.openError(getShell(event),
-					UIText.TagAction_errorDuringTagging,
-					UIText.TagAction_errorWhileGettingRevCommits, new Status(
-							IStatus.ERROR, Activator.getPluginId(), e
-									.getMessage(), e));
-		}
 
+		} catch (IOException e) {
+			throw new ExecutionException(
+					UIText.TagAction_errorWhileGettingRevCommits, e);
+		}
 		return revWalk;
 	}
 
-	private ObjectId getTagCommit(ObjectId objectId) throws IOException {
+	private ObjectId getTagCommit(ObjectId objectId, Repository repo)
+			throws ExecutionException {
 		ObjectId result = null;
 		if (objectId == null) {
-			result = repo.resolve(Constants.HEAD);
-
+			try {
+				result = repo.resolve(Constants.HEAD);
+			} catch (IOException e) {
+				throw new ExecutionException(
+						UIText.TagAction_unableToResolveHeadObjectId, e);
+			}
 		} else {
 			result = objectId;
 		}
