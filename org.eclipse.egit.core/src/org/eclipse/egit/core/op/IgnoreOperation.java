@@ -80,20 +80,23 @@ public class IgnoreOperation implements IEGitOperation {
 		}
 	}
 
+	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(CoreText.IgnoreOperation_taskName, paths.size());
 		try {
 			for (IPath path : paths) {
-				if (monitor.isCanceled())
+				if (monitor.isCanceled()) {
 					break;
+				}
 				// TODO This is pretty inefficient; multiple ignores in
 				// the same directory cause multiple writes.
 
 				// NB This does the same thing in
 				// DecoratableResourceAdapter, but neither currently
 				// consult .gitignore
-				if (!RepositoryUtil.isIgnored(path))
+				if (RepositoryUtil.canBeAutoIgnored(path)) {
 					addIgnore(monitor, path);
+				}
 				monitor.worked(1);
 			}
 			monitor.done();
@@ -114,6 +117,7 @@ public class IgnoreOperation implements IEGitOperation {
 		return gitignoreOutsideWSChanged;
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return schedulingRule;
 	}

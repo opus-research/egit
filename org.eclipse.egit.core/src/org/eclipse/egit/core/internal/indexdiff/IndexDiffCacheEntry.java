@@ -99,12 +99,14 @@ public class IndexDiffCacheEntry {
 		this.repository = repository;
 		indexChangedListenerHandle = repository.getListenerList().addIndexChangedListener(
 				new IndexChangedListener() {
+					@Override
 					public void onIndexChanged(IndexChangedEvent event) {
 						refreshIndexDelta();
 					}
 				});
 		refsChangedListenerHandle = repository.getListenerList().addRefsChangedListener(
 				new RefsChangedListener() {
+					@Override
 					public void onRefsChanged(RefsChangedEvent event) {
 						scheduleReloadJob("RefsChanged"); //$NON-NLS-1$
 					}
@@ -333,6 +335,7 @@ public class IndexDiffCacheEntry {
 			}
 
 		};
+		reloadJob.setSystem(true);
 		reloadJob.schedule();
 	}
 
@@ -344,6 +347,12 @@ public class IndexDiffCacheEntry {
 		return true;
 	}
 
+	/**
+	 * Jobs accessing this code should be configured as "system" jobs, to not
+	 * interrupt autobuild jobs, see bug 474003
+	 *
+	 * @param monitor
+	 */
 	private void waitForWorkspaceLock(IProgressMonitor monitor) {
 		// Wait for the workspace lock to avoid starting the calculation
 		// of an IndexDiff while the workspace changes (e.g. due to a
@@ -550,6 +559,7 @@ public class IndexDiffCacheEntry {
 
 	private void createResourceChangeListener() {
 		resourceChangeListener = new IResourceChangeListener() {
+			@Override
 			public void resourceChanged(IResourceChangeEvent event) {
 				GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(repository);
 				try {
