@@ -40,6 +40,12 @@ public class UIText extends NLS {
 	public static String AbstractRebaseCommand_DialogTitle;
 
 	/** */
+	public static String Activator_DefaultRepoFolderIsFile;
+
+	/** */
+	public static String Activator_DefaultRepoFolderNotCreated;
+
+	/** */
 	public static String Activator_refreshFailed;
 
 	/** */
@@ -1906,9 +1912,6 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_DirectoryLabel;
 
 	/** */
-	public static String CreateRepositoryPage_MissingNameMessage;
-
-	/** */
 	public static String CreateRepositoryPage_NotADirectoryMessage;
 
 	/** */
@@ -1925,9 +1928,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateRepositoryPage_PleaseUseAbsoluePathMessage;
-
-	/** */
-	public static String CreateRepositoryPage_RepositoryNameLabel;
 
 	/** */
 	public static String PushResultDialog_ConfigureButton;
@@ -3153,6 +3153,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NonDeletedFilesTree_ResourcePathsButton;
+
+	/** */
+	public static String NoteDetailsPage_ContentSection;
+
+	/** */
+	public static String NotesBlock_NotesSection;
+
+	/** */
+	public static String NotesEditorPage_Title;
 
 	/** */
 	public static String OpenWorkingFileAction_text;
