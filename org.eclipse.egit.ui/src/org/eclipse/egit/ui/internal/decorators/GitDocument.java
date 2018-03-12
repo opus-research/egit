@@ -180,8 +180,7 @@ class GitDocument extends Document implements RefsChangedListener {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation
 							.getTrace()
-							.trace(
-									GitTraceLocation.QUICKDIFF.getLocation(),
+							.trace(GitTraceLocation.QUICKDIFF.getLocation(),
 									"(GitDocument) has reference doc, size=" + s.length() + " bytes"); //$NON-NLS-1$ //$NON-NLS-2$
 			} else {
 				if (GitTraceLocation.QUICKDIFF.isActive())
