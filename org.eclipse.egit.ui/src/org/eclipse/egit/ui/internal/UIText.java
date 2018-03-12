@@ -2503,9 +2503,6 @@ public class UIText extends NLS {
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
 
 	/** */
-	public static String CompareUtils_jobName;
-
-	/** */
 	public static String CompareUtils_errorCommonAncestor;
 
 	/** */
