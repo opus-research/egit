@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -43,18 +43,24 @@ public class GitModelRoot {
 	 * @return children
 	 */
 	public GitModelObject[] getChildren() {
-		return getChildrenImpl();
+		if (children == null)
+			children = getChildrenImpl();
+
+		return children;
 	}
 
 	/**
 	 *  Disposes all nested resources
 	 */
 	public void dispose() {
-		disposeOldChildren();
+		for (GitModelObject child : children)
+			child.dispose();
+
+		gsds.dispose();
 	}
 
 	private GitModelObject[] getChildrenImpl() {
-		List<GitModelObject> result = new ArrayList<GitModelObject>();
+		List<GitModelObject> restult = new ArrayList<GitModelObject>();
 		try {
 			if (gsds.size() == 1) {
 				GitSynchronizeData gsd = gsds.iterator().next();
@@ -65,22 +71,13 @@ public class GitModelRoot {
 				for (GitSynchronizeData data : gsds) {
 					GitModelRepository repoModel = new GitModelRepository(data);
 					if (repoModel.getChildren().length > 0)
-						result.add(repoModel);
+						restult.add(repoModel);
 				}
 		} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
 		}
-		disposeOldChildren();
-		children = result.toArray(new GitModelObject[result.size()]);
 
-		return children;
-	}
-
-	private void disposeOldChildren() {
-		if (children == null)
-			return;
-		for (GitModelObject child : children)
-			child.dispose();
+		return restult.toArray(new GitModelObject[restult.size()]);
 	}
 
 }

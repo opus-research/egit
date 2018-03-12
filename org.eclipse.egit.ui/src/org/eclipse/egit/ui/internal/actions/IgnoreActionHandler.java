@@ -1,8 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2009, Alex Blewitt <alex.blewitt@gmail.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,14 +8,18 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.op.IgnoreOperation;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 
 /** Action for ignoring files via .gitignore. */
 public class IgnoreActionHandler extends RepositoryActionHandler {
@@ -26,12 +28,32 @@ public class IgnoreActionHandler extends RepositoryActionHandler {
 		final IResource[] resources = getSelectedResources(event);
 		if (resources.length == 0)
 			return null;
-		List<IPath> paths = new ArrayList<IPath>();
-		for (IResource resource : resources)
-			paths.add(resource.getLocation());
-
-		IgnoreOperationUI operation = new IgnoreOperationUI(paths);
-		operation.run();
+		final IgnoreOperation operation = new IgnoreOperation(resources);
+		String jobname = UIText.IgnoreActionHandler_addToGitignore;
+		Job job = new Job(jobname) {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				try {
+					operation.execute(monitor);
+				} catch (CoreException e) {
+					return Activator.createErrorStatus(e.getStatus()
+							.getMessage(), e);
+				}
+				if (operation.isGitignoreOutsideWSChanged())
+					GitLightweightDecorator.refresh();
+				return Status.OK_STATUS;
+			}
+		};
+		job.setUser(true);
+		job.setRule(operation.getSchedulingRule());
+		job.schedule();
 		return null;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		// Do not consult Team.isIgnoredHint here because the user
+		// should be allowed to add ignored resources to .gitignore
+		return true;
 	}
 }

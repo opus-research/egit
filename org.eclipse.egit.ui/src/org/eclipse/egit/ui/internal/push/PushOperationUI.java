@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2012 SAP AG and others.
+ * Copyright (c) 2011 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,7 +13,6 @@ package org.eclipse.egit.ui.internal.push;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
@@ -28,15 +27,12 @@ import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
@@ -46,6 +42,8 @@ import org.eclipse.osgi.util.NLS;
  */
 public class PushOperationUI {
 	private final Repository repository;
+
+	private final int timeout;
 
 	private final boolean dryRun;
 
@@ -61,22 +59,20 @@ public class PushOperationUI {
 
 	private final String remoteName;
 
-	private PushOperationResult expectedResult;
-
-	private boolean showConfigureButton = true;
-
 	/**
 	 * @param repository
 	 * @param remoteName
+	 * @param timeout
 	 * @param dryRun
 	 *
 	 */
 	public PushOperationUI(Repository repository, String remoteName,
-			boolean dryRun) {
+			int timeout, boolean dryRun) {
 		this.repository = repository;
 		this.spec = null;
 		this.config = null;
 		this.remoteName = remoteName;
+		this.timeout = timeout;
 		this.dryRun = dryRun;
 		destinationString = NLS.bind("{0} - {1}", repository.getDirectory() //$NON-NLS-1$
 				.getParentFile().getName(), remoteName);
@@ -86,15 +82,17 @@ public class PushOperationUI {
 	/**
 	 * @param repository
 	 * @param config
+	 * @param timeout
 	 * @param dryRun
 	 *
 	 */
 	public PushOperationUI(Repository repository, RemoteConfig config,
-			boolean dryRun) {
+			int timeout, boolean dryRun) {
 		this.repository = repository;
 		this.spec = null;
 		this.config = config;
 		this.remoteName = null;
+		this.timeout = timeout;
 		this.dryRun = dryRun;
 		destinationString = NLS.bind("{0} - {1}", repository.getDirectory() //$NON-NLS-1$
 				.getParentFile().getName(), config.getName());
@@ -103,14 +101,16 @@ public class PushOperationUI {
 	/**
 	 * @param repository
 	 * @param spec
+	 * @param timeout
 	 * @param dryRun
 	 */
 	public PushOperationUI(Repository repository,
-			PushOperationSpecification spec, boolean dryRun) {
+			PushOperationSpecification spec, int timeout, boolean dryRun) {
 		this.repository = repository;
 		this.spec = spec;
 		this.config = null;
 		this.remoteName = null;
+		this.timeout = timeout;
 		this.dryRun = dryRun;
 		if (spec.getURIsNumber() == 1)
 			destinationString = spec.getURIs().iterator().next()
@@ -129,26 +129,6 @@ public class PushOperationUI {
 	}
 
 	/**
-	 * Set the expected result. If this is set, the result dialog in {@link #start()} will only be
-	 * shown when the result is different from the expected result.
-	 *
-	 * @param expectedResult
-	 */
-	public void setExpectedResult(PushOperationResult expectedResult) {
-		this.expectedResult = expectedResult;
-	}
-
-	/**
-	 * Set whether the "Configure..." button should be shown in the result
-	 * dialog of {@link #start()}.
-	 *
-	 * @param showConfigureButton
-	 */
-	public void setShowConfigureButton(boolean showConfigureButton) {
-		this.showConfigureButton = showConfigureButton;
-	}
-
-	/**
 	 * Executes this directly, without showing a confirmation dialog
 	 *
 	 * @param monitor
@@ -161,8 +141,6 @@ public class PushOperationUI {
 		createPushOperation();
 		if (credentialsProvider != null)
 			op.setCredentialsProvider(credentialsProvider);
-		else
-			op.setCredentialsProvider(new EGitCredentialsProvider());
 		try {
 			op.run(monitor);
 			return op.getOperationResult();
@@ -175,7 +153,7 @@ public class PushOperationUI {
 
 	private void createPushOperation() throws CoreException {
 		if (remoteName != null) {
-			op = new PushOperation(repository, remoteName, dryRun, getTimeout());
+			op = new PushOperation(repository, remoteName, dryRun, timeout);
 			return;
 		}
 
@@ -197,13 +175,8 @@ public class PushOperationUI {
 
 			for (URIish uri : urisToPush) {
 				try {
-					// Fetch ref specs are passed here to make sure that the
-					// returned remote ref updates include tracking branch
-					// updates.
-					Collection<RemoteRefUpdate> remoteRefUpdates = Transport
-							.findRemoteRefUpdatesFor(repository, pushRefSpecs,
-									config.getFetchRefSpecs());
-					spec.addURIRefUpdates(uri, remoteRefUpdates);
+					spec.addURIRefUpdates(uri, Transport.open(repository, uri)
+							.findRemoteRefUpdatesFor(pushRefSpecs));
 				} catch (NotSupportedException e) {
 					throw new CoreException(Activator.createErrorStatus(
 							e.getMessage(), e));
@@ -213,7 +186,7 @@ public class PushOperationUI {
 				}
 			}
 		}
-		op = new PushOperation(repository, spec, dryRun, getTimeout());
+		op = new PushOperation(repository, spec, dryRun, timeout);
 	}
 
 	/**
@@ -246,15 +219,12 @@ public class PushOperationUI {
 		job.addJobChangeListener(new JobChangeAdapter() {
 			@Override
 			public void done(IJobChangeEvent event) {
-				PushOperationResult result = op.getOperationResult();
-				if (expectedResult == null || !expectedResult.equals(result)) {
-					if (event.getResult().isOK())
-						PushResultDialog.show(repository, result,
-								destinationString, showConfigureButton);
-					else
-						Activator.handleError(event.getResult().getMessage(),
-								event.getResult().getException(), true);
-				}
+				if (event.getResult().isOK())
+					PushResultDialog.show(repository, op.getOperationResult(),
+							destinationString);
+				else
+					Activator.handleError(event.getResult().getMessage(), event
+							.getResult().getException(), true);
 			}
 		});
 	}
@@ -264,10 +234,5 @@ public class PushOperationUI {
 	 */
 	public String getDestinationString() {
 		return destinationString;
-	}
-
-	private int getTimeout() {
-		return Activator.getDefault().getPreferenceStore()
-				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 	}
 }

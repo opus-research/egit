@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -27,7 +26,7 @@ import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.SubmoduleInitCommand;
 import org.eclipse.jgit.api.SubmoduleUpdateCommand;
-import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.team.core.TeamException;
@@ -98,7 +97,7 @@ public class SubmoduleUpdateOperation implements IEGitOperation {
 							refreshMonitor.worked(1);
 					}
 					refreshMonitor.done();
-				} catch (GitAPIException e) {
+				} catch (JGitInternalException e) {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				} catch (IOException e) {
@@ -111,8 +110,7 @@ public class SubmoduleUpdateOperation implements IEGitOperation {
 				}
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE,
+		ResourcesPlugin.getWorkspace().run(action,
 				monitor != null ? monitor : new NullProgressMonitor());
 	}
 

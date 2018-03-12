@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com> and others.
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -41,9 +41,6 @@ public class HistoryViewCommands {
 	/** "Delete Branch" */
 	public static final String DELETE_BRANCH = "org.eclipse.egit.ui.history.DeleteBranch"; //$NON-NLS-1$
 
-	/** "Rename Branch" */
-	public static final String RENAME_BRANCH = "org.eclipse.egit.ui.history.RenameBranch"; //$NON-NLS-1$
-
 	/** "Create Patch" */
 	public static final String CREATE_PATCH = "org.eclipse.egit.ui.history.CreatePatch"; //$NON-NLS-1$
 
@@ -77,12 +74,6 @@ public class HistoryViewCommands {
 	/** "cherry-pick" a commit */
 	public static final String CHERRYPICK = "org.eclipse.egit.ui.history.CherryPick"; //$NON-NLS-1$
 
-	/** squash multiple commits into one */
-	public static final String SQUASH = "org.eclipse.egit.ui.history.Squash"; //$NON-NLS-1$
-
-	/** reword a commit's message */
-	public static final String REWORD = "org.eclipse.egit.ui.history.Reword"; //$NON-NLS-1$
-
 	/** revert a commit */
 	public static final String REVERT = "org.eclipse.egit.ui.history.Revert"; //$NON-NLS-1$
 
@@ -92,12 +83,6 @@ public class HistoryViewCommands {
 	/** rebase on top of commit */
 	public static final String REBASECURRENT = "org.eclipse.egit.ui.RebaseCurrent"; //$NON-NLS-1$
 
-	/** rebase on top of commit */
-	public static final String REBASE_INTERACTIVE_CURRENT = "org.eclipse.egit.ui.RebaseInteractiveCurrent"; //$NON-NLS-1$
-
 	/** Open in Commit Viewer */
 	public static final String OPEN_IN_COMMIT_VIEWER = "org.eclipse.egit.ui.history.OpenInCommitViewerCommand"; //$NON-NLS-1$
-
-	/** Show Blame Annotations */
-	public static final String SHOW_BLAME = "org.eclipse.egit.ui.history.ShowBlame"; //$NON-NLS-1$
 }

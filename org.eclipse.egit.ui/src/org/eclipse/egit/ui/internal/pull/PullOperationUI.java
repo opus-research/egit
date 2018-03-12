@@ -17,20 +17,19 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.IJobChangeListener;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.PullOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.PullResult;
@@ -43,7 +42,8 @@ import org.eclipse.ui.PlatformUI;
 /**
  * UI wrapper for {@link PullOperation}
  */
-public class PullOperationUI extends JobChangeAdapter {
+public class PullOperationUI extends JobChangeAdapter implements
+		IJobChangeListener {
 	private static final IStatus NOT_TRIED_STATUS = new Status(IStatus.ERROR,
 			Activator.getPluginId(), UIText.PullOperationUI_NotTriedMessage);
 
@@ -62,7 +62,6 @@ public class PullOperationUI extends JobChangeAdapter {
 		int timeout = Activator.getDefault().getPreferenceStore().getInt(
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		pullOperation = new PullOperation(repositories, timeout);
-		pullOperation.setCredentialsProvider(new EGitCredentialsProvider());
 		for (Repository repository : repositories)
 			results.put(repository, NOT_TRIED_STATUS);
 	}
@@ -87,10 +86,9 @@ public class PullOperationUI extends JobChangeAdapter {
 					shortBranchName, repoName);
 		} else
 			jobName = UIText.PullOperationUI_PullingMultipleTaskName;
-		Job job = new WorkspaceJob(jobName) {
-
+		Job job = new Job(jobName) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				execute(monitor);
 				// we always return OK and handle display of errors on our own
 				return Status.OK_STATUS;

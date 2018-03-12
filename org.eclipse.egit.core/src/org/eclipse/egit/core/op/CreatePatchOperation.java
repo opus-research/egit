@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010, SAP AG
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +10,6 @@
  *    Stefan Lay (SAP AG) - initial implementation
  *    Benjamin Muskalla (Tasktop Technologies) - extract into operation
  *    Tomasz Zarna (IBM Corporation) - bug 370332
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Allow spaces in path
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -27,7 +26,6 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -39,9 +37,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
-import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -174,14 +172,14 @@ public class CreatePatchOperation implements IEGitOperation {
 					@Override
 					public synchronized void write(byte[] b, int off, int len) {
 						super.write(b, off, len);
-						try {
-							if (currentEncoding == null)
-								sb.append(toString("UTF-8")); //$NON-NLS-1$
-							else
-								sb.append(toString(currentEncoding));
-						} catch (UnsupportedEncodingException e) {
+						if (currentEncoding == null)
 							sb.append(toString());
-						}
+						else
+							try {
+								sb.append(toString(currentEncoding));
+							} catch (UnsupportedEncodingException e) {
+								sb.append(toString());
+							}
 						reset();
 					}
 				}) {
@@ -257,7 +255,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	}
 
 	private IProject getProject(String path) {
-		URI pathUri = repository.getWorkTree().toURI().resolve(URIUtil.toURI(path));
+		URI pathUri = repository.getWorkTree().toURI().resolve(path);
 		IFile[] files = ResourcesPlugin.getWorkspace().getRoot()
 				.findFilesForLocationURI(pathUri);
 		Assert.isLegal(files.length == 1, NLS.bind(CoreText.CreatePatchOperation_couldNotFindProject, path, repository));
@@ -336,12 +334,7 @@ public class CreatePatchOperation implements IEGitOperation {
 	 * @param diffFmt
 	 */
 	public void updateWorkspacePatchPrefixes(StringBuilder sb, DiffFormatter diffFmt) {
-		RawText rt;
-		try {
-			rt = new RawText(sb.toString().getBytes("UTF-8")); //$NON-NLS-1$
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
-		}
+		RawText rt = new RawText(sb.toString().getBytes());
 
 		final String oldPrefix = diffFmt.getOldPrefix();
 		final String newPrefix = diffFmt.getNewPrefix();

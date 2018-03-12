@@ -9,28 +9,18 @@
 package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.Document;
-import org.eclipse.jgit.diff.DiffConfig;
-import org.eclipse.jgit.diff.DiffConfig.RenameDetectionType;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.RenameDetector;
-import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -38,12 +28,10 @@ import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
@@ -58,9 +46,6 @@ class GitDocument extends Document implements RefsChangedListener {
 	private ObjectId lastBlob;
 
 	private ListenerHandle myRefsChangedHandle;
-
-	// Job that reloads the document when something has changed
-	private Job reloadJob;
 
 	private boolean disposed;
 
@@ -156,32 +141,8 @@ class GitDocument extends Document implements RefsChangedListener {
 			}
 			rw = new RevWalk(repository);
 			RevCommit baselineCommit;
-			ObjectReader reader = null;
-			String oldPath = gitPath;
-
 			try {
-				reader = repository.newObjectReader();
 				baselineCommit = rw.parseCommit(commitId);
-				DiffConfig diffConfig = repository.getConfig().get(
-						DiffConfig.KEY);
-				if (diffConfig.getRenameDetectionType() != RenameDetectionType.FALSE) {
-					TreeWalk walk = new TreeWalk(repository);
-					CanonicalTreeParser baseLineIterator = new CanonicalTreeParser();
-					baseLineIterator.reset(reader, baselineCommit.getTree());
-					walk.addTree(baseLineIterator);
-					walk.addTree(new DirCacheIterator(repository.readDirCache()));
-					List<DiffEntry> diffs = DiffEntry.scan(walk, true);
-					RenameDetector renameDetector = new RenameDetector(
-							repository);
-					renameDetector.addAll(diffs);
-					List<DiffEntry> renames = renameDetector.compute();
-					for (DiffEntry e : renames) {
-						if (e.getNewPath().equals(gitPath)) {
-							oldPath = e.getOldPath();
-							break;
-						}
-					}
-				}
 			} catch (IOException err) {
 				String msg = NLS
 						.bind(UIText.GitDocument_errorLoadCommit, new Object[] {
@@ -189,10 +150,6 @@ class GitDocument extends Document implements RefsChangedListener {
 				Activator.logError(msg, err);
 				setResolved(null, null, null, ""); //$NON-NLS-1$
 				return;
-			} finally {
-				if (reader != null)
-					reader.release();
-				rw.dispose();
 			}
 			RevTree treeId = baselineCommit.getTree();
 			if (treeId.equals(lastTree)) {
@@ -203,7 +160,7 @@ class GitDocument extends Document implements RefsChangedListener {
 				return;
 			}
 
-			tw = TreeWalk.forPath(repository, oldPath, treeId);
+			tw = TreeWalk.forPath(repository, gitPath, treeId);
 			if (tw == null) {
 				if (GitTraceLocation.QUICKDIFF.isActive())
 					GitTraceLocation
@@ -272,31 +229,15 @@ class GitDocument extends Document implements RefsChangedListener {
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
 		}
-		cancelReloadJob();
 		disposed = true;
 	}
 
-	public void onRefsChanged(final RefsChangedEvent event) {
-		cancelReloadJob();
-
-		reloadJob = new Job(UIText.GitDocument_ReloadJobName) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				try {
-					populate();
-					return Status.OK_STATUS;
-				} catch (IOException e) {
-					return Activator.createErrorStatus(
-							UIText.GitDocument_ReloadJobError, e);
-				}
-			}
-		};
-		reloadJob.schedule();
-	}
-
-	private void cancelReloadJob() {
-		if (reloadJob != null && reloadJob.getState() != Job.NONE)
-			reloadJob.cancel();
+	public void onRefsChanged(final RefsChangedEvent e) {
+		try {
+			populate();
+		} catch (IOException e1) {
+			Activator.logError(UIText.GitDocument_errorRefreshQuickdiff, e1);
+		}
 	}
 
 	private Repository getRepository() {

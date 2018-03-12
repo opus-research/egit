@@ -15,20 +15,20 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.ResetActionHandler;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.repository.SelectResetTypePage;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.osgi.util.NLS;
 
@@ -36,7 +36,8 @@ import org.eclipse.osgi.util.NLS;
  * "Resets" a repository
  */
 public class ResetCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode<?>> {
+		RepositoriesViewCommandHandler<RepositoryTreeNode<?>> implements
+		IHandler {
 
 	/**
 	 * Command id
@@ -53,15 +54,10 @@ public class ResetCommand extends
 			throw new ExecutionException(e1.getMessage(), e1);
 		}
 		final String targetBranch;
-		if (!(node.getObject() instanceof Ref))
-			// Use same dialog as for project when a repository is selected
-			// allowing reset to any commit
-			return new ResetActionHandler().execute(event);
-
-		// If a ref is selected in the repository view, only reset to
-		// that ref will be possible.
-		targetBranch = ((Ref) node.getObject()).getName();
-
+		if (node.getObject() instanceof Ref)
+			targetBranch = ((Ref) node.getObject()).getName();
+		else
+			targetBranch = currentBranch;
 		final String repoName = Activator.getDefault().getRepositoryUtil()
 				.getRepositoryName(node.getRepository());
 
@@ -69,8 +65,8 @@ public class ResetCommand extends
 
 			@Override
 			public void addPages() {
-				addPage(new SelectResetTypePage(repoName, node.getRepository(),
-						currentBranch, targetBranch));
+				addPage(new SelectResetTypePage(repoName, currentBranch,
+						targetBranch));
 				setWindowTitle(UIText.ResetCommand_WizardTitle);
 			}
 
@@ -99,8 +95,8 @@ public class ResetCommand extends
 									final ResetOperation operation = new ResetOperation(
 											node.getRepository(), targetBranch,
 											resetType);
-									JobUtil.scheduleUserWorkspaceJob(operation,
-											jobname, JobFamilies.RESET);
+									JobUtil.scheduleUserJob(operation, jobname,
+											JobFamilies.RESET);
 								}
 							});
 				} catch (InvocationTargetException ite) {

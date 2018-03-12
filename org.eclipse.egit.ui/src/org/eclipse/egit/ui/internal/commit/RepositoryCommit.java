@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2013 GitHub Inc. and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Robin Stocker (independent)
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
@@ -22,8 +21,8 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.StyledString;
@@ -154,8 +153,7 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 			try {
 				for (RevCommit parent : commit.getParents())
 					revWalk.parseBody(parent);
-				diffs = FileDiff.compute(repository, treewalk, commit,
-						TreeFilter.ALL);
+				diffs = FileDiff.compute(treewalk, commit);
 			} catch (IOException e) {
 				diffs = new FileDiff[0];
 			} finally {
@@ -188,7 +186,7 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 				}
 				notes = noteList.toArray(new RepositoryCommitNote[noteList
 						.size()]);
-			} catch (Exception e) {
+			} catch (IOException e) {
 				Activator.logError("Error showing notes", e); //$NON-NLS-1$
 				notes = new RepositoryCommitNote[0];
 			}
@@ -216,28 +214,20 @@ public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
 	 * @param object
 	 * @return styled text
 	 */
-	@Override
 	public StyledString getStyledText(Object object) {
 		StyledString styled = new StyledString();
 		styled.append(abbreviate());
 		styled.append(": "); //$NON-NLS-1$
 		styled.append(commit.getShortMessage());
 
-		PersonIdent author = commit.getAuthorIdent();
-		PersonIdent committer = commit.getCommitterIdent();
-		if (author != null && committer != null) {
-			if (author.getName().equals(committer.getName())) {
-				styled.append(MessageFormat.format(
-						UIText.RepositoryCommit_AuthorDate, author.getName(),
-						formatDate(author.getWhen())),
-						StyledString.QUALIFIER_STYLER);
-			} else {
-				styled.append(MessageFormat.format(
-						UIText.RepositoryCommit_AuthorDateCommitter,
-						author.getName(), formatDate(author.getWhen()),
-						committer.getName()), StyledString.QUALIFIER_STYLER);
-			}
-		}
+		PersonIdent person = commit.getAuthorIdent();
+		if (person == null)
+			person = commit.getCommitterIdent();
+		if (person != null)
+			styled.append(MessageFormat.format(
+					UIText.RepositoryCommit_UserAndDate, person.getName(),
+					formatDate(person.getWhen())),
+					StyledString.QUALIFIER_STYLER);
 		return styled;
 	}
 

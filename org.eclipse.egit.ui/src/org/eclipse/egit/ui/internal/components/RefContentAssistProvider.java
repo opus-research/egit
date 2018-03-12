@@ -17,7 +17,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Constants;
@@ -102,10 +102,6 @@ public class RefContentAssistProvider {
 					result.add(ref);
 		} catch (RuntimeException e) {
 			throw e;
-		} catch (InvocationTargetException e) {
-			Throwable cause = e.getCause();
-			Activator.handleError(cause.getMessage(), cause, true);
-			return result;
 		} catch (Exception e) {
 			Activator.handleError(e.getMessage(), e, true);
 			return result;

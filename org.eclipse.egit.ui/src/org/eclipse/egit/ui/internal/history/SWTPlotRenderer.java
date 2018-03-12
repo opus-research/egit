@@ -10,17 +10,19 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
+import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
@@ -54,9 +56,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private static final RGB INNER_OTHER = new RGB(250, 250, 250);
 
-	private static final int MAX_LABEL_LENGTH = 18;
-
-	private static final String ELLIPSIS = "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
+	private static final int MAX_LABEL_LENGTH = 15;
 
 	private final Color sys_black;
 
@@ -74,7 +74,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private boolean enableAntialias = true;
 
-	private final ResourceManager resources;
+	private ResourceManager resources = new LocalResourceManager(
+			JFaceResources.getResources());
 
 	GC g;
 
@@ -88,16 +89,21 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private Ref headRef;
 
-	SWTPlotRenderer(final Display d, final ResourceManager resources) {
-		this.resources = resources;
+	SWTPlotRenderer(final Display d) {
 		sys_black = d.getSystemColor(SWT.COLOR_BLACK);
 		sys_gray = d.getSystemColor(SWT.COLOR_GRAY);
 		sys_white = d.getSystemColor(SWT.COLOR_WHITE);
-
-		commitDotFill = resources.createColor(new RGB(220, 220, 220));
-		commitDotOutline = resources.createColor(new RGB(110, 110, 110));
+		commitDotFill = new Color(d, new RGB(220, 220, 220));
+		commitDotOutline = new Color(d, new RGB(110, 110, 110));
 	}
 
+	void dispose() {
+		commitDotFill.dispose();
+		commitDotOutline.dispose();
+		resources.dispose();
+	}
+
+	@SuppressWarnings("unchecked")
 	void paint(final Event event, Ref actHeadRef) {
 		g = event.gc;
 
@@ -117,14 +123,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			textHeight = g.stringExtent("/").y; //$NON-NLS-1$
 
 		final TableItem ti = (TableItem) event.item;
-		SWTCommit commit = (SWTCommit) ti.getData();
-		try {
-			commit.parseBody();
-		} catch (IOException e) {
-			Activator.error("Error parsing body", e); //$NON-NLS-1$
-			return;
-		}
-		paintCommit(commit , event.height);
+		paintCommit((PlotCommit<SWTLane>) ti.getData(), event.height);
 	}
 
 	protected void drawLine(final Color color, final int x1, final int y1,
@@ -213,15 +212,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 					.getInt(UIPreferences.HISTORY_MAX_BRANCH_LENGTH);
 		else
 			maxLength = MAX_LABEL_LENGTH;
-		if (txt.length() > maxLength) {
-			// Account for the ellipsis length
-			int textLength = maxLength - 3;
-			if (Activator.getDefault().getPreferenceStore()
-					.getBoolean(UIPreferences.HISTORY_CUT_AT_START))
-				txt = ELLIPSIS + txt.substring(txt.length() - textLength);
-			else
-				txt = txt.substring(0, textLength) + ELLIPSIS;
-		}
+		if (txt.length() > maxLength)
+			txt = txt.substring(0, maxLength) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
 
 		// highlight checked out branch
 		Font oldFont = g.getFont();

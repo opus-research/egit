@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2012 Marek Zawirski <marek.zawirski@gmail.com> and others.
+ * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.UIIcons;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.fieldassist.ComboContentAdapter;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
@@ -663,8 +663,8 @@ public class RefSpecPanel {
 		creationButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				final String src = creationSrcComboSupport.getContent();
-				final String dst = creationDstComboSupport.getContent();
+				final String src = creationSrcCombo.getText();
+				final String dst = creationDstCombo.getText();
 				RefSpec spec = new RefSpec(src + ':' + dst);
 				addRefSpec(spec);
 				creationSrcCombo.setText(""); //$NON-NLS-1$
@@ -779,7 +779,7 @@ public class RefSpecPanel {
 		deleteButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				RefSpec spec = new RefSpec(':' + deleteRefComboSupport.getContent());
+				RefSpec spec = new RefSpec(':' + deleteRefCombo.getText());
 				addRefSpec(spec);
 				deleteRefCombo.setText(""); //$NON-NLS-1$
 			}
@@ -1334,8 +1334,8 @@ public class RefSpecPanel {
 	}
 
 	private void tryAutoCompleteSrcToDst() {
-		final String src = creationSrcComboSupport.getContent();
-		final String dst = creationDstComboSupport.getContent();
+		final String src = creationSrcCombo.getText();
+		final String dst = creationDstCombo.getText();
 
 		if (src == null || src.length() == 0)
 			return;
@@ -1347,8 +1347,7 @@ public class RefSpecPanel {
 				newDst = wildcardSpecComponent(dst);
 			else
 				newDst = unwildcardSpecComponent(dst, src);
-			if (!dst.equals(newDst))
-				creationDstCombo.setText(newDst);
+			creationDstCombo.setText(newDst);
 			return;
 		}
 
@@ -1392,8 +1391,8 @@ public class RefSpecPanel {
 	}
 
 	private void tryAutoCompleteDstToSrc() {
-		final String src = creationSrcComboSupport.getContent();
-		final String dst = creationDstComboSupport.getContent();
+		final String src = creationSrcCombo.getText();
+		final String dst = creationDstCombo.getText();
 
 		if (dst == null || dst.length() == 0)
 			return;
@@ -1405,15 +1404,14 @@ public class RefSpecPanel {
 				newSrc = wildcardSpecComponent(src);
 			else
 				newSrc = unwildcardSpecComponent(src, dst);
-			if (!src.equals(newSrc))
-				creationSrcCombo.setText(newSrc);
+			creationSrcCombo.setText(newSrc);
 			return;
 		}
 	}
 
 	private void validateCreationPanel() {
-		final String src = creationSrcComboSupport.getContent();
-		final String dst = creationDstComboSupport.getContent();
+		final String src = creationSrcCombo.getText();
+		final String dst = creationDstCombo.getText();
 
 		// check src ref field
 		boolean srcOk = false;
@@ -1506,7 +1504,7 @@ public class RefSpecPanel {
 	}
 
 	private void validateDeleteCreationPanel() {
-		final String ref = deleteRefComboSupport.getContent();
+		final String ref = deleteRefCombo.getText();
 
 		deleteButton.setEnabled(false);
 		if (ref == null || ref.length() == 0)
@@ -1762,8 +1760,6 @@ public class RefSpecPanel {
 	}
 
 	private ObjectId tryResolveLocalRef(final String ref) {
-		if (!isValidRefExpression(ref))
-			return null;
 		try {
 			return localDb.resolve(ref);
 		} catch (final IOException e) {

@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,7 +9,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.compare.CompareConfiguration;
@@ -33,34 +31,19 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.storage.IndexFileRevision;
-import org.eclipse.egit.core.internal.storage.OpenWorkspaceVersionEnabled;
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IRegion;
-import org.eclipse.jface.text.ITextSelection;
-import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.internal.ui.Utils;
 import org.eclipse.team.internal.ui.synchronize.EditableSharedDocumentAdapter.ISharedDocumentAdapterListener;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceSaveableComparison;
 import org.eclipse.team.internal.ui.synchronize.LocalResourceTypedElement;
 import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ISaveablesLifecycleListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.Saveable;
 import org.eclipse.ui.SaveablesLifecycleEvent;
-import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
  * The input provider for the compare editor when working on resources
@@ -70,7 +53,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 	private ITypedElement left;
 	private ITypedElement right;
-	private ITypedElement ancestor;
 
 	/**
 	 * Creates a new CompareFileRevisionEditorInput.
@@ -82,20 +64,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		super(new CompareConfiguration(), page);
 		this.left = left;
 		this.right = right;
-	}
-
-	/**
-	 * Creates a new CompareFileRevisionEditorInput.
-	 * @param left
-	 * @param right
-	 * @param ancestor
-	 * @param page
-	 */
-	public GitCompareFileRevisionEditorInput(ITypedElement left, ITypedElement right, ITypedElement ancestor, IWorkbenchPage page) {
-		super(new CompareConfiguration(), page);
-		this.left = left;
-		this.right = right;
-		this.ancestor = ancestor;
 	}
 
 	FileRevisionTypedElement getRightRevision() {
@@ -112,13 +80,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		return null;
 	}
 
-	FileRevisionTypedElement getAncestorRevision() {
-		if (ancestor instanceof FileRevisionTypedElement)
-			return (FileRevisionTypedElement) ancestor;
-		return null;
-	}
-
-	private static void ensureContentsCached(FileRevisionTypedElement left, FileRevisionTypedElement right, FileRevisionTypedElement ancestor,
+	private static void ensureContentsCached(FileRevisionTypedElement left, FileRevisionTypedElement right,
 			IProgressMonitor monitor) {
 		if (left != null) {
 			try {
@@ -130,13 +92,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if (right != null) {
 			try {
 				right.cacheContents(monitor);
-			} catch (CoreException e) {
-				Activator.logError(e.getMessage(), e);
-			}
-		}
-		if (ancestor != null) {
-			try {
-				ancestor.cacheContents(monitor);
 			} catch (CoreException e) {
 				Activator.logError(e.getMessage(), e);
 			}
@@ -169,37 +124,29 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	}
 
 	private ICompareInput createCompareInput() {
-		return compare(left, right, ancestor);
+		return compare(left, right);
 	}
 
-	private DiffNode compare(ITypedElement actLeft, ITypedElement actRight, ITypedElement actAncestor) {
+	private DiffNode compare(ITypedElement actLeft, ITypedElement actRight) {
 		if (actLeft.getType().equals(ITypedElement.FOLDER_TYPE)) {
 			//			return new MyDiffContainer(null, left,right);
-			DiffNode diffNode = new DiffNode(null, Differencer.CHANGE,
-					actAncestor, actLeft, actRight);
+			DiffNode diffNode = new DiffNode(null,Differencer.CHANGE,null,actLeft,actRight);
 			ITypedElement[] lc = (ITypedElement[])((IStructureComparator)actLeft).getChildren();
 			ITypedElement[] rc = (ITypedElement[])((IStructureComparator)actRight).getChildren();
-			ITypedElement[] ac = null;
-			if (actAncestor != null)
-				ac = (ITypedElement[]) ((IStructureComparator) actAncestor)
-						.getChildren();
 			int li=0;
 			int ri=0;
 			while (li<lc.length && ri<rc.length) {
 				ITypedElement ln = lc[li];
 				ITypedElement rn = rc[ri];
-				ITypedElement an = null;
-				if (ac != null)
-					an = ac[ri];
 				int compareTo = ln.getName().compareTo(rn.getName());
 				// TODO: Git ordering!
 				if (compareTo == 0) {
 					if (!ln.equals(rn))
-						diffNode.add(compare(ln,rn, an));
+						diffNode.add(compare(ln,rn));
 					++li;
 					++ri;
 				} else if (compareTo < 0) {
-					DiffNode childDiffNode = new DiffNode(Differencer.ADDITION, an, ln, null);
+					DiffNode childDiffNode = new DiffNode(Differencer.ADDITION, null, ln, null);
 					diffNode.add(childDiffNode);
 					if (ln.getType().equals(ITypedElement.FOLDER_TYPE)) {
 						ITypedElement[] children = (ITypedElement[])((IStructureComparator)ln).getChildren();
@@ -211,7 +158,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 					}
 					++li;
 				} else {
-					DiffNode childDiffNode = new DiffNode(Differencer.DELETION, an, null, rn);
+					DiffNode childDiffNode = new DiffNode(Differencer.DELETION, null, null, rn);
 					diffNode.add(childDiffNode);
 					if (rn.getType().equals(ITypedElement.FOLDER_TYPE)) {
 						ITypedElement[] children = (ITypedElement[])((IStructureComparator)rn).getChildren();
@@ -226,10 +173,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 			while (li<lc.length) {
 				ITypedElement ln = lc[li];
-				ITypedElement an = null;
-				if (ac != null)
-					an= ac[li];
-				DiffNode childDiffNode = new DiffNode(Differencer.ADDITION, an, ln, null);
+				DiffNode childDiffNode = new DiffNode(Differencer.ADDITION, null, ln, null);
 				diffNode.add(childDiffNode);
 				if (ln.getType().equals(ITypedElement.FOLDER_TYPE)) {
 					ITypedElement[] children = (ITypedElement[])((IStructureComparator)ln).getChildren();
@@ -243,10 +187,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 			while (ri<rc.length) {
 				ITypedElement rn = rc[ri];
-				ITypedElement an = null;
-				if (ac != null)
-					an = ac[ri];
-				DiffNode childDiffNode = new DiffNode(Differencer.DELETION, an, null, rn);
+				DiffNode childDiffNode = new DiffNode(Differencer.DELETION, null, null, rn);
 				diffNode.add(childDiffNode);
 				if (rn.getType().equals(ITypedElement.FOLDER_TYPE)) {
 					ITypedElement[] children = (ITypedElement[])((IStructureComparator)rn).getChildren();
@@ -260,10 +201,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 			return diffNode;
 		} else {
-			if (actAncestor != null)
-				return new DiffNode(Differencer.CONFLICTING, actAncestor, actLeft, actRight);
-			else
-				return new DiffNode(actLeft, actRight);
+			return new DiffNode(actLeft, actRight);
 		}
 	}
 
@@ -306,10 +244,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		} else {
 			cc.setRightLabel(right.getName());
 		}
-		if (getAncestorRevision() != null) {
-			String ancestorLabel = getFileRevisionLabel(getAncestorRevision());
-			cc.setAncestorLabel(ancestorLabel);
-		}
 
 	}
 
@@ -317,15 +251,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		Object fileObject = element.getFileRevision();
 		if (fileObject instanceof LocalFileRevision){
 			return NLS.bind(UIText.GitCompareFileRevisionEditorInput_LocalHistoryLabel, new Object[]{element.getName(), element.getTimestamp()});
-		} else if (fileObject instanceof IndexFileRevision) {
-			if (isEditable(element))
-				return NLS.bind(
-						UIText.GitCompareFileRevisionEditorInput_IndexEditableLabel,
-						element.getName());
-			else
-				return NLS.bind(
-						UIText.GitCompareFileRevisionEditorInput_IndexLabel,
-						element.getName());
 		} else {
 			return NLS.bind(UIText.GitCompareFileRevisionEditorInput_RevisionLabel, new Object[]{element.getName(),
 					CompareUtils.truncatedRevision(element.getContentIdentifier()), element.getAuthor()});
@@ -426,14 +351,14 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		ICompareInput input = createCompareInput();
 		getCompareConfiguration().setLeftEditable(isLeftEditable(input));
 		getCompareConfiguration().setRightEditable(isRightEditable(input));
-		ensureContentsCached(getLeftRevision(), getRightRevision(), getAncestorRevision(), monitor);
+		ensureContentsCached(getLeftRevision(), getRightRevision(), monitor);
 		initLabels(input);
 		setTitle(NLS.bind(UIText.GitCompareFileRevisionEditorInput_CompareInputTitle, new String[] { input.getName() }));
 
 		// The compare editor (Structure Compare) will show the diff filenames
 		// with their project relative path. So, no need to also show directory entries.
 		DiffNode flatDiffNode = new NotifiableDiffNode(null,
-				ancestor != null ? Differencer.CONFLICTING : Differencer.CHANGE, ancestor, left, right);
+				Differencer.CHANGE, null, left, right);
 		flatDiffView(flatDiffNode, (DiffNode) input);
 
 		return flatDiffNode;
@@ -465,85 +390,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			}
 		}
 	}
-
-	@Override
-	public void registerContextMenu(MenuManager menu,
-			final ISelectionProvider selectionProvider) {
-		super.registerContextMenu(menu, selectionProvider);
-		registerOpenWorkspaceVersion(menu, selectionProvider);
-	}
-
-	private void registerOpenWorkspaceVersion(MenuManager menu,
-			final ISelectionProvider selectionProvider) {
-		FileRevisionTypedElement leftRevision = getLeftRevision();
-		if (leftRevision != null) {
-			IFileRevision fileRevision = leftRevision.getFileRevision();
-			if (fileRevision instanceof OpenWorkspaceVersionEnabled) {
-				OpenWorkspaceVersionEnabled workspaceVersion = (OpenWorkspaceVersionEnabled) fileRevision;
-				final File workspaceFile = new File(workspaceVersion
-						.getRepository().getWorkTree(),
-						workspaceVersion.getGitPath());
-				if (workspaceFile.exists())
-					menu.addMenuListener(new IMenuListener() {
-						public void menuAboutToShow(IMenuManager manager) {
-							Action action = new OpenWorkspaceVersionAction(
-									UIText.CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel,
-									selectionProvider, workspaceFile);
-							manager.insertAfter("file", action); //$NON-NLS-1$
-						}
-					});
-			}
-		}
-	}
-
-	private class OpenWorkspaceVersionAction extends Action {
-
-		private final ISelectionProvider selectionProvider;
-
-		private final File workspaceFile;
-
-		private OpenWorkspaceVersionAction(String text,
-				ISelectionProvider selectionProvider, File workspaceFile) {
-			super(text);
-			this.selectionProvider = selectionProvider;
-			this.workspaceFile = workspaceFile;
-		}
-
-		@Override
-		public void run() {
-			int selectedLine = 0;
-			if (selectionProvider.getSelection() instanceof ITextSelection) {
-				ITextSelection selection = (ITextSelection) selectionProvider
-						.getSelection();
-				selectedLine = selection.getStartLine();
-			}
-
-			IWorkbenchWindow window = PlatformUI.getWorkbench()
-					.getActiveWorkbenchWindow();
-			IWorkbenchPage page = window.getActivePage();
-			IEditorPart editor = EgitUiEditorUtils.openEditor(workspaceFile,
-					page);
-			selectLine(editor, selectedLine);
-		}
-
-		private void selectLine(IEditorPart editorPart, int selectedLine) {
-			if (editorPart instanceof ITextEditor) {
-				ITextEditor editor = (ITextEditor) editorPart;
-				IDocument document = editor.getDocumentProvider().getDocument(
-						editor.getEditorInput());
-				if (document != null)
-					try {
-						IRegion line = document
-								.getLineInformation(selectedLine);
-						editor.selectAndReveal(line.getOffset(), 0);
-					} catch (BadLocationException e) {
-						// line seems not to exist in
-						// workspace version
-					}
-			}
-		}
-	}
-
 	/**
 	 * ITypedElement without content. May be used to indicate that a file is not
 	 * available.

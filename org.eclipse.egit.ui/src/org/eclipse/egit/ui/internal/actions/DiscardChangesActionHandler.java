@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Roland Grunberg <rgrunber@redhat.com>
+ * Copyright (C) 2010, Roland Grunberg <rgrunber@redhat.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,14 +8,13 @@
  *
  * Contributors:
  *   Benjamin Muskalla (Tasktop Technologies Inc.) - support for model scoping
- *   François Rey <eclipse.org_@_francois_._rey_._name> - handling of linked resources
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -24,8 +23,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.DiscardChangesOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.operations.GitScopeUtil;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.lib.Repository;
@@ -49,9 +47,9 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 		if (operation == null)
 			return null;
 		String jobname = UIText.DiscardChangesAction_discardChanges;
-		Job job = new WorkspaceJob(jobname) {
+		Job job = new Job(jobname) {
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				try {
 					operation.execute(monitor);
 				} catch (CoreException e) {
@@ -59,13 +57,6 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 							.getMessage(), e);
 				}
 				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.DISCARD_CHANGES))
-					return true;
-				return super.belongsTo(family);
 			}
 		};
 		job.setUser(true);
@@ -76,18 +67,22 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		Repository[] repositories = getRepositories();
-		if (repositories.length == 0)
-			return false;
-		for (Repository repository : repositories) {
-			if (!repository.getRepositoryState().equals(RepositoryState.SAFE))
+		for (IResource res : getSelectedResources()) {
+			IProject[] proj = new IProject[] { res.getProject() };
+			Repository[] repositories = getRepositoriesFor(proj);
+			if (repositories.length == 0)
 				return false;
+			Repository repository = repositories[0];
+			if (!repository.getRepositoryState().equals(RepositoryState.SAFE)) {
+				return false;
+			}
 		}
 		return true;
 	}
 
-	private DiscardChangesOperation createOperation(IWorkbenchPart part,
-			ExecutionEvent event) throws ExecutionException {
+
+	private DiscardChangesOperation createOperation(IWorkbenchPart part, ExecutionEvent event)
+			throws ExecutionException {
 
 		IResource[] selectedResources = gatherResourceToOperateOn(event);
 		String revision;
@@ -99,8 +94,7 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 
 		IResource[] resourcesInScope;
 		try {
-			resourcesInScope = GitScopeUtil.getRelatedChanges(part,
-					selectedResources);
+			resourcesInScope = GitScopeUtil.getRelatedChanges(part, selectedResources);
 		} catch (InterruptedException e) {
 			// ignore, we will not discard the files in case the user
 			// cancels the scope operation
@@ -116,8 +110,7 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 	 * @return set of resources to operate on
 	 * @throws ExecutionException
 	 */
-	protected IResource[] gatherResourceToOperateOn(ExecutionEvent event)
-			throws ExecutionException {
+	protected IResource[] gatherResourceToOperateOn(ExecutionEvent event) throws ExecutionException {
 		return getSelectedResources(event);
 	}
 
@@ -126,8 +119,7 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 	 * @return the revision to use
 	 * @throws ExecutionException
 	 */
-	protected String gatherRevision(ExecutionEvent event)
-			throws ExecutionException {
+	protected String gatherRevision(ExecutionEvent event) throws ExecutionException {
 		return null;
 	}
 }

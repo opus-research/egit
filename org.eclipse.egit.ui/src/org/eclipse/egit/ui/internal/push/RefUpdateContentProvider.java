@@ -10,6 +10,7 @@ package org.eclipse.egit.ui.internal.push;
 
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.ui.model.WorkbenchContentProvider;
 
 /**
@@ -22,7 +23,8 @@ import org.eclipse.ui.model.WorkbenchContentProvider;
  * @see PushOperationResult
  * @see RefUpdateElement
  */
-class RefUpdateContentProvider extends WorkbenchContentProvider {
+class RefUpdateContentProvider extends WorkbenchContentProvider implements
+		IStructuredContentProvider {
 
 	public Object[] getElements(final Object element) {
 		return element instanceof Object[] ? (Object[]) element : new Object[0];

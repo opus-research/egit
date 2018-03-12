@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2000, 2013 IBM Corporation and others.
+ * Copyright (c) 2000, 2008 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,13 +18,15 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IStorage;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
@@ -133,16 +135,15 @@ public class EgitUiEditorUtils {
 	 * @param file
 	 *            File to open an editor for. {@code file} must exist.
 	 * @param page
-	 * @return the created editor or null in case of an error
 	 */
-	public static IEditorPart openEditor(File file, IWorkbenchPage page) {
+	public static void openEditor(File file, IWorkbenchPage page) {
 		if (!file.exists())
-			return null;
-		IFile fileResource = ResourceUtil.getFileForLocation(new Path(file.getAbsolutePath()));
-		if (fileResource != null) {
+			return;
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IFile[] files = root.findFilesForLocationURI(file.toURI());
+		if (files.length > 0) {
 			try {
-				return IDE.openEditor(page, fileResource,
-						OpenStrategy.activateOnOpen());
+				IDE.openEditor(page, files[0], OpenStrategy.activateOnOpen());
 			} catch (PartInitException e) {
 				Activator.handleError(UIText.EgitUiEditorUtils_openFailed, e,
 						true);
@@ -151,14 +152,13 @@ public class EgitUiEditorUtils {
 			IFileStore store = EFS.getLocalFileSystem().getStore(
 					new Path(file.getAbsolutePath()));
 			try {
-				return IDE.openEditor(page, new FileStoreEditorInput(store),
+				IDE.openEditor(page, new FileStoreEditorInput(store),
 						EditorsUI.DEFAULT_TEXT_EDITOR_ID);
 			} catch (PartInitException e) {
 				Activator.handleError(UIText.EgitUiEditorUtils_openFailed, e,
 						true);
 			}
 		}
-		return null;
 	}
 
 	private static String getEditorId(FileRevisionEditorInput editorInput) {
