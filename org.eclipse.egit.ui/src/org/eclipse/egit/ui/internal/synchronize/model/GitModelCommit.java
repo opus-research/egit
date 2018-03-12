@@ -61,6 +61,9 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+
 		if (obj instanceof GitModelCommit) {
 			GitModelCommit objCommit = (GitModelCommit) obj;
 
@@ -94,10 +97,10 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	protected GitModelObject[] getChildrenImpl() {
-		TreeWalk tw = createTreeWalk();
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
 		try {
+			TreeWalk tw = createTreeWalk();
 			RevTree actualTree = remoteCommit.getTree();
 
 			int actualNth = tw.addTree(actualTree);
