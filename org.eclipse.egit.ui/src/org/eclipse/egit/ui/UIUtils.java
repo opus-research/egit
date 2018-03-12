@@ -25,7 +25,10 @@ import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.variables.IStringVariableManager;
+import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -669,6 +672,23 @@ public class UIUtils {
 		if (section == null)
 			section = settings.addNewSection(sectionName);
 		return section;
+	}
+
+	/**
+	 * @return The default repository directory as configured in the
+	 *         preferences, with variables substituted. An empty string if there
+	 *         was an error during substitution.
+	 */
+	public static String getDefaultRepositoryDir() {
+		String dir = Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.DEFAULT_REPO_DIR);
+		IStringVariableManager manager = VariablesPlugin.getDefault()
+				.getStringVariableManager();
+		try {
+			return manager.performStringSubstitution(dir);
+		} catch (CoreException e) {
+			return ""; //$NON-NLS-1$
+		}
 	}
 
 	/**
