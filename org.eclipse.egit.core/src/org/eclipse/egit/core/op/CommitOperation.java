@@ -37,17 +37,17 @@ import org.eclipse.jgit.api.NoHeadException;
 import org.eclipse.jgit.api.NoMessageException;
 import org.eclipse.jgit.api.WrongRepositoryStateException;
 import org.eclipse.jgit.errors.UnmergedPathException;
-import org.eclipse.jgit.lib.Commit;
+import org.eclipse.jgit.lib.CommitBuilder;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
-import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectWriter;
+import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.TreeEntry;
+import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.osgi.util.NLS;
@@ -318,7 +318,7 @@ public class CommitOperation implements IEGitOperation {
 				if (changeId != null)
 					commitMessage = commitMessage.replaceAll("\nChange-Id: I0000000000000000000000000000000000000000\n", "\nChange-Id: I" + changeId.getName() + "\n");  //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
 			}
-			Commit commit = new Commit();
+			CommitBuilder commit = new CommitBuilder();
 			commit.setTreeId(tree.getTreeId());
 			commit.setParentIds(parentIds);
 			commit.setMessage(commitMessage);
@@ -328,8 +328,13 @@ public class CommitOperation implements IEGitOperation {
 			commit.setCommitter(new PersonIdent(committerIdent, commitDate,
 					timeZone));
 
-			ObjectWriter writer = new ObjectWriter(repo);
-			commit.setCommitId(writer.writeCommit(commit));
+			ObjectInserter inserter = repo.newObjectInserter();
+			try {
+				inserter.insert(commit);
+				inserter.flush();
+			} finally {
+				inserter.release();
+			}
 
 			final RefUpdate ru = repo.updateRef(Constants.HEAD);
 			ru.setNewObjectId(commit.getCommitId());
@@ -366,8 +371,14 @@ public class CommitOperation implements IEGitOperation {
 						}
 					}
 				}
-				ObjectWriter writer = new ObjectWriter(tree.getRepository());
-				tree.setId(writer.writeTree(tree));
+
+				ObjectInserter inserter = tree.getRepository().newObjectInserter();
+				try {
+					tree.setId(inserter.insert(Constants.OBJ_TREE, tree.format()));
+					inserter.flush();
+				} finally {
+					inserter.release();
+				}
 			} catch (IOException e) {
 				throw new TeamException(
 						CoreText.CommitOperation_errorWritingTrees, e);

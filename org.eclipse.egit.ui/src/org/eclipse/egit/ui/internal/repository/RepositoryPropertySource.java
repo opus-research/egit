@@ -57,17 +57,15 @@ import org.eclipse.ui.views.properties.PropertySheetPage;
  */
 public class RepositoryPropertySource implements IPropertySource {
 
-	static final String CHANGEMODEACTIONID = "ChangeMode"; //$NON-NLS-1$
-
-	static final String SINGLEVALUEACTIONID = "SingleValueToggle"; //$NON-NLS-1$
-
-	static final String EDITACTIONID = "Edit"; //$NON-NLS-1$
-
 	private static final String USER_ID_PREFIX = "user"; //$NON-NLS-1$
 
 	private static final String REPO_ID_PREFIX = "repo"; //$NON-NLS-1$
 
 	private static final String EFFECTIVE_ID_PREFIX = "effe"; //$NON-NLS-1$
+
+	private static final String CHANGEMODEACTIONID = "ChangeMode"; //$NON-NLS-1$
+
+	private static final String SINGLEVALUEACTIONID = "SingleValueToggle"; //$NON-NLS-1$
 
 	private final PropertySheetPage myPage;
 
@@ -179,7 +177,7 @@ public class RepositoryPropertySource implements IPropertySource {
 					UIIcons.EDITCONFIG) {
 				@Override
 				public String getId() {
-					return EDITACTIONID;
+					return "Edit"; //$NON-NLS-1$
 				}
 
 				@Override
@@ -446,6 +444,8 @@ public class RepositoryPropertySource implements IPropertySource {
 
 		private final String myTitle;
 
+		ConfigurationEditorComponent editor;
+
 		public EditDialog(Shell shell, FileBasedConfig config, String title) {
 			super(shell);
 			myConfig = config;
@@ -458,13 +458,19 @@ public class RepositoryPropertySource implements IPropertySource {
 			Composite main = (Composite) super.createDialogArea(parent);
 			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
 					true).applyTo(main);
-			Control result = new ConfigurationEditorComponent(main, myConfig,
-					true) {
+			editor = new ConfigurationEditorComponent(main, myConfig, true) {
 				@Override
 				protected void setErrorMessage(String message) {
 					EditDialog.this.setErrorMessage(message);
 				}
-			}.createContents();
+
+				@Override
+				protected void setDirty(boolean dirty) {
+					getButton(IDialogConstants.OK_ID).setEnabled(dirty);
+				}
+			};
+
+			Control result = editor.createContents();
 			applyDialogFont(main);
 			return result;
 		}
@@ -482,13 +488,17 @@ public class RepositoryPropertySource implements IPropertySource {
 			super.create();
 			setTitle(myTitle);
 			setMessage(UIText.RepositoryPropertySource_EditorMessage);
+			getButton(IDialogConstants.OK_ID).setEnabled(false);
 		}
 
 		@Override
-		protected void createButtonsForButtonBar(Composite parent) {
-			// OK button only
-			createButton(parent, IDialogConstants.OK_ID,
-					IDialogConstants.OK_LABEL, true);
+		protected void okPressed() {
+			try {
+				editor.save();
+				super.okPressed();
+			} catch (IOException e) {
+				Activator.handleError(e.getMessage(), e, true);
+			}
 		}
 	}
 }
