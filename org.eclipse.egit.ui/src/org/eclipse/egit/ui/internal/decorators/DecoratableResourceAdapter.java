@@ -83,18 +83,12 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		}
 	}
 
-	@Override
-	public String toString() {
-		return "DecoratableResourceAdapter[" + getName() + (isTracked() ? ", tracked" : "") + (isIgnored() ? ", ignored" : "") + (isDirty() ? ", dirty" : "") + (hasConflicts() ? ",conflicts" : "") + ", staged=" + staged + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$//$NON-NLS-7$//$NON-NLS-8$//$NON-NLS-9$//$NON-NLS-10$//$NON-NLS-11$
-	}
-
 	private void extractResourceProperties() {
 		String repoRelativePath = makeRepoRelative(resource);
 
 		// ignored
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
-		ignored = ignoredFiles.contains(repoRelativePath)
-				|| containsPrefixPath(ignoredFiles, repoRelativePath);
+		ignored = containsPrefixPath(ignoredFiles, repoRelativePath);
 		Set<String> untracked = indexDiffData.getUntracked();
 		tracked = !untracked.contains(repoRelativePath) && !ignored;
 
@@ -145,11 +139,9 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		Set<String> conflicting = indexDiffData.getConflicting();
 		conflicts = containsPrefix(conflicting, repoRelativePath);
 
-		// locally modified / untracked
+		// locally modified
 		Set<String> modified = indexDiffData.getModified();
-		Set<String> untracked = indexDiffData.getUntracked();
-		dirty = containsPrefix(modified, repoRelativePath)
-				|| containsPrefix(untracked, repoRelativePath);
+		dirty = containsPrefix(modified, repoRelativePath);
 	}
 
 	private String makeRepoRelative(IResource res) {
@@ -170,15 +162,9 @@ class DecoratableResourceAdapter extends DecoratableResource {
 	}
 
 	private boolean containsPrefixPath(Set<String> collection, String path) {
-		for (String entry : collection) {
-			String entryPath;
-			if (entry.endsWith("/")) //$NON-NLS-1$
-				entryPath = entry;
-			else
-				entryPath = entry + "/"; //$NON-NLS-1$
-			if (path.startsWith(entryPath))
+		for (String entry : collection)
+			if (path.startsWith(entry))
 				return true;
-		}
 		return false;
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011-2012, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
+ * Copyright (C) 2011, Tomasz Zarna <Tomasz.Zarna@pl.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,18 +8,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.patch;
 
-import static org.eclipse.jgit.lib.Repository.stripWorkDir;
-
-import java.util.Collection;
-import java.util.Set;
-
-import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.history.GitCreatePatchWizard;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Shell;
@@ -36,8 +30,6 @@ public class PatchOperationUI {
 
 	private RevCommit commit;
 
-	private Collection<? extends IResource> resources;
-
 	private PatchOperationUI(IWorkbenchPart part, Repository repo) {
 		this.part = part;
 		this.repository = repo;
@@ -47,12 +39,6 @@ public class PatchOperationUI {
 			RevCommit commit) {
 		this(part, repo);
 		this.commit = commit;
-	}
-
-	private PatchOperationUI(IWorkbenchPart part, Repository repo,
-			Collection<? extends IResource> resources) {
-		this(part, repo);
-		this.resources = resources;
 	}
 
 	/**
@@ -79,13 +65,11 @@ public class PatchOperationUI {
 	 *            the part
 	 * @param repo
 	 *            the repository
-	 * @param resources
-	 *            collection of {@link IResource}s
 	 * @return the {@link PatchOperationUI}
 	 */
 	public static PatchOperationUI createPatch(IWorkbenchPart part,
-			Repository repo, Collection<? extends IResource> resources) {
-		return new PatchOperationUI(null, repo, resources);
+			Repository repo) {
+		return new PatchOperationUI(null, repo);
 	}
 
 	/**
@@ -93,7 +77,7 @@ public class PatchOperationUI {
 	 */
 	public void start() {
 		if (commit != null) {
-			GitCreatePatchWizard.run(getShell(), commit, repository, null);
+			GitCreatePatchWizard.run(getShell(), commit, repository);
 			return;
 		} else
 
@@ -103,50 +87,26 @@ public class PatchOperationUI {
 					UIText.GitCreatePatchAction_workingTreeClean);
 			return;
 		}
-		GitCreatePatchWizard.run(getShell(), null, repository, resources);
+		GitCreatePatchWizard.run(getShell(), null, repository);
 	}
 
 	private boolean isWorkingTreeClean() {
-		IndexDiffCache diffCache = org.eclipse.egit.core.Activator.getDefault()
-				.getIndexDiffCache();
-		if (diffCache != null) {
-			IndexDiffData diffData = diffCache.getIndexDiffCacheEntry(
-					repository).getIndexDiff();
-			if (diffData != null) {
-				Set<String> modified = diffData.getModified();
-				Set<String> untracked = diffData.getUntracked();
-				Set<String> missing = diffData.getMissing();
-				for (IResource resource : resources) {
-					String repoRelativePath = makeRepoRelative(resource);
-					if (containsPrefix(modified, repoRelativePath))
-						return false;
-					if (containsPrefix(untracked, repoRelativePath))
-						return false;
-					if (containsPrefix(missing, repoRelativePath))
-						return false;
-				}
-			}
+		Git git = new Git(repository);
+		try {
+			Status status = git.status().call();
+			return status.getModified().isEmpty()
+					&& status.getUntracked().isEmpty()
+					&& status.getMissing().isEmpty();
+		} catch (Exception e) {
+			MessageDialog.openError(getShell(),
+					UIText.GitCreatePatchAction_cannotCreatePatch, e
+							.getMessage() == null ? e.getMessage()
+							: UIText.GitCreatePatchWizard_InternalError);
 		}
 		return true;
 	}
 
-	private String makeRepoRelative(IResource res) {
-		return stripWorkDir(repository.getWorkTree(), res.getLocation()
-				.toFile());
-	}
-
-	private boolean containsPrefix(Set<String> collection, String prefix) {
-		for (String path : collection)
-			if (path.startsWith(prefix))
-				return true;
-		return false;
-	}
-
 	private Shell getShell() {
-		return getShell(part);
-	}
-
-	private static Shell getShell(IWorkbenchPart part) {
 		if (part != null)
 			return part.getSite().getShell();
 		return PlatformUI.getWorkbench().getDisplay().getActiveShell();

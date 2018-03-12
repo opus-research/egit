@@ -27,7 +27,6 @@ import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jgit.lib.Constants;
@@ -88,9 +87,11 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 			if (structuredSelection.size() > 0) {
 				if (all) {
 					// check that all the repositories have a valid head
-					for (Object element : structuredSelection.toArray())
-						if (!checkRepositoryHasHead(element))
+					for (Object element : structuredSelection.toArray()) {
+						if (!checkRepositoryHasHead(element)) {
 							return false;
+						}
+					}
 					return true;
 				}
 
@@ -164,14 +165,16 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 			}
 			if (!(object instanceof WorkingDirNode)) {
 				String path;
-				if (object instanceof FolderNode)
+				if (object instanceof FolderNode) {
 					path = ((FolderNode) object).getObject().getAbsolutePath();
-				else if (object instanceof FileNode)
-					path = ((FileNode) object).getObject()
-							.getAbsolutePath();
-				else {
-					setBaseEnabled(false);
-					return;
+				} else {
+					if (object instanceof FileNode) {
+						path = ((FileNode) object).getObject()
+								.getAbsolutePath();
+					} else {
+						setBaseEnabled(false);
+						return;
+					}
 				}
 				if (path.startsWith(repository.getDirectory().getAbsolutePath())) {
 					setBaseEnabled(false);
@@ -181,20 +184,6 @@ abstract class RepositoriesViewCommandHandler<T> extends AbstractHandler {
 		}
 
 		setBaseEnabled(true);
-	}
-
-	/**
-	 * Retrieve the current selection. The global selection is used if the menu
-	 * selection is not available.
-	 *
-	 * @param ctx
-	 * @return the selection
-	 */
-	protected Object getSelection(IEvaluationContext ctx) {
-		Object selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-		if (selection == null || !(selection instanceof ISelection))
-			selection = ctx.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
-		return selection;
 	}
 
 }
