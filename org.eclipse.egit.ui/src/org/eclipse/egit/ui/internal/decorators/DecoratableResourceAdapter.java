@@ -42,7 +42,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -207,17 +206,10 @@ class DecoratableResourceAdapter implements IDecoratableResource {
 			assumeValid = true;
 		} else {
 			if (workspaceIterator != null
-					&& workspaceIterator.isModified(indexEntry, true, config_filemode(),
+					&& workspaceIterator.isModified(indexEntry, true, true,
 							repository.getFS()))
 				dirty = true;
 		}
-	}
-
-	private boolean config_filemode() {
-		StoredConfig config = repository.getConfig();
-		Boolean filemode = Boolean.valueOf(config.getBoolean("core", null, //$NON-NLS-1$
-				"filemode", true)); //$NON-NLS-1$
-		return filemode.booleanValue();
 	}
 
 	private class RecursiveStateFilter extends TreeFilter {
