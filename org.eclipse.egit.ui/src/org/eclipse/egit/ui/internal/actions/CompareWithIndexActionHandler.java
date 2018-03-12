@@ -78,7 +78,7 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		return selectionMapsToSingleRepository();
+		return getRepository() != null;
 	}
 
 	private ITypedElement getBaseTypeElement(final IPath baseLocation) {
