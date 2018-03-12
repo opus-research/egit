@@ -166,10 +166,10 @@ public class TestUtils {
 	 */
 	public IProject createProjectInLocalFileSystem(File parentFile,
 			String projectName) throws Exception {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot()
+		IProject firstProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
-		if (project.exists()) {
-			project.delete(true, null);
+		if (firstProject.exists()) {
+			firstProject.delete(true, null);
 		}
 		File testFile = new File(parentFile, projectName);
 		if (testFile.exists())
@@ -178,8 +178,8 @@ public class TestUtils {
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
 				.newProjectDescription(projectName);
 		desc.setLocation(new Path(new File(parentFile, projectName).getPath()));
-		project.create(desc, null);
-		project.open(null);
-		return project;
+		firstProject.create(desc, null);
+		firstProject.open(null);
+		return firstProject;
 	}
 }
