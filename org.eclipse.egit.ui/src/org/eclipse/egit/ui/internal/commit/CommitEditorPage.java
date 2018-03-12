@@ -26,8 +26,9 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.history.CommitFileDiffViewer;
 import org.eclipse.egit.ui.internal.history.FileDiff;
+import org.eclipse.egit.ui.internal.history.FileDiffLabelProvider;
+import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -405,12 +406,15 @@ public class CommitEditorPage extends FormPage {
 		Section files = createSection(parent, toolkit, span);
 		Composite filesArea = createSectionClient(files, toolkit);
 
-		CommitFileDiffViewer viewer = new CommitFileDiffViewer(filesArea,
-				getSite());
+		TableViewer viewer = new TableViewer(toolkit.createTable(filesArea,
+				SWT.V_SCROLL | SWT.H_SCROLL));
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 80)
-				.applyTo(viewer.getTable().getParent());
+				.applyTo(viewer.getControl());
+		viewer.setLabelProvider(new FileDiffLabelProvider());
 		viewer.setContentProvider(ArrayContentProvider.getInstance());
-		viewer.setTreeWalk(getCommit().getRepository(), null);
+		MenuManager manager = new MenuManager();
+		viewer.getTable().setMenu(manager.createContextMenu(viewer.getTable()));
+		getSite().registerContextMenu(manager, viewer);
 
 		FileDiff[] diffs = getCommit().getDiffs();
 		viewer.setInput(diffs);

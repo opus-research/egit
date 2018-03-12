@@ -88,9 +88,6 @@ public class UIText extends NLS {
 	public static String AddToIndexAction_addingFiles;
 
 	/** */
-	public static String AddToIndexCommand_addingFilesFailed;
-
-	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
@@ -1313,9 +1310,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ResourceHistory_ShowTagSequence;
-
-	/** */
-	public static String ResourceHistory_toggleRelativeDate;
 
 	/** */
 	public static String ResourceHistory_toggleCommentWrap;
@@ -3524,9 +3518,6 @@ public class UIText extends NLS {
 	public static String CommitSearchPage_CaseSensitive;
 
 	/** */
-	public static String CommitSearchPage_CheckAll;
-
-	/** */
 	public static String CommitSearchPage_CommitId;
 
 	/** */
@@ -3558,9 +3549,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitSearchPage_TreeId;
-
-	/** */
-	public static String CommitSearchPage_UncheckAll;
 
 	/** */
 	public static String CommitSearchQuery_Label;
@@ -3654,9 +3642,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Commit;
-
-	/** */
-	public static String SynchronizeWithMenu_custom;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
