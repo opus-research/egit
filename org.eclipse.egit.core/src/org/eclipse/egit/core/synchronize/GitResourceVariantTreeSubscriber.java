@@ -27,7 +27,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -108,7 +107,8 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject()) && shouldBeIncluded(res);
+				&& gsds.contains(res.getProject())
+				&& gsds.shouldBeIncluded(res);
 	}
 
 	/**
@@ -119,7 +119,7 @@ public class GitResourceVariantTreeSubscriber extends
 	 */
 	@Override
 	public IResource[] members(IResource res) throws TeamException {
-		if(res.getType() == IResource.FILE || !shouldBeIncluded(res))
+		if (res.getType() == IResource.FILE || !gsds.shouldBeIncluded(res))
 			return new IResource[0];
 
 		GitSynchronizeData gsd = gsds.getData(res.getProject());
@@ -160,7 +160,8 @@ public class GitResourceVariantTreeSubscriber extends
 			// check to see if there is a full refresh
 			if (resource.getType() == IResource.ROOT) {
 				// refresh entire cache
-				cache = GitSyncCache.getAllData(gsds, monitor);
+				GitSyncCache newCache = GitSyncCache.getAllData(gsds, monitor);
+				cache.merge(newCache);
 				super.refresh(resources, depth, monitor);
 				return;
 			}
@@ -195,7 +196,9 @@ public class GitResourceVariantTreeSubscriber extends
 		// scan only the repositories that were affected
 		if (!updateRequests.isEmpty()) {
 			// refresh cache
-			GitSyncCache.mergeAllDataIntoCache(updateRequests, monitor, cache);
+			GitSyncCache newCache = GitSyncCache.getAllData(updateRequests,
+					monitor);
+			cache.merge(newCache);
 		}
 
 		super.refresh(resources, depth, monitor);
@@ -530,27 +533,6 @@ public class GitResourceVariantTreeSubscriber extends
 
 		info.init();
 		return info;
-	}
-
-	private boolean shouldBeIncluded(IResource res) {
-		if (res == null || res.isLinked(IResource.CHECK_ANCESTORS))
-			return false;
-		final IProject proj = res.getProject();
-		if (proj == null)
-			return false;
-		final GitSynchronizeData d = gsds.getData(proj);
-		if (d == null)
-			return false;
-		final Set<IContainer> includedPaths = d.getIncludedPaths();
-		if (includedPaths == null)
-			return true;
-
-		IPath path = res.getLocation();
-		for (IContainer container : includedPaths)
-			if (container.getLocation().isPrefixOf(path))
-				return true;
-
-		return false;
 	}
 
 }

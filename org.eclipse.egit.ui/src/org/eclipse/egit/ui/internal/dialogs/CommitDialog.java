@@ -35,9 +35,9 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
@@ -108,6 +108,8 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
@@ -247,11 +249,11 @@ public class CommitDialog extends TitleAreaDialog {
 
 		@Override
 		public void widgetSelected(SelectionEvent e) {
-			TreeColumn column = (TreeColumn) e.widget;
-			Tree tree = column.getParent();
+			TableColumn column = (TableColumn) e.widget;
+			Table table = column.getParent();
 
-			if (column == tree.getSortColumn()) {
-				int currentDirection = tree.getSortDirection();
+			if (column == table.getSortColumn()) {
+				int currentDirection = table.getSortDirection();
 				switch (currentDirection) {
 				case SWT.NONE:
 					reversed = Boolean.FALSE;
@@ -269,20 +271,20 @@ public class CommitDialog extends TitleAreaDialog {
 				reversed = Boolean.FALSE;
 
 			if (reversed == null) {
-				tree.setSortColumn(null);
-				tree.setSortDirection(SWT.NONE);
+				table.setSortColumn(null);
+				table.setSortDirection(SWT.NONE);
 				filesViewer.setComparator(null);
 				return;
 			}
-			tree.setSortColumn(column);
+			table.setSortColumn(column);
 
 			Comparator<CommitItem> comparator;
 			if (reversed.booleanValue()) {
 				comparator = order.descending();
-				tree.setSortDirection(SWT.DOWN);
+				table.setSortDirection(SWT.DOWN);
 			} else {
 				comparator = order;
-				tree.setSortDirection(SWT.UP);
+				table.setSortDirection(SWT.UP);
 			}
 
 			filesViewer.setComparator(new CommitViewerComparator(comparator));
@@ -326,6 +328,9 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private static final String SHOW_UNTRACKED_PREF = "CommitDialog.showUntracked"; //$NON-NLS-1$
+
+	private static final String DIALOG_SETTINGS_SECTION_NAME = Activator
+			.getPluginId() + ".COMMIT_DIALOG_SECTION"; //$NON-NLS-1$
 
 	/**
 	 * A constant used for the 'commit and push button' button
@@ -583,6 +588,16 @@ public class CommitDialog extends TitleAreaDialog {
 		Control help = super.createHelpControl(parent);
 		toolkit.adapt(help, false, false);
 		return help;
+	}
+
+	@Override
+	protected IDialogSettings getDialogBoundsSettings() {
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+		IDialogSettings section = settings
+				.getSection(DIALOG_SETTINGS_SECTION_NAME);
+		if (section == null)
+			section = settings.addNewSection(DIALOG_SETTINGS_SECTION_NAME);
+		return section;
 	}
 
 	/**
@@ -981,7 +996,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 		commitMessageComponent = new CommitMessageComponent(repository,
 				listener);
-		commitMessageComponent.enableListers(false);
+		commitMessageComponent.enableListeners(false);
 		commitMessageComponent.setDefaults();
 		commitMessageComponent.attachControls(commitText, authorText,
 				committerText);
@@ -1014,7 +1029,7 @@ public class CommitDialog extends TitleAreaDialog {
 		});
 
 		commitMessageComponent.updateUI();
-		commitMessageComponent.enableListers(true);
+		commitMessageComponent.enableListeners(true);
 
 		return messageAndPersonArea;
 	}
