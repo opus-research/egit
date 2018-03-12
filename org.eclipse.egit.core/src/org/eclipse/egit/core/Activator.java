@@ -9,6 +9,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core;
 
+import java.util.Hashtable;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Plugin;
@@ -16,14 +18,14 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.osgi.service.debug.DebugOptions;
+import org.eclipse.osgi.service.debug.DebugOptionsListener;
 import org.osgi.framework.BundleContext;
-import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * The plugin class for the org.eclipse.egit.core plugin. This
  * is a singleton class.
  */
-public class Activator extends Plugin {
+public class Activator extends Plugin implements DebugOptionsListener {
 	private static Activator plugin;
 
 	/**
@@ -71,17 +73,12 @@ public class Activator extends Plugin {
 	}
 
 	public void start(final BundleContext context) throws Exception {
-
 		super.start(context);
-
-		if (isDebugging()) {
-			ServiceTracker debugTracker = new ServiceTracker(context,
-					DebugOptions.class.getName(), null);
-			debugTracker.open();
-
-			DebugOptions opts = (DebugOptions) debugTracker.getService();
-			GitTraceLocation.initializeFromOptions(opts, true);
-		}
+        // register this as DebugOptions listener
+		Hashtable<String, String> props = new Hashtable<String, String>(4);
+		// we want to get notified about our own DebugOptions
+		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle().getSymbolicName());
+		context.registerService(DebugOptionsListener.class.getName(), this, props);
 
 		GitProjectData.reconfigureWindowCache();
 		GitProjectData.attachToWorkspace(true);
@@ -93,4 +90,7 @@ public class Activator extends Plugin {
 		plugin = null;
 	}
 
+	public void optionsChanged(DebugOptions options) {
+		GitTraceLocation.initializeFromOptions(options, isDebugging());
+	}
 }
