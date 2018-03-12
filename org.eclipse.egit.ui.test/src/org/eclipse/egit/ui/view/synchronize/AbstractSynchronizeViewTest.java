@@ -257,20 +257,6 @@ public abstract class AbstractSynchronizeViewTest extends
 		return getCompareEditor(projNode, fileName);
 	}
 
-	protected SWTBotEditor getCompareEditorForNonWorkspaceFileInGitChangeSet(
-			final String fileName) {
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-
-		SWTBotTreeItem rootTree = waitForNodeWithText(syncViewTree,
-					GitModelWorkingTree_workingTree);
-		waitForNodeWithText(rootTree, fileName).doubleClick();
-
-		SWTBotEditor editor = bot
-				.editor(new ComapreEditorTitleMatcher(fileName));
-
-		return editor;
-	}
-
 	protected SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {
 		waitUntilTreeHasNodeContainsText(bot, tree, name, 10000);
 		return getTreeItemContainingText(tree.getAllItems(), name).expand();
@@ -324,8 +310,8 @@ public abstract class AbstractSynchronizeViewTest extends
 		untracked.addAll(Arrays.asList(commitables));
 
 		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
-				TestUtil.TESTCOMMITTER, "Add .gitignore file");
+				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
+				"Add .gitignore file");
 		op.execute(null);
 	}
 
@@ -340,12 +326,11 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	private SWTBotEditor getCompareEditor(SWTBotTreeItem projectNode,
-			final String fileName) {
+			String fileName) {
 		SWTBotTreeItem folderNode = waitForNodeWithText(projectNode, FOLDER);
 		waitForNodeWithText(folderNode, fileName).doubleClick();
 
-		SWTBotEditor editor = bot
-				.editor(new ComapreEditorTitleMatcher(fileName));
+		SWTBotEditor editor = bot.editorByTitle(fileName);
 		// Ensure that both StyledText widgets are enabled
 		SWTBotStyledText styledText = editor.toTextEditor().getStyledText();
 		bot.waitUntil(Conditions.widgetIsEnabled(styledText));
