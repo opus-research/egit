@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mock;
 import java.io.File;
 
 import org.eclipse.egit.ui.Activator;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class GitModelCommitTest extends GitModelTestCase {
@@ -134,8 +134,7 @@ public class GitModelCommitTest extends GitModelTestCase {
 		assertFalse(actual);
 	}
 
-	@Before
-	public void setupEnvironment() throws Exception {
+	@BeforeClass public static void setupEnvironment() throws Exception {
 		leftRepoFile = createProjectAndCommitToRepository();
 
 		Activator.getDefault().getRepositoryUtil()

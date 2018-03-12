@@ -32,6 +32,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.Activator;
@@ -68,6 +69,7 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE.SharedImages;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,14 +78,14 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class BranchAndResetActionTest extends LocalRepositoryTestCase {
+	private static File repositoryFile;
 
 	private static String LOCAL_BRANCHES;
+
 	private static String TAGS;
 
-	private File repositoryFile;
-
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		Repository repo = lookupRepository(repositoryFile);
 
@@ -103,6 +105,16 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 				null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
 				repo));
+		waitInUI();
+	}
+
+	@Before
+	public void prepare() throws Exception {
+		Repository repo = lookupRepository(repositoryFile);
+		if (!repo.getBranch().equals("master")) {
+			BranchOperation bop = new BranchOperation(repo, "refs/heads/master");
+			bop.execute(null);
+		}
 	}
 
 	@Test
@@ -326,8 +338,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 			ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
 		SWTBotShell dialog = bot
 				.shell(UIText.CreateBranchWizard_NewBranchTitle);
-		return dialog;
-	}
+			return dialog;
+		}
 
 	private SWTBotShell openRenameBranchDialog() {
 		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();

@@ -40,7 +40,7 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,18 +49,16 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	private File childRepositoryFile;
+	private static File childRepositoryFile;
 
-	private String REMOTE_BRANCHES;
+	private static String REMOTE_BRANCHES;
 
-	private String LOCAL_BRANCHES;
+	private static String LOCAL_BRANCHES;
 
-	private String initialCommitId;
-
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		childRepositoryFile = createChildRepository(repositoryFile);
 		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
@@ -70,16 +68,25 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 				new RepositoryNode(null, repo), repo));
 		LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
 				null, repo), repo));
+	}
+
+	private String prepare() throws Exception {
+		deleteAllProjects();
+		shareProjects(repositoryFile);
+		Repository repo = lookupRepository(repositoryFile);
+		RevWalk rw = new RevWalk(repo);
 		ObjectId id = repo.resolve(repo.getFullBranch());
-		initialCommitId = id.name();
+		String commitId = rw.parseCommit(id).name();
+		touchAndSubmit(null);
+		deleteAllProjects();
+		shareProjects(childRepositoryFile);
+		waitInUI();
+		return commitId;
 	}
 
 	@Test
 	public void testFetchFromOriginThenMerge() throws Exception {
-		touchAndSubmit(null);
-		deleteAllProjects();
-		shareProjects(childRepositoryFile);
-
+		String previousCommit = prepare();
 		String oldContent = getTestFileContent();
 		fetch();
 
@@ -91,7 +98,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		SWTBotTree tree = confirm.bot().tree();
 		String branch = tree.getAllItems()[0].getText();
 		assertTrue("Wrong result",
-				branch.contains(initialCommitId.substring(0, 7)));
+				branch.contains(previousCommit.substring(0, 7)));
 
 		confirm.close();
 
@@ -123,6 +130,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testMergeSquash() throws Exception {
+		prepare();
 		String oldContent = getTestFileContent();
 		RevCommit oldCommit = getCommitForHead();
 		createNewBranch("newBranch", true);

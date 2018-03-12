@@ -1,12 +1,13 @@
+package org.eclipse.egit.ui.test.team.actions;
+
 /*******************************************************************************
- * Copyright (C) 2011, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.ui.test.team.actions;
 
 import static org.junit.Assert.assertEquals;
 
@@ -28,7 +29,7 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,12 +38,12 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class CommitNonWSChangesTest extends LocalRepositoryTestCase {
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	private Repository repository;
+	private static Repository repository;
 
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		Activator.getDefault().getRepositoryUtil()
 				.addConfiguredRepository(repositoryFile);

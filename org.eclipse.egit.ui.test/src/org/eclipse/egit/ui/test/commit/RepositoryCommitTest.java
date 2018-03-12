@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2013 GitHub Inc and others.
+ *  Copyright (c) 2011 GitHub Inc.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -26,7 +26,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -34,12 +34,12 @@ import org.junit.Test;
  */
 public class RepositoryCommitTest extends LocalRepositoryTestCase {
 
-	private Repository repository;
+	private static Repository repository;
 
-	private RevCommit commit;
+	private static RevCommit commit;
 
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
 		File repoFile = createProjectAndCommitToRepository();
 		assertNotNull(repoFile);
 		repository = Activator.getDefault().getRepositoryCache()
@@ -81,7 +81,6 @@ public class RepositoryCommitTest extends LocalRepositoryTestCase {
 		assertEquals(commit, repoCommit.getAdapter(RevCommit.class));
 	}
 
-	@Test
 	public void testGetters() {
 		RepositoryCommit repoCommit = new RepositoryCommit(repository, commit);
 		assertEquals(repository, repoCommit.getRepository());
