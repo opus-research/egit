@@ -141,10 +141,10 @@ public class PushOperationUI {
 							.findRemoteRefUpdatesFor(pushRefSpecs));
 				} catch (NotSupportedException e) {
 					throw new CoreException(Activator.createErrorStatus(e
-							.getMessage(), e));
+							.getCause().getMessage(), e.getCause()));
 				} catch (IOException e) {
-					throw new CoreException(Activator.createErrorStatus(e.
-							getMessage(), e));
+					throw new CoreException(Activator.createErrorStatus(e
+							.getCause().getMessage(), e.getCause()));
 				}
 			}
 		}
