@@ -1087,13 +1087,7 @@ public class UIText extends NLS {
 	public static String PullResultDialog_FetchResultGroupHeader;
 
 	/** */
-	public static String PullResultDialog_MergeAlreadyUpToDateMessage;
-
-	/** */
 	public static String PullResultDialog_MergeResultGroupHeader;
-
-	/** */
-	public static String PullResultDialog_NothingToFetchFromLocal;
 
 	/** */
 	public static String PushAction_wrongURIDescription;

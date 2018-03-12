@@ -88,9 +88,15 @@ public class DeleteBranchCommand extends
 
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final List<RefNode> nodes = getSelectedNodes(event);
-		final List<RefNode> unmergedNodes = new ArrayList<RefNode>();
+		final List<Ref> refs = new ArrayList<Ref>();
+		for (RefNode refNode : nodes) {
+			refs.add(refNode.getObject());
+		}
 
-		final Shell shell = getShell(event);
+		Shell shell = getShell(event);
+		MessageDialog messageDialog = new BranchMessageDialog(shell, nodes);
+		if (messageDialog.open() != Window.OK)
+			return null;
 
 		try {
 			new ProgressMonitorDialog(shell).run(false, false,
@@ -100,8 +106,8 @@ public class DeleteBranchCommand extends
 								InterruptedException {
 							try {
 								for (RefNode refNode : nodes) {
-									int result = deleteBranch(refNode, refNode
-											.getObject(), false);
+									int result = deleteBranch(refNode,
+											refNode.getObject());
 									if (result == DeleteBranchOperation.REJECTED_CURRENT) {
 										throw new CoreException(
 												Activator
@@ -109,18 +115,11 @@ public class DeleteBranchCommand extends
 																UIText.DeleteBranchCommand_CannotDeleteCheckedOutBranch,
 																null));
 									} else if (result == DeleteBranchOperation.REJECTED_UNMERGED) {
-										unmergedNodes.add(refNode);
-									}
-
-									if (!unmergedNodes.isEmpty()) {
-										MessageDialog messageDialog = new BranchMessageDialog(
-												shell, unmergedNodes);
-										if (messageDialog.open() == Window.OK) {
-											for (RefNode node : unmergedNodes) {
-												deleteBranch(node, node
-														.getObject(), true);
-											}
-										}
+										throw new CoreException(
+												Activator
+														.createErrorStatus(
+																UIText.DeleteBranchCommand_UnmergedData,
+																null));
 									}
 								}
 							} catch (CoreException ex) {
@@ -130,8 +129,8 @@ public class DeleteBranchCommand extends
 					});
 		} catch (InvocationTargetException e1) {
 			Activator.handleError(
-					UIText.RepositoriesView_BranchDeletionFailureMessage, e1
-							.getCause(), true);
+					UIText.RepositoriesView_BranchDeletionFailureMessage,
+					e1.getCause(), true);
 		} catch (InterruptedException e1) {
 			// ignore
 		}
@@ -139,10 +138,10 @@ public class DeleteBranchCommand extends
 		return null;
 	}
 
-	private int deleteBranch(final RefNode node, final Ref ref, boolean force)
+	private int deleteBranch(final RefNode node, final Ref ref)
 			throws CoreException {
 		DeleteBranchOperation dbop = new DeleteBranchOperation(node
-				.getRepository(), ref, force);
+				.getRepository(), ref, true);
 		dbop.execute(null);
 		return dbop.getStatus();
 	}
