@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -17,21 +17,25 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
+import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.RawParseUtils;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,10 +44,15 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class TagActionTest extends LocalRepositoryTestCase {
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	@Before
-	public void setup() throws Exception {
+	private static SWTBotPerspective perspective;
+
+	@BeforeClass
+	public static void setup() throws Exception {
+		perspective = bot.activePerspective();
+		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
+
 		repositoryFile = createProjectAndCommitToRepository();
 		Repository repo = lookupRepository(repositoryFile);
 
@@ -55,6 +64,21 @@ public class TagActionTest extends LocalRepositoryTestCase {
 		TagOperation top = new TagOperation(repo, tag, false);
 		top.execute(null);
 		touchAndSubmit(null);
+		waitInUI();
+	}
+
+	@AfterClass
+	public static void shutdown() {
+		perspective.activate();
+	}
+
+	@Before
+	public void prepare() throws Exception {
+		Repository repo = lookupRepository(repositoryFile);
+		if (!repo.getBranch().equals("master")) {
+			BranchOperation bop = new BranchOperation(repo, "refs/heads/master");
+			bop.execute(null);
+		}
 	}
 
 	@Test
@@ -70,44 +94,25 @@ public class TagActionTest extends LocalRepositoryTestCase {
 		SWTBotShell tagDialog = openTagDialog();
 		tagDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName).setText(
 				"SomeTag");
-		assertFalse("Ok should be disabled",
-				tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
-						.isEnabled());
+		assertFalse("Ok should be disabled", tagDialog.bot().button(
+				IDialogConstants.OK_LABEL).isEnabled());
 		tagDialog.bot().button(UIText.CreateTagDialog_clearButton)
 				.click();
 		tagDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName).setText(
 				"AnotherTag");
-		assertFalse("Ok should be disabled",
-				tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
-						.isEnabled());
+		assertFalse("Ok should be disabled", tagDialog.bot().button(
+				IDialogConstants.OK_LABEL).isEnabled());
 		tagDialog.bot().styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText("Here's the message text");
-		tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton).click();
+		tagDialog.bot().button(IDialogConstants.OK_LABEL).click();
 		waitInUI();
 		assertTrue(lookupRepository(repositoryFile).getTags().keySet()
 				.contains("AnotherTag"));
 	}
 
-	@Test
-	public void testCreateTagAndStartPush() throws Exception {
-		SWTBotShell tagDialog = openTagDialog();
-		SWTBotButton button = tagDialog.bot()
-				.button(UIText.CreateTagDialog_CreateTagAndStartPushButton);
-		assertFalse("'Create Tag And Start Push' should be disabled",
-				button.isEnabled());
-		tagDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName)
-				.setText("tag-to-push");
-		tagDialog.bot().styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
-				.setText("Tag to push");
-		button.click();
-
-		SWTBotShell pushTagsWizard = bot
-				.shell(UIText.PushTagsWizard_WindowTitle);
-		pushTagsWizard.close();
-	}
-
 	private SWTBotShell openTagDialog() throws Exception {
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+		SWTBotTree projectExplorerTree = bot.viewById(
+				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 
 		String[] menuPath = new String[] {
@@ -122,33 +127,30 @@ public class TagActionTest extends LocalRepositoryTestCase {
 	@Test
 	public void testChangeTagMessage() throws Exception {
 		SWTBotShell tagDialog = openTagDialog();
-		assertFalse("Ok should be disabled",
-				tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
-						.isEnabled());
+		assertFalse("Ok should be disabled", tagDialog.bot().button(
+				IDialogConstants.OK_LABEL).isEnabled());
 		tagDialog.bot().textWithLabel(UIText.CreateTagDialog_tagName).setText(
 				"MessageChangeTag");
-		assertFalse("Ok should be disabled",
-				tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
-						.isEnabled());
+		assertFalse("Ok should be disabled", tagDialog.bot().button(
+				IDialogConstants.OK_LABEL).isEnabled());
 		tagDialog.bot().styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText("Here's the first message");
-		tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton).click();
+		tagDialog.bot().button(IDialogConstants.OK_LABEL).click();
 		waitInUI();
 		assertTrue(lookupRepository(repositoryFile).getTags().keySet()
 				.contains("MessageChangeTag"));
 		tagDialog = openTagDialog();
 		tagDialog.bot().tableWithLabel(UIText.CreateTagDialog_existingTags)
 				.getTableItem("MessageChangeTag").select();
-		assertFalse("Ok should be disabled",
-				tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton)
-						.isEnabled());
+		assertFalse("Ok should be disabled", tagDialog.bot().button(
+				IDialogConstants.OK_LABEL).isEnabled());
 		String oldText = tagDialog.bot().styledTextWithLabel(
 				UIText.CreateTagDialog_tagMessage).getText();
 		assertEquals("Wrong message text", "Here's the first message", oldText);
 		tagDialog.bot().checkBox(UIText.CreateTagDialog_overwriteTag).click();
 		tagDialog.bot().styledTextWithLabel(UIText.CreateTagDialog_tagMessage)
 				.setText("New message");
-		tagDialog.bot().button(UIText.CreateTagDialog_CreateTagButton).click();
+		tagDialog.bot().button(IDialogConstants.OK_LABEL).click();
 		tagDialog = openTagDialog();
 		tagDialog.bot().tableWithLabel(UIText.CreateTagDialog_existingTags)
 				.getTableItem("MessageChangeTag").select();

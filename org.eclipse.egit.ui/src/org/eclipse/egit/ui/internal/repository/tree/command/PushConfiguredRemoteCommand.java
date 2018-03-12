@@ -18,6 +18,8 @@ import java.net.URISyntaxException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.push.SimpleConfigurePushDialog;
@@ -42,7 +44,9 @@ public class PushConfiguredRemoteCommand extends
 					UIText.SimplePushActionHandler_NothingToPushDialogMessage);
 			return null;
 		}
-		new PushOperationUI(node.getRepository(), config.getName(), false)
+		int timeout = Activator.getDefault().getPreferenceStore()
+				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+		new PushOperationUI(node.getRepository(), config.getName(), timeout, false)
 				.start();
 		return null;
 	}
@@ -50,34 +54,36 @@ public class PushConfiguredRemoteCommand extends
 	@Override
 	public boolean isEnabled() {
 		RepositoryTreeNode<?> node = getSelectedNodes().get(0);
-		return getRemoteConfig(node) != null;
+		try {
+			return getRemoteConfig(node) != null;
+		} catch (ExecutionException e) {
+			return false;
+		}
 	}
 
-	private RemoteConfig getRemoteConfig(RepositoryTreeNode node) {
+	private RemoteConfig getRemoteConfig(RepositoryTreeNode node)
+			throws ExecutionException {
+		if (node instanceof PushNode)
+			try {
+				RemoteNode remote = (RemoteNode) node.getParent();
+				return new RemoteConfig(node.getRepository().getConfig(),
+						remote.getObject());
+			} catch (URISyntaxException e) {
+				throw new ExecutionException(e.getMessage());
+			}
+
+		if (node instanceof RemoteNode)
+			try {
+				RemoteNode remote = (RemoteNode) node;
+				return new RemoteConfig(node.getRepository().getConfig(),
+						remote.getObject());
+			} catch (URISyntaxException e) {
+				throw new ExecutionException(e.getMessage());
+			}
+
 		if (node instanceof RepositoryNode)
 			return SimpleConfigurePushDialog.getConfiguredRemote(node
 					.getRepository());
-
-		if (node instanceof RemoteNode || node instanceof PushNode) {
-			RemoteNode remoteNode;
-			if (node instanceof PushNode)
-				remoteNode = (RemoteNode) node.getParent();
-			else
-				remoteNode = (RemoteNode) node;
-
-			try {
-				RemoteConfig config = new RemoteConfig(remoteNode
-						.getRepository().getConfig(), remoteNode.getObject());
-				boolean fetchConfigured = !config.getFetchRefSpecs().isEmpty();
-				boolean pushConfigured = !config.getPushRefSpecs().isEmpty();
-				if (fetchConfigured || pushConfigured)
-					return config;
-				else
-					return null;
-			} catch (URISyntaxException e) {
-				return null;
-			}
-		}
 
 		return null;
 	}

@@ -89,22 +89,15 @@ public class CreateTagDialog extends TitleAreaDialog {
 	private static final int MAX_COMMIT_COUNT = 1000;
 
 	/**
-	 * Button id for a "Clear" button.
+	 * Button id for a "Clear" button (value 22).
 	 */
-	private static final int CLEAR_ID = 22;
-
-	/**
-	 * Button id for "Create Tag and Start Push..." button
-	 */
-	private static final int CREATE_AND_START_PUSH_ID = 23;
+	public static final int CLEAR_ID = 22;
 
 	private String tagName;
 
 	private String tagMessage;
 
 	private ObjectId tagCommit;
-
-	private boolean shouldStartPushWizard = false;
 
 	private boolean overwriteTag;
 
@@ -239,14 +232,6 @@ public class CreateTagDialog extends TitleAreaDialog {
 		return overwriteTag;
 	}
 
-	/**
-	 * @return true if the user wants to start the push wizard after creating
-	 *         the tag, false otherwise
-	 */
-	public boolean shouldStartPushWizard() {
-		return shouldStartPushWizard;
-	}
-
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
@@ -280,15 +265,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 		margin.setLayoutData(GridDataFactory.fillDefaults().grab(true, false)
 				.create());
 
-		Button createTagAndStartPushButton = createButton(parent,
-				CREATE_AND_START_PUSH_ID, UIText.CreateTagDialog_CreateTagAndStartPushButton, false);
-		createTagAndStartPushButton
-				.setToolTipText(UIText.CreateTagDialog_CreateTagAndStartPushToolTip);
-		setButtonLayoutData(createTagAndStartPushButton);
-
 		super.createButtonsForButtonBar(parent);
-
-		getButton(OK).setText(UIText.CreateTagDialog_CreateTagButton);
 
 		validateInput();
 	}
@@ -361,7 +338,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 	@Override
 	protected void buttonPressed(int buttonId) {
-		if (buttonId == CLEAR_ID) {
+		switch (buttonId) {
+		case CLEAR_ID:
 			tagNameText.setText(""); //$NON-NLS-1$
 			tagMessageText.setText(""); //$NON-NLS-1$
 			if (commitCombo != null) {
@@ -370,17 +348,16 @@ public class CreateTagDialog extends TitleAreaDialog {
 			tagMessageText.getTextWidget().setEditable(true);
 			overwriteButton.setEnabled(false);
 			overwriteButton.setSelection(false);
-		} else if (buttonId == IDialogConstants.OK_ID
-				|| buttonId == CREATE_AND_START_PUSH_ID) {
-			shouldStartPushWizard = (buttonId == CREATE_AND_START_PUSH_ID);
+			break;
+		case IDialogConstants.OK_ID:
 			// read and store data from widgets
 			tagName = tagNameText.getText();
 			if (commitCombo != null)
 				tagCommit = commitCombo.getValue();
 			tagMessage = tagMessageText.getCommitMessage();
 			overwriteTag = overwriteButton.getSelection();
-			okPressed();
-		} else {
+			//$FALL-THROUGH$ continue propagating OK button action
+		default:
 			super.buttonPressed(buttonId);
 		}
 	}
@@ -604,12 +581,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 			boolean shouldOverwriteTag = (overwriteButton.getSelection() && Repository
 					.isValidRefName(Constants.R_TAGS + tagNameText.getText()));
 
-			boolean enabled = containsTagNameAndMessage || shouldOverwriteTag;
-			button.setEnabled(enabled);
-
-			Button createTagAndStartPush = getButton(CREATE_AND_START_PUSH_ID);
-			if (createTagAndStartPush != null)
-				createTagAndStartPush.setEnabled(enabled);
+			button.setEnabled(containsTagNameAndMessage || shouldOverwriteTag);
 		}
 
 		boolean existingTagSelected = existingTag != null;

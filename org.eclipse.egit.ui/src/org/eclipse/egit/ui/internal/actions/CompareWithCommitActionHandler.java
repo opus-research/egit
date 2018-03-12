@@ -22,7 +22,7 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * The "compare with commit" action. This action opens a diff editor comparing
@@ -44,8 +44,8 @@ public class CompareWithCommitActionHandler extends RepositoryActionHandler {
 
 		final String commitId = dlg.getCommitId().getName();
 
-		IWorkbenchPage workBenchPage = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getActivePage();
+		IWorkbenchPage workBenchPage = HandlerUtil
+				.getActiveWorkbenchWindowChecked(event).getActivePage();
 		try {
 			CompareUtils.compare(resources, repo, Constants.HEAD, commitId,
 					true, workBenchPage);

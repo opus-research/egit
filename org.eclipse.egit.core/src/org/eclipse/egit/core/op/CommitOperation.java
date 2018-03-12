@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -21,7 +20,6 @@ import java.util.HashSet;
 import java.util.TimeZone;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -31,19 +29,15 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
@@ -203,8 +197,7 @@ public class CommitOperation implements IEGitOperation {
 			}
 
 		};
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
 	private void addUntracked() throws CoreException {
@@ -226,7 +219,7 @@ public class CommitOperation implements IEGitOperation {
 	}
 
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repo);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 
 	private void commit() throws TeamException {
@@ -308,26 +301,7 @@ public class CommitOperation implements IEGitOperation {
 					NLS.bind(CoreText.CommitOperation_errorParsingPersonIdent,
 							committer));
 
-		PersonIdent authorIdent;
-		if (repo.getRepositoryState().equals(
-				RepositoryState.CHERRY_PICKING_RESOLVED)) {
-			RevWalk rw = new RevWalk(repo);
-			try {
-				ObjectId cherryPickHead = repo.readCherryPickHead();
-				authorIdent = rw.parseCommit(cherryPickHead)
-						.getAuthorIdent();
-			} catch (IOException e) {
-				Activator
-						.error(CoreText.CommitOperation_ParseCherryPickCommitFailed,
-								e);
-				throw new IllegalStateException(e);
-			} finally {
-				rw.release();
-			}
-		} else {
-			authorIdent = new PersonIdent(enteredAuthor, commitDate, timeZone);
-		}
-
+		PersonIdent authorIdent = new PersonIdent(enteredAuthor, commitDate, timeZone);
 		final PersonIdent committerIdent = new PersonIdent(enteredCommitter, commitDate, timeZone);
 
 		if (amending) {

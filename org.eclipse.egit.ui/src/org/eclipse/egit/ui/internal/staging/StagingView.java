@@ -9,6 +9,8 @@
 package org.eclipse.egit.ui.internal.staging;
 
 import static org.eclipse.egit.ui.internal.CommonUtils.runCommand;
+import static org.eclipse.ui.ISources.ACTIVE_MENU_SELECTION_NAME;
+import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -22,6 +24,7 @@ import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.operations.IUndoContext;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -45,7 +48,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -160,6 +162,7 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
@@ -172,6 +175,8 @@ import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.menus.CommandContributionItem;
+import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.operations.UndoRedoActionGroup;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
@@ -322,7 +327,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 	}
 
-	static class TreeDecoratingLabelProvider extends DecoratingLabelProvider {
+	class TreeDecoratingLabelProvider extends DecoratingLabelProvider {
 
 		ILabelProvider provider;
 
@@ -523,7 +528,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		enableAutoExpand(unstagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
 
 		Composite rebaseAndCommitComposite = toolkit.createComposite(horizontalSashForm);
@@ -775,7 +779,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 						event.detail = DND.DROP_COPY;
 						if (event.data instanceof IStructuredSelection) {
 							final IStructuredSelection selection = (IStructuredSelection) event.data;
-							stage(selection);
+							Object firstElement = selection.getFirstElement();
+							if (firstElement instanceof StagingEntry)
+								stage(selection);
+							else {
+								IResource resource = AdapterUtils.adapt(firstElement, IResource.class);
+								if (resource != null)
+									stage(selection);
+							}
 						}
 					}
 
@@ -788,7 +799,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				compareWith(event);
 			}
 		});
-		enableAutoExpand(stagedViewer);
 		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
 		selectionChangedListener = new ISelectionListener() {
@@ -822,7 +832,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		updateSectionText();
 		updateToolbar();
 		enableCommitWidgets(false);
-		refreshAction.setEnabled(false);
 
 		createPopupMenu(unstagedViewer);
 		createPopupMenu(stagedViewer);
@@ -876,8 +885,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 		srv.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate staging view
-		UIUtils.notifySelectionChangedWithCurrentSelection(
-				selectionChangedListener, site);
+		ISelection selection = srv.getSelection();
+		if (selection != null && !selection.isEmpty()) {
+			IWorkbenchPart part = site.getPage().getActivePart();
+			if (part != null)
+				selectionChangedListener.selectionChanged(part, selection);
+		}
 
 		site.setSelectionProvider(unstagedViewer);
 
@@ -1085,21 +1098,13 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
-		enableAuthorText(enabled);
+		authorText.setEnabled(enabled);
+		refreshAction.setEnabled(enabled);
 		amendPreviousCommitAction.setEnabled(enabled);
 		signedOffByAction.setEnabled(enabled);
 		addChangeIdAction.setEnabled(enabled);
 		commitButton.setEnabled(enabled);
 		commitAndPushButton.setEnabled(enabled);
-	}
-
-	private void enableAuthorText(boolean enabled) {
-		if (currentRepository != null
-				&& currentRepository.getRepositoryState().equals(
-				RepositoryState.CHERRY_PICKING_RESOLVED))
-			authorText.setEnabled(false);
-		else
-			authorText.setEnabled(enabled);
 	}
 
 	private void updateToolbar() {
@@ -1496,7 +1501,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 								fileSelection, false));
 					else
 						menuMgr.add(createItem(
-								UIText.StagingView_replaceWithFileInGitIndex,
 								ActionCommands.DISCARD_CHANGES_ACTION,
 								fileSelection)); // replace with index
 				if (addReplaceWithHeadRevision)
@@ -1506,7 +1510,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 								fileSelection, true));
 					else
 						menuMgr.add(createItem(
-								UIText.StagingView_replaceWithHeadRevision,
 								ActionCommands.REPLACE_WITH_HEAD_ACTION,
 								fileSelection));
 				if (addIgnore)
@@ -1514,8 +1517,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				if (addDelete)
 					menuMgr.add(new DeleteAction(fileSelection));
 				if (addLaunchMergeTool)
-					menuMgr.add(createItem(UIText.StagingView_MergeTool,
-							ActionCommands.MERGE_TOOL_ACTION,
+					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION,
 							fileSelection));
 				menuMgr.add(new Separator());
 				menuMgr.add(createShowInMenu());
@@ -1755,14 +1757,20 @@ public class StagingView extends ViewPart implements IShowInSource {
 		return availableActions;
 	}
 
-	private IAction createItem(String text, final String commandId,
-			final IStructuredSelection selection) {
-		return new Action(text) {
-			@Override
-			public void run() {
-				CommonUtils.runCommand(commandId, selection);
-			}
-		};
+	private CommandContributionItem createItem(String itemAction,
+			final ISelection selection) {
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		CommandContributionItemParameter itemParam = new CommandContributionItemParameter(
+				workbench, null, itemAction, STYLE_PUSH);
+
+		IWorkbenchWindow activeWorkbenchWindow = workbench
+				.getActiveWorkbenchWindow();
+		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
+				.getService(IHandlerService.class);
+		IEvaluationContext ctx = hsr.getCurrentState();
+		ctx.addVariable(ACTIVE_MENU_SELECTION_NAME, selection);
+
+		return new CommandContributionItem(itemParam);
 	}
 
 	private void reactOnSelection(ISelection selection) {
@@ -1977,7 +1985,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		unstagedViewer.setInput(update);
 		stagedViewer.setInput(update);
 		enableCommitWidgets(false);
-		refreshAction.setEnabled(false);
 		updateSectionText();
 		form.setText(UIText.StagingView_NoSelectionTitle);
 	}
@@ -2003,24 +2010,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		});
 	}
 
-	/**
-	 * @param isAmending
-	 *            if the current commit should be amended
-	 */
-	public void setAmending(boolean isAmending) {
-		if (amendPreviousCommitAction.isChecked() != isAmending) {
-			amendPreviousCommitAction.setChecked(isAmending);
-			amendPreviousCommitAction.run();
-		}
-
-	}
-
-	/**
-	 * Reload the staging view
-	 *
-	 * @param repository
-	 */
-	public void reload(final Repository repository) {
+	private void reload(final Repository repository) {
 		if (form.isDisposed())
 			return;
 		if (repository == null) {
@@ -2074,7 +2064,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 						pathsToExpandInStaged);
 				enableCommitWidgets(indexDiffAvailable
 						&& indexDiff.getConflicting().isEmpty());
-				refreshAction.setEnabled(true);
 
 				updateRebaseButtonVisibility(repository.getRepositoryState()
 						.isRebasing());
@@ -2201,11 +2190,9 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void addHeadChangedWarning(String commitMessage) {
-		if (!commitMessage.startsWith(UIText.StagingView_headCommitChanged)) {
-			String message = UIText.StagingView_headCommitChanged
-					+ Text.DELIMITER + Text.DELIMITER + commitMessage;
-			commitMessageComponent.setCommitMessage(message);
-		}
+		String message = UIText.StagingView_headCommitChanged + Text.DELIMITER
+				+ Text.DELIMITER + commitMessage;
+		commitMessageComponent.setCommitMessage(message);
 	}
 
 	private void loadInitialState(CommitHelper helper) {

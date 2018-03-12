@@ -12,10 +12,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Collections;
 import java.util.Set;
 
@@ -47,8 +45,7 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 		repository.create();
 
 		file = new File(project.getProject().getLocation().toFile(), "a.txt");
-		final Writer fileWriter = new OutputStreamWriter(new FileOutputStream(
-				file), "UTF-8");
+		final FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write("aaaaaaaaaaa");
 		fileWriter.close();
 
