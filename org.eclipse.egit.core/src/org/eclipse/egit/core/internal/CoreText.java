@@ -150,7 +150,9 @@ public class CoreText extends NLS {
 	/** */
 	public static String GitFileHistory_gitNotAttached;
 
-	/** */
+	/**
+	 * @since 3.0
+	 */
 	public static String GitFileHistory_invalidCommit;
 
 	/** */
@@ -288,7 +290,9 @@ public class CoreText extends NLS {
 	/** */
 	public static String IndexDiffCacheEntry_reindexing;
 
-	/** */
+	/**
+	 * @since 3.0
+	 */
 	public static String IndexDiffCacheEntry_reindexingIncrementally;
 
 	/** */
@@ -372,7 +376,9 @@ public class CoreText extends NLS {
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
 
-	/** */
+	/**
+	 * @since 3.0
+	 */
 	public static String GitResourceVariantTreeSubscriber_CouldNotFindSourceVariant;
 
 	/** */
