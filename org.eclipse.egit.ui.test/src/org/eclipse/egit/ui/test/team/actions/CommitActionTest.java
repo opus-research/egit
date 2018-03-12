@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,6 +22,8 @@ import java.io.File;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.egit.core.op.BranchOperation;
+import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -31,11 +33,17 @@ import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.CommitMessageUtil;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.util.RawParseUtils;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,10 +52,12 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class CommitActionTest extends LocalRepositoryTestCase {
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	@Before
-	public void setup() throws Exception {
+	private static SWTBotPerspective perspective;
+
+	@BeforeClass
+	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		Repository repo = lookupRepository(repositoryFile);
 		TestUtil.configureTestCommitterAsUser(repo);
@@ -57,6 +67,33 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 		File dotProject = new File(project.getLocation().toOSString(), ".project");
 		project.delete(false, false, null);
 		assertTrue(dotProject.delete());
+
+		TagBuilder tag = new TagBuilder();
+		tag.setTag("SomeTag");
+		tag.setTagger(RawParseUtils.parsePersonIdent(TestUtil.TESTAUTHOR));
+		tag.setMessage("I'm just a little tag");
+		tag.setObjectId(repo.resolve(repo.getFullBranch()), Constants.OBJ_COMMIT);
+		TagOperation top = new TagOperation(repo, tag, false);
+		top.execute(null);
+		touchAndSubmit(null);
+
+		perspective = bot.activePerspective();
+		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
+		waitInUI();
+	}
+
+	@AfterClass
+	public static void shutdown() {
+		perspective.activate();
+	}
+
+	@Before
+	public void prepare() throws Exception {
+		Repository repo = lookupRepository(repositoryFile);
+		if (!repo.getBranch().equals("master")) {
+			BranchOperation bop = new BranchOperation(repo, "refs/heads/master");
+			bop.execute(null);
+		}
 	}
 
 	@Test
@@ -209,8 +246,6 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 			String path = RepositoryMapping.getMapping(file)
 					.getRepoRelativePath(file);
 			assertEquals(path, commitDialogTester.getEntryText(0));
-			commitDialogTester.setCommitMessage("Add new file");
-			commitDialogTester.commit();
 		} finally {
 			Activator
 					.getDefault()

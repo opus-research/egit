@@ -138,18 +138,4 @@ public class RebaseOperation implements IEGitOperation {
 	public RebaseResult getResult() {
 		return result;
 	}
-
-	/**
-	 * @return the {@link Repository}
-	 */
-	public final Repository getRepository() {
-		return repository;
-	}
-
-	/**
-	 * @return the {@link Operation} if it has been set, otherwise null
-	 */
-	public final Operation getOperation() {
-		return operation;
-	}
 }
