@@ -29,7 +29,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -277,65 +276,58 @@ public class GitCompareEditorInput extends CompareEditorInput {
 								.isEntryIgnored())
 					continue;
 
-
 				if (compareVersionIterator != null
 						&& baseVersionIterator != null) {
+					// content exists on both sides
 					boolean equalContent = compareVersionIterator
 							.getEntryObjectId().equals(
 									baseVersionIterator.getEntryObjectId());
 					if (equalContent)
 						continue;
-				}
-
-				String encoding = null;
-
-				GitFileRevision compareRev = null;
-				if (compareVersionIterator != null) {
-					String entryPath = compareVersionIterator.getEntryPathString();
-					encoding = CompareCoreUtils.getResourceEncoding(repository, entryPath);
-					if (!useIndex)
-						compareRev = GitFileRevision.inCommit(repository,
-								compareCommit, entryPath,
-								tw.getObjectId(compareTreeIndex));
-					else
-						compareRev = GitFileRevision.inIndex(repository,
-								entryPath);
-				}
-
-				GitFileRevision baseRev = null;
-				if (baseVersionIterator != null) {
-					String entryPath = baseVersionIterator.getEntryPathString();
-					if (encoding == null) {
-						encoding = CompareCoreUtils.getResourceEncoding(repository, entryPath);
-					}
-					baseRev = GitFileRevision.inCommit(repository, baseCommit,
-							entryPath, tw.getObjectId(baseTreeIndex));
-				}
-
-				if (compareVersionIterator != null
-						&& baseVersionIterator != null) {
 					monitor.setTaskName(baseVersionIterator
 							.getEntryPathString());
-					// content exists on both sides
+					GitFileRevision baseRev = GitFileRevision.inCommit(
+							repository, baseCommit, baseVersionIterator
+									.getEntryPathString(), tw
+									.getObjectId(baseTreeIndex));
+					GitFileRevision compareRev;
+					if (!useIndex)
+						compareRev = GitFileRevision.inCommit(repository,
+								compareCommit, compareVersionIterator
+										.getEntryPathString(), tw
+										.getObjectId(compareTreeIndex));
+					else
+						compareRev = GitFileRevision.inIndex(repository,
+								compareVersionIterator.getEntryPathString());
+
 					add(result, baseVersionIterator.getEntryPathString(),
-							new DiffNode(new FileRevisionTypedElement(compareRev, encoding),
-									new FileRevisionTypedElement(baseRev, encoding)));
+							new DiffNode(new FileRevisionTypedElement(compareRev),
+									new FileRevisionTypedElement(baseRev)));
+
 				} else if (baseVersionIterator != null
 						&& compareVersionIterator == null) {
 					monitor.setTaskName(baseVersionIterator
 							.getEntryPathString());
 					// only on base side
+					GitFileRevision baseRev = GitFileRevision.inCommit(
+							repository, baseCommit, baseVersionIterator
+									.getEntryPathString(), tw
+									.getObjectId(baseTreeIndex));
 					add(result, baseVersionIterator.getEntryPathString(),
 							new DiffNode(Differencer.DELETION | Differencer.RIGHT, null, null,
-									new FileRevisionTypedElement(baseRev, encoding)));
+									new FileRevisionTypedElement(baseRev)));
 				} else if (compareVersionIterator != null
 						&& baseVersionIterator == null) {
 					monitor.setTaskName(compareVersionIterator
 							.getEntryPathString());
 					// only on compare side
+					GitFileRevision compareRev = GitFileRevision.inCommit(
+							repository, compareCommit, compareVersionIterator
+									.getEntryPathString(), tw
+									.getObjectId(compareTreeIndex));
 					add(result, compareVersionIterator.getEntryPathString(),
 							new DiffNode(Differencer.ADDITION | Differencer.RIGHT, null,
-									new FileRevisionTypedElement(compareRev, encoding), null));
+									new FileRevisionTypedElement(compareRev), null));
 				}
 
 				if (monitor.isCanceled())

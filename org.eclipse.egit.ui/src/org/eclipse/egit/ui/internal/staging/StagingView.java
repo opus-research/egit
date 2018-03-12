@@ -1270,8 +1270,6 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		commitMessageComponent.setCommitAllowed(helper.canCommit());
-		commitMessageComponent.setCannotCommitMessage(helper.getCannotCommitMessage());
 		boolean amendAllowed = helper.amendAllowed();
 		commitMessageComponent.setAmendAllowed(amendAllowed);
 		if (!amendAllowed)
@@ -1299,8 +1297,6 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.setCommitter(helper.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
-		commitMessageComponent.setCommitAllowed(helper.canCommit());
-		commitMessageComponent.setCannotCommitMessage(helper.getCannotCommitMessage());
 		commitMessageComponent.setAmendAllowed(helper.amendAllowed());
 		commitMessageComponent.setAmending(false);
 		// set the defaults for change id and signed off buttons.

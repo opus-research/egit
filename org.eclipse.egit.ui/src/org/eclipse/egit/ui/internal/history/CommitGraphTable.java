@@ -37,14 +37,12 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.AbstractHoverInformationControlManager;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.DefaultInformationControl;
@@ -159,8 +157,7 @@ class CommitGraphTable {
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
-	CommitGraphTable(Composite parent, final TableLoader loader,
-			final ResourceManager resources) {
+	CommitGraphTable(Composite parent, final TableLoader loader) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		tableLoader = loader;
@@ -204,7 +201,7 @@ class CommitGraphTable {
 
 		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
-		renderer = new SWTPlotRenderer(rawTable.getDisplay(), resources);
+		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
@@ -237,6 +234,8 @@ class CommitGraphTable {
 			public void widgetDisposed(DisposeEvent e) {
 				if (allCommits != null)
 					allCommits.dispose();
+				if (renderer != null)
+					renderer.dispose();
 				hoverManager.dispose();
 			}
 		});
@@ -247,9 +246,8 @@ class CommitGraphTable {
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
-			final MenuManager menuMgr, final TableLoader loader,
-			final ResourceManager resources) {
-		this(parent, loader, resources);
+			final MenuManager menuMgr, final TableLoader loader) {
+		this(parent, loader);
 
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
@@ -479,11 +477,6 @@ class CommitGraphTable {
 
 	void doPaint(final Event event) {
 		final RevCommit c = (RevCommit) ((TableItem) event.item).getData();
-		if (c instanceof SWTCommit) {
-			final SWTLane lane = ((SWTCommit) c).getLane();
-			if (lane != null && lane.color.isDisposed())
-				return;
-		}
 		if (highlight != null && c.has(highlight))
 			event.gc.setFont(hFont);
 		else
@@ -741,10 +734,6 @@ class CommitGraphTable {
 							HistoryViewCommands.OPEN_IN_TEXT_EDITOR,
 							UIText.GitHistoryPage_OpenInTextEditorLabel));
 				}
-				if (selectionSize == 1)
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.SHOW_BLAME,
-							UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel));
 			}
 
 			if (selectionSize == 1) {
