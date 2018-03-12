@@ -811,16 +811,9 @@ public class CommitDialog extends TitleAreaDialog {
 		filesViewer.setUseHashlookup(true);
 		IDialogSettings settings = org.eclipse.egit.ui.Activator.getDefault()
 				.getDialogSettings();
-		if (settings.get(SHOW_UNTRACKED_PREF) != null) {
-			// note, no matter how the dialog settings are, if
-			// the preferences force us to include untracked files
-			// we must show them
+		if (settings.get(SHOW_UNTRACKED_PREF) != null)
 			showUntracked = Boolean.valueOf(settings.get(SHOW_UNTRACKED_PREF))
-					.booleanValue()
-					|| getPreferenceStore().getBoolean(
-							UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED);
-		}
-
+					.booleanValue();
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items.toArray());
 		filesViewer.getTable().setMenu(getContextMenu());
