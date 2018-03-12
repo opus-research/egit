@@ -156,9 +156,6 @@ public class CoreText extends NLS {
 	public static String ResetOperation_resetMergeFailed;
 
 	/** */
-	public static String ResetOperation_resetCherryPickFailed;
-
-	/** */
 	public static String ResetOperation_updatingFailed;
 
 	/** */
@@ -211,15 +208,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ProjectUtil_refreshing;
-
-	/** */
-	public static String PullOperation_DetachedHeadMessage;
-
-	/** */
-	public static String PullOperation_PullNotConfiguredMessage;
-
-	/** */
-	public static String PullOperation_TaskName;
 
 	/** */
 	public static String PushOperation_InternalExceptionOccurredMessage;

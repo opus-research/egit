@@ -42,9 +42,7 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 	 * @param repo
 	 */
 	public ResetTargetSelectionDialog(Shell parentShell, Repository repo) {
-		super(parentShell, repo, SHOW_LOCAL_BRANCHES | SHOW_REMOTE_BRANCHES
-				| SHOW_TAGS | SHOW_REFERENCES | EXPAND_LOCAL_BRANCHES_NODE
-				| SELECT_CURRENT_REF);
+		super(parentShell, repo);
 		super.setHelpAvailable(false);
 	}
 
