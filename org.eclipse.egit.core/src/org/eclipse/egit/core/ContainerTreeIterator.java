@@ -168,7 +168,7 @@ public class ContainerTreeIterator extends WorkingTreeIterator {
 			case IResource.PROJECT:
 			case IResource.FOLDER: {
 				final IContainer c = (IContainer) f;
-				if (c.findMember(Constants.DOT_GIT) != null)
+				if (c.findMember(".git") != null)
 					mode = FileMode.GITLINK;
 				else
 					mode = FileMode.TREE;
