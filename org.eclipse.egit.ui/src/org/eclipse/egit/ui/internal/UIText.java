@@ -2266,6 +2266,9 @@ public class UIText extends NLS {
 	public static String ConfigurationEditorComponent_ValueColumnHeader;
 
 	/** */
+	public static String ConfigurationEditorComponent_WrongNumberOfTokensMessage;
+
+	/** */
 	public static String ConfigureGerritWizard_title;
 
 	/** */
