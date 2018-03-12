@@ -102,8 +102,6 @@ public class RepositorySearchDialog extends WizardPage {
 	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
-	private boolean isUserModifiedTreeSelection;
-
 	private static final class ContentProvider implements ITreeContentProvider {
 
 		private final Object[] children = new Object[0];
@@ -300,16 +298,11 @@ public class RepositorySearchDialog extends WizardPage {
 
 			@Override
 			public boolean isElementVisible(Viewer viewer, Object element) {
-				boolean elementVisible = super
-						.isElementVisible(viewer, element);
-				// Only user selected elements are not searched.
-				if (getCheckedItems().contains(element)) {
-					if (!isUserModifiedTreeSelection)
-						fTreeViewer.setChecked(element, elementVisible);
-					else
-						return true;
-				}
-				return elementVisible;
+
+				if (getCheckedItems().contains(element))
+					return true;
+
+				return super.isElementVisible(viewer, element);
 			}
 		};
 
@@ -319,7 +312,6 @@ public class RepositorySearchDialog extends WizardPage {
 		fTreeViewer.addCheckStateListener(new ICheckStateListener() {
 
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				isUserModifiedTreeSelection = true;
 				enableOk();
 			}
 		});
@@ -522,7 +514,6 @@ public class RepositorySearchDialog extends WizardPage {
 		fTreeViewer.setInput(validDirs);
 		// this sets all to selected
 		fTreeViewer.setAllChecked(true);
-		isUserModifiedTreeSelection = false;
 		enableOk();
 	}
 
