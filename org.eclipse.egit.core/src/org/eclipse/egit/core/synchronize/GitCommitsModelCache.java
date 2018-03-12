@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -278,7 +278,7 @@ public class GitCommitsModelCache {
 			change.append(";\n\tcurrent commit: "); //$NON-NLS-1$
 			change.append(getObjectId(commitId));
 			change.append(";\n\tparent commit: "); //$NON-NLS-1$
-			change.append(getObjectId(remoteCommitId));
+			change.append(remoteCommitId.toObjectId().getName());
 			change.append("\n)"); //$NON-NLS-1$
 
 			return change.toString();
