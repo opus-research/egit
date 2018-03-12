@@ -97,6 +97,15 @@ public class UIText extends NLS {
 	public static String AddToIndexCommand_addingFilesFailed;
 
 	/** */
+	public static String BlameInformationControl_Author;
+
+	/** */
+	public static String BlameInformationControl_Commit;
+
+	/** */
+	public static String BlameInformationControl_Committer;
+
+	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
@@ -149,6 +158,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SharingWizard_MoveProjectActionLabel;
+
+	/** */
+	public static String ShowBlameHandler_JobName;
 
 	/** */
 	public static String GenerateHistoryJob_BuildingListMessage;
@@ -388,6 +400,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_errorParsingHead;
 
 	/** */
+	public static String GitHistoryPage_errorReadingAdditionalRefs;
+
+	/** */
 	public static String GitHistoryPage_errorSettingStartPoints;
 
 	/** */
@@ -488,6 +503,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitPreferenceRoot_automaticallyEnableChangesetModel;
+
+	/** */
+	public static String GitPreferenceRoot_BlameGroupHeader;
+
+	/** */
+	public static String GitPreferenceRoot_BlameIgnoreWhitespaceLabel;
 
 	/** */
 	public static String GitPreferenceRoot_fetchBeforeSynchronization;
@@ -853,6 +874,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_browse;
 
 	/** */
+	public static String RepositorySearchDialog_CheckAllRepositories;
+
+	/** */
 	public static String RepositorySearchDialog_directory;
 
 	/** */
@@ -871,7 +895,7 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_searchRepositoriesMessage;
 
 	/** */
-	public static String RepositorySearchDialog_ToggleSelectionButton;
+	public static String RepositorySearchDialog_UncheckAllRepositories;
 
 	/** */
 	public static String RepositorySelectionPage_BrowseLocalFile;
@@ -1177,6 +1201,9 @@ public class UIText extends NLS {
 	public static String RefSpecPanel_fetch;
 
 	/** */
+	public static String RefSpecPanel_fetchTitle;
+
+	/** */
 	public static String RefSpecPanel_srcFetchDescription;
 
 	/** */
@@ -1229,6 +1256,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefSpecPanel_push;
+
+	/** */
+	public static String RefSpecPanel_pushTitle;
 
 	/** */
 	public static String RefSpecPanel_srcPushDescription;
@@ -2749,9 +2779,6 @@ public class UIText extends NLS {
 	public static String GitImportWizard_WizardTitle;
 
 	/** */
-	public static String GitScopeOperation_GitScopeManager;
-
-	/** */
 	public static String GitSelectRepositoryPage_AddButton;
 
 	/** */
@@ -3015,12 +3042,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_calculatingChanges;
-
-	/** */
-	public static String CommitActionHandler_errorBuildingScope;
-
-	/** */
-	public static String CommitActionHandler_lookingChanges;
 
 	/** */
 	public static String CommitActionHandler_repository;
@@ -3728,6 +3749,15 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
+	public static String GitVariableResolver_InternalError;
+
+	/** */
+	public static String GitVariableResolver_NoSelectedResource;
+
+	/** */
+	public static String GitVariableResolver_VariableReferencesNonExistentResource;
+
+	/** */
 	public static String DecoratableResourceHelper_noHead;
 
 	/** */
@@ -3756,6 +3786,39 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Commit;
+
+	/** */
+	public static String StagingView_commitFailed;
+
+	/** */
+	public static String StagingView_committingNotPossible;
+
+	/** */
+	public static String StagingView_headCommitChanged;
+
+	/** */
+	public static String StagingView_noStagedFiles;
+
+	/** */
+	public static String StagingView_NoSelectionTitle;
+
+	/** */
+	public static String StagingView_OpenNewCommits;
+
+	/** */
+	public static String StagingView_IndexDiffReload;
+
+	/** */
+	public static String StagingView_Refresh;
+
+	/** */
+	public static String StagingView_LinkSelection;
+
+	/** */
+	public static String StagingView_exceptionTitle;
+
+	/** */
+	public static String StagingView_exceptionMessage;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;

@@ -1505,6 +1505,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		if (currentWalk != null)
 			currentWalk.release();
 		currentWalk = new SWTWalk(db);
+		try {
+			currentWalk.addAdditionalRefs(db.getRefDatabase().getAdditionalRefs());
+		} catch (IOException e) {
+			throw new IllegalStateException(NLS.bind(
+					UIText.GitHistoryPage_errorReadingAdditionalRefs, Activator
+							.getDefault().getRepositoryUtil()
+							.getRepositoryName(db)), e);
+		}
 		currentWalk.sort(RevSort.COMMIT_TIME_DESC, true);
 		currentWalk.sort(RevSort.BOUNDARY, true);
 		highlightFlag = currentWalk.newFlag("highlight"); //$NON-NLS-1$
@@ -1517,8 +1525,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				markStartAllRefs(Constants.R_HEADS);
 				markStartAllRefs(Constants.R_REMOTES);
 				markStartAllRefs(Constants.R_TAGS);
-			} else
-				currentWalk.markStart(currentWalk.parseCommit(headId));
+				markStartAdditionalRefs();
+			}
+			currentWalk.markStart(currentWalk.parseCommit(headId));
 		} catch (IOException e) {
 			throw new IllegalStateException(NLS.bind(
 					UIText.GitHistoryPage_errorSettingStartPoints, Activator
@@ -1623,10 +1632,22 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			Ref ref = refEntry.getValue();
 			if (ref.isSymbolic())
 				continue;
-			Object refTarget = currentWalk.parseAny(ref.getObjectId());
-			if (refTarget instanceof RevCommit)
-				currentWalk.markStart((RevCommit) refTarget);
+			markStartRef(ref);
 		}
+	}
+
+	private void markStartAdditionalRefs() throws IOException {
+		List<Ref> additionalRefs = input.getRepository().getRefDatabase()
+				.getAdditionalRefs();
+		for (Ref ref : additionalRefs)
+			markStartRef(ref);
+	}
+
+	private void markStartRef(Ref ref) throws MissingObjectException,
+			IOException, IncorrectObjectTypeException {
+		Object refTarget = currentWalk.parseAny(ref.getLeaf().getObjectId());
+		if (refTarget instanceof RevCommit)
+			currentWalk.markStart((RevCommit) refTarget);
 	}
 
 	private void cancelRefreshJob() {
