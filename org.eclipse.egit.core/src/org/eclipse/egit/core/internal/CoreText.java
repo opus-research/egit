@@ -80,6 +80,9 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
+	public static String ContainerTreeIterator_DeletedFile;
+
+	/** */
 	public static String DeleteBranchOperation_TaskName;
 
 	/** */
@@ -216,6 +219,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MoveDeleteHook_unmergedFileInFolderError;
+
+	/** */
+	public static String MoveDeleteHook_cannotAutoStageDeletion;
 
 	/** */
 	public static String Error_CanonicalFile;
@@ -402,15 +408,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String SquashCommitsOperation_squashing;
-
-	/** */
-	public static String RecursiveModelMerger_RefreshError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationError;
-
-	/** */
-	public static String RecursiveModelMerger_ScopeInitializationInterrupted;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
