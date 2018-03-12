@@ -53,7 +53,6 @@ import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
@@ -422,7 +421,7 @@ public class CommitInfoBuilder {
 		try {
 			monitor.beginTask(UIText.CommitMessageViewer_BuildDiffListTaskName,
 					currentDiffs.size());
-			BufferedOutputStream bos = new SafeBufferedOutputStream(
+			BufferedOutputStream bos = new BufferedOutputStream(
 					new ByteArrayOutputStream() {
 						@Override
 						public synchronized void write(byte[] b, int off,
@@ -485,10 +484,8 @@ public class CommitInfoBuilder {
 		StringBuilder sb = new StringBuilder();
 		Map<String, Ref> tagsMap = db.getTags();
 		for (Entry<String, Ref> tagEntry : tagsMap.entrySet()) {
-			ObjectId target = tagEntry.getValue().getPeeledObjectId();
-			if (target == null)
-				target = tagEntry.getValue().getObjectId();
-			if (target != null && target.equals(commit)) {
+			ObjectId peeledId = tagEntry.getValue().getPeeledObjectId();
+			if (peeledId != null && peeledId.equals(commit)) {
 				if (sb.length() > 0)
 					sb.append(", "); //$NON-NLS-1$
 				sb.append(tagEntry.getKey());

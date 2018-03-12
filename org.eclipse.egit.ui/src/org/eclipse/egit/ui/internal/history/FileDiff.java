@@ -305,24 +305,8 @@ public class FileDiff extends WorkbenchAdapter {
 		commit = c;
 	}
 
-	/**
-	 * Is this diff a submodule?
-	 *
-	 * @return true if submodule, false otherwise
-	 */
-	protected boolean isSubmodule() {
-		if (diffEntry == null)
-			return false;
-		return diffEntry.getOldMode() == FileMode.GITLINK
-				|| diffEntry.getNewMode() == FileMode.GITLINK;
-	}
-
 	public ImageDescriptor getImageDescriptor(Object object) {
-		final ImageDescriptor base;
-		if (!isSubmodule())
-			base = UIUtils.getEditorImage(getPath());
-		else
-			base = UIIcons.REPOSITORY;
+		final ImageDescriptor base = UIUtils.getEditorImage(getPath());
 		switch (getChange()) {
 		case ADD:
 			return new DecorationOverlayDescriptor(base,
