@@ -881,8 +881,8 @@ public class RepositorySelectionPage extends WizardPage {
 			else
 				portText.setText(""); //$NON-NLS-1$
 
-			if (u.getScheme() != null)
-				scheme.select(scheme.indexOf(u.getScheme()));
+			Protocol p = Protocol.fromUri(u);
+			scheme.select(scheme.indexOf(p.getDefaultScheme()));
 
 			updateAuthGroup();
 			uri = u;
