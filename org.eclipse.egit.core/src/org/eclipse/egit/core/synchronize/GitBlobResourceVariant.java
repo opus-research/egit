@@ -7,15 +7,14 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
- *     Dariusz Luksza <dariusz@luksza.org>
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import org.eclipse.core.resources.IEncodedStorage;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -26,12 +25,11 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentDescription;
 import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.revwalk.RevCommitList;
 import org.eclipse.team.core.TeamException;
 
 /**
@@ -39,18 +37,28 @@ import org.eclipse.team.core.TeamException;
  */
 class GitBlobResourceVariant extends GitResourceVariant {
 
+	private ObjectId id;
+
+	private Repository repository;
+
 	private IStorage storage;
 
-	private byte[] bytes;
+	private RevCommitList<RevCommit> commitList;
 
-	GitBlobResourceVariant(Repository repo, RevCommit revCommit, String path)
-			throws IOException {
-		super(repo, revCommit, path);
+	GitBlobResourceVariant(IResource resource, Repository repository,
+			ObjectId id, RevCommitList<RevCommit> commitList) {
+		super(resource);
+		this.repository = repository;
+		this.id = id;
+		this.commitList = commitList;
+	}
 
-		if (getObjectId() != null) {
-			ObjectLoader blob = repo.openBlob(getObjectId());
-			bytes = blob.getBytes();
-		}
+	ObjectId getId() {
+		return id;
+	}
+
+	RevCommitList<RevCommit> getCommitList() {
+		return commitList;
 	}
 
 	public boolean isContainer() {
@@ -77,7 +85,13 @@ class GitBlobResourceVariant extends GitResourceVariant {
 				}
 
 				public InputStream getContents() throws CoreException {
-					return new ByteArrayInputStream(bytes);
+					try {
+						return repository.open(id, Constants.OBJ_BLOB)
+								.openStream();
+					} catch (IOException err) {
+						throw new TeamException(new Status(IStatus.ERROR,
+								Activator.getPluginId(), err.getMessage(), err));
+					}
 				}
 
 				public String getCharset() throws CoreException {
@@ -85,8 +99,8 @@ class GitBlobResourceVariant extends GitResourceVariant {
 							.getContentTypeManager();
 					try {
 						IContentDescription description = manager
-								.getDescriptionFor(getContents(), getName(),
-										IContentDescription.ALL);
+								.getDescriptionFor(getContents(),
+										getName(), IContentDescription.ALL);
 						return description == null ? null : description
 								.getCharset();
 					} catch (IOException e) {
@@ -96,24 +110,11 @@ class GitBlobResourceVariant extends GitResourceVariant {
 				}
 			};
 		}
-
 		return storage;
 	}
 
-	public byte[] asBytes() {
-		return bytes;
-	}
-
-	@Override
-	protected TreeWalk getTreeWalk(Repository repo, RevTree revTree,
-			String path) throws IOException {
-		TreeWalk tw = new TreeWalk(repo);
-		tw.reset();
-		tw.addTree(revTree);
-		tw.setRecursive(true);
-		tw.setFilter(PathFilter.create(path));
-
-		return tw.next() ? tw : null;
+	public String getContentIdentifier() {
+		return id.name();
 	}
 
 }
