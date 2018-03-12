@@ -58,7 +58,6 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -70,8 +69,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
-import org.eclipse.jgit.revwalk.FollowFilter;
-import org.eclipse.jgit.revwalk.RenameCallback;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -80,7 +77,6 @@ import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
-import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.osgi.util.NLS;
@@ -229,8 +225,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		IWorkbenchAction showAllBranchesAction;
 
-		BooleanPrefAction followRenamesAction;
-
 		IWorkbenchAction reuseCompareEditorAction;
 
 		ShowFilterAction showAllRepoVersionsAction;
@@ -262,7 +256,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			createShowNotesAction();
 			createWrapCommentAction();
 			createFillCommentAction();
-			createFollowRenamesAction();
 
 			wrapCommentAction.setEnabled(showCommentAction.isChecked());
 			fillCommentAction.setEnabled(showCommentAction.isChecked());
@@ -367,19 +360,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			actionsToDispose.add(showAllBranchesAction);
 		}
 
-		private void createFollowRenamesAction() {
-			followRenamesAction = new BooleanPrefAction(
-					UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES,
-					UIText.GitHistoryPage_FollowRenames) {
-				@Override
-				void apply(boolean follow) {
-					historyPage.refresh();
-				}
-			};
-			followRenamesAction.apply(followRenamesAction.isChecked());
-			actionsToDispose.add(followRenamesAction);
-		}
-
 		private void createShowCommentAction() {
 			showCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT,
@@ -474,7 +454,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return path;
 		}
 
-		/** @return whether the file is a regular file (or a directory) */
+		/** @return <code>true</code> if the file is a regular file,
+		 * 		and <code>false</code> otherwise (directory, project) */
 		public boolean isRegularFile() {
 			return regularFile;
 		}
@@ -485,21 +466,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		 */
 		@Override
 		public boolean equals(Object obj) {
-			if (obj == null || !(obj instanceof FilterPath)) {
+			if (obj == null || !(obj instanceof FilterPath))
 				return false;
-			}
 			FilterPath other = (FilterPath) obj;
-			if (path == null) {
+			if (path == null)
 				return other.path == null;
-			}
 			return path.equals(other.path);
 		}
 
 		@Override
 		public int hashCode() {
-			if (path != null) {
+			if (path != null)
 				return path.hashCode();
-			}
 			return super.hashCode();
 		}
 
@@ -592,8 +570,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private boolean currentShowAllBranches;
 
 	private boolean currentShowNotes;
-
-	private boolean currentFollowRenames;
 
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
@@ -828,12 +804,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 					fileViewer.setInput(null);
 					return;
 				}
-
 				final PlotCommit<?> c = (PlotCommit<?>) sel.getFirstElement();
-
 				commentViewer.setInput(c);
 				fileViewer.setInput(c);
-
 			}
 		});
 		commentViewer
@@ -892,8 +865,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		viewMenuMgr.add(showSubMenuMgr);
 		showSubMenuMgr.add(actions.showAllBranchesAction);
 		showSubMenuMgr.add(actions.showNotesAction);
-		showSubMenuMgr.add(actions.followRenamesAction);
-		showSubMenuMgr.add(new Separator());
 		showSubMenuMgr.add(actions.findAction);
 		showSubMenuMgr.add(actions.showFilesAction);
 		showSubMenuMgr.add(actions.showCommentAction);
@@ -1412,8 +1383,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		graph.getControl().getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				if (!graph.getControl().isDisposed() && job == j) {
-					if (getFollowRenames())
-						updateFollowFilter();
 					graph.setInput(highlightFlag, list, asArray, input);
 					if (trace)
 						GitTraceLocation.getTrace().trace(
@@ -1432,32 +1401,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		if (trace)
 			GitTraceLocation.getTrace().traceExit(
 					GitTraceLocation.HISTORYVIEW.getLocation());
-	}
-
-	/**
-	 * Updates the filter for the fileviewer with the information
-	 * from the revwalk, which files have been renamed. This makes sure
-	 * that the fileViewer only shows those files that part of the selected
-	 * file and its rename-history.
-	 */
-	protected void updateFollowFilter() {
-		if (currentWalk instanceof FollowingSWTWalk) {
-			List<DiffEntry> renamedEntries = ((FollowingSWTWalk) currentWalk).getRenamedEntries();
-			List<String> pathList = new ArrayList<String>(renamedEntries.size());
-			for (DiffEntry entry : renamedEntries) {
-				if (!pathList.contains(entry.getOldPath()))
-					pathList.add(entry.getOldPath());
-
-				if (!pathList.contains(entry.getNewPath()))
-					pathList.add(entry.getNewPath());
-			}
-
-			if (pathList.size() > 0) {
-				TreeWalk fileWalker = fileViewer.getTreeWalk();
-				fileWalker.setFilter(AndTreeFilter.create(PathFilterGroup
-						.createFromStrings(pathList), TreeFilter.ANY_DIFF));
-			}
-		}
 	}
 
 	private void setWarningText(String warning) {
@@ -1534,8 +1477,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES);
 		currentShowNotes = store
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES);
-		boolean followRenamesChanged = currentFollowRenames != getFollowRenames();
-		currentFollowRenames = getFollowRenames();
 
 		if (!db.equals(currentRepo)) {
 			repoChanged = true;
@@ -1544,14 +1485,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 		return pathChanged
 			|| currentWalk == null || headChanged || repoChanged || allBranchesChanged
-			|| showNotesChanged || followRenamesChanged;
-	}
-
-	/**
-	 * @return whether following renames is currently enabled
-	 */
-	protected boolean getFollowRenames() {
-		return store.getBoolean(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES);
+			|| showNotesChanged;
 	}
 
 	private AnyObjectId resolveHead(Repository db, boolean acceptNull) {
@@ -1660,10 +1594,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		currentHeadId = headId;
 		if (currentWalk != null)
 			currentWalk.release();
-		if (getFollowRenames())
-			currentWalk = new FollowingSWTWalk(db);
-		else
-			currentWalk = new SWTWalk(db);
+		currentWalk = new SWTWalk(db);
 		try {
 			currentWalk.addAdditionalRefs(db.getRefDatabase().getAdditionalRefs());
 			currentWalk.addAdditionalRefs(db.getRefDatabase().
@@ -1720,27 +1651,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private TreeWalk createFileWalker(Repository db, List<FilterPath> paths) {
 		final TreeWalk fileWalker = new TreeWalk(db);
 		fileWalker.setRecursive(true);
-		if (store.getBoolean(UIPreferences.RESOURCEHISTORY_FOLLOW_RENAMES)
-				&& !paths.isEmpty()
-				&& allRegularFiles(paths)) {
-			pathFilters = paths;
-
-			List<String> selectedPaths = new ArrayList<String>(paths.size());
-			for (FilterPath filterPath : paths)
-				selectedPaths.add(filterPath.getPath());
-
-			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
-			currentWalk.setTreeFilter(followFilter);
-			// for the fileViewer, we start with a simple path filter, until we know
-			// all its names from the rename-history (see updateFollowFilter)
-			fileWalker.setFilter(AndTreeFilter.create(PathFilterGroup
-					.createFromStrings(selectedPaths), TreeFilter.ANY_DIFF));
-		} else if (paths.size() > 0) {
+		if (paths.size() > 0) {
 			pathFilters = paths;
 			List<String> stringPaths = new ArrayList<String>(paths.size());
 			for (FilterPath p : paths)
 				stringPaths.add(p.getPath());
-
 			currentWalk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
 					.createFromStrings(stringPaths), TreeFilter.ANY_DIFF));
 			fileWalker.setFilter(currentWalk.getTreeFilter().clone());
@@ -1751,39 +1666,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			fileWalker.setFilter(TreeFilter.ANY_DIFF);
 		}
 		return fileWalker;
-	}
-
-	/**
-	 * Creates a filter for the given files, will make sure that renames/copies
-	 * of all files will be followed.
-	 * @param paths the list of files to follow, must not be <code>null</code> or empty
-	 * @return the ORed list of {@link FollowFilter follow filters}
-	 */
-	private TreeFilter createFollowFilterFor(List<String> paths) {
-		if (paths == null || paths.isEmpty())
-			throw new IllegalArgumentException("paths must not be null nor empty"); //$NON-NLS-1$
-
-		List<TreeFilter> followFilters = new ArrayList<TreeFilter>(paths.size());
-		for (String path : paths)
-			followFilters.add(FollowFilter.create(path));
-
-		if (followFilters.size() == 1)
-			return followFilters.get(0);
-
-		return OrTreeFilter.create(followFilters);
-	}
-
-	/**
-	 * @return Returns <code>true</code> if <b>all</b> filterpaths refer to plain files,
-	 * 			or if the list is empty.
-	 * @param paths the paths to check
-	 */
-	private boolean allRegularFiles(List<FilterPath> paths) {
-		for (FilterPath filterPath : paths) {
-			if (!filterPath.isRegularFile())
-				return false;
-		}
-		return true;
 	}
 
 	private void scheduleNewGenerateHistoryJob() {
@@ -1894,44 +1776,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				return;
 			}
 			job = null;
-		}
-	}
-
-	/**
-	 * Special version of SWTWalk that tracks which files are renamed/copied.
-	 */
-	private static class FollowingSWTWalk extends SWTWalk {
-		private RenameCallback callback = new RenameCallback() {
-			@Override
-			public void renamed(DiffEntry entry) {
-				renamedEntries.add(entry);
-			}
-		};
-		private List<DiffEntry> renamedEntries = new ArrayList<DiffEntry>(4);
-
-		FollowingSWTWalk(Repository repo) {
-			super(repo);
-		}
-
-		@Override
-		protected void reset(int aRetainFlags) {
-			super.reset(aRetainFlags);
-			renamedEntries.clear();
-		}
-
-		public List<DiffEntry> getRenamedEntries() {
-			return new ArrayList<DiffEntry>(renamedEntries);
-		}
-
-		@Override
-		public void setTreeFilter(TreeFilter filter) {
-			super.setTreeFilter(filter);
-			if (filter instanceof FollowFilter) {
-				FollowFilter followFilter = (FollowFilter) filter;
-				RenameCallback renameCallback = followFilter.getRenameCallback();
-				if (renameCallback == null)
-					followFilter.setRenameCallback(callback);
-			}
 		}
 	}
 }
