@@ -36,7 +36,6 @@ import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.AfterClass;
@@ -113,7 +112,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		dialog = openCompareWithDialog(compareWithCommitMenuText, dialogTitle);
 		dialog.bot().table().select(1);
 		dialog.bot().button(IDialogConstants.OK_LABEL).click();
-		waitUntilCompareTreeViewTreeHasNodeCount(1);
+		assertEquals(1, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 	}
 
 	@Test
@@ -126,14 +126,16 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		// use the default (the last commit) -> no changes
 		dialog.bot().button(UIText.CompareTargetSelectionDialog_CompareButton)
 				.click();
-		waitUntilCompareTreeViewTreeHasNodeCount(0);
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 		// use the tag -> should have a change
 		dialog = openCompareWithDialog(compareWithRefActionLabel, dialogTitle);
 		dialog.bot().tree().getTreeItem(TAGS).expand().getNode("SomeTag")
 				.select();
 		dialog.bot().button(UIText.CompareTargetSelectionDialog_CompareButton)
 				.click();
-		waitUntilCompareTreeViewTreeHasNodeCount(1);
+		assertEquals(1, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 	}
 
 	@Test
@@ -150,7 +152,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		clickCompareWith(compareWithIndexActionLabel);
 
-		waitUntilCompareTreeViewTreeHasNodeCount(1);
+		assertEquals(1, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 
 		// add to index -> no more changes
 		new Git(lookupRepository(repositoryFile)).add().addFilepattern(
@@ -168,7 +171,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		rop.execute(new NullProgressMonitor());
 
 		clickCompareWith(compareWithIndexActionLabel);
-		waitUntilCompareTreeViewTreeHasNodeCount(0);
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 	}
 
 	@Test
@@ -178,13 +182,16 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		clickCompareWith(compareWithHeadMenuLabel);
 
 		// compare with HEAD should not have any changes
-		waitUntilCompareTreeViewTreeHasNodeCount(0);
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 		// change test file -> should have one change
 		setTestFileContent("Hello there");
 
 		clickCompareWith(compareWithHeadMenuLabel);
 
-		waitUntilCompareTreeViewTreeHasNodeCount(1);
+		assertEquals(1, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
+
 		// add to index -> should still show as change
 		new Git(lookupRepository(repositoryFile)).add().addFilepattern(
 				PROJ1 + "/" + FOLDER + "/" + FILE1).call();
@@ -201,7 +208,8 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		rop.execute(new NullProgressMonitor());
 
 		clickCompareWith(compareWithHeadMenuLabel);
-		waitUntilCompareTreeViewTreeHasNodeCount(0);
+		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
+				.getAllItems().length);
 	}
 
 	private void clickCompareWith(String menuLabel) {
@@ -221,10 +229,5 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 				menuString);
 		SWTBotShell dialog = bot.shell(dialogTitle);
 		return dialog;
-	}
-	
-	private void waitUntilCompareTreeViewTreeHasNodeCount(int nodeCount) {
-		SWTBotTree tree = bot.viewById(CompareTreeView.ID).bot().tree();
-		bot.waitUntil(Conditions.treeHasRows(tree, nodeCount), 10000);
 	}
 }
