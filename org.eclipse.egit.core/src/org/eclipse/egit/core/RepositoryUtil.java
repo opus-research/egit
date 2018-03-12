@@ -473,7 +473,7 @@ public class RepositoryUtil {
 
 	/**
 	 * Checks if resource with given path is to be ignored.
-	 * 
+	 *
 	 * @param path
 	 *            Path to be checked
 	 * @return true if the path matches an ignore rule
@@ -491,9 +491,8 @@ public class RepositoryUtil {
 		while (walk.next()) {
 			WorkingTreeIterator workingTreeIterator = walk.getTree(0,
 					WorkingTreeIterator.class);
-			if (walk.getPathString().equals(repoRelativePath)) {
+			if (walk.getPathString().equals(repoRelativePath))
 				return workingTreeIterator.isEntryIgnored();
-			}
 			if (workingTreeIterator.getEntryFileMode().equals(FileMode.TREE))
 				walk.enterSubtree();
 		}
