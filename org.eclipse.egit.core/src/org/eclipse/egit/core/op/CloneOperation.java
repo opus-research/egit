@@ -42,8 +42,6 @@ public class CloneOperation {
 
 	private final boolean allSelected;
 
-	private boolean cloneSubmodules;
-
 	private final Collection<Ref> selectedBranches;
 
 	private final File workdir;
@@ -98,19 +96,10 @@ public class CloneOperation {
 
 	/**
 	 * Sets a credentials provider
-	 *
 	 * @param credentialsProvider
 	 */
 	public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
 		this.credentialsProvider = credentialsProvider;
-	}
-
-	/**
-	 * @param cloneSubmodules
-	 *            true to initialize and update submodules
-	 */
-	public void setCloneSubmodules(boolean cloneSubmodules) {
-		this.cloneSubmodules = cloneSubmodules;
 	}
 
 	/**
@@ -144,7 +133,6 @@ public class CloneOperation {
 			cloneRepository.setURI(uri.toString());
 			cloneRepository.setTimeout(timeout);
 			cloneRepository.setCloneAllBranches(allSelected);
-			cloneRepository.setCloneSubmodules(cloneSubmodules);
 			if (selectedBranches != null) {
 				List<String> branches = new ArrayList<String>();
 				for (Ref branch : selectedBranches)
@@ -177,6 +165,7 @@ public class CloneOperation {
 		}
 	}
 
+
 	/**
 	 * @return The git directory which will contain the repository
 	 */
@@ -185,8 +174,7 @@ public class CloneOperation {
 	}
 
 	/**
-	 * @param task
-	 *            to be performed after clone
+	 * @param task to be performed after clone
 	 */
 	public synchronized void addPostCloneTask(PostCloneTask task) {
 		if (postCloneTasks == null)
@@ -197,20 +185,17 @@ public class CloneOperation {
 	/**
 	 * A task which can be added to be performed after clone
 	 */
-	public interface PostCloneTask {
+	public interface PostCloneTask  {
 
 		/**
 		 * Executes the task
-		 *
-		 * @param repository
-		 *            the cloned git repository
+		 * @param repository the cloned git repository
 		 *
 		 * @param monitor
-		 *            a progress monitor, or <code>null</code> if progress
-		 *            reporting and cancellation are not desired
+		 *            a progress monitor, or <code>null</code> if progress reporting
+		 *            and cancellation are not desired
 		 * @throws CoreException
 		 */
-		void execute(Repository repository, IProgressMonitor monitor)
-				throws CoreException;
+		void execute(Repository repository, IProgressMonitor monitor) throws CoreException;
 	}
 }
