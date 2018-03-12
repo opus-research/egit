@@ -271,12 +271,12 @@ public class CompareTreeView extends ViewPart implements IMenuListener, IShowInS
 						getBaseVersionText());
 				right = getTypedElement(fileNode, fileNode.rightRevision,
 						getCompareVersionText());
-				Repository repository = getRepository();
-				IWorkbenchPage page = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage();
+
 				GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
-						left, right, repository, page);
-				CompareUtils.openInCompareEditor(page,
+						left, right, PlatformUI.getWorkbench()
+								.getActiveWorkbenchWindow().getActivePage());
+				CompareUtils.openInCompare(PlatformUI.getWorkbench()
+						.getActiveWorkbenchWindow().getActivePage(),
 						compareInput);
 			} else {
 				IFile file = fileNode.getFile();
