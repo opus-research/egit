@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree;
 
-import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
@@ -28,7 +28,7 @@ public enum RepositoryTreeNodeType {
 	/** */
 	LOCAL(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
-			/** */
+	/** */
 	BRANCHHIERARCHY(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
 	/** */
@@ -58,14 +58,18 @@ public enum RepositoryTreeNodeType {
 	FETCH(UIIcons.FETCH.createImage()), //
 	/**	 */
 	PUSH(UIIcons.PUSH.createImage()), //
+	/** */
+	SUBMODULES(UIIcons.SUBMODULES.createImage()),
+	/** */
+	STASH(UIIcons.STASH.createImage()),
+	/** */
+	STASHED_COMMIT(UIIcons.CHANGESET.createImage()),
 	/**	 */
 	WORKINGDIR(PlatformUI.getWorkbench().getSharedImages().getImage(
 			ISharedImages.IMG_OBJ_FOLDER)), //
 	/** */
 	ERROR(PlatformUI.getWorkbench().getSharedImages().getImage(
-			ISharedImages.IMG_ELCL_STOP)) // TODO icon?
-
-	;
+			ISharedImages.IMG_ELCL_STOP)); // TODO icon?
 
 	private final Image myImage;
 
@@ -80,7 +84,4 @@ public enum RepositoryTreeNodeType {
 	public Image getIcon() {
 		return myImage;
 	}
-
-
-
 }

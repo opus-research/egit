@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, 2013 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.merge;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -24,20 +23,21 @@ import org.eclipse.compare.structuremergeviewer.IDiffContainer;
 import org.eclipse.compare.structuremergeviewer.IDiffElement;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.EditableRevision;
-import org.eclipse.egit.ui.internal.LocalFileRevision;
+import org.eclipse.egit.ui.internal.FileEditableRevision;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput.EmptyTypedElement;
-import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.egit.ui.internal.LocalFileRevision;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jgit.api.RebaseCommand;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -114,7 +114,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				if (repo != null && repo != map.getRepository())
 					throw new InvocationTargetException(
 							new IllegalStateException(
-									UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
+									UIText.RepositoryAction_multiRepoSelection));
 				filterPaths.add(map.getRepoRelativePath(resource));
 				repo = map.getRepository();
 			}
@@ -122,7 +122,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			if (repo == null)
 				throw new InvocationTargetException(
 						new IllegalStateException(
-								UIText.AbstractHistoryCommanndHandler_NoUniqueRepository));
+								UIText.RepositoryAction_multiRepoSelection));
 
 			if (monitor.isCanceled())
 				throw new InterruptedException();
@@ -194,17 +194,17 @@ public class GitMergeEditorInput extends CompareEditorInput {
 			// set the labels
 			CompareConfiguration config = getCompareConfiguration();
 			config.setRightLabel(NLS.bind(LABELPATTERN, rightCommit
-					.getShortMessage(), rightCommit.name()));
+					.getShortMessage(), CompareUtils.truncatedRevision(rightCommit.name())));
 
 			if (!useWorkspace)
 				config.setLeftLabel(NLS.bind(LABELPATTERN, headCommit
-						.getShortMessage(), headCommit.name()));
+						.getShortMessage(), CompareUtils.truncatedRevision(headCommit.name())));
 			else
 				config.setLeftLabel(UIText.GitMergeEditorInput_WorkspaceHeader);
 
 			if (ancestorCommit != null)
 				config.setAncestorLabel(NLS.bind(LABELPATTERN, ancestorCommit
-						.getShortMessage(), ancestorCommit.name()));
+						.getShortMessage(), CompareUtils.truncatedRevision(ancestorCommit.name())));
 
 			// set title and icon
 			setTitle(NLS.bind(UIText.GitMergeEditorInput_MergeEditorTitle,
@@ -215,7 +215,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 
 			// build the nodes
 			try {
-				return buildDiffContainer(repo, rightCommit, headCommit,
+				return buildDiffContainer(repo, headCommit,
 						ancestorCommit, filterPaths, rw, monitor);
 			} catch (IOException e) {
 				throw new InvocationTargetException(e);
@@ -241,7 +241,7 @@ public class GitMergeEditorInput extends CompareEditorInput {
 	}
 
 	private IDiffContainer buildDiffContainer(Repository repository,
-			RevCommit rightCommit, RevCommit headCommit,
+			RevCommit headCommit,
 			RevCommit ancestorCommit, List<String> filterPaths, RevWalk rw,
 			IProgressMonitor monitor) throws IOException, InterruptedException {
 
@@ -266,10 +266,14 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					suffixFilters.add(PathFilter.create(filterPath));
 				TreeFilter otf = OrTreeFilter.create(suffixFilters);
 				tw.setFilter(AndTreeFilter.create(otf, notIgnoredFilter));
-			} else if (filterPaths.size() > 0)
-				tw.setFilter(AndTreeFilter.create(PathFilter.create(filterPaths
-						.get(0)), notIgnoredFilter));
-			else
+			} else if (filterPaths.size() > 0) {
+				String path = filterPaths.get(0);
+				if (path.length() == 0)
+					tw.setFilter(notIgnoredFilter);
+				else
+					tw.setFilter(AndTreeFilter.create(PathFilter.create(path),
+							notIgnoredFilter));
+			} else
 				tw.setFilter(notIgnoredFilter);
 
 			tw.setRecursive(true);
@@ -307,10 +311,13 @@ public class GitMergeEditorInput extends CompareEditorInput {
 					continue;
 
 				ITypedElement right;
-				if (conflicting)
-					right = CompareUtils.getFileRevisionTypedElement(gitPath,
-							rightCommit, repository);
-				else
+				if (conflicting) {
+					GitFileRevision revision = GitFileRevision.inIndex(
+							repository, gitPath, DirCacheEntry.STAGE_3);
+					String encoding = CompareCoreUtils.getResourceEncoding(
+							repository, gitPath);
+					right = new FileRevisionTypedElement(revision, encoding);
+				} else
 					right = CompareUtils.getFileRevisionTypedElement(gitPath,
 							headCommit, repository);
 
@@ -322,9 +329,8 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				// if the file is not conflicting (as it was auto-merged)
 				// we will show the auto-merged (local) version
 
-				IPath locationPath = new Path(fit.getEntryFile().getPath());
-				final IFile file = ResourcesPlugin.getWorkspace().getRoot()
-						.getFileForLocation(locationPath);
+				IFile file = ResourceUtil.getFileForLocation(repository,
+						fit.getEntryPathString());
 				if (file == null)
 					// TODO in the future, we should be able to show a version
 					// for a non-workspace file as well
@@ -332,37 +338,14 @@ public class GitMergeEditorInput extends CompareEditorInput {
 				if (!conflicting || useWorkspace)
 					rev = new LocalFileRevision(file);
 				else
-					rev = GitFileRevision.inCommit(repository, headCommit,
-							gitPath, null);
+					rev = GitFileRevision.inIndex(repository, gitPath,
+							DirCacheEntry.STAGE_2);
 
-				EditableRevision leftEditable = new EditableRevision(rev) {
-					@Override
-					public void setContent(final byte[] newContent) {
-						try {
-							run(false, false, new IRunnableWithProgress() {
-								public void run(IProgressMonitor myMonitor)
-										throws InvocationTargetException,
-										InterruptedException {
-									try {
-										file.setContents(
-												new ByteArrayInputStream(
-														newContent), false,
-												true, myMonitor);
-									} catch (CoreException e) {
-										throw new InvocationTargetException(e);
-									}
-								}
-							});
-						} catch (InvocationTargetException e) {
-							Activator
-									.handleError(e.getTargetException()
-											.getMessage(), e
-											.getTargetException(), true);
-						} catch (InterruptedException e) {
-							// ignore here
-						}
-					}
-				};
+				IRunnableContext runnableContext = getContainer();
+				if (runnableContext == null)
+					runnableContext = PlatformUI.getWorkbench().getProgressService();
+
+				FileEditableRevision leftEditable = new FileEditableRevision(rev, file, runnableContext);
 				// make sure we don't need a round trip later
 				try {
 					leftEditable.cacheContents(monitor);

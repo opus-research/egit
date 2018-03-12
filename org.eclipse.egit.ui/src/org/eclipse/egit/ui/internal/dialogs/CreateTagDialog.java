@@ -2,6 +2,7 @@
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,11 +27,10 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
-import org.eclipse.egit.ui.internal.SWTUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IInputValidator;
@@ -38,9 +38,6 @@ import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelection;
@@ -91,6 +88,8 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
  */
 public class CreateTagDialog extends TitleAreaDialog {
 
+	private static final int MAX_COMMIT_COUNT = 1000;
+
 	/**
 	 * Button id for a "Clear" button (value 22).
 	 */
@@ -134,14 +133,9 @@ public class CreateTagDialog extends TitleAreaDialog {
 
 		private final Image IMG_LIGHTTAG;
 
-		private final ResourceManager fImageCache;
-
 		private TagLabelProvider() {
-			fImageCache = new LocalResourceManager(
-					JFaceResources.getResources());
-			IMG_TAG = fImageCache.createImage(UIIcons.TAG);
-			IMG_LIGHTTAG = SWTUtils.getDecoratedImage(
-					fImageCache.createImage(UIIcons.TAG), UIIcons.OVR_LIGHTTAG);
+			IMG_TAG = UIIcons.TAG_ANNOTATED.createImage();
+			IMG_LIGHTTAG = UIIcons.TAG.createImage();
 		}
 
 		public Image getColumnImage(Object element, int columnIndex) {
@@ -165,7 +159,8 @@ public class CreateTagDialog extends TitleAreaDialog {
 		}
 
 		public void dispose() {
-			fImageCache.dispose();
+			IMG_TAG.dispose();
+			IMG_LIGHTTAG.dispose();
 			super.dispose();
 		}
 	}
@@ -375,7 +370,7 @@ public class CreateTagDialog extends TitleAreaDialog {
 			tagName = tagNameText.getText();
 			if (commitCombo != null)
 				tagCommit = commitCombo.getValue();
-			tagMessage = tagMessageText.getText();
+			tagMessage = tagMessageText.getCommitMessage();
 			overwriteTag = overwriteButton.getSelection();
 			//$FALL-THROUGH$ continue propagating OK button action
 		default:
@@ -520,6 +515,10 @@ public class CreateTagDialog extends TitleAreaDialog {
 					}
 					for (RevCommit revCommit : commits)
 						commitCombo.add(revCommit);
+
+					// Set combo selection if a tag is selected
+					if (tag != null)
+						commitCombo.setSelectedElement(tag.getObject());
 				}
 				composite.layout(true);
 			}
@@ -655,8 +654,18 @@ public class CreateTagDialog extends TitleAreaDialog {
 			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
 		}
 		// do the walk to get the commits
-		for (RevCommit commit : revWalk)
-			commits.add(commit);
+		RevCommit commit;
+		long count = 0;
+		try {
+			while ((commit = revWalk.next()) != null
+					&& count < MAX_COMMIT_COUNT) {
+				commits.add(commit);
+				count++;
+			}
+		} catch (IOException e) {
+			Activator.logError(UIText.TagAction_errorWhileGettingRevCommits, e);
+			setErrorMessage(UIText.TagAction_errorWhileGettingRevCommits);
+		}
 	}
 
 	/**

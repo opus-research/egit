@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.eclipse.core.expressions.PropertyTester;
+import org.eclipse.egit.ui.internal.ResourcePropertyTester;
+import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -28,6 +30,17 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 
 	public boolean test(Object receiver, String property, Object[] args,
 			Object expectedValue) {
+		boolean value = internalTest(receiver, property);
+		boolean trace = GitTraceLocation.PROPERTIESTESTER.isActive();
+		if (trace)
+			GitTraceLocation
+					.getTrace()
+					.trace(GitTraceLocation.PROPERTIESTESTER.getLocation(),
+							"prop "	+ property + " of " + receiver + " = " + value + ", expected = " + expectedValue); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		return value;
+	}
+
+	private boolean internalTest(Object receiver, String property) {
 
 		if (!(receiver instanceof RepositoryTreeNode))
 			return false;
@@ -39,8 +52,8 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		if (property.equals("containsHead")) //$NON-NLS-1$
 			return containsHead(node);
 
-		if (property.equals("isSafe")) //$NON-NLS-1$
-			return node.getRepository().getRepositoryState() == RepositoryState.SAFE;
+		if (ResourcePropertyTester.testRepositoryState(node.getRepository(), property))
+			return true;
 
 		if (property.equals("isRefCheckedOut")) { //$NON-NLS-1$
 			if (!(node.getObject() instanceof Ref))
@@ -123,9 +136,25 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 			switch (node.getRepository().getRepositoryState()) {
 			case REBASING_INTERACTIVE:
 				return true;
+			case REBASING_REBASING:
+				return true;
 			default:
 				return false;
 			}
+
+		if (property.equals("canContinueRebase")) //$NON-NLS-1$
+			switch (node.getRepository().getRepositoryState()) {
+			case REBASING_INTERACTIVE:
+				return true;
+			default:
+				return false;
+			}
+
+		if ("isSubmodule".equals(property)) { //$NON-NLS-1$
+			RepositoryTreeNode<?> parent = node.getParent();
+			return parent != null
+					&& parent.getType() == RepositoryTreeNodeType.SUBMODULES;
+		}
 		return false;
 	}
 

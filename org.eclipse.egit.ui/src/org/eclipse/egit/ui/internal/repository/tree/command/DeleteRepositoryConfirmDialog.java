@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jgit.lib.Repository;
@@ -87,7 +87,7 @@ public class DeleteRepositoryConfirmDialog extends TitleAreaDialog {
 			GridDataFactory.fillDefaults().grab(true, false).applyTo(removeProjects);
 			removeProjects
 				.setText(NLS
-						.bind(UIText.RepositoriesView_ConfirmProjectDeletion_Question,
+						.bind(UIText.DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox,
 								Integer.valueOf(numberOfProjects)));
 		} else
 			removeProjects.setVisible(false);

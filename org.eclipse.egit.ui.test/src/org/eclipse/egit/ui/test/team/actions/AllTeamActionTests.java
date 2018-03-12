@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,15 +15,17 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses( { BranchAndResetActionTest.class, //
+@SuiteClasses({ BranchAndResetActionTest.class, //
 		TagActionTest.class, //
 		CommitActionTest.class, //
 		PushActionTest.class, //
 		FetchAndMergeActionTest.class, //
 		DisconnectConnectTest.class, //
 		ShowInTest.class, //
-		CompareActionsTest.class
-})
+		CompareActionsTest.class, //
+		ReplaceActionsTest.class, //
+		CreatePatchActionTest.class, //
+		MergeToolTest.class})
 public class AllTeamActionTests {
 	// nothing
 }

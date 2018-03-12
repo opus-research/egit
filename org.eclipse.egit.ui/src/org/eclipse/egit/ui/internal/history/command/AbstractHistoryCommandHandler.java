@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +13,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +26,10 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.history.HistoryPageInput;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
@@ -34,8 +38,10 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -97,6 +103,11 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			}
 
 		}
+
+		Repository repo = AdapterUtils.adapt(input, Repository.class);
+		if (repo != null)
+			return repo;
+
 		throw new ExecutionException(
 				UIText.AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage);
 	}
@@ -147,11 +158,45 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	}
 
 	protected IStructuredSelection getSelection(GitHistoryPage page) {
+		if (page == null)
+			return StructuredSelection.EMPTY;
 		ISelection pageSelection = page.getSelectionProvider().getSelection();
-		if (pageSelection instanceof IStructuredSelection) {
+		if (pageSelection instanceof IStructuredSelection)
 			return (IStructuredSelection) pageSelection;
-		} else
-			return new StructuredSelection();
+		else
+			return StructuredSelection.EMPTY;
+	}
+
+	/**
+	 * Gets the selected commits, re-parsed to have correct parent information
+	 * regardless of how history was walked.
+	 *
+	 * @return the selected commits, or an empty list
+	 * @throws ExecutionException
+	 */
+	protected List<RevCommit> getSelectedCommits() throws ExecutionException {
+		List<RevCommit> commits = new ArrayList<RevCommit>();
+		GitHistoryPage page = getPage();
+		if (page == null)
+			return Collections.emptyList();
+		IStructuredSelection selection = getSelection(page);
+		HistoryPageInput input = page.getInputInternal();
+		if (input == null)
+			return Collections.emptyList();
+		RevWalk walk = new RevWalk(input.getRepository());
+		try {
+			for (Object element : selection.toList()) {
+				RevCommit commit = (RevCommit) element;
+				// Re-parse commit to clear effects of TreeFilter
+				RevCommit reparsed = walk.parseCommit(commit.getId());
+				commits.add(reparsed);
+			}
+		} catch (IOException e) {
+			throw new ExecutionException(e.getMessage(), e);
+		} finally {
+			walk.release();
+		}
+		return commits;
 	}
 
 	/**
@@ -160,16 +205,18 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	 *
 	 * @param commit
 	 * @param repo
-	 * @param refPrefix
+	 * @param refPrefixes
 	 *            e.g. "refs/heads/" or ""
 	 * @return a list of RefNodes
 	 */
-	protected List<RefNode> getRefNodes(RevCommit commit, Repository repo, String refPrefix) {
+	protected List<RefNode> getRefNodes(RevCommit commit, Repository repo,
+			String... refPrefixes) {
 		List<Ref> availableBranches = new ArrayList<Ref>();
 		List<RefNode> nodes = new ArrayList<RefNode>();
 		try {
-			Map<String, Ref> branches = repo.getRefDatabase().getRefs(
-					refPrefix);
+			Map<String, Ref> branches = new HashMap<String, Ref>();
+			for (String refPrefix : refPrefixes)
+				branches.putAll(repo.getRefDatabase().getRefs(refPrefix));
 			for (Ref branch : branches.values()) {
 				if (branch.getLeaf().getObjectId().equals(commit.getId()))
 					availableBranches.add(branch);
@@ -182,5 +229,48 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 			// ignore here
 		}
 		return nodes;
+	}
+
+	protected List<Ref> getBranchesOfCommit(GitHistoryPage page,
+			final Repository repo, boolean hideCurrentBranch)
+			throws IOException {
+		String head = repo.getFullBranch();
+		return getBranchesOfCommit(page, head, hideCurrentBranch);
+	}
+
+	protected List<Ref> getBranchesOfCommit(GitHistoryPage page) {
+		return getBranchesOfCommit(page, (String) null, false);
+	}
+
+	private List<Ref> getBranchesOfCommit(GitHistoryPage page, String head,
+			boolean hideCurrentBranch) {
+		final List<Ref> branchesOfCommit = new ArrayList<Ref>();
+		IStructuredSelection selection = getSelection(page);
+		if (selection.isEmpty())
+			return branchesOfCommit;
+		PlotCommit commit = (PlotCommit) selection.getFirstElement();
+
+		int refCount = commit.getRefCount();
+		for (int i = 0; i < refCount; i++) {
+			Ref ref = commit.getRef(i);
+			String refName = ref.getName();
+			if (hideCurrentBranch && head != null && refName.equals(head))
+				continue;
+			if (refName.startsWith(Constants.R_HEADS)
+					|| refName.startsWith(Constants.R_REMOTES))
+				branchesOfCommit.add(ref);
+		}
+		return branchesOfCommit;
+	}
+
+	protected Repository getRepository(GitHistoryPage page) {
+		if (page == null)
+			return null;
+		HistoryPageInput input = page.getInputInternal();
+		if (input == null)
+			return null;
+
+		final Repository repository = input.getRepository();
+		return repository;
 	}
 }

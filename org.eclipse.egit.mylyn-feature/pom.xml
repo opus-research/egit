@@ -16,12 +16,13 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
   </parent>
 
+  <groupId>org.eclipse.egit.feature</groupId>
   <artifactId>org.eclipse.egit.mylyn</artifactId>
   <packaging>eclipse-feature</packaging>
 
-  <name>EGit Mylyn Feature (Incubation)</name>
+  <name>EGit Mylyn Feature</name>
 
 </project>

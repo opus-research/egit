@@ -22,8 +22,8 @@ import java.util.List;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
@@ -41,6 +41,8 @@ public class CloneOperation {
 	private final URIish uri;
 
 	private final boolean allSelected;
+
+	private boolean cloneSubmodules;
 
 	private final Collection<Ref> selectedBranches;
 
@@ -103,6 +105,14 @@ public class CloneOperation {
 	}
 
 	/**
+	 * @param cloneSubmodules
+	 *            true to initialize and update submodules
+	 */
+	public void setCloneSubmodules(boolean cloneSubmodules) {
+		this.cloneSubmodules = cloneSubmodules;
+	}
+
+	/**
 	 * @param pm
 	 *            the monitor to be used for reporting progress and responding
 	 *            to cancellation. The monitor is never <code>null</code>
@@ -127,12 +137,15 @@ public class CloneOperation {
 			cloneRepository.setCredentialsProvider(credentialsProvider);
 			if (refName != null)
 				cloneRepository.setBranch(refName);
+			else
+				cloneRepository.setNoCheckout(true);
 			cloneRepository.setDirectory(workdir);
 			cloneRepository.setProgressMonitor(gitMonitor);
 			cloneRepository.setRemote(remoteName);
 			cloneRepository.setURI(uri.toString());
 			cloneRepository.setTimeout(timeout);
 			cloneRepository.setCloneAllBranches(allSelected);
+			cloneRepository.setCloneSubmodules(cloneSubmodules);
 			if (selectedBranches != null) {
 				List<String> branches = new ArrayList<String>();
 				for (Ref branch : selectedBranches)
@@ -141,16 +154,20 @@ public class CloneOperation {
 			}
 			Git git = cloneRepository.call();
 			repository = git.getRepository();
-			if (postCloneTasks != null)
-				for (PostCloneTask task : postCloneTasks)
-					task.execute(git.getRepository(), monitor);
+			synchronized (this) {
+				if (postCloneTasks != null)
+					for (PostCloneTask task : postCloneTasks)
+						task.execute(git.getRepository(), monitor);
+			}
 		} catch (final Exception e) {
 			try {
 				if (repository != null)
 					repository.close();
 				FileUtils.delete(workdir, FileUtils.RECURSIVE);
 			} catch (IOException ioe) {
-				throw new InvocationTargetException(ioe);
+				throw new InvocationTargetException(e, NLS.bind(
+						CoreText.CloneOperation_failed_cleanup,
+						ioe.getLocalizedMessage()));
 			}
 			if (monitor.isCanceled())
 				throw new InterruptedException();
@@ -162,7 +179,6 @@ public class CloneOperation {
 				repository.close();
 		}
 	}
-
 
 	/**
 	 * @return The git directory which will contain the repository

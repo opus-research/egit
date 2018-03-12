@@ -37,14 +37,16 @@ import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
+import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -60,6 +62,7 @@ import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.TableCollection;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.swtbot.swt.finder.widgets.TimeoutException;
@@ -102,7 +105,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		top.execute(null);
 		touchAndSubmit(null);
 
-		RepositoriesViewLabelProvider provider = new RepositoriesViewLabelProvider();
+		RepositoriesViewLabelProvider provider = GitRepositoriesViewTestUtils
+				.createLabelProvider();
 		LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
 				null, repo), repo));
 		TAGS = provider.getText(new TagsNode(new RepositoryNode(null, repo),
@@ -191,8 +195,8 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		untracked.add(toBeDeleted);
 		// commit to stable
 		CommitOperation op = new CommitOperation(new IFile[] { toBeDeleted },
-				new ArrayList<IFile>(), untracked, TestUtil.TESTAUTHOR,
-				TestUtil.TESTCOMMITTER, "Add to stable");
+				untracked, TestUtil.TESTAUTHOR, TestUtil.TESTCOMMITTER,
+				"Add to stable");
 		op.execute(null);
 
 		InputStream is = toBeDeleted.getContents();
@@ -210,8 +214,10 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 				}
 			});
 
-			showUndeleted.bot().radio(
-					UIText.NonDeletedFilesTree_FileSystemPathsButton).click();
+			SWTBotToolbarDropDownButton pathButton = showUndeleted.bot().toolbarDropDownButton();
+			pathButton.menuItem(UIText.NonDeletedFilesTree_FileSystemPathsButton).click();
+			// see http://www.eclipse.org/forums/index.php/t/159133/ why we need this
+			pathButton.pressShortcut(KeyStroke.getInstance("ESC"));
 			// fs path
 			IPath path = new Path(lookupRepository(repositoryFile)
 					.getWorkTree().getPath()).append(PROJ1).append(FOLDER)
@@ -220,18 +226,17 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 			for (int i = 0; i < path.segmentCount(); i++) {
 				boolean found = false;
 				String segment = path.segment(i);
-				for (SWTBotTreeItem item : items) {
+				for (SWTBotTreeItem item : items)
 					if (item.getText().equals(segment)) {
 						found = true;
 						items = item.getItems();
 					}
-				}
 				assertTrue(found);
 			}
-
+			pathButton.menuItem(UIText.NonDeletedFilesTree_ResourcePathsButton).click();
+			// see http://www.eclipse.org/forums/index.php/t/159133/ why we need this
+			pathButton.pressShortcut(KeyStroke.getInstance("ESC"));
 			// resource path
-			showUndeleted.bot().radio(
-					UIText.NonDeletedFilesTree_ResourcePathsButton).click();
 			assertEquals("ToBeDeleted", showUndeleted.bot().tree()
 					.getAllItems()[0].getItems()[0].getItems()[0].getText());
 			Display.getDefault().syncExec(new Runnable() {
@@ -301,11 +306,9 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 	@Test
 	public void testCreateDeleteBranch() throws Exception {
 		assertNull(lookupRepository(repositoryFile).resolve("newBranch"));
-		SWTBotShell dialog = openCreateBranchDialog();
-		dialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode("master").select();
-		dialog.bot().button(UIText.CreateBranchDialog_OKButtonText).click();
 
-		SWTBotShell newBranchDialog = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		SWTBotShell newBranchDialog = openCreateBranchDialog();
+		newBranchDialog.bot().comboBoxWithId("BaseBranch").setSelection(0);
 		newBranchDialog.bot().textWithId("BranchName").setText("newBranch");
 		newBranchDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
 		newBranchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
@@ -335,17 +338,18 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 	}
 
 	private SWTBotShell openCreateBranchDialog() {
-		SWTBotTree projectExplorerTree = bot.viewById(
-				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-		getProjectItem(projectExplorerTree, PROJ1).select();
-		String[] menuPath = new String[] {
-				util.getPluginLocalizedValue("TeamMenu.label"),
-				util.getPluginLocalizedValue("SwitchToMenu.label"),
-				UIText.SwitchToMenu_NewBranchMenuLabel };
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
-		SWTBotShell dialog = bot.shell(UIText.CreateBranchDialog_WindowTitle);
-		return dialog;
-	}
+			SWTBotTree projectExplorerTree = bot.viewById(
+					"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+			getProjectItem(projectExplorerTree, PROJ1).select();
+			String[] menuPath = new String[] {
+					util.getPluginLocalizedValue("TeamMenu.label"),
+					util.getPluginLocalizedValue("SwitchToMenu.label"),
+					UIText.SwitchToMenu_NewBranchMenuLabel };
+			ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
+		SWTBotShell dialog = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+			return dialog;
+		}
 
 	private SWTBotShell openRenameBranchDialog() {
 		SWTBotTree projectExplorerTree = bot.viewById(
@@ -447,7 +451,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 
 		Repository repo = lookupRepository(repositoryFile);
 
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.CheckoutDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		if (ObjectId.isId(repo.getBranch())) {
 			String mapped = Activator.getDefault().getRepositoryUtil()
@@ -466,7 +470,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 		assertEquals("Wrong selection count", 1, tc.rowCount());
 		assertEquals("Wrong item selected", newBranch[1], tc.get(0, 0));
 
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot().button(UIText.CheckoutDialog_OkCheckout).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 	}
 

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,15 +9,15 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
+import java.util.List;
+
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.internal.history.GitCreatePatchWizard;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
+import org.eclipse.egit.ui.internal.patch.PatchOperationUI;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 /**
  * Create a patch based on a commit.
@@ -24,15 +25,10 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 public class CreatePatchHandler extends AbstractHistoryCommandHandler {
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IStructuredSelection selection = getSelection(getPage());
-		if (selection.size() == 1) {
-			RevCommit commit = (RevCommit) selection.getFirstElement();
-            Repository repo = getRepository(event);
-			TreeWalk fileWalker = new TreeWalk(repo);
-			fileWalker.setRecursive(true);
-			fileWalker.setFilter(TreeFilter.ANY_DIFF);
-			GitCreatePatchWizard.run(getPart(event), commit, fileWalker, repo);
-		}
+		List<RevCommit> selectedCommits = getSelectedCommits();
+		RevCommit commit = selectedCommits.get(0);
+		Repository repo = getRepository(event);
+		PatchOperationUI.createPatch(getPart(event), commit, repo).start();
 		return null;
 	}
 

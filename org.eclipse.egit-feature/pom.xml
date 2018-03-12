@@ -16,12 +16,13 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>org.eclipse.egit-feature</artifactId>
+  <groupId>org.eclipse.egit.feature</groupId>
+  <artifactId>org.eclipse.egit</artifactId>
   <packaging>eclipse-feature</packaging>
 
-  <name>Eclipse Git Feature (Incubation)</name>
+  <name>Eclipse EGit Feature</name>
 
 </project>

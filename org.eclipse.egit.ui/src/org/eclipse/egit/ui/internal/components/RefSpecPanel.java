@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
+ * Copyright (C) 2008, 2012 Marek Zawirski <marek.zawirski@gmail.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.fieldassist.ComboContentAdapter;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
@@ -142,10 +142,11 @@ public class RefSpecPanel {
 	private static boolean isValidRefExpression(final String s) {
 		if (RefSpec.isWildcard(s)) {
 			// replace wildcard with some legal name just for checking
-			return Repository
-					.isValidRefName(s.substring(0, s.length() - 1) + 'X');
+			return isValidRefExpression(s.substring(0, s.length() - 1) + 'X');
 		} else
-			return Repository.isValidRefName(s);
+			return Repository.isValidRefName(s)
+					|| Repository.isValidRefName(Constants.R_HEADS + s)
+					|| Repository.isValidRefName(Constants.R_TAGS + s);
 	}
 
 	private static RefSpec setRefSpecSource(final RefSpec spec, final String src) {
@@ -662,8 +663,8 @@ public class RefSpecPanel {
 		creationButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				final String src = creationSrcCombo.getText();
-				final String dst = creationDstCombo.getText();
+				final String src = creationSrcComboSupport.getContent();
+				final String dst = creationDstComboSupport.getContent();
 				RefSpec spec = new RefSpec(src + ':' + dst);
 				addRefSpec(spec);
 				creationSrcCombo.setText(""); //$NON-NLS-1$
@@ -778,7 +779,7 @@ public class RefSpecPanel {
 		deleteButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				RefSpec spec = new RefSpec(':' + deleteRefCombo.getText());
+				RefSpec spec = new RefSpec(':' + deleteRefComboSupport.getContent());
 				addRefSpec(spec);
 				deleteRefCombo.setText(""); //$NON-NLS-1$
 			}
@@ -807,7 +808,7 @@ public class RefSpecPanel {
 		addConfiguredButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER,
 				true, false));
 		addConfiguredButton.setText(NLS.bind(
-				UIText.RefSpecPanel_predefinedConfigured, typeString()));
+				UIText.RefSpecPanel_predefinedConfigured, typeStringTitle()));
 		addConfiguredButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -1333,8 +1334,8 @@ public class RefSpecPanel {
 	}
 
 	private void tryAutoCompleteSrcToDst() {
-		final String src = creationSrcCombo.getText();
-		final String dst = creationDstCombo.getText();
+		final String src = creationSrcComboSupport.getContent();
+		final String dst = creationDstComboSupport.getContent();
 
 		if (src == null || src.length() == 0)
 			return;
@@ -1346,7 +1347,8 @@ public class RefSpecPanel {
 				newDst = wildcardSpecComponent(dst);
 			else
 				newDst = unwildcardSpecComponent(dst, src);
-			creationDstCombo.setText(newDst);
+			if (!dst.equals(newDst))
+				creationDstCombo.setText(newDst);
 			return;
 		}
 
@@ -1357,9 +1359,13 @@ public class RefSpecPanel {
 
 		// dst is empty, src is ref or wildcard, so we can rewrite it as user
 		// would perhaps
-		if (pushSpecs)
-			creationDstCombo.setText(src);
-		else {
+		if (pushSpecs) {
+			String newDst = src;
+			newDst = deletePrefixes(src,
+					Constants.R_TAGS.substring(Constants.R_REFS.length()),
+					Constants.R_HEADS.substring(Constants.R_REFS.length()));
+			creationDstCombo.setText(newDst);
+		} else {
 			for (final RefSpec spec : predefinedConfigured) {
 				if (spec.matchSource(src)) {
 					final String newDst = spec.expandFromSource(src)
@@ -1369,16 +1375,25 @@ public class RefSpecPanel {
 				}
 			}
 			if (remoteConfig != null && src.startsWith(Constants.R_HEADS)) {
-				final String newDst = Constants.R_REMOTES + remoteConfig + '/'
+				final String newDst = Constants.R_REMOTES
+						+ remoteConfig.getName() + '/'
 						+ src.substring(Constants.R_HEADS.length());
 				creationDstCombo.setText(newDst);
 			}
 		}
 	}
 
+	private String deletePrefixes(String ref, String... prefixes) {
+		for (String prefix : prefixes)
+			if (ref.startsWith(prefix))
+				return ref.substring(prefix.length());
+
+		return ref;
+	}
+
 	private void tryAutoCompleteDstToSrc() {
-		final String src = creationSrcCombo.getText();
-		final String dst = creationDstCombo.getText();
+		final String src = creationSrcComboSupport.getContent();
+		final String dst = creationDstComboSupport.getContent();
 
 		if (dst == null || dst.length() == 0)
 			return;
@@ -1390,14 +1405,15 @@ public class RefSpecPanel {
 				newSrc = wildcardSpecComponent(src);
 			else
 				newSrc = unwildcardSpecComponent(src, dst);
-			creationSrcCombo.setText(newSrc);
+			if (!src.equals(newSrc))
+				creationSrcCombo.setText(newSrc);
 			return;
 		}
 	}
 
 	private void validateCreationPanel() {
-		final String src = creationSrcCombo.getText();
-		final String dst = creationDstCombo.getText();
+		final String src = creationSrcComboSupport.getContent();
+		final String dst = creationDstComboSupport.getContent();
 
 		// check src ref field
 		boolean srcOk = false;
@@ -1490,7 +1506,7 @@ public class RefSpecPanel {
 	}
 
 	private void validateDeleteCreationPanel() {
-		final String ref = deleteRefCombo.getText();
+		final String ref = deleteRefComboSupport.getContent();
 
 		deleteButton.setEnabled(false);
 		if (ref == null || ref.length() == 0)
@@ -1675,6 +1691,11 @@ public class RefSpecPanel {
 				: UIText.RefSpecPanel_fetch);
 	}
 
+	private String typeStringTitle() {
+		return (pushSpecs ? UIText.RefSpecPanel_pushTitle
+				: UIText.RefSpecPanel_fetchTitle);
+	}
+
 	private void addPredefinedRefSpecs(final RefSpec predefined) {
 		addPredefinedRefSpecs(Collections.singletonList(predefined));
 	}
@@ -1741,6 +1762,8 @@ public class RefSpecPanel {
 	}
 
 	private ObjectId tryResolveLocalRef(final String ref) {
+		if (!isValidRefExpression(ref))
+			return null;
 		try {
 			return localDb.resolve(ref);
 		} catch (final IOException e) {

@@ -10,12 +10,10 @@ package org.eclipse.egit.core.synchronize;
 
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.MASTER;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.InputStream;
@@ -79,12 +77,13 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		// when
 		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
 				.setMessage("Initial commit").call();
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, false);
+		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD,
+				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
 		GitResourceVariantTree grvt = new GitTestResourceVariantTree(dataSet,
-				null);
+				null, null);
 
 		// then
 		assertEquals(1, grvt.roots().length);
@@ -104,33 +103,38 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		// when
 		// create second project
 		TestProject secondProject = new TestProject(true, "Project-2");
-		IProject secondIProject = secondProject.project;
-		// add connect project with repository
-		new ConnectProviderOperation(secondIProject, gitDir).execute(null);
-		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
-				.setMessage("Initial commit").call();
-		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, false);
-		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
+		try {
+			IProject secondIProject = secondProject.project;
+			// add connect project with repository
+			new ConnectProviderOperation(secondIProject, gitDir).execute(null);
+			new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
+					.setMessage("Initial commit").call();
+			GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD,
+					false);
+			GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
-		// given
-		GitResourceVariantTree grvt = new GitTestResourceVariantTree(dataSet,
-				null);
+			// given
+			GitResourceVariantTree grvt = new GitTestResourceVariantTree(dataSet,
+					null, null);
 
-		// then
-		IResource[] roots = grvt.roots();
-		// sort in order to be able to assert the project instances
-		Arrays.sort(roots, new Comparator<IResource>() {
-			public int compare(IResource r1, IResource r2) {
-				String path1 = r1.getFullPath().toString();
-				String path2 = r2.getFullPath().toString();
-				return path1.compareTo(path2);
-			}
-		});
-		assertEquals(2, roots.length);
-		IResource actualProject = roots[0];
-		assertEquals(this.project.project, actualProject);
-		IResource actualProject1 = roots[1];
-		assertEquals(secondIProject, actualProject1);
+			// then
+			IResource[] roots = grvt.roots();
+			// sort in order to be able to assert the project instances
+			Arrays.sort(roots, new Comparator<IResource>() {
+				public int compare(IResource r1, IResource r2) {
+					String path1 = r1.getFullPath().toString();
+					String path2 = r2.getFullPath().toString();
+					return path1.compareTo(path2);
+				}
+			});
+			assertEquals(2, roots.length);
+			IResource actualProject = roots[0];
+			assertEquals(this.project.project, actualProject);
+			IResource actualProject1 = roots[1];
+			assertEquals(secondIProject, actualProject1);
+		} finally {
+			secondProject.dispose();
+		}
 	}
 
 	/**
@@ -150,7 +154,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(null,
+				dataSet);
 
 		// then
 		assertNull(grvt.getResourceVariant(null));
@@ -173,9 +178,12 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
 				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
+		GitSyncCache cache = GitSyncCache.getAllData(dataSet,
+				new NullProgressMonitor());
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(cache,
+				dataSet);
 
 		// then
 		assertNull(grvt.getResourceVariant(mainJava.getResource()));
@@ -199,21 +207,16 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
 				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
+		GitSyncCache cache = GitSyncCache.getAllData(dataSet,
+				new NullProgressMonitor());
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(cache,
+				dataSet);
 
 		// then
-		IResourceVariant actual = grvt.getResourceVariant(mainJava);
-		assertNotNull(actual);
-		assertEquals(fileName, actual.getName());
-
-		InputStream actualIn = actual.getStorage(new NullProgressMonitor())
-				.getContents();
-		byte[] actualByte = getBytesAndCloseStream(actualIn);
-		InputStream expectedIn = mainJava.getContents();
-		byte[] expectedByte = getBytesAndCloseStream(expectedIn);
-		assertArrayEquals(expectedByte, actualByte);
+		// null variant indicates that resource wasn't changed
+		assertNull(grvt.getResourceVariant(mainJava));
 	}
 
 	/**
@@ -239,11 +242,14 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		testRepo.appendContentAndCommit(iProject, file, "// test",
 				"first commit");
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
-				false);
+				true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
+		GitSyncCache cache = GitSyncCache.getAllData(dataSet,
+				new NullProgressMonitor());
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitBaseResourceVariantTree(cache,
+				dataSet);
 
 		// then
 		IResourceVariant actual = grvt.getResourceVariant(mainJava);
@@ -257,10 +263,7 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		byte[] expectedByte = getBytesAndCloseStream(expectedIn);
 
 		// assert arrays not equals
-		if (Arrays.equals(expectedByte, actualByte))
-			fail();
-		else
-			assertTrue(true);
+		assertFalse(Arrays.equals(expectedByte, actualByte));
 	}
 
 	private byte[] getBytesAndCloseStream(InputStream stream) throws Exception {

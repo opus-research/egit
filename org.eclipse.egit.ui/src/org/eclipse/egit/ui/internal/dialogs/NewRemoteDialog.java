@@ -12,11 +12,12 @@ package org.eclipse.egit.ui.internal.dialogs;
 
 import java.util.Set;
 
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -61,7 +62,11 @@ public class NewRemoteDialog extends TitleAreaDialog {
 		super.create();
 		setTitle(UIText.NewRemoteDialog_DialogTitle);
 		setMessage(UIText.NewRemoteDialog_ConfigurationMessage);
-		getButton(OK).setEnabled(false);
+		if (existingRemotes.isEmpty()) {
+			nameText.setText(Constants.DEFAULT_REMOTE_NAME);
+			nameText.selectAll();
+		}
+		checkPage();
 	}
 
 	@Override

@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -23,7 +24,7 @@ import org.eclipse.egit.core.ContainerTreeIterator;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -40,7 +41,7 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		repository = new FileRepository(gitDir);
+		repository = FileRepositoryBuilder.create(gitDir);
 		repository.create();
 
 		file = new File(project.getProject().getLocation().toFile(), "a.txt");
@@ -68,7 +69,7 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 		final Set<String> repositoryPaths = Collections.singleton(mapping
 				.getRepoRelativePath(eclipseFile));
 
-		assertTrue(repositoryPaths.size() == 1);
+		assertEquals(1, repositoryPaths.size());
 		treeWalk.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
 
 		assertTrue(treeWalk.next());

@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,18 +31,22 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.QualifiedName;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
+import org.eclipse.egit.core.JobFamilies;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.WindowCache;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
@@ -52,6 +57,7 @@ import org.eclipse.team.core.RepositoryProvider;
  * a Git repository.
  */
 public class GitProjectData {
+
 	private static final Map<IProject, GitProjectData> projectDataCache = new HashMap<IProject, GitProjectData>();
 
 	private static Set<RepositoryChangeListener> repositoryChangeListeners = new HashSet<RepositoryChangeListener>();
@@ -139,8 +145,35 @@ public class GitProjectData {
 	 *            the repository which has had changes occur within it.
 	 */
 	static void fireRepositoryChanged(final RepositoryMapping which) {
-		for (RepositoryChangeListener listener : getRepositoryChangeListeners())
-			listener.repositoryChanged(which);
+		Job job = new Job(CoreText.GitProjectData_repositoryChangedJobName) {
+
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				RepositoryChangeListener[] listeners = getRepositoryChangeListeners();
+				monitor.beginTask(
+						CoreText.GitProjectData_repositoryChangedTaskName,
+						listeners.length);
+
+				for (RepositoryChangeListener listener : listeners) {
+					listener.repositoryChanged(which);
+					monitor.worked(1);
+				}
+
+				monitor.done();
+
+				return Status.OK_STATUS;
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				if (JobFamilies.REPOSITORY_CHANGED.equals(family))
+					return true;
+
+				return super.belongsTo(family);
+			}
+		};
+
+		job.schedule();
 	}
 
 	/**
@@ -235,13 +268,14 @@ public class GitProjectData {
 	 */
 	public static void reconfigureWindowCache() {
 		final WindowCacheConfig c = new WindowCacheConfig();
-		IEclipsePreferences d = new DefaultScope().getNode(Activator.getPluginId());
-		IEclipsePreferences p = new InstanceScope().getNode(Activator.getPluginId());
+		IEclipsePreferences d = DefaultScope.INSTANCE.getNode(Activator.getPluginId());
+		IEclipsePreferences p = InstanceScope.INSTANCE.getNode(Activator.getPluginId());
 		c.setPackedGitLimit(p.getInt(GitCorePreferences.core_packedGitLimit, d.getInt(GitCorePreferences.core_packedGitLimit, 0)));
 		c.setPackedGitWindowSize(p.getInt(GitCorePreferences.core_packedGitWindowSize, d.getInt(GitCorePreferences.core_packedGitWindowSize, 0)));
 		c.setPackedGitMMAP(p.getBoolean(GitCorePreferences.core_packedGitMMAP, d.getBoolean(GitCorePreferences.core_packedGitMMAP, false)));
 		c.setDeltaBaseCacheLimit(p.getInt(GitCorePreferences.core_deltaBaseCacheLimit, d.getInt(GitCorePreferences.core_deltaBaseCacheLimit, 0)));
-		WindowCache.reconfigure(c);
+		c.setStreamFileThreshold(p.getInt(GitCorePreferences.core_streamFileThreshold, d.getInt(GitCorePreferences.core_streamFileThreshold, 0)));
+		c.install();
 	}
 
 	private final IProject project;
@@ -450,18 +484,15 @@ public class GitProjectData {
 		}
 
 		if (c == null) {
-			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
-					new FileNotFoundException(m.getContainerPath().toString()));
+			logGoneMappedResource(m);
 			m.clear();
 			return;
 		}
 		m.setContainer(c);
 
 		git = c.getLocation().append(m.getGitDirPath()).toFile();
-		if (!git.isDirectory()
-				|| !new File(git, "config").isFile()) {  //$NON-NLS-1$
-			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
-					new FileNotFoundException(m.getContainerPath().toString()));
+		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
+			logGoneMappedResource(m);
 			m.clear();
 			return;
 		}
@@ -470,8 +501,7 @@ public class GitProjectData {
 			m.setRepository(Activator.getDefault().getRepositoryCache()
 					.lookupRepository(git));
 		} catch (IOException ioe) {
-			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
-					new FileNotFoundException(m.getContainerPath().toString()));
+			logGoneMappedResource(m);
 			m.clear();
 			return;
 		}
@@ -495,11 +525,25 @@ public class GitProjectData {
 		}
 	}
 
+	private void logGoneMappedResource(final RepositoryMapping m) {
+		Activator.logError(MessageFormat.format(
+				CoreText.GitProjectData_mappedResourceGone, m.toString()),
+				new FileNotFoundException(m.getContainerPath().toString()));
+	}
+
 	private void protect(IResource resource) {
 		IResource c = resource;
 		while (c != null && !c.equals(getProject())) {
 			trace("protect " + c);  //$NON-NLS-1$
 			protectedResources.add(c);
+			try {
+				c.setTeamPrivateMember(true);
+			} catch (CoreException e) {
+				Activator.logError(MessageFormat.format(
+						CoreText.GitProjectData_FailedToMarkTeamPrivate,
+						c.getFullPath()),
+						e);
+			}
 			c = c.getParent();
 		}
 	}

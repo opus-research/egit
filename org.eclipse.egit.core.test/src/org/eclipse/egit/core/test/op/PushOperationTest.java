@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
+ * Copyright (C) 2010, 2012 Mathias Kinzler <mathias.kinzler@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,20 +10,21 @@ package org.eclipse.egit.core.test.op;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
-import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.ILogListener;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.AddToIndexOperation;
@@ -37,8 +38,11 @@ import org.eclipse.egit.core.test.DualRepositoryTestCase;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
 import org.eclipse.jgit.transport.URIish;
@@ -47,6 +51,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class PushOperationTest extends DualRepositoryTestCase {
+
+
+	private static final String INVALID_URI = "invalid-uri";
 
 	File workdir;
 
@@ -75,32 +82,14 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		testUtils.addFileToProject(project, "folder1/file1.txt", "Hello world");
 
 		repository1.connect(project);
-
-		project.accept(new IResourceVisitor() {
-
-			public boolean visit(IResource resource) throws CoreException {
-				if (resource instanceof IFile) {
-					try {
-						repository1
-								.track(EFS.getStore(resource.getLocationURI())
-										.toLocalFile(0, null));
-					} catch (IOException e) {
-						throw new CoreException(Activator.error(e.getMessage(),
-								e));
-					}
-				}
-				return true;
-			}
-		});
-
+		repository1.trackAllFiles(project);
 		repository1.commit("Initial commit");
 
 		// let's get rid of the project
 		project.delete(false, false, null);
 
 		// let's clone repository1 to repository2
-		URIish uri = new URIish("file:///"
-				+ repository1.getRepository().getDirectory().toString());
+		URIish uri = repository1.getUri();
 		CloneOperation clop = new CloneOperation(uri, true, null, workdir2,
 				"refs/heads/master", "origin", 0);
 		clop.run(null);
@@ -146,16 +135,10 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		files.add(newFile);
 		IFile[] fileArr = files.toArray(new IFile[files.size()]);
 
-		// TODO This should be removed once we replace GitIndex with DirCache
-		// The following wait is currently needed on file
-		// systems with low time stamp accuracy or a buggy
-		// java.io.File.lastModified.
-		Thread.sleep(1000);
-
 		AddToIndexOperation trop = new AddToIndexOperation(files);
 		trop.execute(null);
-		CommitOperation cop = new CommitOperation(fileArr, files, files,
-				TestUtils.AUTHOR, TestUtils.COMMITTER, "Added file");
+		CommitOperation cop = new CommitOperation(fileArr, files, TestUtils.AUTHOR,
+				TestUtils.COMMITTER, "Added file");
 		cop.execute(null);
 
 		proj.delete(false, false, null);
@@ -192,6 +175,64 @@ public class PushOperationTest extends DualRepositoryTestCase {
 	}
 
 	/**
+	 * An invalid URI should yield an operation result with an error message
+	 * and the exception should be logged
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testInvalidUriDuringPush() throws Exception {
+		ILog log = Activator.getDefault().getLog();
+		LogListener listener = new LogListener();
+		log.addLogListener(listener);
+
+		PushOperation pop = createInvalidPushOperation();
+		pop.run(new NullProgressMonitor());
+		PushOperationResult result = pop.getOperationResult();
+		String errorMessage = result.getErrorMessage(new URIish(INVALID_URI));
+		assertNotNull(errorMessage);
+		assertTrue(errorMessage.contains(INVALID_URI));
+
+		assertTrue(listener.loggedSomething());
+		assertTrue(listener.loggedException());
+
+	}
+
+	private PushOperation createInvalidPushOperation() throws Exception {
+		// set up push with invalid URI to provoke an exception
+		PushOperationSpecification spec = new PushOperationSpecification();
+		// the remote is invalid
+		URIish remote = new URIish(INVALID_URI);
+		// update master upon master
+		Repository local = repository1.getRepository();
+		RemoteRefUpdate update = new RemoteRefUpdate(local, "HEAD", "refs/heads/test",
+				false, null, null);
+		spec.addURIRefUpdates(remote, Collections.singletonList(update));
+		// now we can construct the push operation
+		PushOperation pop = new PushOperation(local, spec, false, 0);
+		return pop;
+	}
+
+	private static final class LogListener implements ILogListener {
+		private boolean loggedSomething = false;
+		private boolean loggedException = false;
+
+		public void logging(IStatus status, String plugin) {
+			loggedSomething = true;
+			loggedException = status.getException() != null;
+		}
+
+		public boolean loggedSomething() {
+			return loggedSomething;
+		}
+
+		public boolean loggedException() {
+			return loggedException;
+		}
+
+}
+
+	/**
 	 * We should get an {@link IllegalStateException} if we run
 	 * getOperationResult before run()
 	 *
@@ -220,8 +261,7 @@ public class PushOperationTest extends DualRepositoryTestCase {
 
 		PushOperationSpecification spec = new PushOperationSpecification();
 		// the remote is repo2
-		URIish remote = new URIish("file:///"
-				+ repository2.getRepository().getDirectory().toString());
+		URIish remote = repository2.getUri();
 		// update master upon master
 		List<RemoteRefUpdate> refUpdates = new ArrayList<RemoteRefUpdate>();
 		RemoteRefUpdate update = new RemoteRefUpdate(repository1
@@ -240,6 +280,35 @@ public class PushOperationTest extends DualRepositoryTestCase {
 		} catch (IllegalStateException e) {
 			// expected
 		}
+	}
+
+	@Test
+	public void testUpdateTrackingBranchIfSpecifiedInRemoteRefUpdate() throws Exception {
+		// Commit on repository 2
+		IProject project = importProject(repository2, projectName);
+		RevCommit commit = repository2.addAndCommit(project, new File(workdir2, "test.txt"), "Commit in repository 2");
+		project.delete(false, false, null);
+
+		// We want to push from repository 2 to 1 (because repository 2 already
+		// has tracking set up)
+		URIish remote = repository1.getUri();
+		String trackingRef = "refs/remotes/origin/master";
+		RemoteRefUpdate update = new RemoteRefUpdate(
+				repository2.getRepository(), "HEAD", "refs/heads/master", false,
+				trackingRef, null);
+		PushOperationSpecification spec = new PushOperationSpecification();
+		spec.addURIRefUpdates(remote, Arrays.asList(update));
+
+		PushOperation push = new PushOperation(repository2.getRepository(),
+				spec, false, 0);
+		push.run(null);
+
+		PushOperationResult result = push.getOperationResult();
+		PushResult pushResult = result.getPushResult(remote);
+		assertNotNull("Expected result to have tracking ref update", pushResult.getTrackingRefUpdate(trackingRef));
+
+		ObjectId trackingId = repository2.getRepository().resolve(trackingRef);
+		assertEquals("Expected tracking branch to be updated", commit.getId(), trackingId);
 	}
 
 	private Status getStatus(PushOperationResult operationResult) {

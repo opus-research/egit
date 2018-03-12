@@ -23,20 +23,33 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.internal.CoreText;
+import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.lib.CheckoutEntry;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.ReflogEntry;
+import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.FS;
 import org.osgi.service.prefs.BackingStoreException;
 
@@ -52,7 +65,7 @@ public class RepositoryUtil {
 
 	private final Map<String, String> repositoryNameCache = new HashMap<String, String>();
 
-	private final IEclipsePreferences prefs = new InstanceScope()
+	private final IEclipsePreferences prefs = InstanceScope.INSTANCE
 			.getNode(Activator.getPluginId());
 
 	/**
@@ -106,6 +119,34 @@ public class RepositoryUtil {
 				return null;
 			}
 
+			try {
+				ReflogReader reflogReader = repository.getReflogReader(Constants.HEAD);
+				if (reflogReader != null) {
+					List<ReflogEntry> lastEntry = reflogReader.getReverseEntries();
+					for (ReflogEntry entry : lastEntry) {
+						if (entry.getNewId().name().equals(commitId)) {
+							CheckoutEntry checkoutEntry = entry.parseCheckout();
+							if (checkoutEntry != null) {
+								Ref ref = repository.getRef(checkoutEntry.getToBranch());
+								if (ref != null) {
+									if (ref.getObjectId().getName()
+											.equals(commitId))
+										return checkoutEntry.getToBranch();
+									ref = repository.peel(ref);
+								}
+								if (ref != null) {
+									ObjectId id = ref.getPeeledObjectId();
+									if (id != null && id.getName().equals(commitId))
+										return checkoutEntry.getToBranch();
+								}
+							}
+						}
+					}
+				}
+			} catch (IOException e) {
+				// ignore here
+			}
+
 			Map<String, String> cacheEntry = commitMappingCache.get(repository
 					.getDirectory().toString());
 			if (!refresh && cacheEntry != null
@@ -147,7 +188,8 @@ public class RepositoryUtil {
 						}
 					} else if (any instanceof RevCommit) {
 						RevCommit commit = ((RevCommit)any);
-						tagMap.put(tagRef.getName(), commit.getCommitterIdent().getWhen());
+						if (commit.name().equals(commitId))
+							tagMap.put(tagRef.getName(), commit.getCommitterIdent().getWhen());
 					} // else ignore here
 				}
 			} catch (IOException e) {
@@ -234,20 +276,27 @@ public class RepositoryUtil {
 	 * @param repository
 	 * @return the name
 	 */
-	public String getRepositoryName(Repository repository) {
-		synchronized (repositoryNameCache) {
-			File gitDir = repository.getDirectory();
-			if (gitDir != null) {
-				String name = repositoryNameCache.get(gitDir.getPath()
-						.toString());
-				if (name != null)
-					return name;
-				name = gitDir.getParentFile().getName();
-				repositoryNameCache.put(gitDir.getPath().toString(), name);
-				return name;
-			}
+	public String getRepositoryName(final Repository repository) {
+		File gitDir = repository.getDirectory();
+		if (gitDir == null)
+			return ""; //$NON-NLS-1$
+
+		// Use parent file for non-bare repositories
+		if (!repository.isBare()) {
+			gitDir = gitDir.getParentFile();
+			if (gitDir == null)
+				return ""; //$NON-NLS-1$
 		}
-		return ""; //$NON-NLS-1$
+
+		synchronized (repositoryNameCache) {
+			final String path = gitDir.getPath().toString();
+			String name = repositoryNameCache.get(path);
+			if (name != null)
+				return name;
+			name = gitDir.getName();
+			repositoryNameCache.put(path, name);
+			return name;
+		}
 	}
 
 	/**
@@ -257,27 +306,35 @@ public class RepositoryUtil {
 		return prefs;
 	}
 
+	private Set<String> getRepositories() {
+		String dirs;
+		synchronized (prefs) {
+			dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
+		}
+		if (dirs == null || dirs.length() == 0)
+			return Collections.emptySet();
+		Set<String> configuredStrings = new HashSet<String>();
+		StringTokenizer tok = new StringTokenizer(dirs, File.pathSeparator);
+		while (tok.hasMoreTokens())
+			configuredStrings.add(tok.nextToken());
+		return configuredStrings;
+	}
+
 	/**
 	 *
 	 * @return the list of configured Repository paths; will be sorted
 	 */
 	public List<String> getConfiguredRepositories() {
-		synchronized (prefs) {
-			Set<String> configuredStrings = new HashSet<String>();
+		final List<String> repos = new ArrayList<String>(getRepositories());
+		Collections.sort(repos);
+		return repos;
+	}
 
-			String dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
-			if (dirs != null && dirs.length() > 0) {
-				StringTokenizer tok = new StringTokenizer(dirs,
-						File.pathSeparator);
-				while (tok.hasMoreTokens()) {
-					String dirName = tok.nextToken();
-					configuredStrings.add(dirName);
-				}
-			}
-			List<String> result = new ArrayList<String>();
-			result.addAll(configuredStrings);
-			Collections.sort(result);
-			return result;
+	private String getPath(File repositoryDir) {
+		try {
+			return repositoryDir.getCanonicalPath();
+		} catch (IOException e) {
+			return repositoryDir.getAbsolutePath();
 		}
 	}
 
@@ -296,12 +353,7 @@ public class RepositoryUtil {
 			if (!FileKey.isGitRepository(repositoryDir, FS.DETECTED))
 				throw new IllegalArgumentException();
 
-			String dirString;
-			try {
-				dirString = repositoryDir.getCanonicalPath();
-			} catch (IOException e) {
-				dirString = repositoryDir.getAbsolutePath();
-			}
+			String dirString = getPath(repositoryDir);
 
 			List<String> dirStrings = getConfiguredRepositories();
 			if (dirStrings.contains(dirString)) {
@@ -323,12 +375,7 @@ public class RepositoryUtil {
 	public boolean removeDir(File file) {
 		synchronized (prefs) {
 
-			String dir;
-			try {
-				dir = file.getCanonicalPath();
-			} catch (IOException e1) {
-				dir = file.getAbsolutePath();
-			}
+			String dir = getPath(file);
 
 			Set<String> dirStrings = new HashSet<String>();
 			dirStrings.addAll(getConfiguredRepositories());
@@ -357,4 +404,140 @@ public class RepositoryUtil {
 		}
 	}
 
+	/**
+	 * Does the collection of repository returned by
+	 * {@link #getConfiguredRepositories()} contain the given repository?
+	 *
+	 * @param repository
+	 * @return true if contains repository, false otherwise
+	 */
+	public boolean contains(final Repository repository) {
+		return contains(getPath(repository.getDirectory()));
+	}
+
+	/**
+	 * Does the collection of repository returned by
+	 * {@link #getConfiguredRepositories()} contain the given repository
+	 * directory?
+	 *
+	 * @param repositoryDir
+	 * @return true if contains repository directory, false otherwise
+	 */
+	public boolean contains(final String repositoryDir) {
+		return getRepositories().contains(repositoryDir);
+	}
+
+	/**
+	 * Get short branch text for given repository
+	 *
+	 * @param repository
+	 * @return short branch text
+	 * @throws IOException
+	 */
+	public String getShortBranch(Repository repository) throws IOException {
+		Ref head = repository.getRef(Constants.HEAD);
+		if (head == null || head.getObjectId() == null)
+			return CoreText.RepositoryUtil_noHead;
+
+		if (head.isSymbolic())
+			return repository.getBranch();
+
+		String id = head.getObjectId().name();
+		String ref = mapCommitToRef(repository, id, false);
+		if (ref != null)
+			return Repository.shortenRefName(ref) + ' ' + id.substring(0, 7);
+		else
+			return id.substring(0, 7);
+	}
+
+	/**
+	 * Resolve HEAD and parse the commit. Returns null if HEAD does not exist or
+	 * could not be parsed.
+	 * <p>
+	 * Only use this if you don't already have to work with a RevWalk.
+	 *
+	 * @param repository
+	 * @return the commit or null if HEAD does not exist or could not be parsed.
+	 * @since 2.2
+	 */
+	public RevCommit parseHeadCommit(Repository repository) {
+		RevWalk walk = null;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || head.getObjectId() == null)
+				return null;
+
+			walk = new RevWalk(repository);
+			RevCommit commit = walk.parseCommit(head.getObjectId());
+			return commit;
+		} catch (IOException e) {
+			return null;
+		} finally {
+			if (walk != null)
+				walk.release();
+		}
+	}
+
+	/**
+	 * Checks if resource with given path is to be ignored.
+	 *
+	 * @param path
+	 *            Path to be checked
+	 * @return true if the path matches an ignore rule or no repository mapping
+	 *         could be found, false otherwise
+	 * @throws IOException
+	 * @since 2.3
+	 */
+	public static boolean isIgnored(IPath path) throws IOException {
+		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
+		if (mapping == null)
+			return true; // Linked resources may not be mapped
+		Repository repository = mapping.getRepository();
+		String repoRelativePath = mapping.getRepoRelativePath(path);
+		TreeWalk walk = new TreeWalk(repository);
+		try {
+			walk.addTree(new FileTreeIterator(repository));
+			walk.setFilter(PathFilter.create(repoRelativePath));
+			while (walk.next()) {
+				WorkingTreeIterator workingTreeIterator = walk.getTree(0,
+						WorkingTreeIterator.class);
+				if (walk.getPathString().equals(repoRelativePath))
+					return workingTreeIterator.isEntryIgnored();
+				if (workingTreeIterator.getEntryFileMode()
+						.equals(FileMode.TREE))
+					walk.enterSubtree();
+			}
+		} finally {
+			walk.release();
+		}
+		return false;
+	}
+
+	/**
+	 * Get the fast-forward setting for current branch on the given repository.
+	 *
+	 * @param repository
+	 *            the repository to check
+	 * @return the fast-forward mode for the current branch
+	 * @since 3.0
+	 */
+	public FastForwardMode getFastForwardMode(Repository repository) {
+		FastForwardMode ffmode = FastForwardMode.valueOf(repository.getConfig()
+				.getEnum(ConfigConstants.CONFIG_KEY_MERGE, null,
+						ConfigConstants.CONFIG_KEY_FF,
+						FastForwardMode.Merge.TRUE));
+		ffmode = repository.getConfig().getEnum(
+				ConfigConstants.CONFIG_BRANCH_SECTION,
+				getCurrentBranch(repository),
+				ConfigConstants.CONFIG_KEY_MERGEOPTIONS, ffmode);
+		return ffmode;
+	}
+
+	private String getCurrentBranch(Repository repository) {
+		try {
+			return repository.getBranch();
+		} catch (IOException e) {
+			return null;
+		}
+	}
 }

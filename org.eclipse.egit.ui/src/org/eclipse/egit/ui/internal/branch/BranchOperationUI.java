@@ -10,6 +10,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.branch;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -18,15 +21,17 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.BranchOperation;
+import org.eclipse.egit.core.op.IEGitOperation.PostExecuteTask;
+import org.eclipse.egit.core.op.IEGitOperation.PreExecuteTask;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
-import org.eclipse.egit.ui.internal.dialogs.RenameBranchDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutDialog;
-import org.eclipse.egit.ui.internal.dialogs.CreateBranchDialog;
 import org.eclipse.egit.ui.internal.dialogs.DeleteBranchDialog;
+import org.eclipse.egit.ui.internal.dialogs.RenameBranchDialog;
 import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
@@ -35,6 +40,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
 
 /**
@@ -152,12 +158,44 @@ public class BranchOperationUI {
 		String jobname = NLS.bind(UIText.BranchAction_checkingOut, repoName,
 				target);
 
-		final BranchOperation bop = new BranchOperation(repository, target);
+		final boolean restore = Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.CHECKOUT_PROJECT_RESTORE);
+		final BranchOperation bop = new BranchOperation(repository, target,
+				!restore);
 
 		Job job = new Job(jobname) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
+					if (restore) {
+						final BranchProjectTracker tracker = new BranchProjectTracker(
+								repository);
+						final AtomicReference<IMemento> memento = new AtomicReference<IMemento>();
+						bop.addPreExecuteTask(new PreExecuteTask() {
+
+							public void preExecute(Repository pRepo,
+									IProgressMonitor pMonitor)
+									throws CoreException {
+								// Snapshot current projects before checkout
+								// begins
+								memento.set(tracker.snapshot());
+							}
+						});
+						bop.addPostExecuteTask(new PostExecuteTask() {
+
+							public void postExecute(Repository pRepo,
+									IProgressMonitor pMonitor)
+									throws CoreException {
+								IMemento snapshot = memento.get();
+								if (snapshot == null)
+									return;
+								// Save previous branch's projects and restore
+								// current branch's projects
+								tracker.save(snapshot).restore(pMonitor);
+							}
+						});
+					}
+
 					bop.execute(monitor);
 				} catch (CoreException e) {
 					switch (bop.getResult().getStatus()) {
@@ -229,11 +267,12 @@ public class BranchOperationUI {
 			dialog = new CheckoutDialog(getShell(), repository);
 			break;
 		case MODE_CREATE:
-			dialog = new CreateBranchDialog(getShell(), repository);
-			if (dialog.open() != Window.OK)
-				return null;
-			CreateBranchWizard wiz = new CreateBranchWizard(repository, dialog
-					.getRefName());
+			CreateBranchWizard wiz;
+			try {
+				wiz = new CreateBranchWizard(repository, repository.getFullBranch());
+			} catch (IOException e) {
+				wiz = new CreateBranchWizard(repository);
+			}
 			new WizardDialog(getShell(), wiz).open();
 			return null;
 		case MODE_DELETE:

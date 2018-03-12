@@ -1,5 +1,7 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (C) 2012, 2013 Tomasz Zarna <tzarna@gmail.com>
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +9,7 @@
  *
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
+ *    Tomasz Zarna (IBM) - merge squash, bug 382720
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
@@ -23,11 +26,13 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeCommand;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
@@ -49,6 +54,10 @@ public class MergeOperation implements IEGitOperation {
 	private final String refName;
 
 	private MergeStrategy mergeStrategy;
+
+	private boolean squash;
+
+	private FastForwardMode fastForwardMode;
 
 	private MergeResult mergeResult;
 
@@ -75,6 +84,21 @@ public class MergeOperation implements IEGitOperation {
 			this.mergeStrategy = MergeStrategy.get(mergeStrategy);
 	}
 
+	/**
+	 * @param squash true to squash merge commits
+	 */
+	public void setSquash(boolean squash) {
+		this.squash = squash;
+	}
+
+	/**
+	 * @param ffmode set the fast forward mode
+	 * @since 3.0
+	 */
+	public void setFastForwardMode(FastForwardMode ffmode) {
+		this.fastForwardMode = ffmode;
+	}
+
 	public void execute(IProgressMonitor m) throws CoreException {
 		if (mergeResult != null)
 			throw new CoreException(new Status(IStatus.ERROR, Activator
@@ -87,34 +111,42 @@ public class MergeOperation implements IEGitOperation {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 			public void run(IProgressMonitor mymonitor) throws CoreException {
-				IProject[] validProjects = ProjectUtil.getValidProjects(repository);
+				IProject[] validProjects = ProjectUtil.getValidOpenProjects(repository);
 				mymonitor.beginTask(NLS.bind(CoreText.MergeOperation_ProgressMerge, refName), 3);
 				Git git = new Git(repository);
 				mymonitor.worked(1);
 				MergeCommand merge;
 				try {
+					FastForwardMode ffmode = fastForwardMode;
+					if (ffmode == null)
+						ffmode = Activator.getDefault().getRepositoryUtil()
+								.getFastForwardMode(repository);
 					Ref ref = repository.getRef(refName);
 					if (ref != null)
-						merge = git.merge().include(ref);
+						merge = git.merge().include(ref).setFastForward(ffmode);
 					else
-						merge = git.merge().include(ObjectId.fromString(refName));
+						merge = git.merge()
+								.include(ObjectId.fromString(refName))
+								.setFastForward(ffmode);
 				} catch (IOException e) {
 					throw new TeamException(CoreText.MergeOperation_InternalError, e);
 				}
+				merge.setSquash(squash);
 				if (mergeStrategy != null) {
 					merge.setStrategy(mergeStrategy);
 				}
 				try {
 					mergeResult = merge.call();
 					mymonitor.worked(1);
-					if (MergeResult.MergeStatus.FAILED.equals(mergeResult.getMergeStatus()))
-						throw new TeamException(mergeResult.toString());
-					else if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
+					if (MergeResult.MergeStatus.NOT_SUPPORTED.equals(mergeResult.getMergeStatus()))
 						throw new TeamException(new Status(IStatus.INFO, Activator.getPluginId(), mergeResult.toString()));
 				} catch (NoHeadException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedNoHead, e);
 				} catch (ConcurrentRefUpdateException e) {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
+				} catch (CheckoutConflictException e) {
+					mergeResult = new MergeResult(e.getConflictingPaths());
+					return;
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
 				} finally {
@@ -139,6 +171,4 @@ public class MergeOperation implements IEGitOperation {
 	public ISchedulingRule getSchedulingRule() {
 		return ResourcesPlugin.getWorkspace().getRoot();
 	}
-
-
 }

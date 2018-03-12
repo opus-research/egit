@@ -1,6 +1,8 @@
 /*******************************************************************************
  * Copyright (C) 2007, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2006, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2013, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,8 +15,10 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 
+import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -46,6 +50,10 @@ public class TestProject {
 	private String location;
 	private TestUtils testUtils = new TestUtils();
 
+	private final File workspaceSupplement;
+
+	private IFolder binFolder;
+
 	/**
 	 * @throws CoreException
 	 *             If project already exists
@@ -61,23 +69,72 @@ public class TestProject {
 	/**
 	 * @param remove
 	 *            should project be removed if already exists
-	 * @param projectName
+	 * @param path
 	 * @throws CoreException
 	 */
-	public TestProject(final boolean remove, String projectName) throws CoreException {
+	public TestProject(final boolean remove, String path) throws CoreException {
+		this(remove, path, true, null);
+	}
+
+	/**
+	 * @param remove
+	 *            should project be removed if already exists
+	 * @param path
+	 * @param insidews set false to create in temp
+	 * @param workspaceSupplement
+	 * @throws CoreException
+	 */
+	public TestProject(final boolean remove, String path, boolean insidews, File workspaceSupplement) throws CoreException {
+		this.workspaceSupplement = workspaceSupplement;
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		project = root.getProject(projectName);
+		IProjectDescription description = createDescription(path, insidews,
+				root, workspaceSupplement);
+		project = root.getProject(description.getName());
 		if (remove)
 			project.delete(true, null);
-		project.create(null);
+		IPath locationBefore = description.getLocation();
+		if (locationBefore == null)
+			locationBefore = root.getRawLocation().append(path);
+		location = locationBefore.toOSString();
+		project.create(description, null);
 		project.open(null);
-		location = project.getLocation().toOSString();
 		javaProject = JavaCore.create(project);
-		IFolder binFolder = createBinFolder();
+		binFolder = createBinFolder();
 		setJavaNature();
 		javaProject.setRawClasspath(new IClasspathEntry[0], null);
 		createOutputFolder(binFolder);
 		addSystemLibraries();
+	}
+
+	public void setBinFolderDerived() throws CoreException {
+		binFolder.setDerived(true, null);
+	}
+
+	public File getWorkspaceSupplement() {
+		return workspaceSupplement;
+	}
+
+	private IProjectDescription createDescription(String path,
+			boolean insidews, IWorkspaceRoot root, File workspaceSupplement) {
+		Path ppath = new Path(path);
+		String projectName = ppath.lastSegment();
+		URI locationURI;
+		URI top;
+		if (insidews) {
+			top = root.getRawLocationURI();
+		} else {
+			top = URIUtil.toURI(workspaceSupplement.getAbsolutePath());
+		}
+		if (!insidews || !ppath.lastSegment().equals(path)) {
+			locationURI = URIUtil.toURI(URIUtil.toPath(top).append(path));
+		} else
+			locationURI = null;
+		IProjectDescription description = ResourcesPlugin.getWorkspace()
+				.newProjectDescription(projectName);
+
+		description.setName(projectName);
+		description.setLocationURI(locationURI);
+		return description;
 	}
 
 	public IProject getProject() {
@@ -126,6 +183,11 @@ public class TestProject {
 	public IFolder createFolder(String name) throws Exception {
 		IFolder folder = project.getFolder(name);
 		folder.create(true, true, null);
+		return folder;
+	}
+
+	public IFolder createFolderWithKeep(String name) throws Exception {
+		IFolder folder = createFolder(name);
 
 		IFile keep = project.getFile(name + "/keep");
 		keep.create(new ByteArrayInputStream(new byte[] {0}), true, null);
@@ -224,5 +286,9 @@ public class TestProject {
 	 */
 	public void setSourceFolder(IPackageFragmentRoot sourceFolder) {
 		this.sourceFolder = sourceFolder;
+	}
+
+	public String getLocation() {
+		return location;
 	}
 }

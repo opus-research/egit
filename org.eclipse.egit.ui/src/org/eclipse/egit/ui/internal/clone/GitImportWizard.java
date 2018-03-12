@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010-2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,11 +7,14 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Stefan Lay (SAP AG) - improvements
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -29,13 +32,17 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.ConfigurationChecker;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.clone.GitCloneSourceProviderExtension.CloneSourceProvider;
+import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
+import org.eclipse.egit.ui.internal.provisional.wizards.IRepositorySearchResult;
+import org.eclipse.egit.ui.internal.provisional.wizards.NoRepositoryInfoException;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizardPage;
-import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.ui.IImportWizard;
 import org.eclipse.ui.IWorkbench;
@@ -44,34 +51,136 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.NewProjectAction;
 
 /**
- * The import wizard including options to clone/add repositories
+ * A wizard which allows to optionally clone a repository and to import projects from a repository.
  */
-public class GitImportWizard extends Wizard implements IImportWizard {
+public class GitImportWizard extends AbstractGitCloneWizard implements IImportWizard {
+	private static final String GIT_IMPORT_SECTION = "GitImportWizard"; //$NON-NLS-1$
+
 	private GitSelectRepositoryPage selectRepoPage = new GitSelectRepositoryPage();
 
-	private GitSelectWizardPage importWithDirectoriesPage = new GitSelectWizardPage();
+	private GitSelectWizardPage importWithDirectoriesPage = new GitSelectWizardPage(){
+		public void setVisible(boolean visible) {
+			if (existingRepo == null && visible && (cloneDestination.cloneSettingsChanged())) {
+				setCallerRunsCloneOperation(true);
+				try {
+					final GitRepositoryInfo repositoryInfo = currentSearchResult.getGitRepositoryInfo();
+					performClone(repositoryInfo);
+					importWithDirectoriesPage.getControl().getDisplay().asyncExec(new Runnable() {
 
-	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage();
+						public void run() {
+							runCloneOperation(getContainer(), repositoryInfo);
+							cloneDestination.saveSettingsForClonedRepo();
+						}});
+				} catch (URISyntaxException e) {
+					Activator.error(UIText.GitImportWizard_errorParsingURI, e);
+				} catch (NoRepositoryInfoException e) {
+					Activator.error(UIText.GitImportWizard_noRepositoryInfo, e);
+				} catch (Exception e) {
+					Activator.error(e.getMessage(), e);
+				}
+			}
+			super.setVisible(visible);
+		}
+	};
+
+	private GitProjectsImportPage projectsImportPage = new GitProjectsImportPage() ;
 
 	private GitCreateGeneralProjectPage createGeneralProjectPage = new GitCreateGeneralProjectPage();
 
+	private Repository existingRepo;
+
 	/**
-	 * Default constructor
+	 * The default constructor
 	 */
 	public GitImportWizard() {
+		this(null);
+	}
+
+	/**
+	 * Construct the import wizard based on given repository search result. The
+	 * wizard skips the repository location page in this case.
+	 *
+	 * @param searchResult
+	 *            the search result to initialize the import wizard with.
+	 */
+	public GitImportWizard(IRepositorySearchResult searchResult) {
+		super(searchResult);
 		setWindowTitle(UIText.GitImportWizard_WizardTitle);
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
-		selectRepoPage.setWizard(this);
-		setNeedsProgressMonitor(true);
-		ConfigurationChecker.checkConfiguration();
+		setDialogSettings(getImportWizardDialogSettings());
 	}
 
 	@Override
-	public void addPages() {
-		addPage(selectRepoPage);
+	protected void addPreClonePages() {
+		if (!hasSearchResult())
+			addPage(selectRepoPage);
+	}
+
+	@Override
+	protected void addPostClonePages() {
 		addPage(importWithDirectoriesPage);
 		addPage(projectsImportPage);
 		addPage(createGeneralProjectPage);
+	}
+
+	@Override
+	protected List<CloneSourceProvider> getCloneSourceProviders() {
+		List<CloneSourceProvider> cloneSourceProvider = super.getCloneSourceProviders();
+		cloneSourceProvider.add(0, CloneSourceProvider.LOCAL);
+		return cloneSourceProvider;
+	}
+
+	public void init(IWorkbench workbench, IStructuredSelection selection) {
+		// nothing to do
+	}
+
+	@Override
+	public IWizardPage getNextPage(IWizardPage page) {
+		if (page == selectRepoPage) {
+			existingRepo = selectRepoPage.getRepository();
+			importWithDirectoriesPage.setRepository(selectRepoPage
+					.getRepository());
+			return importWithDirectoriesPage;
+		} else if (page == cloneDestination) {
+			existingRepo = null;
+			importWithDirectoriesPage.setRepository(getTargetRepository());
+			return importWithDirectoriesPage;
+		} else if (page == importWithDirectoriesPage)
+			switch (importWithDirectoriesPage.getWizardSelection()) {
+			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
+				projectsImportPage.setProjectsList(importWithDirectoriesPage
+						.getPath());
+				return projectsImportPage;
+			case GitSelectWizardPage.NEW_WIZARD:
+				return null;
+			case GitSelectWizardPage.GENERAL_WIZARD:
+				createGeneralProjectPage.setPath(importWithDirectoriesPage
+						.getPath());
+				return createGeneralProjectPage;
+
+			}
+		else if (page == createGeneralProjectPage
+				|| page == projectsImportPage)
+			return null;
+		return super.getNextPage(page);
+	}
+
+	private Repository getTargetRepository() {
+		if (existingRepo != null)
+			return existingRepo;
+		else
+			try {
+				return org.eclipse.egit.core.Activator
+						.getDefault()
+						.getRepositoryCache()
+						.lookupRepository(
+								new File(cloneDestination.getDestinationFile(),
+										Constants.DOT_GIT));
+			} catch (IOException e) {
+				Activator
+						.error("Error looking up repository at " + cloneDestination.getDestinationFile(), e); //$NON-NLS-1$
+				return null;
+			}
 	}
 
 	@Override
@@ -94,35 +203,6 @@ public class GitImportWizard extends Wizard implements IImportWizard {
 			return false;
 		}
 		return true;
-	}
-
-	@Override
-	public IWizardPage getNextPage(IWizardPage page) {
-		if (page == selectRepoPage) {
-			importWithDirectoriesPage.setRepository(selectRepoPage
-					.getRepository());
-			return importWithDirectoriesPage;
-		} else if (page == importWithDirectoriesPage) {
-
-			switch (importWithDirectoriesPage.getWizardSelection()) {
-			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
-				projectsImportPage.setProjectsList(importWithDirectoriesPage
-						.getPath());
-				return projectsImportPage;
-			case GitSelectWizardPage.NEW_WIZARD:
-				return null;
-			case GitSelectWizardPage.GENERAL_WIZARD:
-				createGeneralProjectPage.setPath(importWithDirectoriesPage
-						.getPath());
-				return createGeneralProjectPage;
-
-			}
-
-		} else if (page == createGeneralProjectPage
-				|| page == projectsImportPage) {
-			return null;
-		}
-		return super.getNextPage(page);
 	}
 
 	@Override
@@ -154,7 +234,8 @@ public class GitImportWizard extends Wizard implements IImportWizard {
 					IWorkingSet[] workingSetArray = projectsImportPage
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
-					repository[0] = selectRepoPage.getRepository();
+					repository[0] = getTargetRepository();
+					projectsImportPage.saveWidgetValues();
 				}
 			});
 			ProjectUtils.createProjects(projectsToCreate, repository[0],
@@ -166,7 +247,7 @@ public class GitImportWizard extends Wizard implements IImportWizard {
 			final File[] repoDir = new File[1];
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				public void run() {
-					repoDir[0] = selectRepoPage.getRepository().getDirectory();
+					repoDir[0] = getTargetRepository().getDirectory();
 				}
 			});
 			final List<IProject> previousProjects = Arrays
@@ -183,13 +264,12 @@ public class GitImportWizard extends Wizard implements IImportWizard {
 						throws CoreException {
 					IProject[] currentProjects = ResourcesPlugin.getWorkspace()
 							.getRoot().getProjects();
-					for (IProject current : currentProjects) {
+					for (IProject current : currentProjects)
 						if (!previousProjects.contains(current)) {
 							ConnectProviderOperation cpo = new ConnectProviderOperation(
 									current, repoDir[0]);
 							cpo.execute(actMonitor);
 						}
-					}
 				}
 			};
 			try {
@@ -211,7 +291,7 @@ public class GitImportWizard extends Wizard implements IImportWizard {
 					defaultLocation[0] = createGeneralProjectPage
 							.isDefaultLocation();
 					path[0] = importWithDirectoriesPage.getPath();
-					repoDir[0] = selectRepoPage.getRepository().getDirectory();
+					repoDir[0] = getTargetRepository().getDirectory();
 				}
 			});
 			try {
@@ -244,7 +324,15 @@ public class GitImportWizard extends Wizard implements IImportWizard {
 		}
 	}
 
-	public void init(IWorkbench workbench, IStructuredSelection selection) {
-		// nothing to do
+	static IDialogSettings getImportWizardDialogSettings() {
+		IDialogSettings settings = Activator.getDefault().getDialogSettings();
+
+		IDialogSettings wizardSettings = settings
+				.getSection(GitImportWizard.GIT_IMPORT_SECTION);
+		if (wizardSettings == null) {
+			wizardSettings = settings
+					.addNewSection(GitImportWizard.GIT_IMPORT_SECTION);
+		}
+		return wizardSettings;
 	}
 }

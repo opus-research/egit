@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.fieldassist.ComboContentAdapter;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
@@ -183,14 +183,17 @@ public class CommitCombo extends Composite {
 	 * @return index of selected element
 	 */
 	public int getSelectedIndex() {
-		return combo.getSelectionIndex();
+		int selectionIndex = combo.getSelectionIndex();
+		if (selectionIndex == -1)
+			selectionIndex = combo.indexOf(combo.getText());
+		return selectionIndex;
 	}
 
 	/**
 	 * @return SHA-1 of selected commit
 	 */
 	public ObjectId getValue() {
-		int selectionIndex = combo.getSelectionIndex();
+		int selectionIndex = getSelectedIndex();
 		return -1 != selectionIndex ? getItem(selectionIndex) : null;
 	}
 

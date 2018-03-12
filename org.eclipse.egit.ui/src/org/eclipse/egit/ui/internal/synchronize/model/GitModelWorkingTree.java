@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,19 +10,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
-import java.io.IOException;
+import java.util.Map;
 
 import org.eclipse.compare.structuremergeviewer.Differencer;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.jgit.dircache.DirCacheIterator;
-import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
+import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.synchronize.model.TreeBuilder.FileModelFactory;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
 
 /**
  * Representation of working tree in EGit ChangeSet model
@@ -30,18 +26,24 @@ public class GitModelWorkingTree extends GitModelCache {
 
 	/**
 	 * @param parent
-	 *            parent of working tree instance
-	 * @throws IOException
+	 *            parent object
+	 * @param repo
+	 *            repository associated with this object
+	 * @param cache
+	 *            list of cached changes
 	 */
-	public GitModelWorkingTree(GitModelObject parent)
-			throws IOException {
-		super(parent, null, new FileModelFactory() {
+	public GitModelWorkingTree(GitModelRepository parent, Repository repo,
+			Map<String, Change> cache) {
+		super(parent, repo, cache, new FileModelFactory() {
 			public GitModelBlob createFileModel(
-					GitModelObjectContainer modelParent, RevCommit modelCommit,
-					ObjectId repoId, ObjectId cacheId, IPath location)
-					throws IOException {
-				return new GitModelWorkingFile(modelParent, modelCommit,
-						repoId, location);
+					GitModelObjectContainer objParent, Repository nestedRepo,
+					Change change, IPath path) {
+				return new GitModelWorkingFile(objParent, nestedRepo, change,
+						path);
+			}
+
+			public boolean isWorkingTree() {
+				return true;
 			}
 		});
 	}
@@ -62,37 +64,24 @@ public class GitModelWorkingTree extends GitModelCache {
 		if (obj == this)
 			return true;
 
-		if (obj instanceof GitModelWorkingTree) {
-			GitModelCache left = (GitModelCache) obj;
-			return left.getParent().equals(getParent());
-		}
+		if (obj == null)
+			return false;
 
-		return false;
+		if (obj.getClass() != getClass())
+			return false;
+
+		GitModelCache left = (GitModelCache) obj;
+		return left.getParent().equals(getParent());
 	}
 
 	@Override
 	public int hashCode() {
-		return getParent().hashCode();
+		return getParent().hashCode() + 31;
 	}
 
 	@Override
 	public String toString() {
 		return "ModelWorkingTree"; //$NON-NLS-1$
-	}
-
-	@Override
-	protected TreeWalk createAndConfigureTreeWalk() throws IOException {
-		TreeWalk tw = createTreeWalk();
-		tw.setRecursive(true);
-
-		Repository repo = getRepository();
-		int ftIndex = tw.addTree(new AdaptableFileTreeIterator(repo,
-				ResourcesPlugin.getWorkspace().getRoot()));
-		int dirCacheIteratorNth = tw.addTree(new DirCacheIterator(repo.readDirCache()));
-		IndexDiffFilter idf = new IndexDiffFilter(dirCacheIteratorNth, ftIndex, true);
-		tw.setFilter(idf);
-
-		return tw;
 	}
 
 }
