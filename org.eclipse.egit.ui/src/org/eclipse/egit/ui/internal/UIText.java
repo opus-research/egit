@@ -3012,13 +3012,7 @@ public class UIText extends NLS {
 	public static String DeleteBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteGitDirCheckbox;
-
-	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryConfirmMessage;
-
-	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryNoUndoWarning;
+	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
 
 	/** */
 	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryTitle;
