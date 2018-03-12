@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -268,8 +269,8 @@ public class GitProjectData {
 	 */
 	public static void reconfigureWindowCache() {
 		final WindowCacheConfig c = new WindowCacheConfig();
-		IEclipsePreferences d = new DefaultScope().getNode(Activator.getPluginId());
-		IEclipsePreferences p = new InstanceScope().getNode(Activator.getPluginId());
+		IEclipsePreferences d = DefaultScope.INSTANCE.getNode(Activator.getPluginId());
+		IEclipsePreferences p = InstanceScope.INSTANCE.getNode(Activator.getPluginId());
 		c.setPackedGitLimit(p.getInt(GitCorePreferences.core_packedGitLimit, d.getInt(GitCorePreferences.core_packedGitLimit, 0)));
 		c.setPackedGitWindowSize(p.getInt(GitCorePreferences.core_packedGitWindowSize, d.getInt(GitCorePreferences.core_packedGitWindowSize, 0)));
 		c.setPackedGitMMAP(p.getBoolean(GitCorePreferences.core_packedGitMMAP, d.getBoolean(GitCorePreferences.core_packedGitMMAP, false)));
@@ -484,18 +485,15 @@ public class GitProjectData {
 		}
 
 		if (c == null) {
-			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
-					new FileNotFoundException(m.getContainerPath().toString()));
+			logGoneMappedResource(m);
 			m.clear();
 			return;
 		}
 		m.setContainer(c);
 
 		git = c.getLocation().append(m.getGitDirPath()).toFile();
-		if (!git.isDirectory()
-				|| !new File(git, "config").isFile()) {  //$NON-NLS-1$
-			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
-					new FileNotFoundException(m.getContainerPath().toString()));
+		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
+			logGoneMappedResource(m);
 			m.clear();
 			return;
 		}
@@ -504,8 +502,7 @@ public class GitProjectData {
 			m.setRepository(Activator.getDefault().getRepositoryCache()
 					.lookupRepository(git));
 		} catch (IOException ioe) {
-			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
-					new FileNotFoundException(m.getContainerPath().toString()));
+			logGoneMappedResource(m);
 			m.clear();
 			return;
 		}
@@ -527,6 +524,12 @@ public class GitProjectData {
 		if (dotGit != null && dotGit.getLocation().toFile().equals(git)) {
 			protect(dotGit);
 		}
+	}
+
+	private void logGoneMappedResource(final RepositoryMapping m) {
+		Activator.logError(MessageFormat.format(
+				CoreText.GitProjectData_mappedResourceGone, m.toString()),
+				new FileNotFoundException(m.getContainerPath().toString()));
 	}
 
 	private void protect(IResource resource) {

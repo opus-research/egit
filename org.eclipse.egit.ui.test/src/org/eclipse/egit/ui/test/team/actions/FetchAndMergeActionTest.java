@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,18 +15,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
+import org.eclipse.egit.ui.internal.repository.tree.LocalNode;
 import org.eclipse.egit.ui.internal.repository.tree.RemoteTrackingNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
+import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.view.repositories.GitRepositoriesViewTestUtils;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
@@ -51,6 +57,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 
 	private static String REMOTE_BRANCHES;
 
+	private static String LOCAL_BRANCHES;
+
 	@BeforeClass
 	public static void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
@@ -62,6 +70,8 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		Repository repo = lookupRepository(childRepositoryFile);
 		REMOTE_BRANCHES = provider.getText(new RemoteTrackingNode(
 				new RepositoryNode(null, repo), repo));
+		LOCAL_BRANCHES = provider.getText(new LocalNode(new RepositoryNode(
+				null, repo), repo));
 	}
 
 	@AfterClass
@@ -87,9 +97,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 	public void testFetchFromOriginThenMerge() throws Exception {
 		String previousCommit = prepare();
 		String oldContent = getTestFileContent();
-		SWTBotShell fetchDialog = openFetchDialog();
-		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
-		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		fetch();
 
 		String uri = lookupRepository(childRepositoryFile).getConfig()
 				.getString(ConfigConstants.CONFIG_REMOTE_SECTION, "origin",
@@ -106,9 +114,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		String newContent = getTestFileContent();
 		assertEquals(oldContent, newContent);
 
-		fetchDialog = openFetchDialog();
-		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
-		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		fetch();
 		confirm = bot.shell(NLS.bind(UIText.FetchResultDialog_title, uri));
 		int count = confirm.bot().tree().rowCount();
 
@@ -128,6 +134,57 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		bot.shell(UIText.MergeAction_MergeResultTitle).close();
 		newContent = getTestFileContent();
 		assertFalse(oldContent.equals(newContent));
+	}
+
+	@Test
+	public void testMergeSquash() throws Exception {
+		prepare();
+		String oldContent = getTestFileContent();
+		RevCommit oldCommit = getCommitForHead();
+		createNewBranch("newBranch", true);
+		touchAndSubmit("branch commit #1");
+		touchAndSubmit("branch commit #2");
+		String branchContent = getTestFileContent();
+		checkoutBranch(Constants.MASTER);
+		assertEquals(oldContent, getTestFileContent());
+
+		mergeBranch("newBranch", true);
+
+		assertEquals(oldCommit, getCommitForHead());
+		assertEquals(branchContent, getTestFileContent());
+	}
+
+	private RevCommit getCommitForHead() throws Exception {
+		Repository repo = lookupRepository(repositoryFile);
+		RevWalk rw = new RevWalk(repo);
+		ObjectId id = repo.resolve(repo.getFullBranch());
+		return rw.parseCommit(id);
+	}
+
+	private void mergeBranch(String branchToMerge, boolean squash) throws Exception {
+		SWTBotShell mergeDialog = openMergeDialog();
+		mergeDialog.bot().tree().getTreeItem(LOCAL_BRANCHES).expand().getNode(branchToMerge).select();
+		if (squash)
+			mergeDialog.bot().radio(UIText.MergeTargetSelectionDialog_MergeTypeSquashButton).click();
+		mergeDialog.bot().button(UIText.MergeTargetSelectionDialog_ButtonMerge).click();
+		bot.shell(UIText.MergeAction_MergeResultTitle).close();
+	}
+
+	private void createNewBranch(String newBranch, boolean checkout) {
+		SWTBotShell newBranchDialog = openCreateBranchDialog();
+		newBranchDialog.bot().comboBoxWithId("BaseBranch").setSelection(0);
+		newBranchDialog.bot().textWithId("BranchName").setText(newBranch);
+		if (!checkout)
+			newBranchDialog.bot().checkBox(UIText.CreateBranchPage_CheckoutButton).deselect();
+		newBranchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+	}
+
+	private void fetch() throws Exception {
+		SWTBotShell fetchDialog = openFetchDialog();
+		fetchDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
+		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.FETCH, 20, TimeUnit.SECONDS);
+		fetchDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		jobJoiner.join();
 	}
 
 	private SWTBotShell openFetchDialog() throws Exception {
@@ -155,5 +212,32 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 				UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
 				repo.getBranch()));
 		return dialog;
+	}
+
+	private SWTBotShell openCreateBranchDialog() {
+		SWTBotTree projectExplorerTree = bot
+				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		getProjectItem(projectExplorerTree, PROJ1).select();
+		String[] menuPath = new String[] {
+				util.getPluginLocalizedValue("TeamMenu.label"),
+				util.getPluginLocalizedValue("SwitchToMenu.label"),
+				UIText.SwitchToMenu_NewBranchMenuLabel };
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, menuPath);
+		SWTBotShell dialog = bot
+				.shell(UIText.CreateBranchWizard_NewBranchTitle);
+		return dialog;
+	}
+
+	private void checkoutBranch(String branchToCheckout) {
+		SWTBotTree projectExplorerTree = bot
+				.viewById("org.eclipse.jdt.ui.PackageExplorer").bot().tree();
+		getProjectItem(projectExplorerTree, PROJ1).select();
+		String[] menuPath = new String[] {
+				util.getPluginLocalizedValue("TeamMenu.label"),
+				util.getPluginLocalizedValue("SwitchToMenu.label"),
+				branchToCheckout };
+		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.CHECKOUT, 60, TimeUnit.SECONDS);
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, menuPath);
+		jobJoiner.join();
 	}
 }

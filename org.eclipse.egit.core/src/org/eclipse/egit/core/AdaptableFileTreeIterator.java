@@ -19,6 +19,7 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.util.FS;
 
 /**
@@ -68,7 +69,7 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 	 * @param workspaceRoot
 	 *            the workspace root to check resource mapping against.
 	 */
-	protected AdaptableFileTreeIterator(final AdaptableFileTreeIterator parent,
+	protected AdaptableFileTreeIterator(final WorkingTreeIterator parent,
 			File path, final IWorkspaceRoot workspaceRoot) {
 		super(parent, path, FS.DETECTED);
 		root = workspaceRoot;
@@ -78,7 +79,7 @@ public class AdaptableFileTreeIterator extends FileTreeIterator {
 	public AbstractTreeIterator createSubtreeIterator(ObjectReader repo)
 			throws IncorrectObjectTypeException, IOException {
 		final File currentFile = ((FileEntry) current()).getFile();
-		IContainer container = IteratorService.findContainer(currentFile);
+		IContainer container = IteratorService.findContainer(root, currentFile);
 		if (container != null)
 			return new ContainerTreeIterator(this, container);
 		return new AdaptableFileTreeIterator(this, currentFile, root);

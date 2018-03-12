@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>2.1.0-SNAPSHOT</version>
+  <version>2.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,43 +62,19 @@
   </licenses>
 
   <properties>
-    <egit-version>2.1.0-SNAPSHOT</egit-version>
-    <tycho-version>0.15.0</tycho-version>
+    <egit-version>2.3.0-SNAPSHOT</egit-version>
+    <tycho-version>0.16.0</tycho-version>
+    <tycho-extras-version>0.16.0</tycho-extras-version>
     <mockito-version>1.8.4</mockito-version>
     <junit-version>4.8.1</junit-version>
     <jgit-site>file:/${basedir}/../../jgit/org.eclipse.jgit.packaging/org.eclipse.jgit.repository/target/repository</jgit-site>
     <signer-input-directory>/home/data/httpd/download-staging.priv/egit</signer-input-directory>
     <download-publish-path>/home/data/httpd/download.eclipse.org/egit/updates-nightly</download-publish-path>
     <target-platform>egit-4.2</target-platform>
+    <tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/egit/egit.git</tycho.scmUrl>
   </properties>
 
   <profiles>
-    <profile>
-      <id>platform-galileo</id>
-      <activation>
-        <property>
-          <name>platform-version-name</name>
-          <value>galileo</value>
-        </property>
-      </activation>
-      <properties>
-        <target-platform>egit-3.5</target-platform>
-        <platform-version>[3.5,3.6)</platform-version>
-      </properties>
-    </profile>
-    <profile>
-      <id>platform-helios</id>
-      <activation>
-        <property>
-          <name>platform-version-name</name>
-          <value>helios</value>
-        </property>
-      </activation>
-      <properties>
-        <target-platform>egit-3.6</target-platform>
-        <platform-version>[3.6,3.7)</platform-version>
-      </properties>
-    </profile>
     <profile>
       <id>platform-indigo</id>
       <activation>
@@ -176,8 +152,6 @@
 
     <module>org.eclipse.egit.mylyn.ui</module>
     <module>org.eclipse.egit.mylyn-feature</module>
-
-    <module>org.eclipse.egit.psf-feature</module>
 
     <module>org.eclipse.egit.doc</module>
     <module>org.eclipse.egit-feature</module>
@@ -286,6 +260,23 @@
           </executions>
         </plugin>
         <plugin>
+          <groupId>org.eclipse.tycho</groupId>
+          <artifactId>tycho-packaging-plugin</artifactId>
+          <version>${tycho-version}</version>
+          <configuration>
+            <sourceReferences>
+              <generate>true</generate>
+            </sourceReferences>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.tycho.extras</groupId>
+              <artifactId>tycho-sourceref-jgit</artifactId>
+              <version>${tycho-extras-version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>2.5</version>
@@ -301,7 +292,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.3.2</version>
+          <version>2.5.2</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <failOnError>false</failOnError>
@@ -317,7 +308,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>2.6</version>
+          <version>2.7.1</version>
           <configuration>
             <sourceEncoding>utf-8</sourceEncoding>
             <minimumTokens>100</minimumTokens>
@@ -336,7 +327,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.2.1</version>
+          <version>2.3</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.dash.maven</groupId>
@@ -346,7 +337,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.3</version>
+          <version>1.7</version>
         </plugin>
       </plugins>
     </pluginManagement>

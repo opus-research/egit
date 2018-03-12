@@ -5,6 +5,7 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -112,11 +113,13 @@ import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
+import org.eclipse.ui.part.IShowInSource;
+import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		ISchedulingRule, TableLoader {
+		ISchedulingRule, TableLoader, IShowInSource {
 
 	private static final int INITIAL_ITEM = -1;
 
@@ -780,6 +783,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		attachCommitSelectionChanged();
 		initActions();
 
+		getSite().setSelectionProvider(graph.getTableView());
 		getSite().registerContextMenu(POPUP_ID, popupMgr, graph.getTableView());
 		// due to the issues described in bug 322751, it makes no
 		// sense to set a selection provider for the site here
@@ -1896,11 +1900,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			markStartRef(walk, ref);
 	}
 
-	private void markStartRef(RevWalk walk, Ref ref) throws MissingObjectException,
-			IOException, IncorrectObjectTypeException {
-		Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
-		if (refTarget instanceof RevCommit)
-			walk.markStart((RevCommit) refTarget);
+	private void markStartRef(RevWalk walk, Ref ref) throws IOException,
+			IncorrectObjectTypeException {
+		try {
+			Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
+			if (refTarget instanceof RevCommit)
+				walk.markStart((RevCommit) refTarget);
+		} catch (MissingObjectException e) {
+			// If there is a ref which points to Nirvana then we should simply
+			// ignore this ref. We should not let a corrupt ref cause that the
+			// history view is not filled at all
+		}
 	}
 
 	private void markUninteresting(RevWalk walk, String prefix) throws IOException,
@@ -1940,5 +1950,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	public boolean isConflicting(ISchedulingRule rule) {
 		return this == rule;
+	}
+
+	public ShowInContext getShowInContext() {
+		if (fileViewer != null && fileViewer.getControl().isFocusControl())
+			return fileViewer.getShowInContext();
+		else
+			return null;
 	}
 }

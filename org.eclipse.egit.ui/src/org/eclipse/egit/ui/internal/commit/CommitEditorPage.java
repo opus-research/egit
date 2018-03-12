@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011, 2012 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -51,6 +51,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.DisposeEvent;
@@ -76,6 +77,7 @@ import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Hyperlink;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
+import org.eclipse.ui.part.ShowInContext;
 
 /**
  * Commit editor page class displaying author, committer, parent commits,
@@ -482,25 +484,17 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		Repository repository = getCommit().getRepository();
 		RevCommit commit = getCommit().getRevCommit();
 		RevWalk revWalk = new RevWalk(repository);
-		List<Ref> result = new ArrayList<Ref>();
 		try {
 			Map<String, Ref> refsMap = new HashMap<String, Ref>();
 			refsMap.putAll(repository.getRefDatabase().getRefs(
 					Constants.R_HEADS));
 			refsMap.putAll(repository.getRefDatabase().getRefs(
 					Constants.R_REMOTES));
-			for (Ref ref : refsMap.values()) {
-				if (ref.isSymbolic())
-					continue;
-				RevCommit headCommit = revWalk.parseCommit(ref.getObjectId());
-				RevCommit base = revWalk.parseCommit(commit);
-				if (revWalk.isMergedInto(base, headCommit))
-					result.add(ref);
-			}
-		} catch (IOException ignored) {
-			// Ignored
+			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, refsMap.values());
+		} catch (IOException e) {
+			Activator.handleError(e.getMessage(), e, false);
+			return Collections.emptyList();
 		}
-		return result;
 	}
 
 	private void loadSections() {
@@ -549,6 +543,13 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	public boolean isConflicting(ISchedulingRule rule) {
 		return rule == this;
+	}
+
+	ShowInContext getShowInContext() {
+		if (diffViewer != null && diffViewer.getControl().isFocusControl())
+			return diffViewer.getShowInContext();
+		else
+			return null;
 	}
 
 }

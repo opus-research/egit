@@ -3,6 +3,7 @@
  * Copyright (C) 2007, Martin Oberhuber (martin.oberhuber@windriver.com)
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,9 +17,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
@@ -265,21 +266,15 @@ public class ProjectUtil {
 	 */
 	public static IProject[] getProjectsContaining(Repository repository,
 			Collection<String> fileList) throws CoreException {
-		Set<IProject> result = new HashSet<IProject>();
-		Set<File> handledPaths = new TreeSet<File>();
+		Set<IProject> result = new LinkedHashSet<IProject>();
+		File workTree = repository.getWorkTree();
 
 		for (String member : fileList) {
-			File file = new File(repository.getWorkTree(), member);
+			File file = new File(workTree, member);
 
-			if (handledPaths.contains(file))
-				continue;
-
-			IContainer container = findContainerFast(file);
-			if (container != null && container instanceof IProject)
+			IContainer container = findContainer(file);
+			if (container instanceof IProject)
 				result.add((IProject) container);
-
-			// remember to avoid re-calculation
-			handledPaths.add(file);
 		}
 
 		return result.toArray(new IProject[result.size()]);
@@ -295,7 +290,7 @@ public class ProjectUtil {
 	 * @return the IContainer (either IProject or IWorkspaceRoot) or
 	 *         <code>null</code> if not found.
 	 */
-	public static IContainer findContainerFast(File file) {
+	public static IContainer findContainer(File file) {
 		String absFile = file.getAbsolutePath();
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject[] allProjects = root.getProjects();
@@ -330,8 +325,8 @@ public class ProjectUtil {
 	 * Find directories containing .project files recursively starting at given
 	 * directory
 	 *
-	 * @param files
-	 * @param directory
+	 * @param files the collection to add the found projects to
+	 * @param directory where to search for project files
 	 * @param visistedDirs
 	 * @param monitor
 	 * @return true if projects files found, false otherwise
@@ -377,12 +372,9 @@ public class ProjectUtil {
 			File file = contents[i];
 			if (file.isFile() && file.getName().equals(dotProject)) {
 				files.add(file);
-				// don't search sub-directories since we can't have nested
-				// projects
-				return true;
 			}
 		}
-		// no project description found, so recurse into sub-directories
+		// recurse into sub-directories (even when project was found above, for nested projects)
 		for (int i = 0; i < contents.length; i++) {
 			// Skip non-directories
 			if (!contents[i].isDirectory())
