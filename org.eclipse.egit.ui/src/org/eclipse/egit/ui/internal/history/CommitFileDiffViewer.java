@@ -34,10 +34,10 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.blame.BlameOperation;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -144,6 +144,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		this.site = site;
 		final Table rawTable = getTable();
 
+		rawTable.setLinesVisible(true);
+
 		Color fg = rawTable.getForeground();
 		Color bg = rawTable.getBackground();
 		RGB dimmedForegroundRgb = ColorUtil.blend(fg.getRGB(), bg.getRGB(), 60);
@@ -153,7 +155,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		setLabelProvider(new FileDiffLabelProvider(dimmedForegroundRgb));
 		setContentProvider(new FileDiffContentProvider());
 		addOpenListener(new IOpenListener() {
-			@Override
 			public void open(final OpenEvent event) {
 				final ISelection s = event.getSelection();
 				if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -182,7 +183,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		});
 
 		addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				updateActionEnablement(event.getSelection());
 			}
@@ -190,7 +190,6 @@ public class CommitFileDiffViewer extends TableViewer {
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(final DisposeEvent e) {
 				clipboard.dispose();
 			}
@@ -310,7 +309,6 @@ public class CommitFileDiffViewer extends TableViewer {
 		if (site instanceof IPageSite) {
 			final IPageSite pageSite = (IPageSite) site;
 			getControl().addFocusListener(new FocusListener() {
-				@Override
 				public void focusLost(FocusEvent e) {
 					pageSite.getActionBars().setGlobalActionHandler(
 							ActionFactory.SELECT_ALL.getId(), null);
@@ -319,7 +317,6 @@ public class CommitFileDiffViewer extends TableViewer {
 					pageSite.getActionBars().updateActionBars();
 				}
 
-				@Override
 				public void focusGained(FocusEvent e) {
 					updateActionEnablement(getSelection());
 					pageSite.getActionBars().setGlobalActionHandler(
@@ -568,7 +565,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			try {
 				if (file != null) {
 					IResource[] resources = new IResource[] { file, };
-					CompareUtils.compare(resources, getRepository(), np, op,
+					CompareUtils.compare(resources, getRepository(),
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {
@@ -724,7 +721,6 @@ public class CommitFileDiffViewer extends TableViewer {
 				if (marked) {
 					// Does not yet work reliably, see comment on bug 393610.
 					getTable().getDisplay().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							reveal(element);
 						}

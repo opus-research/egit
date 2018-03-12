@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,7 +12,6 @@ package org.eclipse.egit.ui;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -26,7 +25,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -63,7 +61,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyEvent;
@@ -277,7 +274,6 @@ public class UIUtils {
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
@@ -323,22 +319,18 @@ public class UIUtils {
 
 						IContentProposal propsal = new IContentProposal() {
 
-							@Override
 							public String getLabel() {
 								return null;
 							}
 
-							@Override
 							public String getDescription() {
 								return null;
 							}
 
-							@Override
 							public int getCursorPosition() {
 								return 0;
 							}
 
-							@Override
 							public String getContent() {
 								return uriString;
 							}
@@ -359,7 +351,6 @@ public class UIUtils {
 				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
 		return new IPreviousValueProposalHandler() {
-			@Override
 			public void updateProposals() {
 				String value = textField.getText();
 				// don't store empty values
@@ -428,7 +419,6 @@ public class UIUtils {
 							stroke.format()));
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
@@ -515,7 +505,6 @@ public class UIUtils {
 
 		widget.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				resource.dispose();
 			}
@@ -535,7 +524,6 @@ public class UIUtils {
 
 		widget.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				resources.dispose();
 			}
@@ -589,7 +577,6 @@ public class UIUtils {
 		collapseItem.setToolTipText(UIText.UIUtils_CollapseAll);
 		collapseItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				viewer.collapseAll();
 			}
@@ -603,7 +590,6 @@ public class UIUtils {
 		expandItem.setToolTipText(UIText.UIUtils_ExpandAll);
 		expandItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				viewer.expandAll();
 			}
@@ -762,7 +748,6 @@ public class UIUtils {
 					UIText.CancelAfterSaveDialog_Title, null,
 					cancelConfirmationQuestion,
 					MessageDialog.QUESTION, buttons, 0) {
-				@Override
 				protected int getShellStyle() {
 					return (SWT.TITLE | SWT.BORDER | SWT.APPLICATION_MODAL
 							| SWT.SHEET | getDefaultOrientation());
@@ -786,25 +771,6 @@ public class UIUtils {
 	}
 
 	/**
-	 * Use hyperlink detectors to find a text viewer's hyperlinks and apply them
-	 * to the text widget. Existing overlapping styles are overwritten by new
-	 * styles from this.
-	 *
-	 * @param textViewer
-	 * @param hyperlinkDetectors
-	 */
-	public static void applyHyperlinkDetectorStyleRanges(
-			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		StyleRange[] styleRanges = getHyperlinkDetectorStyleRanges(textViewer,
-				hyperlinkDetectors);
-		StyledText styledText = textViewer.getTextWidget();
-		// Apply hyperlink style ranges one by one. setStyleRange takes care to
-		// do the right thing in case they overlap with an existing style range.
-		for (StyleRange styleRange : styleRanges)
-			styledText.setStyleRange(styleRange);
-	}
-
-	/**
 	 * Use hyperlink detectors to find a text viewer's hyperlinks and return the
 	 * style ranges to render them.
 	 *
@@ -814,7 +780,7 @@ public class UIUtils {
 	 */
 	public static StyleRange[] getHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		HashSet<StyleRange> styleRangeList = new LinkedHashSet<StyleRange>();
+		HashSet<StyleRange> styleRangeList = new HashSet<StyleRange>();
 		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
 			IDocument doc = textViewer.getDocument();
 			for (int line = 0; line < doc.getNumberOfLines(); line++) {
@@ -851,8 +817,8 @@ public class UIUtils {
 	}
 
 	private static String getShowInMenuLabel() {
-		IBindingService bindingService = CommonUtils.getAdapter(PlatformUI
-				.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = (IBindingService) PlatformUI
+				.getWorkbench().getAdapter(IBindingService.class);
 		if (bindingService != null) {
 			String keyBinding = bindingService
 					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
@@ -875,8 +841,8 @@ public class UIUtils {
 	 *         than one {@code Trigger}.
 	 */
 	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = CommonUtils.getAdapter(
-				PlatformUI.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = (IBindingService) PlatformUI
+				.getWorkbench().getAdapter(IBindingService.class);
 		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
 		if (ts == null)
 			return null;
@@ -919,7 +885,8 @@ public class UIUtils {
 	 */
 	public static void notifySelectionChangedWithCurrentSelection(
 			ISelectionListener selectionListener, IServiceLocator serviceLocator) {
-		IHandlerService handlerService = CommonUtils.getService(serviceLocator, IHandlerService.class);
+		IHandlerService handlerService = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
 		IEvaluationContext state = handlerService.getCurrentState();
 		// This seems to be the most reliable way to get the active part, it
 		// also returns a part when it is called while creating a view that is

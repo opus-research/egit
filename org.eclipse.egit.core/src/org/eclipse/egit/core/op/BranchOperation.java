@@ -232,7 +232,8 @@ public class BranchOperation extends BaseOperation {
 
 		List<IProject> toBeClosed = new ArrayList<IProject>();
 		File root = repository.getWorkTree();
-		try (TreeWalk walk = new TreeWalk(repository)) {
+		TreeWalk walk = new TreeWalk(repository);
+		try {
 			walk.addTree(targetTreeId);
 			walk.addTree(currentTreeId);
 			walk.addTree(new FileTreeIterator(repository));
@@ -260,6 +261,8 @@ public class BranchOperation extends BaseOperation {
 			}
 		} catch (IOException e) {
 			return new IProject[0];
+		} finally {
+			walk.release();
 		}
 		return toBeClosed.toArray(new IProject[toBeClosed.size()]);
 	}

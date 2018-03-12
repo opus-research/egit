@@ -7,7 +7,6 @@
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,10 +27,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
@@ -39,12 +35,9 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
-import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
@@ -60,17 +53,12 @@ import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.text.Document;
-import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.ITextListener;
-import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
 import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
@@ -113,16 +101,12 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.custom.SashForm;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.events.ControlAdapter;
-import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -144,7 +128,6 @@ import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
-import org.eclipse.ui.progress.UIJob;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
@@ -166,7 +149,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				setChecked(historyPage.store.getBoolean(prefName));
 			}
 
-			@Override
 			public void run() {
 				historyPage.store.setValue(prefName, isChecked());
 				if (historyPage.store.needsSaving())
@@ -179,7 +161,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			abstract void apply(boolean value);
 
-			@Override
 			public void propertyChange(final PropertyChangeEvent event) {
 				if (prefName.equals(event.getProperty())) {
 					setChecked(historyPage.store.getBoolean(prefName));
@@ -187,7 +168,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				}
 			}
 
-			@Override
 			public void dispose() {
 				// stop listening
 				historyPage.store.removePropertyChangeListener(this);
@@ -319,7 +299,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		private void createFindToolbarAction() {
 			findAction = new Action(UIText.GitHistoryPage_FindMenuLabel,
 					UIIcons.ELCL16_FIND) {
-				@Override
 				public void run() {
 					historyPage.store.setValue(
 							UIPreferences.RESOURCEHISTORY_SHOW_FINDTOOLBAR,
@@ -445,7 +424,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT,
 					UIText.ResourceHistory_toggleRevComment) {
-				@Override
 				void apply(final boolean value) {
 					historyPage.layout();
 					wrapCommentAction.setEnabled(isChecked());
@@ -459,7 +437,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showFilesAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL,
 					UIText.ResourceHistory_toggleRevDetail) {
-				@Override
 				void apply(final boolean value) {
 					historyPage.layout();
 				}
@@ -471,7 +448,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showRelativeDateAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE,
 					UIText.ResourceHistory_toggleRelativeDate) {
-				@Override
 				void apply(boolean date) {
 					// nothing, just set the Preference
 				}
@@ -484,7 +460,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showEmailAddressesAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES,
 					UIText.GitHistoryPage_toggleEmailAddresses) {
-				@Override
 				void apply(boolean date) {
 					// nothing, just set the Preference
 				}
@@ -497,7 +472,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showNotesAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_NOTES,
 					UIText.ResourceHistory_toggleShowNotes) {
-				@Override
 				void apply(boolean value) {
 					historyPage.refresh();
 				}
@@ -510,7 +484,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			showTagSequenceAction = new BooleanPrefAction(
 					UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
 					UIText.ResourceHistory_ShowTagSequence) {
-				@Override
 				void apply(boolean value) {
 					// nothing, just set the Preference
 				}
@@ -523,7 +496,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			wrapCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
 					UIText.ResourceHistory_toggleCommentWrap) {
-				@Override
 				void apply(boolean wrap) {
 					// nothing, just set the Preference
 				}
@@ -536,7 +508,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			fillCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL,
 					UIText.ResourceHistory_toggleCommentFill) {
-				@Override
 				void apply(boolean fill) {
 					// nothing, just set the Preference
 				}
@@ -653,8 +624,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	/** Viewer displaying the currently selected commit of {@link #graph}. */
 	private CommitMessageViewer commentViewer;
 
-	private DiffViewer diffViewer;
-
 	/** Viewer displaying file difference implied by {@link #graph}'s commit. */
 	private CommitFileDiffViewer fileViewer;
 
@@ -695,7 +664,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
-		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			final String prop = event.getProperty();
 			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(prop)) {
@@ -715,10 +683,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (UIPreferences.HISTORY_MAX_BRANCH_LENGTH.equals(prop)
 					|| UIPreferences.HISTORY_MAX_TAG_LENGTH.equals(prop))
 				graph.getTableView().refresh();
-			if (UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP.equals(prop)) {
-				setWrap(((Boolean) event.getNewValue()).booleanValue());
-			}
-
 		}
 	};
 
@@ -731,12 +695,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private List<FilterPath> pathFilters;
 
 	private Runnable refschangedRunnable;
-
-	private final RenameTracker renameTracker = new RenameTracker();
-
-	private ScrolledComposite commentAndDiffScrolledComposite;
-
-	private Composite commentAndDiffComposite;
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -829,37 +787,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				.addPropertyChangeListener(listener);
 
 		revInfoSplit = new SashForm(graphDetailSplit, SWT.HORIZONTAL);
-
-		commentAndDiffScrolledComposite = new ScrolledComposite(revInfoSplit,
-				SWT.H_SCROLL | SWT.V_SCROLL);
-		commentAndDiffScrolledComposite.setExpandHorizontal(true);
-		commentAndDiffScrolledComposite.setExpandVertical(true);
-
-		commentAndDiffComposite = new Composite(commentAndDiffScrolledComposite, SWT.NONE);
-		commentAndDiffScrolledComposite.setContent(commentAndDiffComposite);
-		commentAndDiffComposite.setLayout(GridLayoutFactory.fillDefaults()
-				.create());
-
-		commentViewer = new CommitMessageViewer(commentAndDiffComposite,
-				getSite(), getPartSite());
-		commentViewer.getControl().setLayoutData(
-				GridDataFactory.fillDefaults().grab(true, false).create());
-
-		commentViewer.addTextListener(new ITextListener() {
-			@Override
-			public void textChanged(TextEvent event) {
-				resizeCommentAndDiffScrolledComposite();
-			}
-		});
-
-		commentAndDiffComposite.setBackground(commentViewer.getControl()
-				.getBackground());
-
+		commentViewer = new CommitMessageViewer(revInfoSplit, getSite(), getPartSite());
 
 		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
 				EditorsUI.getPreferenceStore()) {
 
-			@Override
 			public int getHyperlinkStateMask(ISourceViewer sourceViewer) {
 				return SWT.NONE;
 			}
@@ -878,7 +810,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				};
 			}
 
-			@Override
 			public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
 				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
@@ -886,38 +817,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		commentViewer.configure(configuration);
 
-		diffViewer = new DiffViewer(commentAndDiffComposite, null, SWT.NONE, false);
-		diffViewer.getControl().setLayoutData(
-				GridDataFactory.fillDefaults().grab(true, false).create());
-		diffViewer.setEditable(false);
-
-		setWrap(store
-				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP));
-
-		commentAndDiffScrolledComposite.addControlListener(new ControlAdapter() {
-			@Override
-			public void controlResized(ControlEvent e) {
-				if (commentViewer.getTextWidget().getWordWrap())
-					resizeCommentAndDiffScrolledComposite();
-			}
-		});
-
 		fileViewer = new CommitFileDiffViewer(revInfoSplit, getSite());
-		fileViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
-			public void selectionChanged(SelectionChangedEvent event) {
-				ISelection selection = event.getSelection();
-				List<FileDiff> diffs = new ArrayList<FileDiff>();
-				if (selection instanceof IStructuredSelection) {
-					IStructuredSelection sel = (IStructuredSelection) selection;
-					for (Object obj : sel.toList())
-						if (obj instanceof FileDiff)
-							diffs.add((FileDiff) obj);
-				}
-				formatDiffs(diffs);
-			}
-		});
-
 		findToolbar = new FindToolbar(historyControl);
 
 		layoutSashForm(graphDetailSplit,
@@ -943,7 +843,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private void layoutSashForm(final SashForm sf, final String key) {
 		sf.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				final int[] w = sf.getWeights();
 				store.putValue(key, UIPreferences.intArrayToString(w));
@@ -1010,7 +909,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	private void attachCommitSelectionChanged() {
 		graph.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(final SelectionChangedEvent event) {
 				final ISelection s = event.getSelection();
 				if (s.isEmpty() || !(s instanceof IStructuredSelection)) {
@@ -1025,9 +923,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					fileViewer.setInput(null);
 					return;
 				}
-				if (input == null) {
-					return;
-				}
+
 				final PlotCommit<?> c = (PlotCommit<?>) sel.getFirstElement();
 				commentViewer.setInput(c);
 				final PlotWalk walk = new PlotWalk(input.getRepository());
@@ -1048,13 +944,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		});
 		commentViewer
 				.addCommitNavigationListener(new CommitNavigationListener() {
-					@Override
 					public void showCommit(final RevCommit c) {
 						graph.selectCommit(c);
 					}
 				});
 		findToolbar.addSelectionListener(new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				graph.selectCommit((RevCommit) event.data);
 			}
@@ -1127,7 +1021,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		viewMenuMgr.add(actions.reuseCompareEditorAction);
 	}
 
-	@Override
 	public void dispose() {
 		trace = GitTraceLocation.HISTORYVIEW.isActive();
 		if (trace)
@@ -1158,7 +1051,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				if (i instanceof IWorkbenchAction)
 					((IWorkbenchAction) i).dispose();
 		}
-		renameTracker.reset(null);
 		super.dispose();
 	}
 
@@ -1199,7 +1091,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return topControl;
 	}
 
-	@Override
 	public void refresh() {
 		if (repoHasBeenRemoved(currentRepo))
 			clearHistoryPage();
@@ -1223,7 +1114,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return graph.getTableView();
 	}
 
-	@Override
 	public void onRefsChanged(final RefsChangedEvent e) {
 		if (input == null || e.getRepository() != input.getRepository())
 			return;
@@ -1234,7 +1124,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		synchronized (this) {
 			if (refschangedRunnable == null) {
 				refschangedRunnable = new Runnable() {
-					@Override
 					public void run() {
 						if (!getControl().isDisposed()) {
 							if (GitTraceLocation.HISTORYVIEW.isActive())
@@ -1342,7 +1231,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			} else if (o instanceof HistoryPageInput)
 				input = (HistoryPageInput) o;
 			else if (o instanceof IAdaptable) {
-				IResource resource = CommonUtils.getAdapter(((IAdaptable) o), IResource.class);
+				IResource resource = (IResource) ((IAdaptable) o)
+						.getAdapter(IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping
 							.getMapping(resource);
@@ -1553,7 +1443,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			GitTraceLocation.getTrace().traceEntry(
 					GitTraceLocation.HISTORYVIEW.getLocation(), message);
 		getHistoryPageSite().getShell().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				if (topControl.isDisposed())
 					return;
@@ -1573,17 +1462,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					GitTraceLocation.HISTORYVIEW.getLocation());
 	}
 
-	@Override
 	public boolean isValidInput(final Object object) {
 		return canShowHistoryFor(object);
 	}
 
-	@Override
 	public Object getAdapter(final Class adapter) {
 		return null;
 	}
 
-	@Override
 	public String getDescription() {
 		// this doesn't seem to be rendered anywhere, but still...
 		String filterHint = null;
@@ -1604,7 +1490,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return NLS.bind(DESCRIPTION_PATTERN, getName(), filterHint);
 	}
 
-	@Override
 	public String getName() {
 		return this.name;
 	}
@@ -1618,7 +1503,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	void setWarningTextInUIThread(final Job j) {
 		graph.getControl().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				if (!graph.getControl().isDisposed() && job == j) {
 					setWarningText(UIText.GitHistoryPage_ListIncompleteWarningMessage);
@@ -1638,7 +1522,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			return;
 
 		graph.getControl().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				if (!graph.getControl().isDisposed() && job == j) {
 					graph.setInput(highlightFlag, list, asArray, input, true);
@@ -1922,80 +1805,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		fileViewer.setTreeWalk(db, fileWalker);
 		fileViewer.setInterestingPaths(fileViewerInterestingPaths);
 		fileViewer.refresh();
+		fileViewer.addSelectionChangedListener(commentViewer);
 		return fileWalker;
-	}
-
-	private void formatDiffs(final List<FileDiff> diffs) {
-		if (diffs.isEmpty()) {
-			if (UIUtils.isUsable(diffViewer)) {
-				IDocument document = new Document();
-				diffViewer.setDocument(document);
-				diffViewer.setFormatter(null);
-			}
-			return;
-		}
-
-		final Repository repository = fileViewer.getRepository();
-		Job formatJob = new Job(UIText.GitHistoryPage_FormatDiffJobName) {
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				final IDocument document = new Document();
-				final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
-						document);
-
-				monitor.beginTask("", diffs.size()); //$NON-NLS-1$
-				for (FileDiff diff : diffs) {
-					if (monitor.isCanceled())
-						break;
-					if (diff.getCommit().getParentCount() > 1)
-						break;
-					monitor.setTaskName(diff.getPath());
-					try {
-						formatter.write(repository, diff);
-					} catch (IOException ignore) {
-						// Ignored
-					}
-					monitor.worked(1);
-				}
-				monitor.done();
-				UIJob uiJob = new UIJob(UIText.GitHistoryPage_FormatDiffJobName) {
-					@Override
-					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
-						if (UIUtils.isUsable(diffViewer)) {
-							diffViewer.setDocument(document);
-							diffViewer.setFormatter(formatter);
-							resizeCommentAndDiffScrolledComposite();
-						}
-						return Status.OK_STATUS;
-					}
-				};
-				uiJob.schedule();
-				return Status.OK_STATUS;
-			}
-		};
-		formatJob.schedule();
-	}
-
-	private void setWrap(boolean wrap) {
-		commentViewer.getTextWidget().setWordWrap(wrap);
-		diffViewer.getTextWidget().setWordWrap(wrap);
-		resizeCommentAndDiffScrolledComposite();
-	}
-
-	private void resizeCommentAndDiffScrolledComposite() {
-		int widthHint;
-		if (commentViewer.getTextWidget().getWordWrap()) {
-			widthHint = commentAndDiffScrolledComposite.getClientArea().width;
-			if (commentAndDiffScrolledComposite.getVerticalBar() != null
-					&& !commentAndDiffScrolledComposite.getVerticalBar().isVisible())
-				widthHint -= commentAndDiffScrolledComposite.getVerticalBar().getSize().x;
-		} else {
-			widthHint = SWT.DEFAULT;
-		}
-		Point size = commentAndDiffComposite
-				.computeSize(widthHint, SWT.DEFAULT);
-		commentAndDiffComposite.setSize(size);
-		commentAndDiffScrolledComposite.setMinSize(size);
 	}
 
 	private TreeWalk createFileWalker(RevWalk walk, Repository db, List<FilterPath> paths) {
@@ -2014,8 +1825,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			fileViewerInterestingPaths = new HashSet<String>(selectedPaths);
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
 			walk.setTreeFilter(followFilter);
-			walk.setRevFilter(renameTracker.getFilter());
-
 		} else if (paths.size() > 0) {
 			pathFilters = paths;
 			List<String> stringPaths = new ArrayList<String>(paths.size());
@@ -2049,15 +1858,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		for (String path : paths)
 			followFilters.add(createFollowFilter(path, diffConfig));
 
-		if (followFilters.size() == 1) {
-			FollowFilter followFilter = (FollowFilter) followFilters.get(0);
-			renameTracker.reset(followFilter.getPath());
+		if (followFilters.size() == 1)
 			return followFilters.get(0);
-		}
 
-		// TODO: this scenario is not supported by JGit: RewriteTreeFilter
-		// can not handle composite TreeFilters and expects a plain
-		// FollowFilter for rename detection.
 		return OrTreeFilter.create(followFilters);
 	}
 
@@ -2066,7 +1869,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		followFilter.setRenameCallback(new RenameCallback() {
 			@Override
 			public void renamed(DiffEntry entry) {
-				renameTracker.getCallback().renamed(entry);
 				if (fileViewerInterestingPaths != null) {
 					fileViewerInterestingPaths.add(entry.getOldPath());
 					fileViewerInterestingPaths.add(entry.getNewPath());
@@ -2088,13 +1890,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return true;
 	}
 
-	@Override
 	public void loadItem(int item) {
 		if (job == null || job.loadMoreItemsThreshold() < item)
 			loadHistory(item, null);
 	}
 
-	@Override
 	public void loadCommit(RevCommit c) {
 		if (job == null)
 			return;
@@ -2137,7 +1937,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IWorkbenchPartSite site = getPartSite();
 		if (site != null) {
 			final IWorkbenchSiteProgressService p;
-			p = CommonUtils.getAdapter(site, IWorkbenchSiteProgressService.class);
+			p = (IWorkbenchSiteProgressService) site
+					.getAdapter(IWorkbenchSiteProgressService.class);
 			if (p != null) {
 				p.schedule(j, 0, true /* use half-busy cursor */);
 				return;
@@ -2220,17 +2021,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_EMAIL_ADDRESSES);
 	}
 
-	@Override
 	public boolean contains(ISchedulingRule rule) {
 		return this == rule;
 	}
 
-	@Override
 	public boolean isConflicting(ISchedulingRule rule) {
 		return this == rule;
 	}
 
-	@Override
 	public ShowInContext getShowInContext() {
 		if (fileViewer != null && fileViewer.getControl().isFocusControl())
 			return fileViewer.getShowInContext();
@@ -2238,19 +2036,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			return null;
 	}
 
-	@Override
 	public String[] getShowInTargetIds() {
 		return new String[] { IHistoryView.VIEW_ID };
-	}
-
-	/**
-	 * Get renamed path in given commit with initial starting path
-	 *
-	 * @param path
-	 * @param commit
-	 * @return actual path in commit
-	 */
-	public String getRenamedPath(String path, ObjectId commit) {
-		return renameTracker.getPath(commit, path);
 	}
 }

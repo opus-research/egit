@@ -61,7 +61,6 @@ public class CommitMessageEditorDialog extends TitleAreaDialog {
 		toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				CommitMessageEditorDialog.this.commitMessage = messageArea
 						.getCommitMessage();
@@ -108,11 +107,5 @@ public class CommitMessageEditorDialog extends TitleAreaDialog {
 	 */
 	public String getCommitMessage() {
 		return this.commitMessage;
-	}
-
-	@Override
-	protected void configureShell(Shell newShell) {
-		super.configureShell(newShell);
-		newShell.setText(UIText.CommitMessageEditorDialog_EditCommitMessageTitle);
 	}
 }

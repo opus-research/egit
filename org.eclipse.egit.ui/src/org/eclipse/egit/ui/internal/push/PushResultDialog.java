@@ -51,11 +51,9 @@ class PushResultDialog extends TitleAreaDialog {
 			final PushOperationResult result, final String sourceString,
 			final boolean showConfigureButton) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				PlatformUI.getWorkbench().getDisplay().asyncExec(
 						new Runnable() {
-							@Override
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
@@ -95,7 +93,6 @@ class PushResultDialog extends TitleAreaDialog {
 		if (buttonId == CONFIGURE) {
 			super.buttonPressed(IDialogConstants.OK_ID);
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
 				public void run() {
 					Dialog dlg = SimpleConfigurePushDialog.getDialog(PlatformUI
 							.getWorkbench().getDisplay().getActiveShell(),
@@ -110,14 +107,9 @@ class PushResultDialog extends TitleAreaDialog {
 	protected Control createDialogArea(final Composite parent) {
 		final Composite composite = (Composite) super.createDialogArea(parent);
 		String pushErrors = getPushErrors();
-		String title;
-		if (pushErrors != null && pushErrors.length() > 0) {
+		setTitle(NLS.bind(UIText.PushResultDialog_label, destinationString));
+		if (pushErrors != null && pushErrors.length() > 0)
 			setErrorMessage(pushErrors);
-			title = NLS.bind(UIText.PushResultDialog_label_failed,
-					destinationString);
-		} else
-			title = NLS.bind(UIText.PushResultDialog_label, destinationString);
-		setTitle(title);
 		final PushResultTable table = new PushResultTable(composite);
 		table.setData(localDb, result);
 		final Control tableControl = table.getControl();
@@ -150,7 +142,6 @@ class PushResultDialog extends TitleAreaDialog {
 		this.hideConfigure = !show;
 	}
 
-	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
 		return UIUtils.getDialogBoundSettings(getClass());
 	}
