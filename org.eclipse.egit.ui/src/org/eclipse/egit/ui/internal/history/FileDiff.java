@@ -310,7 +310,7 @@ public class FileDiff extends WorkbenchAdapter {
 	 *
 	 * @return true if submodule, false otherwise
 	 */
-	public boolean isSubmodule() {
+	protected boolean isSubmodule() {
 		if (diffEntry == null)
 			return false;
 		return diffEntry.getOldMode() == FileMode.GITLINK
