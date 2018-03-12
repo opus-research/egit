@@ -16,6 +16,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.rebase.RebaseHelper;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
@@ -34,7 +35,7 @@ import org.eclipse.ui.ISources;
 public class RebaseCurrentRefCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-
+		BasicConfigurationDialog.show();
 		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 
 		final Repository repository = node.getRepository();
