@@ -2002,7 +2002,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 						}
 					};
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
-							&& anyElementIsExistingFile(fileSelection));
+							&& anyElementExistsInWorkspace(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
 
 					Action openCompareWithIndex = new Action(
@@ -2086,16 +2086,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	}
 
-	private boolean anyElementIsExistingFile(IStructuredSelection s) {
+	private boolean anyElementExistsInWorkspace(IStructuredSelection s) {
 		for (Object element : s.toList()) {
 			if (element instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) element;
-				if (entry.getType() != IResource.FILE) {
-					continue;
-				}
-				if (entry.getLocation().toFile().exists()) {
+				if (entry.getFile() != null && entry.getFile().exists())
 					return true;
-				}
 			}
 		}
 		return false;
