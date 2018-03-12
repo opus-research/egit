@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010-2012 SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +8,6 @@
  *
  * Contributors:
  *    Tomasz Zarna <Tomasz.Zarna@pl.ibm.com> - Allow to save patches in Workspace
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Create Patch... should remember previously chosen location
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history;
 
@@ -71,11 +70,6 @@ import org.eclipse.ui.views.navigator.ResourceComparator;
 public class LocationPage extends WizardPage {
 
 	private static final String PATH_KEY = "GitCreatePatchWizard.LocationPage.path"; //$NON-NLS-1$
-	private static final String LOCATION_KEY = "GitCreatePatchWizard.LocationPage.location"; //$NON-NLS-1$
-	private static final String LOCATION_VALUE_CLIPBOARD = "clipboard"; //$NON-NLS-1$
-	private static final String LOCATION_VALUE_FILE_SYSTEM = "filesystem"; //$NON-NLS-1$
-	private static final String LOCATION_VALUE_WORKSPACE = "workspace"; //$NON-NLS-1$
-
 
 	private Button cpRadio;
 
@@ -109,9 +103,10 @@ public class LocationPage extends WizardPage {
 					return allProjects;
 
 				ArrayList<IProject> accessibleProjects = new ArrayList<IProject>();
-				for (IProject project : allProjects)
+				for (IProject project : allProjects) {
 					if (project.isOpen())
 						accessibleProjects.add(project);
+				}
 				return accessibleProjects.toArray();
 			}
 			return super.getChildren(element);
@@ -199,15 +194,16 @@ public class LocationPage extends WizardPage {
 				String label, boolean defaultButton) {
 			Button button = super.createButton(parent, id, label,
 					defaultButton);
-			if (id == IDialogConstants.OK_ID)
+			if (id == IDialogConstants.OK_ID) {
 				button.setEnabled(false);
+			}
 			return button;
 		}
 
 		private void validateDialog() {
 			String fileName = wsFilenameText.getText();
 
-			if (fileName.equals("")) //$NON-NLS-1$
+			if (fileName.equals("")) { //$NON-NLS-1$
 				if (modified) {
 					setErrorMessage(UIText.GitCreatePatchWizard_WorkspacePatchDialogEnterFileName);
 					getButton(IDialogConstants.OK_ID).setEnabled(false);
@@ -217,6 +213,7 @@ public class LocationPage extends WizardPage {
 					getButton(IDialogConstants.OK_ID).setEnabled(false);
 					return;
 				}
+			}
 
 			// make sure that the filename is valid
 			if (!(ResourcesPlugin.getWorkspace().validateName(fileName,
@@ -335,29 +332,24 @@ public class LocationPage extends WizardPage {
 		composite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		initializeDialogUnits(composite);
 
-		String selectedOption= getDialogSettings().get(LOCATION_KEY);
-		if (selectedOption == null)
-			selectedOption = LOCATION_VALUE_CLIPBOARD;
-
 		// clipboard
 		GridData gd = new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING);
 		gd.horizontalSpan = 3;
 		cpRadio = new Button(composite, SWT.RADIO);
 		cpRadio.setText(UIText.GitCreatePatchWizard_Clipboard);
 		cpRadio.setLayoutData(gd);
-		cpRadio.setSelection(LOCATION_VALUE_CLIPBOARD.equals(selectedOption));
+		cpRadio.setSelection(true);
 
 		// filesystem
-		boolean isFileSystemSelected = LOCATION_VALUE_FILE_SYSTEM.equals(selectedOption);
 		fsRadio = new Button(composite, SWT.RADIO);
 		fsRadio.setText(UIText.GitCreatePatchWizard_File);
-		fsRadio.setSelection(isFileSystemSelected);
+		fsRadio.setSelection(false);
 
 		fsPathText = new Text(composite, SWT.BORDER);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
 		fsPathText.setLayoutData(gd);
 		fsPathText.setText(createFileName());
-		fsPathText.setEnabled(isFileSystemSelected);
+		fsPathText.setEnabled(false);
 
 		fsBrowseButton = new Button(composite, SWT.PUSH);
 		fsBrowseButton.setText(UIText.GitCreatePatchWizard_Browse);
@@ -367,22 +359,21 @@ public class LocationPage extends WizardPage {
 				SWT.DEFAULT, true);
 		data.widthHint = Math.max(widthHint, minSize.x);
 		fsBrowseButton.setLayoutData(data);
-		fsBrowseButton.setEnabled(isFileSystemSelected);
+		fsBrowseButton.setEnabled(false);
 
 		// workspace
-		boolean isWorkspaceSelected = LOCATION_VALUE_WORKSPACE.equals(selectedOption);
 		wsRadio = new Button(composite, SWT.RADIO);
 		wsRadio.setText(UIText.GitCreatePatchWizard_Workspace);
-		wsRadio.setSelection(isWorkspaceSelected);
+		wsRadio.setSelection(false);
 
 		wsPathText = new Text(composite, SWT.BORDER);
 		wsPathText.setLayoutData(gd);
-		wsPathText.setEnabled(isWorkspaceSelected);
+		wsPathText.setEnabled(false);
 
 		wsBrowseButton = new Button(composite, SWT.PUSH);
 		wsBrowseButton.setText(UIText.GitCreatePatchWizard_Browse);
 		wsBrowseButton.setLayoutData(data);
-		wsBrowseButton.setEnabled(isWorkspaceSelected);
+		wsBrowseButton.setEnabled(false);
 
 		cpRadio.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
@@ -392,7 +383,6 @@ public class LocationPage extends WizardPage {
 					fsBrowseButton.setEnabled(false);
 					wsPathText.setEnabled(false);
 					wsBrowseButton.setEnabled(false);
-					getDialogSettings().put(LOCATION_KEY, LOCATION_VALUE_CLIPBOARD);
 					validatePage();
 				}
 			}
@@ -409,7 +399,6 @@ public class LocationPage extends WizardPage {
 					wsBrowseButton.setEnabled(false);
 					// set focus to filesystem input text control
 					fsPathText.setFocus();
-					getDialogSettings().put(LOCATION_KEY, LOCATION_VALUE_FILE_SYSTEM);
 					validatePage();
 				}
 			}
@@ -433,8 +422,9 @@ public class LocationPage extends WizardPage {
 					final File file = new File(fsPathText.getText());
 					dialog.setFilterPath(file.getParent());
 					dialog.setFileName(file.getName());
-				} else
+				} else {
 					dialog.setFileName(""); //$NON-NLS-1$
+				}
 				dialog.setText(""); //$NON-NLS-1$
 				final String path = dialog.open();
 				if (path != null)
@@ -454,7 +444,6 @@ public class LocationPage extends WizardPage {
 					wsBrowseButton.setEnabled(true);
 					// set focus to workspace input text control
 					wsPathText.setFocus();
-					getDialogSettings().put(LOCATION_KEY, LOCATION_VALUE_WORKSPACE);
 					validatePage();
 				}
 			}
@@ -509,12 +498,13 @@ public class LocationPage extends WizardPage {
 	 * @return page is valid
 	 */
 	protected boolean validatePage() {
-		if (wsRadio.getSelection())
+		if (wsRadio.getSelection()) {
 			pageValid = validateWorkspaceLocation();
-		else if (fsRadio.getSelection())
+		}else if (fsRadio.getSelection()) {
 			pageValid = validateFilesystemLocation();
-		else if (cpRadio.getSelection())
+		} else if (cpRadio.getSelection()) {
 			pageValid = true;
+		}
 
 		/**
 		 * Avoid draw flicker by clearing error message if all is valid.
@@ -609,10 +599,12 @@ public class LocationPage extends WizardPage {
 				if (wsRadio.getSelection())
 					setErrorMessage(UIText.GitCreatePatchWizard_WorkspacePatchProjectClosed);
 				return false;
-			} else if (ResourcesPlugin.getWorkspace().getRoot().getFolder(
-					pathToWorkspaceFile).exists()) {
-				setErrorMessage(UIText.GitCreatePatchWizard_WorkspacePatchFolderExists);
-				return false;
+			} else {
+				if (ResourcesPlugin.getWorkspace().getRoot().getFolder(
+						pathToWorkspaceFile).exists()) {
+					setErrorMessage(UIText.GitCreatePatchWizard_WorkspacePatchFolderExists);
+					return false;
+				}
 			}
 		} else {
 			setErrorMessage(status.getMessage());
