@@ -115,22 +115,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	/**
-	 * Handle a warning. The warning is logged. If <code>show</code> is
-	 * <code>true</code> the warning is shown to the user.
-	 * @param message
-	 * @param throwable
-	 * @param show
-	 */
-	public static void handleWarning(String message, Throwable throwable, boolean show){
-		IStatus status = new Status(IStatus.WARNING, getPluginId(), message,
-				throwable);
-		int style = StatusManager.LOG;
-		if (show)
-			style |= StatusManager.SHOW;
-		StatusManager.getManager().handle(status, style);
-	}
-
-	/**
 	 * Shows an error. The error is NOT logged.
 	 *
 	 * @param message
@@ -551,14 +535,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 */
 	public static void error(String message, Throwable e) {
 		handleError(message, e, false);
-	}
-
-	/**
-	 * @param message
-	 * @param throwable
-	 */
-	public static void logWarning(String message, Throwable throwable){
-		handleWarning(message, throwable, false);
 	}
 
 	/**
