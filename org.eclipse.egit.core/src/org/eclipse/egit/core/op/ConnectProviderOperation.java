@@ -219,13 +219,9 @@ public class ConnectProviderOperation implements IEGitOperation {
 	@Nullable
 	private RepositoryMapping findActualRepository(
 			Collection<RepositoryMapping> repos, File suggestedRepo) {
-		File path = Path.fromOSString(suggestedRepo.getPath()).toFile();
+		IPath path = Path.fromOSString(suggestedRepo.getPath());
 		for (RepositoryMapping rm : repos) {
-			IPath other = rm.getGitDirAbsolutePath();
-			if (other == null) {
-				continue;
-			}
-			if (path.equals(other.toFile())) {
+			if (path.equals(rm.getGitDirAbsolutePath())) {
 				return rm;
 			}
 		}

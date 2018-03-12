@@ -420,9 +420,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	private void setSymlinkFileMode(IndexDiffData indexDiff,
 			Collection<StagingEntry> entries) {
 		final Set<String> symlinks = indexDiff.getSymlinks();
-		if (symlinks.isEmpty()) {
-			return;
-		}
 		for (StagingEntry stagingEntry : entries) {
 			if (symlinks.contains(stagingEntry.getPath()))
 				stagingEntry.setSymlink(true);
@@ -441,9 +438,6 @@ public class StagingViewContentProvider extends WorkbenchContentProvider {
 	private void setSubmoduleFileMode(IndexDiffData indexDiff,
 			Collection<StagingEntry> entries) {
 		final Set<String> submodules = indexDiff.getSubmodules();
-		if (submodules.isEmpty()) {
-			return;
-		}
 		for (StagingEntry stagingEntry : entries) {
 			if (submodules.contains(stagingEntry.getPath()))
 				stagingEntry.setSubmodule(true);

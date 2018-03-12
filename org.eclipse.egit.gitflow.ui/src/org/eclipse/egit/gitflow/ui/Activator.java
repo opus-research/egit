@@ -60,14 +60,6 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	/**
-	 * @param message
-	 * @return Warning status for given message.
-	 */
-	public static IStatus warning(String message) {
-		return new Status(IStatus.WARNING, getPluginId(), message);
-	}
-
-	/**
 	 * @return the id of the egit ui plugin
 	 */
 	public static String getPluginId() {
@@ -107,13 +99,5 @@ public class Activator extends AbstractUIPlugin {
 			style |= StatusManager.SHOW;
 		}
 		StatusManager.getManager().handle(status, style);
-	}
-
-	/**
-	 * @param message
-	 * @param e
-	 */
-	public static void logError(String message, Throwable e) {
-		handleError(message, e, false);
 	}
 }
