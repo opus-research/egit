@@ -46,7 +46,6 @@ import org.eclipse.egit.ui.internal.EditableRevision;
 import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.LocalFileRevision;
-import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView.PathNode.Type;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -56,6 +55,8 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.ILabelProvider;
@@ -187,7 +188,7 @@ public class CompareTreeView extends ViewPart {
 				UIPreferences.TREE_COMPARE_SHOW_EQUALS,
 				UIText.CompareTreeView_EqualFilesTooltip) {
 			@Override
-			public void apply(boolean value) {
+			void apply(boolean value) {
 				buildTrees(false);
 			}
 		};
@@ -249,16 +250,14 @@ public class CompareTreeView extends ViewPart {
 			};
 			GitFileRevision rightRevision = compareVersionMap.get(new Path(
 					repositoryMapping.getRepoRelativePath(res)));
-			if (rightRevision == null) {
+			if (rightRevision == null)
 				right = new GitCompareFileRevisionEditorInput.EmptyTypedElement(
 						NLS
 								.bind(
 										UIText.CompareTreeView_ItemNotFoundInVersionMessage,
 										res.getName(), getCompareVersion()));
-			} else {
-				String encoding = CompareUtils.getResourceEncoding(res);
-				right = new FileRevisionTypedElement(rightRevision, encoding);
-			}
+			else
+				right = new FileRevisionTypedElement(rightRevision);
 			GitCompareFileRevisionEditorInput compareInput = new GitCompareFileRevisionEditorInput(
 					left, right, PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getActivePage());
@@ -603,7 +602,7 @@ public class CompareTreeView extends ViewPart {
 					String relPath = repositoryMapping
 							.getRepoRelativePath(resource);
 					if (relPath.length() > 0)
-						orFilters.add(PathFilter.create(relPath, tw.getPathEncoding()));
+						orFilters.add(PathFilter.create(relPath));
 				}
 				if (orFilters.size() > 1)
 					tw.setFilter(OrTreeFilter.create(orFilters));
@@ -948,6 +947,47 @@ public class CompareTreeView extends ViewPart {
 			if (rebuildArray)
 				return childList.toArray();
 			return children;
+		}
+	}
+
+	private static abstract class BooleanPrefAction extends Action implements
+			IPropertyChangeListener, IWorkbenchAction {
+		private final String prefName;
+
+		private final IPersistentPreferenceStore store;
+
+		BooleanPrefAction(final IPersistentPreferenceStore store,
+				final String pn, final String text) {
+			this.store = store;
+			setText(text);
+			prefName = pn;
+			store.addPropertyChangeListener(this);
+			setChecked(store.getBoolean(prefName));
+		}
+
+		public void run() {
+			store.setValue(prefName, isChecked());
+			if (store.needsSaving()) {
+				try {
+					store.save();
+				} catch (IOException e) {
+					Activator.handleError(e.getMessage(), e, false);
+				}
+			}
+		}
+
+		abstract void apply(boolean value);
+
+		public void propertyChange(final PropertyChangeEvent event) {
+			if (prefName.equals(event.getProperty())) {
+				setChecked(store.getBoolean(prefName));
+				apply(isChecked());
+			}
+		}
+
+		public void dispose() {
+			// stop listening
+			store.removePropertyChangeListener(this);
 		}
 	}
 

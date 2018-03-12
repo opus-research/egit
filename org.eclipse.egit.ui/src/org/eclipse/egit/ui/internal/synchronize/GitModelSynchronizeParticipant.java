@@ -153,7 +153,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 		TreeWalk tw = new TreeWalk(repo);
 		tw.setRecursive(true);
-		tw.setFilter(PathFilter.create(repoRelativeLocation.toString(), tw.getPathEncoding()));
+		tw.setFilter(PathFilter.create(repoRelativeLocation.toString()));
 		RevCommit baseCommit = gsd.getSrcRevCommit();
 		RevCommit remoteCommit = gsd.getDstRevCommit();
 

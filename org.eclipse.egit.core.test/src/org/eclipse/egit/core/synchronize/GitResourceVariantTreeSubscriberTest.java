@@ -192,7 +192,7 @@ public class GitResourceVariantTreeSubscriberTest extends GitTestCase {
 		tw.setRecursive(true);
 		String path = Repository.stripWorkDir(repo.getWorkTree(), mainJava
 				.getLocation().toFile());
-		tw.setFilter(PathFilter.create(path, tw.getPathEncoding()));
+		tw.setFilter(PathFilter.create(path));
 		int nth = tw.addTree(commit.getTree());
 		tw.next();
 
