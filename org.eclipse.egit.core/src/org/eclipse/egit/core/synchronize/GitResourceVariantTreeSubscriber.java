@@ -30,7 +30,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
@@ -241,7 +241,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public IDiff getDiff(IResource resource) throws CoreException {
 		final GitSynchronizeData syncData = gsds.getData(resource.getProject());
-		if (syncData.shouldIncludeLocal())
+		if (syncData == null || syncData.shouldIncludeLocal())
 			return super.getDiff(resource);
 
 		SyncInfo info = getSyncInfo(resource);
@@ -480,8 +480,9 @@ public class GitResourceVariantTreeSubscriber extends
 	 * As opposed to the other repository providers, EGit allows for
 	 * synchronization between three remote branches. This will return the
 	 * "source" tree for such synchronization use cases.
-	 *
+	 * 
 	 * @return The source tree of this subscriber.
+	 * @since 3.0
 	 */
 	protected IResourceVariantTree getSourceTree() {
 		if (sourceTree == null)
@@ -493,12 +494,13 @@ public class GitResourceVariantTreeSubscriber extends
 	/**
 	 * This can be used to retrieve the version of the given resource
 	 * corresponding to the source tree of this subscriber.
-	 *
+	 * 
 	 * @param resource
 	 *            The resource for which we need a variant.
 	 * @return The revision of the given resource cached in the source tree of
 	 *         this subscriber.
 	 * @throws TeamException
+	 * @since 3.0
 	 */
 	public IFileRevision getSourceFileRevision(IFile resource)
 			throws TeamException {

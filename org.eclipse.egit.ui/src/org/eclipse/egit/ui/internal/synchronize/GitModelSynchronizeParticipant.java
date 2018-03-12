@@ -38,7 +38,6 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
@@ -239,11 +238,10 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 				try {
 					final IFileRevision revision = ((GitResourceVariantTreeSubscriber) subscriber)
 							.getSourceFileRevision((IFile) resource);
-					if (!(revision instanceof WorkspaceFileRevision)) {
-						final ITypedElement newSource = new FileRevisionTypedElement(
-								revision, getLocalEncoding(resource));
-						((ResourceDiffCompareInput) input).setLeft(newSource);
-					}
+					final ITypedElement newSource = new FileRevisionTypedElement(
+							revision,
+							getLocalEncoding(resource));
+					((ResourceDiffCompareInput) input).setLeft(newSource);
 				} catch (TeamException e) {
 					// Keep the input from super as-is
 					String error = NLS
