@@ -369,9 +369,6 @@ public class CoreText extends NLS {
 	public static String GitResourceVariantTree_fetchingVariant;
 
 	/** */
-	public static String GitResourceVariantTreeSubscriber_CouldNotFindSourceVariant;
-
-	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
 
 	/** */
