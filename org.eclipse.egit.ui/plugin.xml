@@ -4903,6 +4903,7 @@
             id="org.eclipse.egit.ui.ReflogView"
             name="%ReflogViewContext"
             parentId="org.eclipse.ui.contexts.window">
+            parentId="org.eclipse.ui.contexts.window">
       </context>
    </extension>
    <extension

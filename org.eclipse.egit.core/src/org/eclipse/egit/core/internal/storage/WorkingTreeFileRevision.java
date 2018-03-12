@@ -22,7 +22,7 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.team.core.history.IFileRevision;
 
 /** An {@link IFileRevision} for the current version in the working tree */
-public class WorkingTreeFileRevision extends GitFileRevision {
+public class WorkingTreeFileRevision extends GitFileRevision implements IFileRevision {
 
 	private final File file;
 
