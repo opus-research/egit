@@ -20,6 +20,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.variables.IStringVariableManager;
@@ -52,6 +53,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
 import org.eclipse.jface.viewers.AbstractTreeViewer;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -80,14 +82,18 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Widget;
+import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchCommandConstants;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ContributionItemFactory;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.keys.IBindingService;
+import org.eclipse.ui.services.IServiceLocator;
 
 /**
  * Some utilities for UI code
@@ -190,6 +196,16 @@ public class UIUtils {
 	public static Font getItalicFont(final String id) {
 		return PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
 				.getFontRegistry().getItalic(id);
+	}
+
+	/**
+	 * @return the indent of controls that depend on the previous control (e.g.
+	 *         a checkbox that is only enabled when the checkbox above it is
+	 *         checked)
+	 */
+	public static int getControlIndent() {
+		// Eclipse 4.3: Use LayoutConstants.getIndent once we depend on 4.3
+		return 20;
 	}
 
 	/**
@@ -814,5 +830,34 @@ public class UIUtils {
 		Point minSize = button.computeSize(SWT.DEFAULT, SWT.DEFAULT, true);
 		data.widthHint = Math.max(widthHint, minSize.x);
 		button.setLayoutData(data);
+	}
+
+	/**
+	 * Locates the current part and selection and fires
+	 * {@link ISelectionListener#selectionChanged(IWorkbenchPart, ISelection)}
+	 * on the passed listener.
+	 *
+	 * @param serviceLocator
+	 * @param selectionListener
+	 */
+	public static void notifySelectionChangedWithCurrentSelection(
+			ISelectionListener selectionListener, IServiceLocator serviceLocator) {
+		IHandlerService handlerService = (IHandlerService) serviceLocator
+				.getService(IHandlerService.class);
+		IEvaluationContext state = handlerService.getCurrentState();
+		// This seems to be the most reliable way to get the active part, it
+		// also returns a part when it is called while creating a view that is
+		// being shown.Getting the active part through the active workbench
+		// window returned null in that case.
+		Object partObject = state.getVariable(ISources.ACTIVE_PART_NAME);
+		Object selectionObject = state
+				.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
+		if (partObject instanceof IWorkbenchPart
+				&& selectionObject instanceof ISelection) {
+			IWorkbenchPart part = (IWorkbenchPart) partObject;
+			ISelection selection = (ISelection) selectionObject;
+			if (!selection.isEmpty())
+				selectionListener.selectionChanged(part, selection);
+		}
 	}
 }

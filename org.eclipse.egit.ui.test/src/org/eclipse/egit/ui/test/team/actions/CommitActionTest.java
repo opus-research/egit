@@ -22,7 +22,6 @@ import java.io.File;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -37,7 +36,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -46,10 +44,10 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class CommitActionTest extends LocalRepositoryTestCase {
-	private static File repositoryFile;
+	private File repositoryFile;
 
-	@BeforeClass
-	public static void setup() throws Exception {
+	@Before
+	public void setup() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		Repository repo = lookupRepository(repositoryFile);
 		TestUtil.configureTestCommitterAsUser(repo);
@@ -59,15 +57,6 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 		File dotProject = new File(project.getLocation().toOSString(), ".project");
 		project.delete(false, false, null);
 		assertTrue(dotProject.delete());
-	}
-
-	@Before
-	public void prepare() throws Exception {
-		Repository repo = lookupRepository(repositoryFile);
-		if (!repo.getBranch().equals("master")) {
-			BranchOperation bop = new BranchOperation(repo, "refs/heads/master");
-			bop.execute(null);
-		}
 	}
 
 	@Test
@@ -222,7 +211,6 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 			assertEquals(path, commitDialogTester.getEntryText(0));
 			commitDialogTester.setCommitMessage("Add new file");
 			commitDialogTester.commit();
-			file.delete(false, null);
 		} finally {
 			Activator
 					.getDefault()
@@ -230,26 +218,5 @@ public class CommitActionTest extends LocalRepositoryTestCase {
 					.setValue(UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED,
 							include);
 		}
-	}
-
-	@Test
-	public void testSortingByName() throws Exception {
-		IFile fileA = touch(PROJ1, "a", "a");
-		IFile fileB = touch(PROJ1, "b", "b");
-		CommitDialogTester commitDialogTester = CommitDialogTester
-				.openCommitDialog(PROJ1);
-		commitDialogTester.setShowUntracked(true);
-		assertEquals(2, commitDialogTester.getRowCount());
-		assertEquals(PROJ1 + "/a", commitDialogTester.getEntryText(0));
-		assertEquals(PROJ1 + "/b", commitDialogTester.getEntryText(1));
-		// Sort ascending (first click changes default sort order)
-		commitDialogTester.sortByName();
-		// Sort descending (now the sort order should be reversed)
-		commitDialogTester.sortByName();
-		assertEquals(PROJ1 + "/b", commitDialogTester.getEntryText(0));
-		assertEquals(PROJ1 + "/a", commitDialogTester.getEntryText(1));
-		commitDialogTester.cancel();
-		fileA.delete(false, null);
-		fileB.delete(false, null);
 	}
 }
