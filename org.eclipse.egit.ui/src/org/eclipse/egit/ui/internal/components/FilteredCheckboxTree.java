@@ -68,9 +68,6 @@ public class FilteredCheckboxTree extends FilteredTree {
 		fToolkit = toolkit;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.ui.dialogs.FilteredTree#doCreateTreeViewer(org.eclipse.swt.widgets.Composite, int)
-	 */
 	@Override
 	protected TreeViewer doCreateTreeViewer(Composite actParent, int style) {
 		int treeStyle = style | SWT.CHECK | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER;
@@ -86,9 +83,9 @@ public class FilteredCheckboxTree extends FilteredTree {
 	}
 
 	/*
-	 * Overridden to hook a listener on the job and set the deferred content provider
-	 * to synchronous mode before a filter is done.
-	 * @see org.eclipse.ui.dialogs.FilteredTree#doCreateRefreshJob()
+	 * Overridden to hook a listener on the job and set the deferred content
+	 * provider to synchronous mode before a filter is done.
+	 *
 	 */
 	@Override
 	protected WorkbenchJob doCreateRefreshJob() {
@@ -111,9 +108,6 @@ public class FilteredCheckboxTree extends FilteredTree {
 		return filterJob;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.ui.dialogs.FilteredTree#doCreateFilterText(org.eclipse.swt.widgets.Composite)
-	 */
 	@Override
 	protected Text doCreateFilterText(Composite actParent) {
 		// Overridden so the text gets create using the toolkit if we have one
