@@ -134,8 +134,6 @@ public class RebaseResultDialog extends MessageDialog {
 			return UIText.RebaseResultDialog_UpToDate;
 		case FAST_FORWARD:
 			return UIText.RebaseResultDialog_FastForward;
-		case NOTHING_TO_COMMIT:
-			return UIText.RebaseResultDialog_NothingToCommit;
 		default:
 			throw new IllegalStateException(status.name());
 		}

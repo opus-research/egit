@@ -62,7 +62,6 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			repositoryName = DecoratableResourceHelper
 					.getRepositoryName(repository);
 			branch = DecoratableResourceHelper.getShortBranch(repository);
-			branchStatus = DecoratableResourceHelper.getBranchStatus(repository);
 			switch (resource.getType()) {
 			case IResource.FILE:
 				extractResourceProperties();
@@ -139,11 +138,9 @@ class DecoratableResourceAdapter extends DecoratableResource {
 		Set<String> conflicting = indexDiffData.getConflicting();
 		conflicts = containsPrefix(conflicting, repoRelativePath);
 
-		// locally modified / untracked
+		// locally modified
 		Set<String> modified = indexDiffData.getModified();
-		Set<String> untracked = indexDiffData.getUntracked();
-		dirty = containsPrefix(modified, repoRelativePath)
-				|| containsPrefix(untracked, repoRelativePath);
+		dirty = containsPrefix(modified, repoRelativePath);
 	}
 
 	private String makeRepoRelative(IResource res) {
