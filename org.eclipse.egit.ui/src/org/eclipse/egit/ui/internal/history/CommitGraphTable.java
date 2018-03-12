@@ -470,9 +470,6 @@ class CommitGraphTable {
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.REVERT,
 						UIText.GitHistoryPage_revertMenuItem));
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.MERGE,
-						UIText.GitHistoryPage_mergeMenuItem));
 				popupMgr.add(new Separator());
 
 				MenuManager resetManager = new MenuManager(
