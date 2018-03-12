@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.compare.CompareNavigator;
+import org.eclipse.compare.ITypedElement;
+import org.eclipse.compare.ResourceNode;
 import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -218,20 +220,35 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 	@Override
 	public ICompareInput asCompareInput(Object object) {
-		// handle file comparison of Workspace model without local changes
-		IResource resource = AdapterUtils.adapt(object, IResource.class);
-		if (resource != null && resource.getType() == IResource.FILE) {
-			GitSynchronizeData gsd = gsds.getData(resource.getProject());
-			if (!gsd.shouldIncludeLocal())
+		ICompareInput compareInput = super.asCompareInput(object);
+
+		if(compareInput != null) {
+			// note, ResourceDiffCompareInput maybe returned from super;
+			// it always has the local resource on the left side!
+			// this is only ok if we are comparing with the working tree
+
+			// handle file comparison outside working tree
+			ITypedElement left = compareInput.getLeft();
+			if(left instanceof ResourceNode) {
+				// the left side can only be a resource node if
+				// we are comparing against the local working tree
+				IResource resource = ((ResourceNode) left).getResource();
+				if (resource.getType() == IResource.FILE) {
+					GitSynchronizeData gsd = gsds
+							.getData(resource.getProject());
+					if (!gsd.shouldIncludeLocal())
+						return getFileFromGit(gsd, resource.getLocation());
+				}
+			}
+		} else {
+			IResource resource = AdapterUtils.adapt(object, IResource.class);
+			if (resource.getType() == IResource.FILE) {
+				GitSynchronizeData gsd = gsds.getData(resource.getProject());
 				return getFileFromGit(gsd, resource.getLocation());
+			}
 		}
 
-		// note, ResourceDiffCompareInput maybe returned from super;
-		// it always has the local resource on the left side!
-		// this is only ok if "shouldIncludeLocal" is set to true
-
-		// fallback to super ISynchronizationCompareAdapter
-		return super.asCompareInput(object);
+		return compareInput;
 	}
 
 	@Override
