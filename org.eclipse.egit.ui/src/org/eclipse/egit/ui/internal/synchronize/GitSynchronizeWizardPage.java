@@ -11,21 +11,17 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import static org.eclipse.ui.ide.IDE.SharedImages.IMG_OBJ_PROJECT;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -37,19 +33,17 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.CellEditor;
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ComboBoxCellEditor;
 import org.eclipse.jface.viewers.EditingSupport;
-import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.StyledCellLabelProvider;
+import org.eclipse.jface.viewers.TreeSelection;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
@@ -62,29 +56,23 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 
 class GitSynchronizeWizardPage extends WizardPage {
 
-	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace().getRoot();
+	private static final IWorkspaceRoot ROOT = ResourcesPlugin.getWorkspace()
+			.getRoot();
 
 	private boolean shouldIncludeLocal = false;
 
-	private CheckboxTreeViewer treeViewer;
+	private TreeViewer treeViewer;
 
-	private Map<IProject, Repository> projects;
+	private final Map<Repository, Set<IProject>> resources = new HashMap<Repository, Set<IProject>>();
 
-	private Set<IProject> selectedProjects = new HashSet<IProject>();
+	private final Map<Repository, String> selectedBranches = new HashMap<Repository, String>();
 
-	private Map<Repository, String> selectedBranches = new HashMap<Repository, String>();
+	private final Image branchImage = UIIcons.BRANCH.createImage();
 
-	private Image branchImage = UIIcons.BRANCH.createImage();
-
-	private Image projectImage = PlatformUI.getWorkbench().getSharedImages()
-			.getImage(IMG_OBJ_PROJECT);
+	private final Image repositoryImage = UIIcons.REPOSITORY.createImage();
 
 	GitSynchronizeWizardPage() {
 		super(GitSynchronizeWizardPage.class.getName());
@@ -99,66 +87,90 @@ class GitSynchronizeWizardPage extends WizardPage {
 		layout.marginHeight = 0;
 		composite.setLayout(layout);
 
-		projects = new HashMap<IProject, Repository>();
 		for (IProject project : ROOT.getProjects()) {
-			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-			if (mapping != null)
-				projects.put(project, mapping.getRepository());
+			RepositoryMapping repositoryMapping = RepositoryMapping
+					.getMapping(project);
+			if (repositoryMapping == null)
+				continue;
+			Repository repo = repositoryMapping.getRepository();
+			Set<IProject> projects = resources.get(repo);
+			if (projects == null) {
+				projects = new HashSet<IProject>();
+				resources.put(repo, projects);
+			}
+			projects.add(project);
 		}
 
-		treeViewer = new ContainerCheckedTreeViewer(composite, SWT.BORDER
-				| SWT.V_SCROLL | SWT.H_SCROLL | SWT.FULL_SELECTION);
+		treeViewer = new TreeViewer(composite, SWT.BORDER | SWT.V_SCROLL
+				| SWT.H_SCROLL | SWT.FULL_SELECTION);
 		treeViewer.getTree().setLinesVisible(true);
 		treeViewer.getTree().setHeaderVisible(true);
 		treeViewer.getTree().setLayoutData(
 				new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		TreeViewerColumn prjectsColumn = new TreeViewerColumn(treeViewer,
+		TreeViewerColumn projectsColumn = new TreeViewerColumn(treeViewer,
 				SWT.LEAD);
-		prjectsColumn.getColumn().setText(
-				UIText.GitBranchSynchronizeWizardPage_projects);
-		prjectsColumn.getColumn().setImage(projectImage);
-		prjectsColumn.setLabelProvider(new StyledCellLabelProvider() {
+		projectsColumn.getColumn().setText(
+				UIText.GitBranchSynchronizeWizardPage_repositories);
+		projectsColumn.getColumn().setImage(repositoryImage);
+		projectsColumn.setLabelProvider(new StyledCellLabelProvider() {
 			@Override
 			public void update(ViewerCell cell) {
 				Object element = cell.getElement();
-				if (element instanceof IProject) {
-					IProject project = (IProject) element;
-					String projectName = project.getName();
-					int projNameLen = projectName.length();
-
-					Repository repo = projects.get(project);
-					String descr = " [" + repo.getWorkTree().getName(); //$NON-NLS-1$
+				if (element instanceof Repository) {
+					Repository repo = (Repository) element;
+					String descr = ""; //$NON-NLS-1$
 					try {
-						descr +=  " " + repo.getBranch() + "]";//$NON-NLS-1$ //$NON-NLS-2$
+						descr += " [" + repo.getBranch() + "]";//$NON-NLS-1$ //$NON-NLS-2$
 					} catch (IOException e) {
 						Activator.logError(e.getMessage(), e);
-						descr += "]"; //$NON-NLS-1$
 					}
 
 					Color decorationsColor = JFaceResources.getColorRegistry()
 							.get(JFacePreferences.DECORATIONS_COLOR);
 
-					StyleRange styleRange = new StyleRange(projNameLen,
-							projNameLen + descr.length(), decorationsColor,
+					String repoName = repo.getWorkTree().getName();
+					int repoNameLen = repoName.length();
+					StyleRange styleRange = new StyleRange(repoNameLen,
+							repoNameLen + descr.length(), decorationsColor,
 							null);
 
-					cell.setImage(projectImage);
-					cell.setText(projectName + descr);
-					cell.setStyleRanges(new StyleRange[] {styleRange});
+					cell.setImage(repositoryImage);
+					cell.setText(repoName + descr);
+					cell.setStyleRanges(new StyleRange[] { styleRange });
 				}
 
 				super.update(cell);
 			}
 		});
 
-		TreeViewerColumn dstColumn = new TreeViewerColumn(treeViewer,
-				SWT.LEAD);
-		dstColumn.getColumn().setText(UIText.GitBranchSynchronizeWizardPage_destination);
+		TreeViewerColumn dstColumn = new TreeViewerColumn(treeViewer, SWT.LEAD);
+		dstColumn.getColumn().setText(
+				UIText.GitBranchSynchronizeWizardPage_destination);
 		dstColumn.getColumn().setImage(branchImage);
 		dstColumn.getColumn().setWidth(200);
 		final ComboBoxCellEditor branchesEditor = new ComboBoxCellEditor(
 				treeViewer.getTree(), new String[0]);
+		branchesEditor
+				.setActivationStyle(ComboBoxCellEditor.DROP_DOWN_ON_KEY_ACTIVATION
+						| ComboBoxCellEditor.DROP_DOWN_ON_MOUSE_ACTIVATION);
+		((CCombo) branchesEditor.getControl()).addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				CCombo combo = (CCombo) e.widget;
+				TreeSelection sel = (TreeSelection) treeViewer.getSelection();
+				int selectedIdx = combo.getSelectionIndex();
+				Repository repo = (Repository) sel.getFirstElement();
+
+				if (selectedIdx != -1) {
+					selectedBranches.put(repo, combo.getItem(selectedIdx));
+					setPageComplete(true);
+				} else {
+					selectedBranches.put(repo, null);
+					setPageComplete(false);
+				}
+			}
+		});
 		dstColumn.setEditingSupport(new EditingSupport(treeViewer) {
 			@Override
 			protected void setValue(Object element, Object value) {
@@ -169,10 +181,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 				CCombo combo = (CCombo) branchesEditor.getControl();
 				String branch = combo.getItem(intValue);
 
-				RepositoryMapping mapping = RepositoryMapping
-						.getMapping((IResource) element);
-				Repository repository = mapping.getRepository();
-				selectedBranches.put(repository, branch);
+				selectedBranches.put((Repository) element, branch);
 				treeViewer.refresh(element, true);
 
 				validatePage();
@@ -180,34 +189,15 @@ class GitSynchronizeWizardPage extends WizardPage {
 
 			@Override
 			protected Object getValue(Object element) {
-				RepositoryMapping mapping = RepositoryMapping
-						.getMapping((IResource) element);
-				String branch = selectedBranches.get(mapping
-						.getRepository());
+				String branch = selectedBranches.get(element);
 				CCombo combo = (CCombo) branchesEditor.getControl();
 				int index = branch == null ? 0 : combo.indexOf(branch);
-
 				return Integer.valueOf(index);
 			}
 
 			@Override
 			protected CellEditor getCellEditor(Object element) {
-				RepositoryMapping mapping = RepositoryMapping
-						.getMapping((IResource) element);
-				Repository repo = mapping.getRepository();
-				List<String> refs = new LinkedList<String>(repo.getAllRefs()
-						.keySet());
-
-				List<Ref> additionalRefs;
-				try {
-					additionalRefs = repo.getRefDatabase().getAdditionalRefs();
-				} catch (IOException e) {
-					additionalRefs = null;
-				}
-				if (additionalRefs != null)
-					for (Ref ref : additionalRefs)
-						refs.add(ref.getName());
-
+				Set<String> refs = ((Repository) element).getAllRefs().keySet();
 				branchesEditor.setItems(refs.toArray(new String[refs.size()]));
 
 				return branchesEditor;
@@ -221,10 +211,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 		dstColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				RepositoryMapping mapping = RepositoryMapping
-						.getMapping((IResource) element);
-				String branch = selectedBranches.get(mapping
-						.getRepository());
+				String branch = selectedBranches.get(element);
 				return branch == null ? "" : branch; //$NON-NLS-1$
 			}
 		});
@@ -256,37 +243,28 @@ class GitSynchronizeWizardPage extends WizardPage {
 			}
 		});
 
-		List<IProject> projectsList = new ArrayList<IProject>(projects.keySet());
-		Collections.sort(projectsList, new Comparator<IProject>() {
-			public int compare(IProject o1, IProject o2) {
-				return o2.getName().compareTo(o1.getName());
+		List<Repository> repositoriesList = new ArrayList<Repository>(
+				resources.keySet());
+		Collections.sort(repositoriesList, new Comparator<Repository>() {
+			public int compare(Repository o1, Repository o2) {
+				String name1 = o1.getWorkTree().getName();
+				String name2 = o2.getWorkTree().getName();
+
+				return name1.compareToIgnoreCase(name2);
 			}
 		});
 
-		final Object[] array = projectsList.toArray();
-		treeViewer.setInput(array);
-		treeViewer.setCheckedElements(array);
-		prjectsColumn.getColumn().pack();
-
-		save();
-
-		treeViewer.addCheckStateListener(new ICheckStateListener() {
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				selectedProjects.clear();
-				selectedProjects.clear();
-
-				save();
-				validatePage();
-			}
-		});
+		treeViewer.setInput(repositoriesList
+				.toArray(new Repository[repositoriesList.size()]));
+		projectsColumn.getColumn().pack();
 
 		Composite buttonsComposite = new Composite(composite, SWT.NONE);
 		layout = new GridLayout(4, false);
 		layout.marginWidth = 0;
 		layout.marginHeight = 0;
 		buttonsComposite.setLayout(layout);
-		buttonsComposite.setLayoutData(GridDataFactory.fillDefaults().grab(true, false)
-				.create());
+		buttonsComposite.setLayoutData(GridDataFactory.fillDefaults()
+				.grab(true, false).create());
 
 		final Button includeLocal = new Button(buttonsComposite, SWT.CHECK);
 		includeLocal
@@ -297,31 +275,8 @@ class GitSynchronizeWizardPage extends WizardPage {
 				shouldIncludeLocal = includeLocal.getSelection();
 			}
 		});
-		includeLocal.setLayoutData(GridDataFactory.fillDefaults().grab(true, false)
-				.create());
-
-		Button selectAllBtn = new Button(buttonsComposite, SWT.PUSH);
-		selectAllBtn.setText(UIText.GitBranchSynchronizeWizardPage_selectAll);
-		selectAllBtn.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				treeViewer.setCheckedElements(array);
-				save();
-				validatePage();
-			}
-		});
-
-		Button deselectAllBtn = new Button(buttonsComposite, SWT.PUSH);
-		deselectAllBtn.setText(UIText.GitBranchSynchronizeWizardPage_deselectAll);
-		deselectAllBtn.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event event) {
-				// uncheck everything
-				treeViewer.setCheckedElements(new Object[0]);
-				// clear all selection
-				selectedProjects.clear();
-				selectedProjects.clear();
-				validatePage();
-			}
-		});
+		includeLocal.setLayoutData(GridDataFactory.fillDefaults()
+				.grab(true, false).create());
 
 		Dialog.applyDialogFont(composite);
 		setPageComplete(false);
@@ -333,28 +288,14 @@ class GitSynchronizeWizardPage extends WizardPage {
 		if (branchImage != null)
 			branchImage.dispose();
 
+		if (repositoryImage != null)
+			repositoryImage.dispose();
+
 		super.dispose();
 	}
 
-	private void save() {
-		// record any candidate repositories that should be synchronized
-		for (Object grayedElement : treeViewer.getGrayedElements())
-			selectedProjects.add((IProject) grayedElement);
-
-		for (Object checkedElement : treeViewer.getCheckedElements())
-			selectedProjects.add((IProject) checkedElement);
-	}
-
 	private void validatePage() {
-		boolean complete = !selectedProjects.isEmpty();
-		if (complete)
-			for (IProject project : selectedProjects)
-				if (!selectedBranches.containsKey(projects.get(project))) {
-					complete = false;
-					break;
-				}
-
-		setPageComplete(complete);
+		setPageComplete(!selectedBranches.isEmpty());
 	}
 
 	Map<Repository, String> getSelectedBranches() {
@@ -362,7 +303,11 @@ class GitSynchronizeWizardPage extends WizardPage {
 	}
 
 	Set<IProject> getSelectedProjects() {
-		return selectedProjects;
+		Set<IProject> projects = new HashSet<IProject>();
+		for (Repository repo : selectedBranches.keySet())
+			projects.addAll(resources.get(repo));
+
+		return projects;
 	}
 
 	boolean shouldIncludeLocal() {
