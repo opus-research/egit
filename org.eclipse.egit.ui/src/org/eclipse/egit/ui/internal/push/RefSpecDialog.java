@@ -127,7 +127,7 @@ public class RefSpecDialog extends TitleAreaDialog {
 			uriToCheck = config.getURIs().get(0);
 
 		final RefContentAssistProvider assistProvider = new RefContentAssistProvider(
-				repo, uriToCheck, pushMode, getShell());
+				repo, uriToCheck, getShell());
 
 		// source
 		Label sourceLabel = new Label(main, SWT.NONE);
@@ -162,7 +162,7 @@ public class RefSpecDialog extends TitleAreaDialog {
 		UIUtils.addRefContentProposalToText(sourceText, repo,
 				new IRefListProvider() {
 					public List<Ref> getRefList() {
-						return assistProvider.getRefsForContentAssist(true);
+						return assistProvider.getRefsForContentAssist(true, pushMode);
 					}
 				});
 
@@ -202,11 +202,9 @@ public class RefSpecDialog extends TitleAreaDialog {
 		UIUtils.addRefContentProposalToText(destinationText, repo,
 				new IRefListProvider() {
 					public List<Ref> getRefList() {
-						return assistProvider.getRefsForContentAssist(false);
+						return assistProvider.getRefsForContentAssist(false, pushMode);
 					}
 				});
-		// pre-fetch to avoid interrupting the user later
-		assistProvider.preFetchPushDestinationRefs();
 
 		// force update
 		forceButton = new Button(main, SWT.CHECK);
