@@ -47,24 +47,6 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
-	public static String DiscardChangesOperation_discardFailed;
-
-	/** */
-	public static String DiscardChangesOperation_discardFailedSeeLog;
-
-	/** */
-	public static String DiscardChangesOperation_discardingChanges;
-
-	/** */
-	public static String DiscardChangesOperation_refreshFailed;
-
-	/** */
-	public static String DiscardChangesOperation_repoNotFound;
-
-	/** */
-	public static String DiscardChangesOperation_writeIndexFailed;
-
-	/** */
 	public static String DisconnectProviderOperation_disconnecting;
 
 	/** */
@@ -207,9 +189,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String ProjectUtil_refreshingProjects;
-
-	/** */
-	public static String ProjectUtil_refreshing;
 
 	/** */
 	public static String PushOperation_resultCancelled;
