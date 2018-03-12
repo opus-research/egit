@@ -33,9 +33,6 @@ public class CoreText extends NLS {
 	public static String AssumeUnchangedOperation_writingIndex;
 
 	/** */
-	public static String CherryPickOperation_cherryPicking;
-
-	/** */
 	public static String CommitFileRevision_errorLookingUpPath;
 
 	/** */
