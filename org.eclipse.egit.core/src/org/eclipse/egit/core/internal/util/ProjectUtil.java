@@ -158,8 +158,12 @@ public class ProjectUtil {
 	 * @param monitor
 	 * @throws CoreException
 	 */
-	private static void closeMissingProject(IProject p, File projectFile,
+	static void closeMissingProject(IProject p, File projectFile,
 			IProgressMonitor monitor) throws CoreException {
+		// Don't close/delete if already closed
+		if (p.exists() && !p.isOpen())
+			return;
+
 		// Create temporary .project file so it can be closed
 		boolean closeFailed = false;
 		File projectRoot = projectFile.getParentFile();
