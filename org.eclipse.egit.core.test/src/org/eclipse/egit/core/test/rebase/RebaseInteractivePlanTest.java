@@ -10,25 +10,57 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test.rebase;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan;
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.JoinedList;
-import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.ReversedList;
+import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.MoveHelper;
+import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.PlanElement;
+import org.eclipse.egit.core.test.GitTestCase;
+import org.eclipse.egit.core.test.TestRepository;
+import org.eclipse.jgit.lib.Constants;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
-public class RebaseInteractivePlanTest {
+public class RebaseInteractivePlanTest extends GitTestCase {
+
+	private RebaseInteractivePlan plan;
+
+	private ArrayList<PlanElement> toDoElements;
+
+	private MoveHelper moveHelper;
+
+	private TestRepository testRepository;
+
+	@Before
+	public void setUp() throws Exception {
+		super.setUp();
+		gitDir = new File(project.getProject().getLocationURI().getPath(),
+				Constants.DOT_GIT);
+		testRepository = new TestRepository(gitDir);
+		testRepository.connect(project.getProject());
+		plan = RebaseInteractivePlan.getPlan(testRepository.getRepository());
+		toDoElements = new ArrayList<PlanElement>();
+		moveHelper = new RebaseInteractivePlan.MoveHelper(toDoElements, plan);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		plan.dispose();
+		testRepository.dispose();
+		super.tearDown();
+	}
 
 
 	@Test
@@ -41,164 +73,89 @@ public class RebaseInteractivePlanTest {
 		// how to mock repository?
 	}
 
-	@Test
-	public void moveUpTest() {
-		// how to mock repository?
+	@SuppressWarnings("boxing")
+	private PlanElement createPlanElement(boolean isComment) {
+		PlanElement element1 = Mockito.mock(PlanElement.class);
+		Mockito.when(element1.isComment()).thenReturn(isComment);
+		return element1;
 	}
 
 	@Test
-	public void moveDownTest() {
-		// how to mock repository?
+	public void moveUpTestOneElement() throws Exception {
+		PlanElement element1 = createPlanElement(false);
+		toDoElements.add(element1);
+		moveHelper.moveTodoEntryUp(element1);
+		assertEquals(element1, toDoElements.get(0));
 	}
 
+	@Test
+	public void moveUpTestTwoElements() throws Exception {
+		PlanElement element1 = createPlanElement(false);
+		PlanElement element2 = createPlanElement(false);
+		toDoElements.add(element1);
+		toDoElements.add(element2);
+		moveHelper.moveTodoEntryUp(element2);
+		assertEquals(element2, toDoElements.get(0));
+		assertEquals(element1, toDoElements.get(1));
+		moveHelper.moveTodoEntryUp(element2);
+		assertEquals(element2, toDoElements.get(0));
+		assertEquals(element1, toDoElements.get(1));
+		moveHelper.moveTodoEntryUp(element1);
+		assertEquals(element1, toDoElements.get(0));
+		assertEquals(element2, toDoElements.get(1));
+	}
 
+	@Test
+	public void moveUpTestThreeElementsWithOneComment() throws Exception {
+		PlanElement element1 = createPlanElement(false);
+		PlanElement element2 = createPlanElement(true);
+		PlanElement element3 = createPlanElement(false);
+		toDoElements.add(element1);
+		toDoElements.add(element2);
+		toDoElements.add(element3);
+		moveHelper.moveTodoEntryUp(element3);
+		assertEquals(element3, toDoElements.get(0));
+		assertEquals(element1, toDoElements.get(1));
+		assertEquals(element2, toDoElements.get(2));
+	}
 
-	public static class ReversedListTest {
-		private List<Integer> testData;
+	@Test
+	public void moveDownTestOneElement() throws Exception {
+		PlanElement element1 = createPlanElement(false);
+		toDoElements.add(element1);
+		moveHelper.moveTodoEntryDown(element1);
+		assertEquals(element1, toDoElements.get(0));
+	}
 
-		private ReversedList<List<Integer>, Integer> reversedble;
+	@Test
+	public void moveDownTestTwoElements() throws Exception {
+		PlanElement element1 = createPlanElement(false);
+		PlanElement element2 = createPlanElement(false);
+		toDoElements.add(element1);
+		toDoElements.add(element2);
+		moveHelper.moveTodoEntryDown(element1);
+		assertEquals(element2, toDoElements.get(0));
+		assertEquals(element1, toDoElements.get(1));
+		moveHelper.moveTodoEntryDown(element1);
+		assertEquals(element2, toDoElements.get(0));
+		assertEquals(element1, toDoElements.get(1));
+		moveHelper.moveTodoEntryDown(element2);
+		assertEquals(element1, toDoElements.get(0));
+		assertEquals(element2, toDoElements.get(1));
+	}
 
-		@SuppressWarnings("boxing")
-		@Before
-		public void beforeTest() {
-			testData = new LinkedList<Integer>(Arrays.asList(0, 1, 2, 3, 4, 5,
-					6, 7, 8, 9));
-			reversedble = ReversedList.wrap(testData);
-		}
-
-		@Test
-		public void testReverse() {
-			assertEquals("[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]",
-					reversedble.toString());
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testAdd() {
-			testData.add(10);
-			reversedble.add(-1);
-			assertEquals("[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1]",
-					reversedble.toString());
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testAddIndex() {
-			testData.add(0, -1);
-			assertEquals("[-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]",
-					testData.toString());
-			reversedble.add(0, 10);
-			assertEquals("[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1]",
-					reversedble.toString());
-			reversedble.add(5, -5);
-			assertEquals("[10, 9, 8, 7, 6, -5, 5, 4, 3, 2, 1, 0, -1]",
-					reversedble.toString());
-			assertEquals("[-1, 0, 1, 2, 3, 4, 5, -5, 6, 7, 8, 9, 10]",
-					testData.toString());
-			testData.add(5, -4);
-			List<Integer> copyDoupleReversed = new ArrayList<Integer>(
-					reversedble);
-			Collections.reverse(copyDoupleReversed);
-			assertEquals("[-1, 0, 1, 2, 3, -4, 4, 5, -5, 6, 7, 8, 9, 10]",
-					copyDoupleReversed.toString());
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testGet() {
-			testData.add(10);
-			assertEquals(new Integer(9), testData.get(9));
-			assertEquals(new Integer(5), testData.get(5));
-			assertEquals(new Integer(0), testData.get(0));
-			assertEquals(new Integer(10), testData.get(10));
-			assertEquals(new Integer(10), reversedble.get(0));
-			assertEquals(new Integer(0), reversedble.get(10));
-			assertEquals(new Integer(4), reversedble.get(6));
-			assertEquals(new Integer(9), reversedble.get(1));
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testSize() {
-			assertEquals(testData.size(), reversedble.size());
-			testData.add(10);
-			assertEquals(testData.size(), reversedble.size());
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testAddAll() {
-			testData.addAll(Arrays.asList(10, 11, 12));
-			assertEquals("[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",
-					testData.toString());
-			assertEquals("[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]",
-					reversedble.toString());
-			reversedble.addAll(Arrays.asList(-1, -2, -3));
-			assertEquals(
-					"[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3]",
-					reversedble.toString());
-			assertEquals(
-					"[-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]",
-					testData.toString());
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testAddAllIndex() {
-			testData.addAll(4, Arrays.asList(-4, -44, -44));
-			assertEquals("[0, 1, 2, 3, -4, -44, -44, 4, 5, 6, 7, 8, 9]",
-					testData.toString());
-			assertEquals("[9, 8, 7, 6, 5, 4, -44, -44, -4, 3, 2, 1, 0]",
-					reversedble.toString());
-
-			beforeTest();
-
-			reversedble.addAll(4, Arrays.asList(-6, -66, -66));
-			assertEquals("[9, 8, 7, 6, -6, -66, -66, 5, 4, 3, 2, 1, 0]",
-					reversedble.toString());
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testSet() {
-			testData.set(0, -99);
-			assertEquals(new Integer(-99), testData.get(0));
-			assertEquals(new Integer(-99), reversedble.get(9));
-			reversedble.set(0, -66);
-			assertEquals(new Integer(-66), reversedble.get(0));
-			assertEquals(new Integer(-66), testData.get(9));
-		}
-
-		@Test
-		public void testSubList() {
-			List<Integer> subList = reversedble.subList(2, 5);
-			List<Integer> expected = new LinkedList<Integer>(testData.subList(
-					5, 8));
-			Collections.reverse(expected);
-			assertEquals(expected, subList);
-		}
-
-		@Test
-		public void testListIteratorIndex() {
-			ListIterator<Integer> litrReversed = reversedble.listIterator(3);
-			ListIterator<Integer> litrTestData = testData.listIterator(7);
-
-			assertEquals(2, litrReversed.previousIndex());
-			assertEquals(3, litrReversed.nextIndex());
-
-			assertEquals(litrReversed.next(), litrTestData.previous());
-			assertEquals(litrReversed.previous(), litrTestData.next());
-			assertEquals(litrReversed.previous(), litrTestData.next());
-
-		}
-
-		@SuppressWarnings("boxing")
-		@Test
-		public void testToArray() {
-			Integer[] expected2 = new Integer[] { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
-			assertArrayEquals(expected2, reversedble.toArray());
-		}
-
+	@Test
+	public void moveDownTestThreeElementsWithOneComment() throws Exception {
+		PlanElement element1 = createPlanElement(false);
+		PlanElement element2 = createPlanElement(true);
+		PlanElement element3 = createPlanElement(false);
+		toDoElements.add(element1);
+		toDoElements.add(element2);
+		toDoElements.add(element3);
+		moveHelper.moveTodoEntryDown(element1);
+		assertEquals(element2, toDoElements.get(0));
+		assertEquals(element3, toDoElements.get(1));
+		assertEquals(element1, toDoElements.get(2));
 	}
 
 	public static class JoinedListTest {
