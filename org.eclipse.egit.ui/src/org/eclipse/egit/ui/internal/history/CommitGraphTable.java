@@ -6,7 +6,6 @@
  * Copyright (C) 2011-2012, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +44,6 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.text.AbstractHoverInformationControlManager;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.DefaultInformationControl;
@@ -62,13 +60,11 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -162,8 +158,7 @@ class CommitGraphTable {
 
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
-	CommitGraphTable(Composite parent, final TableLoader loader,
-			final ResourceManager resources) {
+	CommitGraphTable(Composite parent, final TableLoader loader) {
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 		tableLoader = loader;
@@ -207,7 +202,7 @@ class CommitGraphTable {
 
 		table.setLabelProvider(graphLabelProvider);
 		table.setContentProvider(new GraphContentProvider());
-		renderer = new SWTPlotRenderer(rawTable.getDisplay(), resources);
+		renderer = new SWTPlotRenderer(rawTable.getDisplay());
 
 		clipboard = new Clipboard(rawTable.getDisplay());
 		rawTable.addDisposeListener(new DisposeListener() {
@@ -240,6 +235,8 @@ class CommitGraphTable {
 			public void widgetDisposed(DisposeEvent e) {
 				if (allCommits != null)
 					allCommits.dispose();
+				if (renderer != null)
+					renderer.dispose();
 				hoverManager.dispose();
 			}
 		});
@@ -250,9 +247,8 @@ class CommitGraphTable {
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
-			final MenuManager menuMgr, final TableLoader loader,
-			final ResourceManager resources) {
-		this(parent, loader, resources);
+			final MenuManager menuMgr, final TableLoader loader) {
+		this(parent, loader);
 
 		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
 		getControl().addFocusListener(new FocusListener() {
@@ -355,6 +351,7 @@ class CommitGraphTable {
 		return !table.getSelection().isEmpty();
 	}
 
+	@SuppressWarnings("unchecked")
 	private void doCopy() {
 		final ISelection s = table.getSelection();
 		if (s.isEmpty() || !(s instanceof IStructuredSelection))
@@ -678,15 +675,7 @@ class CommitGraphTable {
 			IStructuredSelection selection = (IStructuredSelection) table
 					.getSelection();
 			RevCommit commit = (RevCommit) selection.getFirstElement();
-			RevWalk walk = new org.eclipse.jgit.revwalk.RevWalk(input.getRepository());
-			try {
-				return walk.parseCommit(commit.getId());
-			} catch (IOException e) {
-				throw new RuntimeException(
-						"Could not parse commit " + commit.getId(), e); //$NON-NLS-1$
-			} finally {
-				walk.release();
-			}
+			return commit;
 		}
 
 		private void writeToFile(final String fileName, String content)
@@ -757,24 +746,11 @@ class CommitGraphTable {
 							UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel));
 			}
 
-			if (selectionSize > 0) {
-				popupMgr.add(getCommandContributionItem(
-						HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
-						UIText.CommitGraphTable_OpenCommitLabel));
-			}
-
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (hasMultipleRefNodes()) {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel2));
-				} else {
-					popupMgr.add(getCommandContributionItem(
-							HistoryViewCommands.CHECKOUT,
-							UIText.GitHistoryPage_CheckoutMenuLabel));
-				}
-
+				popupMgr.add(getCommandContributionItem(
+						HistoryViewCommands.CHECKOUT,
+						UIText.GitHistoryPage_CheckoutMenuLabel));
 				popupMgr.add(getCommandContributionItem(
 						HistoryViewCommands.PUSH_COMMIT,
 						UIText.GitHistoryPage_pushCommit));
@@ -868,26 +844,10 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
+					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
-		}
-
-		private boolean hasMultipleRefNodes() {
-			try {
-				Map<String, Ref> branches = input.getRepository()
-						.getRefDatabase().getRefs(Constants.R_HEADS);
-				int count = 0;
-				for (Ref branch : branches.values()) {
-					if (branch.getLeaf().getObjectId()
-							.equals(((RevCommit) ((IStructuredSelection) selectionProvider
-									.getSelection()).getFirstElement()).getId()))
-						count++;
-				}
-				return (count > 1);
-
-			} catch (IOException e) {
-				// ignore here
-			}
-			return false;
 		}
 
 		private CommandContributionItem getCommandContributionItem(

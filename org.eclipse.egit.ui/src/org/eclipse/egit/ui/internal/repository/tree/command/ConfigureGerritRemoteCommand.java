@@ -31,7 +31,7 @@ public class ConfigureGerritRemoteCommand extends
 		Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 				.getShell();
 		ConfigureGerritWizard configureGerritWizard = new ConfigureGerritWizard(
-				repository, remoteName);
+				repository.getConfig(), remoteName);
 		WizardDialog dlg = new WizardDialog(shell, configureGerritWizard);
 		dlg.setHelpAvailable(false);
 		dlg.open();

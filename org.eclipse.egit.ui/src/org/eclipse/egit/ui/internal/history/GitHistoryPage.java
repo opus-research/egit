@@ -5,8 +5,6 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -54,9 +52,6 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelection;
@@ -96,6 +91,8 @@ import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.MenuDetectEvent;
+import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -112,13 +109,11 @@ import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
-import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		ISchedulingRule, TableLoader, IShowInSource {
+		ISchedulingRule, TableLoader {
 
 	private static final int INITIAL_ITEM = -1;
 
@@ -221,8 +216,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		BooleanPrefAction showNotesAction;
 
-		BooleanPrefAction showTagSequenceAction;
-
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -274,7 +267,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			createShowRelativeDateAction();
 			createShowEmailAddressesAction();
 			createShowNotesAction();
-			createShowTagSequenceAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 			createFollowRenamesAction();
@@ -467,18 +459,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			actionsToDispose.add(showNotesAction);
 		}
 
-		private void createShowTagSequenceAction() {
-			showTagSequenceAction = new BooleanPrefAction(
-					UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
-					UIText.ResourceHistory_ShowTagSequence) {
-				void apply(boolean value) {
-					// nothing, just set the Preference
-				}
-			};
-			showTagSequenceAction.apply(showTagSequenceAction.isChecked());
-			actionsToDispose.add(showTagSequenceAction);
-		}
-
 		private void createWrapCommentAction() {
 			wrapCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
@@ -629,9 +609,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	/** Job that is updating our history view, if we are refreshing. */
 	private GenerateHistoryJob job;
 
-	private final ResourceManager resources = new LocalResourceManager(
-			JFaceResources.getResources());
-
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
 
@@ -762,8 +739,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		graphDetailSplit = new SashForm(historyControl, SWT.VERTICAL);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				graphDetailSplit);
-		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr,
-				this, resources);
+		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr, this);
 
 		graph.setRelativeDate(isShowingRelativeDates());
 		graph.setShowEmailAddresses(isShowingEmailAddresses());
@@ -782,7 +758,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		attachCommitSelectionChanged();
 		initActions();
 
-		getSite().setSelectionProvider(graph.getTableView());
 		getSite().registerContextMenu(POPUP_ID, popupMgr, graph.getTableView());
 		// due to the issues described in bug 322751, it makes no
 		// sense to set a selection provider for the site here
@@ -918,6 +893,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		actions = new GitHistoryPageActions(this);
 		setupToolBar();
 		setupViewMenu();
+
+		graph.getControl().addMenuDetectListener(new MenuDetectListener() {
+			public void menuDetected(MenuDetectEvent e) {
+				popupMgr.add(actions.showFilesAction);
+				popupMgr.add(actions.showCommentAction);
+			}
+		});
 	}
 
 	private void setupToolBar() {
@@ -947,18 +929,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		showSubMenuMgr.add(actions.followRenamesAction);
 		showSubMenuMgr.add(new Separator());
 		showSubMenuMgr.add(actions.findAction);
-		showSubMenuMgr.add(actions.showCommentAction);
 		showSubMenuMgr.add(actions.showFilesAction);
+		showSubMenuMgr.add(actions.showCommentAction);
 		showSubMenuMgr.add(new Separator());
 		showSubMenuMgr.add(actions.showRelativeDateAction);
 		showSubMenuMgr.add(actions.showEmailAddressesAction);
-
-		IMenuManager showInMessageManager = new MenuManager(
-				UIText.GitHistoryPage_InRevisionCommentSubMenuLabel);
-		showSubMenuMgr.add(showInMessageManager);
-		showInMessageManager.add(actions.showTagSequenceAction);
-		showInMessageManager.add(actions.wrapCommentAction);
-		showInMessageManager.add(actions.fillCommentAction);
 
 		IMenuManager filterSubMenuMgr = new MenuManager(
 				UIText.GitHistoryPage_FilterSubMenuLabel);
@@ -971,6 +946,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(actions.compareModeAction);
 		viewMenuMgr.add(actions.reuseCompareEditorAction);
+
+		viewMenuMgr.add(new Separator());
+		viewMenuMgr.add(actions.wrapCommentAction);
+		viewMenuMgr.add(actions.fillCommentAction);
 	}
 
 	public void dispose() {
@@ -986,8 +965,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
 		}
-
-		resources.dispose();
 
 		// dispose of the actions (the history framework doesn't do this for us)
 		for (IWorkbenchAction action : actions.actionsToDispose)
@@ -1615,7 +1592,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					continue;
 				if (db != map.getRepository())
 					throw new IllegalStateException(
-							UIText.RepositoryAction_multiRepoSelection);
+							UIText.AbstractHistoryCommanndHandler_NoUniqueRepository);
 
 				if (showAllFilter == ShowFilter.SHOWALLFOLDER) {
 					final String path;
@@ -1829,8 +1806,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	private void loadHistory(final int itemToLoad, RevWalk walk) {
 		if (itemToLoad == INITIAL_ITEM) {
-			job = new GenerateHistoryJob(this, graph.getControl(), walk,
-					resources);
+			job = new GenerateHistoryJob(this, graph.getControl(), walk);
 			job.setRule(this);
 		}
 		job.setLoadHint(itemToLoad);
@@ -1892,17 +1868,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			markStartRef(walk, ref);
 	}
 
-	private void markStartRef(RevWalk walk, Ref ref) throws IOException,
-			IncorrectObjectTypeException {
-		try {
-			Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
-			if (refTarget instanceof RevCommit)
-				walk.markStart((RevCommit) refTarget);
-		} catch (MissingObjectException e) {
-			// If there is a ref which points to Nirvana then we should simply
-			// ignore this ref. We should not let a corrupt ref cause that the
-			// history view is not filled at all
-		}
+	private void markStartRef(RevWalk walk, Ref ref) throws MissingObjectException,
+			IOException, IncorrectObjectTypeException {
+		Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
+		if (refTarget instanceof RevCommit)
+			walk.markStart((RevCommit) refTarget);
 	}
 
 	private void markUninteresting(RevWalk walk, String prefix) throws IOException,
@@ -1942,12 +1912,5 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	public boolean isConflicting(ISchedulingRule rule) {
 		return this == rule;
-	}
-
-	public ShowInContext getShowInContext() {
-		if (fileViewer != null && fileViewer.getControl().isFocusControl())
-			return fileViewer.getShowInContext();
-		else
-			return null;
 	}
 }

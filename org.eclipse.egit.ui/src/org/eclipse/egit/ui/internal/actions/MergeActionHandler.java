@@ -56,7 +56,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 			String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 			final MergeOperation op = new MergeOperation(repository, refName);
-			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
 			Job job = new Job(jobname) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {
@@ -97,7 +96,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								MergeResultDialog.getDialog(shell, repository, op
+								new MergeResultDialog(shell, repository, op
 										.getResult()).open();
 							}
 						});
