@@ -102,6 +102,19 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	/**
+	 * Shows an error. The error is NOT logged.
+	 *
+	 * @param message
+	 *            a localized message
+	 * @param throwable
+	 */
+	public static void showError(String message, Throwable throwable) {
+		IStatus status = new Status(IStatus.ERROR, getPluginId(), message,
+				throwable);
+		StatusManager.getManager().handle(status, StatusManager.SHOW);
+	}
+
+	/**
 	 * Get the theme used by this plugin.
 	 *
 	 * @return our theme.
@@ -406,18 +419,6 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public static void error(String message, Throwable e) {
 		handleError(message, e, false);
-	}
-
-	/**
-	 * Creates an error status
-	 *
-	 * @param message
-	 *            a localized message
-	 * @param throwable
-	 * @return a new Status object
-	 */
-	public static IStatus createErrorStatus(String message, Throwable throwable) {
-		return new Status(IStatus.ERROR, getPluginId(), message, throwable);
 	}
 
 }

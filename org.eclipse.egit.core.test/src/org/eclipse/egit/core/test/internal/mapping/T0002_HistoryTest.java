@@ -111,7 +111,7 @@ public class T0002_HistoryTest extends GitTestCase {
 
 		ConnectProviderOperation operation = new ConnectProviderOperation(
 				project.getProject(), gitDir);
-		operation.execute(null);
+		operation.run(null);
 	}
 
 	private void addFile(Tree t,File f) throws IOException {

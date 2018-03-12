@@ -13,6 +13,7 @@ package org.eclipse.egit.core.op;
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -33,7 +34,7 @@ import org.eclipse.team.core.TeamException;
 /**
  * A class for changing a ref and possibly index and workdir too.
  */
-public class ResetOperation implements IEGitOperation {
+public class ResetOperation implements IWorkspaceRunnable {
 	/**
 	 * Kind of reset
 	 */
@@ -75,10 +76,7 @@ public class ResetOperation implements IEGitOperation {
 		this.type = type;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void run(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(NLS.bind(CoreText.ResetOperation_performingReset,
 				type.toString().toLowerCase(), refName), 7);
 

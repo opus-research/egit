@@ -35,10 +35,7 @@ public class QuickdiffBaselineOperation extends AbstractRevObjectOperation {
 		this.baseline = baseline;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void run(IProgressMonitor monitor) throws CoreException {
 		try {
 			GitQuickDiffProvider.setBaselineReference(repository, baseline);
 		} catch (IOException e) {

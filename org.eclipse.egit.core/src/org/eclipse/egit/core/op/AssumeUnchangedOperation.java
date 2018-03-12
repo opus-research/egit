@@ -18,6 +18,7 @@ import java.util.Map;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -34,7 +35,7 @@ import org.eclipse.osgi.util.NLS;
 /**
  * Tell JGit to ignore changes in selected files
  */
-public class AssumeUnchangedOperation implements IEGitOperation {
+public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 	private final Collection rsrcList;
 
 	private final IdentityHashMap<Repository, DirCache> caches;
@@ -54,10 +55,7 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		if (m == null)
 			m = new NullProgressMonitor();
 
