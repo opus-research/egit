@@ -226,13 +226,13 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if(left != null && left instanceof GitResourceNode) {
 			String ci = ((GitResourceNode)left).getContentIdentifier();
 			if(ci != null) {
-				cc.setLeftLabel(truncatedRevision(ci));
+				cc.setLeftLabel(ci.substring(0, 7) + ".."); //$NON-NLS-1$
 			}
 		}
 		if(right != null && right instanceof GitResourceNode) {
 			String ci = ((GitResourceNode)right).getContentIdentifier();
 			if(ci != null) {
-				cc.setRightLabel(truncatedRevision(ci));
+				cc.setRightLabel(ci.substring(0, 7) + ".."); //$NON-NLS-1$
 			}
 		}
 		if (getLeftRevision() != null) {
@@ -253,16 +253,12 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 
 	}
 
-	private String truncatedRevision(String revision) {
-		return revision.substring(0, 7) + ".."; //$NON-NLS-1$
-	}
-
 	private String getFileRevisionLabel(FileRevisionTypedElement element) {
 		Object fileObject = element.getFileRevision();
 		if (fileObject instanceof LocalFileRevision){
 			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_localRevision, new Object[]{element.getName(), element.getTimestamp()});
 		} else {
-			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_repository, new Object[]{element.getName(), truncatedRevision(element.getContentIdentifier()), element.getAuthor()});
+			return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_repository, new Object[]{element.getName(), element.getContentIdentifier(), element.getAuthor()});
 		}
 	}
 
@@ -283,8 +279,8 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	public String getTitle() {
 		Object[] titleObject = new Object[3];
 		titleObject[0] = getShortName(left);
-		titleObject[1] = truncatedRevision(getContentIdentifier(getLeftRevision()));
-		titleObject[2] = truncatedRevision(getContentIdentifier(getRightRevision()));
+		titleObject[1] = getContentIdentifier(getLeftRevision());
+		titleObject[2] = getContentIdentifier(getRightRevision());
 		return NLS.bind(TeamUIMessages.CompareFileRevisionEditorInput_compareResourceAndVersions, titleObject);
 	}
 
