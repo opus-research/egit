@@ -595,12 +595,10 @@ class CommitGraphTable {
 
 		private File createTempFile(RevCommit commit) {
 			String tmpDir = System.getProperty("java.io.tmpdir"); //$NON-NLS-1$
-			String patchName = "egit-patch" + commit.getId().name(); //$NON-NLS-1$
-			File patchDir = new File(tmpDir, patchName);
+			File patchDir = new File(tmpDir, "egit-patch" + commit.getId().name()); //$NON-NLS-1$
 			int counter = 1;
 			while(patchDir.exists()) {
-				patchDir = new File(tmpDir, patchName + "_" + counter); //$NON-NLS-1$
-				counter++;
+				patchDir = new File(tmpDir, commit.getId().name() + "_" + counter); //$NON-NLS-1$
 			}
 			patchDir.mkdir();
 			patchDir.deleteOnExit();
