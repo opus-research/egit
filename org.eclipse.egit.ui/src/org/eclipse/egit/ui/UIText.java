@@ -232,42 +232,6 @@ public class UIText extends NLS {
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
-	public static String GitHistoryPage_AllChangesInRepoHint;
-
-	/** */
-	public static String GitHistoryPage_AllChangesOfResourceHint;
-
-	/** */
-	public static String GitHistoryPage_AllChangesInFolderHint;
-
-	/** */
-	public static String GitHistoryPage_AllChangesInProjectHint;
-
-	/** */
-	public static String GitHistoryPage_AllInParentMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_AllInParentTooltip;
-
-	/** */
-	public static String GitHistoryPage_AllInProjectMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_AllInProjectTooltip;
-
-	/** */
-	public static String GitHistoryPage_AllInRepoMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_AllInRepoTooltip;
-
-	/** */
-	public static String GitHistoryPage_AllOfResourceMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_AllOfResourceTooltip;
-
-	/** */
 	public static String GitHistoryPage_compareMode;
 
 	/** */
@@ -275,9 +239,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_CheckoutMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_CompareModeMenuLabel;
 
 	/** */
 	public static String GitHistoryPage_CompareWithEachOtherMenuLabel;
@@ -310,19 +271,10 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FileNotInCommit;
 
 	/** */
-	public static String GitHistoryPage_FileType;
-
-	/** */
-	public static String GitHistoryPage_FindMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_FindTooltip;
-
-	/** */
-	public static String GitHistoryPage_FolderType;
-
-	/** */
 	public static String GitHistoryPage_fileNotFound;
+
+	/** */
+	public static String GitHistoryPage_find;
 
 	/** */
 	public static String GitHistoryPage_notContainedInCommits;
@@ -334,19 +286,10 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_From;
 
 	/** */
-	public static String GitHistoryPage_MultiResourcesType;
-
-	/** */
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_ProjectType;
-
-	/** */
 	public static String GitHistoryPage_QuickdiffMenuLabel;
-
-	/** */
-	public static String GitHistoryPage_RefreshMenuLabel;
 
 	/** */
 	public static String GitHistoryPage_ResetBaselineToHeadMenuLabel;
@@ -370,7 +313,7 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_ShowAllBranchesMenuLabel;
+	public static String GitHistoryPage_ShowAllVersionsForResource;
 
 	/** */
 	public static String GitHistoryPage_Subject;
@@ -1031,6 +974,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPage_refreshJob;
+
+	/** */
+	public static String HistoryPage_findbar_findTooltip;
 
 	/** */
 	public static String HistoryPage_findbar_find;
@@ -1753,6 +1699,15 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_Rename;
 
 	/** */
+	public static String HistoryPage_ShowAllVersionsForProject;
+
+	/** */
+	public static String HistoryPage_ShowAllVersionsForRepo;
+
+	/** */
+	public static String HistoryPage_ShowAllVersionsForFolder;
+
+	/** */
 	public static String Decorator_exceptionMessage;
 
 	/** */
@@ -2257,27 +2212,6 @@ public class UIText extends NLS {
 	public static String MergeAction_WrongRepositoryState;
 
 	/** */
-	public static String MergeResultDialog_couldNotFindCommit;
-
-	/** */
-	public static String MergeResultDialog_description;
-
-	/** */
-	public static String MergeResultDialog_id;
-
-	/** */
-	public static String MergeResultDialog_mergeInput;
-
-	/** */
-	public static String MergeResultDialog_mergeResult;
-
-	/** */
-	public static String MergeResultDialog_newHead;
-
-	/** */
-	public static String MergeResultDialog_result;
-
-	/** */
 	public static String MergeTargetSelectionDialog_ButtonMerge;
 
 	/** */
@@ -2459,16 +2393,10 @@ public class UIText extends NLS {
 	public static String NewRepositoryWizard_WizardTitle;
 
 	/** */
-	public static String RemoteSelectionCombo_sourceName;
+	public static String RemoteSelectionCombo_remoteName;
 
 	/** */
-	public static String RemoteSelectionCombo_sourceRef;
-
-	/** */
-	public static String RemoteSelectionCombo_destinationName;
-
-	/** */
-	public static String RemoteSelectionCombo_destinationRef;
+	public static String RemoteSelectionCombo_remoteRef;
 
 	/** */
 	public static String RemoveCommand_DeleteConfirmMultiMessage;
@@ -2498,7 +2426,7 @@ public class UIText extends NLS {
 	public static String SelectSynchronizeResourceDialog_dstRef;
 
 	/** */
-	public static String SelectSynchronizeResourceDialog_includeUncommitedChanges;
+	public static String SelectSynchronizeResourceDialog_includeUncommitedChnages;
 
 	/** */
 	public static String SelectUriWiazrd_Title;
