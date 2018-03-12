@@ -467,16 +467,4 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
-	/**
-	 * Get short name of current branch
-	 *
-	 * @return branch name
-	 */
-	protected String getCurrentBranch() {
-		try {
-			return repo.getBranch();
-		} catch (IOException e) {
-			return null;
-		}
-	}
 }

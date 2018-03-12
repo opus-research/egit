@@ -46,7 +46,12 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	@Override
 	protected String getMessageText() {
-		String branch = getCurrentBranch();
+		String branch;
+		try {
+			branch = repo.getBranch();
+		} catch (IOException e) {
+			branch = null;
+		}
 		if (branch != null)
 			return MessageFormat.format(
 					UIText.MergeTargetSelectionDialog_SelectRefWithBranch,
@@ -57,7 +62,12 @@ public class MergeTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	@Override
 	protected String getTitle() {
-		String branch = getCurrentBranch();
+		String branch;
+		try {
+			branch = repo.getBranch();
+		} catch (IOException e) {
+			branch = null;
+		}
 		if (branch != null)
 			return MessageFormat.format(
 					UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,

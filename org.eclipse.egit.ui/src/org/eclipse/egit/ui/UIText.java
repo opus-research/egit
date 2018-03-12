@@ -727,22 +727,13 @@ public class UIText extends NLS {
 	public static String RebaseTargetSelectionDialog_DialogMessage;
 
 	/** */
-	public static String RebaseTargetSelectionDialog_DialogMessageWithBranch;
-
-	/** */
 	public static String RebaseTargetSelectionDialog_DialogTitle;
-
-	/** */
-	public static String RebaseTargetSelectionDialog_DialogTitleWithBranch;
 
 	/** */
 	public static String RebaseTargetSelectionDialog_RebaseButton;
 
 	/** */
 	public static String RebaseTargetSelectionDialog_RebaseTitle;
-
-	/** */
-	public static String RebaseTargetSelectionDialog_RebaseTitleWithBranch;
 
 	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceButton;
@@ -4365,15 +4356,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchChangeFromGerritCommand_noRepositorySelectedMessage;
-
-	/** */
-	public static String RebasePulldownAction_Continue;
-
-	/** */
-	public static String RebasePulldownAction_Skip;
-
-	/** */
-	public static String RebasePulldownAction_Abort;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
