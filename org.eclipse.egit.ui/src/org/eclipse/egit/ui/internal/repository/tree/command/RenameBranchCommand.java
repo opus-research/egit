@@ -51,7 +51,7 @@ public class RenameBranchCommand extends
 					UIText.RenameBranchCommand_WrongNameMessage, oldName));
 		Repository db = refNode.getRepository();
 		IInputValidator inputValidator = ValidationUtils
-				.getRefNameInputValidator(db, prefix, true);
+				.getRefNameInputValidator(db, prefix);
 		String defaultValue = db.shortenRefName(oldName);
 		InputDialog newNameDialog = new InputDialog(shell,
 				UIText.RepositoriesView_RenameBranchTitle, NLS.bind(
