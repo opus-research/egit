@@ -47,7 +47,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -118,7 +117,7 @@ class CreateBranchPage extends WizardPage {
 
 	private Label sourceIcon;
 
-	private StyledText sourceNameLabel;
+	private Label sourceNameLabel;
 
 	private String sourceRefName = ""; //$NON-NLS-1$
 
@@ -189,9 +188,7 @@ class CreateBranchPage extends WizardPage {
 		sourceIcon.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.END, SWT.CENTER).create());
 
-		sourceNameLabel = new StyledText(main, SWT.NONE);
-		sourceNameLabel.setBackground(main.getBackground());
-		sourceNameLabel.setEditable(false);
+		sourceNameLabel = new Label(main, SWT.NONE);
 		sourceNameLabel.setLayoutData(GridDataFactory.fillDefaults()
 				.align(SWT.FILL, SWT.CENTER)
 				.grab(true, false).create());
