@@ -202,7 +202,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 						ActionFactory.SELECT_ALL.getId(), null);
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.COPY.getId(), null);
-				site.getActionBars().updateActionBars();
+				site.getActionBars().getMenuManager().update(false);
 			}
 
 			@Override
@@ -211,7 +211,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 						ActionFactory.SELECT_ALL.getId(), selectAll);
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.COPY.getId(), copy);
-				site.getActionBars().updateActionBars();
+				site.getActionBars().getMenuManager().update(false);
 			}
 		});
 
@@ -349,7 +349,7 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 	}
 
 	private static List<Ref> getBranches(Repository repo)  {
-		List<Ref> ref = new ArrayList<Ref>();
+		List<Ref> ref = new ArrayList<>();
 		try {
 			RefDatabase refDb = repo.getRefDatabase();
 			ref.addAll(refDb.getRefs(Constants.R_HEADS).values());

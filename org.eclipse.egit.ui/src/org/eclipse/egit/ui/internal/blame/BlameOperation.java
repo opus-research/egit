@@ -85,6 +85,25 @@ public class BlameOperation implements IEGitOperation {
 				return commit;
 			return Platform.getAdapterManager().getAdapter(this, adapter);
 		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this) {
+				return true;
+			}
+			if (!(obj instanceof BlameHistoryPageInput)) {
+				return false;
+			}
+			BlameHistoryPageInput other = (BlameHistoryPageInput) obj;
+			return super.equals(obj)
+					&& (commit == other.commit
+							|| commit != null && commit.equals(other.commit));
+		}
+
+		@Override
+		public int hashCode() {
+			return super.hashCode() ^ (commit == null ? 0 : commit.hashCode());
+		}
 	}
 
 	private static class RevisionSelectionHandler implements
@@ -227,7 +246,7 @@ public class BlameOperation implements IEGitOperation {
 		if (result == null)
 			return;
 
-		Map<RevCommit, BlameRevision> revisions = new HashMap<RevCommit, BlameRevision>();
+		Map<RevCommit, BlameRevision> revisions = new HashMap<>();
 		int lineCount = result.getResultContents().size();
 		BlameRevision previous = null;
 		for (int i = 0; i < lineCount; i++) {
@@ -293,17 +312,6 @@ public class BlameOperation implements IEGitOperation {
 		if (editor == null)
 			return;
 
-		// Show history view for path
-		try {
-			IHistoryView part = (IHistoryView) page.showView(
-					IHistoryView.VIEW_ID, null, IWorkbenchPage.VIEW_VISIBLE);
-			HistoryPageInput input = createHistoryPageInputWhenEditorOpened();
-			part.showHistoryFor(input);
-		} catch (PartInitException e) {
-			Activator.handleError("Error displaying blame annotations", e, //$NON-NLS-1$
-					false);
-		}
-
 		// IRevisionRulerColumn would also be possible but using
 		// IVerticalRulerInfo seems to work in more situations.
 		IVerticalRulerInfo rulerInfo = AdapterUtils.adapt(editor,
@@ -338,30 +346,6 @@ public class BlameOperation implements IEGitOperation {
 					.addSelectionChangedListener(
 							new RevisionSelectionHandler(repository, path,
 									storage));
-	}
-
-	private HistoryPageInput createHistoryPageInputWhenEditorOpened() {
-		if (storage instanceof IFile) {
-			IResource resource = (IResource) storage;
-			if (startCommit != null) {
-				return new BlameHistoryPageInput(repository, startCommit,
-						resource);
-			} else {
-				return new HistoryPageInput(repository,
-						new IResource[] { resource });
-			}
-		} else if (!repository.isBare()) {
-			File file = new File(repository.getWorkTree(), path);
-			if (startCommit != null) {
-				return new BlameHistoryPageInput(repository, startCommit,
-						file);
-			} else {
-				return new HistoryPageInput(repository,
-						new File[] { file });
-			}
-		} else {
-			return new HistoryPageInput(repository);
-		}
 	}
 
 	@Override

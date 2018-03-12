@@ -85,7 +85,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * Property listeners for plugin specific events
 	 */
 	private static List<IPropertyChangeListener> propertyChangeListeners =
-		new ArrayList<IPropertyChangeListener>(5);
+		new ArrayList<>(5);
 
 	/**
 	 * Property constant indicating the decorator configuration has changed.
@@ -296,10 +296,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	@Override
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
-		resourceManager = new LocalResourceManager(
-				JFaceResources.getResources());
 		// we want to be notified about debug options changes
-		Dictionary<String, String> props = new Hashtable<String, String>(4);
+		Dictionary<String, String> props = new Hashtable<>(4);
 		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
 				.getSymbolicName());
 		context.registerService(DebugOptionsListener.class.getName(), this,
@@ -472,7 +470,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			setSystem(true);
 		}
 
-		private Set<Repository> repositoriesChanged = new LinkedHashSet<Repository>();
+		private Set<Repository> repositoriesChanged = new LinkedHashSet<>();
 
 		@Override
 		public IStatus run(IProgressMonitor monitor) {
@@ -734,7 +732,16 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 *
 	 * @return the {@link ResourceManager} of this plugin
 	 */
-	public ResourceManager getResourceManager() {
+	public synchronized ResourceManager getResourceManager() {
+		if (resourceManager == null) {
+			Display display = PlatformUI.getWorkbench().getDisplay();
+			if (display == null) {
+				// Workbench already closed?
+				throw new IllegalStateException();
+			}
+			resourceManager = new LocalResourceManager(JFaceResources
+					.getResources(display));
+		}
 		return resourceManager;
 	}
 

@@ -207,6 +207,9 @@ class CommitGraphTable {
 
 			@Override
 			protected void mapElement(final Object element, final Widget item) {
+				if (element == null) {
+					return;
+				}
 				((SWTCommit) element).widget = item;
 			}
 		};
@@ -280,7 +283,7 @@ class CommitGraphTable {
 						ActionFactory.SELECT_ALL.getId(), null);
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.COPY.getId(), null);
-				site.getActionBars().updateActionBars();
+				site.getActionBars().getMenuManager().update(false);
 			}
 
 			@Override
@@ -289,7 +292,7 @@ class CommitGraphTable {
 						ActionFactory.SELECT_ALL.getId(), selectAll);
 				site.getActionBars().setGlobalActionHandler(
 						ActionFactory.COPY.getId(), copy);
-				site.getActionBars().updateActionBars();
+				site.getActionBars().getMenuManager().update(false);
 			}
 		});
 
@@ -418,7 +421,7 @@ class CommitGraphTable {
 	}
 
 	private void initCommitsMap() {
-		commitsMap = new HashMap<String, PlotCommit>();
+		commitsMap = new HashMap<>();
 		// ensure that filling (GenerateHistoryJob) and reading (here)
 		// the commit list is thread safe
 		synchronized (allCommits) {
@@ -815,14 +818,14 @@ class CommitGraphTable {
 					HistoryViewCommands.SET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_SetAsBaselineMenuLabel));
 
-			Map<String, String> parameters = new HashMap<String, String>();
+			Map<String, String> parameters = new HashMap<>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,
 					UIText.GitHistoryPage_ResetBaselineToHeadMenuLabel,
 					parameters));
 
-			parameters = new HashMap<String, String>();
+			parameters = new HashMap<>();
 			parameters.put(HistoryViewCommands.BASELINE_TARGET, "HEAD^1"); //$NON-NLS-1$
 			quickDiffManager.add(getCommandContributionItem(
 					HistoryViewCommands.RESET_QUICKDIFF_BASELINE,

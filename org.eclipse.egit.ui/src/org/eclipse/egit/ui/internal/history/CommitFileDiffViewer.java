@@ -55,6 +55,7 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -350,7 +351,7 @@ public class CommitFileDiffViewer extends TableViewer {
 							ActionFactory.SELECT_ALL.getId(), null);
 					pageSite.getActionBars().setGlobalActionHandler(
 							ActionFactory.COPY.getId(), null);
-					pageSite.getActionBars().updateActionBars();
+					pageSite.getActionBars().getMenuManager().update(false);
 				}
 
 				@Override
@@ -360,7 +361,7 @@ public class CommitFileDiffViewer extends TableViewer {
 							ActionFactory.SELECT_ALL.getId(), selectAll);
 					pageSite.getActionBars().setGlobalActionHandler(
 							ActionFactory.COPY.getId(), copy);
-					pageSite.getActionBars().updateActionBars();
+					pageSite.getActionBars().getMenuManager().update(false);
 				}
 			});
 		}
@@ -467,8 +468,8 @@ public class CommitFileDiffViewer extends TableViewer {
 			return null;
 		IPath workTreePath = new Path(db.getWorkTree().getAbsolutePath());
 		IStructuredSelection selection = (IStructuredSelection) getSelection();
-		List<Object> elements = new ArrayList<Object>();
-		List<File> files = new ArrayList<File>();
+		List<Object> elements = new ArrayList<>();
+		List<File> files = new ArrayList<>();
 		for (Object selectedElement : selection.toList()) {
 			FileDiff fileDiff = (FileDiff) selectedElement;
 			IPath path = workTreePath.append(fileDiff.getPath());
@@ -674,10 +675,13 @@ public class CommitFileDiffViewer extends TableViewer {
 		return walker;
 	}
 
+	@NonNull
 	Repository getRepository() {
-		if (db == null)
+		Repository repo = db;
+		if (repo == null) {
 			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
-		return db;
+		}
+		return repo;
 	}
 
 	/**

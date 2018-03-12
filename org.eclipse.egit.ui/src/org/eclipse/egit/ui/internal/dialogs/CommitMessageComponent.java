@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,6 +36,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
@@ -166,7 +168,7 @@ public class CommitMessageComponent {
 
 	private Repository repository;
 
-	private Collection<String> filesToCommit = new ArrayList<String>();
+	private Collection<String> filesToCommit = new ArrayList<>();
 
 	private ObjectId headCommitId;
 
@@ -204,7 +206,7 @@ public class CommitMessageComponent {
 		amending = false;
 		amendAllowed = false;
 		createChangeId = false;
-		filesToCommit = new ArrayList<String>();
+		filesToCommit = new ArrayList<>();
 		headCommitId = null;
 		listenersEnabled = false;
 	}
@@ -672,11 +674,15 @@ public class CommitMessageComponent {
 			return previousCommitMessage;
 		String calculatedCommitMessage = null;
 
-		Set<IResource> resources = new HashSet<IResource>();
+		Set<IResource> resources = new HashSet<>();
 		for (String path : paths) {
 			IFile file = findFile(path);
 			if (file != null)
 				resources.add(file.getProject());
+		}
+		if (resources.size() == 0 && repository != null) {
+			resources
+					.addAll(Arrays.asList(ProjectUtil.getProjects(repository)));
 		}
 		try {
 			ICommitMessageProvider messageProvider = getCommitMessageProvider();

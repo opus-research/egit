@@ -53,6 +53,7 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.core.synchronize.IgnoreInGitSynchronizations;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Repository;
@@ -635,6 +636,11 @@ public class ResourceUtil {
 				if (resources.length > 0) {
 					// get mappings from model provider if there are matching resources
 					final ModelProvider model = candidate.getModelProvider();
+					IgnoreInGitSynchronizations adapter = model
+							.getAdapter(IgnoreInGitSynchronizations.class);
+					if (adapter != null) {
+						continue;
+					}
 					final ResourceMapping[] modelMappings = model.getMappings(
 							resource, context, new NullProgressMonitor());
 					for (ResourceMapping mapping : modelMappings)
@@ -716,11 +722,38 @@ public class ResourceUtil {
 	 */
 	@Nullable
 	public static Repository getRepository(@NonNull IPath path) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(path);
-		if (mapping != null) {
-			return mapping.getRepository();
-		}
 		return Activator.getDefault().getRepositoryCache().getRepository(path);
 	}
 
+	/**
+	 * Makes a given path relative to the working directory of the given
+	 * repository. If the repository is bare or the path is {@code null} or is
+	 * not in that working directory, {@code null} is returned. Returns an empty
+	 * path if the given path <em>is</em> the working directory.
+	 *
+	 * @param path
+	 *            to make relative
+	 * @param repository
+	 *            to make the path relative to
+	 * @return the repository-relative path, or {@code null} if the path is not
+	 *         inside the repository's working directory.
+	 */
+	@Nullable
+	public static IPath getRepositoryRelativePath(@Nullable IPath path,
+			@NonNull Repository repository) {
+		if (path == null || repository.isBare()) {
+			return null;
+		}
+		java.nio.file.Path workingDirectory = repository.getWorkTree().toPath();
+		java.nio.file.Path toRelativize = path.toFile().toPath();
+		if (toRelativize.startsWith(workingDirectory)) {
+			int n = workingDirectory.getNameCount();
+			int m = toRelativize.getNameCount();
+			if (n == m) {
+				return new Path(""); //$NON-NLS-1$
+			}
+			return Path.fromOSString(toRelativize.subpath(n, m).toString());
+		}
+		return null;
+	}
 }

@@ -40,6 +40,7 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
 import org.eclipse.jdt.ui.JavaUI;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -57,6 +58,9 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
+import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
+import org.eclipse.swtbot.swt.finder.results.VoidResult;
+import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
 import org.eclipse.swtbot.swt.finder.waits.ICondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
@@ -69,6 +73,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.progress.IProgressConstants;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -569,6 +574,81 @@ public class TestUtil {
 	}
 
 	/**
+	 * Expand a node and wait until it is expanded. Use only if the node is
+	 * expected to have children.
+	 *
+	 * @param treeItem
+	 *            to expand
+	 * @return the {@code treeItem}
+	 */
+	public static SWTBotTreeItem expandAndWait(final SWTBotTreeItem treeItem) {
+		final String text = treeItem.getText();
+		treeItem.expand();
+		new SWTBot().waitUntil(new DefaultCondition() {
+
+			@Override
+			public boolean test() {
+				if (treeItem.widget.isDisposed()) {
+					return true; // Stop waiting and report failure below.
+				}
+				SWTBotTreeItem[] children = treeItem.getItems();
+				return children != null && children.length > 0;
+			}
+
+			@Override
+			public String getFailureMessage() {
+				return "No children found for " + text;
+			}
+		});
+		if (treeItem.widget.isDisposed()) {
+			fail("Widget disposed while waiting for expansion of node " + text);
+		}
+		return treeItem;
+	}
+
+	/**
+	 * Expand a node and wait until it is expanded and has a child node with the
+	 * given name. Use only if the node is expected to have children.
+	 *
+	 * @param treeItem
+	 *            to expand
+	 * @param childName
+	 *            to wait for
+	 * @return the child node
+	 */
+	public static SWTBotTreeItem expandAndWaitFor(final SWTBotTreeItem treeItem,
+			final String childName) {
+		final String text = treeItem.getText();
+		final SWTBotTreeItem[] result = { null };
+		treeItem.expand();
+		new SWTBot().waitUntil(new DefaultCondition() {
+
+			@Override
+			public boolean test() {
+				if (treeItem.widget.isDisposed()) {
+					return true; // Stop waiting and report failure below.
+				}
+				try {
+					result[0] = treeItem.getNode(childName);
+					return true;
+				} catch (WidgetNotFoundException e) {
+					return false;
+				}
+			}
+
+			@Override
+			public String getFailureMessage() {
+				return "Child " + childName + " not found under " + text;
+			}
+		});
+		if (treeItem.widget.isDisposed()) {
+			fail("Widget disposed while waiting for child node " + text + '.'
+					+ childName);
+		}
+		return result[0];
+	}
+
+	/**
 	 * Navigates in the given tree to the node denoted by the labels in the
 	 * path, using {@link #getNode(SWTBotTreeItem[], String)} to find children.
 	 *
@@ -587,7 +667,7 @@ public class TestUtil {
 		new SWTBot().waitUntil(widgetIsEnabled(tree));
 		SWTBotTreeItem item = getNode(tree.getAllItems(), path[0]);
 		for (int i = 1; item != null && i < path.length; i++) {
-			item.expand();
+			item = expandAndWait(item);
 			item = getChildNode(item, path[i]);
 		}
 		return item;
@@ -776,5 +856,20 @@ public class TestUtil {
 	public static SWTBotTree getExplorerTree() {
 		SWTBotView view = showExplorerView();
 		return view.bot().tree();
+	}
+
+	public static void openJobResultDialog(Job job) {
+		assertNotNull("Job should not be null", job);
+		final Action action = (Action) job
+				.getProperty(IProgressConstants.ACTION_PROPERTY);
+		if (action != null) {
+			UIThreadRunnable.asyncExec(new VoidResult() {
+
+				@Override
+				public void run() {
+					action.run();
+				}
+			});
+		}
 	}
 }

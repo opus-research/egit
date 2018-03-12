@@ -138,7 +138,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 	 */
 	public static class Protocol {
 		/** Ordered list of all protocols **/
-		private static final TreeMap<String, Protocol> protocols = new TreeMap<String, Protocol>();
+		private static final TreeMap<String, Protocol> protocols = new TreeMap<>();
 
 		/** Git native transfer */
 		public static final Protocol GIT = new Protocol("git", //$NON-NLS-1$
@@ -733,7 +733,13 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			eventDepth++;
 			if (eventDepth == 1) {
 				uri = u;
-				uriText.setText(uri.toString());
+				String oldUriText = uriText.getText();
+				String newUriText = uri.toString();
+				// avoid moving the cursor to the first position if there are no
+				// changes by this automatic update
+				if (!oldUriText.equals(newUriText)) {
+					uriText.setText(newUriText);
+				}
 				checkPage();
 			}
 		} finally {
@@ -746,7 +752,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		if (remotes == null)
 			return null;
 
-		List<RemoteConfig> result = new ArrayList<RemoteConfig>();
+		List<RemoteConfig> result = new ArrayList<>();
 
 		for (RemoteConfig config : remotes)
 			if ((sourceSelection && !config.getURIs().isEmpty() || !sourceSelection
