@@ -14,36 +14,33 @@ package org.eclipse.egit.ui.internal.history.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.ui.UIText;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jgit.api.CherryPickCommand;
-import org.eclipse.jgit.api.Git;
+import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
- * Executes the CherryPick
+ * Executes a cherry pick on the currently selected commit
  */
 public class CherryPickHandler extends AbstractHistoryCommandHandler {
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		RevCommit commit = (RevCommit) getSelection(getPage()).getFirstElement();
-		RevCommit newHead;
-		Repository repo = getRepository(event);
 
-		CherryPickCommand cherryPick;
-		Git git = new Git(repo);
-		try {
-			cherryPick = git.cherryPick().include(commit.getId());
-			newHead = cherryPick.call();
-			if (newHead != null && cherryPick.getCherryPickedRefs().isEmpty())
-				MessageDialog.openWarning(getPart(event).getSite().getShell(),
-						UIText.CherryPickHandler_NoCherryPickPerformedTitle,
-						UIText.CherryPickHandler_NoCherryPickPerformedMessage);
-		} catch (Exception e) {
-			throw new ExecutionException(UIText.CherryPickOperation_InternalError, e);
-		}
-		if (newHead == null)
-			throw new ExecutionException(UIText.CherryPickOperation_Failed);
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+		RevCommit commit = (RevCommit) getSelection(getPage())
+				.getFirstElement();
+		if (commit == null)
+			return null;
+		Repository repo = getRepository(event);
+		if (repo == null)
+			return null;
+
+		final IStructuredSelection selected = new StructuredSelection(
+				new RepositoryCommit(repo, commit));
+		CommonUtils
+				.runCommand(
+						org.eclipse.egit.ui.internal.commit.command.CherryPickHandler.ID,
+						selected);
 		return null;
 	}
 }

@@ -18,7 +18,10 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 
-class FileDiffContentProvider implements IStructuredContentProvider {
+/**
+ * Content provider for {@link FileDiff} objects
+ */
+public class FileDiffContentProvider implements IStructuredContentProvider {
 	private TreeWalk walk;
 
 	private RevCommit commit;
@@ -27,21 +30,25 @@ class FileDiffContentProvider implements IStructuredContentProvider {
 
 	public void inputChanged(final Viewer newViewer, final Object oldInput,
 			final Object newInput) {
-		walk = ((CommitFileDiffViewer) newViewer).getTreeWalk();
-		commit = (RevCommit) newInput;
+		if (newInput != null) {
+			walk = ((CommitFileDiffViewer) newViewer).getTreeWalk();
+			commit = (RevCommit) newInput;
+		} else {
+			walk = null;
+			commit = null;
+		}
 		diff = null;
 	}
 
 	public Object[] getElements(final Object inputElement) {
-		if (diff == null && walk != null && commit != null) {
+		if (diff == null && walk != null && commit != null)
 			try {
 				diff = FileDiff.compute(walk, commit);
 			} catch (IOException err) {
 				Activator.handleError(NLS.bind(UIText.FileDiffContentProvider_errorGettingDifference,
 						commit.getId()), err, false);
 			}
-		}
-		return diff;
+		return diff != null ? diff : new Object[0];
 	}
 
 	public void dispose() {

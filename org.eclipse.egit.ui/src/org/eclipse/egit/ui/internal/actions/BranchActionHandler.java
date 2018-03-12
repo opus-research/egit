@@ -26,12 +26,13 @@ public class BranchActionHandler extends RepositoryActionHandler {
 		final Repository repository = getRepository(true, event);
 		if (repository == null)
 			return null;
-		new BranchOperationUI(repository).start();
+		BranchOperationUI.checkout(repository).start();
 		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		return getRepository() != null;
+		Repository repo = getRepository();
+		return repo != null && containsHead(repo);
 	}
 }

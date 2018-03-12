@@ -15,7 +15,9 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.IWorkbench;
@@ -55,21 +57,12 @@ public class CommitDialogPreferencePage extends FieldEditorPreferencePage
 		hardWrap.getDescriptionControl(formattingGroup).setToolTipText(
 				UIText.CommitDialogPreferencePage_hardWrapMessageTooltip);
 		addField(hardWrap);
+		updateMargins(formattingGroup);
 
 		Group footersGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		footersGroup.setText(UIText.CommitDialogPreferencePage_footers);
 		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
 				.applyTo(footersGroup);
-
-		BooleanFieldEditor createChangeId = new BooleanFieldEditor(
-				UIPreferences.COMMIT_DIALOG_CREATE_CHANGE_ID,
-				UIText.CommitDialogPreferencePage_createChangeId,
-				footersGroup);
-		createChangeId
-				.getDescriptionControl(footersGroup)
-				.setToolTipText(
-						UIText.CommitDialogPreferencePage_createChangeIdTooltip);
-		addField(createChangeId);
 
 		BooleanFieldEditor signedOffBy = new BooleanFieldEditor(
 				UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY,
@@ -80,5 +73,26 @@ public class CommitDialogPreferencePage extends FieldEditorPreferencePage
 				.setToolTipText(
 						UIText.CommitDialogPreferencePage_signedOffByTooltip);
 		addField(signedOffBy);
+		updateMargins(footersGroup);
+
+		IntegerFieldEditor historySize = new IntegerFieldEditor(
+				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE,
+				UIText.CommitDialogPreferencePage_commitMessageHistory, main);
+		addField(historySize);
+
+		BooleanFieldEditor includeUntracked = new BooleanFieldEditor(
+				UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED,
+				UIText.CommitDialogPreferencePage_includeUntrackedFiles, main);
+		includeUntracked.getDescriptionControl(main).setToolTipText(
+				UIText.CommitDialogPreferencePage_includeUntrackedFilesTooltip);
+		addField(includeUntracked);
+	}
+
+	private void updateMargins(Group group) {
+		// make sure there is some room between the group border
+		// and the controls in the group
+		GridLayout layout = (GridLayout) group.getLayout();
+		layout.marginWidth = 5;
+		layout.marginHeight = 5;
 	}
 }

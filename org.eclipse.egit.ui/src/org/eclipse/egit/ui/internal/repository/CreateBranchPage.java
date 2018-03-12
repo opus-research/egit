@@ -7,17 +7,25 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Dariusz Luksza <dariusz@luksza.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.jface.dialogs.Dialog;
@@ -26,10 +34,13 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -57,6 +68,32 @@ import org.eclipse.ui.PlatformUI;
  * suggested initially.
  */
 class CreateBranchPage extends WizardPage {
+
+	/**
+	 * Get proposed target branch name for given source branch name
+	 *
+	 * @param sourceName
+	 * @return target name
+	 */
+	public static String getProposedTargetName(String sourceName) {
+		if (sourceName == null)
+			return null;
+
+		if (sourceName.startsWith(Constants.R_REMOTES)) {
+			String target = sourceName.substring(Constants.R_REMOTES.length());
+			int postSlash = target.indexOf('/') + 1;
+			if (postSlash > 0 && postSlash < target.length())
+				return target.substring(postSlash);
+			else
+				return target;
+		}
+
+		if (sourceName.startsWith(Constants.R_TAGS))
+			return sourceName.substring(Constants.R_TAGS.length());
+
+		return null;
+	}
+
 	private final Repository myRepository;
 
 	private final IInputValidator myValidator;
@@ -66,6 +103,11 @@ class CreateBranchPage extends WizardPage {
 	private final RevCommit myBaseCommit;
 
 	private Text nameText;
+
+	/**
+	 * Whether the contents of {@code nameText} is a suggestion or was entered by the user.
+	 */
+	private boolean nameIsSuggestion;
 
 	private Button checkout;
 
@@ -119,7 +161,7 @@ class CreateBranchPage extends WizardPage {
 	 * @param repo
 	 *            the repository
 	 * @param baseCommit
-	 *            the commit to base the new branch on, must not be null
+	 *            the commit to base the new branch on, may be null
 	 */
 	public CreateBranchPage(Repository repo, RevCommit baseCommit) {
 		super(CreateBranchPage.class.getName());
@@ -149,6 +191,7 @@ class CreateBranchPage extends WizardPage {
 					.setToolTipText(UIText.CreateBranchPage_SourceBranchTooltip);
 		}
 		this.branchCombo = new Combo(main, SWT.READ_ONLY | SWT.DROP_DOWN);
+		branchCombo.setData("org.eclipse.swtbot.widget.key", "BaseBranch"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(
 				this.branchCombo);
@@ -156,40 +199,60 @@ class CreateBranchPage extends WizardPage {
 		if (this.myBaseCommit != null) {
 			this.branchCombo.add(myBaseCommit.name());
 			this.branchCombo.setText(myBaseCommit.name());
-			this.branchCombo.setEnabled(false);
-		} else {
 			try {
-				for (Entry<String, Ref> ref : myRepository.getRefDatabase()
-						.getRefs(Constants.R_REMOTES).entrySet()) {
-					if (!ref.getValue().isSymbolic())
-						this.branchCombo.add(ref.getValue().getName());
+				Map<String, Ref> map = myRepository.getRefDatabase().getRefs(
+						Constants.R_HEADS);
+				for (Entry<String, Ref> entry : map.entrySet()) {
+					if (entry.getValue().getLeaf().getObjectId()
+							.equals(myBaseCommit))
+						this.branchCombo.add(entry.getValue().getName());
 				}
-				for (Entry<String, Ref> ref : myRepository.getRefDatabase()
-						.getRefs(Constants.R_HEADS).entrySet()) {
-					if (!ref.getValue().isSymbolic())
-						this.branchCombo.add(ref.getValue().getName());
+				map = myRepository.getRefDatabase()
+						.getRefs(Constants.R_REMOTES);
+				for (Entry<String, Ref> entry : map.entrySet()) {
+					if (entry.getValue().getLeaf().getObjectId()
+							.equals(myBaseCommit))
+						this.branchCombo.add(entry.getValue().getName());
 				}
-				for (Entry<String, Ref> ref : myRepository.getRefDatabase()
-						.getRefs(Constants.R_TAGS).entrySet()) {
-					if (!ref.getValue().isSymbolic())
-						this.branchCombo.add(ref.getValue().getName());
-				}
+			} catch (IOException e) {
+				// bad luck, we can't extend the drop down; let's log an error
+				Activator.logError(
+						"Exception while trying to find Refs for Commit", e); //$NON-NLS-1$
+			}
+			this.branchCombo.setEnabled(this.branchCombo.getItemCount() > 1);
+		} else {
+			List<String> refs = new ArrayList<String>();
+			RefDatabase refDatabase = myRepository.getRefDatabase();
+			try {
+				for (Ref ref : refDatabase.getAdditionalRefs())
+					refs.add(ref.getName());
 
+				Set<Entry<String, Ref>> entrys = refDatabase.getRefs(
+						RefDatabase.ALL).entrySet();
+				for (Entry<String, Ref> ref : entrys)
+					refs.add(ref.getValue().getName());
 			} catch (IOException e1) {
 				// ignore here
 			}
 
-			this.branchCombo.addSelectionListener(new SelectionAdapter() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					checkPage();
-				}
-			});
+			Collections.sort(refs, CommonUtils.STRING_ASCENDING_COMPARATOR);
+			for (String refName : refs)
+				this.branchCombo.add(refName);
+
 			// select the current branch in the drop down
-			if (myBaseRef != null) {
+			if (myBaseRef != null)
 				this.branchCombo.setText(myBaseRef);
-			}
 		}
+
+		this.branchCombo.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				String ref = branchCombo.getText();
+				suggestBranchName(ref);
+				upstreamConfig = getDefaultUpstreamConfig(myRepository, ref);
+				checkPage();
+			}
+		});
 
 		Label nameLabel = new Label(main, SWT.NONE);
 		nameLabel.setText(UIText.CreateBranchPage_BranchNameLabel);
@@ -204,6 +267,11 @@ class CreateBranchPage extends WizardPage {
 		nameLabel.addTraverseListener(new TraverseListener() {
 			public void keyTraversed(TraverseEvent e) {
 				nameText.setFocus();
+			}
+		});
+		nameText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				nameIsSuggestion = false;
 			}
 		});
 		// enable testing with SWTBot
@@ -226,20 +294,20 @@ class CreateBranchPage extends WizardPage {
 		warningComposite.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(
 				warningComposite);
-		Label warningLabel = new Label(warningComposite, SWT.NONE);
+
+		CLabel warningLabel = new CLabel(warningComposite, SWT.NONE);
+		warningLabel.setText(UIText.CreateBranchPage_LocalBranchWarningText);
+		warningLabel.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 		warningLabel.setImage(PlatformUI.getWorkbench().getSharedImages()
 				.getImage(ISharedImages.IMG_OBJS_INFO_TSK));
-		Text warningText = new Text(warningComposite, SWT.READ_ONLY);
-		warningText.setText(UIText.CreateBranchPage_LocalBranchWarningText);
-		warningText
-				.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 
 		buttonConfigRebase = new Button(upstreamConfigGroup, SWT.RADIO);
 		buttonConfigRebase.setText(UIText.CreateBranchPage_RebaseRadioButton);
 		buttonConfigRebase.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.REBASE;
+				if (buttonConfigRebase.getSelection())
+					upstreamConfig = UpstreamConfig.REBASE;
 			}
 		});
 		buttonConfigRebase
@@ -250,7 +318,8 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigMerge.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.MERGE;
+				if (buttonConfigMerge.getSelection())
+					upstreamConfig = UpstreamConfig.MERGE;
 			}
 		});
 		buttonConfigMerge
@@ -261,7 +330,8 @@ class CreateBranchPage extends WizardPage {
 		buttonConfigNone.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				upstreamConfig = UpstreamConfig.NONE;
+				if (buttonConfigNone.getSelection())
+					upstreamConfig = UpstreamConfig.NONE;
 			}
 		});
 		buttonConfigNone
@@ -288,17 +358,7 @@ class CreateBranchPage extends WizardPage {
 		Dialog.applyDialogFont(main);
 		setControl(main);
 		nameText.setFocus();
-		if (myBaseRef != null
-				&& (myBaseRef.startsWith(Constants.R_REMOTES) || myBaseRef
-						.startsWith(Constants.R_TAGS))) {
-			// additional convenience: the last part of the name is suggested
-			// as name for the local branch
-			nameText.setText(myBaseRef
-					.substring(myBaseRef.lastIndexOf('/') + 1));
-			nameText.selectAll();
-		} else
-			// in any case, we will have to enter the name
-			setPageComplete(false);
+		suggestBranchName(myBaseRef);
 		checkPage();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
@@ -315,8 +375,11 @@ class CreateBranchPage extends WizardPage {
 			gd.exclude = !branchCombo.getText().startsWith(Constants.R_HEADS);
 			warningComposite.setVisible(!gd.exclude);
 
+			warningComposite.getParent().getParent().layout(true);
+
+			boolean showRebase = !branchCombo.getText().startsWith(Constants.R_TAGS) && !ObjectId.isId(branchCombo.getText());
 			gd = (GridData) upstreamConfigGroup.getLayoutData();
-			gd.exclude = branchCombo.getText().startsWith(Constants.R_TAGS);
+			gd.exclude = !showRebase;
 			upstreamConfigGroup.setVisible(!gd.exclude);
 
 			upstreamConfigGroup.getParent().layout(true);
@@ -325,8 +388,7 @@ class CreateBranchPage extends WizardPage {
 				buttonConfigMerge.setSelection(false);
 			buttonConfigRebase.setSelection(false);
 			buttonConfigNone.setSelection(false);
-			switch (getDefaultUpstreamConfig(myRepository, branchCombo
-					.getText())) {
+			switch (upstreamConfig) {
 			case MERGE:
 				buttonConfigMerge.setSelection(true);
 				break;
@@ -374,7 +436,7 @@ class CreateBranchPage extends WizardPage {
 
 		final CreateLocalBranchOperation cbop;
 
-		if (myBaseCommit != null)
+		if (myBaseCommit != null && this.branchCombo.getText().equals(myBaseCommit.name()))
 			cbop = new CreateLocalBranchOperation(myRepository, newRefName,
 					myBaseCommit);
 		else
@@ -389,7 +451,7 @@ class CreateBranchPage extends WizardPage {
 				return;
 			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
 					IProgressMonitor.UNKNOWN);
-			new BranchOperationUI(myRepository, Constants.R_HEADS + newRefName)
+			BranchOperationUI.checkout(myRepository, Constants.R_HEADS + newRefName)
 					.run(monitor);
 		}
 	}
@@ -423,5 +485,16 @@ class CreateBranchPage extends WizardPage {
 		if (setupRebase)
 			return UpstreamConfig.REBASE;
 		return UpstreamConfig.MERGE;
+	}
+
+	private void suggestBranchName(String ref) {
+		if (nameText.getText().length() == 0 || nameIsSuggestion) {
+			String branchNameSuggestion = getProposedTargetName(ref);
+			if (branchNameSuggestion != null) {
+				nameText.setText(branchNameSuggestion);
+				nameText.selectAll();
+				nameIsSuggestion = true;
+			}
+		}
 	}
 }

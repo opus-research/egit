@@ -36,6 +36,9 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 		if (property.equals("isBare")) //$NON-NLS-1$
 			return node.getRepository().isBare();
 
+		if (property.equals("containsHead")) //$NON-NLS-1$
+			return containsHead(node);
+
 		if (property.equals("isSafe")) //$NON-NLS-1$
 			return node.getRepository().getRepositoryState() == RepositoryState.SAFE;
 
@@ -123,6 +126,21 @@ public class RepositoriesViewPropertyTester extends PropertyTester {
 			default:
 				return false;
 			}
+
+		if ("isSubmodule".equals(property)) { //$NON-NLS-1$
+			RepositoryTreeNode<?> parent = node.getParent();
+			return parent != null
+					&& parent.getType() == RepositoryTreeNodeType.SUBMODULES;
+		}
 		return false;
 	}
+
+	private boolean containsHead(RepositoryTreeNode node) {
+		try {
+			return node.getRepository().resolve(Constants.HEAD) != null;
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
 }

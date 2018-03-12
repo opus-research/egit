@@ -9,6 +9,7 @@
 package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -54,9 +55,6 @@ class GenerateHistoryJob extends Job {
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
 						GitTraceLocation.HISTORYVIEW.getLocation());
-			page.setErrorMessage(NLS.bind(
-					UIText.GenerateHistoryJob_BuildingListMessage, page
-							.getName()));
 			try {
 				for (;;) {
 					final int oldsz = allCommits.size();
@@ -64,26 +62,25 @@ class GenerateHistoryJob extends Job {
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.HISTORYVIEW.getLocation(),
 								"Filling commit list"); //$NON-NLS-1$
-					allCommits.fillTo(oldsz + BATCH_SIZE - 1);
-					if (monitor.isCanceled()) {
-						page.setErrorMessage(NLS.bind(
-								UIText.GenerateHistoryJob_CancelMessage, page
-										.getName()));
+					// ensure that filling (here) and reading (CommitGraphTable)
+					// the commit list is thread safe
+					synchronized (allCommits) {
+						allCommits.fillTo(oldsz + BATCH_SIZE - 1);
+					}
+					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
-					}
-					if (allCommits.size() == 0) {
-						page.setErrorMessage(NLS.bind(
-								UIText.GenerateHistoryJob_NoCommits,
-								page.getName()));
-						break;
-					}
 					if (maxCommits > 0 && allCommits.size() > maxCommits)
 						incomplete = true;
 					if (incomplete || oldsz == allCommits.size())
 						break;
 
-					monitor.setTaskName(NLS
-							.bind("Found {0} commits", Integer.valueOf(allCommits.size()))); //$NON-NLS-1$
+					if (allCommits.size() != 1)
+						monitor.setTaskName(MessageFormat
+								.format(UIText.GenerateHistoryJob_taskFoundMultipleCommits,
+										Integer.valueOf(allCommits.size())));
+					else
+						monitor.setTaskName(UIText.GenerateHistoryJob_taskFoundSingleCommit);
+
 					final long now = System.currentTimeMillis();
 					if (now - lastUpdateAt < 2000 && lastUpdateCnt > 0)
 						continue;

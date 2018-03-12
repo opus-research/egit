@@ -12,8 +12,10 @@ package org.eclipse.egit.ui.internal.repository.tree;
 
 import java.io.File;
 
+import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * A node in the Git Repositories view tree
@@ -21,7 +23,7 @@ import org.eclipse.jgit.lib.Repository;
  * @param <T>
  *            the type
  */
-public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTreeNode> {
+public abstract class RepositoryTreeNode<T> extends PlatformObject implements Comparable<RepositoryTreeNode> {
 
 	private final Repository myRepository;
 
@@ -131,6 +133,10 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case ADDITIONALREFS:
 			// fall through
+		case SUBMODULES:
+			// fall through
+		case STASH:
+			// fall through
 		case WORKINGDIR:
 			result = prime
 					* result
@@ -164,6 +170,8 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case FETCH:
 			// fall through
 		case BRANCHHIERARCHY:
+			// fall through
+		case STASHED_COMMIT:
 			// fall through
 		case ERROR:
 			result = prime * result
@@ -245,6 +253,10 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case ERROR:
 			// fall through
+		case SUBMODULES:
+			// fall through
+		case STASH:
+			// fall through
 		case WORKINGDIR:
 			return 0;
 
@@ -260,6 +272,9 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case FOLDER:
 			return ((File) myObject).getName().compareTo(
 					((File) otherNode.getObject()).getName());
+		case STASHED_COMMIT:
+			return ((RevCommit) myObject).compareTo(((RevCommit) otherNode
+					.getObject()));
 		case TAG:
 			// fall through
 		case ADDITIONALREF:
@@ -268,21 +283,29 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			return ((Ref) myObject).getName().compareTo(
 					((Ref) otherNode.getObject()).getName());
 		case REPO:
-			int nameCompare = ((Repository) myObject).getDirectory()
-					.getParentFile().getName().compareTo(
-							(((Repository) otherNode.getObject())
-									.getDirectory().getParentFile().getName()));
+			int nameCompare = getDirectoryContainingRepo((Repository) myObject)
+					.getName()
+					.compareTo(
+							getDirectoryContainingRepo((Repository) otherNode.getObject())
+									.getName());
 			if (nameCompare != 0)
 				return nameCompare;
 			// if the name is not unique, let's look at the whole path
-			return ((Repository) myObject).getDirectory().getParentFile()
-					.getParentFile().getPath().compareTo(
-							(((Repository) otherNode.getObject())
-									.getDirectory().getParentFile()
-									.getParentFile().getPath()));
-
+			return getDirectoryContainingRepo((Repository) myObject)
+					.getParentFile()
+					.getPath()
+					.compareTo(
+							getDirectoryContainingRepo((Repository) otherNode.getObject())
+									.getParentFile().getPath());
 		}
 		return 0;
+	}
+
+	private File getDirectoryContainingRepo(Repository repo) {
+		if (!repo.isBare())
+			return repo.getDirectory().getParentFile();
+		else
+			return repo.getDirectory();
 	}
 
 	private boolean checkObjectsEqual(Object otherObject) {
@@ -299,8 +322,10 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case ADDITIONALREFS:
 			// fall through
-		case ERROR:
-			// fall through TODO fix this: Repository may be null
+		case SUBMODULES:
+			// fall through
+		case STASH:
+			// fall through
 		case WORKINGDIR:
 			return ((Repository) myObject).getDirectory().equals(
 					((Repository) otherObject).getDirectory());
@@ -316,6 +341,8 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case FILE:
 			return ((File) myObject).getPath().equals(
 					((File) otherObject).getPath());
+		case ERROR:
+			// fall through
 		case REMOTE:
 			// fall through
 		case FETCH:
@@ -324,10 +351,22 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case BRANCHHIERARCHY:
 			// fall through
+		case STASHED_COMMIT:
+			// fall through
 		case TAGS:
 			return myObject.equals(otherObject);
 		}
 		return false;
 	}
 
+	public Object getAdapter(Class adapter) {
+		if (Repository.class == adapter && myRepository != null)
+			return myRepository;
+		return super.getAdapter(adapter);
+	}
+
+	@Override
+	public String toString() {
+		return "RepositoryNode[" + myType + ", " + myObject.toString() + "]";   //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
+	}
 }
