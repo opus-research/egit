@@ -11,17 +11,15 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.team.core.Team.isIgnoredHint;
-
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.synchronize.SyncInfo;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.eclipse.team.core.variants.IResourceVariantComparator;
 import org.eclipse.team.core.variants.IResourceVariantTree;
+import org.eclipse.team.core.variants.ResourceVariantByteStore;
 import org.eclipse.team.core.variants.ResourceVariantTreeSubscriber;
 
 /**
@@ -29,6 +27,8 @@ import org.eclipse.team.core.variants.ResourceVariantTreeSubscriber;
  */
 public class GitResourceVariantTreeSubscriber extends
 		ResourceVariantTreeSubscriber {
+
+	private final ResourceVariantByteStore store;
 
 	/**
 	 * A resource variant tree of the remote branch(es).
@@ -40,20 +40,23 @@ public class GitResourceVariantTreeSubscriber extends
 	 */
 	private IResourceVariantTree baseTree;
 
-	private GitSynchronizeDataSet gsds;
+	private GitSynchronizeDataSet gitSynchronizeDataSet;
 
 	/**
 	 * @param data
+	 * @param store
 	 */
-	public GitResourceVariantTreeSubscriber(GitSynchronizeDataSet data) {
-		this.gsds = data;
+	public GitResourceVariantTreeSubscriber(GitSynchronizeDataSet data,
+			ResourceVariantByteStore store) {
+		this.store = store;
+		this.gitSynchronizeDataSet = data;
 	}
 
 	private IResource[] roots;
 
 	@Override
 	public boolean isSupervised(IResource resource) throws TeamException {
-		return gsds.contains(resource.getProject()) && !isIgnoredHint(resource);
+		return true; //gitSynchronizeDataSet.contains(resource.getProject());
 	}
 
 	@Override
@@ -62,7 +65,7 @@ public class GitResourceVariantTreeSubscriber extends
 			return roots;
 		}
 
-		roots = gsds.getAllProjects();
+		roots = gitSynchronizeDataSet.getAllResources();
 		return roots;
 	}
 
@@ -70,11 +73,17 @@ public class GitResourceVariantTreeSubscriber extends
 	 * @param data
 	 */
 	public void reset(GitSynchronizeDataSet data) {
-		gsds = data;
+		gitSynchronizeDataSet = data;
+		store.dispose();
 
 		roots = null;
 		baseTree = null;
 		remoteTree = null;
+	}
+
+	@Override
+	public IResource[] members(IResource resource) throws TeamException {
+		return getBaseTree().members(resource);
 	}
 
 	@Override
@@ -84,13 +93,13 @@ public class GitResourceVariantTreeSubscriber extends
 
 	@Override
 	public IResourceVariantComparator getResourceComparator() {
-		return new GitResourceVariantComparator(gsds);
+		return new GitResourceVariantComparator(gitSynchronizeDataSet, store);
 	}
 
 	@Override
 	protected IResourceVariantTree getBaseTree() {
 		if (baseTree == null) {
-			baseTree = new GitBaseResourceVariantTree(gsds);
+			baseTree = new GitBaseResourceVariantTree(gitSynchronizeDataSet, store);
 		}
 		return baseTree;
 	}
@@ -98,7 +107,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	protected IResourceVariantTree getRemoteTree() {
 		if (remoteTree == null) {
-			remoteTree = new GitRemoteResourceVariantTree(gsds);
+			remoteTree = new GitRemoteResourceVariantTree(gitSynchronizeDataSet, store);
 		}
 		return remoteTree;
 	}
@@ -106,14 +115,8 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	protected SyncInfo getSyncInfo(IResource local, IResourceVariant base,
 			IResourceVariant remote) throws TeamException {
-		GitSynchronizeData gsd = gsds.getData(local.getProject());
-
-		SyncInfo info;
-		if (gsd.shouldIncludeLocal())
-			info = new SyncInfo(local, base, remote, getResourceComparator());
-		else
-			info = new GitSyncInfo(local, base, remote, getResourceComparator(), gsd);
-
+		GitSyncInfo info = new GitSyncInfo(local, base, remote,
+				getResourceComparator());
 		info.init();
 		return info;
 	}

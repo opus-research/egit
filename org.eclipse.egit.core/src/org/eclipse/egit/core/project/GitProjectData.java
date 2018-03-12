@@ -178,10 +178,14 @@ public class GitProjectData {
 	public static void delete(final IProject p) {
 		trace("delete(" + p.getName() + ")");   //$NON-NLS-1$ //$NON-NLS-2$
 		GitProjectData d = lookup(p);
-		if (d == null)
-			deletePropertyFiles(p);
-		else
-			d.deletePropertyFilesAndUncache();
+		if (d == null) {
+			try {
+				d = new GitProjectData(p).load();
+			} catch (IOException ioe) {
+				d = new GitProjectData(p);
+			}
+		}
+		d.delete();
 	}
 
 	static void trace(final String m) {
@@ -294,11 +298,10 @@ public class GitProjectData {
 	}
 
 	/**
-	 * @param resource any workbench resource contained within this project.
+	 * @param r any workbench resource contained within this project.
 	 * @return the mapping for the specified project
 	 */
-	public RepositoryMapping getRepositoryMapping(IResource resource) {
-		IResource r = resource;
+	public RepositoryMapping getRepositoryMapping(IResource r) {
 		try {
 			for (; r != null; r = r.getParent()) {
 				final RepositoryMapping m;
@@ -316,13 +319,8 @@ public class GitProjectData {
 		return null;
 	}
 
-	private void deletePropertyFilesAndUncache() {
-		deletePropertyFiles(getProject());
-		uncache(getProject());
-	}
-
-	private static void deletePropertyFiles(IProject project) {
-		final File dir = propertyFile(project).getParentFile();
+	private void delete() {
+		final File dir = propertyFile().getParentFile();
 		final File[] todel = dir.listFiles();
 		if (todel != null) {
 			for (int k = 0; k < todel.length; k++) {
@@ -333,8 +331,9 @@ public class GitProjectData {
 		}
 		dir.delete();
 		trace("deleteDataFor("  //$NON-NLS-1$
-				+ project.getName()
+				+ getProject().getName()
 				+ ")");  //$NON-NLS-1$
+		uncache(getProject());
 	}
 
 	/**
@@ -381,12 +380,9 @@ public class GitProjectData {
 	}
 
 	private File propertyFile() {
-		return propertyFile(getProject());
-	}
-
-	private static File propertyFile(IProject project) {
-		return new File(project.getWorkingLocation(Activator.getPluginId())
-				.toFile(), "GitProjectData.properties"); //$NON-NLS-1$
+		return new File(getProject()
+				.getWorkingLocation(Activator.getPluginId()).toFile(),
+				"GitProjectData.properties");  //$NON-NLS-1$
 	}
 
 	private GitProjectData load() throws IOException {
@@ -480,8 +476,7 @@ public class GitProjectData {
 		}
 	}
 
-	private void protect(IResource resource) {
-		IResource c = resource;
+	private void protect(IResource c) {
 		while (c != null && !c.equals(getProject())) {
 			trace("protect " + c);  //$NON-NLS-1$
 			protectedResources.add(c);

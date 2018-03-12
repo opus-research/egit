@@ -15,9 +15,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.osgi.util.NLS;
 
 class GenerateHistoryJob extends Job {
 	private static final int BATCH_SIZE = 256;
@@ -31,9 +29,7 @@ class GenerateHistoryJob extends Job {
 	private long lastUpdateAt;
 
 	GenerateHistoryJob(final GitHistoryPage ghp, final SWTCommitList list) {
-		super(NLS.bind(UIText.HistoryPage_refreshJob, Activator.getDefault()
-				.getRepositoryUtil().getRepositoryName(
-						ghp.getInputInternal().getRepository())));
+		super(UIText.HistoryPage_refreshJob);
 		page = ghp;
 		allCommits = list;
 	}
@@ -42,9 +38,6 @@ class GenerateHistoryJob extends Job {
 	protected IStatus run(final IProgressMonitor monitor) {
 		IStatus status = Status.OK_STATUS;
 		try {
-			page.setErrorMessage(NLS.bind(
-					UIText.GenerateHistoryJob_BuildingListMessage, page
-							.getName()));
 			try {
 				for (;;) {
 					final int oldsz = allCommits.size();
@@ -63,12 +56,8 @@ class GenerateHistoryJob extends Job {
 						UIText.GenerateHistoryJob_errorComputingHistory, e);
 			}
 
-			if (monitor.isCanceled()) {
-				page.setErrorMessage(NLS
-						.bind(UIText.GenerateHistoryJob_CancelMessage, page
-								.getName()));
+			if (monitor.isCanceled())
 				return Status.CANCEL_STATUS;
-			}
 			updateUI();
 		} finally {
 			monitor.done();
@@ -85,12 +74,4 @@ class GenerateHistoryJob extends Job {
 		page.showCommitList(this, allCommits, asArray);
 		lastUpdateCnt = allCommits.size();
 	}
-
-	@Override
-	public boolean belongsTo(Object family) {
-		if (family.equals(JobFamilies.GENERATE_HISTORY))
-			return true;
-		return super.belongsTo(family);
-	}
-
 }

@@ -33,10 +33,9 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.egit.core.RepositoryCache;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
@@ -50,8 +49,6 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
-import org.eclipse.jgit.events.ConfigChangedEvent;
-import org.eclipse.jgit.events.ConfigChangedListener;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.ListenerHandle;
@@ -110,8 +107,6 @@ public class RepositoriesView extends CommonNavigator {
 
 	private final IndexChangedListener myIndexChangedListener;
 
-	private final ConfigChangedListener myConfigChangeListener;
-
 	private final List<ListenerHandle> myListeners = new LinkedList<ListenerHandle>();
 
 	private Job scheduledJob;
@@ -120,11 +115,11 @@ public class RepositoriesView extends CommonNavigator {
 
 	private final RepositoryCache repositoryCache;
 
-	private long lastInputChange = 0L;
+	private long lastInputChange = 0l;
 
-	private long lastRepositoryChange = 0L;
+	private long lastRepositoryChange = 0l;
 
-	private long lastInputUpdate = -1L;
+	private long lastInputUpdate = -1l;
 
 	private boolean reactOnSelection = false;
 
@@ -159,13 +154,6 @@ public class RepositoriesView extends CommonNavigator {
 				lastRepositoryChange = System.currentTimeMillis();
 				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 
-			}
-		};
-
-		myConfigChangeListener = new ConfigChangedListener() {
-			public void onConfigChanged(ConfigChangedEvent event) {
-				lastRepositoryChange = System.currentTimeMillis();
-				scheduleRefresh(DEFAULT_REFRESH_DELAY);
 			}
 		};
 
@@ -249,31 +237,22 @@ public class RepositoriesView extends CommonNavigator {
 		// react on changes in the configured repositories
 		repositoryUtil.getPreferences().addPreferenceChangeListener(
 				configurationListener);
-		initRepositoriesAndListeners();
-		return viewer;
-	}
 
-	private void initRepositoriesAndListeners() {
-		synchronized (repositories) {
-			repositories.clear();
-			unregisterRepositoryListener();
-			// listen for repository changes
-			for (String dir : repositoryUtil.getConfiguredRepositories()) {
-				try {
-					Repository repo = repositoryCache
-							.lookupRepository(new File(dir));
-					myListeners.add(repo.getListenerList()
-							.addIndexChangedListener(myIndexChangedListener));
-					myListeners.add(repo.getListenerList()
-							.addRefsChangedListener(myRefsChangedListener));
-					myListeners.add(repo.getListenerList()
-							.addConfigChangedListener(myConfigChangeListener));
-					repositories.add(repo);
-				} catch (IOException e) {
-					Activator.handleError(e.getMessage(), e, false);
-				}
+		// listen for repository changes
+		for (String dir : repositoryUtil.getConfiguredRepositories()) {
+			try {
+				Repository repo = repositoryCache
+						.lookupRepository(new File(dir));
+				myListeners.add(repo.getListenerList().addIndexChangedListener(
+						myIndexChangedListener));
+				myListeners.add(repo.getListenerList().addRefsChangedListener(
+						myRefsChangedListener));
+				repositories.add(repo);
+			} catch (IOException e) {
+				Activator.handleError(e.getMessage(), e, false);
 			}
 		}
+		return viewer;
 	}
 
 	@Override
@@ -373,11 +352,12 @@ public class RepositoriesView extends CommonNavigator {
 	}
 
 	/**
-	 * Refresh Repositories View
+	 * Executes an immediate refresh
+	 * @return the job used to perform the refresh
 	 */
-	public void refresh() {
-		lastInputUpdate = -1L;
-		scheduleRefresh(0);
+	public Job refresh() {
+		lastInputUpdate = -1l;
+		return scheduleRefresh(0);
 	}
 
 	private Job scheduleRefresh(long delay) {
@@ -416,8 +396,28 @@ public class RepositoriesView extends CommonNavigator {
 							GitTraceLocation.REPOSITORIESVIEW.getLocation(),
 							"Running the update"); //$NON-NLS-1$
 				lastInputUpdate = System.currentTimeMillis();
-				if (needsNewInput)
-					initRepositoriesAndListeners();
+				if (needsNewInput) {
+					synchronized (repositories) {
+						unregisterRepositoryListener();
+						repositories.clear();
+						for (String dir : repositoryUtil
+								.getConfiguredRepositories()) {
+							try {
+								Repository repo = repositoryCache
+										.lookupRepository(new File(dir));
+								myListeners.add(repo.getListenerList()
+										.addIndexChangedListener(
+												myIndexChangedListener));
+								myListeners.add(repo.getListenerList()
+										.addRefsChangedListener(
+												myRefsChangedListener));
+								repositories.add(repo);
+							} catch (IOException e) {
+								Activator.handleError(e.getMessage(), e, false);
+							}
+						}
+					}
+				}
 
 				Display.getDefault().asyncExec(new Runnable() {
 					public void run() {
@@ -479,13 +479,6 @@ public class RepositoriesView extends CommonNavigator {
 					schedule(DEFAULT_REFRESH_DELAY);
 				}
 				return Status.OK_STATUS;
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.REPO_VIEW_REFRESH))
-					return true;
-				return super.belongsTo(family);
 			}
 
 		};

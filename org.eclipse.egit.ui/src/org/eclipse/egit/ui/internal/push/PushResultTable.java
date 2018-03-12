@@ -8,12 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
@@ -24,25 +18,13 @@ import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IElementComparer;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -50,7 +32,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.RemoteRefUpdate.Status;
 
 /**
  * Table displaying push operation results.
@@ -59,8 +47,6 @@ class PushResultTable {
 	private static final int TABLE_PREFERRED_WIDTH = 650;
 
 	private static final int TABLE_PREFERRED_HEIGHT = 300;
-
-	private static final int TEXT_PREFERRED_HEIGHT = 100;
 
 	private static final int COLUMN_STATUS_WEIGHT = 40;
 
@@ -74,19 +60,17 @@ class PushResultTable {
 
 	private static final String IMAGE_ADD = "MODE_ADD"; //$NON-NLS-1$
 
-	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
-
-	private static final String SPACE = " "; //$NON-NLS-1$
-
 	private final TableViewer tableViewer;
 
 	private final Composite tablePanel;
 
 	private final ImageRegistry imageRegistry;
 
-	private ObjectReader reader;
+	private final Color rejectedColor;
 
-	private Map<ObjectId, String> abbrevations;
+	private final Color updatedColor;
+
+	private final Color upToDateColor;
 
 	PushResultTable(final Composite parent) {
 		tablePanel = new Composite(parent, SWT.NONE);
@@ -104,10 +88,16 @@ class PushResultTable {
 		imageRegistry.put(IMAGE_ADD, UIIcons.ELCL16_ADD);
 		imageRegistry.put(IMAGE_DELETE, UIIcons.ELCL16_DELETE);
 
+		rejectedColor = new Color(parent.getDisplay(), 255, 0, 0);
+		updatedColor = new Color(parent.getDisplay(), 0, 255, 0);
+		upToDateColor = new Color(parent.getDisplay(), 245, 245, 245);
+
 		tablePanel.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				if (reader != null)
-					reader.release();
+				// dispose of our allocated Color instances
+				rejectedColor.dispose();
+				updatedColor.dispose();
+				upToDateColor.dispose();
 				imageRegistry.dispose();
 			}
 		});
@@ -125,80 +115,9 @@ class PushResultTable {
 		});
 		tableViewer.setContentProvider(new RefUpdateContentProvider());
 		tableViewer.setInput(null);
-		// detail message
-		final Text text = new Text(parent, SWT.MULTI | SWT.READ_ONLY
-				| SWT.BORDER);
-		GridData textLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		textLayoutData.heightHint = TEXT_PREFERRED_HEIGHT;
-		text.setLayoutData(textLayoutData);
-		tableViewer
-				.addSelectionChangedListener(new ISelectionChangedListener() {
-					public void selectionChanged(SelectionChangedEvent event) {
-						ISelection selection = event.getSelection();
-						if (!(selection instanceof IStructuredSelection)) {
-							text.setText(EMPTY_STRING);
-							return;
-						}
-						IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-						if (structuredSelection.size() != 1) {
-							text.setText(EMPTY_STRING);
-							return;
-						}
-						RefUpdateElement element = (RefUpdateElement) structuredSelection
-								.getFirstElement();
-						text.setText(getResult(element));
-					}
-				});
-	}
-
-	private String getResult(RefUpdateElement element) {
-		StringBuilder result = new StringBuilder(EMPTY_STRING);
-		PushOperationResult pushOperationResult = element
-				.getPushOperationResult();
-		Set<URIish> urIs = pushOperationResult.getURIs();
-		Iterator<URIish> iterator = urIs.iterator();
-		while(iterator.hasNext()) {
-			boolean lineBreakNeeded = false;
-			URIish uri = iterator.next();
-			result.append(UIText.PushResultTable_repository);
-			result.append(SPACE);
-			result.append(uri.toString());
-			result.append(Text.DELIMITER);
-			result.append(Text.DELIMITER);
-			String message = element.getRemoteRefUpdate(uri).getMessage();
-			if (message != null) {
-				result.append(message);
-				result.append(Text.DELIMITER);
-				lineBreakNeeded = true;
-			}
-			StringBuilder messagesBuffer = new StringBuilder(pushOperationResult
-					.getPushResult(uri).getMessages());
-			trim(messagesBuffer);
-			if (messagesBuffer.length()>0) {
-				result.append(messagesBuffer);
-				result.append(Text.DELIMITER);
-				lineBreakNeeded = true;
-			}
-			if (iterator.hasNext() && lineBreakNeeded)
-				result.append(Text.DELIMITER);
-		}
-		trim(result);
-		return result.toString();
-	}
-
-	private static void trim(StringBuilder s) {
-		// remove leading line breaks
-		while (s.length()>0 && (s.charAt(0)=='\n' || s.charAt(0)=='\r'))
-			s.deleteCharAt(0);
-		// remove trailing line breaks
-		while (s.length()>0 && (s.charAt(s.length()-1)=='\n' || s.charAt(s.length()-1)=='\r'))
-			s.deleteCharAt(s.length()-1);
 	}
 
 	void setData(final Repository localDb, final PushOperationResult result) {
-		reader = localDb.newObjectReader();
-		abbrevations = new HashMap<ObjectId,String>();
-
 		// We have to recreate columns.
 		for (final TableColumn tc : tableViewer.getTable().getColumns())
 			tc.dispose();
@@ -255,17 +174,12 @@ class PushResultTable {
 		for (final URIish uri : result.getURIs()) {
 			final TableViewerColumn statusViewer = createColumn(layout, NLS
 					.bind(UIText.PushResultTable_columnStatusRepo, Integer
-							.toString(++i)), COLUMN_STATUS_WEIGHT, SWT.LEFT);
+							.toString(++i)), COLUMN_STATUS_WEIGHT, SWT.CENTER);
 			statusViewer.getColumn().setToolTipText(uri.toString());
-			statusViewer.setLabelProvider(new UpdateStatusLabelProvider(uri));
+			statusViewer.setLabelProvider(new UpdateStatusLabelProvider(
+					localDb, uri));
 		}
 		tableViewer.setInput(result);
-		// select the first row of table to get the details of the first
-		// push result shown in the Text control
-		Table table = tableViewer.getTable();
-		if (table.getItemCount()>0) {
-			tableViewer.setSelection(new StructuredSelection(table.getItem(0).getData()));
-		}
 		tablePanel.layout();
 	}
 
@@ -285,9 +199,12 @@ class PushResultTable {
 	}
 
 	private class UpdateStatusLabelProvider extends ColumnLabelProvider {
+		private Repository localDb;
+
 		private final URIish uri;
 
-		UpdateStatusLabelProvider(final URIish uri) {
+		UpdateStatusLabelProvider(final Repository localDb, final URIish uri) {
+			this.localDb = localDb;
 			this.uri = uri;
 		}
 
@@ -310,9 +227,9 @@ class PushResultTable {
 					return UIText.PushResultTable_statusOkNewBranch;
 				}
 
-				return safeAbbreviate(oldRef.getObjectId())
+				return oldRef.getObjectId().abbreviate(localDb).name()
 						+ (rru.isFastForward() ? ".." : "...") //$NON-NLS-1$ //$NON-NLS-2$
-						+ safeAbbreviate(rru.getNewObjectId());
+						+ rru.getNewObjectId().abbreviate(localDb).name();
 			case UP_TO_DATE:
 				return UIText.PushResultTable_statusUpToDate;
 			case NON_EXISTING:
@@ -330,36 +247,24 @@ class PushResultTable {
 			}
 		}
 
-		private String safeAbbreviate(ObjectId id) {
-			String abbrev = abbrevations.get(id);
-			if (abbrev == null) {
-				try {
-					abbrev = reader.abbreviate(id).name();
-				} catch (IOException cannotAbbreviate) {
-					abbrev = id.name();
-				}
-				abbrevations.put(id, abbrev);
-			}
-			return abbrev;
-		}
-
 		@Override
-		public Image getImage(Object element) {
+		public Color getBackground(Object element) {
 			final RefUpdateElement rue = (RefUpdateElement) element;
 			if (!rue.isSuccessfulConnection(uri))
-				return imageRegistry.get(IMAGE_DELETE);
+				return rejectedColor;
+
 			final Status status = rue.getRemoteRefUpdate(uri).getStatus();
 			switch (status) {
 			case OK:
-				return null; // no icon for ok
+				return updatedColor;
 			case UP_TO_DATE:
 			case NON_EXISTING:
-				return null; // no icon for up to date
+				return upToDateColor;
 			case REJECTED_NODELETE:
 			case REJECTED_NONFASTFORWARD:
 			case REJECTED_REMOTE_CHANGED:
 			case REJECTED_OTHER_REASON:
-				return imageRegistry.get(IMAGE_DELETE);
+				return rejectedColor;
 			default:
 				throw new IllegalArgumentException(NLS.bind(
 						UIText.PushResultTable_statusUnexpected, status));
@@ -378,7 +283,7 @@ class PushResultTable {
 			case OK:
 				if (rru.isDelete())
 					return NLS.bind(UIText.PushResultTable_statusDetailDeleted,
-							safeAbbreviate(oldRef.getObjectId()));
+							oldRef.getObjectId().abbreviate(localDb).name());
 				if (oldRef == null)
 					return null;
 				if (rru.isFastForward())
@@ -398,7 +303,7 @@ class PushResultTable {
 				if (remoteRef == null)
 					curVal = UIText.PushResultTable_refNonExisting;
 				else
-					curVal = safeAbbreviate(remoteRef.getObjectId());
+					curVal = remoteRef.getObjectId().abbreviate(localDb).name();
 
 				final ObjectId expectedOldObjectId = rru
 						.getExpectedOldObjectId();
@@ -406,7 +311,7 @@ class PushResultTable {
 				if (expectedOldObjectId.equals(ObjectId.zeroId()))
 					expVal = UIText.PushResultTable_refNonExisting;
 				else
-					expVal = safeAbbreviate(expectedOldObjectId);
+					expVal = expectedOldObjectId.abbreviate(localDb).name();
 				return NLS.bind(UIText.PushResultTable_statusDetailChanged,
 						curVal, expVal);
 			case REJECTED_OTHER_REASON:

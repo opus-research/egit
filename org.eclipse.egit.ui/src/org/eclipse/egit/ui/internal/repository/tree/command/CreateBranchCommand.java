@@ -11,18 +11,21 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
+import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.repository.CreateBranchPage;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
+import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
 
 /**
  * Creates a branch using a simple dialog.
@@ -35,19 +38,6 @@ public class CreateBranchCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RepositoryTreeNode node = getSelectedNodes(event).get(0);
-
-		if (node.getType() == RepositoryTreeNodeType.ADDITIONALREF) {
-			Ref ref = (Ref) node.getObject();
-			try {
-				RevCommit baseCommit = new RevWalk(node.getRepository())
-						.parseCommit(ref.getLeaf().getObjectId());
-				new WizardDialog(getShell(event), new CreateBranchWizard(node
-						.getRepository(), baseCommit)).open();
-			} catch (IOException e) {
-				Activator.handleError(e.getMessage(), e, true);
-			}
-			return null;
-		}
 		final Ref baseBranch;
 		if (node.getObject() instanceof Ref)
 			baseBranch = (Ref) node.getObject();
@@ -84,8 +74,49 @@ public class CreateBranchCommand extends
 			}
 			baseBranch = branch;
 		}
-		new WizardDialog(getShell(event), new CreateBranchWizard(node
-				.getRepository(), baseBranch)).open();
+
+		Wizard wiz = new Wizard() {
+
+			@Override
+			public void addPages() {
+				addPage(new CreateBranchPage(node.getRepository(), baseBranch));
+				setWindowTitle(UIText.RepositoriesView_NewBranchTitle);
+			}
+
+			@Override
+			public boolean performFinish() {
+				try {
+					getContainer().run(false, true,
+							new IRunnableWithProgress() {
+
+								public void run(IProgressMonitor monitor)
+										throws InvocationTargetException,
+										InterruptedException {
+									CreateBranchPage cp = (CreateBranchPage) getPages()[0];
+									try {
+										cp.createBranch(monitor);
+									} catch (CoreException ce) {
+										throw new InvocationTargetException(ce);
+									} catch (IOException ioe) {
+										throw new InvocationTargetException(ioe);
+									}
+
+								}
+							});
+				} catch (InvocationTargetException ite) {
+					Activator
+							.handleError(
+									UIText.RepositoriesView_BranchCreationFailureMessage,
+									ite.getCause(), true);
+					return false;
+				} catch (InterruptedException ie) {
+					// ignore here
+				}
+				return true;
+			}
+		};
+		new WizardDialog(getShell(event), wiz).open();
+
 		return null;
 	}
 }

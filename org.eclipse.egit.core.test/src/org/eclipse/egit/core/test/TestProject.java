@@ -9,13 +9,10 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -114,24 +111,6 @@ public class TestProject {
 		return cu.getTypes()[0];
 	}
 
-	public IFile createFile(String name, byte[] content) throws Exception {
-		IFile file = project.getFile(name);
-		InputStream inputStream = new ByteArrayInputStream(content);
-		file.create(inputStream, true, null);
-
-		return file;
-	}
-
-	public IFolder createFolder(String name) throws Exception {
-		IFolder folder = project.getFolder(name);
-		folder.create(true, true, null);
-
-		IFile keep = project.getFile(name + "/keep");
-		keep.create(new ByteArrayInputStream(new byte[] {0}), true, null);
-
-		return folder;
-	}
-
 	public void dispose() throws CoreException, IOException {
 		waitForIndexer();
 		if (project.exists())
@@ -203,11 +182,6 @@ public class TestProject {
 		//                                }, IJavaSearchConstants.WAIT_UNTIL_READY_TO_SEARCH, null);
 	}
 
-	public String getFileContent(String filepath) throws Exception {
-		IFile file = project.getFile(filepath);
-		InputStream stream = file.getContents();
-		return testUtils.slurpAndClose(stream);
-	}
 	/**
 	 * @return Returns the sourceFolder.
 	 */

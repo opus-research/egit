@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
    Copyright (C) 2009, Igor Fedorenko <igor@ifedorenko.com>
-   Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
 
    All rights reserved. This program and the accompanying materials
    are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.core</artifactId>
@@ -25,9 +24,9 @@
 
   <name>Git Team Provider (Core) (Incubation)</name>
 
- <build>
-     <!-- workaround for https://issues.sonatype.org/browse/TYCHO-168 -->
-     <resources>
+  <!-- workaround for https://issues.sonatype.org/browse/TYCHO-168 -->
+  <build>
+    <resources>
       <resource>
         <directory>src</directory>
         <excludes>
@@ -35,20 +34,6 @@
         </excludes>
       </resource>
     </resources>
-    <plugins>
-      <plugin>
-        <groupId>org.sonatype.tycho</groupId>
-        <artifactId>maven-osgi-source-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-      </plugin>
-    </plugins>
   </build>
 
 </project>

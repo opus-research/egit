@@ -8,13 +8,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.test;
 
-import org.eclipse.egit.ui.dialogs.commit.CommitMessageAreaTest;
 import org.eclipse.egit.ui.prefpages.configuration.GlobalConfigurationPageTest;
 import org.eclipse.egit.ui.test.history.HistoryViewTest;
 import org.eclipse.egit.ui.test.team.actions.AllTeamActionTests;
-import org.eclipse.egit.ui.test.trace.TraceConfigurationDialogTest;
 import org.eclipse.egit.ui.view.repositories.AllRepositoriesViewTests;
-import org.eclipse.egit.ui.view.synchronize.SynchronizeViewTest;
 import org.eclipse.egit.ui.wizards.clone.GitCloneWizardTest;
 import org.eclipse.egit.ui.wizards.share.SharingWizardTest;
 import org.junit.runner.RunWith;
@@ -27,10 +24,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		GitCloneWizardTest.class,                   //
 		SharingWizardTest.class,					//
 		AllTeamActionTests.class,                   //
-		HistoryViewTest.class,                      //
-		CommitMessageAreaTest.class,
-		TraceConfigurationDialogTest.class,
-		SynchronizeViewTest.class})
+		HistoryViewTest.class })
 public class AllLocalTests {
 	// empty class, don't need anything here
 }

@@ -4,7 +4,6 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,17 +21,15 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.RepositoryUtil;
 import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
@@ -42,23 +39,13 @@ import org.eclipse.osgi.util.NLS;
  * Import Git Repository Wizard. A front end to a git clone operation.
  */
 public class GitCloneWizard extends Wizard {
-
-	/**
-	 * Job family of the Clone Repository job.
-	 */
-	public static final Object CLONE_JOB_FAMILY = new Object();
-
 	private RepositorySelectionPage cloneSource;
 
 	private SourceBranchPage validSource;
 
 	private CloneDestinationPage cloneDestination;
 
-	private String alreadyClonedInto;
-
-	private boolean callerRunsCloneOperation;
-
-	private CloneOperation cloneOperation;
+	String alreadyClonedInto;
 
 	/**
 	 * The default constructor
@@ -88,16 +75,6 @@ public class GitCloneWizard extends Wizard {
 				super.setVisible(visible);
 			}
 		};
-	}
-
-	/**
-	 * @param newValue
-	 *            if true the clone wizard just creates a clone operation. The
-	 *            caller has to run this operation using runCloneOperation. If
-	 *            false the clone operation is performed using a job.
-	 */
-	public void setCallerRunsCloneOperation(boolean newValue) {
-		callerRunsCloneOperation = newValue;
 	}
 
 	@Override
@@ -145,13 +122,13 @@ public class GitCloneWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 		try {
-			return performClone();
+			return performClone(false);
 		} finally {
 			setWindowTitle(UIText.GitCloneWizard_title);
 		}
 	}
 
-	boolean performClone() {
+	boolean performClone(boolean background) {
 		final URIish uri = cloneSource.getSelection().getURI();
 		setWindowTitle(NLS.bind(UIText.GitCloneWizard_jobName, uri.toString()));
 		final boolean allSelected;
@@ -180,75 +157,64 @@ public class GitCloneWizard extends Wizard {
 			return false;
 		}
 
-		int timeout = Activator.getDefault().getPreferenceStore().getInt(
-				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
-				selectedBranches, workdir, branch, remoteName, timeout);
+				selectedBranches, workdir, branch, remoteName);
+
 		alreadyClonedInto = workdir.getPath();
 
-		cloneSource.saveUriInPrefs();
-		if (!callerRunsCloneOperation)
-			runAsJob(uri, op);
-		else
-			cloneOperation = op;
-		return true;
-	}
-
-	/**
-	 * @param container
-	 */
-	public void runCloneOperation(IWizardContainer container) {
-		try {
-				container.run(true, true,
-						new IRunnableWithProgress() {
-							public void run(IProgressMonitor monitor)
-									throws InvocationTargetException,
-									InterruptedException {
-								executeCloneOperation(cloneOperation, monitor);
-							}
-						});
-			} catch (InvocationTargetException e) {
-				Activator.handleError(UIText.GitCloneWizard_failed,
-						e.getCause(), true);
-			} catch (InterruptedException e) {
-				// nothing to do
-			}
-	}
-
-	private void runAsJob(final URIish uri, final CloneOperation op) {
-		final Job job = new Job(NLS.bind(UIText.GitCloneWizard_jobName,
-				uri.toString())) {
-			@Override
-			protected IStatus run(final IProgressMonitor monitor) {
-				try {
-					return executeCloneOperation(op, monitor);
-				} catch (InterruptedException e) {
-					return Status.CANCEL_STATUS;
-				} catch (InvocationTargetException e) {
-					Throwable thr = e.getCause();
-					return new Status(IStatus.ERROR, Activator.getPluginId(),
-							0, thr.getMessage(), thr);
-				}
-			}
-
-			@Override
-			public boolean belongsTo(Object family) {
-				return CLONE_JOB_FAMILY.equals(family);
-			}
-		};
-		job.setUser(true);
-		job.schedule();
-	}
-
-	private IStatus executeCloneOperation(final CloneOperation op,
-			final IProgressMonitor monitor) throws InvocationTargetException,
-			InterruptedException {
-
-		final RepositoryUtil util = Activator.getDefault()
+		final RepositoryUtil config = Activator.getDefault()
 				.getRepositoryUtil();
 
-		op.run(monitor);
-		util.addConfiguredRepository(op.getGitDir());
-		return Status.OK_STATUS;
+		if (background) {
+			final Job job = new Job(NLS.bind(UIText.GitCloneWizard_jobName, uri
+					.toString())) {
+				@Override
+				protected IStatus run(final IProgressMonitor monitor) {
+					try {
+						op.run(monitor);
+						cloneSource.saveUriInPrefs();
+						config.addConfiguredRepository(op.getGitDir());
+						return Status.OK_STATUS;
+					} catch (InterruptedException e) {
+						return Status.CANCEL_STATUS;
+					} catch (InvocationTargetException e) {
+						Throwable thr = e.getCause();
+						return new Status(IStatus.ERROR, Activator
+								.getPluginId(), 0, thr.getMessage(), thr);
+					}
+				}
+
+			};
+			job.setUser(true);
+			job.schedule();
+			return true;
+		} else {
+			try {
+				// Perform clone in ModalContext thread with progress
+				// reporting on the wizard.
+				getContainer().run(true, true, new IRunnableWithProgress() {
+					public void run(IProgressMonitor monitor)
+							throws InvocationTargetException,
+							InterruptedException {
+						op.run(monitor);
+						if (monitor.isCanceled())
+							throw new InterruptedException();
+					}
+				});
+
+				cloneSource.saveUriInPrefs();
+				config.addConfiguredRepository(op.getGitDir());
+				return true;
+			} catch (InterruptedException e) {
+				MessageDialog.openInformation(getShell(),
+						UIText.GitCloneWizard_CloneFailedHeading,
+						UIText.GitCloneWizard_CloneCanceledMessage);
+				return false;
+			} catch (Exception e) {
+				Activator.handleError(UIText.GitCloneWizard_CloneFailedHeading,
+						e, true);
+				return false;
+			}
+		}
 	}
 }

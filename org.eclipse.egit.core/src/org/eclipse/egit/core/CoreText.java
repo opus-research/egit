@@ -53,9 +53,6 @@ public class CoreText extends NLS {
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
-	public static String DeleteBranchOperation_TaskName;
-
-	/** */
 	public static String DiscardChangesOperation_discardFailed;
 
 	/** */
@@ -158,9 +155,6 @@ public class CoreText extends NLS {
 	public static String RemoteRefUpdateCantBeReused;
 
 	/** */
-	public static String RenameBranchOperation_TaskName;
-
-	/** */
 	public static String ResetOperation_cantUpdate;
 
 	/** */
@@ -179,9 +173,6 @@ public class CoreText extends NLS {
 	public static String ResetOperation_readingIndex;
 
 	/** */
-	public static String ResetOperation_resetMergeFailed;
-
-	/** */
 	public static String ResetOperation_updatingFailed;
 
 	/** */
@@ -198,12 +189,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MergeOperation_ProgressMerge;
-
-	/** */
-	public static String CherryPickOperation_InternalError;
-
-	/** */
-	public static String CherryPickOperation_Failed;
 
 	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
@@ -225,12 +210,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CloneOperation_writingIndex;
-
-	/** */
-	public static String CreateLocalBranchOperation_CreatingBranchMessage;
-
-	/** */
-	public static String CreateLocalBranchOperation_NoBranchMessage;
 
 	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
@@ -284,19 +263,16 @@ public class CoreText extends NLS {
 	public static String TagOperation_objectIdNotFound;
 
 	/** */
-	public static String GitResourceVariantTree_couldNotFindResourceVariant;
+	public static String GitResourceVariantTree_couldNotFindBlob;
 
 	/** */
-	public static String GitResourceVariantTree_couldNotFetchMembers;
-
-	/** */
-	public static String GitFolderResourceVariant_fetchingMembers;
+	public static String GitResourceVariantTree_fetchingMembers;
 
 	/** */
 	public static String GitResourceVariantTree_fetchingVariant;
 
 	/** */
-	public static String GitResourceVariantTree_couldNotFetchMembersOf;
+	public static String GitResourceVariantTree_unableToReadRepository;
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
@@ -307,24 +283,8 @@ public class CoreText extends NLS {
 	/** */
 	public static String OperationNotYetExecuted;
 
-	/** */
-	public static String IgnoreOperation_error;
-
-	/** */
-	public static String IgnoreOperation_parentOutsideRepo;
-
-	/** */
-	public static String IgnoreOperation_creatingFailed;
-
-	/** */
-	public static String IgnoreOperation_taskName;
-
-	/** */
-	public static String IgnoreOperation_updatingFailed;
-
 	static {
 		initializeMessages("org.eclipse.egit.core.coretext", //$NON-NLS-1$
 				CoreText.class);
 	}
-
 }

@@ -7,7 +7,6 @@
  *
  * Contributors:
  *     IBM Corporation - initial API and implementation
- *     Dariusz Luksza <dariusz@luksza.org>
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
@@ -15,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.eclipse.core.resources.IEncodedStorage;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -25,26 +25,40 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentDescription;
 import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevCommitList;
 import org.eclipse.team.core.TeamException;
 
 /**
  * This is a representation of a file's blob in some branch.
  */
-public class GitBlobResourceVariant extends GitResourceVariant {
+class GitBlobResourceVariant extends GitResourceVariant {
+
+	private ObjectId id;
+
+	private Repository repository;
 
 	private IStorage storage;
 
-	private final ObjectLoader blob;
+	private RevCommitList<RevCommit> commitList;
 
-	GitBlobResourceVariant(Repository repo, RevCommit revCommit,
-			ObjectId objectId, String path) throws IOException {
-		super(repo, revCommit, objectId, path);
+	GitBlobResourceVariant(IResource resource, Repository repository,
+			ObjectId id, RevCommitList<RevCommit> commitList) {
+		super(resource);
+		this.repository = repository;
+		this.id = id;
+		this.commitList = commitList;
+	}
 
-		blob = repo.open(getObjectId());
+	ObjectId getId() {
+		return id;
+	}
+
+	RevCommitList<RevCommit> getCommitList() {
+		return commitList;
 	}
 
 	public boolean isContainer() {
@@ -72,9 +86,11 @@ public class GitBlobResourceVariant extends GitResourceVariant {
 
 				public InputStream getContents() throws CoreException {
 					try {
-						return blob.openStream();
-					} catch (IOException e) {
-						throw new TeamException(e.getMessage(), e);
+						return repository.open(id, Constants.OBJ_BLOB)
+								.openStream();
+					} catch (IOException err) {
+						throw new TeamException(new Status(IStatus.ERROR,
+								Activator.getPluginId(), err.getMessage(), err));
 					}
 				}
 
@@ -94,8 +110,11 @@ public class GitBlobResourceVariant extends GitResourceVariant {
 				}
 			};
 		}
-
 		return storage;
+	}
+
+	public String getContentIdentifier() {
+		return id.name();
 	}
 
 }

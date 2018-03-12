@@ -21,132 +21,119 @@ import org.eclipse.jface.resource.ImageDescriptor;
 public class UIIcons {
 
 	/** Decoration for resource in the index but not yet committed. */
-	public final static ImageDescriptor OVR_STAGED;
+	public static final ImageDescriptor OVR_STAGED;
 
 	/** Decoration for resource added to index but not yet committed. */
-	public final static ImageDescriptor OVR_STAGED_ADD;
+	public static final ImageDescriptor OVR_STAGED_ADD;
 
 	/** Decoration for resource removed from the index but not commit. */
-	public final static ImageDescriptor OVR_STAGED_REMOVE;
+	public static final ImageDescriptor OVR_STAGED_REMOVE;
 
 	/** Decoration for resource not being tracked by Git */
-	public final static ImageDescriptor OVR_UNTRACKED;
+	public static final ImageDescriptor OVR_UNTRACKED;
 
 	/** Decoration for tracked resource with a merge conflict.  */
-	public final static ImageDescriptor OVR_CONFLICT;
+	public static final ImageDescriptor OVR_CONFLICT;
 
 	/** Decoration for tracked resources that we want to ignore changes in. */
-	public final static ImageDescriptor OVR_ASSUMEVALID;
-
-	/** Decoration for tracked resources that are dirty. */
-	public final static ImageDescriptor OVR_DIRTY;
+	public static final ImageDescriptor OVR_ASSUMEVALID;
 
 	/** Find icon */
-	public final static ImageDescriptor ELCL16_FIND;
+	public static final ImageDescriptor ELCL16_FIND;
 	/** Compare / View icon */
-	public final static ImageDescriptor ELCL16_COMPARE_VIEW;
+	public static final ImageDescriptor ELCL16_COMPARE_VIEW;
 	/** Next arrow icon */
-	public final static ImageDescriptor ELCL16_NEXT;
+	public static final ImageDescriptor ELCL16_NEXT;
 	/** Previous arrow icon */
-	public final static ImageDescriptor ELCL16_PREVIOUS;
+	public static final ImageDescriptor ELCL16_PREVIOUS;
 	/** Commit icon */
-	public final static ImageDescriptor ELCL16_COMMIT;
+	public static final ImageDescriptor ELCL16_COMMIT;
 	/** Comments icon */
-	public final static ImageDescriptor ELCL16_COMMENTS;
+	public static final ImageDescriptor ELCL16_COMMENTS;
 	/** Author icon */
-	public final static ImageDescriptor ELCL16_AUTHOR;
+	public static final ImageDescriptor ELCL16_AUTHOR;
 	/** Committer icon */
-	public final static ImageDescriptor ELCL16_COMMITTER;
-	/** Id icon */
-	public final static ImageDescriptor ELCL16_ID;
+	public static final ImageDescriptor ELCL16_COMMITTER;
 	/** Delete icon */
-	public final static ImageDescriptor ELCL16_DELETE;
+	public static final ImageDescriptor ELCL16_DELETE;
 	/** Add icon */
-	public final static ImageDescriptor ELCL16_ADD;
+	public static final ImageDescriptor ELCL16_ADD;
 	/** Trash icon */
-	public final static ImageDescriptor ELCL16_TRASH;
+	public static final ImageDescriptor ELCL16_TRASH;
 	/** Clear icon */
-	public final static ImageDescriptor ELCL16_CLEAR;
+	public static final ImageDescriptor ELCL16_CLEAR;
 	/** Refresh icon */
-	public final static ImageDescriptor ELCL16_REFRESH;
+	public static final ImageDescriptor ELCL16_REFRESH;
 	/** Linked with icon */
-	public final static ImageDescriptor ELCL16_SYNCED;
+	public static final ImageDescriptor ELCL16_SYNCED;
 
 	/** Enabled, checked, checkbox image */
-	public final static ImageDescriptor CHECKBOX_ENABLED_CHECKED;
+	public static final ImageDescriptor CHECKBOX_ENABLED_CHECKED;
 	/** Enabled, unchecked, checkbox image */
-	public final static ImageDescriptor CHECKBOX_ENABLED_UNCHECKED;
+	public static final ImageDescriptor CHECKBOX_ENABLED_UNCHECKED;
 	/** Disabled, checked, checkbox image */
-	public final static ImageDescriptor CHECKBOX_DISABLED_CHECKED;
+	public static final ImageDescriptor CHECKBOX_DISABLED_CHECKED;
 	/** Disabled, unchecked, checkbox image */
-	public final static ImageDescriptor CHECKBOX_DISABLED_UNCHECKED;
-	/** Edit configuration */
-	public final static ImageDescriptor EDITCONFIG;
+	public static final ImageDescriptor CHECKBOX_DISABLED_UNCHECKED;
+
 	/** Create Patch Wizard banner */
-	public final static ImageDescriptor WIZBAN_CREATE_PATCH;
+	public static final ImageDescriptor WIZBAN_CREATE_PATCH;
 
 	/** Import Wizard banner */
-	public final static ImageDescriptor WIZBAN_IMPORT_REPO;
+	public static final ImageDescriptor WIZBAN_IMPORT_REPO;
 
 	/** Connect Wizard banner */
-	public final static ImageDescriptor WIZBAN_CONNECT_REPO;
+	public static final ImageDescriptor WIZBAN_CONNECT_REPO;
 
-	/** History view, select all version in same project */
-	public final static ImageDescriptor FILTERPROJECT;
+	/** History filter, select all version in repo */
+	public static ImageDescriptor FILTERREPO;
 
-	/** History view, select all version in same folder */
-	public final static ImageDescriptor FILTERFOLDER;
+	/** History filter, select all version in same project */
+	public static ImageDescriptor FILTERPROJECT;
 
-	/** History view, select all version of resource */
-	public final static ImageDescriptor FILTERRESOURCE;
+	/** History filter, select all version in same folder */
+	public static ImageDescriptor FILTERFOLDER;
 
 	/** Import button */
-	public final static ImageDescriptor FETCH;
+	public static ImageDescriptor FETCH;
 
 	/** Export button */
-	public final static ImageDescriptor PUSH;
+	public static ImageDescriptor PUSH;
 
 	/** Collapse all button */
-	public final static ImageDescriptor COLLAPSEALL;
+	public static ImageDescriptor COLLAPSEALL;
 
 	/** Repository tree node */
-	public final static ImageDescriptor REPOSITORY;
+	public static ImageDescriptor REPOSITORY;
 
 	/** New Repository button */
-	public final static ImageDescriptor NEW_REPOSITORY;
+	public static ImageDescriptor NEW_REPOSITORY;
 
 	/** Remote Repository tree node */
-	public final static ImageDescriptor REMOTE_REPOSITORY;
-
-	/** Reset */
-	public final static ImageDescriptor RESET;
+	public static ImageDescriptor REMOTE_REPOSITORY;
 
 	/** Remote Repository tree node */
-	public final static ImageDescriptor REMOTE_SPEC;
+	public static ImageDescriptor REMOTE_SPEC;
 
 	/** Branches tree node */
-	public final static ImageDescriptor BRANCHES;
+	public static ImageDescriptor BRANCHES;
 
 	/** Checked-out decorator for branch */
-	public final static ImageDescriptor OVR_CHECKEDOUT;
+	public static ImageDescriptor OVR_CHECKEDOUT;
 
 	/** Tags icon */
-	public final static ImageDescriptor TAGS;
+	public static ImageDescriptor TAGS;
 
 	/** Tag icon */
-	public final static ImageDescriptor TAG;
+	public static ImageDescriptor TAG;
 
 	/** Branch icon */
-	public final static ImageDescriptor BRANCH;
+	public static ImageDescriptor BRANCH;
 
 	/** Clone Icon */
-	public final static ImageDescriptor CLONEGIT;
+	public static ImageDescriptor CLONEGIT;
 
-	/** Changeset Icon */
-	public final static ImageDescriptor CHANGESET;
-
-	/** base URL */
-	public final static URL base;
+	private static final URL base;
 
 	static {
 		base = init();
@@ -156,7 +143,6 @@ public class UIIcons {
 		OVR_UNTRACKED = map("ovr/untracked.gif"); //$NON-NLS-1$
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
 		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
-		OVR_DIRTY = map("ovr/dirty.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
 		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
@@ -164,7 +150,6 @@ public class UIIcons {
 		WIZBAN_CREATE_PATCH = map("wizban/createpatch_wizban.png"); //$NON-NLS-1$
 		WIZBAN_IMPORT_REPO = map("wizban/import_wiz.png"); //$NON-NLS-1$
 		WIZBAN_CONNECT_REPO = map("wizban/newconnect_wizban.png"); //$NON-NLS-1$
-		EDITCONFIG = map("obj16/editconfig.gif"); //$NON-NLS-1$
 		ELCL16_COMMIT = map("elcl16/commit.gif"); //$NON-NLS-1$
 		ELCL16_COMMENTS = map("elcl16/comment.gif"); //$NON-NLS-1$
 		ELCL16_AUTHOR = map("elcl16/author.gif"); //$NON-NLS-1$
@@ -175,16 +160,15 @@ public class UIIcons {
 		ELCL16_CLEAR = map("elcl16/clear.gif"); //$NON-NLS-1$
 		ELCL16_REFRESH = map("elcl16/refresh.gif"); //$NON-NLS-1$
 		ELCL16_SYNCED = map("elcl16/synced.gif"); //$NON-NLS-1$
-		ELCL16_ID = map("elcl16/sha1.gif"); //$NON-NLS-1$
 		CHECKBOX_ENABLED_CHECKED = map("checkboxes/enabled_checked.gif"); //$NON-NLS-1$
 		CHECKBOX_ENABLED_UNCHECKED = map("checkboxes/enabled_unchecked.gif"); //$NON-NLS-1$
 		CHECKBOX_DISABLED_CHECKED = map("checkboxes/disabled_checked.gif"); //$NON-NLS-1$
 		CHECKBOX_DISABLED_UNCHECKED = map("checkboxes/disabled_unchecked.gif"); //$NON-NLS-1$
-		FILTERRESOURCE = map("elcl16/filterresource.gif"); //$NON-NLS-1$
+		FILTERREPO = map("elcl16/filterrepo.gif"); //$NON-NLS-1$
 		FILTERPROJECT = map("elcl16/filterproject.gif"); //$NON-NLS-1$
 		FILTERFOLDER = map("elcl16/filterfolder.gif"); //$NON-NLS-1$
-		FETCH = map("obj16/fetch.gif"); //$NON-NLS-1$
-		PUSH = map("obj16/push.gif"); //$NON-NLS-1$
+		FETCH = map("obj16/pull.gif"); //$NON-NLS-1$
+		PUSH = map("obj16/commit.gif"); //$NON-NLS-1$
 		REPOSITORY = map("obj16/repository_rep.gif"); //$NON-NLS-1$
 		NEW_REPOSITORY = map("etool16/newlocation_wiz.gif"); //$NON-NLS-1$
 		REMOTE_REPOSITORY = map("obj16/remote_entry_tbl.gif"); //$NON-NLS-1$
@@ -196,8 +180,6 @@ public class UIIcons {
 		BRANCH = map("obj16/branch_obj.gif"); //$NON-NLS-1$
 		COLLAPSEALL = map("elcl16/collapseall.gif"); //$NON-NLS-1$
 		CLONEGIT = map("obj16/cloneGit.gif"); //$NON-NLS-1$
-		RESET = map("obj16/reset.gif"); //$NON-NLS-1$
-		CHANGESET = map("obj16/changelog_obj.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

@@ -59,7 +59,7 @@ public class RepositoryCache {
 	/**
 	 * @return all Repository instances contained in the cache
 	 */
-	public synchronized Repository[] getAllRepositories() {
+	public synchronized Repository[] getAllReposiotries() {
 		List<Repository> result = new ArrayList<Repository>();
 		Collection<Reference<Repository>> values = repositoryCache.values();
 		for(Reference<Repository> ref:values) {
@@ -76,14 +76,6 @@ public class RepositoryCache {
 			if (i.next().getValue().get() == null)
 				i.remove();
 		}
-	}
-
-	/**
-	 * TESTING ONLY!
-	 * Unit tests can use this method to get a clean beginning state
-	 */
-	public void clear() {
-		repositoryCache.clear();
 	}
 
 }
