@@ -54,6 +54,11 @@ public class JobFamilies {
 	public static final Object RESET = new Object();
 
 	/**
+	 * Rebase job
+	 */
+	public static final Object REBASE = new Object();
+
+	/**
 	 * Pull job
 	 */
 	public final static Object PULL = new Object();
@@ -82,4 +87,40 @@ public class JobFamilies {
 	 * Disconnect
 	 */
 	public final static Object DISCONNECT = new Object();
+
+	/**
+	 * Staging View refresh
+	 */
+	public static final Object STAGING_VIEW_REFRESH = new Object();
+
+	/**
+	 * Add to index job
+	 */
+	public static final Object ADD_TO_INDEX = new Object();
+
+	/**
+	 * Remove from index job
+	 */
+	public static final Object REMOVE_FROM_INDEX = new Object();
+
+	/**
+	 * Cherry pick commit job
+	 */
+	public static final Object CHERRY_PICK = new Object();
+
+	/**
+	 * Revert commit job
+	 */
+	public static final Object REVERT_COMMIT = new Object();
+
+	/**
+	 * Clone repository job
+	 */
+	public static final Object CLONE = new Object();
+	
+	/**
+	 * Fetch data from git job
+	 */
+	public static final Object SYNCHRONIZE_READ_DATA = new Object();
+
 }

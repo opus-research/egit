@@ -25,12 +25,18 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 /**
  * Abstract super class for commands shared between different components in EGit
  */
 public abstract class AbstractSharedCommandHandler extends AbstractHandler {
+
+	private static final IWorkbench WORKBENCH = PlatformUI.getWorkbench();
+
 	/**
 	 * @param event
 	 *            the {@link ExecutionEvent}
@@ -39,7 +45,18 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 	 */
 	protected Repository getRepository(ExecutionEvent event) {
 		ISelection selection = HandlerUtil.getCurrentSelection(event);
-		if (selection.isEmpty())
+		return getRepository(selection);
+	}
+
+	/**
+	 * Get repository from selection
+	 *
+	 * @param selection
+	 * @return a {@link Repository} if all elements in the current selection map
+	 *         to the same {@link Repository}, otherwise null
+	 */
+	protected Repository getRepository(ISelection selection) {
+		if (selection == null || selection.isEmpty())
 			return null;
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ssel = (IStructuredSelection) selection;
@@ -75,7 +92,13 @@ public abstract class AbstractSharedCommandHandler extends AbstractHandler {
 			return result;
 		}
 		if (selection instanceof TextSelection) {
-			// TODO find editor input and adapt to IResource
+			IEditorInput activeEditor = WORKBENCH.getActiveWorkbenchWindow()
+					.getActivePage().getActiveEditor().getEditorInput();
+			IResource resource = (IResource) activeEditor
+					.getAdapter(IResource.class);
+
+			if (resource != null)
+				return RepositoryMapping.getMapping(resource).getRepository();
 		}
 		return null;
 	}

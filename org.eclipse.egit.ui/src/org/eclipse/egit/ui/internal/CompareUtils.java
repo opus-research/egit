@@ -12,27 +12,27 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
-import org.eclipse.core.resources.IEncodedStorage;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
+import org.eclipse.egit.core.internal.storage.WorkingTreeFileRevision;
+import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.merge.GitCompareEditorInput;
@@ -44,6 +44,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
@@ -107,8 +108,10 @@ public class CompareUtils {
 		try {
 			IFileRevision nextFile = getFileRevision(gitPath, commit, db,
 							blobId);
-				if (nextFile != null)
-					right = new FileRevisionTypedElement(nextFile);
+				if (nextFile != null) {
+					String encoding = CompareCoreUtils.getResourceEncoding(db, gitPath);
+					right = new FileRevisionTypedElement(nextFile, encoding);
+				}
 		} catch (IOException e) {
 			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
 					gitPath, commit.getId()), e);
@@ -168,55 +171,6 @@ public class CompareUtils {
 			return ci.substring(0, 7) + "..."; //$NON-NLS-1$
 		else
 			return ci;
-	}
-
-	/**
-	 * Determine the encoding used by Eclipse for the resource which belongs to
-	 * repoPath in the eclipse workspace or null if no resource is found
-	 *
-	 * @param db
-	 *            the repository
-	 * @param repoPath
-	 *            the path in the git repository
-	 * @return the encoding used in eclipse for the resource or null if
-	 *
-	 */
-	public static String getResourceEncoding(Repository db, String repoPath) {
-		if (db.isBare())
-			return null;
-		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot root = workspace.getRoot();
-		IPath absolutePath = new Path(db.getWorkTree().getAbsolutePath())
-				.append(repoPath);
-		IResource resource = root.getFileForLocation(absolutePath);
-		if (resource == null)
-			return null;
-
-		return getResourceEncoding(resource);
-	}
-
-	/**
-	 * Determine the encoding used by eclipse for the resource.
-	 *
-	 * @param resource
-	 *            must be an instance of IEncodedStorage
-	 * @return the encoding used in Eclipse for the resource if found or null
-	 */
-	public static String getResourceEncoding(IResource resource) {
-		// Get the encoding for the current version. As a matter of
-		// principle one might want to use the eclipse settings for the
-		// version we are retrieving as that may be defined by the
-		// project settings, but there is no historic API for this.
-		String charset;
-		IEncodedStorage encodedStorage = ((IEncodedStorage) resource);
-		try {
-			charset = encodedStorage.getCharset();
-			if (charset == null)
-				charset = resource.getParent().getDefaultCharset();
-		} catch (CoreException e) {
-			charset = Constants.CHARACTER_ENCODING;
-		}
-		return charset;
 	}
 
 	/**
@@ -366,7 +320,9 @@ public class CompareUtils {
 
 			// check if file is staged
 			if (entry != null) {
-				return new FileRevisionTypedElement(GitFileRevision.inIndex(db, gitPath));
+				GitFileRevision nextFile = GitFileRevision.inIndex(db, gitPath);
+				String encoding = CompareCoreUtils.getResourceEncoding(db, gitPath);
+				return new FileRevisionTypedElement(nextFile, encoding);
 			}
 		} catch (IOException e) {
 			Activator.error(NLS.bind(UIText.GitHistoryPage_errorLookingUpPath,
@@ -376,6 +332,78 @@ public class CompareUtils {
 		return new GitCompareFileRevisionEditorInput.EmptyTypedElement(NLS
 				.bind(UIText.CompareWithIndexAction_FileNotInIndex,
 						gitPath.substring(gitPath.lastIndexOf("/") + 1))); //$NON-NLS-1$
+	}
+
+	/**
+	 * Opens a compare editor. The workspace version of the given file is
+	 * compared with the version in the HEAD commit.
+	 *
+	 * @param repository
+	 * @param file
+	 */
+	public static void compareHeadWithWorkspace(Repository repository,
+			IFile file) {
+		RevCommit headCommit = getHeadCommit(repository);
+		if (headCommit == null)
+			return;
+		String path = RepositoryMapping.getMapping(file).getRepoRelativePath(
+				file);
+		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
+				headCommit, repository);
+		IFileRevision nextFile = new WorkspaceFileRevision(file);
+		String encoding = null;
+		try {
+			encoding = file.getCharset();
+		} catch (CoreException e) {
+			Activator.handleError(UIText.CompareUtils_errorGettingEncoding, e, true);
+		}
+		ITypedElement next = new FileRevisionTypedElement(nextFile, encoding);
+		GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(
+				next, base, null);
+		CompareUI.openCompareDialog(input);
+	}
+
+	/**
+	 * Opens a compare editor. The working tree version of the given file is
+	 * compared with the version in the HEAD commit. Use this method if the
+	 * given file is outide the workspace.
+	 *
+	 * @param repository
+	 * @param path
+	 */
+	public static void compareHeadWithWorkingTree(Repository repository,
+			String path) {
+		RevCommit headCommit = getHeadCommit(repository);
+		if (headCommit == null)
+			return;
+		ITypedElement base = CompareUtils.getFileRevisionTypedElement(path,
+				headCommit, repository);
+		IFileRevision nextFile;
+		nextFile = new WorkingTreeFileRevision(new File(
+				repository.getWorkTree(), path));
+		String encoding = ResourcesPlugin.getEncoding();
+		ITypedElement next = new FileRevisionTypedElement(nextFile, encoding);
+		GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(
+				next, base, null);
+		CompareUI.openCompareDialog(input);
+	}
+
+	private static RevCommit getHeadCommit(Repository repository) {
+		RevCommit headCommit;
+		try {
+			ObjectId objectId = repository.resolve(Constants.HEAD);
+			if (objectId == null) {
+				Activator.handleError(
+						UIText.CompareUtils_errorGettingHeadCommit, null, true);
+				return null;
+			}
+			headCommit = new RevWalk(repository).parseCommit(objectId);
+		} catch (IOException e) {
+			Activator.handleError(UIText.CompareUtils_errorGettingHeadCommit,
+					e, true);
+			return null;
+		}
+		return headCommit;
 	}
 
 }

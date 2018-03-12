@@ -15,7 +15,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter.DiffStyleRange.Type;
 import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.jface.text.BadLocationException;
@@ -63,6 +63,16 @@ public class DiffStyleRangeFormatter extends DiffFormatter {
 			 */
 			OTHER,
 
+		}
+
+		@Override
+		public boolean equals(Object object) {
+			return super.equals(object);
+		}
+
+		@Override
+		public int hashCode() {
+			return super.hashCode();
 		}
 
 		/**
@@ -149,7 +159,7 @@ public class DiffStyleRangeFormatter extends DiffFormatter {
 	 */
 	public DiffStyleRangeFormatter write(Repository repository, FileDiff diff)
 			throws IOException {
-		this.stream.charset = CompareUtils.getResourceEncoding(repository,
+		this.stream.charset = CompareCoreUtils.getResourceEncoding(repository,
 				diff.getPath());
 		diff.outputDiff(null, repository, this, true);
 		flush();

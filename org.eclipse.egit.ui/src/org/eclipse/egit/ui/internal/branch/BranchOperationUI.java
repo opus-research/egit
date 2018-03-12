@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.branch;
 
+import java.io.IOException;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -23,10 +25,9 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
-import org.eclipse.egit.ui.internal.dialogs.RenameBranchDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutDialog;
-import org.eclipse.egit.ui.internal.dialogs.CreateBranchDialog;
 import org.eclipse.egit.ui.internal.dialogs.DeleteBranchDialog;
+import org.eclipse.egit.ui.internal.dialogs.RenameBranchDialog;
 import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.window.Window;
@@ -53,6 +54,8 @@ public class BranchOperationUI {
 	private final Repository repository;
 
 	private String target;
+
+	private String base;
 
 	private final int mode;
 
@@ -84,6 +87,19 @@ public class BranchOperationUI {
 	 */
 	public static BranchOperationUI create(Repository repository) {
 		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
+		return op;
+	}
+
+	/**
+	 * Create an operation for creating a local branch with a given base reference
+	 *
+	 * @param repository
+	 * @param baseRef
+	 * @return the {@link BranchOperationUI}
+	 */
+	public static BranchOperationUI createWithRef(Repository repository, String baseRef) {
+		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
+		op.base = baseRef;
 		return op;
 	}
 
@@ -229,11 +245,14 @@ public class BranchOperationUI {
 			dialog = new CheckoutDialog(getShell(), repository);
 			break;
 		case MODE_CREATE:
-			dialog = new CreateBranchDialog(getShell(), repository);
-			if (dialog.open() != Window.OK)
-				return null;
-			CreateBranchWizard wiz = new CreateBranchWizard(repository, dialog
-					.getRefName());
+			CreateBranchWizard wiz;
+			try {
+				if (base == null)
+					base = repository.getFullBranch();
+				wiz = new CreateBranchWizard(repository, base);
+			} catch (IOException e) {
+				wiz = new CreateBranchWizard(repository);
+			}
 			new WizardDialog(getShell(), wiz).open();
 			return null;
 		case MODE_DELETE:

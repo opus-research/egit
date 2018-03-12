@@ -11,15 +11,32 @@
 package org.eclipse.egit.ui.internal.commit;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.core.runtime.PlatformObject;
+import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.history.FileDiff;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.ui.model.WorkbenchAdapter;
 
 /**
  * Class that encapsulates a particular {@link Repository} instance and
@@ -28,7 +45,24 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
  * This class computes and provides access to the {@link FileDiff} objects
  * introduced by the commit.
  */
-public class RepositoryCommit extends PlatformObject {
+public class RepositoryCommit extends WorkbenchAdapter implements IAdaptable {
+
+	private static DateFormat FORMAT = DateFormat.getDateTimeInstance(
+			DateFormat.MEDIUM, DateFormat.SHORT);
+
+	/**
+	 * Format commit date
+	 *
+	 * @param date
+	 * @return date string
+	 */
+	public static String formatDate(final Date date) {
+		if (date == null)
+			return ""; //$NON-NLS-1$
+		synchronized (FORMAT) {
+			return FORMAT.format(date);
+		}
+	}
 
 	/**
 	 * NAME_LENGTH
@@ -40,6 +74,8 @@ public class RepositoryCommit extends PlatformObject {
 	private RevCommit commit;
 
 	private FileDiff[] diffs;
+
+	private RepositoryCommitNote[] notes;
 
 	/**
 	 * Create a repository commit
@@ -54,9 +90,6 @@ public class RepositoryCommit extends PlatformObject {
 		this.commit = commit;
 	}
 
-	/**
-	 * @see org.eclipse.core.runtime.PlatformObject#getAdapter(java.lang.Class)
-	 */
 	public Object getAdapter(Class adapter) {
 		if (Repository.class == adapter)
 			return repository;
@@ -64,7 +97,7 @@ public class RepositoryCommit extends PlatformObject {
 		if (RevCommit.class == adapter)
 			return commit;
 
-		return super.getAdapter(adapter);
+		return Platform.getAdapterManager().getAdapter(this, adapter);
 	}
 
 	/**
@@ -82,7 +115,10 @@ public class RepositoryCommit extends PlatformObject {
 	 * @return repo name
 	 */
 	public String getRepositoryName() {
-		return repository.getDirectory().getParentFile().getName();
+		if (!repository.isBare())
+			return repository.getDirectory().getParentFile().getName();
+		else
+			return repository.getDirectory().getName();
 	}
 
 	/**
@@ -111,7 +147,7 @@ public class RepositoryCommit extends PlatformObject {
 	public FileDiff[] getDiffs() {
 		if (diffs == null) {
 			RevWalk revWalk = new RevWalk(repository);
-			TreeWalk treewalk = new TreeWalk(repository);
+			TreeWalk treewalk = new TreeWalk(revWalk.getObjectReader());
 			treewalk.setRecursive(true);
 			treewalk.setFilter(TreeFilter.ANY_DIFF);
 			try {
@@ -127,6 +163,73 @@ public class RepositoryCommit extends PlatformObject {
 			}
 		}
 		return diffs;
+	}
+
+	/**
+	 * Get notes for this commit.
+	 *
+	 * @return non-null but possibly empty array of {@link RepositoryCommitNote}
+	 *         instances.
+	 */
+	public RepositoryCommitNote[] getNotes() {
+		if (notes == null) {
+			List<RepositoryCommitNote> noteList = new ArrayList<RepositoryCommitNote>();
+			try {
+				Repository repo = getRepository();
+				Git git = Git.wrap(repo);
+				RevCommit revCommit = getRevCommit();
+				for (Ref ref : repo.getRefDatabase().getRefs(Constants.R_NOTES)
+						.values()) {
+					Note note = git.notesShow().setNotesRef(ref.getName())
+							.setObjectId(revCommit).call();
+					if (note != null)
+						noteList.add(new RepositoryCommitNote(this, ref, note));
+				}
+				notes = noteList.toArray(new RepositoryCommitNote[noteList
+						.size()]);
+			} catch (IOException e) {
+				Activator.logError("Error showing notes", e); //$NON-NLS-1$
+				notes = new RepositoryCommitNote[0];
+			}
+		}
+		return notes;
+	}
+
+	public Object[] getChildren(Object o) {
+		return new Object[0];
+	}
+
+	public ImageDescriptor getImageDescriptor(Object object) {
+		return UIIcons.CHANGESET;
+	}
+
+	public String getLabel(Object o) {
+		return abbreviate();
+	}
+
+	public Object getParent(Object o) {
+		return null;
+	}
+
+	/**
+	 * @param object
+	 * @return styled text
+	 */
+	public StyledString getStyledText(Object object) {
+		StyledString styled = new StyledString();
+		styled.append(abbreviate());
+		styled.append(": "); //$NON-NLS-1$
+		styled.append(commit.getShortMessage());
+
+		PersonIdent person = commit.getAuthorIdent();
+		if (person == null)
+			person = commit.getCommitterIdent();
+		if (person != null)
+			styled.append(MessageFormat.format(
+					UIText.RepositoryCommit_UserAndDate, person.getName(),
+					formatDate(person.getWhen())),
+					StyledString.QUALIFIER_STYLER);
+		return styled;
 	}
 
 }

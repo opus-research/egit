@@ -7,17 +7,23 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Dariusz Luksza <dariusz@luksza.org>
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.jface.dialogs.Dialog;
@@ -27,9 +33,11 @@ import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -149,6 +157,7 @@ class CreateBranchPage extends WizardPage {
 					.setToolTipText(UIText.CreateBranchPage_SourceBranchTooltip);
 		}
 		this.branchCombo = new Combo(main, SWT.READ_ONLY | SWT.DROP_DOWN);
+		branchCombo.setData("org.eclipse.swtbot.widget.key", "BaseBranch"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false).applyTo(
 				this.branchCombo);
@@ -158,26 +167,22 @@ class CreateBranchPage extends WizardPage {
 			this.branchCombo.setText(myBaseCommit.name());
 			this.branchCombo.setEnabled(false);
 		} else {
+			List<String> refs = new ArrayList<String>();
+			RefDatabase refDatabase = myRepository.getRefDatabase();
 			try {
-				for (Entry<String, Ref> ref : myRepository.getRefDatabase()
-						.getRefs(Constants.R_REMOTES).entrySet()) {
-					if (!ref.getValue().isSymbolic())
-						this.branchCombo.add(ref.getValue().getName());
-				}
-				for (Entry<String, Ref> ref : myRepository.getRefDatabase()
-						.getRefs(Constants.R_HEADS).entrySet()) {
-					if (!ref.getValue().isSymbolic())
-						this.branchCombo.add(ref.getValue().getName());
-				}
-				for (Entry<String, Ref> ref : myRepository.getRefDatabase()
-						.getRefs(Constants.R_TAGS).entrySet()) {
-					if (!ref.getValue().isSymbolic())
-						this.branchCombo.add(ref.getValue().getName());
-				}
+				for (Ref ref : refDatabase.getAdditionalRefs())
+					refs.add(ref.getName());
 
+				Set<Entry<String, Ref>> entrys = refDatabase.getRefs(RefDatabase.ALL).entrySet();
+				for (Entry<String, Ref> ref : entrys)
+						refs.add(ref.getValue().getName());
 			} catch (IOException e1) {
 				// ignore here
 			}
+
+			Collections.sort(refs, CommonUtils.STRING_ASCENDING_COMPARATOR);
+			for (String refName : refs)
+				this.branchCombo.add(refName);
 
 			this.branchCombo.addSelectionListener(new SelectionAdapter() {
 				@Override
@@ -188,9 +193,8 @@ class CreateBranchPage extends WizardPage {
 				}
 			});
 			// select the current branch in the drop down
-			if (myBaseRef != null) {
+			if (myBaseRef != null)
 				this.branchCombo.setText(myBaseRef);
-			}
 		}
 
 		Label nameLabel = new Label(main, SWT.NONE);
@@ -228,13 +232,12 @@ class CreateBranchPage extends WizardPage {
 		warningComposite.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(
 				warningComposite);
-		Label warningLabel = new Label(warningComposite, SWT.NONE);
+
+		CLabel warningLabel = new CLabel(warningComposite, SWT.NONE);
+		warningLabel.setText(UIText.CreateBranchPage_LocalBranchWarningText);
+		warningLabel.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 		warningLabel.setImage(PlatformUI.getWorkbench().getSharedImages()
 				.getImage(ISharedImages.IMG_OBJS_INFO_TSK));
-		Text warningText = new Text(warningComposite, SWT.READ_ONLY);
-		warningText.setText(UIText.CreateBranchPage_LocalBranchWarningText);
-		warningText
-				.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 
 		buttonConfigRebase = new Button(upstreamConfigGroup, SWT.RADIO);
 		buttonConfigRebase.setText(UIText.CreateBranchPage_RebaseRadioButton);
@@ -304,6 +307,7 @@ class CreateBranchPage extends WizardPage {
 		} else
 			// in any case, we will have to enter the name
 			setPageComplete(false);
+
 		checkPage();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {

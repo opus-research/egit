@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,8 +38,10 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.MarginPainter;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.jface.text.contentassist.IContentAssistant;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
 import org.eclipse.jface.text.quickassist.IQuickAssistProcessor;
+import org.eclipse.jface.text.reconciler.IReconciler;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.AnnotationModel;
 import org.eclipse.jface.text.source.IAnnotationAccess;
@@ -80,6 +83,8 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
  * Text field with support for spellchecking.
  */
 public class SpellcheckableMessageArea extends Composite {
+
+	static final int MAX_LINE_WIDTH = 72;
 
 	private static class TextViewerAction extends Action implements IUpdate {
 
@@ -129,6 +134,7 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	private final SourceViewer sourceViewer;
+
 	private ModifyListener hardWrapModifyListener;
 
 	/**
@@ -136,7 +142,29 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param initialText
 	 */
 	public SpellcheckableMessageArea(Composite parent, String initialText) {
-		super(parent, SWT.BORDER);
+		this(parent, initialText, SWT.BORDER);
+	}
+
+	/**
+	 * @param parent
+	 * @param initialText
+	 * @param styles
+	 */
+	public SpellcheckableMessageArea(Composite parent, String initialText,
+			int styles) {
+		this(parent, initialText, false, styles);
+	}
+
+	/**
+	 * @param parent
+	 * @param initialText
+	 * @param readOnly
+	 * @param styles
+	 */
+	public SpellcheckableMessageArea(Composite parent, String initialText,
+			boolean readOnly,
+			int styles) {
+		super(parent, styles);
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
@@ -146,10 +174,12 @@ public class SpellcheckableMessageArea extends Composite {
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
 		int endSpacing = 2;
-		int textWidth = getCharWidth() * 70 + endSpacing;
+		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
 		int textHeight = getLineHeight() * 7;
 		Point size = getTextWidget().computeSize(textWidth, textHeight);
 		getTextWidget().setSize(size);
+
+		getTextWidget().setEditable(!readOnly);
 
 		createMarginPainter();
 
@@ -169,6 +199,37 @@ public class SpellcheckableMessageArea extends Composite {
 				return getHyperlinkTargets();
 			}
 
+			@Override
+			public int getHyperlinkStateMask(ISourceViewer viewer) {
+				return SWT.NONE;
+			}
+
+			@Override
+			public IReconciler getReconciler(ISourceViewer viewer) {
+				if (!isEditable(viewer))
+					return null;
+				return super.getReconciler(sourceViewer);
+			}
+
+			public IContentAssistant getContentAssistant(ISourceViewer viewer) {
+				if (!viewer.isEditable())
+					return null;
+				IContentAssistant assistant = createContentAssistant(viewer);
+				// Add content assist proposal handler if assistant exists
+				if (assistant != null) {
+					final IHandlerActivation activation = installContentAssistActionHandler();
+					viewer.getTextWidget().addDisposeListener(
+							new DisposeListener() {
+
+								public void widgetDisposed(DisposeEvent e) {
+									getHandlerService().deactivateHandler(
+											activation);
+								}
+							});
+				}
+				return assistant;
+			}
+
 		});
 		sourceViewer.setDocument(document, annotationModel);
 
@@ -178,6 +239,10 @@ public class SpellcheckableMessageArea extends Composite {
 				getHandlerService().deactivateHandler(handlerActivation);
 			}
 		});
+	}
+
+	private boolean isEditable(ISourceViewer viewer) {
+		return viewer != null && viewer.getTextWidget().getEditable();
 	}
 
 	private void configureHardWrap() {
@@ -194,7 +259,9 @@ public class SpellcheckableMessageArea extends Composite {
 							return;
 						}
 						String lineDelimiter = textWidget.getLineDelimiter();
-						List<WrapEdit> wrapEdits = calculateWrapEdits(textWidget.getText(), 70, lineDelimiter);
+						List<WrapEdit> wrapEdits = calculateWrapEdits(
+								textWidget.getText(), MAX_LINE_WIDTH,
+								lineDelimiter);
 						// Prevent infinite loop because replaceTextRange causes a ModifyEvent
 						active = false;
 						for (WrapEdit wrapEdit : wrapEdits) {
@@ -237,14 +304,16 @@ public class SpellcheckableMessageArea extends Composite {
 		contextMenu.add(selectAllAction);
 		contextMenu.add(new Separator());
 
-		final SubMenuManager quickFixMenu = new SubMenuManager(contextMenu);
-		quickFixMenu.setVisible(true);
-		quickFixMenu.addMenuListener(new IMenuListener() {
-			public void menuAboutToShow(IMenuManager manager) {
-				quickFixMenu.removeAll();
-				addProposals(quickFixMenu);
-			}
-		});
+		if(isEditable(sourceViewer)) {
+			final SubMenuManager quickFixMenu = new SubMenuManager(contextMenu);
+			quickFixMenu.setVisible(true);
+			quickFixMenu.addMenuListener(new IMenuListener() {
+				public void menuAboutToShow(IMenuManager manager) {
+					quickFixMenu.removeAll();
+					addProposals(quickFixMenu);
+				}
+			});
+		}
 		StyledText textWidget = getTextWidget();
 		getTextWidget().setMenu(contextMenu.createContextMenu(textWidget));
 
@@ -369,9 +438,12 @@ public class SpellcheckableMessageArea extends Composite {
 		return support;
 	}
 
-	private void createMarginPainter() {
+	/**
+	 * Create margin painter and add to source viewer
+	 */
+	protected void createMarginPainter() {
 		MarginPainter marginPainter = new MarginPainter(sourceViewer);
-		marginPainter.setMarginRulerColumn(70);
+		marginPainter.setMarginRulerColumn(MAX_LINE_WIDTH);
 		marginPainter.setMarginRulerColor(Display.getDefault().getSystemColor(
 				SWT.COLOR_GRAY));
 		sourceViewer.addPainter(marginPainter);
@@ -404,12 +476,20 @@ public class SpellcheckableMessageArea extends Composite {
 	}
 
 	private IHandlerActivation installQuickFixActionHandler() {
-		IHandlerService handlerService = getHandlerService();
 		ActionHandler handler = createQuickFixActionHandler(sourceViewer);
+		return addHandler(handler);
+	}
+
+	private IHandlerActivation installContentAssistActionHandler() {
+		ActionHandler handler = createContentAssistActionHandler(sourceViewer);
+		return addHandler(handler);
+	}
+
+	private IHandlerActivation addHandler(ActionHandler handler) {
 		ActiveShellExpression expression = new ActiveShellExpression(
 				sourceViewer.getTextWidget().getShell());
-		return handlerService.activateHandler(
-				ITextEditorActionDefinitionIds.QUICK_ASSIST, handler,
+		return getHandlerService().activateHandler(
+				handler.getAction().getActionDefinitionId(), handler,
 				expression);
 	}
 
@@ -428,6 +508,21 @@ public class SpellcheckableMessageArea extends Composite {
 		quickFixAction
 		.setActionDefinitionId(ITextEditorActionDefinitionIds.QUICK_ASSIST);
 		return new ActionHandler(quickFixAction);
+	}
+
+	private ActionHandler createContentAssistActionHandler(
+			final ITextOperationTarget textOperationTarget) {
+		Action proposalAction = new Action() {
+			public void run() {
+				if (textOperationTarget
+						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS))
+					textOperationTarget
+							.doOperation(ISourceViewer.CONTENTASSIST_PROPOSALS);
+			}
+		};
+		proposalAction
+				.setActionDefinitionId(ITextEditorActionDefinitionIds.CONTENT_ASSIST_PROPOSALS);
+		return new ActionHandler(proposalAction);
 	}
 
 	/**
@@ -456,6 +551,16 @@ public class SpellcheckableMessageArea extends Composite {
 	protected Map<String, IAdaptable> getHyperlinkTargets() {
 		return Collections.singletonMap("org.eclipse.ui.DefaultTextEditor", //$NON-NLS-1$
 				getDefaultTarget());
+	}
+
+	/**
+	 * Create content assistant
+	 *
+	 * @param viewer
+	 * @return content assistant
+	 */
+	protected IContentAssistant createContentAssistant(ISourceViewer viewer) {
+		return null;
 	}
 
 	/**
