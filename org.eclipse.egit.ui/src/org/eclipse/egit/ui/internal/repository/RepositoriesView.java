@@ -26,7 +26,6 @@ import java.util.TreeSet;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -39,14 +38,12 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.op.BranchOperation;
-import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
@@ -76,6 +73,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.osgi.util.NLS;
@@ -103,6 +101,7 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.ide.IDE;
@@ -116,7 +115,7 @@ import org.eclipse.ui.views.properties.PropertySheetPage;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
- *
+ * 
  * The Git Repositories view.
  * <p>
  * This keeps track of a bunch of local directory names each of which represent
@@ -128,7 +127,7 @@ import org.osgi.service.prefs.BackingStoreException;
  * <p>
  * TODO
  * <li>Clarification whether to show projects, perhaps configurable switch</li>
- *
+ * 
  */
 public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		IShowInTarget {
@@ -167,7 +166,16 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	private IAction linkWithSelectionAction;
 
-	private static List<String> getDirs() {
+	private IAction copyAction;
+
+	private IAction pasteAction;
+
+	/**
+	 * TODO move to utility class
+	 * 
+	 * @return the directories as configured for this view
+	 */
+	public static List<String> getDirs() {
 		List<String> resultStrings = new ArrayList<String>();
 		String dirs = getPrefs().get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
 		if (dirs != null && dirs.length() > 0) {
@@ -258,9 +266,21 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 			public void selectionChanged(SelectionChangedEvent event) {
 
+				copyAction.setEnabled(false);
+
 				IStructuredSelection ssel = (IStructuredSelection) event
 						.getSelection();
 				if (ssel.size() == 1) {
+					RepositoryTreeNode node = (RepositoryTreeNode) ssel
+							.getFirstElement();
+					// allow copy on repository, file, or folder (copying the
+					// directory)
+					if (node.getType() == RepositoryTreeNodeType.REPO
+							|| node.getType() == RepositoryTreeNodeType.WORKINGDIR
+							|| node.getType() == RepositoryTreeNodeType.FOLDER
+							|| node.getType() == RepositoryTreeNodeType.FILE) {
+						copyAction.setEnabled(true);
+					}
 					setSelection(new StructuredSelection(ssel.getFirstElement()));
 				} else {
 					setSelection(new StructuredSelection());
@@ -407,6 +427,17 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 		});
 
+		MenuItem pasteItem = new MenuItem(men, SWT.PUSH);
+		pasteItem.setText(UIText.RepositoriesView_PasteMenu);
+		pasteItem.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				pasteAction.run();
+			}
+
+		});
+
 		MenuItem refreshItem = new MenuItem(men, SWT.PUSH);
 		refreshItem.setText(refreshAction.getText());
 		refreshItem.addSelectionListener(new SelectionAdapter() {
@@ -420,84 +451,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	}
 
-	@SuppressWarnings("unchecked")
 	private void addMenuItemsForTreeSelection(Menu men) {
 
 		final IStructuredSelection sel = (IStructuredSelection) tv
 				.getSelection();
-
-		boolean importableProjectsOnly = true;
-
-		for (Object node : sel.toArray()) {
-			RepositoryTreeNode tnode = (RepositoryTreeNode) node;
-			importableProjectsOnly = tnode.getType() == RepositoryTreeNodeType.PROJ;
-			if (!importableProjectsOnly)
-				break;
-		}
-
-		if (importableProjectsOnly) {
-			MenuItem sync = new MenuItem(men, SWT.PUSH);
-			sync.setText(UIText.RepositoriesView_ImportProject_MenuItem);
-
-			sync.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-
-						public void run(IProgressMonitor monitor)
-								throws CoreException {
-
-							for (Object selected : sel.toArray()) {
-								RepositoryTreeNode<File> projectNode = (RepositoryTreeNode<File>) selected;
-								File file = projectNode.getObject();
-
-								IProjectDescription pd = ResourcesPlugin
-										.getWorkspace().newProjectDescription(
-												file.getName());
-								IPath locationPath = new Path(file
-										.getAbsolutePath());
-
-								pd.setLocation(locationPath);
-
-								ResourcesPlugin.getWorkspace().getRoot()
-										.getProject(pd.getName()).create(pd,
-												monitor);
-								IProject project = ResourcesPlugin
-										.getWorkspace().getRoot().getProject(
-												pd.getName());
-								project.open(monitor);
-
-								File gitDir = projectNode.getRepository()
-										.getDirectory();
-
-								ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
-										project, gitDir);
-								connectProviderOperation
-										.execute(new SubProgressMonitor(monitor, 20));
-
-							}
-
-						}
-					};
-
-					try {
-
-						ResourcesPlugin.getWorkspace().run(wsr,
-								ResourcesPlugin.getWorkspace().getRoot(),
-								IWorkspace.AVOID_UPDATE,
-								new NullProgressMonitor());
-
-						scheduleRefresh();
-					} catch (CoreException e1) {
-						Activator.logError(e1.getMessage(), e1);
-					}
-
-				}
-
-			});
-		}
 
 		// from here on, we only deal with single selection
 		if (sel.size() > 1)
@@ -530,9 +487,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 					@Override
 					public void widgetSelected(SelectionEvent e) {
-
 						checkoutBranch(node, ref.getLeaf().getName());
-
 					}
 				});
 
@@ -1280,14 +1235,15 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 			@Override
 			public void run() {
-				GitCloneWizard wiz = new GitCloneWizard();
-				wiz.init(null, null);
-				new WizardDialog(getSite().getShell(), wiz).open();
+				WizardDialog dlg = new WizardDialog(getSite().getShell(),
+						new GitCloneWizard());
+				if (dlg.open() == Window.OK)
+					scheduleRefresh();
 			}
 		};
 		importAction.setToolTipText(UIText.RepositoriesView_Clone_Tooltip);
 
-		importAction.setImageDescriptor(UIIcons.IMPORT);
+		importAction.setImageDescriptor(UIIcons.CLONEGIT);
 
 		getViewSite().getActionBars().getToolBarManager().add(importAction);
 
@@ -1358,6 +1314,123 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
 
 		getViewSite().getActionBars().getToolBarManager().add(refreshAction);
+
+		IAction collapseAllAction = new Action(
+				UIText.RepositoriesView_CollapseAllMenu) {
+
+			@Override
+			public void run() {
+				tv.collapseAll();
+			}
+		};
+
+		// copy and paste are global actions; we just implement them
+		// and register them with the global action handler
+		// we enable/disable them upon tree selection changes
+
+		copyAction = new Action("") { //$NON-NLS-1$
+
+			@Override
+			public void run() {
+				// for REPO, WORKINGDIR, FILE, FOLDER: copy directory
+				IStructuredSelection sel = (IStructuredSelection) tv
+						.getSelection();
+				if (sel.size() == 1) {
+					RepositoryTreeNode node = (RepositoryTreeNode) sel
+							.getFirstElement();
+					String dir = null;
+					if (node.getType() == RepositoryTreeNodeType.REPO) {
+						dir = node.getRepository().getDirectory().getPath();
+					} else if (node.getType() == RepositoryTreeNodeType.FILE
+							|| node.getType() == RepositoryTreeNodeType.FOLDER) {
+						dir = ((File) node.getObject()).getPath();
+					} else if (node.getType() == RepositoryTreeNodeType.WORKINGDIR) {
+						dir = node.getRepository().getWorkDir().getPath();
+					}
+					if (dir != null) {
+						Clipboard clip = null;
+						try {
+							clip = new Clipboard(getSite().getShell()
+									.getDisplay());
+							clip
+									.setContents(new Object[] { dir },
+											new Transfer[] { TextTransfer
+													.getInstance() });
+						} finally {
+							if (clip != null)
+								// we must dispose ourselves
+								clip.dispose();
+						}
+					}
+				}
+			}
+
+		};
+		copyAction.setEnabled(false);
+
+		getViewSite().getActionBars().setGlobalActionHandler(
+				ActionFactory.COPY.getId(), copyAction);
+
+		pasteAction = new Action("") { //$NON-NLS-1$
+
+			@Override
+			public void run() {
+				// we check if the pasted content is a directory
+				// repository location and try to add this
+				String errorMessage = null;
+
+				Clipboard clip = null;
+				try {
+					clip = new Clipboard(getSite().getShell().getDisplay());
+					String content = (String) clip.getContents(TextTransfer
+							.getInstance());
+					if (content == null) {
+						errorMessage = UIText.RepositoriesView_NothingToPasteMessage;
+						return;
+					}
+
+					File file = new File(content);
+					if (!file.exists() || !file.isDirectory()) {
+						errorMessage = UIText.RepositoriesView_ClipboardContentNotDirectoryMessage;
+						return;
+					}
+
+					if (!RepositoryCache.FileKey.isGitRepository(file)) {
+						errorMessage = NLS
+								.bind(
+										UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
+										content);
+						return;
+					}
+
+					if (addDir(file))
+						scheduleRefresh();
+					else
+						errorMessage = NLS.bind(
+								UIText.RepositoriesView_PasteRepoAlreadyThere,
+								content);
+				} finally {
+					if (clip != null)
+						// we must dispose ourselves
+						clip.dispose();
+					if (errorMessage != null)
+						// TODO String ext
+						MessageDialog.openWarning(getSite().getShell(),
+								UIText.RepositoriesView_PasteFailureTitle,
+								errorMessage);
+				}
+			}
+
+		};
+
+		collapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
+
+		getViewSite().getActionBars().getToolBarManager()
+				.add(collapseAllAction);
+
+		getViewSite().getActionBars().setGlobalActionHandler(
+				ActionFactory.PASTE.getId(), pasteAction);
+
 	}
 
 	/**
@@ -1387,13 +1460,28 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 
-				final List<Repository> input;
+				final List<RepositoryTreeNode<Repository>> input;
 				try {
 					input = getRepositoriesFromDirs(monitor);
 				} catch (InterruptedException e) {
 					return new Status(IStatus.ERROR, Activator.getPluginId(), e
 							.getMessage(), e);
 				}
+
+				boolean needsNewInput = tv.getInput() == null;
+				List oldInput = (List) tv.getInput();
+				if (!needsNewInput)
+					needsNewInput = oldInput.size() != input.size();
+
+				if (!needsNewInput) {
+					for (int i = 0; i < input.size(); i++) {
+						needsNewInput = !input.get(i).equals(oldInput.get(i));
+						if (needsNewInput)
+							break;
+					}
+				}
+
+				final boolean updateInput = needsNewInput;
 
 				Display.getDefault().syncExec(new Runnable() {
 
@@ -1404,7 +1492,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 						Object[] expanded = tv.getExpandedElements();
 						IStructuredSelection sel = (IStructuredSelection) tv
 								.getSelection();
-						tv.setInput(input);
+						if (updateInput)
+							tv.setInput(input);
+						else
+							tv.refresh();
 						tv.setExpandedElements(expanded);
 
 						Object selected = sel.getFirstElement();
@@ -1439,33 +1530,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	}
 
-	private List<Repository> getRepositoriesFromDirs(IProgressMonitor monitor)
-			throws InterruptedException {
-
-		List<String> gitDirStrings = getDirs();
-		List<Repository> input = new ArrayList<Repository>();
-		for (String dirString : gitDirStrings) {
-			if (monitor.isCanceled()) {
-				throw new InterruptedException(
-						UIText.RepositoriesView_ActionCanceled_Message);
-			}
-			try {
-				File dir = new File(dirString);
-				if (dir.exists() && dir.isDirectory()) {
-					input.add(new Repository(dir));
-				}
-			} catch (IOException e) {
-				IStatus error = new Status(IStatus.ERROR, Activator
-						.getPluginId(), e.getMessage(), e);
-				Activator.getDefault().getLog().log(error);
-			}
-		}
-		return input;
-	}
-
 	/**
 	 * Adds a directory to the list if it is not already there
-	 *
+	 * 
 	 * @param file
 	 * @return see {@link Collection#add(Object)}
 	 */
@@ -1488,6 +1555,45 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			saveDirs(dirs);
 			return true;
 		}
+	}
+
+	/**
+	 * Converts the directories as configured for this view into a list of
+	 * {@link Repository} objects suitable for the tree content provider
+	 * <p>
+	 * TODO move to some utility class
+	 * 
+	 * @param monitor
+	 * @return a list of nodes
+	 * @throws InterruptedException
+	 */
+	public static List<RepositoryTreeNode<Repository>> getRepositoriesFromDirs(
+			IProgressMonitor monitor) throws InterruptedException {
+
+		List<String> gitDirStrings = getDirs();
+		List<RepositoryTreeNode<Repository>> input = new ArrayList<RepositoryTreeNode<Repository>>();
+
+		for (String dirString : gitDirStrings) {
+			if (monitor != null && monitor.isCanceled()) {
+				throw new InterruptedException(
+						UIText.RepositoriesView_ActionCanceled_Message);
+			}
+			try {
+				File dir = new File(dirString);
+				if (dir.exists() && dir.isDirectory()) {
+					Repository repo = new Repository(dir);
+					RepositoryTreeNode<Repository> node = new RepositoryTreeNode<Repository>(
+							null, RepositoryTreeNodeType.REPO, repo, repo);
+					input.add(node);
+				}
+			} catch (IOException e) {
+				IStatus error = new Status(IStatus.ERROR, Activator
+						.getPluginId(), e.getMessage(), e);
+				Activator.getDefault().getLog().log(error);
+			}
+		}
+		Collections.sort(input);
+		return input;
 	}
 
 	private static void saveDirs(Set<String> gitDirStrings) {
@@ -1551,7 +1657,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	/**
 	 * Opens the tree and marks the folder to which a project is pointing
-	 *
+	 * 
 	 * @param resource
 	 *            TODO exceptions?
 	 */
