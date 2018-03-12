@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
@@ -246,7 +245,6 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			updateFields(presetUri);
 
 		updateRemoteAndURIPanels();
-		Dialog.applyDialogFont(panel);
 		setControl(panel);
 
 		checkPage();
