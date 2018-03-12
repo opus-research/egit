@@ -8,7 +8,6 @@
  *
  * Contributors:
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Factored out ResourceState
- *    Andre Bossert <anb0s@anbos.de> - Extended support for nested Git repositories in project
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.decorators;
 
@@ -49,11 +48,6 @@ public class DecoratableResource extends ResourceState
 	protected String branchStatus = null;
 
 	/**
-	 * is resource a working tree root
-	 */
-	protected boolean isWorkingTreeRoot = false;
-
-	/**
 	 * Constructs a new decoratable resource
 	 *
 	 * This object represents the state of a resource used as a basis for
@@ -64,14 +58,6 @@ public class DecoratableResource extends ResourceState
 	 */
 	protected DecoratableResource(IResource resource) {
 		this.resource = resource;
-	}
-
-	/**
-	 * @param isWorkTreeRoot
-	 *            set to true if the resource is a work-tree-root
-	 */
-	protected void setIsWorkingTreeRoot(boolean isWorkTreeRoot) {
-		isWorkingTreeRoot = isWorkTreeRoot;
 	}
 
 	@Override
@@ -102,11 +88,6 @@ public class DecoratableResource extends ResourceState
 	@Override
 	public String getBranchStatus() {
 		return branchStatus;
-	}
-
-	@Override
-	public boolean isWorkingTreeRoot() {
-		return isWorkingTreeRoot;
 	}
 
 }
