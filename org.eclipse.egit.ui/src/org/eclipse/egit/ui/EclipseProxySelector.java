@@ -6,7 +6,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core;
+package org.eclipse.egit.ui;
 
 import java.io.IOException;
 import java.net.InetAddress;
