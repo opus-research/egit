@@ -122,9 +122,7 @@ public class GitModelTree extends GitModelCommit {
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
 		try {
-			int remoteNth = -1;
-			if (!remoteId.equals(zeroId()))
-				remoteNth = tw.addTree(remoteId);
+			int remoteNth = tw.addTree(remoteId);
 
 			int baseNth = -1;
 			if (!baseId.equals(zeroId()))
@@ -136,7 +134,7 @@ public class GitModelTree extends GitModelCommit {
 
 			while (tw.next()) {
 				GitModelObject obj = getModelObject(tw, ancestorCommit, ancestorNth,
-						baseNth, remoteNth);
+						remoteNth, baseNth);
 				if (obj != null)
 					result.add(obj);
 			}
