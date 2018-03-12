@@ -12,6 +12,7 @@ package org.eclipse.egit.core.op;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 
@@ -19,19 +20,17 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.team.core.Team;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.GitIndex.Entry;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.team.core.Team;
 
 /**
  * Add one or more new files/folders to the Git repository.
@@ -46,8 +45,8 @@ import org.eclipse.team.core.Team;
  * Resources are only scheduled for addition in the index.
  * </p>
  */
-public class TrackOperation implements IEGitOperation {
-	private final IResource[] rsrcList;
+public class TrackOperation implements IWorkspaceRunnable {
+	private final Collection rsrcList;
 
 	/**
 	 * Create a new operation to track additional files/folders.
@@ -56,46 +55,31 @@ public class TrackOperation implements IEGitOperation {
 	 *            collection of {@link IResource}s which should be added to the
 	 *            relevant Git repositories.
 	 */
-	public TrackOperation(IResource[] rsrcs) {
+	public TrackOperation(final Collection rsrcs) {
 		rsrcList = rsrcs;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		return new MultiRule(rsrcList);
-	}
-
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		if (m == null) {
 			m = new NullProgressMonitor();
 		}
 
 		final IdentityHashMap<RepositoryMapping, Boolean> tomerge = new IdentityHashMap<RepositoryMapping, Boolean>();
-		m.beginTask(CoreText.AddOperation_adding, rsrcList.length * 200);
+		m.beginTask(CoreText.AddOperation_adding, rsrcList.size() * 200);
 		try {
-			for (IResource toAdd : rsrcList) {
+			for (Object obj : rsrcList) {
+				obj = ((IAdaptable)obj).getAdapter(IResource.class);
+				if (obj instanceof IResource) {
+					final IResource toAdd = (IResource)obj;
 					final RepositoryMapping rm = RepositoryMapping.getMapping(toAdd);
 					final GitIndex index = rm.getRepository().getIndex();
 
-					if (toAdd instanceof IFile) {
-						String repoPath = rm.getRepoRelativePath(toAdd);
+					if (obj instanceof IFile) {
+						String repoPath = rm.getRepoRelativePath((IResource) obj);
 						Entry entry = index.getEntry(repoPath);
 						if (entry != null) {
 							if (!entry.isAssumedValid()) {
-								// TODO is this the right location?
-								if (GitTraceLocation.CORE.isActive())
-									GitTraceLocation
-											.getTrace()
-											.trace(
-													GitTraceLocation.CORE
-															.getLocation(),
-													"Already tracked - skipping"); //$NON-NLS-1$
+								System.out.println("Already tracked - skipping");
 								continue;
 							}
 						}
@@ -123,9 +107,8 @@ public class TrackOperation implements IEGitOperation {
 										return false;
 
 								} catch (IOException e) {
-									if (GitTraceLocation.CORE.isActive())
-										GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-									throw new CoreException(Activator.error(CoreText.AddOperation_failed, e));
+									e.printStackTrace();
+									throw Activator.error(CoreText.AddOperation_failed, e);
 								}
 								return true;
 							}
@@ -135,20 +118,19 @@ public class TrackOperation implements IEGitOperation {
 						entry.setAssumeValid(false);
 
 					}
+				}
 				m.worked(200);
 			}
 			for (RepositoryMapping rm : tomerge.keySet()) {
-				m.setTaskName(NLS.bind(CoreText.TrackOperation_writingIndex, rm.getRepository().getDirectory()));
+				m.setTaskName("Writing index for "+rm.getRepository().getDirectory());
 				rm.getRepository().getIndex().write();
 			}
 		} catch (RuntimeException e) {
-			if (GitTraceLocation.CORE.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-			throw new CoreException(Activator.error(CoreText.AddOperation_failed, e));
+			e.printStackTrace();
+			throw Activator.error(CoreText.AddOperation_failed, e);
 		} catch (IOException e) {
-			if (GitTraceLocation.CORE.isActive())
-				GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-			throw new CoreException(Activator.error(CoreText.AddOperation_failed, e));
+			e.printStackTrace();
+			throw Activator.error(CoreText.AddOperation_failed, e);
 		} finally {
 			try {
 				final Iterator i = tomerge.keySet().iterator();
@@ -158,8 +140,7 @@ public class TrackOperation implements IEGitOperation {
 					r.fireRepositoryChanged();
 				}
 			} catch (IOException e) {
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+				e.printStackTrace();
 			} finally {
 				m.done();
 			}

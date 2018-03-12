@@ -15,10 +15,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -30,21 +33,17 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Preferences;
 import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.core.runtime.preferences.DefaultScope;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
-import org.eclipse.jgit.lib.Constants;
+import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.WindowCache;
 import org.eclipse.jgit.lib.WindowCacheConfig;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.team.core.RepositoryProvider;
 
 /**
  * This class keeps information about how a project is mapped to
@@ -52,6 +51,8 @@ import org.eclipse.team.core.RepositoryProvider;
  */
 public class GitProjectData {
 	private static final Map<IProject, GitProjectData> projectDataCache = new HashMap<IProject, GitProjectData>();
+
+	private static final Map<File, WeakReference> repositoryCache = new HashMap<File, WeakReference>();
 
 	private static Set<RepositoryChangeListener> repositoryChangeListeners = new HashSet<RepositoryChangeListener>();
 
@@ -75,7 +76,7 @@ public class GitProjectData {
 	}
 
 	private static QualifiedName MAPPING_KEY = new QualifiedName(
-			GitProjectData.class.getName(), "RepositoryMapping");  //$NON-NLS-1$
+			GitProjectData.class.getName(), "RepositoryMapping");
 
 	/**
 	 * Start listening for resource changes.
@@ -83,7 +84,7 @@ public class GitProjectData {
 	 * @param includeChange true to listen to content changes
 	 */
 	public static void attachToWorkspace(final boolean includeChange) {
-		trace("attachToWorkspace - addResourceChangeListener");  //$NON-NLS-1$
+		trace("attachToWorkspace - addResourceChangeListener");
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				rcl,
 				(includeChange ? IResourceChangeEvent.POST_CHANGE : 0)
@@ -95,7 +96,7 @@ public class GitProjectData {
 	 * Stop listening to resource changes
 	 */
 	public static void detachFromWorkspace() {
-		trace("detachFromWorkspace - removeResourceChangeListener"); //$NON-NLS-1$
+		trace("detachFromWorkspace - removeResourceChangeListener");
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(rcl);
 	}
 
@@ -176,7 +177,7 @@ public class GitProjectData {
 	 * @param p Eclipse project
 	 */
 	public static void delete(final IProject p) {
-		trace("delete(" + p.getName() + ")");   //$NON-NLS-1$ //$NON-NLS-2$
+		trace("delete(" + p.getName() + ")");
 		GitProjectData d = lookup(p);
 		if (d == null) {
 			try {
@@ -189,11 +190,7 @@ public class GitProjectData {
 	}
 
 	static void trace(final String m) {
-		// TODO is this the right location?
-		if (GitTraceLocation.CORE.isActive())
-			GitTraceLocation.getTrace().trace(
-					GitTraceLocation.CORE.getLocation(),
-					"(GitProjectData) " + m); //$NON-NLS-1$
+		Activator.trace("(GitProjectData) " + m);
 	}
 
 	private synchronized static void cache(final IProject p,
@@ -203,8 +200,7 @@ public class GitProjectData {
 
 	private synchronized static void uncache(final IProject p) {
 		if (projectDataCache.remove(p) != null) {
-			trace("uncacheDataFor(" //$NON-NLS-1$
-				+ p.getName() + ")"); //$NON-NLS-1$
+			trace("uncacheDataFor(" + p.getName() + ")");
 		}
 	}
 
@@ -212,17 +208,35 @@ public class GitProjectData {
 		return projectDataCache.get(p);
 	}
 
+	private synchronized static Repository lookupRepository(final File gitDir)
+			throws IOException {
+		final Iterator i = repositoryCache.entrySet().iterator();
+		while (i.hasNext()) {
+			final Map.Entry e = (Map.Entry) i.next();
+			if (((Reference) e.getValue()).get() == null) {
+				i.remove();
+			}
+		}
+
+		final Reference r = repositoryCache.get(gitDir);
+		Repository d = r != null ? (Repository) r.get() : null;
+		if (d == null) {
+			d = new Repository(gitDir);
+			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
+		}
+		return d;
+	}
+
 	/**
 	 * Update the settings for the global window cache of the workspace.
 	 */
 	public static void reconfigureWindowCache() {
 		final WindowCacheConfig c = new WindowCacheConfig();
-		IEclipsePreferences d = new DefaultScope().getNode(Activator.getPluginId());
-		IEclipsePreferences p = new InstanceScope().getNode(Activator.getPluginId());
-		c.setPackedGitLimit(p.getInt(GitCorePreferences.core_packedGitLimit, d.getInt(GitCorePreferences.core_packedGitLimit, 0)));
-		c.setPackedGitWindowSize(p.getInt(GitCorePreferences.core_packedGitWindowSize, d.getInt(GitCorePreferences.core_packedGitWindowSize, 0)));
-		c.setPackedGitMMAP(p.getBoolean(GitCorePreferences.core_packedGitMMAP, d.getBoolean(GitCorePreferences.core_packedGitMMAP, false)));
-		c.setDeltaBaseCacheLimit(p.getInt(GitCorePreferences.core_deltaBaseCacheLimit, d.getInt(GitCorePreferences.core_deltaBaseCacheLimit, 0)));
+		Preferences p = Activator.getDefault().getPluginPreferences();
+		c.setPackedGitLimit(p.getInt(GitCorePreferences.core_packedGitLimit));
+		c.setPackedGitWindowSize(p.getInt(GitCorePreferences.core_packedGitWindowSize));
+		c.setPackedGitMMAP(p.getBoolean(GitCorePreferences.core_packedGitMMAP));
+		c.setDeltaBaseCacheLimit(p.getInt(GitCorePreferences.core_deltaBaseCacheLimit));
 		WindowCache.reconfigure(c);
 	}
 
@@ -272,18 +286,18 @@ public class GitProjectData {
 			if (c == null)
 				continue; // Not fully mapped yet?
 
-			final IResource dotGit = c.findMember(Constants.DOT_GIT);
+			final IResource dotGit = c.findMember(".git");
 			if (dotGit != null) {
 				try {
 					final Repository r = rm.getRepository();
 					final File dotGitDir = dotGit.getLocation().toFile()
 							.getCanonicalFile();
 					if (dotGitDir.equals(r.getDirectory())) {
-						trace("teamPrivate " + dotGit);  //$NON-NLS-1$
+						trace("teamPrivate " + dotGit);
 						dotGit.setTeamPrivateMember(true);
 					}
 				} catch (IOException err) {
-					throw new CoreException(Activator.error(CoreText.Error_CanonicalFile, err));
+					throw Activator.error(CoreText.Error_CanonicalFile, err);
 				}
 			}
 		}
@@ -313,8 +327,7 @@ public class GitProjectData {
 					return m;
 			}
 		} catch (CoreException err) {
-			Activator.logError(
-					CoreText.GitProjectData_failedFindingRepoMapping, err);
+			Activator.logError("Failed finding RepositoryMapping", err);
 		}
 		return null;
 	}
@@ -330,9 +343,7 @@ public class GitProjectData {
 			}
 		}
 		dir.delete();
-		trace("deleteDataFor("  //$NON-NLS-1$
-				+ getProject().getName()
-				+ ")");  //$NON-NLS-1$
+		trace("deleteDataFor(" + getProject().getName() + ")");
 		uncache(getProject());
 	}
 
@@ -347,18 +358,16 @@ public class GitProjectData {
 		boolean ok = false;
 
 		try {
-			trace("save " + dat);  //$NON-NLS-1$
-			tmp = File.createTempFile(
-					"gpd_",  //$NON-NLS-1$
-					".prop",   //$NON-NLS-1$
-					dat.getParentFile());
+			trace("save " + dat);
+			tmp = File.createTempFile("gpd_", ".prop", dat.getParentFile());
 			final FileOutputStream o = new FileOutputStream(tmp);
 			try {
 				final Properties p = new Properties();
-				for (final RepositoryMapping repoMapping : mappings) {
-					repoMapping.store(p);
+				final Iterator i = mappings.iterator();
+				while (i.hasNext()) {
+					((RepositoryMapping) i.next()).store(p);
 				}
-				p.store(o, "GitProjectData");  //$NON-NLS-1$
+				p.store(o, "GitProjectData");
 				ok = true;
 			} finally {
 				o.close();
@@ -367,27 +376,27 @@ public class GitProjectData {
 				}
 			}
 		} catch (IOException ioe) {
-			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
-					dat), ioe));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), ioe);
 		}
 
 		dat.delete();
 		if (!tmp.renameTo(dat)) {
 			tmp.delete();
-			throw new CoreException(Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
-					dat), null));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), null);
 		}
 	}
 
 	private File propertyFile() {
 		return new File(getProject()
 				.getWorkingLocation(Activator.getPluginId()).toFile(),
-				"GitProjectData.properties");  //$NON-NLS-1$
+				"GitProjectData.properties");
 	}
 
 	private GitProjectData load() throws IOException {
 		final File dat = propertyFile();
-		trace("load " + dat);  //$NON-NLS-1$
+		trace("load " + dat);
 
 		final FileInputStream o = new FileInputStream(dat);
 		try {
@@ -395,8 +404,9 @@ public class GitProjectData {
 			p.load(o);
 
 			mappings.clear();
-			for (final Object keyObj : p.keySet()) {
-				final String key = keyObj.toString();
+			final Iterator keyItr = p.keySet().iterator();
+			while (keyItr.hasNext()) {
+				final String key = keyItr.next().toString();
 				if (RepositoryMapping.isInitialKey(key)) {
 					mappings.add(new RepositoryMapping(p, key));
 				}
@@ -411,8 +421,9 @@ public class GitProjectData {
 
 	private void remapAll() {
 		protectedResources.clear();
-		for (final RepositoryMapping repoMapping : mappings) {
-			map(repoMapping);
+		final Iterator i = mappings.iterator();
+		while (i.hasNext()) {
+			map((RepositoryMapping) i.next());
 		}
 	}
 
@@ -439,8 +450,7 @@ public class GitProjectData {
 		m.setContainer(c);
 
 		git = c.getLocation().append(m.getGitDirPath()).toFile();
-		if (!git.isDirectory()
-				|| !new File(git, "config").isFile()) {  //$NON-NLS-1$
+		if (!git.isDirectory() || !new File(git, "config").isFile()) {
 			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
 					new FileNotFoundException(m.getContainerPath().toString()));
 			m.clear();
@@ -448,8 +458,7 @@ public class GitProjectData {
 		}
 
 		try {
-			m.setRepository(Activator.getDefault().getRepositoryCache()
-					.lookupRepository(git));
+			m.setRepository(lookupRepository(git));
 		} catch (IOException ioe) {
 			Activator.logError(CoreText.GitProjectData_mappedResourceGone,
 					new FileNotFoundException(m.getContainerPath().toString()));
@@ -459,18 +468,14 @@ public class GitProjectData {
 
 		m.fireRepositoryChanged();
 
-		trace("map "  //$NON-NLS-1$
-				+ c
-				+ " -> "  //$NON-NLS-1$
-				+ m.getRepository());
+		trace("map " + c + " -> " + m.getRepository());
 		try {
 			c.setSessionProperty(MAPPING_KEY, m);
 		} catch (CoreException err) {
-			Activator.logError(
-					CoreText.GitProjectData_failedToCacheRepoMapping, err);
+			Activator.logError("Failed to cache RepositoryMapping", err);
 		}
 
-		dotGit = c.findMember(Constants.DOT_GIT);
+		dotGit = c.findMember(".git");
 		if (dotGit != null && dotGit.getLocation().toFile().equals(git)) {
 			protect(dotGit);
 		}
@@ -478,7 +483,7 @@ public class GitProjectData {
 
 	private void protect(IResource c) {
 		while (c != null && !c.equals(getProject())) {
-			trace("protect " + c);  //$NON-NLS-1$
+			trace("protect " + c);
 			protectedResources.add(c);
 			c = c.getParent();
 		}

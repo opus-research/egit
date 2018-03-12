@@ -3,7 +3,6 @@
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,16 +12,14 @@
 package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
-import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
+import org.eclipse.egit.ui.internal.components.SelectionChangeListener;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
@@ -38,14 +35,17 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 
 /**
  * Wizard page that allows the user entering the location of a repository to be
  * cloned.
  */
 class CloneDestinationPage extends WizardPage {
+	private final RepositorySelectionPage sourcePage;
 
-	private final List<Ref> availableRefs = new ArrayList<Ref>();
+	private final SourceBranchPage branchPage;
 
 	private RepositorySelection validatedRepoSelection;
 
@@ -59,9 +59,24 @@ class CloneDestinationPage extends WizardPage {
 
 	private Text remoteText;
 
-	CloneDestinationPage() {
+	Button showImportWizard;
+
+	String alreadyClonedInto;
+
+	CloneDestinationPage(final RepositorySelectionPage sp,
+			final SourceBranchPage bp) {
 		super(CloneDestinationPage.class.getName());
+		sourcePage = sp;
+		branchPage = bp;
 		setTitle(UIText.CloneDestinationPage_title);
+
+		final SelectionChangeListener listener = new SelectionChangeListener() {
+			public void selectionChanged() {
+				checkPreviousPagesSelections();
+			}
+		};
+		sourcePage.addSelectionListener(listener);
+		branchPage.addSelectionListener(listener);
 	}
 
 	public void createControl(final Composite parent) {
@@ -72,36 +87,24 @@ class CloneDestinationPage extends WizardPage {
 
 		createDestinationGroup(panel);
 		createConfigGroup(panel);
-		Dialog.applyDialogFont(panel);
+		createWorkbenchGroup(panel);
 		setControl(panel);
 		checkPage();
 	}
 
 	@Override
 	public void setVisible(final boolean visible) {
-		if (visible) {
-			if (this.availableRefs.isEmpty()) {
-				initialBranch.setEnabled(false);
-			}
-		}
+		if (visible)
+			revalidate();
 		super.setVisible(visible);
 		if (visible)
 			directoryText.setFocus();
 	}
 
-	public void setSelection(RepositorySelection repositorySelection, List<Ref> availableRefs, List<Ref> branches, Ref head){
-		this.availableRefs.clear();
-		this.availableRefs.addAll(availableRefs);
-		checkPreviousPagesSelections(repositorySelection, branches, head);
-		revalidate(repositorySelection,branches, head);
-	}
-
-	private void checkPreviousPagesSelections(
-			RepositorySelection repositorySelection, List<Ref> branches,
-			Ref head) {
-		if (!repositorySelection.equals(validatedRepoSelection)
-				|| !branches.equals(validatedSelectedBranches)
-				|| !head.equals(validatedHEAD))
+	private void checkPreviousPagesSelections() {
+		if (!sourcePage.selectionEquals(validatedRepoSelection)
+				|| !branchPage.selectionEquals(validatedSelectedBranches,
+						validatedHEAD))
 			setPageComplete(false);
 		else
 			checkPage();
@@ -169,6 +172,20 @@ class CloneDestinationPage extends WizardPage {
 		});
 	}
 
+	private void createWorkbenchGroup(Composite parent) {
+		final Group g = createGroup(parent, UIText.CloneDestinationPage_workspaceImport);
+		showImportWizard = new Button(g, SWT.CHECK);
+		showImportWizard.setSelection(true);
+		showImportWizard.setText(UIText.CloneDestinationPage_importProjectsAfterClone);
+		showImportWizard.setLayoutData(createFieldGridData());
+		showImportWizard.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				checkPage();
+			}
+		});
+	}
+
 	private static Group createGroup(final Composite parent, final String text) {
 		final Group g = new Group(parent, SWT.NONE);
 		final GridLayout layout = new GridLayout();
@@ -226,7 +243,8 @@ class CloneDestinationPage extends WizardPage {
 			return;
 		}
 		final File absoluteFile = new File(dstpath).getAbsoluteFile();
-		if (!isEmptyDir(absoluteFile)) {
+		if (!absoluteFile.getAbsolutePath().equals(alreadyClonedInto)
+				&& !isEmptyDir(absoluteFile)) {
 			setErrorMessage(NLS.bind(
 					UIText.CloneDestinationPage_errorNotEmptyDir, absoluteFile
 							.getPath()));
@@ -240,8 +258,7 @@ class CloneDestinationPage extends WizardPage {
 			setPageComplete(false);
 			return;
 		}
-		if (!availableRefs.isEmpty()
-				&& initialBranch.getSelectionIndex() < 0) {
+		if (initialBranch.getSelectionIndex() < 0) {
 			setErrorMessage(NLS.bind(UIText.CloneDestinationPage_fieldRequired,
 					UIText.CloneDestinationPage_promptInitialBranch));
 			setPageComplete(false);
@@ -277,34 +294,34 @@ class CloneDestinationPage extends WizardPage {
 		return canCreateSubdir(parent.getParentFile());
 	}
 
-	private void revalidate(RepositorySelection repoSelection, List<Ref> branches, Ref head) {
-		if (repoSelection.equals(validatedRepoSelection)
-				&& branches.equals(validatedSelectedBranches)
-				&& head.equals(validatedHEAD)) {
+	private void revalidate() {
+		if (sourcePage.selectionEquals(validatedRepoSelection)
+				&& branchPage.selectionEquals(validatedSelectedBranches,
+						validatedHEAD)) {
 			checkPage();
 			return;
 		}
 
-		if (!repoSelection.equals(validatedRepoSelection)) {
-			validatedRepoSelection = repoSelection;
+		if (!sourcePage.selectionEquals(validatedRepoSelection)) {
+			validatedRepoSelection = sourcePage.getSelection();
 			// update repo-related selection only if it changed
-			final String n = validatedRepoSelection.getURI().getHumanishName();
+			final String n = getSuggestedName();
 			setDescription(NLS.bind(UIText.CloneDestinationPage_description, n));
 			directoryText.setText(new File(ResourcesPlugin.getWorkspace()
 					.getRoot().getRawLocation().toFile(), n).getAbsolutePath());
 		}
 
-		validatedSelectedBranches = branches;
-		validatedHEAD = head;
+		validatedSelectedBranches = branchPage.getSelectedBranches();
+		validatedHEAD = branchPage.getHEAD();
 
 		initialBranch.removeAll();
-		final Ref actHead = head;
+		final Ref head = branchPage.getHEAD();
 		int newix = 0;
-		for (final Ref r : branches) {
+		for (final Ref r : branchPage.getSelectedBranches()) {
 			String name = r.getName();
 			if (name.startsWith(Constants.R_HEADS))
 				name = name.substring((Constants.R_HEADS).length());
-			if (actHead != null && actHead.getName().equals(r.getName()))
+			if (head != null && head.getName().equals(r.getName()))
 				newix = initialBranch.getItemCount();
 			initialBranch.add(name);
 		}
@@ -312,4 +329,18 @@ class CloneDestinationPage extends WizardPage {
 		checkPage();
 	}
 
+	private String getSuggestedName() {
+		String path = validatedRepoSelection.getURI().getPath();
+		int s = path.lastIndexOf('/');
+		if (s != -1)
+			path = path.substring(s + 1);
+		if (path.endsWith(".git")) //$NON-NLS-1$
+			path = path.substring(0, path.length() - 4);
+		return path;
+	}
+
+	@Override
+	public boolean canFlipToNextPage() {
+		return super.canFlipToNextPage() && showImportWizard.getSelection();
+	}
 }

@@ -10,23 +10,17 @@ package org.eclipse.egit.ui.internal.actions;
 
 import java.util.List;
 
-import org.eclipse.egit.core.op.IEGitOperation;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.core.resources.IWorkspaceRunnable;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.revwalk.RevCommit;
 
 /**
  * Changes the reference for the quickdiff to HEAD
  */
-public class ResetQuickdiffBaselineAction extends AbstractRevCommitOperationAction {
+public class ResetQuickdiffBaselineAction extends AbstractRevObjectAction {
 
 	@Override
-	protected IEGitOperation createOperation(List<RevCommit> selection) {
+	protected IWorkspaceRunnable createOperation(IAction act, List selection) {
 		return new QuickdiffBaselineOperation(getActiveRepository(), Constants.HEAD);
-	}
-
-	@Override
-	protected String getJobName() {
-		return UIText.ResetQuickdiffBaselineAction_resetQuickdiffBaseline;
 	}
 }

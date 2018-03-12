@@ -10,13 +10,15 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
-import org.eclipse.egit.ui.internal.history.GitHistoryPage;
+import java.util.Arrays;
+import java.util.Hashtable;
+
+import org.eclipse.core.resources.IResource;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.team.internal.ui.TeamUIPlugin;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.internal.ui.actions.TeamAction;
 import org.eclipse.team.ui.TeamUI;
-import org.eclipse.team.ui.history.IHistoryPage;
-import org.eclipse.team.ui.history.IHistoryView;
+import org.eclipse.team.ui.history.HistoryPageSaveablePart;
 
 /**
  *	Compare the resources filtered in the history view with the current
@@ -24,19 +26,34 @@ import org.eclipse.team.ui.history.IHistoryView;
  */
 public class CompareWithRevisionAction extends TeamAction {
 
-	@Override
+	// There are changes in Eclipse 3.3 requiring that execute be implemented
+	// for it to compile. while 3.2 requires that run is implemented instead.
+	/** See {@link #run}
+	 * @param action
+	 */
 	public void execute(IAction action) {
-		IHistoryView view = TeamUI.showHistoryFor(TeamUIPlugin.getActivePage(), getSelectedResources()[0], null);
-		if (view == null)
-			return;
-		IHistoryPage page = view.getHistoryPage();
-		if (page instanceof GitHistoryPage){
-			GitHistoryPage gitHistoryPage = (GitHistoryPage) page;
-			gitHistoryPage.setCompareMode(true);
-		}
+		run(action);
+	}
+
+	@Override
+	public void run(IAction action) {
+		super.run(action);
+		System.out.println("Run:" + action); //$NON-NLS-1$
+		System.out.println("Selection resources:" //$NON-NLS-1$
+				+ Arrays.asList(getSelectedResources()));
+		IResource[] r = getSelectedResources();
+		Hashtable providerMapping = this.getProviderMapping(r);
+		System.out.println("Mapping:" + providerMapping); //$NON-NLS-1$
+		TeamUI.getHistoryView().showHistoryFor(getSelectedResources()[0]);
+
+	}
+
+	void showCompareInDialog(Shell shell, Object object) {
+		HistoryPageSaveablePart.showHistoryInDialog(shell, object);
 	}
 
 	public boolean isEnabled() {
 		return !getSelection().isEmpty();
 	}
+
 }

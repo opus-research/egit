@@ -14,31 +14,27 @@ import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.egit.core.CoreText;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.team.core.TeamException;
 import org.eclipse.jgit.lib.Commit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.RefLogWriter;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.WorkDirCheckout;
-import org.eclipse.osgi.util.NLS;
-import org.eclipse.team.core.TeamException;
 
 /**
  * A class for changing a ref and possibly index and workdir too.
  */
-public class ResetOperation implements IEGitOperation {
+public class ResetOperation implements IWorkspaceRunnable {
 	/**
 	 * Kind of reset
 	 */
@@ -64,6 +60,7 @@ public class ResetOperation implements IEGitOperation {
 	private final ResetType type;
 
 	private Commit commit;
+	private Commit previousCommit;
 	private Tree newTree;
 	private GitIndex index;
 
@@ -80,46 +77,9 @@ public class ResetOperation implements IEGitOperation {
 		this.type = type;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		if (type == ResetType.HARD)
-			return ResourcesPlugin.getWorkspace().getRoot();
-		else
-			return null;
-	}
+	public void run(IProgressMonitor monitor) throws CoreException {
+		monitor.beginTask("Performing " + type.toString().toLowerCase() + " reset to " + refName, 7);
 
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
-		IProgressMonitor monitor;
-		if (m == null)
-			monitor = new NullProgressMonitor();
-		else
-			monitor = m;
-		if (type == ResetType.HARD) {
-			IWorkspaceRunnable action = new IWorkspaceRunnable() {
-				public void run(IProgressMonitor monitor) throws CoreException {
-					reset(monitor);
-				}
-			};
-			// lock workspace to protect working tree changes
-			ResourcesPlugin.getWorkspace().run(action, monitor);
-		} else {
-			reset(monitor);
-		}
-	}
-
-	private void reset(IProgressMonitor monitor) throws CoreException {
-		monitor.beginTask(NLS.bind(CoreText.ResetOperation_performingReset,
-				type.toString().toLowerCase(), refName), 7);
-
-		IProject[] validProjects = null;
-		if (type == ResetType.HARD)
-			validProjects = ProjectUtil.getValidProjects(repository);
 		mapObjects();
 		monitor.worked(1);
 
@@ -145,12 +105,10 @@ public class ResetOperation implements IEGitOperation {
 		}
 		monitor.worked(1);
 
+		writeReflogs();
 		monitor.worked(1);
 
-		if (type == ResetType.HARD)
-			// only refresh if working tree changes
-			ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
-					monitor, 1));
+		refreshProjects();
 
 		monitor.done();
 	}
@@ -165,7 +123,23 @@ public class ResetOperation implements IEGitOperation {
 		try {
 			index.write();
 		} catch (IOException e1) {
-			throw new TeamException(CoreText.ResetOperation_writingIndex, e1);
+			throw new TeamException("Writing index", e1);
+		}
+	}
+
+	private void refreshProjects() {
+		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
+		final File parentFile = repository.getWorkDir();
+		for (IProject p : projects) {
+			final File file = p.getLocation().toFile();
+			if (file.getAbsolutePath().startsWith(parentFile.getAbsolutePath())) {
+				try {
+					System.out.println("Refreshing " + p);
+					p.refreshLocal(IResource.DEPTH_INFINITE, null);
+				} catch (CoreException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 
@@ -174,8 +148,7 @@ public class ResetOperation implements IEGitOperation {
 		try {
 			commitId = repository.resolve(refName);
 		} catch (IOException e) {
-			throw new TeamException(NLS.bind(
-					CoreText.ResetOperation_lookingUpRef, refName), e);
+			throw new TeamException("looking up ref " + refName, e);
 		}
 		try {
 			commit = repository.mapCommit(commitId);
@@ -184,31 +157,26 @@ public class ResetOperation implements IEGitOperation {
 				Tag t = repository.mapTag(refName, commitId);
 				commit = repository.mapCommit(t.getObjId());
 			} catch (IOException e2) {
-				throw new TeamException(NLS.bind(
-						CoreText.ResetOperation_lookingUpCommit, commitId), e2);
+				throw new TeamException("looking up commit " + commitId, e2);
 			}
 		}
 
+		try {
+			previousCommit = repository.mapCommit(repository.resolve(Constants.HEAD));
+		} catch (IOException e) {
+			throw new TeamException("looking up HEAD commit", e);
+		}
 	}
 
 	private void writeRef() throws TeamException {
 		try {
 			final RefUpdate ru = repository.updateRef(Constants.HEAD);
 			ru.setNewObjectId(commit.getCommitId());
-			String name = refName;
-			if (name.startsWith("refs/heads/"))  //$NON-NLS-1$
-				name = name.substring(11);
-			if (name.startsWith("refs/remotes/"))  //$NON-NLS-1$
-				name = name.substring(13);
-			String message = "reset --" //$NON-NLS-1$
-					+ type.toString().toLowerCase() + " " + name; //$NON-NLS-1$
-			ru.setRefLogMessage(message, false);
+			ru.setRefLogMessage("reset", false);
 			if (ru.forceUpdate() == RefUpdate.Result.LOCK_FAILURE)
-				throw new TeamException(NLS.bind(
-						CoreText.ResetOperation_cantUpdate, ru.getName()));
+				throw new TeamException("Can't update " + ru.getName());
 		} catch (IOException e) {
-			throw new TeamException(NLS.bind(
-					CoreText.ResetOperation_updatingFailed, Constants.HEAD), e);
+			throw new TeamException("Updating " + Constants.HEAD + " failed", e);
 		}
 	}
 
@@ -217,7 +185,7 @@ public class ResetOperation implements IEGitOperation {
 			newTree = commit.getTree();
 			index = repository.getIndex();
 		} catch (IOException e) {
-			throw new TeamException(CoreText.ResetOperation_readingIndex, e);
+			throw new TeamException("Reading index", e);
 		}
 	}
 
@@ -227,7 +195,7 @@ public class ResetOperation implements IEGitOperation {
 			index = repository.getIndex();
 			index.readTree(newTree);
 		} catch (IOException e) {
-			throw new TeamException(CoreText.ResetOperation_readingIndex, e);
+			throw new TeamException("Reading index", e);
 		}
 	}
 
@@ -235,7 +203,7 @@ public class ResetOperation implements IEGitOperation {
 		try {
 			index.write();
 		} catch (IOException e) {
-			throw new TeamException(CoreText.ResetOperation_writingIndex, e);
+			throw new TeamException("Writing index", e);
 		}
 	}
 
@@ -247,8 +215,29 @@ public class ResetOperation implements IEGitOperation {
 			workDirCheckout.setFailOnConflict(false);
 			workDirCheckout.checkout();
 		} catch (IOException e) {
-			throw new TeamException(
-					CoreText.ResetOperation_mappingTreeForCommit, e);
+			throw new TeamException("mapping tree for commit", e);
+		}
+	}
+
+
+	private void writeReflog(String reflogRelPath) throws IOException {
+		String name = refName;
+		if (name.startsWith("refs/heads/"))
+			name = name.substring(11);
+		if (name.startsWith("refs/remotes/"))
+			name = name.substring(13);
+
+		String message = "reset --" + type.toString().toLowerCase() + " " + name;
+
+		RefLogWriter.writeReflog(repository, previousCommit.getCommitId(), commit.getCommitId(), message, reflogRelPath);
+	}
+
+	private void writeReflogs() throws TeamException {
+		try {
+			writeReflog(Constants.HEAD);
+			writeReflog(repository.getFullBranch());
+		} catch (IOException e) {
+			throw new TeamException("Writing reflogs", e);
 		}
 	}
 }

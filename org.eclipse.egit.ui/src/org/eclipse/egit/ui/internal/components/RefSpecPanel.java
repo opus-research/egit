@@ -80,6 +80,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.Ref.Storage;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -382,7 +383,9 @@ public class RefSpecPanel {
 
 		Ref HEAD = null;
 		try {
-			HEAD = localDb.getRef(Constants.HEAD);
+			final ObjectId id = localDb.resolve(Constants.HEAD);
+			if (id != null)
+				HEAD = new Ref(Storage.LOOSE, Constants.HEAD, id);
 		} catch (IOException e) {
 			Activator.logError("Couldn't read HEAD from local repository", e); //$NON-NLS-1$
 		}
@@ -1668,12 +1671,10 @@ public class RefSpecPanel {
 	private void updateAddPredefinedButton(final Button button,
 			final List<RefSpec> predefined) {
 		boolean enable = false;
-		if (predefined != null) {
-			for (final RefSpec pre : predefined) {
-				if (!specs.contains(pre)) {
-					enable = true;
-					break;
-				}
+		for (final RefSpec pre : predefined) {
+			if (!specs.contains(pre)) {
+				enable = true;
+				break;
 			}
 		}
 		button.setEnabled(enable);
