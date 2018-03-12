@@ -167,20 +167,15 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		String preset = null;
 		if (presetUri == null) {
 			Clipboard clippy = new Clipboard(Display.getCurrent());
-			String text = (String) clippy.getContents(TextTransfer
-					.getInstance());
+			String text = (String) clippy.getContents(TextTransfer.getInstance());
 			try {
-				if (text != null) {
+				if(text != null) {
 					text = text.trim();
 					int index = text.indexOf(' ');
-					if (index > 0)
-						text = text.substring(0, index);
-					URIish u = new URIish(text);
-					if (Transport.canHandleProtocol(u, FS.DETECTED)) {
-						String s = u.getScheme();
-						if (s.equals(DEFAULT_SCHEMES[S_GIT])
-								|| s.equals(DEFAULT_SCHEMES[S_SSH])
-								|| text.endsWith(Constants.DOT_GIT))
+					if(index > 0)
+						text = text.substring(0,index);
+					if(Transport.canHandleProtocol(new URIish(text), FS.DETECTED)) {
+						if(!text.startsWith("http") || text.contains(".git")) //$NON-NLS-1$ //$NON-NLS-2$
 							preset = text;
 					}
 				}
@@ -249,7 +244,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 
 		createUriPanel(panel);
 
-		if (presetUri != null)
+		if(presetUri != null)
 			updateFields(presetUri);
 
 		updateRemoteAndURIPanels();
@@ -335,8 +330,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			}
 		});
 
-		uriProposalHandler = UIUtils.addPreviousValuesContentProposalToText(
-				uriText, USED_URIS_PREF);
+		uriProposalHandler = UIUtils.addPreviousValuesContentProposalToText(uriText, USED_URIS_PREF);
 
 		Button browseButton = new Button(g, SWT.NULL);
 		browseButton.setText(UIText.RepositorySelectionPage_BrowseLocalFile);
@@ -488,8 +482,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 				|| uri.getPass() != null || uri.getPath() == null)
 			return false;
 		if (uri.getScheme() == null)
-			return FS.DETECTED
-					.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
+			return FS.DETECTED.resolve(new File("."), uri.getPath()).isDirectory(); //$NON-NLS-1$
 		return false;
 	}
 
@@ -627,17 +620,17 @@ public class RepositorySelectionPage extends BaseWizardPage {
 						badField = UIText.RepositorySelectionPage_promptPassword;
 					if (badField != null) {
 						selectionIncomplete(NLS
-								.bind(UIText.RepositorySelectionPage_fieldNotSupported,
+								.bind(
+										UIText.RepositorySelectionPage_fieldNotSupported,
 										unamp(badField), proto));
 						return;
 					}
 
-					final File d = FS.DETECTED.resolve(
-							new File("."), uri.getPath()); //$NON-NLS-1$
+					final File d = FS.DETECTED.resolve(new File("."), uri.getPath()); //$NON-NLS-1$
 					if (!d.exists()) {
 						selectionIncomplete(NLS.bind(
-								UIText.RepositorySelectionPage_fileNotFound,
-								d.getAbsolutePath()));
+								UIText.RepositorySelectionPage_fileNotFound, d
+										.getAbsolutePath()));
 						return;
 					}
 
@@ -661,7 +654,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 						badField = UIText.RepositorySelectionPage_promptPassword;
 					if (badField != null) {
 						selectionIncomplete(NLS
-								.bind(UIText.RepositorySelectionPage_fieldNotSupported,
+								.bind(
+										UIText.RepositorySelectionPage_fieldNotSupported,
 										unamp(badField), proto));
 						return;
 					}
@@ -675,7 +669,8 @@ public class RepositorySelectionPage extends BaseWizardPage {
 			} catch (Exception e) {
 				Activator.logError(NLS.bind(
 						UIText.RepositorySelectionPage_errorValidating,
-						getClass().getName()), e);
+						getClass().getName()),
+						e);
 				selectionIncomplete(UIText.RepositorySelectionPage_internalError);
 				return;
 			}
@@ -750,6 +745,7 @@ public class RepositorySelectionPage extends BaseWizardPage {
 		if (visible)
 			uriText.setFocus();
 	}
+
 
 	/**
 	 * Updates the proposal list for the URI field
