@@ -23,10 +23,7 @@ public class UserPasswordCredentials {
 	 */
 	public UserPasswordCredentials(String user, String password) {
 		this.user = user;
-		if (password != null && password.length() > 0)
-			this.password = password;
-		else
-			this.password = null;
+		this.password = password;
 	}
 
 	/**
@@ -41,13 +38,5 @@ public class UserPasswordCredentials {
 	 */
 	public String getPassword() {
 		return password;
-	}
-
-	/**
-	 * @return {@code true} if credentials are not null and not empty
-	 */
-	public boolean isValid() {
-		return user != null && user.length() > 0 && password != null
-				&& password.length() > 0;
 	}
 }

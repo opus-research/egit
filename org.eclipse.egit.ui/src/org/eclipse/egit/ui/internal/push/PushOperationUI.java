@@ -30,7 +30,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -54,6 +53,8 @@ public class PushOperationUI {
 	private final RemoteConfig config;
 
 	private PushOperationSpecification spec;
+
+	private CredentialsProvider credentialsProvider;
 
 	private PushOperation op;
 
@@ -123,7 +124,7 @@ public class PushOperationUI {
 	 * @param credentialsProvider
 	 */
 	public void setCredentialsProvider(CredentialsProvider credentialsProvider) {
-		op.setCredentialsProvider(credentialsProvider);
+		this.credentialsProvider = credentialsProvider;
 	}
 
 	/**
@@ -157,8 +158,8 @@ public class PushOperationUI {
 	public PushOperationResult execute(IProgressMonitor monitor)
 			throws CoreException {
 		createPushOperation();
-		if (op.getCredentialsProvider() == null)
-			op.setCredentialsProvider(new EGitCredentialsProvider());
+		if (credentialsProvider != null)
+			op.setCredentialsProvider(credentialsProvider);
 		try {
 			op.run(monitor);
 			return op.getOperationResult();
