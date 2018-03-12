@@ -313,9 +313,6 @@ public class UIIcons {
 	/** Sort alphabetically icon */
 	public final static ImageDescriptor ALPHABETICALLY_SORT;
 
-	/** Sort by state icon */
-	public final static ImageDescriptor STATE_SORT;
-
 	/** {@link #BRANCH} overlaid with {@link #OVR_CHECKEDOUT}. */
 	public final static ImageDescriptor CHECKED_OUT_BRANCH;
 
@@ -423,7 +420,6 @@ public class UIIcons {
 		DONE_STEP = map("obj16/done_step.gif"); //$NON-NLS-1$
 		CURRENT_STEP = map("obj16/current_step.gif"); //$NON-NLS-1$
 		ALPHABETICALLY_SORT = map("obj16/alphab_sort_co.gif"); //$NON-NLS-1$
-		STATE_SORT = map("obj16/state_sort_co.png"); //$NON-NLS-1$
 		CHECKED_OUT_BRANCH = new DecorationOverlayDescriptor(BRANCH,
 				OVR_CHECKEDOUT, IDecoration.TOP_LEFT);
 	}
