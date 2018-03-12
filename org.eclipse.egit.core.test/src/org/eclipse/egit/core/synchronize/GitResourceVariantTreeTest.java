@@ -149,7 +149,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet,
+				store);
 
 		// then
 		assertEquals(1, grvt.members(project.project).length);
@@ -179,7 +180,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet,
+				store);
 
 		// then
 		assertEquals(2, grvt.members(iPackage.getResource()).length);
@@ -202,7 +204,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet,
+				store);
 
 		// then
 		assertNull(grvt.getResourceVariant(null));
@@ -224,7 +227,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet,
+				store);
 
 		// then
 		assertNull(grvt.getResourceVariant(mainJava.getResource()));
@@ -247,7 +251,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet,
+				store);
 
 		// then
 		IResourceVariant actual = grvt.getResourceVariant(mainJava
@@ -290,7 +295,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 
 		// given
-		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet);
+		GitResourceVariantTree grvt = new GitRemoteResourceVariantTree(dataSet,
+				store);
 
 		// then
 		IResourceVariant actual = grvt.getResourceVariant(mainJava

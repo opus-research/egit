@@ -11,14 +11,14 @@
 package org.eclipse.egit.core.synchronize;
 
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.resource.GitResource;
 import org.eclipse.team.core.TeamException;
 
 class GitFolderResourceVariant extends GitResourceVariant {
 
-	GitFolderResourceVariant(GitResource resource) {
+	GitFolderResourceVariant(IResource resource) {
 		super(resource);
 	}
 
@@ -35,7 +35,7 @@ class GitFolderResourceVariant extends GitResourceVariant {
 	}
 
 	public String getContentIdentifier() {
-		return getResource().getContentIdentifier();
+		return getName();
 	}
 
 	@Override
@@ -54,10 +54,6 @@ class GitFolderResourceVariant extends GitResourceVariant {
 		}
 		GitFolderResourceVariant other = (GitFolderResourceVariant) obj;
 		return getResource().equals(other.getResource());
-	}
-
-	public byte[] asBytes() {
-		return getName().getBytes();
 	}
 
 }

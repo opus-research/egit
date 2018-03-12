@@ -13,33 +13,26 @@ package org.eclipse.egit.core.synchronize;
 
 import java.io.IOException;
 
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Tree;
+import org.eclipse.team.core.variants.ResourceVariantByteStore;
 
 class GitRemoteResourceVariantTree extends GitResourceVariantTree {
 
-	GitRemoteResourceVariantTree(GitSynchronizeDataSet data) {
-		super(new GitResourceVariantByteStore(), data);
+	GitRemoteResourceVariantTree(GitSynchronizeDataSet data, ResourceVariantByteStore store) {
+		super(data, store);
 	}
 
 	@Override
-	protected RevCommit getBaseRevCommit(GitSynchronizeData gsd)
-			throws IOException {
-		Repository repo = gsd.getRepository();
-		Ref dstRef = repo.getRef(gsd.getDstRev());
+	Tree getRevTree(IResource resource) throws IOException {
+		return getSyncData().getData(resource.getProject()).mapDstTree();
+	}
 
-		RevWalk rw = new RevWalk(repo);
-		RevCommit dstRev = rw.lookupCommit(dstRef.getObjectId());
-
-		rw.setRevFilter(RevFilter.MERGE_BASE);
-		rw.markStart(dstRev);
-
-		return rw.next();
+	@Override
+	ObjectId getRevObjId(IResource resource) throws IOException {
+		return getSyncData().getData(resource.getProject()).getDstObjectId();
 	}
 
 }
