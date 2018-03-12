@@ -409,6 +409,12 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FilterSubMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_IncompleteListTooltip;
+
+	/** */
+	public static String GitHistoryPage_ListIncompleteWarningMessage;
+
+	/** */
 	public static String GitHistoryPage_ShowSubMenuLabel;
 
 	/** */
@@ -1255,6 +1261,12 @@ public class UIText extends NLS {
 	public static String ResetTargetSelectionDialog_WindowTitle;
 
 	/** */
+	public static String ResourceHistory_MaxNumCommitsInList;
+
+	/** */
+	public static String ResourceHistory_ShowTagSequence;
+
+	/** */
 	public static String ResourceHistory_toggleCommentWrap;
 
 	/** */
@@ -1699,6 +1711,15 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_branches;
 
 	/** */
+	public static String CommitMessageViewer_BuildDiffListTaskName;
+
+	/** */
+	public static String CommitMessageViewer_BuildDiffTaskName;
+
+	/** */
+	public static String CommitMessageViewer_CanNotRenderDiffMessage;
+
+	/** */
 	public static String CommitMessageViewer_tags;
 
 	/** */
@@ -1715,6 +1736,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitMessageViewer_errorGettingFileDifference;
+
+	/** */
+	public static String CommitMessageViewer_FormattingMessageTaskName;
+
+	/** */
+	public static String CommitMessageViewer_GettingNextTagTaskName;
+
+	/** */
+	public static String CommitMessageViewer_GettingPreviousTagTaskName;
 
 	/** */
 	public static String CommitMessageViewer_parent;
@@ -2197,6 +2227,9 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_ErrorCouldNotCreateNewRef;
 
 	/** */
+	public static String BranchSelectionDialog_ErrorCouldNotDeleteRef;
+
+	/** */
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef;
 
 	/** */
@@ -2219,6 +2252,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchSelectionDialog_Rename;
+
+	/** */
+	public static String BranchSelectionDialog_Delete;
 
 	/** */
 	public static String CommitDialogPreferencePage_title;
@@ -2287,7 +2323,34 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_bindingStagedFlag;
 
 	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetAuthor;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetCommitter;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetDate;
+
+	/** */
+	public static String DecoratorPreferencesPage_bindingChangeSetShortMessage;
+
+	/** */
+	public static String DecoratorPreferencesPage_dateFormat;
+
+	/** */
+	public static String DecoratorPreferencesPage_dateFormatPreview;
+
+	/** */
+	public static String DecoratorPreferencesPage_wrongDateFormat;
+
+	/** */
 	public static String DecoratorPreferencesPage_selectVariablesToAdd;
+
+	/** */
+	public static String DecoratorPreferencesPage_otherDecorations;
+
+	/** */
+	public static String DecoratorPreferencesPage_changeSetLabelFormat;
 
 	/** */
 	public static String DecoratorPreferencesPage_textLabel;
