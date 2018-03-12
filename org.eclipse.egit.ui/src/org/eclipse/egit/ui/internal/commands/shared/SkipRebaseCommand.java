@@ -12,7 +12,6 @@ package org.eclipse.egit.ui.internal.commands.shared;
 
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.rebase.RebaseInteracitveHandler;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.lib.Repository;
 
@@ -30,7 +29,6 @@ public class SkipRebaseCommand extends AbstractRebaseCommandHandler {
 
 	@Override
 	public RebaseOperation createRebaseOperation(Repository repository) {
-		return new RebaseOperation(repository, Operation.SKIP,
-				RebaseInteracitveHandler.INSTANCE);
+		return new RebaseOperation(repository, Operation.SKIP);
 	}
 }
