@@ -37,7 +37,6 @@ import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -160,15 +159,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (!PlatformUI.isWorkbenchRunning())
 			return;
 
-		if (element instanceof RepositoryNode)
-			try {
-				decorateRepository((RepositoryNode) element, decoration);
-				return;
-			} catch (CoreException e) {
-				exceptions.handleException(e);
-				return;
-			}
-
 		final IResource resource = getResource(element);
 		if (resource == null)
 			decorateResourceMapping(element, decoration);
@@ -262,23 +252,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 		helper.decorate(decoration, decoRes);
 	}
 
-	private void decorateRepository(RepositoryNode node, IDecoration decoration)
-			throws CoreException {
-		IndexDiffData status = org.eclipse.egit.core.Activator.getDefault()
-				.getIndexDiffCache()
-				.getIndexDiffCacheEntry(node.getRepository()).getIndexDiff();
-		IDecoratableResource decoratable = null;
-		final DecorationHelper helper = new DecorationHelper(Activator
-				.getDefault().getPreferenceStore());
-		try {
-			decoratable = new DecoratableRepository(status,
-					node.getRepository());
-		} catch (IOException e) {
-			throw new CoreException(Activator.createErrorStatus(
-					UIText.Decorator_exceptionMessage, e));
-		}
-		helper.decorate(decoration, decoratable);
-	}
 
 	/**
 	 * Helper class for doing resource decoration, based on the given
@@ -315,9 +288,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 		/** */
 		public static final String PROJECT_FORMAT_DEFAULT ="{dirty:>} {name} [{repository} {branch}{ branch_status}]";  //$NON-NLS-1$
-
-		/** */
-		public static final String REPOSITORY_FORMAT_DEFAULT ="{dirty:>} {name}";  //$NON-NLS-1$
 
 		private IPreferenceStore store;
 
@@ -438,9 +408,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 				format = store
 						.getString(UIPreferences.DECORATOR_PROJECTTEXT_DECORATION);
 				break;
-			case IResource.ROOT:
-				format = store
-						.getString(UIPreferences.DECORATOR_REPOSITORYTEXT_DECORATION);
 			}
 
 			Map<String, String> bindings = new HashMap<String, String>();
@@ -460,8 +427,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 			ImageDescriptor overlay = null;
 
 			if (resource.isTracked()) {
-				if (store.getBoolean(UIPreferences.DECORATOR_SHOW_TRACKED_ICON)
-						&& IResource.ROOT != resource.getType())
+				if (store.getBoolean(UIPreferences.DECORATOR_SHOW_TRACKED_ICON))
 					overlay = trackedImage;
 
 				if (store
@@ -499,8 +465,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 			}
 
 			// Overlays can only be added once, so do it at the end
-			if (overlay != null)
-				decoration.addOverlay(overlay);
+			decoration.addOverlay(overlay);
 		}
 
 		/**
