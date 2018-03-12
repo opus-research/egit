@@ -15,8 +15,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import org.eclipse.core.resources.IStorage;
-import org.eclipse.egit.core.internal.storage.IndexFileRevision;
-import org.eclipse.egit.core.internal.test.GitTestCase;
+import org.eclipse.egit.core.test.GitTestCase;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheBuilder;
 import org.eclipse.jgit.dircache.DirCacheEntry;
@@ -25,7 +24,7 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.IO;
 import org.junit.After;
 import org.junit.Before;

@@ -11,12 +11,9 @@
 package org.eclipse.egit.ui.internal.rebase;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.compare.CompareEditorInput;
@@ -31,10 +28,10 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.FileChecker;
 import org.eclipse.egit.core.internal.FileChecker.CheckResult;
 import org.eclipse.egit.core.internal.FileChecker.CheckResultEntry;
-import org.eclipse.egit.core.internal.op.RebaseOperation;
-import org.eclipse.egit.core.internal.project.RepositoryMapping;
-import org.eclipse.egit.ui.internal.Activator;
-import org.eclipse.egit.ui.internal.UIPreferences;
+import org.eclipse.egit.core.op.RebaseOperation;
+import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.egit.ui.internal.merge.GitMergeEditorInput;
@@ -52,7 +49,6 @@ import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.RebaseResult.Status;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
@@ -60,7 +56,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -180,66 +175,10 @@ public class RebaseResultDialog extends MessageDialog {
 	@Override
 	protected Control createCustomArea(Composite parent) {
 
-		if (result.getStatus() == Status.STOPPED)
-			return createStoppedDialogArea(parent);
-		if (result.getStatus() == Status.FAILED)
-			return createFailedDialog(parent);
-		createToggleButton(parent);
-		return null;
-	}
-
-	private Control createFailedDialog(Composite parent) {
-		Composite composite = new Composite(parent, SWT.NONE);
-		GridLayout gridLayout = new GridLayout();
-		gridLayout.numColumns = 2;
-		composite.setLayout(gridLayout);
-		// result
-		Label resultLabel = new Label(composite, SWT.NONE);
-		resultLabel.setText(UIText.MergeResultDialog_result);
-		resultLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
-				false));
-		Text resultText = new Text(composite, SWT.READ_ONLY);
-		resultText.setText(result.getStatus().toString());
-		resultText.setSelection(resultText.getCaretPosition());
-		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		if (result.getStatus() == Status.FAILED) {
-			resultText.setForeground(parent.getDisplay().getSystemColor(
-					SWT.COLOR_RED));
-
-			StringBuilder paths = new StringBuilder();
-			Label pathsLabel = new Label(composite, SWT.NONE);
-			pathsLabel.setText(UIText.MergeResultDialog_failed);
-			pathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false,
-					false));
-			Text pathsText = new Text(composite, SWT.READ_ONLY);
-			pathsText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false,
-					false));
-			Set<Entry<String, MergeFailureReason>> failedPaths = result
-					.getFailingPaths().entrySet();
-			int n = 0;
-			for (Map.Entry<String, MergeFailureReason> e : failedPaths) {
-				if (n > 0)
-					paths.append(Text.DELIMITER);
-				paths.append(e.getValue());
-				paths.append("\t"); //$NON-NLS-1$
-				paths.append(e.getKey());
-				n++;
-				if (n > 10 && failedPaths.size() > 15)
-					break;
-			}
-			if (n < failedPaths.size()) {
-				paths.append(Text.DELIMITER);
-				paths.append(MessageFormat.format(
-						UIText.MergeResultDialog_nMore,
-						Integer.valueOf(n - failedPaths.size())));
-			}
-			pathsText.setText(paths.toString());
+		if (result.getStatus() != Status.STOPPED) {
+			createToggleButton(parent);
+			return null;
 		}
-
-		return composite;
-	}
-
-	private Control createStoppedDialogArea(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(1, false));
 		GridDataFactory.fillDefaults().indent(0, 0).grab(true, true).applyTo(
