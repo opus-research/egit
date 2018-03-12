@@ -4379,18 +4379,9 @@
                style="push">
             <visibleWhen
                   checkEnabled="false">
-               <and>
-                  <test
-                        property="GitSelection.resourcesSingleRepository">
-                  </test>
-                  <iterate
-                        ifEmpty="false"
-                        operator="or">
-                     <test
-                           property="GitResource.hasUnstagedChanges">
-                     </test>
-                   </iterate>
-               </and>
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasUnstagedChanges">
+               </test>
             </visibleWhen>
          </command>
          <command
@@ -4399,18 +4390,9 @@
                style="push">
             <visibleWhen
                   checkEnabled="false">
-               <and>
-                  <test
-                        property="GitSelection.resourcesSingleRepository">
-                  </test>
-                  <iterate
-                        ifEmpty="false"
-                        operator="or">
-                     <test
-                           property="GitResource.isStaged">
-                     </test>
-                  </iterate>
-               </and>
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasStagedChanges">
+               </test>
             </visibleWhen>
          </command>
          <command
@@ -4419,20 +4401,9 @@
                style="push">
             <visibleWhen
                   checkEnabled="false">
-               <and>
-                  <test
-                        property="GitSelection.resourcesSingleRepository">
-                  </test>
-                  <iterate
-                        ifEmpty="false"
-                        operator="or">
-                     <not>
-                        <test
-                              property="GitResource.isIgnored">
-                        </test>
-                     </not>
-                  </iterate>
-               </and>
+               <test
+                     property="org.eclipse.egit.ui.resources.ResourceState.hasNotIgnoredResources">
+               </test>
             </visibleWhen>
          </command>
       </menuContribution>
@@ -5267,7 +5238,7 @@
             class="org.eclipse.egit.ui.internal.ResourcePropertyTester"
             id="org.eclipse.egit.ui.ResourceTester"
             namespace="GitResource"
-            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration,isStaged,isIgnored,hasUnstagedChanges"
+            properties="isShared,isContainer,isSafe,canCommit,canAmend,canResetHead,canAbortRebase,canContinueRebase,hasGerritConfiguration"
             type="org.eclipse.core.resources.IResource">
       </propertyTester>
       <propertyTester
@@ -5275,6 +5246,13 @@
             id="org.eclipse.egit.ui.SelectionTester"
             namespace="GitSelection"
             properties="projectsSingleRepository,projectsWithRepositories,resourcesSingleRepository,fileOrFolderInRepository,resourcesAllInRepository"
+            type="java.util.Collection">
+      </propertyTester>
+      <propertyTester
+            class="org.eclipse.egit.ui.internal.resources.ResourceStatePropertyTester"
+            id="org.eclipse.egit.ui.ResourceStateTester"
+            namespace="org.eclipse.egit.ui.resources.ResourceState"
+            properties="hasStagedChanges,hasUnstagedChanges,hasNotIgnoredResources"
             type="java.util.Collection">
       </propertyTester>
    </extension>
