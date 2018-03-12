@@ -39,8 +39,6 @@ import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
 import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.CommitBuilder;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileMode;
-import org.eclipse.jgit.lib.FileTreeEntry;
 import org.eclipse.jgit.lib.GitIndex;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
@@ -247,7 +245,7 @@ public class CommitOperation implements IEGitOperation {
 			Entry idxEntry = index.getEntry(string);
 			if (notIndexed.contains(file)) {
 				File thisfile = new File(repositoryMapping.getWorkTree(),
-						string);
+						idxEntry.getName());
 				if (!thisfile.isFile()) {
 					index.remove(repositoryMapping.getWorkTree(), thisfile);
 					// TODO is this the right Location?
@@ -255,7 +253,7 @@ public class CommitOperation implements IEGitOperation {
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.CORE.getLocation(),
 								"Phantom file, so removing from index"); //$NON-NLS-1$
-					while (treeWithDeletedEntry != null && treeWithDeletedEntry.memberCount() == 0) {
+					while (treeWithDeletedEntry.memberCount() == 0) {
 						Tree toDelete = treeWithDeletedEntry;
 						treeWithDeletedEntry = treeWithDeletedEntry.getParent();
 						toDelete.delete();
@@ -276,12 +274,6 @@ public class CommitOperation implements IEGitOperation {
 				TreeEntry newMember = projTree.findBlobMember(repoRelativePath);
 
 				newMember.setId(idxEntry.getObjectId());
-				if (newMember instanceof FileTreeEntry)
-					((FileTreeEntry) newMember).setExecutable(
-							(idxEntry.getModeBits() &
-									FileMode.EXECUTABLE_FILE.getBits())
-							== FileMode.EXECUTABLE_FILE.getBits());
-
 				// TODO is this the right Location?
 				if (GitTraceLocation.CORE.isActive())
 					GitTraceLocation.getTrace().trace(

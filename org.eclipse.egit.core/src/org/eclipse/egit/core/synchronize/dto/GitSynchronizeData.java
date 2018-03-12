@@ -67,21 +67,9 @@ public class GitSynchronizeData {
 		repo = repository;
 
 		ObjectWalk ow = new ObjectWalk(repo);
-		if (srcRev.length() > 0)
-			this.srcRev = ow.parseCommit(repo.resolve(srcRev));
-		else
-			this.srcRev = null;
-
-		if (dstRev.length() > 0)
-			this.dstRev = ow.parseCommit(repo.resolve(dstRev));
-		else
-			this.dstRev = null;
-
-		if (this.dstRev != null || this.srcRev != null)
-			this.commonAncestorRev = getCommonAncestor(repo, this.srcRev,
-					this.dstRev);
-		else
-			this.commonAncestorRev = null;
+		this.srcRev = ow.parseCommit(repo.resolve(srcRev));
+		this.dstRev = ow.parseCommit(repo.resolve(dstRev));
+		this.commonAncestorRev = getCommonAncestor(repo, this.srcRev, this.dstRev);
 
 		this.includeLocal = includeLocal;
 		repoParentPath = repo.getDirectory().getParentFile().getAbsolutePath();

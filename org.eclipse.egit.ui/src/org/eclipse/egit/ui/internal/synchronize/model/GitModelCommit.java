@@ -85,12 +85,23 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		if (obj == this)
 			return true;
 
-		if (obj instanceof GitModelCommit && !(obj instanceof GitModelTree)
-				&& !(obj instanceof GitModelBlob)) {
+		if (obj instanceof GitModelCommit) {
 			GitModelCommit objCommit = (GitModelCommit) obj;
 
-			return objCommit.getBaseCommit().equals(baseCommit)
-					&& objCommit.getParent().equals(getParent());
+			boolean equalsBaseCommit;
+			RevCommit objBaseCommit = objCommit.getBaseCommit();
+			if (objBaseCommit != null)
+				equalsBaseCommit = objBaseCommit.equals(baseCommit);
+			else
+				equalsBaseCommit = baseCommit == null;
+
+			// it is impossible to have different common ancestor commit if
+			// remote and base commit are equal, therefore we don't compare
+			// common ancestor's
+
+			return equalsBaseCommit
+					&& objCommit.getRemoteCommit().equals(remoteCommit)
+					&& objCommit.getLocation().equals(getLocation());
 		}
 
 		return false;
@@ -98,12 +109,7 @@ public class GitModelCommit extends GitModelObjectContainer implements
 
 	@Override
 	public int hashCode() {
-		return baseCommit.hashCode() ^ getParent().hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "ModelCommit[" + baseCommit.getId() + "]"; //$NON-NLS-1$//$NON-NLS-2$
+		return baseCommit.hashCode();
 	}
 
 	@Override
@@ -114,15 +120,15 @@ public class GitModelCommit extends GitModelObjectContainer implements
 		try {
 			RevTree actualTree = baseCommit.getTree();
 
-			int baseNth = tw.addTree(actualTree);
-			int remoteNth = -1;
+			int actualNth = tw.addTree(actualTree);
+			int baseNth = -1;
 			if (remoteCommit != null)
-				remoteNth = tw.addTree(remoteCommit.getTree());
+				baseNth = tw.addTree(remoteCommit.getTree());
 			int ancestorNth = tw.addTree(ancestorCommit.getTree());
 
 			while (tw.next()) {
 				GitModelObject obj = getModelObject(tw, ancestorCommit, ancestorNth,
-						remoteNth, baseNth);
+						baseNth, actualNth);
 				if (obj != null)
 					result.add(obj);
 			}

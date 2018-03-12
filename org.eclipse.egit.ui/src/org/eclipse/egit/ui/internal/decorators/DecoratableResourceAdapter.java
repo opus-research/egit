@@ -36,7 +36,9 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -73,11 +75,16 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			mapping = RepositoryMapping.getMapping(resource);
 			repository = mapping.getRepository();
 			headId = repository.resolve(Constants.HEAD);
-			store = Activator.getDefault().getPreferenceStore();
 
-			repositoryName = DecoratableResourceHelper
-					.getRepositoryName(repository);
-			branch = DecoratableResourceHelper.getShortBranch(repository);
+			store = Activator.getDefault().getPreferenceStore();
+			String repoName = Activator.getDefault().getRepositoryUtil().getRepositoryName(repository);
+			RepositoryState state = repository.getRepositoryState();
+			if (state != RepositoryState.SAFE)
+				repositoryName = repoName + '|' + state.getDescription();
+			else
+				repositoryName = repoName;
+
+			branch = getShortBranch();
 
 			TreeWalk treeWalk = createThreeWayTreeWalk();
 			if (treeWalk == null)
@@ -103,6 +110,22 @@ class DecoratableResourceAdapter extends DecoratableResource {
 								"Decoration took " + (System.currentTimeMillis() - start) //$NON-NLS-1$
 										+ " ms"); //$NON-NLS-1$
 		}
+	}
+
+	private String getShortBranch() throws IOException {
+		Ref head = repository.getRef(Constants.HEAD);
+		if (head != null && !head.isSymbolic()) {
+			String refString = Activator.getDefault().getRepositoryUtil()
+					.mapCommitToRef(repository, repository.getFullBranch(),
+							false);
+			if (refString != null) {
+				return repository.getFullBranch().substring(0, 7)
+						+ "... (" + refString + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+			} else
+				return repository.getFullBranch().substring(0, 7) + "..."; //$NON-NLS-1$
+		}
+
+		return repository.getBranch();
 	}
 
 	private void extractResourceProperties(TreeWalk treeWalk) throws IOException {
@@ -326,11 +349,10 @@ class DecoratableResourceAdapter extends DecoratableResource {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(DecoratableResourceHelper.getDirCache(repository)));
+		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
 
 		// Working directory
 		treeWalk.addTree(IteratorService.createInitialIterator(repository));
 		return treeWalk;
 	}
-
 }

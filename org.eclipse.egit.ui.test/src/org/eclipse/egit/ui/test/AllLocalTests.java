@@ -34,7 +34,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		PushTest.class,
 		SpellcheckableMessageAreaTest.class,
 		TraceConfigurationDialogTest.class,
-		SynchronizeViewTest.class })
+		SynchronizeViewTest.class})
 public class AllLocalTests {
 	// empty class, don't need anything here
 }

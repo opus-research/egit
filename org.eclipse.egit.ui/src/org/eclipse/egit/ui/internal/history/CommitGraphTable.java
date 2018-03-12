@@ -277,7 +277,9 @@ class CommitGraphTable {
 
 	void setInput(final RevFlag hFlag, final SWTCommitList list,
 			final SWTCommit[] asArray, HistoryPageInput input) {
-		setHistoryPageInput(input);
+		this.input = input;
+		if (menuListener != null)
+			menuListener.setInput(input);
 		final SWTCommitList oldList = allCommits;
 		highlight = hFlag;
 		allCommits = list;
@@ -290,12 +292,6 @@ class CommitGraphTable {
 		} else {
 			table.getTable().deselectAll();
 		}
-	}
-
-	void setHistoryPageInput(HistoryPageInput input) {
-		this.input = input;
-		if (menuListener != null)
-			menuListener.setInput(input);
 	}
 
 	private void initCommitsMap() {
