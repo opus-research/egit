@@ -74,8 +74,6 @@ public class CommitOperation implements IEGitOperation {
 
 	private boolean commitIndex;
 
-	RevCommit commit = null;
-
 	/**
 	 * @param filesToCommit
 	 *            a list of files which will be included in the commit
@@ -242,7 +240,13 @@ public class CommitOperation implements IEGitOperation {
 		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 
-	private void commit() throws TeamException {
+	/**
+	 * Commit changes
+	 *
+	 * @return created commit
+	 * @throws TeamException
+	 */
+	protected RevCommit commit() throws TeamException {
 		final Date commitDate = new Date();
 		final TimeZone timeZone = TimeZone.getDefault();
 		final PersonIdent authorIdent = RawParseUtils.parsePersonIdent(author);
@@ -264,7 +268,7 @@ public class CommitOperation implements IEGitOperation {
 			if (!commitIndex)
 				for(String path:commitFileList)
 					commitCommand.setOnly(path);
-			commit = commitCommand.call();
+			return commitCommand.call();
 		} catch (NoHeadException e) {
 			throw new TeamException(e.getLocalizedMessage(), e);
 		} catch (NoMessageException e) {
@@ -307,20 +311,23 @@ public class CommitOperation implements IEGitOperation {
 	}
 
 	/**
-	 * @return the newly created commit if committing was successful, null otherwise.
+	 * Commit all changes
+	 *
+	 * @param commitDate
+	 * @param timeZone
+	 * @param authorIdent
+	 * @param committerIdent
+	 * @return created commit
+	 * @throws TeamException
 	 */
-	public RevCommit getCommit() {
-		return commit;
-	}
-
 	// TODO: can the commit message be change by the user in case of a merge commit?
-	private void commitAll(final Date commitDate, final TimeZone timeZone,
+	protected RevCommit commitAll(final Date commitDate, final TimeZone timeZone,
 			final PersonIdent authorIdent, final PersonIdent committerIdent)
 			throws TeamException {
 
 		Git git = new Git(repo);
 		try {
-			commit = git.commit()
+			return git.commit()
 					.setAll(true)
 					.setAuthor(
 							new PersonIdent(authorIdent, commitDate, timeZone))
