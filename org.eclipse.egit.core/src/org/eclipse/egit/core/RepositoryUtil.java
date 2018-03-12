@@ -543,7 +543,7 @@ public class RepositoryUtil {
 
 	/**
 	 * Checks if given repository is in the 'detached HEAD' state.
-	 * 
+	 *
 	 * @param repository
 	 *            the repository to check
 	 * @return <code>true</code> if the repository is in the 'detached HEAD'
