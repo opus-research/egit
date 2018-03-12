@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2012 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -61,7 +61,7 @@ public class ShowInTest extends LocalRepositoryTestCase {
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util
 				.getPluginLocalizedValue("ShowResourceInHistoryAction_label");
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
 				menuString);
 		bot.viewById(IHistoryView.VIEW_ID).close();
 	}
@@ -92,7 +92,7 @@ public class ShowInTest extends LocalRepositoryTestCase {
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util
 				.getPluginLocalizedValue("ShowRepositoryAction_label");
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
+		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
 				menuString);
 		bot.viewById(RepositoriesView.VIEW_ID).close();
 	}
