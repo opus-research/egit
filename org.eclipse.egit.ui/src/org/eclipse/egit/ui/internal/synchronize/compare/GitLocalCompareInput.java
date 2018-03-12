@@ -53,8 +53,6 @@ public class GitLocalCompareInput extends GitCompareInput {
 		String absoluteFilePath = repo.getWorkTree().getAbsolutePath()
 				+ "/" + gitPath; //$NON-NLS-1$
 		IFile file = ROOT.getFileForLocation(new Path(absoluteFilePath));
-		if (file == null)
-			file = ROOT.getFile(new Path(absoluteFilePath));
 
 		return new LocalResourceTypedElement(file);
 	}
