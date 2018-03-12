@@ -880,10 +880,7 @@ public class UIText extends NLS {
 	public static String CommitAction_cannotCommit;
 
 	/** */
-	public static String CommitAction_CommittingChanges;
-
-	/** */
-	public static String CommitAction_CommittingFailed;
+	public static String CommitAction_errorCommittingChanges;
 
 	/** */
 	public static String CommitAction_errorComputingDiffs;
@@ -895,7 +892,16 @@ public class UIText extends NLS {
 	public static String CommitAction_errorOnCommit;
 
 	/** */
+	public static String CommitAction_errorPreparingTrees;
+
+	/** */
 	public static String CommitAction_errorRetrievingCommit;
+
+	/** */
+	public static String CommitAction_errorWritingTrees;
+
+	/** */
+	public static String CommitAction_failedToUpdate;
 
 	/** */
 	public static String CommitAction_InternalError;
