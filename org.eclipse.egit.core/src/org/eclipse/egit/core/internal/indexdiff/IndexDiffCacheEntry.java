@@ -21,10 +21,12 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
@@ -53,6 +55,8 @@ import org.eclipse.team.core.Team;
  *
  */
 public class IndexDiffCacheEntry {
+
+	private static final String GITIGNORE_NAME = ".gitignore"; //$NON-NLS-1$
 
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
 
@@ -140,9 +144,14 @@ public class IndexDiffCacheEntry {
 	private void scheduleReloadJob() {
 		if (reloadJob != null)
 			reloadJob.cancel();
+		if (!checkRepository())
+			return;
 		reloadJob = new Job(getReloadJobName()) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
+				waitForWorkspaceLock();
+				if (monitor.isCanceled())
+					return Status.CANCEL_STATUS;
 				lock.lock();
 				try {
 					long startTime = System.currentTimeMillis();
@@ -178,11 +187,42 @@ public class IndexDiffCacheEntry {
 		reloadJob.schedule();
 	}
 
+	private boolean checkRepository() {
+		if (Activator.getDefault() == null)
+			return false;
+		if (!repository.getDirectory().exists())
+			return false;
+		return true;
+	}
+
+	private void waitForWorkspaceLock() {
+		// Wait for the workspace lock to avoid starting the calculation
+		// of an IndexDiff while the workspace changes (e.g. due to a
+		// branch switch).
+		// The index diff calculation jobs do not lock the workspace
+		// during execution to avoid blocking the workspace.
+		try {
+			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
+
+				public void run(IProgressMonitor monitor) throws CoreException {
+					// empty
+				}
+			}, new NullProgressMonitor());
+		} catch (CoreException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	private void scheduleUpdateJob(final Collection<String> filesToUpdate,
 			final Collection<IFile> fileResourcesToUpdate) {
+		if (!checkRepository())
+			return;
 		Job job = new Job(getReloadJobName()) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
+				waitForWorkspaceLock();
+				if (monitor.isCanceled())
+					return Status.CANCEL_STATUS;
 				lock.lock();
 				try {
 					long startTime = System.currentTimeMillis();
@@ -278,22 +318,21 @@ public class IndexDiffCacheEntry {
 			public void resourceChanged(IResourceChangeEvent event) {
 				final Collection<String> filesToUpdate = new HashSet<String>();
 				final Collection<IFile> fileResourcesToUpdate = new HashSet<IFile>();
+				final boolean[] gitIgnoreChanged = new boolean[1];
+				gitIgnoreChanged[0] = false;
 
 				try {
 					event.getDelta().accept(new IResourceDeltaVisitor() {
 						public boolean visit(IResourceDelta delta)
 								throws CoreException {
-							final IResource resource = delta.getResource();
-							// Don't include ignored resources
-							if (Team.isIgnoredHint(resource))
-								return false;
-
 							// If the file has changed but not in a way that we
 							// care about (e.g. marker changes to files) then
 							// ignore
 							if (delta.getKind() == IResourceDelta.CHANGED
 									&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
 								return true;
+
+							final IResource resource = delta.getResource();
 
 							// skip any non-FILE resources
 							if (resource.getType() != IResource.FILE)
@@ -308,6 +347,14 @@ public class IndexDiffCacheEntry {
 								// Ignore the change
 								return true;
 
+							if (resource.getName().equals(GITIGNORE_NAME)) {
+								gitIgnoreChanged[0] = true;
+								return false;
+							}
+							// Don't include ignored resources
+							if (Team.isIgnoredHint(resource))
+								return false;
+
 							String repoRelativePath = mapping
 									.getRepoRelativePath(resource);
 							filesToUpdate.add(repoRelativePath);
@@ -321,7 +368,9 @@ public class IndexDiffCacheEntry {
 					return;
 				}
 
-				if (!filesToUpdate.isEmpty())
+				if (gitIgnoreChanged[0] || indexDiffData == null)
+					scheduleReloadJob();
+				else if (!filesToUpdate.isEmpty())
 					if (filesToUpdate.size() < RESOURCE_LIST_UPDATE_LIMIT)
 						scheduleUpdateJob(filesToUpdate, fileResourcesToUpdate);
 					else
