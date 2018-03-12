@@ -10,7 +10,6 @@ package org.eclipse.egit.core;
 
 import java.io.IOException;
 
-import org.eclipse.core.runtime.Assert;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -30,18 +29,14 @@ public class RevUtils {
 	 * Finds and returns instance of common ancestor commit for given to
 	 * commit's
 	 *
-	 * @param repo repository in which common ancestor should be searched, cannot be null
-	 * @param commit1 left commit id, cannot be null
-	 * @param commit2 right commit id, cannot be null
+	 * @param repo
+	 * @param commit1
+	 * @param commit2
 	 * @return common ancestor for commit1 and commit2 parameters
 	 * @throws IOException
 	 */
 	public static RevCommit getCommonAncestor(Repository repo,
 			AnyObjectId commit1, AnyObjectId commit2) throws IOException {
-		Assert.isNotNull(repo);
-		Assert.isNotNull(commit1);
-		Assert.isNotNull(commit2);
-
 		RevWalk rw = new RevWalk(repo);
 		rw.setRevFilter(RevFilter.MERGE_BASE);
 

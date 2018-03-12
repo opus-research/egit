@@ -151,22 +151,10 @@ public class UIText extends NLS {
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
-	public static String SelectResetTypePage_labelCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_labelResettingTo;
-
-	/** */
 	public static String SelectResetTypePage_PageMessage;
 
 	/** */
 	public static String SelectResetTypePage_PageTitle;
-
-	/** */
-	public static String SelectResetTypePage_tooltipCurrentHead;
-
-	/** */
-	public static String SelectResetTypePage_tooltipResettingTo;
 
 	/** */
 	public static String SharingWizard_windowTitle;
@@ -277,7 +265,7 @@ public class UIText extends NLS {
 	public static String ExistingOrNewPage_FolderWillBeCreatedMessage;
 
 	/** */
-	public static String ExistingOrNewPage_HeaderLocation;
+	public static String ExistingOrNewPage_HeaderPath;
 
 	/** */
 	public static String ExistingOrNewPage_HeaderProject;
@@ -1736,15 +1724,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushAction_wrongURITitle;
-
-	/** */
-	public static String PushCommand_pushBranchTitle;
-
-	/** */
-	public static String PushCommand_pushTagTitle;
-
-	/** */
-	public static String PushCommitHandler_pushCommitTitle;
 
 	/** */
 	public static String PushOperationUI_MultiRepositoriesDestinationString;
