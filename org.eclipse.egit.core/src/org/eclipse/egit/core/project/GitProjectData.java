@@ -492,7 +492,7 @@ public class GitProjectData {
 		}
 		m.setContainer(c);
 
-		git = m.getGitDirAbsolutePath().toFile();
+		git = c.getLocation().append(m.getGitDirPath()).toFile();
 		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
 			logAndUnmapGoneMappedResource(m);
 			return;

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,30 +11,26 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushBranchWizard;
-import org.eclipse.egit.ui.internal.push.PushTagsWizard;
 import org.eclipse.egit.ui.internal.push.PushWizard;
+import org.eclipse.egit.ui.internal.push.SimplePushRefWizard;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 
 /**
  * Implements "Push" from a Repository
  */
-public class PushCommand extends
-		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+public class PushCommand extends RepositoriesViewCommandHandler<RepositoryNode> {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		List<RepositoryTreeNode> nodes = getSelectedNodes(event);
-		RepositoryTreeNode node = nodes.get(0);
+		RepositoryTreeNode node = getSelectedNodes(event).get(0);
 
 		IWizard pushWiz = null;
 
@@ -45,7 +41,8 @@ public class PushCommand extends
 						(Ref) node.getObject());
 				break;
 			case TAG:
-				pushWiz = createPushTagsWizard(nodes);
+				pushWiz = new SimplePushRefWizard(node.getRepository(),
+						(Ref) node.getObject(), UIText.PushCommand_pushTagTitle);
 				break;
 			case REPO:
 				pushWiz = new PushWizard(node.getRepository());
@@ -55,38 +52,17 @@ public class PushCommand extends
 			}
 		} catch (URISyntaxException e1) {
 			Activator.handleError(e1.getMessage(), e1, true);
-			return null;
 		}
 
 		WizardDialog dlg = new WizardDialog(getShell(event), pushWiz);
-		dlg.setHelpAvailable(pushWiz.isHelpAvailable());
+		dlg.setHelpAvailable(true);
 		dlg.open();
 
 		return null;
 	}
 
-	private PushTagsWizard createPushTagsWizard(List<RepositoryTreeNode> nodes) {
-		List<String> tagNames = new ArrayList<String>();
-		for (RepositoryTreeNode node : nodes) {
-			if (node instanceof TagNode) {
-				TagNode tagNode = (TagNode) node;
-				tagNames.add(tagNode.getObject().getName());
-			}
-		}
-		Repository repository = nodes.get(0).getRepository();
-		return new PushTagsWizard(repository, tagNames);
-	}
-
 	@Override
 	public boolean isEnabled() {
-		List<RepositoryTreeNode> nodes = getSelectedNodes();
-		if (nodes.isEmpty())
-			return false;
-		Repository repository = nodes.get(0).getRepository();
-		for (RepositoryTreeNode node : nodes) {
-			if (repository != node.getRepository())
-				return false;
-		}
 		return selectedRepositoryHasHead();
 	}
 }

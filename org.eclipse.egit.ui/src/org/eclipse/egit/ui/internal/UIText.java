@@ -8,7 +8,6 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
- * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -41,12 +40,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AbstractRebaseCommand_DialogTitle;
-
-	/** */
-	public static String AbstractRebaseCommandHandler_cleanupDialog_text;
-
-	/** */
-	public static String AbstractRebaseCommandHandler_cleanupDialog_title;
 
 	/** */
 	public static String AbstractReflogCommandHandler_NoInput;
@@ -131,18 +124,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BlameInformationControl_Committer;
-
-	/** */
-	public static String BlameInformationControl_DiffHeaderLabel;
-
-	/** */
-	public static String BlameInformationControl_OpenCommitLink;
-
-	/** */
-	public static String BlameInformationControl_ShowAnnotationsLink;
-
-	/** */
-	public static String BlameInformationControl_ShowInHistoryLink;
 
 	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
@@ -841,9 +822,6 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StartMergeRadioText;
 
 	/** */
-	public static String RebaseResultDialog_stashApplyConflicts;
-
-	/** */
 	public static String RebaseResultDialog_StatusAborted;
 
 	/** */
@@ -878,9 +856,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseResultDialog_ToggleShowButton;
-
-	/** */
-	public static String RebaseResultDialog_UncommittedChanges;
 
 	/** */
 	public static String RebaseResultDialog_UpToDate;
@@ -1040,9 +1015,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CleanRepositoryPage_title;
-
-	/** */
-	public static String CleanWizard_title;
 
 	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
@@ -1726,12 +1698,6 @@ public class UIText extends NLS {
 	public static String RefSpecPage_annotatedTagsNoTags;
 
 	/** */
-	public static String RefSpecWizard_pushTitle;
-
-	/** */
-	public static String RefSpecWizard_fetchTitle;
-
-	/** */
 	public static String QuickDiff_failedLoading;
 
 	/** */
@@ -2095,9 +2061,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_CommitMessage;
 
 	/** */
-	public static String CommitDialog_CompareWithHeadRevision;
-
-	/** */
 	public static String CommitDialog_DeselectAll;
 
 	/** */
@@ -2428,9 +2391,6 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_BranchNameLabel;
 
 	/** */
-	public static String CreateBranchPage_BranchNameToolTip;
-
-	/** */
 	public static String CreateBranchPage_CheckingOutMessage;
 
 	/** */
@@ -2452,19 +2412,16 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
-	public static String CreateBranchPage_SourceLabel;
+	public static String CreateBranchPage_SourceBranchLabel;
 
 	/** */
-	public static String CreateBranchPage_SourceSelectButton;
+	public static String CreateBranchPage_SourceBranchTooltip;
 
 	/** */
-	public static String CreateBranchPage_SourceSelectionDialogMessage;
+	public static String CreateBranchPage_SourceCommitLabel;
 
 	/** */
-	public static String CreateBranchPage_SourceSelectionDialogTitle;
-
-	/** */
-	public static String CreateBranchPage_SourceTooltip;
+	public static String CreateBranchPage_SourceCommitTooltip;
 
 	/** */
 	public static String CreateBranchPage_Title;
@@ -2543,30 +2500,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushResultTable_statusOkNewTag;
-
-	/** */
-	public static String PushTagsPage_ForceUpdateButton;
-
-	/** */
-	public static String PushTagsPage_PageMessage;
-
-	/** */
-	public static String PushTagsPage_PageName;
-
-	/** */
-	public static String PushTagsPage_PageTitle;
-
-	/** */
-	public static String PushTagsPage_RemoteLabel;
-
-	/** */
-	public static String PushTagsPage_TagsLabelNoneSelected;
-
-	/** */
-	public static String PushTagsPage_TagsLabelSelected;
-
-	/** */
-	public static String PushTagsWizard_WindowTitle;
 
 	/** */
 	public static String PushToGerritPage_BranchLabel;
@@ -2974,34 +2907,34 @@ public class UIText extends NLS {
 	public static String BranchSelectionAndEditDialog_Delete;
 
 	/** */
-	public static String CommittingPreferencePage_commitMessageHistory;
+	public static String CommitDialogPreferencePage_commitMessageHistory;
 
 	/** */
-	public static String CommittingPreferencePage_title;
+	public static String CommitDialogPreferencePage_title;
 
 	/** */
-	public static String CommittingPreferencePage_hardWrapMessage;
+	public static String CommitDialogPreferencePage_hardWrapMessage;
 
 	/** */
-	public static String CommittingPreferencePage_hardWrapMessageTooltip;
+	public static String CommitDialogPreferencePage_hardWrapMessageTooltip;
 
 	/** */
-	public static String CommittingPreferencePage_footers;
+	public static String CommitDialogPreferencePage_footers;
 
 	/** */
-	public static String CommittingPreferencePage_formatting;
+	public static String CommitDialogPreferencePage_formatting;
 
 	/** */
-	public static String CommittingPreferencePage_includeUntrackedFiles;
+	public static String CommitDialogPreferencePage_includeUntrackedFiles;
 
 	/** */
-	public static String CommittingPreferencePage_includeUntrackedFilesTooltip;
+	public static String CommitDialogPreferencePage_includeUntrackedFilesTooltip;
 
 	/** */
-	public static String CommittingPreferencePage_signedOffBy;
+	public static String CommitDialogPreferencePage_signedOffBy;
 
 	/** */
-	public static String CommittingPreferencePage_signedOffByTooltip;
+	public static String CommitDialogPreferencePage_signedOffByTooltip;
 
 	/** */
 	public static String Decorator_exceptionMessage;
@@ -3832,15 +3765,6 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_clearButtonTooltip;
 
 	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushButton;
-
-	/** */
-	public static String CreateTagDialog_CreateTagAndStartPushToolTip;
-
-	/** */
-	public static String CreateTagDialog_CreateTagButton;
-
-	/** */
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
 
 	/** */
@@ -4028,7 +3952,7 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_description;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_repository;
+	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_destination;
@@ -4856,9 +4780,6 @@ public class UIText extends NLS {
 	public static String StagingView_Find;
 
 	/** */
-	public static String StagingView_MergeTool;
-
-	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
 
 	/** */
@@ -4886,10 +4807,7 @@ public class UIText extends NLS {
 	public static String StashCreateCommand_titleNoChanges;
 
 	/** */
-	public static String StashDropCommand_confirmSingle;
-
-	/** */
-	public static String StashDropCommand_confirmMultiple;
+	public static String StashDropCommand_confirmMessage;
 
 	/** */
 	public static String StashDropCommand_confirmTitle;

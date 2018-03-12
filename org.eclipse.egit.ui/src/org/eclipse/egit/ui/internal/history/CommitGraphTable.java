@@ -17,9 +17,8 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -72,7 +71,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -703,8 +701,7 @@ class CommitGraphTable {
 
 		private void writeToFile(final String fileName, String content)
 				throws IOException {
-			Writer output = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(fileName), RawParseUtils.UTF8_CHARSET));
+			Writer output = new BufferedWriter(new FileWriter(fileName));
 			try {
 				output.write(content);
 			} finally {
@@ -778,16 +775,14 @@ class CommitGraphTable {
 
 			if (selectionSize == 1) {
 				popupMgr.add(new Separator());
-				if (!input.getRepository().isBare()) {
-					if (hasMultipleRefNodes()) {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel2));
-					} else {
-						popupMgr.add(getCommandContributionItem(
-								HistoryViewCommands.CHECKOUT,
-								UIText.GitHistoryPage_CheckoutMenuLabel));
-					}
+				if (hasMultipleRefNodes()) {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel2));
+				} else {
+					popupMgr.add(getCommandContributionItem(
+							HistoryViewCommands.CHECKOUT,
+							UIText.GitHistoryPage_CheckoutMenuLabel));
 				}
 
 				popupMgr.add(getCommandContributionItem(

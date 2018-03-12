@@ -110,9 +110,10 @@ public class RemoteSelectionCombo extends Composite {
 		for (final RemoteConfig rc : remoteConfigs)
 			items[i++] = getTextForRemoteConfig(rc);
 
-		remoteCombo.setItems(items);
 		RemoteConfig defaultRemoteConfig = getDefaultRemoteConfig();
-		setSelectedRemote(defaultRemoteConfig);
+		final int defaultIndex = remoteConfigs.indexOf(defaultRemoteConfig);
+		remoteCombo.setItems(items);
+		remoteCombo.select(defaultIndex);
 
 		return defaultRemoteConfig;
 	}
@@ -132,23 +133,10 @@ public class RemoteSelectionCombo extends Composite {
 	 */
 	public RemoteConfig getSelectedRemote() {
 		final int idx = remoteCombo.getSelectionIndex();
-		if (remoteConfigs != null && idx != -1) {
+		if (remoteConfigs != null) {
 			return remoteConfigs.get(idx);
 		}
 		return null;
-	}
-
-	/**
-	 * Set the selected remote
-	 *
-	 * @param remoteConfig
-	 *            config to set, must be one of those passed to
-	 *            {@link #setItems(List)}
-	 */
-	public void setSelectedRemote(RemoteConfig remoteConfig) {
-		int index = remoteConfigs.indexOf(remoteConfig);
-		if (index != -1)
-			remoteCombo.select(index);
 	}
 
 	@Override

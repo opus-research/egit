@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2014 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,6 +9,8 @@
 package org.eclipse.egit.ui.internal.staging;
 
 import static org.eclipse.egit.ui.internal.CommonUtils.runCommand;
+import static org.eclipse.ui.ISources.ACTIVE_MENU_SELECTION_NAME;
+import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -22,6 +24,7 @@ import java.util.Set;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.operations.IUndoContext;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -30,11 +33,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -48,7 +48,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -62,7 +61,6 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
-import org.eclipse.egit.ui.internal.commit.CommitHelper.CommitInfo;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
@@ -162,9 +160,9 @@ import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.ISaveablePart;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
@@ -177,6 +175,8 @@ import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.menus.CommandContributionItem;
+import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.operations.UndoRedoActionGroup;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
@@ -185,8 +185,7 @@ import org.eclipse.ui.part.ViewPart;
 /**
  * A GitX style staging view with embedded commit dialog.
  */
-public class StagingView extends ViewPart implements IShowInSource,
-		ISaveablePart {
+public class StagingView extends ViewPart implements IShowInSource {
 
 	/**
 	 * Staging view id
@@ -443,8 +442,6 @@ public class StagingView extends ViewPart implements IShowInSource,
 	private LocalResourceManager resources = new LocalResourceManager(
 			JFaceResources.getResources());
 
-	private volatile boolean commitPending;
-
 	private Image getImage(ImageDescriptor descriptor) {
 		return (Image) this.resources.get(descriptor);
 	}
@@ -584,7 +581,7 @@ public class StagingView extends ViewPart implements IShowInSource,
 		rebaseContinueButton.setImage(getImage(UIIcons.REBASE_CONTINUE));
 		buttonGridData.applyTo(rebaseContinueButton);
 
-		showControl(rebaseSection, false);
+		updateRebaseButtonVisibility(false);
 
 		commitMessageSection = toolkit.createSection(rebaseAndCommitComposite,
 				ExpandableComposite.TITLE_BAR);
@@ -1085,6 +1082,12 @@ public class StagingView extends ViewPart implements IShowInSource,
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
+		if (!enabled) {
+			commitMessageText.setText(""); //$NON-NLS-1$
+			committerText.setText(""); //$NON-NLS-1$
+			authorText.setText(""); //$NON-NLS-1$
+		}
+
 		commitMessageText.setEnabled(enabled);
 		committerText.setEnabled(enabled);
 		enableAuthorText(enabled);
@@ -1093,12 +1096,6 @@ public class StagingView extends ViewPart implements IShowInSource,
 		addChangeIdAction.setEnabled(enabled);
 		commitButton.setEnabled(enabled);
 		commitAndPushButton.setEnabled(enabled);
-
-		if (!enabled) {
-			commitMessageText.setText(""); //$NON-NLS-1$
-			committerText.setText(""); //$NON-NLS-1$
-			authorText.setText(""); //$NON-NLS-1$
-		}
 	}
 
 	private void enableAuthorText(boolean enabled) {
@@ -1390,8 +1387,6 @@ public class StagingView extends ViewPart implements IShowInSource,
 		// corruption.
 		if (needsRedraw)
 			commitMessageSection.redraw();
-
-		firePropertyChange(PROP_DIRTY);
 	}
 
 	private void compareWith(OpenEvent event) {
@@ -1506,7 +1501,6 @@ public class StagingView extends ViewPart implements IShowInSource,
 								fileSelection, false));
 					else
 						menuMgr.add(createItem(
-								UIText.StagingView_replaceWithFileInGitIndex,
 								ActionCommands.DISCARD_CHANGES_ACTION,
 								fileSelection)); // replace with index
 				if (addReplaceWithHeadRevision)
@@ -1516,7 +1510,6 @@ public class StagingView extends ViewPart implements IShowInSource,
 								fileSelection, true));
 					else
 						menuMgr.add(createItem(
-								UIText.StagingView_replaceWithHeadRevision,
 								ActionCommands.REPLACE_WITH_HEAD_ACTION,
 								fileSelection));
 				if (addIgnore)
@@ -1524,8 +1517,7 @@ public class StagingView extends ViewPart implements IShowInSource,
 				if (addDelete)
 					menuMgr.add(new DeleteAction(fileSelection));
 				if (addLaunchMergeTool)
-					menuMgr.add(createItem(UIText.StagingView_MergeTool,
-							ActionCommands.MERGE_TOOL_ACTION,
+					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION,
 							fileSelection));
 				menuMgr.add(new Separator());
 				menuMgr.add(createShowInMenu());
@@ -1765,14 +1757,20 @@ public class StagingView extends ViewPart implements IShowInSource,
 		return availableActions;
 	}
 
-	private IAction createItem(String text, final String commandId,
-			final IStructuredSelection selection) {
-		return new Action(text) {
-			@Override
-			public void run() {
-				CommonUtils.runCommand(commandId, selection);
-			}
-		};
+	private CommandContributionItem createItem(String itemAction,
+			final ISelection selection) {
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		CommandContributionItemParameter itemParam = new CommandContributionItemParameter(
+				workbench, null, itemAction, STYLE_PUSH);
+
+		IWorkbenchWindow activeWorkbenchWindow = workbench
+				.getActiveWorkbenchWindow();
+		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
+				.getService(IHandlerService.class);
+		IEvaluationContext ctx = hsr.getCurrentState();
+		ctx.addVariable(ACTIVE_MENU_SELECTION_NAME, selection);
+
+		return new CommandContributionItem(itemParam);
 	}
 
 	private void reactOnSelection(ISelection selection) {
@@ -2001,18 +1999,16 @@ public class StagingView extends ViewPart implements IShowInSource,
 	protected void updateRebaseButtonVisibility(final boolean isRebasing) {
 		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
-				if (rebaseSection.isDisposed())
-					return;
 				showControl(rebaseSection, isRebasing);
 				rebaseSection.getParent().layout(true);
 			}
-		});
-	}
 
-	private static void showControl(Control c, final boolean show) {
-		c.setVisible(show);
-		GridData g = (GridData) c.getLayoutData();
-		g.exclude = !show;
+			private void showControl(Control c, final boolean show) {
+				c.setVisible(show);
+				GridData g = (GridData) c.getLayoutData();
+				g.exclude = !show;
+			}
+		});
 	}
 
 	/**
@@ -2084,6 +2080,8 @@ public class StagingView extends ViewPart implements IShowInSource,
 						pathsToExpandInUnstaged);
 				expandPreviousExpandedAndPaths(stagedExpanded, stagedViewer,
 						pathsToExpandInStaged);
+				enableCommitWidgets(indexDiffAvailable
+						&& indexDiff.getConflicting().isEmpty());
 				refreshAction.setEnabled(true);
 
 				updateRebaseButtonVisibility(repository.getRepositoryState()
@@ -2105,8 +2103,6 @@ public class StagingView extends ViewPart implements IShowInSource,
 
 				form.setText(StagingView.getRepositoryName(repository));
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable
-						&& indexDiff.getConflicting().isEmpty());
 				updateSectionText();
 			}
 		});
@@ -2213,11 +2209,9 @@ public class StagingView extends ViewPart implements IShowInSource,
 	}
 
 	private void addHeadChangedWarning(String commitMessage) {
-		if (!commitMessage.startsWith(UIText.StagingView_headCommitChanged)) {
-			String message = UIText.StagingView_headCommitChanged
-					+ Text.DELIMITER + Text.DELIMITER + commitMessage;
-			commitMessageComponent.setCommitMessage(message);
-		}
+		String message = UIText.StagingView_headCommitChanged + Text.DELIMITER
+				+ Text.DELIMITER + commitMessage;
+		commitMessageComponent.setCommitMessage(message);
 	}
 
 	private void loadInitialState(CommitHelper helper) {
@@ -2321,7 +2315,7 @@ public class StagingView extends ViewPart implements IShowInSource,
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
 
-		if (!UIUtils.saveAllEditors(currentRepository, this))
+		if (!UIUtils.saveAllEditors(currentRepository))
 			return;
 
 		String commitMessage = commitMessageComponent.getCommitMessage();
@@ -2338,26 +2332,13 @@ public class StagingView extends ViewPart implements IShowInSource,
 		if (amendPreviousCommitAction.isChecked())
 			commitOperation.setAmending(true);
 		commitOperation.setComputeChangeId(addChangeIdAction.isChecked());
-		commitPending = true;
 		Job commitJob = new CommitJob(currentRepository, commitOperation)
 			.setOpenCommitEditor(openNewCommitsAction.isChecked())
 			.setPushUpstream(pushUpstream);
-		commitJob.addJobChangeListener(new JobChangeAdapter() {
-			@Override
-			public void done(IJobChangeEvent event) {
-				commitPending = false;
-				asyncExec(new Runnable() {
-					public void run() {
-						firePropertyChange(PROP_DIRTY);
-					}
-				});
-			}
-		});
 		commitJob.schedule();
 		CommitMessageHistory.saveCommitHistory(commitMessage);
 		clearCommitMessageToggles();
 		commitMessageText.setText(EMPTY_STRING);
-		firePropertyChange(PROP_DIRTY);
 	}
 
 	private boolean isCommitWithoutFilesAllowed() {
@@ -2398,44 +2379,6 @@ public class StagingView extends ViewPart implements IShowInSource,
 
 	private void asyncExec(Runnable runnable) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
-	}
-
-	public boolean isSaveAsAllowed() {
-		return false;
-	}
-
-	public void doSaveAs() {
-		throw new UnsupportedOperationException();
-	}
-
-	public void doSave(IProgressMonitor monitor) {
-		commit(false);
-	}
-
-	public boolean isSaveOnCloseNeeded() {
-		return true;
-	}
-
-	public boolean isDirty() {
-		if (commitPending)
-			return false;
-		if (form == null || form.isDisposed())
-			return false;
-		if (amendPreviousCommitAction != null
-				&& amendPreviousCommitAction.isEnabled()
-				&& amendPreviousCommitAction.isChecked()) {
-			CommitInfo headCommitInfo = CommitHelper
-					.getHeadCommitInfo(currentRepository);
-			if (headCommitInfo != null) {
-				String commitMessage = commitMessageText.getText();
-				if (!commitMessage.equals(headCommitInfo.getCommitMessage()))
-					return true;
-			}
-		} else {
-			if (userEnteredCommmitMessage())
-				return true;
-		}
-		return false;
 	}
 
 }

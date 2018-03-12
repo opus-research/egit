@@ -117,7 +117,7 @@ class GitSynchronizeWizardPage extends WizardPage {
 		TreeViewerColumn projectsColumn = new TreeViewerColumn(treeViewer,
 				SWT.LEAD);
 		projectsColumn.getColumn().setText(
-				UIText.GitBranchSynchronizeWizardPage_repository);
+				UIText.GitBranchSynchronizeWizardPage_repositories);
 		projectsColumn.getColumn().setImage(repositoryImage);
 		projectsColumn.setLabelProvider(new StyledCellLabelProvider() {
 			@Override

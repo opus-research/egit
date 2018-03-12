@@ -80,6 +80,7 @@ public class Eclipse {
 	public SWTBotShell openPreferencePage(SWTBotShell preferencePage) {
 		if (preferencePage != null)
 			preferencePage.close();
+		bot.perspectiveById("org.eclipse.ui.resourcePerspective").activate();
 		// This does not work on Mac
 		// bot.menu("Window").menu("Preferences").click();
 		// Launch preferences programmatically instead

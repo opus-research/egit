@@ -55,6 +55,17 @@
                id="org.eclipse.egit.ui.internal.actions.CommitAction"
                label="%CommitAction_label"
                menubarPath="team.main/group1"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
+               id="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
+               label="%CompareWithIndexAction_label"
+               menubarPath="compareWithMenu/gitCompareWithGroup"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
+               id="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
+               label="%CompareWithBranchOrTagAction.label"
+               menubarPath="compareWithMenu/gitCompareWithGroup">
+         </action>
           <action
                class="org.eclipse.egit.ui.internal.actions.CompareWithPreviousAction"
                definitionId="org.eclipse.egit.ui.team.CompareWithPrevious"
@@ -63,32 +74,15 @@
                label="%CompareWithPreviousAction.label"
                menubarPath="compareWithMenu/gitCompareWithGroup"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.CompareIndexWithHeadAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareIndexWithHeadAction"
-               label="%CompareIndexWithHeadAction_label"
-               menubarPath="compareWithMenu/gitCompareWithGroup"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareWithIndexAction"
-               label="%CompareWithIndexAction_label"
-               menubarPath="compareWithMenu/gitCompareWithGroup"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.CompareWithHeadAction"
                id="org.eclipse.egit.ui.internal.actions.CompareWithHeadAction"
                label="%CompareWithHeadAction_label"
                menubarPath="compareWithMenu/gitCompareWithGroup"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
-               label="%CompareWithCommitAction.label"
-               menubarPath="compareWithMenu/gitCompareWithGroup2">
-         </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
-               id="org.eclipse.egit.ui.internal.actions.CompareWithRefAction"
-               label="%CompareWithBranchOrTagAction.label"
-               menubarPath="compareWithMenu/gitCompareWithGroup2">
-         </action>
+               class="org.eclipse.egit.ui.internal.actions.CompareIndexWithHeadAction"
+               id="org.eclipse.egit.ui.internal.actions.CompareIndexWithHeadAction"
+               label="%CompareIndexWithHeadAction_label"
+               menubarPath="compareWithMenu/gitCompareWithGroup"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.IgnoreAction"
                definitionId="org.eclipse.egit.ui.team.Ignore"
@@ -111,17 +105,22 @@
                label="%AddToIndexAction_label"
                menubarPath="team.main/group8"/>
          <action
+               class="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
+               id="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
+               label="%DiscardChangesAction_label"
+               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
+               id="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
+               label="%ReplaceWithRefAction_label"
+               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
+         <action
                class="org.eclipse.egit.ui.internal.actions.ReplaceWithPreviousAction"
                enablesFor="1"
                id="org.eclipse.egit.ui.internal.actions.ReplaceWithPreviousAction"
                label="%replaceWithPreviousVersionAction.label"
                menubarPath="replaceWithMenu/gitReplaceWithGroup">
          </action>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
-               id="org.eclipse.egit.ui.internal.actions.DiscardChangesAction"
-               label="%DiscardChangesAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
                id="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
@@ -131,12 +130,7 @@
                class="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
                id="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
                label="%ReplaceWithCommitAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup2"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
-               id="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
-               label="%ReplaceWithRefAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup2"/>
+               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
                definitionId="org.eclipse.egit.ui.team.ApplyPatch"
@@ -171,12 +165,32 @@
                menubarPath="team.main/group4">
          </action>
          <action
+               class="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
+               id="org.eclipse.egit.ui.internal.actions.CompareWithCommitAction"
+               label="%CompareWithCommitAction.label"
+               menubarPath="compareWithMenu/gitCompareWithGroup">
+         </action>
+         <action
                class="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
                id="org.eclipse.egit.ui.internal.actions.CreatePatchAction"
                label="%CreatePatchAction.label"
                menubarPath="team.main/group6"
                tooltip="%CreatePatchAction.tooltip">
          </action>
+      </objectContribution>
+      <objectContribution
+         adaptable="true"
+         id="org.eclipse.egit.ui.fileContributions"
+         objectClass="org.eclipse.core.resources.IFile">
+         <filter name="projectPersistentProperty"
+               value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
+         </filter>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.CompareWithRevisionAction"
+               icon="$nl$/icons/obj16/history.gif"
+               id="org.eclipse.egit.ui.internal.actions.CompareWithRevisionAction"
+               label="%CompareWithRevisionAction_label"
+               menubarPath="compareWithMenu/gitCompareWithGroup"/>
       </objectContribution>
       <objectContribution
             adaptable="true"
@@ -410,9 +424,9 @@
       </page>
       <page
             category="org.eclipse.egit.ui.GitPreferences"
-            class="org.eclipse.egit.ui.internal.preferences.CommittingPreferencePage"
-            id="org.eclipse.egit.ui.internal.preferences.CommittingPreferencePage"
-            name="%GitPreferences_CommittingPreferencePage_name">
+            class="org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"
+            id="org.eclipse.egit.ui.internal.preferences.CommitDialogPreferencePage"
+            name="%GitPreferences_CommitDialogPreferencePage_name">
          <keywordReference
                id="org.eclipse.egit.ui.keyword.git">
          </keywordReference>
@@ -877,11 +891,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.team.PushTags"
-            name="%PushTagsCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.Merge"
             name="%MergeCommand.name">
       </command>
@@ -992,16 +1001,9 @@
                     <adapt
                         type="org.eclipse.ui.IContributorResourceAdapter">
                     </adapt>
-                    <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
-                        </instanceof>
-                        <not>
-                           <test
-                                 property="GitRepository.isBare">
-                           </test>
-                        </not>
-                     </and>
+                    <instanceof
+                          value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
+                    </instanceof>
                   </or>
                </iterate>
             </and>
@@ -1162,33 +1164,24 @@
                class="org.eclipse.egit.ui.internal.repository.tree.command.PushCommand">
          </class>
          <activeWhen>
-            <or>
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-                        </instanceof>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-               <and>
-                  <count
-                        value="+">
-                  </count>
-                  <iterate>
-                     <instanceof
-                           value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
-                     </instanceof>
-                  </iterate>
-               </and>
-            </or>
+            <and>
+               <count
+                     value="1">
+               </count>
+               <iterate>
+	               <or>
+		               <instanceof
+		                     value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
+		               </instanceof>
+		               <instanceof
+		                     value="org.eclipse.egit.ui.internal.repository.tree.TagNode">
+		               </instanceof>
+		               <instanceof
+		                     value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+		               </instanceof>
+	               </or>
+               </iterate>
+            </and>
          </activeWhen>
       </handler>
       <handler
@@ -1226,39 +1219,6 @@
                   <iterate>
 		             <instanceof
 		                   value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-		             </instanceof>
-                  </iterate>
-               </and>
-            </or>
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.team.PushTags">
-         <class
-               class="org.eclipse.egit.ui.internal.actions.PushTagsActionHandler">
-         </class>
-         <activeWhen>
-            <or>
-               <reference
-                     definitionId="org.eclipse.egit.ui.gitProject">
-               </reference>
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-		             <instanceof
-		                   value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-		             </instanceof>
-                  </iterate>
-               </and>
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-		             <instanceof
-		                   value="org.eclipse.egit.ui.internal.repository.tree.TagsNode">
 		             </instanceof>
                   </iterate>
                </and>
@@ -1829,7 +1789,7 @@
          <activeWhen>
              <and>
                   <count
-                        value="+">
+                        value="1">
                   </count>
                   <iterate>
                      <and>
@@ -2242,7 +2202,7 @@
                   checkEnabled="false">
                <and>
                   <count
-                        value="+">
+                        value="1">
                   </count>
                   <iterate>
                      <instanceof
@@ -2572,28 +2532,9 @@
       <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView?after=tag">
          <command
-               commandId="org.eclipse.egit.ui.team.Tag"
+               commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
                icon="icons/obj16/new_tag_obj.gif"
                label="%RepoViewCreateTag.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <or>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.TagsNode">
-                        </instanceof>
-                     </or>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-         <command
-               commandId="org.eclipse.egit.ui.team.PushTags"
                style="push">
             <visibleWhen
                   checkEnabled="false">
@@ -2825,24 +2766,17 @@
                   <iterate
                         ifEmpty="false"
                         operator="and">
-                     <and>
-                        <or>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
-                           </instanceof>
-                           <instanceof
-                                 value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
-                           </instanceof>
-                        </or>
-                        <not>
-                           <test
-                                 property="GitRepository.isBare">
-                           </test>
-                        </not>
-                     </and>
+                     <or>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.BranchesNode">
+                        </instanceof>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.LocalNode">
+                        </instanceof>
+                     </or>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2864,16 +2798,9 @@
                   <iterate
                         ifEmpty="false"
                         operator="and">
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <not>
-                           <test
-                                 property="GitRepository.isBare">
-                           </test>
-                        </not>
-                     </and>
+                     <instanceof
+                           value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                     </instanceof>
                   </iterate>
                </and>
             </visibleWhen>
@@ -2975,7 +2902,7 @@
                   checkEnabled="false">
                <and>
                   <count
-                        value="+">
+                        value="1">
                   </count>
                   <iterate>
                      <and>
@@ -3136,23 +3063,6 @@
                   commandId="org.eclipse.egit.ui.team.Push"
                   icon="icons/obj16/push.gif"
                   label="%RepoViewPush.label"
-                  style="push">
-               <visibleWhen
-                     checkEnabled="false">
-                  <and>
-                     <count
-                           value="1">
-                     </count>
-                     <iterate>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                     </iterate>
-                  </and>
-               </visibleWhen>
-            </command>
-            <command
-                  commandId="org.eclipse.egit.ui.team.PushTags"
                   style="push">
                <visibleWhen
                      checkEnabled="false">
@@ -3859,10 +3769,6 @@
                      style="push">
                </command>
                <command
-                     commandId="org.eclipse.egit.ui.team.PushTags"
-                     style="push">
-               </command>
-               <command
                      commandId="org.eclipse.egit.ui.team.Fetch"
                      label="%FetchAction_label"
                      style="push">
@@ -4418,6 +4324,12 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CreateTagCommand"
+            id="org.eclipse.egit.ui.RepositoriesViewCreateTag"
+            name="%CreateTagCommand">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.CheckoutCommand"
             id="org.eclipse.egit.ui.CheckoutCommand"
             name="%CheckoutCommand">
@@ -4518,7 +4430,7 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.repository.tree.command.ConfigureBranchCommand"
             id="org.eclipse.egit.ui.RepositoriesViewConfigureBranch"
-            name="%RepoViewConfigureBranchCommand.name">
+            name="%RepoViewConfigurBranchCommand.name">
       </command>
    </extension>
    <extension
@@ -4538,6 +4450,10 @@
       <image
             commandId="org.eclipse.egit.ui.RepositoriesLinkWithSelection"
             icon="icons/elcl16/synced.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.RepositoriesViewCreateTag"
+            icon="icons/obj16/new_tag_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.ShowRepositoriesView"
@@ -4661,10 +4577,6 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.PushBranch"
-            icon="icons/obj16/push.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.PushTags"
             icon="icons/obj16/push.gif">
       </image>
       <image
@@ -4963,6 +4875,11 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            id="org.eclipse.egit.ui.team.CompareWithRevision"
+            name="%CompareWithHistoryCommand.name">
+      </command>
+      <command
+            categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.CompareWithIndexActionHandler"
             id="org.eclipse.egit.ui.team.CompareWithIndex"
             name="%CompareWithIndexCommand.name">
@@ -5255,7 +5172,7 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.commit.command.CreateTagHandler"
             id="org.eclipse.egit.ui.commit.CreateTag"
-            name="%CreateTagCommand.name">
+            name="%CreateTagCommand">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler"
