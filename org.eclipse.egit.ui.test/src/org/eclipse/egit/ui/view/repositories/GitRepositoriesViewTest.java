@@ -24,10 +24,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -590,7 +588,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		masterNode.select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewCheckout.label"));
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RepoViewCreateBranch.label"));
 		SWTBotShell createBranchShell = bot

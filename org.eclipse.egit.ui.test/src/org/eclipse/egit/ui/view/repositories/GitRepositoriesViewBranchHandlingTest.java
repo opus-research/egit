@@ -171,7 +171,6 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		createPage.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
 				.select();
 		createPage.bot().button(IDialogConstants.FINISH_LABEL).click();
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		getOrOpenView().toolbarButton("Refresh").click();
 		refreshAndWait();
 
