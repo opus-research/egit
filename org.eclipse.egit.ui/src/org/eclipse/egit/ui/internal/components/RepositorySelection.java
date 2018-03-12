@@ -41,7 +41,7 @@ public class RepositorySelection {
 	 *            the new remote config. null if user chosen to specify
 	 *            repository as URI.
 	 */
-	public RepositorySelection(final URIish uri, final RemoteConfig config) {
+	RepositorySelection(final URIish uri, final RemoteConfig config) {
 		if (config != null && uri != null)
 			throw new IllegalArgumentException(
 					"URI and config cannot be set at the same time."); //$NON-NLS-1$
@@ -70,6 +70,19 @@ public class RepositorySelection {
 			return Collections.singletonList(uri);
 		if (isConfigSelected())
 			return config.getURIs();
+		return null;
+	}
+
+	/**
+	 * @return list of all selected URIs - either the one specified as custom
+	 *         URI or all URIs from selected configuration. May be null in case
+	 *         of no valid selection.
+	 */
+	public List<URIish> getPushURIs() {
+		if (isURISelected())
+			return Collections.singletonList(uri);
+		if (isConfigSelected())
+			return config.getPushURIs();
 		return null;
 	}
 
