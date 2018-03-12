@@ -269,29 +269,21 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			return ((Ref) myObject).getName().compareTo(
 					((Ref) otherNode.getObject()).getName());
 		case REPO:
-			int nameCompare = getDirectoryContainingRepo((Repository) myObject)
-					.getName()
-					.compareTo(
-							getDirectoryContainingRepo((Repository) otherNode.getObject())
-									.getName());
+			int nameCompare = ((Repository) myObject).getDirectory()
+					.getParentFile().getName().compareTo(
+							(((Repository) otherNode.getObject())
+									.getDirectory().getParentFile().getName()));
 			if (nameCompare != 0)
 				return nameCompare;
 			// if the name is not unique, let's look at the whole path
-			return getDirectoryContainingRepo((Repository) myObject)
-					.getParentFile()
-					.getPath()
-					.compareTo(
-							getDirectoryContainingRepo((Repository) otherNode.getObject())
-									.getParentFile().getPath());
+			return ((Repository) myObject).getDirectory().getParentFile()
+					.getParentFile().getPath().compareTo(
+							(((Repository) otherNode.getObject())
+									.getDirectory().getParentFile()
+									.getParentFile().getPath()));
+
 		}
 		return 0;
-	}
-
-	private File getDirectoryContainingRepo(Repository repo) {
-		if (!repo.isBare())
-			return repo.getDirectory().getParentFile();
-		else
-			return repo.getDirectory();
 	}
 
 	private boolean checkObjectsEqual(Object otherObject) {
