@@ -178,28 +178,13 @@ public class BranchOperationUI {
 	}
 
 	private void showResultDialog() {
-		String displayedRef = createDisplayedRef();
-		BranchResultDialog.show(bop.getResult(), repository, displayedRef);
+		BranchResultDialog.show(bop.getResult(), repository, refName);
 		try {
 			if (ObjectId.isId(repository.getFullBranch()) && bop.getResult().getStatus() == CheckoutResult.Status.OK)
 				showDetachedHeadWarning();
 		} catch (IOException e) {
 			// Don't show warning then.
 		}
-	}
-
-	private String createDisplayedRef() {
-		String refToCheckOut = ""; //$NON-NLS-1$
-		if (refName != null)
-			refToCheckOut = refName;
-		else if (commitId != null) {
-			if (commitId != null)
-				refToCheckOut = commitId.getName().substring(0, 7)+ "... "; //$NON-NLS-1$
-		}
-		else
-			throw new IllegalStateException(
-					"Both refName and commitId must not be null"); //$NON-NLS-1$
-		return refToCheckOut;
 	}
 
 	private void showDetachedHeadWarning() {
