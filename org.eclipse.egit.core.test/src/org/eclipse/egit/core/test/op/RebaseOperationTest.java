@@ -80,12 +80,10 @@ public class RebaseOperationTest extends GitTestCase {
 		// parent of topic commit should be first master commit before rebase
 		assertEquals(first, topicCommit.getParent(0));
 
-		RevCommit upstream = new RevWalk(testRepository.getRepository())
-				.parseCommit(repository.resolve(MASTER));
-
 		// rebase topic onto master
 		RebaseOperation op = new RebaseOperation(
-				testRepository.getRepository(), upstream);
+				testRepository.getRepository(), testRepository.getRepository()
+						.getRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
@@ -126,12 +124,10 @@ public class RebaseOperationTest extends GitTestCase {
 		// parent of topic commit should be first master commit before rebase
 		assertEquals(first, topicCommit.getParent(0));
 
-		RevCommit upstream = new RevWalk(testRepository.getRepository())
-				.parseCommit(repository.resolve(MASTER));
-
 		// rebase topic onto master
 		RebaseOperation op = new RebaseOperation(
-				testRepository.getRepository(), upstream);
+				testRepository.getRepository(), testRepository.getRepository()
+						.getRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
@@ -172,12 +168,10 @@ public class RebaseOperationTest extends GitTestCase {
 		// parent of topic commit should be first master commit before rebase
 		assertEquals(first, topicCommit.getParent(0));
 
-		RevCommit upstream = new RevWalk(testRepository.getRepository())
-				.parseCommit(repository.resolve(MASTER));
-
 		// rebase topic onto master
 		RebaseOperation op = new RebaseOperation(
-				testRepository.getRepository(), upstream);
+				testRepository.getRepository(), testRepository.getRepository()
+						.getRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
@@ -222,11 +216,9 @@ public class RebaseOperationTest extends GitTestCase {
 		// parent of topic commit should be first master commit before rebase
 		assertEquals(first, topicCommit.getParent(0));
 
-		RevCommit upstream = new RevWalk(testRepository.getRepository())
-				.parseCommit(repository.resolve(MASTER));
-
 		// rebase topic onto master
-		RebaseOperation op = new RebaseOperation(repository, upstream);
+		RebaseOperation op = new RebaseOperation(repository, repository
+				.getRef(MASTER));
 		op.execute(null);
 
 		RebaseResult res = op.getResult();
@@ -235,9 +227,7 @@ public class RebaseOperationTest extends GitTestCase {
 		try {
 			// let's try to start again, we should get a wrapped
 			// WrongRepositoryStateException
-			upstream = new RevWalk(testRepository.getRepository())
-					.parseCommit(repository.resolve(MASTER));
-			op = new RebaseOperation(repository, upstream);
+			op = new RebaseOperation(repository, repository.getRef(MASTER));
 			op.execute(null);
 			fail("Expected Exception not thrown");
 		} catch (CoreException e) {
