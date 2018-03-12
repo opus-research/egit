@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011 SAP AG.
+ * Copyright (c) 2012 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
- *    Sascha Scholz (SAP) - improvements
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.provisional.wizards;
 
@@ -30,7 +29,6 @@ public class GitRepositoryInfo {
 
 	private final String cloneUri;
 	private UserPasswordCredentials credentials;
-	private boolean shouldSaveCredentialsInSecureStore;
 	private String repositoryName;
 	private final List<String> fetchRefSpecs = new ArrayList<String>();
 
@@ -149,22 +147,6 @@ public class GitRepositoryInfo {
 	 */
 	public UserPasswordCredentials getCredentials() {
 		return credentials;
-	}
-
-	/**
-	 * @param shouldSaveCredentialsInSecureStore
-	 *            whether the credentials should be saved after successful clone
-	 */
-	public void setShouldSaveCredentialsInSecureStore(
-			boolean shouldSaveCredentialsInSecureStore) {
-		this.shouldSaveCredentialsInSecureStore = shouldSaveCredentialsInSecureStore;
-	}
-
-	/**
-	 * @return whether the credentials should be saved after successful clone
-	 */
-	public boolean shouldSaveCredentialsInSecureStore() {
-		return shouldSaveCredentialsInSecureStore;
 	}
 
 	/**
