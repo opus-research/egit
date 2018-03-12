@@ -68,7 +68,7 @@ public class PushCommand extends
 	}
 
 	private PushTagsWizard createPushTagsWizard(List<RepositoryTreeNode> nodes) {
-		List<String> tagNames = new ArrayList<>();
+		List<String> tagNames = new ArrayList<String>();
 		for (RepositoryTreeNode node : nodes) {
 			if (node instanceof TagNode) {
 				TagNode tagNode = (TagNode) node;

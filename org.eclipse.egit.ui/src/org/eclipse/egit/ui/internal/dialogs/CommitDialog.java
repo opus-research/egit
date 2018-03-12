@@ -371,7 +371,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 	Button ignoreErrors;
 
-	ArrayList<CommitItem> items = new ArrayList<>();
+	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
 	private String commitMessage = null;
 
@@ -386,7 +386,7 @@ public class CommitDialog extends TitleAreaDialog {
 
 	private boolean preselectAll = false;
 
-	private ArrayList<String> selectedFiles = new ArrayList<>();
+	private ArrayList<String> selectedFiles = new ArrayList<String>();
 
 	private boolean amending = false;
 
@@ -1208,7 +1208,7 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private Collection<String> getFileList() {
-		Collection<String> result = new ArrayList<>();
+		Collection<String> result = new ArrayList<String>();
 		for (CommitItem item : items) {
 			result.add(item.path);
 		}

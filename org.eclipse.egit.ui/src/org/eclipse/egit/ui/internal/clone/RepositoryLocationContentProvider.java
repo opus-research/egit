@@ -26,7 +26,7 @@ import org.eclipse.jface.viewers.Viewer;
 
 class RepositoryLocationContentProvider implements ITreeContentProvider {
 
-	private Map<RepositoryServerInfo, CloneSourceProvider> parents = new HashMap<>();
+	private Map<RepositoryServerInfo, CloneSourceProvider> parents = new HashMap<RepositoryServerInfo, CloneSourceProvider>();
 
 	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {

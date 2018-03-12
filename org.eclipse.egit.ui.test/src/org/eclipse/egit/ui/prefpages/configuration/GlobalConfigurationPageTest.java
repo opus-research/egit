@@ -74,11 +74,11 @@ public class GlobalConfigurationPageTest {
 	private void getGitConfigurationPreferencePage() {
 		preferencePage = new Eclipse().openPreferencePage(preferencePage);
 		SWTBotTreeItem team = preferencePage.bot().tree().getTreeItem("Team");
-		team = TestUtil.expandAndWait(team)
-				.getNode(util.getPluginLocalizedValue("GitPreferences_name"));
-		team = TestUtil.expandAndWait(team).getNode(
-				util.getPluginLocalizedValue("ConfigurationPage.name"));
-		team.select();
+		team.expand()
+				.getNode(util.getPluginLocalizedValue("GitPreferences_name"))
+				.expand()
+				.getNode(util.getPluginLocalizedValue("ConfigurationPage.name"))
+				.select();
 	}
 
 	@After

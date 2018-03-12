@@ -302,7 +302,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		private GitHistoryPage historyPage;
 
 		GitHistoryPageActions(GitHistoryPage historyPage) {
-			actionsToDispose = new ArrayList<>();
+			actionsToDispose = new ArrayList<IWorkbenchAction>();
 			this.historyPage = historyPage;
 			createActions();
 		}
@@ -979,7 +979,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				ISelection selection = event.getSelection();
-				List<FileDiff> diffs = new ArrayList<>();
+				List<FileDiff> diffs = new ArrayList<FileDiff>();
 				if (selection instanceof IStructuredSelection) {
 					IStructuredSelection sel = (IStructuredSelection) selection;
 					for (Object obj : sel.toList())
@@ -1878,7 +1878,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			throws IllegalStateException {
 		final ArrayList<FilterPath> paths;
 		if (inResources != null) {
-			paths = new ArrayList<>(inResources.length);
+			paths = new ArrayList<FilterPath>(inResources.length);
 			for (final IResource r : inResources) {
 				final RepositoryMapping map = RepositoryMapping.getMapping(r);
 				if (map == null)
@@ -1914,7 +1914,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			IPath workdirPath = new Path(db.getWorkTree().getPath());
 			IPath gitDirPath = new Path(db.getDirectory().getPath());
 			int segmentCount = workdirPath.segmentCount();
-			paths = new ArrayList<>(inFiles.length);
+			paths = new ArrayList<FilterPath>(inFiles.length);
 			for (File file : inFiles) {
 				IPath filePath;
 				boolean isRegularFile;
@@ -1943,7 +1943,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					paths.add(new FilterPath(pathToAdd.toString(), isRegularFile));
 			}
 		} else
-			paths = new ArrayList<>(0);
+			paths = new ArrayList<FilterPath>(0);
 		return paths;
 	}
 
@@ -2138,24 +2138,24 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				&& allRegularFiles(paths)) {
 			pathFilters = paths;
 
-			List<String> selectedPaths = new ArrayList<>(paths.size());
+			List<String> selectedPaths = new ArrayList<String>(paths.size());
 			for (FilterPath filterPath : paths)
 				selectedPaths.add(filterPath.getPath());
 
-			fileViewerInterestingPaths = new HashSet<>(selectedPaths);
+			fileViewerInterestingPaths = new HashSet<String>(selectedPaths);
 			TreeFilter followFilter = createFollowFilterFor(selectedPaths);
 			walk.setTreeFilter(followFilter);
 			walk.setRevFilter(renameTracker.getFilter());
 
 		} else if (paths.size() > 0) {
 			pathFilters = paths;
-			List<String> stringPaths = new ArrayList<>(paths.size());
+			List<String> stringPaths = new ArrayList<String>(paths.size());
 			for (FilterPath p : paths)
 				stringPaths.add(p.getPath());
 
 			walk.setTreeFilter(AndTreeFilter.create(PathFilterGroup
 					.createFromStrings(stringPaths), TreeFilter.ANY_DIFF));
-			fileViewerInterestingPaths = new HashSet<>(stringPaths);
+			fileViewerInterestingPaths = new HashSet<String>(stringPaths);
 		} else {
 			pathFilters = null;
 			walk.setTreeFilter(TreeFilter.ALL);
@@ -2176,7 +2176,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		DiffConfig diffConfig = currentRepo.getConfig().get(DiffConfig.KEY);
 
-		List<TreeFilter> followFilters = new ArrayList<>(paths.size());
+		List<TreeFilter> followFilters = new ArrayList<TreeFilter>(paths.size());
 		for (String path : paths)
 			followFilters.add(createFollowFilter(path, diffConfig));
 
