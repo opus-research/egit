@@ -3740,15 +3740,6 @@ public class UIText extends NLS {
 	public static String GitActionContributor_Pull;
 
 	/** */
-	public static String GitVariableResolver_InternalError;
-
-	/** */
-	public static String GitVariableResolver_NoSelectedResource;
-
-	/** */
-	public static String GitVariableResolver_VariableReferencesNonExistentResource;
-
-	/** */
 	public static String DecoratableResourceHelper_noHead;
 
 	/** */
