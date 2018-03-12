@@ -28,11 +28,13 @@ class RepositoryLocationContentProvider implements ITreeContentProvider {
 	private Map<RepositoryServerInfo, CloneSourceProvider> parents = new HashMap<RepositoryServerInfo, CloneSourceProvider>();
 
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-		// nothing to do
+		// TODO Auto-generated method stub
+
 	}
 
 	public void dispose() {
-		// nothing to do
+		// TODO Auto-generated method stub
+
 	}
 
 	public boolean hasChildren(Object element) {
@@ -97,8 +99,9 @@ class RepositoryLocationContentProvider implements ITreeContentProvider {
 
 	private void cacheParents(CloneSourceProvider repositoryImport,
 			Collection<RepositoryServerInfo> repositoryServerInfos) {
-		for (RepositoryServerInfo info : repositoryServerInfos)
+		for (RepositoryServerInfo info : repositoryServerInfos) {
 			parents.put(info, repositoryImport);
+		}
 	}
 
 }

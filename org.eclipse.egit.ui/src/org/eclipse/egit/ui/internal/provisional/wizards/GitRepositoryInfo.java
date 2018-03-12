@@ -31,15 +31,14 @@ public class GitRepositoryInfo {
 	private final String cloneUri;
 	private UserPasswordCredentials credentials;
 	private String repositoryName;
-	private final List<String> fetchRefSpecs = new ArrayList<String>();
+	private List<String> fetchRefSpecs = new ArrayList<String>();
 
-	/**
-	 * Describes settings for git push
-	 */
+	/** */
 	public static class PushInfo {
-
-		private String pushRefSpec;
-		private String pushUri;
+		/** */
+		public String pushRefSpec;
+		/** */
+		public String pushUri;
 
 		/**
 		 * @param pushRefSpec
@@ -49,37 +48,25 @@ public class GitRepositoryInfo {
 			this.pushRefSpec = pushRefSpec;
 			this.pushUri = pushUri;
 		}
-
-		/**
-		 * @return the push ref spec
-		 */
-		public String getPushRefSpec() {
-			return pushRefSpec;
-		}
-
-		/**
-		 * @return the push URI
-		 */
-		public String getPushUri() {
-			return pushUri;
-		}
 	}
-
 	private List<PushInfo> pushInfos = new ArrayList<PushInfo>();
 
 	/** */
 	public static class RepositoryConfigProperty {
-
-		private String section;
-		private String subsection;
-		private String name;
-		private String value;
+		/** */
+		public String section;
+		/** */
+		public String subsection;
+		/** */
+		public String name;
+		/** */
+		public String value;
 
 		/**
-		 * @param section the config section
-		 * @param subsection the config sub section
-		 * @param name the name of the config parameter
-		 * @param value the value of the config parameter
+		 * @param section
+		 * @param subsection
+		 * @param name
+		 * @param value
 		 */
 		public RepositoryConfigProperty(String section, String subsection, String name, String value) {
 			this.section = section;
@@ -87,37 +74,8 @@ public class GitRepositoryInfo {
 			this.name = name;
 			this.value = value;
 		}
-
-		/**
-		 * @return the config section
-		 */
-		public String getSection() {
-			return section;
-		}
-
-		/**
-		 * @return the config sub section
-		 */
-		public String getSubsection() {
-			return subsection;
-		}
-
-		/**
-		 * @return the name of the config parameter
-		 */
-		public String getName() {
-			return name;
-		}
-
-		/**
-		 * @return the value of the config parameter
-		 */
-		public String getValue() {
-			return value;
-		}
 	}
-
-	private final List<RepositoryConfigProperty> repositoryConfigProperties = new ArrayList<RepositoryConfigProperty>();
+	private List<RepositoryConfigProperty> repositoryConfigProperties = new ArrayList<RepositoryConfigProperty>();
 
 
 	/**

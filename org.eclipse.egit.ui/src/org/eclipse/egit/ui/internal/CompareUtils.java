@@ -400,12 +400,8 @@ public class CompareUtils {
 		final String gitPath = mapping.getRepoRelativePath(baseFile);
 
 		DirCache dc = repository.lockDirCache();
-		final DirCacheEntry entry;
-		try {
-			entry = dc.getEntry(gitPath);
-		} finally {
-			dc.unlock();
-		}
+		final DirCacheEntry entry = dc.getEntry(gitPath);
+		dc.unlock();
 
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
 		String encoding = CompareCoreUtils.getResourceEncoding(baseFile);

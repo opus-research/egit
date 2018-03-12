@@ -1,13 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2010-2011 SAP AG.
+ * Copyright (c) 2011 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Mathias Kinzler (SAP AG) - initial implementation
- *    Stefan Lay (SAP AG) - improvements
+ *    Stefan Lay (SAP AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
@@ -72,7 +71,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 							cloneDestination.saveSettingsForClonedRepo();
 						}});
 				} catch (URISyntaxException e) {
-					Activator.error(UIText.GitImportWizard_errorParsingURI, e);
+
 				}
 			}
 			super.setVisible(visible);
@@ -109,7 +108,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 	}
 
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
-		// nothing to do
+		// nothing o do
 	}
 
 	@Override
@@ -117,7 +116,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 		try {
 			return (new RepositorySelection(new URIish(currentSearchResult.getGitRepositoryInfo().getCloneUri()), null));
 		} catch (URISyntaxException e) {
-			Activator.error(UIText.GitImportWizard_errorParsingURI, e);
+			Activator.error("URI can't be parsed", e); //$NON-NLS-1$
 			return null;
 		}
 	}
@@ -141,6 +140,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			importWithDirectoriesPage.setRepository(getClonedRepository());
 			return importWithDirectoriesPage;
 		} else if (page == importWithDirectoriesPage) {
+
 			switch (importWithDirectoriesPage.getWizardSelection()) {
 			case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD:
 				projectsImportPage.setProjectsList(importWithDirectoriesPage
@@ -223,7 +223,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					IWorkingSet[] workingSetArray = projectsImportPage
 							.getSelectedWorkingSets();
 					workingSets.addAll(Arrays.asList(workingSetArray));
-					repository[0] = getClonedRepository();
+					repository[0] = selectRepoPage.getRepository();
 				}
 			});
 			ProjectUtils.createProjects(projectsToCreate, repository[0],
@@ -235,7 +235,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 			final File[] repoDir = new File[1];
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				public void run() {
-					repoDir[0] = getClonedRepository().getDirectory();
+					repoDir[0] = selectRepoPage.getRepository().getDirectory();
 				}
 			});
 			final List<IProject> previousProjects = Arrays
@@ -280,7 +280,7 @@ public class GitImportWizard extends AbstractGitCloneWizard implements IImportWi
 					defaultLocation[0] = createGeneralProjectPage
 							.isDefaultLocation();
 					path[0] = importWithDirectoriesPage.getPath();
-					repoDir[0] = getClonedRepository().getDirectory();
+					repoDir[0] = selectRepoPage.getRepository().getDirectory();
 				}
 			});
 			try {
