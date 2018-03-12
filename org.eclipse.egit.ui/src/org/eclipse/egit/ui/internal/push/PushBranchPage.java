@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,8 +20,10 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.UIUtils.IRefListProvider;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.components.RefContentAssistProvider;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.SelectionType;
@@ -33,7 +36,7 @@ import org.eclipse.jface.layout.RowLayoutFactory;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.BranchConfig;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -80,6 +83,8 @@ public class PushBranchPage extends WizardPage {
 	private RemoteSelectionCombo remoteSelectionCombo;
 
 	private Text remoteBranchNameText;
+
+	private RefContentAssistProvider assist;
 
 	private UpstreamConfig upstreamConfig = UpstreamConfig.NONE;
 
@@ -132,8 +137,11 @@ public class PushBranchPage extends WizardPage {
 	/**
 	 * @return the chosen short name of the branch on the remote
 	 */
-	String getRemoteBranchName() {
-		return remoteBranchNameText.getText();
+	String getFullRemoteReference() {
+		if (!remoteBranchNameText.getText().startsWith(Constants.R_REFS))
+			return Constants.R_HEADS + remoteBranchNameText.getText();
+		else
+			return remoteBranchNameText.getText();
 	}
 
 	boolean isConfigureUpstreamSelected() {
@@ -244,6 +252,7 @@ public class PushBranchPage extends WizardPage {
 				.addRemoteSelectionListener(new IRemoteSelectionListener() {
 					public void remoteSelected(RemoteConfig rc) {
 						remoteConfig = rc;
+						setRefAssist(rc);
 						checkPage();
 					}
 				});
@@ -267,6 +276,17 @@ public class PushBranchPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
 				.applyTo(remoteBranchNameText);
 		remoteBranchNameText.setText(getSuggestedBranchName());
+		UIUtils.addRefContentProposalToText(remoteBranchNameText,
+				this.repository, new IRefListProvider() {
+
+					public List<Ref> getRefList() {
+						if (PushBranchPage.this.assist != null) {
+							return PushBranchPage.this.assist
+									.getRefsForContentAssist(false, true);
+						}
+						return Collections.emptyList();
+					}
+				});
 
 		if (this.ref != null) {
 			upstreamConfigComponent = new UpstreamConfigComponent(inputPanel,
@@ -314,9 +334,9 @@ public class PushBranchPage extends WizardPage {
 		remoteSelectionCombo.setItems(remoteConfigs);
 		if (this.ref != null) {
 			String branchName = Repository.shortenRefName(this.ref.getName());
-			String remoteName = repository.getConfig().getString(
-					ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
-					ConfigConstants.CONFIG_KEY_REMOTE);
+			BranchConfig branchConfig = new BranchConfig(
+					repository.getConfig(), branchName);
+			String remoteName = branchConfig.getRemote();
 			if (remoteName != null) {
 				for (RemoteConfig rc : remoteConfigs) {
 					if (remoteName.equals(rc.getName()))
@@ -326,19 +346,18 @@ public class PushBranchPage extends WizardPage {
 		}
 
 		remoteConfig = remoteSelectionCombo.getSelectedRemote();
+		setRefAssist(remoteConfig);
 	}
 
 	private void setDefaultUpstreamConfig() {
 		if (this.ref != null) {
 			String branchName = Repository.shortenRefName(ref.getName());
-			boolean alreadyConfigured = repository.getConfig()
-					.getSubsections(ConfigConstants.CONFIG_BRANCH_SECTION)
-					.contains(branchName);
+			BranchConfig branchConfig = new BranchConfig(
+					repository.getConfig(), branchName);
+			boolean alreadyConfigured = branchConfig.getMerge() != null;
 			UpstreamConfig config;
 			if (alreadyConfigured) {
-				boolean rebase = repository.getConfig().getBoolean(
-						ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
-						ConfigConstants.CONFIG_KEY_REBASE, false);
+				boolean rebase = branchConfig.isRebase();
 				config = rebase ? UpstreamConfig.REBASE : UpstreamConfig.MERGE;
 			} else {
 				config = UpstreamConfig.getDefault(repository, Constants.R_REMOTES
@@ -398,6 +417,7 @@ public class PushBranchPage extends WizardPage {
 			remoteSelectionCombo.setItems(Arrays.asList(config));
 			this.remoteConfig = config;
 			remoteSelectionCombo.setEnabled(false);
+			setRefAssist(this.remoteConfig);
 			checkPage();
 		} catch (URISyntaxException e) {
 			handleError(e);
@@ -409,10 +429,10 @@ public class PushBranchPage extends WizardPage {
 			StoredConfig config = repository.getConfig();
 			String branchName = Repository.shortenRefName(ref.getName());
 
-			String merge = config.getString(
-					ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
-					ConfigConstants.CONFIG_KEY_MERGE);
-			if (merge != null && merge.startsWith(Constants.R_HEADS))
+			BranchConfig branchConfig = new BranchConfig(config, branchName);
+			String merge = branchConfig.getMerge();
+			if (!branchConfig.isRemoteLocal() && merge != null
+					&& merge.startsWith(Constants.R_HEADS))
 				return Repository.shortenRefName(merge);
 
 			return branchName;
@@ -421,26 +441,31 @@ public class PushBranchPage extends WizardPage {
 		}
 	}
 
-	private boolean hasDifferentUpstreamConfiguration() {
-		StoredConfig config = repository.getConfig();
-		String branchName = Repository.shortenRefName(ref.getName());
+	private void setRefAssist(RemoteConfig config) {
+		if (config != null && config.getURIs().size() > 0) {
+			this.assist = new RefContentAssistProvider(
+					PushBranchPage.this.repository, config.getURIs().get(0),
+					getShell());
+		}
+	}
 
-		String remote = config.getString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				branchName, ConfigConstants.CONFIG_KEY_REMOTE);
+	private boolean hasDifferentUpstreamConfiguration() {
+		String branchName = Repository.shortenRefName(ref.getName());
+		BranchConfig branchConfig = new BranchConfig(repository.getConfig(),
+				branchName);
+
+		String remote = branchConfig.getRemote();
 		// No upstream config -> don't show warning
 		if (remote == null)
 			return false;
 		if (!remote.equals(remoteConfig.getName()))
 			return true;
 
-		String merge = config.getString(ConfigConstants.CONFIG_BRANCH_SECTION,
-				branchName, ConfigConstants.CONFIG_KEY_MERGE);
-		if (merge == null || !merge.equals(Constants.R_HEADS + getRemoteBranchName()))
+		String merge = branchConfig.getMerge();
+		if (merge == null || !merge.equals(getFullRemoteReference()))
 			return true;
 
-		boolean rebase = config.getBoolean(
-				ConfigConstants.CONFIG_BRANCH_SECTION, branchName,
-				ConfigConstants.CONFIG_KEY_REBASE, false);
+		boolean rebase = branchConfig.isRebase();
 		if (rebase != isRebaseSelected())
 			return true;
 
