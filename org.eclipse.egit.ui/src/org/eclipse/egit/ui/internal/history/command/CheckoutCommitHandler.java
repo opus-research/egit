@@ -8,7 +8,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -16,10 +19,13 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -28,7 +34,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * Check out of a commit.
  */
 public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
-	private static final class BranchMessageDialog extends AmbigousBranchDialog {
+	private static final class BranchMessageDialog extends AmbiguousBranchDialog {
 
 		public BranchMessageDialog(Shell parentShell, List<RefNode> nodes) {
 			super(parentShell, nodes, UIText.CheckoutHandler_SelectBranchTitle, UIText.CheckoutHandler_SelectBranchMessage);
@@ -36,18 +42,35 @@ public class CheckoutCommitHandler extends AbstractHistoryCommanndHandler {
 
 	}
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		RevCommit commit = (RevCommit) getSelection(getPage()).getFirstElement();
+		PlotCommit commit = (PlotCommit) getSelection(getPage())
+				.getFirstElement();
 		Repository repo = getRepository(event);
+		List<Ref> availableBranches = new ArrayList<Ref>();
 
 		final BranchOperationUI op;
 
-		List<RefNode> nodes = getRefNodes(commit, repo, Constants.R_HEADS);
+		try {
+			Map<String, Ref> localBranches = repo.getRefDatabase().getRefs(
+					Constants.R_HEADS);
+			for (Ref branch : localBranches.values()) {
+				if (branch.getLeaf().getObjectId().equals(commit.getId())) {
+					availableBranches.add(branch);
+				}
+			}
+		} catch (IOException e) {
+			// ignore here
+		}
 
-		if (nodes.isEmpty())
+		if (availableBranches.isEmpty())
 			op = new BranchOperationUI(repo, commit.getId());
-		else if (nodes.size() == 1)
-			op = new BranchOperationUI(repo, nodes.get(0).getObject().getName());
+		else if (availableBranches.size() == 1)
+			op = new BranchOperationUI(repo, availableBranches.get(0).getName());
 		else {
+			List<RefNode> nodes = new ArrayList<RefNode>();
+			RepositoryNode repoNode = new RepositoryNode(null, repo);
+			for (Ref ref : availableBranches) {
+				nodes.add(new RefNode(repoNode, repo, ref));
+			}
 			BranchMessageDialog dlg = new BranchMessageDialog(HandlerUtil
 					.getActiveShellChecked(event), nodes);
 			if (dlg.open() == Window.OK) {
