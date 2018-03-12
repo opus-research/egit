@@ -12,9 +12,6 @@
 
 package org.eclipse.egit.ui.internal.history.command;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.internal.CommonUtils;
@@ -35,17 +32,14 @@ public class RevertHandler extends AbstractHistoryCommandHandler {
 	public static final String ID = "org.eclipse.egit.ui.history.Revert"; //$NON-NLS-1$
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final List<RevCommit> commits = getSelectedCommits(event);
+		final RevCommit commit = getSelectedCommit(event);
 		Repository repo = getRepository(event);
 		if (repo == null)
 			return null;
 		BasicConfigurationDialog.show(repo);
 
-		List<RepositoryCommit> repositoryCommits = new ArrayList<RepositoryCommit>();
-		for (RevCommit commit : commits)
-			repositoryCommits.add(new RepositoryCommit(repo, commit));
 		final IStructuredSelection selected = new StructuredSelection(
-				repositoryCommits);
+				new RepositoryCommit(repo, commit));
 		CommonUtils
 				.runCommand(
 						org.eclipse.egit.ui.internal.commit.command.RevertHandler.ID,
