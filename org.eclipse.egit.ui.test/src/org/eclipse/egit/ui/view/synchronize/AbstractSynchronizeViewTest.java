@@ -16,18 +16,15 @@ import static org.eclipse.egit.ui.UIText.GitModelWorkingTree_workingTree;
 import static org.eclipse.egit.ui.test.ContextMenuHelper.clickContextMenu;
 import static org.eclipse.egit.ui.test.TestUtil.waitUntilTreeHasNodeContainsText;
 import static org.eclipse.jface.dialogs.MessageDialogWithToggle.NEVER;
-import static org.eclipse.jgit.lib.Constants.R_TAGS;
 import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE_PERSPECTIVE;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -35,15 +32,14 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
-import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
-import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -52,8 +48,6 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -66,7 +60,7 @@ import org.junit.BeforeClass;
 public abstract class AbstractSynchronizeViewTest extends
 		LocalRepositoryTestCase {
 
-	protected static final String INITIAL_TAG = R_TAGS + "initial-tag";
+	protected static final String INITIAL_TAG = "initial-tag";
 
 	protected static final String TEST_COMMIT_MSG = "test commit";
 
@@ -144,22 +138,38 @@ public abstract class AbstractSynchronizeViewTest extends
 		commit(projectName);
 	}
 
-	protected void launchSynchronization(String srcRef, String dstRef,
-			boolean includeLocal) throws InterruptedException, IOException {
-		launchSynchronization(PROJ1, srcRef, dstRef, includeLocal);
+	protected void launchSynchronization(String srcRepo, String srcRef,
+			String dstRepo, String dstRef, boolean includeLocal)
+			throws InterruptedException {
+		launchSynchronization(REPO1, PROJ1, srcRepo, srcRef, dstRepo, dstRef,
+				includeLocal);
 	}
 
-	protected void launchSynchronization(String projectName, String srcRef,
-			String dstRef, boolean includeLocal) throws InterruptedException,
-			IOException {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot()
-				.getProject(projectName);
-		Repository repo = RepositoryMapping.getMapping(project).getRepository();
+	protected void launchSynchronization(String repo, String projectName,
+			String srcRepo, String srcRef, String dstRepo, String dstRef,
+			boolean includeLocal) throws InterruptedException {
+		showDialog(projectName, "Team", "Synchronize...");
 
-		GitSynchronizeData data = new GitSynchronizeData(repo, srcRef, dstRef,
-				includeLocal);
+		bot.shell("Synchronize repository: " + repo + File.separator + ".git");
 
-		GitModelSynchronize.launch(data, new IResource[] { project });
+		if (!includeLocal)
+			bot.checkBox(
+					UIText.SelectSynchronizeResourceDialog_includeUncommitedChanges)
+					.click();
+
+		if (!includeLocal && srcRepo != null)
+			bot.comboBox(0)
+					.setSelection(srcRepo);
+		if (!includeLocal && srcRef != null)
+			bot.comboBox(1).setSelection(srcRef);
+
+		if (dstRepo != null)
+			bot.comboBox(2)
+					.setSelection(dstRepo);
+		if (dstRef != null)
+			bot.comboBox(3).setSelection(dstRef);
+
+		bot.button(IDialogConstants.OK_LABEL).click();
 
 		Job.getJobManager().join(
 				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
@@ -197,6 +207,7 @@ public abstract class AbstractSynchronizeViewTest extends
 	protected void createEmptyRepository() throws Exception {
 		File gitDir = new File(new File(getTestDirectory(), EMPTY_REPOSITORY),
 				Constants.DOT_GIT);
+		gitDir.mkdir();
 		Repository myRepository = new FileRepository(gitDir);
 		myRepository.create();
 
@@ -238,7 +249,10 @@ public abstract class AbstractSynchronizeViewTest extends
 			rootTree = waitForNodeWithText(syncViewTree, TEST_COMMIT_MSG);
 
 		SWTBotTreeItem projNode = waitForNodeWithText(rootTree, PROJ1);
-		return getCompareEditor(projNode, fileName);
+		SWTBotTreeItem folderNode = waitForNodeWithText(projNode, FOLDER);
+		waitForNodeWithText(folderNode, fileName).doubleClick();
+
+		return bot.editorByTitle(fileName);
 	}
 
 	protected SWTBotTreeItem waitForNodeWithText(SWTBotTree tree, String name) {
@@ -256,7 +270,10 @@ public abstract class AbstractSynchronizeViewTest extends
 			throws Exception {
 		SWTBotTree syncViewTree = setPresentationModel("Workspace").tree();
 		SWTBotTreeItem projectTree = waitForNodeWithText(syncViewTree, PROJ1);
-		return getCompareEditor(projectTree, FILE1);
+		SWTBotTreeItem folderTree = waitForNodeWithText(projectTree, FOLDER);
+		waitForNodeWithText(folderTree, FILE1).doubleClick();
+
+		return bot.editorByTitle(FILE1);
 	}
 
 	protected SWTBotEditor getCompareEditorForFileInGitChangeSetModel()
@@ -266,7 +283,13 @@ public abstract class AbstractSynchronizeViewTest extends
 		SWTBotTreeItem commitNode = syncViewTree.getAllItems()[0];
 		commitNode.expand();
 		SWTBotTreeItem projectTree = waitForNodeWithText(commitNode, PROJ1);
-		return getCompareEditor(projectTree, FILE1);
+		SWTBotTreeItem folderTree = waitForNodeWithText(projectTree, FOLDER);
+		waitForNodeWithText(folderTree, FILE1).doubleClick();
+
+		SWTBotEditor editor = bot.editorByTitle(FILE1);
+		editor.toTextEditor().setFocus();
+
+		return editor;
 	}
 
 	protected SWTBotEditor getCompareEditorForFileInWorspaceModel(
@@ -274,7 +297,11 @@ public abstract class AbstractSynchronizeViewTest extends
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 
 		SWTBotTreeItem projNode = waitForNodeWithText(syncViewTree, PROJ1);
-		SWTBotEditor editor = getCompareEditor(projNode, fileName);
+		SWTBotTreeItem folderNode = waitForNodeWithText(projNode, FOLDER);
+		waitForNodeWithText(folderNode, fileName).doubleClick();
+
+		SWTBotEditor editor = bot.editorByTitle(fileName);
+		editor.toTextEditor().setFocus();
 
 		return editor;
 	}
@@ -284,21 +311,9 @@ public abstract class AbstractSynchronizeViewTest extends
 
 		bot.shell(CommitDialog_CommitChanges).bot().activeShell();
 		bot.styledText(0).setText(TEST_COMMIT_MSG);
-		bot.toolbarButtonWithTooltip(CommitDialog_SelectAll).click();
+		bot.button(CommitDialog_SelectAll).click();
 		bot.button(CommitDialog_Commit).click();
 		TestUtil.joinJobs(JobFamilies.COMMIT);
-	}
-
-	private SWTBotEditor getCompareEditor(SWTBotTreeItem projectNode,
-			String fileName) {
-		SWTBotTreeItem folderNode = waitForNodeWithText(projectNode, FOLDER);
-		waitForNodeWithText(folderNode, fileName).doubleClick();
-
-		SWTBotEditor editor = bot.editorByTitle(fileName);
-		// Ensure that both StyledText widgets are enabled
-		SWTBotStyledText styledText = editor.toTextEditor().getStyledText();
-		bot.waitUntil(Conditions.widgetIsEnabled(styledText));
-		return editor;
 	}
 
 	private static void showDialog(String projectName, String... cmd) {

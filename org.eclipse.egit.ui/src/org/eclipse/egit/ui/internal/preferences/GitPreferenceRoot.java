@@ -92,9 +92,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 				.applyTo(historyGroup);
 
 		addField(new BooleanFieldEditor(
-				UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE,
-				UIText.ResourceHistory_toggleRelativeDate, historyGroup));
-		addField(new BooleanFieldEditor(
 				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
 				UIText.ResourceHistory_toggleCommentWrap, historyGroup));
 
@@ -156,9 +153,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
 				.applyTo(synchronizeGroup);
 		synchronizeGroup.setText(UIText.GitPreferenceRoot_SynchronizeView);
-		addField(new BooleanFieldEditor(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH,
-				UIText.GitPreferenceRoot_fetchBeforeSynchronization,
-				synchronizeGroup));
 		addField(new BooleanFieldEditor(UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
 				UIText.GitPreferenceRoot_automaticallyEnableChangesetModel,
 				synchronizeGroup));
