@@ -27,6 +27,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.ui.mapping.ISynchronizationCompareInput;
@@ -54,6 +56,11 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	protected final RevCommit remoteCommit;
 
 	/**
+	 * Ancestor commit connected with this container
+	 */
+	protected final RevCommit ancestorCommit;
+
+	/**
 	 *
 	 * @param parent instance of parent object
 	 * @param commit commit connected with this container
@@ -65,6 +72,7 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		super(parent);
 		kind = direction;
 		baseCommit = commit;
+		ancestorCommit = calculateAncestor(baseCommit);
 
 		RevCommit[] parents = baseCommit.getParents();
 		if (parents != null && parents.length > 0)
@@ -77,6 +85,15 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 	public Image getImage() {
 		// currently itsn't used
 		return null;
+	}
+
+	/**
+	 * Returns common ancestor for this commit and all it parent's commits.
+	 *
+	 * @return common ancestor commit
+	 */
+	public RevCommit getAncestorCommit() {
+		return ancestorCommit;
 	}
 
 	/**
@@ -236,6 +253,21 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 			kind = kind | DELETION;
 		else
 			kind = kind | CHANGE;
+	}
+
+	private RevCommit calculateAncestor(RevCommit actual) throws IOException {
+		RevWalk rw = new RevWalk(getRepository());
+		rw.setRevFilter(RevFilter.MERGE_BASE);
+
+		for (RevCommit parent : actual.getParents()) {
+			RevCommit parentCommit = rw.parseCommit(parent.getId());
+			rw.markStart(parentCommit);
+		}
+
+		rw.markStart(rw.parseCommit(actual.getId()));
+
+		RevCommit result = rw.next();
+		return result != null ? result : rw.parseCommit(ObjectId.zeroId());
 	}
 
 }
