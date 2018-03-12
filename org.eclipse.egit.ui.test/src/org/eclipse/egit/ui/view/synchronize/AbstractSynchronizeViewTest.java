@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -33,7 +35,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -43,12 +44,14 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
+import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.util.FileUtils;
+import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -162,13 +165,12 @@ public abstract class AbstractSynchronizeViewTest extends
 	}
 
 	protected void launchSynchronization(String srcRef, String dstRef,
-			boolean includeLocal) throws InterruptedException, IOException {
+			boolean includeLocal) throws IOException {
 		launchSynchronization(PROJ1, srcRef, dstRef, includeLocal);
 	}
 
 	protected void launchSynchronization(String projectName, String srcRef,
-			String dstRef, boolean includeLocal) throws InterruptedException,
-			IOException {
+			String dstRef, boolean includeLocal) throws IOException {
 		IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(projectName);
 		Repository repo = RepositoryMapping.getMapping(project).getRepository();
@@ -176,11 +178,11 @@ public abstract class AbstractSynchronizeViewTest extends
 		GitSynchronizeData data = new GitSynchronizeData(repo, srcRef, dstRef,
 				includeLocal);
 
+		JobJoiner jobJoiner = JobJoiner.startListening(
+				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, 60,
+				TimeUnit.SECONDS);
 		GitModelSynchronize.launch(data, new IResource[] { project });
-
-		Job.getJobManager().join(JobFamilies.SYNCHRONIZE_READ_DATA, null);
-		Job.getJobManager().join(
-				ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION, null);
+		jobJoiner.join();
 	}
 
 	protected void setEnabledModelProvider(String modelProviderId) {
@@ -297,17 +299,22 @@ public abstract class AbstractSynchronizeViewTest extends
 				return item;
 			}
 
-		throw new RuntimeException("Poject with name " + projectName +
+		throw new RuntimeException("Project with name " + projectName +
 				" was not found in given tree");
 	}
 
 	private SWTBotTreeItem getTreeItemContainingText(SWTBotTreeItem[] items,
 			String text) {
-		for (SWTBotTreeItem item : items)
+		List<String> existingItems = new ArrayList<String>();
+		for (SWTBotTreeItem item : items) {
 			if (item.getText().contains(text))
 				return item;
+			existingItems.add(item.getText());
+		}
 
 		throw new WidgetNotFoundException(
-					"Tree item elment containing text: test commit was not found");
+				"Tree item element containing text \"" + text
+						+ "\" was not found. Existing tree items:\n"
+						+ StringUtils.join(existingItems, "\n"));
 	}
 }
