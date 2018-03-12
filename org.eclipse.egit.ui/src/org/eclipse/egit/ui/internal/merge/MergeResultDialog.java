@@ -117,11 +117,10 @@ public class MergeResultDialog extends Dialog {
 		resultLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
 				false));
 		Text resultText = new Text(composite, SWT.READ_ONLY);
-		MergeStatus status = mergeResult.getMergeStatus();
-		resultText.setText(status.toString());
+		resultText.setText(getStatusText(mergeResult.getMergeStatus()));
 		resultText.setSelection(resultText.getCaretPosition());
 		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		if (status == MergeStatus.FAILED) {
+		if (mergeResult.getMergeStatus() == MergeStatus.FAILED) {
 			resultText.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_RED));
 
 			StringBuilder paths = new StringBuilder();
@@ -149,9 +148,7 @@ public class MergeResultDialog extends Dialog {
 			pathsText.setText(paths.toString());
 		}
 
-		if (status == MergeStatus.FAST_FORWARD
-				|| status == MergeStatus.FAST_FORWARD_SQUASHED
-				|| status == MergeStatus.MERGED) {
+		if (mergeResult.getMergeStatus() != MergeStatus.FAILED) {
 			// new head
 			Label newHeadLabel = new Label(composite, SWT.NONE);
 			newHeadLabel.setText(UIText.MergeResultDialog_newHead);
