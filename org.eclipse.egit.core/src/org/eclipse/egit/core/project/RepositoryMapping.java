@@ -31,8 +31,8 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.RepositoryCache;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
@@ -256,6 +256,7 @@ public class RepositoryMapping {
 		p.setProperty(containerPathString + ".gitdir", gitDirPathString); //$NON-NLS-1$
 	}
 
+	@Override
 	public String toString() {
 		IPath absolutePath = getGitDirAbsolutePath();
 		return "RepositoryMapping[" //$NON-NLS-1$

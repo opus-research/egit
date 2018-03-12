@@ -49,6 +49,9 @@ public class FeatureTrackHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
+		if (gfRepo == null) {
+			return error(UIText.Handlers_noGitflowRepositoryFound);
+		}
 		final List<Ref> refs = new ArrayList<Ref>();
 		Shell activeShell = HandlerUtil.getActiveShell(event);
 
@@ -89,7 +92,7 @@ public class FeatureTrackHandler extends AbstractHandler {
 
 		Ref ref = dialog.getSelectedNode();
 		FeatureTrackOperation featureTrackOperation = new FeatureTrackOperation(
-				gfRepo, ref);
+				gfRepo, ref, timeout);
 		JobUtil.scheduleUserWorkspaceJob(featureTrackOperation,
 				UIText.FeatureTrackHandler_trackingFeature, GITFLOW_FAMILY);
 

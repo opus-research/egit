@@ -33,6 +33,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
+import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.storage.IndexFileRevision;
 import org.eclipse.egit.core.internal.storage.OpenWorkspaceVersionEnabled;
 import org.eclipse.egit.ui.internal.CommonUtils;
@@ -48,7 +49,6 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.core.history.IFileRevision;
@@ -77,59 +77,41 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 	private ITypedElement left;
 	private ITypedElement right;
 	private ITypedElement ancestor;
-	private Repository repository;
 
 	/**
 	 * Creates a new CompareFileRevisionEditorInput.
-	 *
 	 * @param left
 	 * @param right
-	 * @param repository
-	 *            repository where resources are coming from
 	 * @param page
 	 */
-	public GitCompareFileRevisionEditorInput(ITypedElement left,
-			ITypedElement right, Repository repository, IWorkbenchPage page) {
+	public GitCompareFileRevisionEditorInput(ITypedElement left, ITypedElement right, IWorkbenchPage page) {
 		super(new CompareConfiguration(), page);
 		this.left = left;
 		this.right = right;
-		this.repository = repository;
 	}
 
 	/**
 	 * Creates a new CompareFileRevisionEditorInput.
-	 *
 	 * @param left
 	 * @param right
 	 * @param ancestor
-	 * @param repository
-	 *            repository where resources are coming from
 	 * @param page
 	 */
-	public GitCompareFileRevisionEditorInput(ITypedElement left,
-			ITypedElement right, ITypedElement ancestor, Repository repository,
-			IWorkbenchPage page) {
+	public GitCompareFileRevisionEditorInput(ITypedElement left, ITypedElement right, ITypedElement ancestor, IWorkbenchPage page) {
 		super(new CompareConfiguration(), page);
 		this.left = left;
 		this.right = right;
 		this.ancestor = ancestor;
-		this.repository = repository;
 	}
 
-	/**
-	 * @return the revision
-	 */
-	public FileRevisionTypedElement getRightRevision() {
+	FileRevisionTypedElement getRightRevision() {
 		if (right instanceof FileRevisionTypedElement) {
 			return (FileRevisionTypedElement) right;
 		}
 		return null;
 	}
 
-	/**
-	 * @return the revision
-	 */
-	public FileRevisionTypedElement getLeftRevision() {
+	FileRevisionTypedElement getLeftRevision() {
 		if (left instanceof FileRevisionTypedElement) {
 			return (FileRevisionTypedElement) left;
 		}
@@ -140,13 +122,6 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		if (ancestor instanceof FileRevisionTypedElement)
 			return (FileRevisionTypedElement) ancestor;
 		return null;
-	}
-
-	/**
-	 * @return repository where resources are coming from
-	 */
-	public Repository getRepository() {
-		return repository;
 	}
 
 	private static void ensureContentsCached(FileRevisionTypedElement left, FileRevisionTypedElement right, FileRevisionTypedElement ancestor,
@@ -409,11 +384,7 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		return element.getName();
 	}
 
-	/**
-	 * @param element
-	 * @return the long name / e.g. path
-	 */
-	public String getLongName(ITypedElement element) {
+	private String getLongName(ITypedElement element) {
 		if (element instanceof FileRevisionTypedElement){
 			FileRevisionTypedElement fileRevisionElement = (FileRevisionTypedElement) element;
 			return fileRevisionElement.getPath();
@@ -432,10 +403,10 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 			if (fileObject instanceof LocalFileRevision){
 				try {
 					IStorage storage = ((LocalFileRevision) fileObject).getStorage(new NullProgressMonitor());
-					if (CompareUtils.getAdapter(storage, IFileState.class) != null){
+					if (AdapterUtils.adapt(storage, IFileState.class) != null) {
 						//local revision
 						return UIText.GitCompareFileRevisionEditorInput_LocalRevision;
-					} else if (CompareUtils.getAdapter(storage, IFile.class) != null) {
+					} else if (AdapterUtils.adapt(storage, IFile.class) != null) {
 						//current revision
 						return UIText.GitCompareFileRevisionEditorInput_CurrentRevision;
 					}
@@ -712,6 +683,19 @@ public class GitCompareFileRevisionEditorInput extends SaveableCompareEditorInpu
 		@Override
 		public void handleDocumentSaved() {
 			// Ignore
+		}
+
+		@Override
+		public void doSave(IProgressMonitor monitor) throws CoreException {
+			// SaveableComparison unconditionally resets the dirty flag to
+			// false, but LocalResourceSaveableComparison's performSave may not
+			// actually save: if the file has been changed outside the compare
+			// editor, it displays a dialog that the user may cancel.
+			if (isDirty()) {
+				performSave(monitor);
+				// LocalResourecSaveableComparison does already reset the dirty
+				// flag if it did save.
+			}
 		}
 	}
 

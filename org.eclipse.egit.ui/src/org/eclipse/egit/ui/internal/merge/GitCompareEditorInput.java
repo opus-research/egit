@@ -5,8 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.merge;
 
@@ -26,11 +24,9 @@ import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.compare.structuremergeviewer.IDiffContainer;
 import org.eclipse.compare.structuremergeviewer.IDiffElement;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -45,6 +41,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
@@ -112,13 +109,6 @@ public class GitCompareEditorInput extends CompareEditorInput {
 		this.baseVersion = baseVersion;
 		this.compareVersion = compareVersion;
 		this.repository = repository;
-	}
-
-	/**
-	 * @return repository where resources are coming from
-	 */
-	public Repository getRepository() {
-		return repository;
 	}
 
 	@Override
@@ -270,8 +260,7 @@ public class GitCompareEditorInput extends CompareEditorInput {
 			if (baseCommit == null) {
 				// compare workspace with something
 				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
-						repository, ResourcesPlugin.getWorkspace().getRoot()));
+				baseTreeIndex = tw.addTree(new FileTreeIterator(repository));
 			} else
 				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
 						repository.newObjectReader(), baseCommit.getTree()));
