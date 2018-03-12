@@ -72,7 +72,7 @@ public abstract class AbstractFeatureFinishHandlerTest extends AbstractGitflowHa
 		});
 
 		bot.waitUntil(shellIsActive(UIText.FeatureStartHandler_provideFeatureName));
-		bot.text().setText(featureName);
+		bot.text().typeText(featureName);
 		bot.button("OK").click();
 		bot.waitUntil(Conditions.waitForJobs(JobFamilies.GITFLOW_FAMILY, "Git flow jobs"));
 	}
