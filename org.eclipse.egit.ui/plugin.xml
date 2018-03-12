@@ -1555,6 +1555,10 @@
             </contentExtension>
          </includes>
       </viewerContentBinding>
+      <dragAssistant
+            viewerId="org.eclipse.egit.ui.RepositoriesView"
+            class="org.eclipse.egit.ui.internal.repository.RepositoryDragAssistant">
+      </dragAssistant>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
@@ -3444,15 +3448,7 @@
             commandId="org.eclipse.egit.ui.commit.CreateBranch"
             icon="icons/obj16/new_branch_obj.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.history.CherryPick"
-            icon="icons/obj16/cherry-pick.png">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.commit.CherryPick"
-            icon="icons/obj16/cherry-pick.png">
-      </image>
-      <image
+       <image
             commandId="org.eclipse.egit.ui.commit.Checkout"
             icon="icons/obj16/checkout.gif">
       </image>
@@ -3607,6 +3603,10 @@
       <image
             commandId="org.eclipse.egit.ui.team.RenameBranch"
             icon="icons/obj16/editconfig.gif">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.history.DeleteBranch"
+            icon="icons/obj16/delete_obj.gif">
       </image>
    </extension>
    <extension
@@ -3936,6 +3936,11 @@
             name="%CreateBranchCommand.name">
       </command>
       <command
+            defaultHandler="org.eclipse.egit.ui.internal.history.command.DeleteBranchOnCommitHandler"
+            id="org.eclipse.egit.ui.history.DeleteBranch"
+            name="Delete Branch">
+      </command>
+      <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CreateTagOnCommitHandler"
             id="org.eclipse.egit.ui.history.CreateTag"
             name="%CreateTagCommand.name">
@@ -3983,11 +3988,6 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CherryPickHandler"
             id="org.eclipse.egit.ui.history.CherryPick"
-            name="%CherryPickCommand.name">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.commit.command.CherryPickHandler"
-            id="org.eclipse.egit.ui.commit.CherryPick"
             name="%CherryPickCommand.name">
       </command>
       <command
