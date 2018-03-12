@@ -25,12 +25,12 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.jgit.api.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.GitAPIException;
 import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.NoHeadException;
+import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.osgi.util.NLS;
@@ -111,10 +111,11 @@ public class MergeOperation implements IEGitOperation {
 					throw new TeamException(CoreText.MergeOperation_MergeFailedRefUpdate, e);
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(), e.getCause());
+				} finally {
+					ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
+							mymonitor, 1));
+					mymonitor.done();
 				}
-				ProjectUtil.refreshValidProjects(validProjects, new SubProgressMonitor(
-						mymonitor, 1));
-				mymonitor.done();
 			}
 		};
 		// lock workspace to protect working tree changes

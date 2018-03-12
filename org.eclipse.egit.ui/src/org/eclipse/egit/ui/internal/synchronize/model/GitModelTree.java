@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize.model;
 
+import static org.eclipse.compare.structuremergeviewer.Differencer.LEFT;
+import static org.eclipse.compare.structuremergeviewer.Differencer.RIGHT;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 
 import java.io.IOException;
@@ -54,10 +56,11 @@ public class GitModelTree extends GitModelCommit {
 	 *            name resource associated with this tree
 	 * @throws IOException
 	 */
-	public GitModelTree(GitModelObject parent, RevCommit commit,
+	public GitModelTree(GitModelCommit parent, RevCommit commit,
 			ObjectId ancestorId, ObjectId baseId, ObjectId remoteId, String name)
 			throws IOException {
-		super(parent, commit);
+		// only direction is important for us, therefore we mask rest of bits in kind
+		super(parent, commit, parent.getKind() & (LEFT | RIGHT));
 		this.name = name;
 		this.baseId = baseId;
 		this.remoteId = remoteId;
@@ -110,27 +113,20 @@ public class GitModelTree extends GitModelCommit {
 	}
 
 	@Override
-	protected String getAncestorSha1() {
-		return ancestorId.getName();
+	protected ObjectId getBaseObjectId() {
+		return baseId;
 	}
 
 	@Override
-	protected String getBaseSha1() {
-		return baseId.getName();
-	}
-
-	@Override
-	protected String getRemoteSha1() {
-		return remoteId.getName();
+	protected ObjectId getRemoteObjectId() {
+		return remoteId;
 	}
 
 	private void getChildrenImpl() {
-		TreeWalk tw = createTreeWalk();
 		List<GitModelObject> result = new ArrayList<GitModelObject>();
 
 		try {
-			List<String> notIgnored = getNotIgnoredNodes(remoteId);
-
+			TreeWalk tw = createTreeWalk();
 			int remoteNth = tw.addTree(remoteId);
 
 			int baseNth = -1;
@@ -142,9 +138,6 @@ public class GitModelTree extends GitModelCommit {
 				ancestorNth = tw.addTree(ancestorId);
 
 			while (tw.next()) {
-				if (!notIgnored.contains(tw.getNameString()))
-					continue;
-
 				GitModelObject obj = createChildren(tw, ancestorNth, baseNth,
 						remoteNth);
 				if (obj != null)
