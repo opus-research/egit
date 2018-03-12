@@ -1983,9 +1983,6 @@ public class UIText extends NLS {
 	public static String PushAction_wrongURITitle;
 
 	/** */
-	public static String PushBranchPage_CommitLabel;
-
-	/** */
 	public static String PushBranchPage_RemoteBranchNameLabel;
 
 	/** */
@@ -4394,6 +4391,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RevertHandler_AlreadyRevertedMessage;
+
+	/** */
+	public static String RevertHandler_CommitsNotOnCurrentBranch;
+
+	/** */
+	public static String RevertHandler_Error_Title;
+
+	/** */
+	public static String RevertHandler_ErrorCheckingIfCommitsAreOnCurrentBranch;
 
 	/** */
 	public static String RevertHandler_JobName;
