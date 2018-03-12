@@ -133,8 +133,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		ColumnViewerToolTipSupport.enableFor(refLogTableTreeViewer);
 
-		TreeViewerColumn fromColum = createColumn(layout,
-				UIText.ReflogView_FromColumnHeader, 10, SWT.LEFT);
+		TreeViewerColumn fromColum = createColumn(layout, "From", 10, SWT.LEFT); //$NON-NLS-1$
 		fromColum.setLabelProvider(new ColumnLabelProvider() {
 
 			@Override
@@ -155,8 +154,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 		});
 
-		TreeViewerColumn toColumn = createColumn(layout,
-				UIText.ReflogView_ToColumnHeader, 10, SWT.LEFT);
+		TreeViewerColumn toColumn = createColumn(layout, "To", 10, SWT.LEFT); //$NON-NLS-1$
 		toColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			@Override
@@ -178,7 +176,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 
 		});
 		TreeViewerColumn messageColumn = createColumn(layout,
-				UIText.ReflogView_MessageColumnHeader, 50, SWT.LEFT);
+				"Message", 50, SWT.LEFT); //$NON-NLS-1$
 		messageColumn.setLabelProvider(new ColumnLabelProvider() {
 
 			private ResourceManager resourceManager = new LocalResourceManager(
@@ -238,7 +236,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 									walk.parseCommit(id)));
 					}
 				} catch (IOException e) {
-					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
+					Activator.logError("Error opening commit", e); //$NON-NLS-1$
 				} finally {
 					walk.release();
 				}
