@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.selection;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -161,26 +160,19 @@ public class SelectionUtils {
 
 	private static List<IResource> extractResourcesFromMapping(Object o) {
 		ResourceMapping mapping = AdapterUtils.adapt(o, ResourceMapping.class);
-		if (mapping == null)
-			return Collections.emptyList();
-
-		ResourceTraversal[] traversals;
-		try {
-			traversals = mapping.getTraversals(null, null);
-		} catch (CoreException e) {
-			Activator.logError(e.getMessage(), e);
-			return Collections.emptyList();
+		if (mapping != null) {
+			ResourceTraversal[] traversals;
+			try {
+				traversals = mapping.getTraversals(null, null);
+				for (ResourceTraversal traversal : traversals) {
+					IResource[] resources = traversal.getResources();
+					return Arrays.asList(resources);
+				}
+			} catch (CoreException e) {
+				Activator.logError(e.getMessage(), e);
+			}
 		}
-
-		if (traversals.length == 0)
-			return Collections.emptyList();
-
-		List<IResource> result = new ArrayList<IResource>();
-		for (ResourceTraversal traversal : traversals) {
-			IResource[] resources = traversal.getResources();
-			result.addAll(Arrays.asList(resources));
-		}
-		return result;
+		return Collections.emptyList();
 	}
 
 	/**
