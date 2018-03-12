@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,8 +29,6 @@ import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILabelDecorator;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.StructuredViewer;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
@@ -65,10 +62,10 @@ public class ProblemLabelDecorator extends BaseLabelProvider implements
 
 	@Override
 	public void dispose() {
-		super.dispose();
 		resourceManager.dispose();
 		if (this.viewer != null)
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
+		super.dispose();
 	}
 
 	@Override
@@ -106,22 +103,15 @@ public class ProblemLabelDecorator extends BaseLabelProvider implements
 
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
-		Set<IResource> resources = new HashSet<>();
+		Set<IResource> resources = new HashSet<IResource>();
 
 		IMarkerDelta[] markerDeltas = event.findMarkerDeltas(IMarker.PROBLEM,
 				true);
-		for (IMarkerDelta delta : markerDeltas) {
-			// Also add parents
-			IResource resource = delta.getResource();
-			while (resource.getType() != IResource.ROOT
-					&& resources.add(resource)) {
-				resource = resource.getParent();
-			}
-		}
+		for (IMarkerDelta delta : markerDeltas)
+			resources.add(delta.getResource());
 
-		if (!resources.isEmpty()) {
+		if (!resources.isEmpty())
 		    updateLabels(resources);
-		}
 	}
 
 	private void updateLabels(Set<IResource> changedResources) {
@@ -132,37 +122,23 @@ public class ProblemLabelDecorator extends BaseLabelProvider implements
 			display.asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					fireLabelProviderChanged(new LabelProviderChangedEvent(
-							ProblemLabelDecorator.this, updateElements));
+					viewer.update(updateElements, null);
 				}
 			});
 		}
 	}
 
 	private List<Object> getAffectedElements(Set<IResource> resources) {
-		List<Object> result = new ArrayList<>();
+		List<Object> result = new ArrayList<Object>();
 		if (viewer.getContentProvider() instanceof IStructuredContentProvider) {
 			IStructuredContentProvider contentProvider = (IStructuredContentProvider) viewer.getContentProvider();
-			getAffectedElements(resources, contentProvider.getElements(null),
-					contentProvider, result);
-		}
-		return result;
-	}
-
-	private void getAffectedElements(Set<IResource> resources,
-			Object[] elements, IStructuredContentProvider contentProvider,
-			List<Object> result) {
-		for (Object element : elements) {
-			IResource resource = AdapterUtils.adapt(element, IResource.class);
-			if (resource != null && resources.contains(resource)) {
-				result.add(element);
-				if (contentProvider instanceof ITreeContentProvider) {
-					getAffectedElements(resources,
-							((ITreeContentProvider) contentProvider)
-									.getChildren(element),
-							contentProvider, result);
-				}
+			Object[] elements = contentProvider.getElements(null);
+			for (Object element : elements) {
+				IResource resource = AdapterUtils.adapt(element, IResource.class);
+				if (resource != null && resources.contains(resource))
+					result.add(element);
 			}
 		}
+		return result;
 	}
 }

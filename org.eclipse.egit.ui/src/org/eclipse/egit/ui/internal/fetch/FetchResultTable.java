@@ -36,7 +36,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.jface.viewers.ViewerComparator;
+import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -155,7 +155,7 @@ class FetchResultTable {
 					walk.markStart(walk.parseCommit(update.getNewObjectId()));
 					walk.markUninteresting(walk.parseCommit(update
 							.getOldObjectId()));
-					List<RepositoryCommit> commits = new ArrayList<>();
+					List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
 					for (RevCommit commit : walk)
 						commits.add(new RepositoryCommit(repo, commit));
 					children = commits.toArray();
@@ -296,7 +296,7 @@ class FetchResultTable {
 			}
 
 		});
-		treeViewer.setComparator(new ViewerComparator() {
+		treeViewer.setSorter(new ViewerSorter() {
 
 			@Override
 			public int compare(Viewer viewer, Object e1, Object e2) {
@@ -410,7 +410,7 @@ class FetchResultTable {
 		treeViewer.setInput(null);
 		repo = db;
 		reader = db.newObjectReader();
-		abbrevations = new HashMap<>();
+		abbrevations = new HashMap<ObjectId, String>();
 		treeViewer.setInput(fetchResult);
 	}
 

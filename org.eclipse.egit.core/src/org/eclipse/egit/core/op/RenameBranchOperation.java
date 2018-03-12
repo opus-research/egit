@@ -13,7 +13,7 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -49,25 +49,29 @@ public class RenameBranchOperation implements IEGitOperation {
 		this.newName = newName;
 	}
 
-	@Override
-	public void execute(IProgressMonitor monitor) throws CoreException {
-		IWorkspaceRunnable action = new IWorkspaceRunnable() {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 
-			@Override
+		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				String taskName = NLS.bind(
 						CoreText.RenameBranchOperation_TaskName, branch
 								.getName(), newName);
-				SubMonitor progress = SubMonitor.convert(actMonitor);
-				progress.setTaskName(taskName);
-				try (Git git = new Git(repository)) {
-					git.branchRename().setOldName(
+				actMonitor.beginTask(taskName, 1);
+				try {
+					new Git(repository).branchRename().setOldName(
 							branch.getName()).setNewName(newName).call();
 				} catch (JGitInternalException e) {
 					throw new CoreException(Activator.error(e.getMessage(), e));
 				} catch (GitAPIException e) {
 					throw new CoreException(Activator.error(e.getMessage(), e));
 				}
+				actMonitor.worked(1);
+				actMonitor.done();
 			}
 		};
 		// lock workspace to protect working tree changes
@@ -75,7 +79,6 @@ public class RenameBranchOperation implements IEGitOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}

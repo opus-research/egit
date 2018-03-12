@@ -45,7 +45,6 @@ public class IgnoreOperationTest extends GitTestCase {
 
 	private TestRepository testRepository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -53,7 +52,6 @@ public class IgnoreOperationTest extends GitTestCase {
 		testRepository.connect(project.getProject());
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -133,8 +131,7 @@ public class IgnoreOperationTest extends GitTestCase {
 		File ignoreFile = new File(rootFile, Constants.GITIGNORE_FILENAME);
 		String content = testUtils.slurpAndClose(ignoreFile.toURI().toURL()
 				.openStream());
-		assertEquals("/.metadata/\n/" + project.getProject().getName() + "/\n",
-				content);
+		assertEquals("/" + project.getProject().getName() + "/\n", content);
 		assertTrue(operation.isGitignoreOutsideWSChanged());
 	}
 

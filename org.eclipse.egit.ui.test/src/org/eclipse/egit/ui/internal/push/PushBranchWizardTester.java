@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (c) 2013, 2014 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,7 +19,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.SWTBot;
@@ -33,19 +32,16 @@ public class PushBranchWizardTester {
 
 	public static PushBranchWizardTester startWizard(SWTBotTree projectTree,
 			String branchName) {
-		String pushBranchMenu = branchName.equals(Constants.HEAD)
-				? UIText.PushMenu_PushHEAD
-				: NLS.bind(UIText.PushMenu_PushBranch, branchName);
+		String pushBranchMenu = NLS
+				.bind(UIText.PushMenu_PushBranch, branchName);
 		ContextMenuHelper.clickContextMenu(projectTree, "Team", pushBranchMenu);
 		return forBranchName(branchName);
 	}
 
 	public static PushBranchWizardTester forBranchName(String branchName) {
 		SWTWorkbenchBot bot = new SWTWorkbenchBot();
-		String title = branchName.equals(Constants.HEAD)
-				? UIText.PushCommitHandler_pushCommitTitle
-				: MessageFormat.format(UIText.PushBranchWizard_WindowTitle,
-						branchName);
+		String title = MessageFormat.format(
+				UIText.PushBranchWizard_WindowTitle, branchName);
 		SWTBot wizard = bot.shell(title).bot();
 		return new PushBranchWizardTester(wizard);
 	}
@@ -112,15 +108,13 @@ public class PushBranchWizardTester {
 	public void selectMerge() {
 		wizard.checkBox(UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
 				.select();
-		wizard.comboBoxWithLabel(UIText.BranchRebaseModeCombo_RebaseModeLabel)
-				.setSelection(UIText.BranchRebaseMode_None);
+		wizard.radio(UIText.UpstreamConfigComponent_MergeRadio).click();
 	}
 
 	public void selectRebase() {
 		wizard.checkBox(UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
 				.select();
-		wizard.comboBoxWithLabel(UIText.BranchRebaseModeCombo_RebaseModeLabel)
-				.setSelection(UIText.BranchRebaseMode_Rebase);
+		wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio).click();
 	}
 
 	public void assertConfigureUpstreamSelected() {
@@ -131,16 +125,14 @@ public class PushBranchWizardTester {
 
 	public void assertMergeSelected() {
 		assertConfigureUpstreamSelected();
-		assertEquals(UIText.BranchRebaseMode_None, wizard
-				.comboBoxWithLabel(UIText.BranchRebaseModeCombo_RebaseModeLabel)
-				.selection());
+		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_MergeRadio)
+				.isSelected());
 	}
 
 	public void assertRebaseSelected() {
 		assertConfigureUpstreamSelected();
-		assertEquals(UIText.BranchRebaseMode_Rebase, wizard
-				.comboBoxWithLabel(UIText.BranchRebaseModeCombo_RebaseModeLabel)
-				.selection());
+		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio)
+				.isSelected());
 	}
 
 	public boolean isUpstreamConfigOverwriteWarningShown() {

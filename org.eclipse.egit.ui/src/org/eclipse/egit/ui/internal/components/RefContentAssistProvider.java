@@ -11,18 +11,15 @@ package org.eclipse.egit.ui.internal.components;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
@@ -37,7 +34,6 @@ public class RefContentAssistProvider {
 	private List<Ref> destinationRefs;
 	private List<Ref> sourceRefs;
 	private final Shell shell;
-	private final IWizardContainer container;
 	private final Repository repo;
 	private URIish uri;
 
@@ -50,23 +46,6 @@ public class RefContentAssistProvider {
 		this.repo = repo;
 		this.uri = uri;
 		this.shell = shell;
-		this.container = null;
-	}
-
-	/**
-	 * @param repo
-	 *            the repository
-	 * @param uri
-	 *            the uri to fetch branches from
-	 * @param container
-	 *            used to attach progress dialogs to.
-	 */
-	public RefContentAssistProvider(Repository repo, URIish uri,
-			IWizardContainer container) {
-		this.repo = repo;
-		this.uri = uri;
-		this.shell = null;
-		this.container = container;
 	}
 
 	/**
@@ -81,7 +60,7 @@ public class RefContentAssistProvider {
 		} else if (destinationRefs != null)
 			return destinationRefs;
 
-		List<Ref> result = new ArrayList<>();
+		List<Ref> result = new ArrayList<Ref>();
 		try {
 			boolean local = pushMode == source;
 			if (!local) {
@@ -89,23 +68,22 @@ public class RefContentAssistProvider {
 						uri,
 						Activator.getDefault().getPreferenceStore().getInt(
 								UIPreferences.REMOTE_CONNECTION_TIMEOUT));
-				IRunnableWithProgress runnable = new IRunnableWithProgress() {
-					@Override
-					public void run(IProgressMonitor monitor)
-							throws InvocationTargetException,
-							InterruptedException {
-						monitor.beginTask(
-								UIText.RefSpecDialog_GettingRemoteRefsMonitorMessage,
-								IProgressMonitor.UNKNOWN);
-						lop.run(monitor);
-						monitor.done();
-					}
-				};
-				if (shell != null) {
-					new ProgressMonitorDialog(shell).run(true, true, runnable);
-				} else {
-					container.run(true, true, runnable);
-				}
+
+				new ProgressMonitorDialog(shell).run(true, true,
+						new IRunnableWithProgress() {
+
+							@Override
+							public void run(IProgressMonitor monitor)
+									throws InvocationTargetException,
+									InterruptedException {
+								monitor
+										.beginTask(
+												UIText.RefSpecDialog_GettingRemoteRefsMonitorMessage,
+												IProgressMonitor.UNKNOWN);
+								lop.run(monitor);
+								monitor.done();
+							}
+						});
 				for (Ref ref : lop.getRemoteRefs())
 					if (ref.getName().startsWith(Constants.R_HEADS)
 							|| (!pushMode && ref.getName().startsWith(
@@ -133,7 +111,6 @@ public class RefContentAssistProvider {
 			Activator.handleError(e.getMessage(), e, true);
 			return result;
 		}
-		Collections.sort(result, CommonUtils.REF_ASCENDING_COMPARATOR);
 		if (source)
 			sourceRefs = result;
 		else

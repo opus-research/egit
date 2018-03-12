@@ -3,7 +3,6 @@
  * Copyright (C) 2010, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2013, Dariusz Luksza <dariusz.luksza@gmail.com>
- * Copyright (C) 2016, 2017 Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,10 +14,8 @@ package org.eclipse.egit.ui.internal.preferences;
 import java.io.File;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
-import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
@@ -27,6 +24,7 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.DirectoryFieldEditor;
+import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
@@ -40,11 +38,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
-import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /** Root preference page for the all of our workspace preferences. */
-public class GitPreferenceRoot extends DoublePreferencesPreferencePage
-		implements IWorkbenchPreferencePage {
+public class GitPreferenceRoot extends FieldEditorPreferencePage implements
+		IWorkbenchPreferencePage {
 	private final static int GROUP_SPAN = 3;
 
 	private final static String[][] MERGE_MODE_NAMES_AND_VALUES = new String[3][2];
@@ -73,14 +70,8 @@ public class GitPreferenceRoot extends DoublePreferencesPreferencePage
 	}
 
 	@Override
-	protected IPreferenceStore doGetSecondaryPreferenceStore() {
-		return new ScopedPreferenceStore(InstanceScope.INSTANCE,
-				org.eclipse.egit.core.Activator.getPluginId());
-	}
-
-	@Override
 	public void init(final IWorkbench workbench) {
-		// Nothing to do
+		// Do nothing.
 	}
 
 	@Override
@@ -93,16 +84,11 @@ public class GitPreferenceRoot extends DoublePreferencesPreferencePage
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
 				.applyTo(cloningGroup);
 		DirectoryFieldEditor editor = new DirectoryFieldEditor(
-				GitCorePreferences.core_defaultRepositoryDir,
+				UIPreferences.DEFAULT_REPO_DIR,
 				UIText.GitPreferenceRoot_DefaultRepoFolderLabel, cloningGroup) {
 
 			/** The own control is the variableButton */
 			private static final int NUMBER_OF_OWN_CONTROLS = 1;
-
-			@Override
-			public IPreferenceStore getPreferenceStore() {
-				return getSecondaryPreferenceStore();
-			}
 
 			@Override
 			protected boolean doCheckState() {
@@ -194,30 +180,12 @@ public class GitPreferenceRoot extends DoublePreferencesPreferencePage
 				.applyTo(repoChangeScannerGroup);
 		repoChangeScannerGroup
 				.setText(UIText.GitPreferenceRoot_RepoChangeScannerGroupHeader);
-
-		IntegerFieldEditor intervalField = new IntegerFieldEditor(
-				UIPreferences.REFESH_INDEX_INTERVAL,
-				UIText.RefreshPreferencesPage_RefreshIndexInterval,
-				repoChangeScannerGroup);
-		intervalField.getLabelControl(repoChangeScannerGroup).setToolTipText(
-				UIText.RefreshPreferencesPage_RefreshIndexIntervalTooltip);
-		addField(intervalField);
 		addField(new BooleanFieldEditor(UIPreferences.REFESH_ON_INDEX_CHANGE,
 				UIText.RefreshPreferencesPage_RefreshWhenIndexChange,
-				repoChangeScannerGroup) {
-			@Override
-			public int getNumberOfControls() {
-				return 2;
-			}
-		});
+				repoChangeScannerGroup));
 		addField(new BooleanFieldEditor(UIPreferences.REFESH_ONLY_WHEN_ACTIVE,
 				UIText.RefreshPreferencesPage_RefreshOnlyWhenActive,
-				repoChangeScannerGroup) {
-			@Override
-			public int getNumberOfControls() {
-				return 2;
-			}
-		});
+				repoChangeScannerGroup));
 		updateMargins(repoChangeScannerGroup);
 
 		Group mergeGroup = new Group(main, SWT.SHADOW_ETCHED_IN);

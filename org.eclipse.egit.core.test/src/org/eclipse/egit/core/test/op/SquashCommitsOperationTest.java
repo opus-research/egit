@@ -39,7 +39,6 @@ public class SquashCommitsOperationTest extends GitTestCase {
 	private RevCommit commit2;
 	private RevCommit commit3;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -60,7 +59,6 @@ public class SquashCommitsOperationTest extends GitTestCase {
 				"commit 3");
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -70,12 +68,10 @@ public class SquashCommitsOperationTest extends GitTestCase {
 	@Test
 	public void squash() throws Exception {
 		InteractiveHandler messageHandler = new InteractiveHandler() {
-			@Override
 			public void prepareSteps(List<RebaseTodoLine> steps) {
 				// not used
 			}
 
-			@Override
 			public String modifyCommitMessage(String commit) {
 				return "squashed";
 			}
@@ -88,20 +84,14 @@ public class SquashCommitsOperationTest extends GitTestCase {
 
 		assertEquals(2, countCommitsInHead());
 
-		LogCommand log;
-		try (Git git = new Git(testRepository.getRepository())) {
-			log = git.log();
-		}
+		LogCommand log = new Git(testRepository.getRepository()).log();
 		Iterable<RevCommit> logCommits = log.call();
 		RevCommit latestCommit = logCommits.iterator().next();
 		assertEquals("squashed", latestCommit.getFullMessage());
 	}
 
 	private int countCommitsInHead() throws GitAPIException {
-		LogCommand log;
-		try (Git git = new Git(testRepository.getRepository())) {
-			log = git.log();
-		}
+		LogCommand log = new Git(testRepository.getRepository()).log();
 		Iterable<RevCommit> commits = log.call();
 		int result = 0;
 		for (Iterator i = commits.iterator(); i.hasNext();) {

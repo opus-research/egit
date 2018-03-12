@@ -12,7 +12,6 @@ package org.eclipse.egit.ui;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -26,14 +25,15 @@ import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.core.variables.IStringVariableManager;
+import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.RepositorySaveableFilter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.bindings.Trigger;
 import org.eclipse.jface.bindings.TriggerSequence;
@@ -173,44 +173,14 @@ public class UIUtils {
 	}
 
 	/**
-	 * A provider of candidate elements for which content proposals may be
-	 * generated.
-	 *
-	 * @param <T>
-	 *            type of the candidate elements
+	 * Used for
+	 * {@link UIUtils#addRefContentProposalToText(Text, Repository, IRefListProvider)}
 	 */
-	public interface IContentProposalCandidateProvider<T> {
-
+	public interface IRefListProvider {
 		/**
-		 * Retrieves the collection of candidates eligible for content proposal
-		 * generation.
-		 *
-		 * @return collection of candidates
+		 * @return the List of {@link Ref}s to propose
 		 */
-		public Collection<? extends T> getCandidates();
-	}
-
-	/**
-	 * A factory for creating {@link IContentProposal}s for {@link Ref}s.
-	 *
-	 * @param <T>
-	 *            type of elements to create proposals for
-	 */
-	public interface IContentProposalFactory<T> {
-
-		/**
-		 * Gets a new {@link IContentProposal} for the given element. May or may
-		 * not consider the {@link Pattern} and creates a proposal only if it
-		 * matches the element with implementation-defined semantics.
-		 *
-		 * @param pattern
-		 *            constructed from current input to aid in selecting
-		 *            meaningful proposals; may be {@code null}
-		 * @param element
-		 *            to consider creating a proposal for
-		 * @return a new {@link IContentProposal}, or {@code null} if none
-		 */
-		public IContentProposal getProposal(Pattern pattern, T element);
+		public List<Ref> getRefList();
 	}
 
 	/**
@@ -276,9 +246,8 @@ public class UIUtils {
 	 *            instance of {@link Control} object with should be decorated
 	 * @param tooltip
 	 *            text value which should appear after clicking on bulb image.
-	 * @return the {@link ControlDecoration} created
 	 */
-	public static ControlDecoration addBulbDecorator(final Control control,
+	public static void addBulbDecorator(final Control control,
 			final String tooltip) {
 		ControlDecoration dec = new ControlDecoration(control, SWT.TOP
 				| SWT.LEFT);
@@ -290,46 +259,6 @@ public class UIUtils {
 		dec.setShowHover(true);
 
 		dec.setDescriptionText(tooltip);
-		return dec;
-	}
-
-	/**
-	 * Creates a simple {@link Pattern} that can be used for matching content
-	 * assist proposals. The pattern ignores leading blanks and allows '*' as a
-	 * wildcard matching multiple arbitrary characters.
-	 *
-	 * @param content
-	 *            to create the pattern from
-	 * @return the pattern, or {@code null} if none could be created
-	 */
-	public static Pattern createProposalPattern(String content) {
-		// Make the simplest possible pattern check: allow "*"
-		// for multiple characters.
-		String patternString = content;
-		// Ignore spaces in the beginning.
-		while (patternString.length() > 0 && patternString.charAt(0) == ' ') {
-			patternString = patternString.substring(1);
-		}
-
-		// We quote the string as it may contain spaces
-		// and other stuff colliding with the pattern.
-		patternString = Pattern.quote(patternString);
-
-		patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		// Make sure we add a (logical) * at the end.
-		if (!patternString.endsWith(".*")) { //$NON-NLS-1$
-			patternString = patternString + ".*"; //$NON-NLS-1$
-		}
-
-		// Compile a case-insensitive pattern (assumes ASCII only).
-		Pattern pattern;
-		try {
-			pattern = Pattern.compile(patternString, Pattern.CASE_INSENSITIVE);
-		} catch (PatternSyntaxException e) {
-			pattern = null;
-		}
-		return pattern;
 	}
 
 	/**
@@ -361,18 +290,48 @@ public class UIUtils {
 
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<>();
 
-				Pattern pattern = createProposalPattern(contents);
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
+
+				// make the simplest possible pattern check: allow "*"
+				// for multiple characters
+				String patternString = contents;
+				// ignore spaces in the beginning
+				while (patternString.length() > 0
+						&& patternString.charAt(0) == ' ') {
+					patternString = patternString.substring(1);
+				}
+
+				// we quote the string as it may contain spaces
+				// and other stuff colliding with the Pattern
+				patternString = Pattern.quote(patternString);
+
+				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
+
+				// make sure we add a (logical) * at the end
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
+					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
+
+				// let's compile a case-insensitive pattern (assumes ASCII only)
+				Pattern pattern;
+				try {
+					pattern = Pattern.compile(patternString,
+							Pattern.CASE_INSENSITIVE);
+				} catch (PatternSyntaxException e) {
+					pattern = null;
+				}
+
 				String[] proposals = org.eclipse.egit.ui.Activator.getDefault()
 						.getDialogSettings().getArray(preferenceKey);
-				if (proposals != null) {
+
+				if (proposals != null)
 					for (final String uriString : proposals) {
 
 						if (pattern != null
-								&& !pattern.matcher(uriString).matches()) {
+								&& !pattern.matcher(uriString).matches())
 							continue;
-						}
+
 						IContentProposal propsal = new IContentProposal() {
 
 							@Override
@@ -397,7 +356,7 @@ public class UIUtils {
 						};
 						resultList.add(propsal);
 					}
-				}
+
 				return resultList.toArray(new IContentProposal[resultList
 						.size()]);
 			}
@@ -407,8 +366,8 @@ public class UIUtils {
 				new TextContentAdapter(), cp, stroke,
 				VALUE_HELP_ACTIVATIONCHARS);
 		// set the acceptance style to always replace the complete content
-		adapter.setProposalAcceptanceStyle(
-				ContentProposalAdapter.PROPOSAL_REPLACE);
+		adapter
+				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
 		return new IPreviousValueProposalHandler() {
 			@Override
@@ -429,7 +388,7 @@ public class UIUtils {
 						settings.put(preferenceKey, existingValues);
 					} else {
 
-						List<String> values = new ArrayList<>(
+						List<String> values = new ArrayList<String>(
 								existingValues.length + 1);
 
 						for (String existingValue : existingValues)
@@ -466,73 +425,69 @@ public class UIUtils {
 	 * @param refListProvider
 	 *            provides the {@link Ref}s to show in the proposal
 	 */
-	public static final void addRefContentProposalToText(Text textField,
-			Repository repository,
-			IContentProposalCandidateProvider<Ref> refListProvider) {
-		UIUtils.<Ref> addContentProposalToText(textField,
-				refListProvider, (pattern, ref) -> {
-					String shortenedName = Repository
-							.shortenRefName(ref.getName());
-					if (pattern != null
-							&& !pattern.matcher(ref.getName()).matches()
-							&& !pattern.matcher(shortenedName).matches()) {
-						return null;
-					}
-					return new RefContentProposal(repository, ref);
-				}, UIText.UIUtils_StartTypingForRemoteRefMessage,
-				UIText.UIUtils_PressShortcutForRemoteRefMessage);
-	}
-
-	/**
-	 * Adds a content proposal for arbitrary elements to a text field.
-	 *
-	 * @param <T>
-	 *            type of the proposal candidate objects
-	 *
-	 * @param textField
-	 *            the text field
-	 * @param candidateProvider
-	 *            {@link IContentProposalCandidateProvider} providing the
-	 *            candidates eligible for creating {@link IContentProposal}s
-	 * @param factory
-	 *            {@link IContentProposalFactory} to use to create proposals
-	 *            from candidates
-	 * @param startTypingMessage
-	 *            hover message if no content assist key binding is active
-	 * @param shortcutMessage
-	 *            hover message if a content assist key binding is active,
-	 *            should have a "{0}" placeholder that will be filled by the
-	 *            appropriate keystroke
-	 */
-	public static final <T> void addContentProposalToText(Text textField,
-			IContentProposalCandidateProvider<T> candidateProvider,
-			IContentProposalFactory<T> factory, String startTypingMessage,
-			String shortcutMessage) {
+	public static final void addRefContentProposalToText(final Text textField,
+			final Repository repository, final IRefListProvider refListProvider) {
 		KeyStroke stroke = UIUtils
 				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null) {
-			addBulbDecorator(textField, startTypingMessage);
-		} else {
+		if (stroke == null)
 			addBulbDecorator(textField,
-					NLS.bind(shortcutMessage, stroke.format()));
-		}
+					UIText.UIUtils_StartTypingForPreviousValuesMessage);
+		else
+			addBulbDecorator(
+					textField,
+					NLS.bind(UIText.UIUtils_PressShortcutMessage,
+							stroke.format()));
+
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				List<IContentProposal> resultList = new ArrayList<>();
+				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
-				Pattern pattern = createProposalPattern(contents);
-				Collection<? extends T> candidates = candidateProvider
-						.getCandidates();
-				if (candidates != null) {
-					for (final T candidate : candidates) {
-						IContentProposal proposal = factory.getProposal(pattern,
-								candidate);
-						if (proposal != null) {
-							resultList.add(proposal);
-						}
-					}
+				// make the simplest possible pattern check: allow "*"
+				// for multiple characters
+				String patternString = contents;
+				// ignore spaces in the beginning
+				while (patternString.length() > 0
+						&& patternString.charAt(0) == ' ') {
+					patternString = patternString.substring(1);
 				}
+
+				// we quote the string as it may contain spaces
+				// and other stuff colliding with the Pattern
+				patternString = Pattern.quote(patternString);
+
+				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
+
+				// make sure we add a (logical) * at the end
+				if (!patternString.endsWith(".*")) { //$NON-NLS-1$
+					patternString = patternString + ".*"; //$NON-NLS-1$
+				}
+
+				// let's compile a case-insensitive pattern (assumes ASCII only)
+				Pattern pattern;
+				try {
+					pattern = Pattern.compile(patternString,
+							Pattern.CASE_INSENSITIVE);
+				} catch (PatternSyntaxException e) {
+					pattern = null;
+				}
+
+				List<Ref> proposals = refListProvider.getRefList();
+
+				if (proposals != null)
+					for (final Ref ref : proposals) {
+						final String shortenedName = Repository
+								.shortenRefName(ref.getName());
+						if (pattern != null
+								&& !pattern.matcher(ref.getName()).matches()
+								&& !pattern.matcher(shortenedName).matches())
+							continue;
+
+						IContentProposal propsal = new RefContentProposal(
+								repository, ref);
+						resultList.add(propsal);
+					}
+
 				return resultList.toArray(new IContentProposal[resultList
 						.size()]);
 			}
@@ -542,8 +497,8 @@ public class UIUtils {
 				new TextContentAdapter(), cp, stroke,
 				UIUtils.VALUE_HELP_ACTIVATIONCHARS);
 		// set the acceptance style to always replace the complete content
-		adapter.setProposalAcceptanceStyle(
-				ContentProposalAdapter.PROPOSAL_REPLACE);
+		adapter
+				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 	}
 
 	/**
@@ -720,6 +675,23 @@ public class UIUtils {
 	}
 
 	/**
+	 * @return The default repository directory as configured in the
+	 *         preferences, with variables substituted. An empty string if there
+	 *         was an error during substitution.
+	 */
+	public static String getDefaultRepositoryDir() {
+		String dir = Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.DEFAULT_REPO_DIR);
+		IStringVariableManager manager = VariablesPlugin.getDefault()
+				.getStringVariableManager();
+		try {
+			return manager.performStringSubstitution(dir);
+		} catch (CoreException e) {
+			return ""; //$NON-NLS-1$
+		}
+	}
+
+	/**
 	 * Is viewer in a usable state?
 	 *
 	 * @param viewer
@@ -858,16 +830,7 @@ public class UIUtils {
 	 *
 	 * @param textViewer
 	 * @param hyperlinkDetectors
-	 * @deprecated Instead of applying SWT styling directly use JFace
-	 *             infrastructure (
-	 *             {@link org.eclipse.jface.text.rules.DefaultDamagerRepairer
-	 *             DefaultDamagerRepairer},
-	 *             {@link org.eclipse.jface.text.rules.ITokenScanner
-	 *             ITokenScanner}) to do syntax coloring. See also
-	 *             {@link org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner}
-	 *             .
 	 */
-	@Deprecated
 	public static void applyHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
 		StyleRange[] styleRanges = getHyperlinkDetectorStyleRanges(textViewer,
@@ -886,19 +849,10 @@ public class UIUtils {
 	 * @param textViewer
 	 * @param hyperlinkDetectors
 	 * @return the style ranges to render the detected hyperlinks
-	 * @deprecated Instead of applying SWT styling directly use JFace
-	 *             infrastructure (
-	 *             {@link org.eclipse.jface.text.rules.DefaultDamagerRepairer
-	 *             DefaultDamagerRepairer},
-	 *             {@link org.eclipse.jface.text.rules.ITokenScanner
-	 *             ITokenScanner}) to do syntax coloring. See also
-	 *             {@link org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner}
-	 *             .
 	 */
-	@Deprecated
 	public static StyleRange[] getHyperlinkDetectorStyleRanges(
 			ITextViewer textViewer, IHyperlinkDetector[] hyperlinkDetectors) {
-		HashSet<StyleRange> styleRangeList = new LinkedHashSet<>();
+		HashSet<StyleRange> styleRangeList = new LinkedHashSet<StyleRange>();
 		if (hyperlinkDetectors != null && hyperlinkDetectors.length > 0) {
 			IDocument doc = textViewer.getDocument();
 			for (int line = 0; line < doc.getNumberOfLines(); line++) {
@@ -935,8 +889,8 @@ public class UIUtils {
 	}
 
 	private static String getShowInMenuLabel() {
-		IBindingService bindingService = AdapterUtils.adapt(PlatformUI
-		.getWorkbench(), IBindingService.class);
+		IBindingService bindingService = CommonUtils.getAdapter(PlatformUI
+				.getWorkbench(), IBindingService.class);
 		if (bindingService != null) {
 			String keyBinding = bindingService
 					.getBestActiveBindingFormattedFor(IWorkbenchCommandConstants.NAVIGATE_SHOW_IN_QUICK_MENU);
@@ -958,13 +912,9 @@ public class UIUtils {
 	 *         binding service returns a {@code TriggerSequence} containing more
 	 *         than one {@code Trigger}.
 	 */
-	@Nullable
 	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = AdapterUtils
-				.adapt(PlatformUI.getWorkbench(), IBindingService.class);
-		if (bindingService == null) {
-			return null;
-		}
+		IBindingService bindingService = CommonUtils.getAdapter(
+				PlatformUI.getWorkbench(), IBindingService.class);
 		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
 		if (ts == null)
 			return null;

@@ -19,6 +19,7 @@ import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.UIUtils.IRefListProvider;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
@@ -89,7 +90,12 @@ public class FetchSourcePage extends WizardPage {
 		});
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(sourceText);
 		UIUtils.addRefContentProposalToText(sourceText, repository,
-				() -> getRemoteRefs());
+				new IRefListProvider() {
+					@Override
+					public List<Ref> getRefList() {
+						return getRemoteRefs();
+					}
+				});
 		checkPage();
 		setControl(main);
 	}
@@ -130,7 +136,7 @@ public class FetchSourcePage extends WizardPage {
 	private List<Ref> getRemoteRefs() {
 		if (remoteRefs == null) {
 			URIish uriToCheck;
-			List<Ref> proposals = new ArrayList<>();
+			List<Ref> proposals = new ArrayList<Ref>();
 			uriToCheck = config.getURIs().get(0);
 			final ListRemoteOperation lop = new ListRemoteOperation(repository,
 					uriToCheck, Activator.getDefault().getPreferenceStore()

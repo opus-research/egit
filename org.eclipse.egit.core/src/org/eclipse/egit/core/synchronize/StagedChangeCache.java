@@ -86,7 +86,7 @@ public class StagedChangeCache {
 
 			return result;
 		} catch (IOException e) {
-			Activator.logError(e.getMessage(), e);
+			Activator.error(e.getMessage(), e);
 			return new HashMap<String, Change>(0);
 		}
 	}

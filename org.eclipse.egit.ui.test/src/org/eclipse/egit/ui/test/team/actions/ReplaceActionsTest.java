@@ -54,8 +54,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		touchAndSubmit(null);
 		String initialContent = getTestFileContent();
 		String menuLabel = util
-				.getPluginLocalizedValue(
-						"ReplaceWithPreviousVersionAction.label");
+				.getPluginLocalizedValue("replaceWithPreviousVersionAction.label");
 		clickReplaceWith(menuLabel);
 		SWTBotShell confirm = bot
 				.shell(UIText.DiscardChangesAction_confirmActionTitle);
@@ -67,39 +66,34 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 	@Test
 	public void testReplaceWithPreviousWithMerge() throws Exception {
 		Repository repo = lookupRepository(repositoryFile);
-		try (Git git = new Git(repo)) {
+		Git git = new Git(repo);
 
-			Calendar cal = Calendar.getInstance();
-			long time = cal.getTime().getTime();
-			PersonIdent sideCommitter = new PersonIdent("Side Committer",
-					"side@example.org", time, 0);
-			// Make sure commit time stamps are different, otherwise the order
-			// in the dialog is not stable
-			time += 5000;
-			PersonIdent masterCommitter = new PersonIdent("Master Committer",
-					"master@example.org", time, 0);
+		Calendar cal = Calendar.getInstance();
+		PersonIdent sideCommitter = new PersonIdent("Side Committer",
+				"side@example.org", cal.getTime().getTime(), 0);
+		// Make sure commit time stamps are different, otherwise the order in
+		// the dialog is not stable
+		cal.roll(Calendar.SECOND, 2);
+		PersonIdent masterCommitter = new PersonIdent("Master Committer",
+				"master@example.org", cal.getTime().getTime(), 0);
 
-			git.checkout().setCreateBranch(true).setName("side").call();
-			touch(PROJ1, "folder/test.txt", "side");
-			RevCommit sideCommit = git.commit().setAll(true)
-					.setMessage("Side commit").setCommitter(sideCommitter)
-					.call();
+		git.checkout().setCreateBranch(true).setName("side").call();
+		touch(PROJ1, "folder/test.txt", "side");
+		RevCommit sideCommit = git.commit().setAll(true)
+				.setMessage("Side commit").setCommitter(sideCommitter).call();
 
-			git.checkout().setName("master").call();
-			touch(PROJ1, "folder/test2.txt", "master");
-			git.commit().setAll(true).setMessage("Master commit")
-					.setCommitter(masterCommitter).call();
+		git.checkout().setName("master").call();
+		touch(PROJ1, "folder/test2.txt", "master");
+		git.commit().setAll(true).setMessage("Master commit")
+				.setCommitter(masterCommitter).call();
 
-			git.merge().include(sideCommit).call();
-		}
-		TestUtil.waitForJobs(100, 5000);
+		git.merge().include(sideCommit).call();
 
 		String contentAfterMerge = getTestFileContent();
 		assertEquals("side", contentAfterMerge);
 
 		String menuLabel = util
-				.getPluginLocalizedValue(
-						"ReplaceWithPreviousVersionAction.label");
+				.getPluginLocalizedValue("replaceWithPreviousVersionAction.label");
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
 				.button(IDialogConstants.OK_LABEL).click();
@@ -107,8 +101,6 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 				.shell(UIText.CommitSelectDialog_WindowTitle);
 		assertEquals(2, selectDialog.bot().table().rowCount());
 		selectDialog.close();
-		TestUtil.processUIEvents();
-
 		// we have closed, so nothing should have changed
 		String contentAfterClose = getTestFileContent();
 		assertEquals(contentAfterMerge, contentAfterClose);
@@ -116,15 +108,12 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
 				.button(IDialogConstants.OK_LABEL).click();
-		TestUtil.waitForJobs(100, 5000);
-
 		selectDialog = bot.shell(UIText.CommitSelectDialog_WindowTitle);
 		// Select first parent, which should be the master commit
 		SWTBotTable table = selectDialog.bot().table();
 		assertEquals("Master commit", table.cell(0, 1));
 		table.select(0);
 		executeReplace(selectDialog);
-		TestUtil.waitForJobs(100, 5000);
 
 		String replacedContent = getTestFileContent();
 		assertThat(replacedContent, not(contentAfterMerge));

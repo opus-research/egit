@@ -8,34 +8,27 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.op;
 
-import static org.eclipse.egit.gitflow.Activator.error;
-import static org.eclipse.egit.gitflow.GitFlowConfig.DEVELOP_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.FEATURE_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.HOTFIX_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.MASTER_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.RELEASE_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.VERSION_TAG_KEY;
-import static org.eclipse.egit.gitflow.GitFlowDefaults.VERSION_TAG;
-import static org.eclipse.jgit.lib.Constants.R_HEADS;
-
 import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
+
+import static org.eclipse.egit.gitflow.Activator.error;
+import static org.eclipse.egit.gitflow.GitFlowDefaults.*;
+
 import org.eclipse.egit.gitflow.GitFlowConfig;
 import org.eclipse.egit.gitflow.GitFlowRepository;
-import org.eclipse.egit.gitflow.InitParameters;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
-import org.eclipse.jgit.annotations.NonNull;
+
+import static org.eclipse.egit.gitflow.GitFlowConfig.*;
+
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * git flow init
@@ -61,9 +54,7 @@ public final class InitOperation extends GitFlowOperation {
 	 * @param release
 	 * @param hotfix
 	 * @param versionTag
-	 * @deprecated Use {@code InitOperation#InitOperation(Repository, InitParameters)} instead.
 	 */
-	@Deprecated
 	public InitOperation(Repository jGitRepository, String develop,
 			String master, String feature, String release, String hotfix,
 			String versionTag) {
@@ -77,28 +68,13 @@ public final class InitOperation extends GitFlowOperation {
 	}
 
 	/**
-	 * @param jGitRepository
-	 * @param parameters
-	 * @since 4.1
-	 */
-	public InitOperation(@NonNull Repository jGitRepository,
-			@NonNull InitParameters parameters) {
-		super(new GitFlowRepository(jGitRepository));
-		this.develop = parameters.getDevelop();
-		this.master = parameters.getMaster();
-		this.feature = parameters.getFeature();
-		this.release = parameters.getRelease();
-		this.hotfix = parameters.getHotfix();
-		this.versionTag = parameters.getVersionTag();
-	}
-
-	/**
 	 * use default prefixes and names
 	 *
 	 * @param repository
 	 */
 	public InitOperation(Repository repository) {
-		this(repository, new InitParameters());
+		this(repository, DEVELOP, MASTER, FEATURE_PREFIX, RELEASE_PREFIX,
+				HOTFIX_PREFIX);
 	}
 
 	/**
@@ -125,27 +101,21 @@ public final class InitOperation extends GitFlowOperation {
 			throw new CoreException(error(e.getMessage(), e));
 		}
 
-		SubMonitor progress = SubMonitor.convert(monitor, 3);
 		if (!repository.hasBranches()) {
 			new CommitOperation(repository.getRepository(),
 					repository.getConfig().getUser(), repository.getConfig().getUser(),
-					CoreText.InitOperation_initialCommit)
-							.execute(progress.newChild(1));
+					CoreText.InitOperation_initialCommit).execute(monitor);
 		}
 
 		try {
-			if (!isMasterBranchAvailable()) {
-				throw new CoreException(error(NLS.bind(CoreText.InitOperation_localMasterDoesNotExist, master)));
-			}
-
 			RevCommit head = repository.findHead();
 			if (!repository.hasBranch(develop)) {
 				CreateLocalBranchOperation branchFromHead = createBranchFromHead(
 						develop, head);
-				branchFromHead.execute(progress.newChild(1));
+				branchFromHead.execute(monitor);
 				BranchOperation checkoutOperation = new BranchOperation(
 						repository.getRepository(), develop);
-				checkoutOperation.execute(progress.newChild(1));
+				checkoutOperation.execute(monitor);
 			}
 		} catch (WrongGitFlowStateException e) {
 			throw new CoreException(error(e));
@@ -167,13 +137,5 @@ public final class InitOperation extends GitFlowOperation {
 		GitFlowConfig config = repository.getConfig();
 		config.setBranch(DEVELOP_KEY, develop);
 		config.setBranch(MASTER_KEY, master);
-	}
-
-	private boolean isMasterBranchAvailable() throws CoreException {
-		try {
-			return repository.getRepository().exactRef(R_HEADS + master) != null;
-		} catch (IOException e) {
-			throw new CoreException(error(e.getMessage(), e));
-		}
 	}
 }

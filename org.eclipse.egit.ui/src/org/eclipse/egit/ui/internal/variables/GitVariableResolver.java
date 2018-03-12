@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.variables;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -18,17 +17,17 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.variables.IDynamicVariable;
 import org.eclipse.core.variables.IDynamicVariableResolver;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
@@ -69,9 +68,6 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
 		if (mapping != null) {
 			String repoRelativePath = mapping.getRepoRelativePath(res);
-			if (repoRelativePath == null) {
-				return ""; //$NON-NLS-1$
-			}
 			if (repoRelativePath.equals("")) //$NON-NLS-1$
 				return "."; //$NON-NLS-1$
 			else
@@ -89,17 +85,13 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 			return ""; //$NON-NLS-1$
 	}
 
-	@NonNull
 	private String getGitWorkTree(String argument) throws CoreException {
 		IResource res = getResource(argument);
 		RepositoryMapping mapping = RepositoryMapping.getMapping(res);
-		if (mapping != null) {
-			File workTree = mapping.getWorkTree();
-			if (workTree != null) {
-				return workTree.getAbsolutePath();
-			}
-		}
-		return ""; //$NON-NLS-1$
+		if (mapping != null)
+			return mapping.getWorkTree().getAbsolutePath();
+		else
+			return ""; //$NON-NLS-1$
 	}
 
 	private String getGitBranch(String argument) throws CoreException {
@@ -125,7 +117,6 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 	 * @throws CoreException
 	 *             thrown if no resource is selected
 	 */
-	@NonNull
 	private IResource getResource(String argument) throws CoreException {
 		IResource res;
 		if (argument == null) {
@@ -176,8 +167,7 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 				IWorkbenchPart part = page.getActivePart();
 				if(part instanceof IEditorPart) {
 					IEditorPart epart = (IEditorPart) part;
-					resource = AdapterUtils
-							.adaptToAnyResource(epart.getEditorInput());
+					resource = CommonUtils.getAdapter(epart.getEditorInput(), IResource.class);
 				}
 				else if(part != null) {
 					IWorkbenchPartSite site = part.getSite();
@@ -191,8 +181,8 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 									Iterator iterator = ss.iterator();
 									while (iterator.hasNext() && resource == null) {
 										Object next = iterator.next();
-										resource = AdapterUtils
-												.adaptToAnyResource(next);
+										resource = getAdapterFromManager(next,
+												IResource.class);
 									}
 								}
 							}
@@ -202,6 +192,27 @@ public class GitVariableResolver implements IDynamicVariableResolver {
 			}
 		}
 		return resource;
+	}
+
+	/**
+	 * Returns the adapter corresponding to the given adapter class.
+	 * <p>
+	 * Workaround for "Unnecessary cast" errors, see bug 460685. Can be removed
+	 * when EGit depends on Eclipse 4.5 or higher.
+	 *
+	 * @param adaptable
+	 *            the adaptable
+	 * @param adapterClass
+	 *            the adapter class to look up
+	 * @return a object of the given class, or <code>null</code> if this object
+	 *         does not have an adapter for the given class
+	 */
+	@SuppressWarnings("unchecked")
+	private static <T> T getAdapterFromManager(Object adaptable,
+			Class<T> adapterClass) {
+		Object adapter = Platform.getAdapterManager().getAdapter(adaptable,
+				IResource.class);
+		return (T) adapter;
 	}
 
 }

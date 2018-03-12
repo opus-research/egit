@@ -21,7 +21,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -41,6 +41,8 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 
 	private final IdentityHashMap<Repository, DirCache> caches;
 
+	private final IdentityHashMap<RepositoryMapping, Object> mappings;
+
 	private boolean assumeUnchanged;
 
 	/**
@@ -58,63 +60,70 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 			final Collection<? extends IResource> rsrcs, boolean assumeUnchanged) {
 		rsrcList = rsrcs;
 		caches = new IdentityHashMap<Repository, DirCache>();
+		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 		this.assumeUnchanged = assumeUnchanged;
 	}
 
-	@Override
-	public void execute(IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor, rsrcList.size() * 2);
-		progress.setTaskName(CoreText.AssumeUnchangedOperation_adding);
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	 */
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 
 		caches.clear();
+		mappings.clear();
 
+		monitor.beginTask(CoreText.AssumeUnchangedOperation_adding,
+				rsrcList.size() * 200);
 		try {
 			for (IResource resource : rsrcList) {
 				assumeValid(resource);
-				progress.worked(1);
+				monitor.worked(200);
 			}
 
-			progress.setWorkRemaining(caches.size());
 			for (Map.Entry<Repository, DirCache> e : caches.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCache editor = e.getValue();
-				progress.setTaskName(NLS.bind(
+				monitor.setTaskName(NLS.bind(
 						CoreText.AssumeUnchangedOperation_writingIndex, db
 								.getDirectory()));
 				editor.write();
 				editor.commit();
-				progress.worked(1);
 			}
 		} catch (RuntimeException e) {
 			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
 		} catch (IOException e) {
 			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
 		} finally {
-			for (DirCache cache : caches.values()) {
+			for (final RepositoryMapping rm : mappings.keySet())
+				rm.fireRepositoryChanged();
+			for (DirCache cache:caches.values())
 				cache.unlock();
-			}
 			caches.clear();
+			mappings.clear();
+			monitor.done();
 		}
 	}
 
-	@Override
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(rsrcList.toArray(new IResource[rsrcList.size()]));
 	}
 
 	private void assumeValid(final IResource resource) throws CoreException {
 		final IProject proj = resource.getProject();
-		if (proj == null) {
-			return;
-		}
 		final GitProjectData pd = GitProjectData.get(proj);
-		if (pd == null) {
+		if (pd == null)
 			return;
-		}
 		final RepositoryMapping rm = pd.getRepositoryMapping(resource);
-		if (rm == null) {
+		if (rm == null)
 			return;
-		}
 		final Repository db = rm.getRepository();
 
 		DirCache cache = caches.get(db);
@@ -125,18 +134,17 @@ public class AssumeUnchangedOperation implements IEGitOperation {
 				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}
 			caches.put(db, cache);
+			mappings.put(rm, rm);
 		}
 
 		final String path = rm.getRepoRelativePath(resource);
 		if (resource instanceof IContainer) {
-			for (final DirCacheEntry ent : cache.getEntriesWithin(path)) {
+			for (final DirCacheEntry ent : cache.getEntriesWithin(path))
 				ent.setAssumeValid(assumeUnchanged);
-			}
 		} else {
 			final DirCacheEntry ent = cache.getEntry(path);
-			if (ent != null) {
+			if (ent != null)
 				ent.setAssumeValid(assumeUnchanged);
-			}
 		}
 	}
 }

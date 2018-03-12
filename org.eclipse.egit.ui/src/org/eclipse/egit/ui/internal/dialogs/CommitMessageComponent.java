@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,10 +33,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
@@ -168,7 +166,7 @@ public class CommitMessageComponent {
 
 	private Repository repository;
 
-	private Collection<String> filesToCommit = new ArrayList<>();
+	private Collection<String> filesToCommit = new ArrayList<String>();
 
 	private ObjectId headCommitId;
 
@@ -206,7 +204,7 @@ public class CommitMessageComponent {
 		amending = false;
 		amendAllowed = false;
 		createChangeId = false;
-		filesToCommit = new ArrayList<>();
+		filesToCommit = new ArrayList<String>();
 		headCommitId = null;
 		listenersEnabled = false;
 	}
@@ -450,13 +448,10 @@ public class CommitMessageComponent {
 		// Check format of commit message. The soft-wrapped text in the SWT
 		// control must be converted to a hard-wrapped text, since this will be
 		// the resulting commit message.
-		if (Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.COMMIT_DIALOG_WARN_ABOUT_MESSAGE_SECOND_LINE)) {
-			String message = commitText.getCommitMessage();
-			String formatIssue = formatIssuesInCommitMessage(message);
-			if (formatIssue != null) {
-				return new CommitStatus(formatIssue, IMessageProvider.WARNING);
-			}
+		String message = commitText.getCommitMessage();
+		String formatIssue = formatIssuesInCommitMessage(message);
+		if (formatIssue != null) {
+			return new CommitStatus(formatIssue, IMessageProvider.WARNING);
 		}
 
 		return CommitStatus.OK;
@@ -585,7 +580,7 @@ public class CommitMessageComponent {
 		if (repository != null)
 			createChangeId = GerritUtil.getCreateChangeId(repository
 					.getConfig());
-		signedOff = Activator.getDefault()
+		signedOff = org.eclipse.egit.ui.Activator.getDefault()
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.COMMIT_DIALOG_SIGNED_OFF_BY);
 	}
@@ -628,9 +623,6 @@ public class CommitMessageComponent {
 
 	private void getHeadCommitInfo() {
 		CommitInfo headCommitInfo = CommitHelper.getHeadCommitInfo(repository);
-		if (headCommitInfo == null) {
-			return;
-		}
 		RevCommit previousCommit = headCommitInfo.getCommit();
 
 		amendingCommitInRemoteBranch = isContainedInAnyRemoteBranch(previousCommit);
@@ -674,15 +666,11 @@ public class CommitMessageComponent {
 			return previousCommitMessage;
 		String calculatedCommitMessage = null;
 
-		Set<IResource> resources = new HashSet<>();
+		Set<IResource> resources = new HashSet<IResource>();
 		for (String path : paths) {
 			IFile file = findFile(path);
 			if (file != null)
 				resources.add(file.getProject());
-		}
-		if (resources.size() == 0 && repository != null) {
-			resources
-					.addAll(Arrays.asList(ProjectUtil.getProjects(repository)));
 		}
 		try {
 			ICommitMessageProvider messageProvider = getCommitMessageProvider();
@@ -693,8 +681,7 @@ public class CommitMessageComponent {
 						.getMessage(resourcesArray);
 			}
 		} catch (CoreException coreException) {
-			Activator.logError(coreException.getLocalizedMessage(),
-					coreException);
+			Activator.error(coreException.getLocalizedMessage(), coreException);
 		}
 		if (calculatedCommitMessage != null)
 			return calculatedCommitMessage;

@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler mathias.kinzler@sap.com>
  * Copyright (C) 2015, Christian Georgi <christian.georgi@sap.com>
- * Copyright (C) 2017, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,13 +12,11 @@ package org.eclipse.egit.ui.internal.push;
 
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.components.TitleAndImageDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
@@ -30,7 +27,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
-class PushResultDialog extends TitleAndImageDialog {
+class PushResultDialog extends TitleAreaDialog {
 	private static final int CONFIGURE = 99;
 
 	private final Repository localDb;
@@ -41,16 +38,42 @@ class PushResultDialog extends TitleAndImageDialog {
 
 	private boolean hideConfigure = false;
 
+	/**
+	 * Shows this dialog asynchronously
+	 *
+	 * @param repository
+	 * @param result
+	 * @param sourceString
+	 * @param showConfigureButton
+	 *            whether to show the "Configure..." button in the result dialog
+	 *            or not
+	 */
+	public static void show(final Repository repository,
+			final PushOperationResult result, final String sourceString,
+			final boolean showConfigureButton) {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				PlatformUI.getWorkbench().getDisplay().asyncExec(
+						new Runnable() {
+							@Override
+							public void run() {
+								Shell shell = PlatformUI.getWorkbench()
+										.getActiveWorkbenchWindow().getShell();
+								PushResultDialog dialog = new PushResultDialog(
+										shell, repository, result, sourceString);
+								dialog.showConfigureButton(showConfigureButton);
+								dialog.open();
+							}
+						});
+			}
+		});
+	}
+
 	PushResultDialog(final Shell parentShell, final Repository localDb,
-			final PushOperationResult result, final String destinationString,
-			boolean modal, @NonNull PushMode pushMode) {
-		super(parentShell, pushMode == PushMode.UPSTREAM ? UIIcons.WIZBAN_PUSH
-				: UIIcons.WIZBAN_PUSH_GERRIT);
-		int shellStyle = getShellStyle() | SWT.RESIZE;
-		if (!modal) {
-			shellStyle &= ~SWT.APPLICATION_MODAL;
-		}
-		setShellStyle(shellStyle);
+			final PushOperationResult result, final String destinationString) {
+		super(parentShell);
+		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.RESIZE);
 		this.localDb = localDb;
 		this.result = result;
 		this.destinationString = destinationString;
@@ -75,9 +98,8 @@ class PushResultDialog extends TitleAndImageDialog {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					Dialog dlg = SimpleConfigurePushDialog.getDialog(
-							PlatformUI.getWorkbench()
-									.getModalDialogShellProvider().getShell(),
+					Dialog dlg = SimpleConfigurePushDialog.getDialog(PlatformUI
+							.getWorkbench().getDisplay().getActiveShell(),
 							localDb);
 					dlg.open();
 				}

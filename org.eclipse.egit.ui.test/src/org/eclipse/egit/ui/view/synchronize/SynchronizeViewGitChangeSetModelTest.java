@@ -38,9 +38,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.common.CompareEditorTester;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.synchronize.GitChangeSetModelProvider;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.Repository;
@@ -50,7 +48,6 @@ import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -73,7 +70,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		launchSynchronization(HEAD, R_HEADS + MASTER, false);
 
 		// then
-		SWTBot viewBot = bot.viewById(ISynchronizeView.VIEW_ID).bot();
+		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
 		@SuppressWarnings("unchecked")
 		Matcher matcher = allOf(widgetOfType(Label.class),
 				withRegex("No changes in .*"));
@@ -311,7 +308,6 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// when
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				CommonUtils.runCommand("org.eclipse.compare.copyLeftToRight",
 						null);
@@ -322,14 +318,11 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// then file FILE1 should be in index
 		Repository repo = lookupRepository(repositoryFile);
-		Status status;
-		try (Git git = new Git(repo)) {
-			status = git.status().call();
-		}
+		Status status = new Git(repo).status().call();
 		assertThat(Long.valueOf(status.getChanged().size()),
 				is(Long.valueOf(1L)));
-		assertThat(status.getChanged().iterator().next(),
-				is(PROJ1 + "/" + FOLDER + "/" + FILE1));
+		assertThat(status.getChanged().iterator().next(), is(PROJ1 + "/"
+				+ FOLDER + "/" + FILE1));
 	}
 
 	@Test
@@ -342,7 +335,6 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// when
 		Display.getDefault().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				CommonUtils.runCommand("org.eclipse.compare.copyRightToLeft",
 						null);
@@ -352,13 +344,11 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// then file FILE1 should be unchanged in working tree
 		Repository repo = lookupRepository(repositoryFile);
-		try (Git git = new Git(repo)) {
-			Status status = git.status().call();
-			assertThat(Long.valueOf(status.getModified().size()),
-					is(Long.valueOf(1)));
-			assertThat(status.getModified().iterator().next(),
-					is(PROJ1 + "/" + FOLDER + "/" + FILE2));
-		}
+		Status status = new Git(repo).status().call();
+		assertThat(Long.valueOf(status.getModified().size()),
+				is(Long.valueOf(1)));
+		assertThat(status.getModified().iterator().next(), is(PROJ1 + "/"
+				+ FOLDER + "/" + FILE2));
 	}
 
 	@Test
@@ -380,12 +370,11 @@ public class SynchronizeViewGitChangeSetModelTest extends
 
 		// then
 		SWTBotTreeItem workingTree = getExpandedWorkingTreeItem();
-		assertTrue(workingTree.getText()
-				.endsWith(GitModelWorkingTree_workingTree));
+		assertEquals(GitModelWorkingTree_workingTree, workingTree.getText());
 		// WidgetNotFoundException will be thrown when node named 'new.txt' not
 		// exists
-		assertNotNull(TestUtil.getNode(workingTree.getItems(), PROJ1)
-				.getNode(newFileName));
+		assertNotNull(workingTree.getNode(PROJ1).expand());
+		assertNotNull(workingTree.getNode(PROJ1).getNode(newFileName));
 	}
 
 	@Test
@@ -404,7 +393,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		commit(PROJ1);
 
 		// then - synchronize view should be empty
-		SWTBot viewBot = bot.viewById(ISynchronizeView.VIEW_ID).bot();
+		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
 		@SuppressWarnings("unchecked")
 		Matcher matcher = allOf(widgetOfType(Label.class),
 				withRegex("No changes in .*"));
@@ -426,8 +415,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		bot.shell("Show View").bot().tree().expandNode("Git").getNode(
 				"Git Repositories").doubleClick();
 
-		SWTBotTree repositoriesTree = bot.viewById(RepositoriesView.VIEW_ID)
-				.bot()
+		SWTBotTree repositoriesTree = bot.viewByTitle("Git Repositories").bot()
 				.tree();
 		SWTBotTreeItem egitRoot = repositoriesTree.getAllItems()[0];
 		egitRoot.expand();
@@ -442,12 +430,12 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		// when
 
 		// then
-		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 		assertEquals(8, syncViewTree.getAllItems().length);
 	}
 
 	protected SWTBotTreeItem getChangeSetTreeItem() {
-		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
+		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
 		SWTBotTreeItem changeSetItem = waitForNodeWithText(syncViewTree,
 				UIText.GitChangeSetModelProviderLabel);
 		return changeSetItem;

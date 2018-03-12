@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2016 Mathias Kinzler <mathias.kinzler@sap.com> and others
+ * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,14 +15,13 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -44,7 +43,7 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 
 	private final RevCommit commit;
 
-	private final BranchRebaseMode upstreamConfig;
+	private final UpstreamConfig upstreamConfig;
 
 	/**
 	 * @param repository
@@ -56,7 +55,7 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 	 *            how to do the upstream configuration
 	 */
 	public CreateLocalBranchOperation(Repository repository, String name,
-			Ref ref, BranchRebaseMode config) {
+			Ref ref, UpstreamConfig config) {
 		this.name = name;
 		this.repository = repository;
 		this.ref = ref;
@@ -80,20 +79,25 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 		this.upstreamConfig = null;
 	}
 
-	@Override
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
+
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
-				String taskName = NLS.bind(
-						CoreText.CreateLocalBranchOperation_CreatingBranchMessage,
-						name);
-				SubMonitor progress = SubMonitor.convert(actMonitor);
-				progress.setTaskName(taskName);
-				try (Git git = new Git(repository)) {
+				String taskName = NLS
+						.bind(
+								CoreText.CreateLocalBranchOperation_CreatingBranchMessage,
+								name);
+				actMonitor.beginTask(taskName, 1);
+				Git git = new Git(repository);
+				try {
 					if (ref != null) {
 						SetupUpstreamMode mode;
-						if (upstreamConfig == null)
+						if (upstreamConfig == UpstreamConfig.NONE)
 							mode = SetupUpstreamMode.NOTRACK;
 						else
 							mode = SetupUpstreamMode.SET_UPSTREAM;
@@ -108,11 +112,11 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 					throw new CoreException(Activator.error(e.getMessage(), e));
 				}
 
-				if (upstreamConfig != null) {
-					// set "branch.<name>.rebase"
+				if (UpstreamConfig.REBASE == upstreamConfig) {
+					// set "branch.<name>.rebase" to "true"
 					StoredConfig config = repository.getConfig();
-					config.setEnum(ConfigConstants.CONFIG_BRANCH_SECTION, name,
-							ConfigConstants.CONFIG_KEY_REBASE, upstreamConfig);
+					config.setBoolean(ConfigConstants.CONFIG_BRANCH_SECTION,
+							name, ConfigConstants.CONFIG_KEY_REBASE, true);
 					try {
 						config.save();
 					} catch (IOException e) {
@@ -120,6 +124,8 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 								e));
 					}
 				}
+				actMonitor.worked(1);
+				actMonitor.done();
 			}
 		};
 		// lock workspace to protect working tree changes
@@ -127,58 +133,58 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}
 
 	/**
-	 * Get the default upstream config for the specified repository and upstream
-	 * branch ref.
-	 *
-	 * @param repo
-	 * @param upstreamRefName
-	 * @return the default {@link BranchRebaseMode}, or {@code null} if none is
-	 *         configured
+	 * Describes how to configure the upstream branch
 	 */
-	public static BranchRebaseMode getDefaultUpstreamConfig(Repository repo,
-			String upstreamRefName) {
-		boolean isLocalBranch = upstreamRefName.startsWith(Constants.R_HEADS);
-		boolean isRemoteBranch = upstreamRefName
-				.startsWith(Constants.R_REMOTES);
-		if (!isLocalBranch && !isRemoteBranch) {
-			return null;
-		}
-		String autosetupMerge = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, null,
-				ConfigConstants.CONFIG_KEY_AUTOSETUPMERGE);
-		if (autosetupMerge == null) {
-			autosetupMerge = ConfigConstants.CONFIG_KEY_TRUE;
-		}
-		boolean setupMerge = autosetupMerge
-				.equals(ConfigConstants.CONFIG_KEY_ALWAYS)
-				|| (isRemoteBranch && autosetupMerge
-						.equals(ConfigConstants.CONFIG_KEY_TRUE));
-		if (!setupMerge) {
-			return null;
-		}
-		String autosetupRebase = repo.getConfig().getString(
-				ConfigConstants.CONFIG_BRANCH_SECTION, null,
-				ConfigConstants.CONFIG_KEY_AUTOSETUPREBASE);
-		if (autosetupRebase == null) {
-			autosetupRebase = ConfigConstants.CONFIG_KEY_NEVER;
-		}
-		boolean setupRebase = autosetupRebase
-				.equals(ConfigConstants.CONFIG_KEY_ALWAYS)
-				|| (autosetupRebase.equals(ConfigConstants.CONFIG_KEY_LOCAL)
-						&& isLocalBranch)
-				|| (autosetupRebase.equals(ConfigConstants.CONFIG_KEY_REMOTE)
-						&& isRemoteBranch);
-		if (setupRebase) {
-			// Like cgit: plain rebase
-			return BranchRebaseMode.REBASE;
-		}
-		return BranchRebaseMode.NONE;
-	}
+	public static enum UpstreamConfig {
+		/** Rebase */
+		REBASE(),
+		/** Merge */
+		MERGE(),
+		/** No configuration */
+		NONE();
 
+		/**
+		 * Get the default upstream config for the specified repository and
+		 * upstream branch ref.
+		 *
+		 * @param repo
+		 * @param upstreamRefName
+		 * @return the default upstream config
+		 */
+		public static UpstreamConfig getDefault(Repository repo,
+				String upstreamRefName) {
+			String autosetupMerge = repo.getConfig().getString(
+					ConfigConstants.CONFIG_BRANCH_SECTION, null,
+					ConfigConstants.CONFIG_KEY_AUTOSETUPMERGE);
+			if (autosetupMerge == null)
+				autosetupMerge = ConfigConstants.CONFIG_KEY_TRUE;
+			boolean isLocalBranch = upstreamRefName.startsWith(Constants.R_HEADS);
+			boolean isRemoteBranch = upstreamRefName.startsWith(Constants.R_REMOTES);
+			if (!isLocalBranch && !isRemoteBranch)
+				return NONE;
+			boolean setupMerge = autosetupMerge
+					.equals(ConfigConstants.CONFIG_KEY_ALWAYS)
+					|| (isRemoteBranch && autosetupMerge
+							.equals(ConfigConstants.CONFIG_KEY_TRUE));
+			if (!setupMerge)
+				return NONE;
+			String autosetupRebase = repo.getConfig().getString(
+					ConfigConstants.CONFIG_BRANCH_SECTION, null,
+					ConfigConstants.CONFIG_KEY_AUTOSETUPREBASE);
+			if (autosetupRebase == null)
+				autosetupRebase = ConfigConstants.CONFIG_KEY_NEVER;
+			boolean setupRebase = autosetupRebase
+					.equals(ConfigConstants.CONFIG_KEY_ALWAYS)
+					|| (autosetupRebase.equals(ConfigConstants.CONFIG_KEY_LOCAL) && isLocalBranch)
+					|| (autosetupRebase.equals(ConfigConstants.CONFIG_KEY_REMOTE) && isRemoteBranch);
+			if (setupRebase)
+				return REBASE;
+			return MERGE;
+		}
+	}
 }

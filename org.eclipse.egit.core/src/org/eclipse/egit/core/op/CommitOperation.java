@@ -26,7 +26,7 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
@@ -175,21 +175,26 @@ public class CommitOperation implements IEGitOperation {
 		return result;
 	}
 
-	@Override
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				if (commitAll)
 					commitAll();
 				else if (amending || commitFileList != null
 						&& commitFileList.size() > 0 || commitIndex) {
-					SubMonitor progress = SubMonitor.convert(actMonitor);
-					progress.setTaskName(
-							CoreText.CommitOperation_PerformingCommit);
+					actMonitor.beginTask(
+							CoreText.CommitOperation_PerformingCommit,
+							20);
+					actMonitor.setTaskName(CoreText.CommitOperation_PerformingCommit);
 					addUntracked();
 					commit();
+					actMonitor.worked(10);
 				} else if (commitWorkingDirChanges) {
 					// TODO commit -a
 				} else {
@@ -203,32 +208,30 @@ public class CommitOperation implements IEGitOperation {
 	}
 
 	private void addUntracked() throws CoreException {
-		if (notTracked == null || notTracked.size() == 0) {
+		if (notTracked == null || notTracked.size() == 0)
 			return;
-		}
-		try (Git git = new Git(repo)) {
-			AddCommand addCommand = git.add();
-			boolean fileAdded = false;
-			for (String path : notTracked)
-				if (commitFileList.contains(path)) {
-					addCommand.addFilepattern(path);
-					fileAdded = true;
-				}
-			if (fileAdded) {
-				addCommand.call();
+		AddCommand addCommand = new Git(repo).add();
+		boolean fileAdded = false;
+		for (String path : notTracked)
+			if (commitFileList.contains(path)) {
+				addCommand.addFilepattern(path);
+				fileAdded = true;
 			}
-		} catch (GitAPIException e) {
-			throw new CoreException(Activator.error(e.getMessage(), e));
-		}
+		if (fileAdded)
+			try {
+				addCommand.call();
+			} catch (Exception e) {
+				throw new CoreException(Activator.error(e.getMessage(), e));
+			}
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
 	}
 
 	private void commit() throws TeamException {
-		try (Git git = new Git(repo)) {
+		Git git = new Git(repo);
+		try {
 			CommitCommand commitCommand = git.commit();
 			setAuthorAndCommitter(commitCommand);
 			commitCommand.setAmend(amending)
@@ -277,7 +280,9 @@ public class CommitOperation implements IEGitOperation {
 
 	// TODO: can the commit message be change by the user in case of a merge commit?
 	private void commitAll() throws TeamException {
-		try (Git git = new Git(repo)) {
+
+		Git git = new Git(repo);
+		try {
 			CommitCommand commitCommand = git.commit();
 			setAuthorAndCommitter(commitCommand);
 			commit = commitCommand.setAll(true).setMessage(message)
@@ -311,9 +316,9 @@ public class CommitOperation implements IEGitOperation {
 				authorIdent = rw.parseCommit(cherryPickHead)
 						.getAuthorIdent();
 			} catch (IOException e) {
-				Activator.logError(
-						CoreText.CommitOperation_ParseCherryPickCommitFailed,
-						e);
+				Activator
+						.error(CoreText.CommitOperation_ParseCherryPickCommitFailed,
+								e);
 				throw new IllegalStateException(e);
 			}
 		} else {

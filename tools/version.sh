@@ -105,9 +105,7 @@ perl -pi~ -e '
 	s/^(Bundle-Version:\s*).*$/${1}'"$OSGI_V"'/;
 	s/(org.eclipse.egit.*;version=")[^"[(]*(")/${1}'"$EGIT_V"'${2}/;
 	s/(org.eclipse.egit.*;version="\[)[^"]*(\)")/${1}'"$EGIT_V,$EGIT_N"'${2}/;
-	s/(org.eclipse.egit.*;bundle-version="\[)[^"]*(\)")/${1}'"$EGIT_V,$EGIT_N"'${2}/;
 	s/(org.eclipse.jgit.*;version="\[)[^"]*(\)")/${1}'"$JGIT_V,$JGIT_N"'${2}/;
-	s/(org.eclipse.jgit;bundle-version="\[)[^"]*(\)")/${1}'"$JGIT_V,$JGIT_N"'${2}/;
 	' $(git ls-files | grep META-INF/MANIFEST.MF)
 
 perl -pi~ -e '
@@ -115,8 +113,8 @@ perl -pi~ -e '
 		$seen_version = 0;
 		$old_argv = $ARGV;
 	}
-	if (!$seen_version) {
-		$seen_version = 1 if (!/<\?xml/ &&
+	if ($seen_version < 2) {
+		$seen_version++ if (!/<\?xml/ &&
 		s/(version=")[^"]*(")/${1}'"$OSGI_V"'${2}/);
 	}
 	s/(feature="org.eclipse.egit" version=")[^"]*(")/${1}'"$EGIT_V"'${2}/;
@@ -127,13 +125,12 @@ perl -pi~ -e '
 		$seen_version = 0;
 		$old_argv = $ARGV;
 	}
-	if (!$seen_version) {
-		$seen_version = 1 if (!/<\?xml/ &&
+	if ($seen_version < 2) {
+		$seen_version++ if (!/<\?xml/ &&
 		s/(version=")[^"]*(")/${1}'"$OSGI_V"'${2}/);
 	}
 	s/(plugin="org.eclipse.egit.core" version=")[^"]*(")/${1}'"$EGIT_V"'${2}/;
-	s/(plugin="org.eclipse.egit.ui" version=")[^"]*(")/${1}'"$EGIT_V"'${2}/;
-	' org.eclipse.egit.gitflow-feature/feature.xml
+	' org.eclipse.egit.psf-feature/feature.xml
 
 perl -pi~ -e '
 	if ($ARGV ne $old_argv) {

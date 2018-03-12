@@ -56,23 +56,12 @@ import org.eclipse.ui.model.WorkbenchAdapter;
 public class FileDiff extends WorkbenchAdapter {
 
 	/**
-	 * Comparator for sorting FileDiffs based on getPath(). Compares first the
-	 * directory part, if those are equal, the filename part.
+	 * Comparator for sorting FileDiffs based on getPath().
 	 */
 	public static final Comparator<FileDiff> PATH_COMPARATOR = new Comparator<FileDiff>() {
-
 		@Override
-		public int compare(FileDiff left, FileDiff right) {
-			String leftPath = left.getPath();
-			String rightPath = right.getPath();
-			int i = leftPath.lastIndexOf('/');
-			int j = rightPath.lastIndexOf('/');
-			int p = leftPath.substring(0, i + 1)
-					.compareTo(rightPath.substring(0, j + 1));
-			if (p != 0) {
-				return p;
-			}
-			return leftPath.compareTo(rightPath);
+		public int compare(FileDiff o1, FileDiff o2) {
+			return o1.getPath().compareTo(o2.getPath());
 		}
 	};
 
@@ -132,7 +121,7 @@ public class FileDiff extends WorkbenchAdapter {
 			final RevCommit[] parents,
 			final TreeFilter... markTreeFilters) throws MissingObjectException,
 			IncorrectObjectTypeException, CorruptObjectException, IOException {
-		final ArrayList<FileDiff> r = new ArrayList<>();
+		final ArrayList<FileDiff> r = new ArrayList<FileDiff>();
 
 		if (parents.length > 0) {
 			walk.reset(trees(commit, parents));
@@ -144,7 +133,7 @@ public class FileDiff extends WorkbenchAdapter {
 
 		if (walk.getTreeCount() <= 2) {
 			List<DiffEntry> entries = DiffEntry.scan(walk, false, markTreeFilters);
-			List<DiffEntry> xentries = new LinkedList<>(entries);
+			List<DiffEntry> xentries = new LinkedList<DiffEntry>(entries);
 			RenameDetector detector = new RenameDetector(repository);
 			detector.addAll(entries);
 			List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
@@ -298,7 +287,7 @@ public class FileDiff extends WorkbenchAdapter {
 	}
 
 	private String getProjectRelativePath(Repository db, String repoPath) {
-		IResource resource = ResourceUtil.getFileForLocation(db, repoPath, false);
+		IResource resource = ResourceUtil.getFileForLocation(db, repoPath);
 		if (resource == null)
 			return null;
 		return resource.getProjectRelativePath().toString();
@@ -364,7 +353,7 @@ public class FileDiff extends WorkbenchAdapter {
 	 * @return non-null but possibly empty array of object ids
 	 */
 	public ObjectId[] getBlobs() {
-		List<ObjectId> objectIds = new ArrayList<>();
+		List<ObjectId> objectIds = new ArrayList<ObjectId>();
 		if (diffEntry.getOldId() != null)
 			objectIds.add(diffEntry.getOldId().toObjectId());
 		if (diffEntry.getNewId() != null)
@@ -378,7 +367,7 @@ public class FileDiff extends WorkbenchAdapter {
 	 * @return non-null but possibly empty array of file modes
 	 */
 	public FileMode[] getModes() {
-		List<FileMode> modes = new ArrayList<>();
+		List<FileMode> modes = new ArrayList<FileMode>();
 		if (diffEntry.getOldMode() != null)
 			modes.add(diffEntry.getOldMode());
 		if (diffEntry.getOldMode() != null)

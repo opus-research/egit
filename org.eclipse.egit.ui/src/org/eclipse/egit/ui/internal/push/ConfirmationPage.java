@@ -49,7 +49,7 @@ import org.eclipse.ui.PlatformUI;
 class ConfirmationPage extends WizardPage {
 	static Collection<RemoteRefUpdate> copyUpdates(
 			final Collection<RemoteRefUpdate> refUpdates) throws IOException {
-		final Collection<RemoteRefUpdate> copy = new ArrayList<>(
+		final Collection<RemoteRefUpdate> copy = new ArrayList<RemoteRefUpdate>(
 				refUpdates.size());
 		for (final RemoteRefUpdate rru : refUpdates)
 			copy.add(new RemoteRefUpdate(rru, null));

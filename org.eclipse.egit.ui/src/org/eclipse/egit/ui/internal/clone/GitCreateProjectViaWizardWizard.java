@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013, 2017 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Wim Jongman (wim.jongman@remainsoftware.com) - Bug 358152
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.clone;
 
@@ -15,7 +14,6 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,8 +25,8 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
@@ -54,8 +52,6 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 	private GitCreateGeneralProjectPage myCreateGeneralProjectPage;
 
 	private GitProjectsImportPage myProjectsImportPage;
-
-	private List<String> myFilter;
 
 	/**
 	 * @param repository
@@ -153,8 +149,8 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 			throws InvocationTargetException, InterruptedException {
 		switch (mySelectionPage.getWizardSelection()) {
 		case GitSelectWizardPage.EXISTING_PROJECTS_WIZARD: {
-			final Set<ProjectRecord> projectsToCreate = new HashSet<>();
-			final List<IWorkingSet> workingSets = new ArrayList<>();
+			final Set<ProjectRecord> projectsToCreate = new HashSet<ProjectRecord>();
+			final List<IWorkingSet> workingSets = new ArrayList<IWorkingSet>();
 			// get the data from the page in the UI thread
 			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 				@Override
@@ -189,15 +185,11 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 						throws CoreException {
 					IProject[] currentProjects = ResourcesPlugin.getWorkspace()
 							.getRoot().getProjects();
-					SubMonitor progress = SubMonitor.convert(monitor,
-							currentProjects.length);
 					for (IProject current : currentProjects) {
 						if (!previousProjects.contains(current)) {
 							ConnectProviderOperation cpo = new ConnectProviderOperation(
 									current, myRepository.getDirectory());
-							cpo.execute(progress.newChild(1));
-						} else {
-							progress.worked(1);
+							cpo.execute(actMonitor);
 						}
 					}
 
@@ -232,22 +224,21 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 						final IProjectDescription desc = ResourcesPlugin
 								.getWorkspace().newProjectDescription(
 										projectName[0]);
-						if (!defaultLocation[0]) {
+						if (!defaultLocation[0])
 							desc.setLocation(new Path(myGitDir));
-						}
-						SubMonitor progress = SubMonitor.convert(actMonitor, 4);
+
 						IProject prj = ResourcesPlugin.getWorkspace().getRoot()
 								.getProject(desc.getName());
-						prj.create(desc, progress.newChild(1));
-						prj.open(progress.newChild(1));
+						prj.create(desc, actMonitor);
+						prj.open(actMonitor);
 
 						ResourcesPlugin.getWorkspace().getRoot().refreshLocal(
-								IResource.DEPTH_ONE, progress.newChild(1));
+								IResource.DEPTH_ONE, actMonitor);
 
 						File repoDir = myRepository.getDirectory();
 						ConnectProviderOperation cpo = new ConnectProviderOperation(
 								prj, repoDir);
-						cpo.execute(progress.newChild(1));
+						cpo.execute(new NullProgressMonitor());
 					}
 				};
 				ResourcesPlugin.getWorkspace().run(wsr, monitor);
@@ -258,33 +249,5 @@ public class GitCreateProjectViaWizardWizard extends Wizard {
 			break;
 		}
 		}
-	}
-
-	/**
-	 * Add a list of paths that may match projects that this wizard can show. If
-	 * no filter is set or if the filter is empty then all projects will show.
-	 * If a non empty filter is set and no projects match then the wizard will
-	 * not show any projects.
-	 *
-	 * @param filter
-	 *            a list of paths
-	 */
-	public void setFilter(List<String> filter) {
-		myFilter = filter;
-	}
-
-	/**
-	 * Gets the list of projects that will filter in a subset of all eligible
-	 * projects.
-	 *
-	 * @return an unmodifiable list of projects which could be empty but never
-	 *         null.
-	 * @see #setFilter(List)
-	 */
-	public List<String> getFilter() {
-		if (myFilter == null) {
-			return Collections.emptyList();
-		}
-		return Collections.unmodifiableList(myFilter);
 	}
 }

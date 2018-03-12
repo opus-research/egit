@@ -8,8 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.storage;
 
-import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.core.variants.IResourceVariant;
@@ -59,25 +57,21 @@ public abstract class AbstractGitResourceVariant implements IResourceVariant {
 		this.rawMode = rawMode;
 	}
 
-	@Override
 	public String getName() {
 		int lastSeparator = path.lastIndexOf('/');
 		return path.substring(lastSeparator + 1);
 	}
 
-	@Override
 	public boolean isContainer() {
 		return isContainer;
 	}
 
-	@Override
 	public String getContentIdentifier() {
 		return objectId.name();
 	}
 
-	@Override
 	public byte[] asBytes() {
-		return objectId.name().getBytes(StandardCharsets.UTF_8);
+		return objectId.name().getBytes();
 	}
 
 	/**

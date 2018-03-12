@@ -12,9 +12,7 @@ package org.eclipse.egit.ui.prefpages.configuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,26 +20,21 @@ import java.util.Set;
 
 import org.eclipse.egit.ui.common.EGitTestCase;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.preferences.GlobalConfigurationPreferencePage;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jgit.junit.MockSystemReader;
-import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
-import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,7 +50,7 @@ public class GlobalConfigurationPageTest {
 
 	private static final SWTWorkbenchBot bot = new SWTWorkbenchBot();
 
-	private static File configFile;
+	private static final TestUtil util = new TestUtil();
 
 	private static FileBasedConfig config;
 
@@ -66,71 +59,44 @@ public class GlobalConfigurationPageTest {
 	@BeforeClass
 	public static void beforeClass() throws Exception {
 		EGitTestCase.closeWelcomePage();
-		configFile = File.createTempFile("gitconfigtest", "config");
-		configFile.deleteOnExit();
-		SystemReader.setInstance(new MockSystemReader() {
-			@Override
-			public FileBasedConfig openUserConfig(Config parent, FS fs) {
-				return new FileBasedConfig(parent, configFile, fs);
-			}
-		});
 		config = SystemReader.getInstance().openUserConfig(null, FS.DETECTED);
 		config.load();
-		clean();
 	}
 
-	private static void clean() throws Exception {
-		config.unsetSection(TESTSECTION, TESTSUBSECTION + '.' + TESTNAME);
+	@Before
+	public void before() throws Exception {
 		config.unsetSection(TESTSECTION, TESTSUBSECTION);
 		config.unsetSection(TESTSECTION, null);
 		config.save();
+		getGitConfigurationPreferencePage();
 	}
 
 	private void getGitConfigurationPreferencePage() {
-		if (preferencePage != null) {
-			preferencePage.close();
-			bot.waitUntil(Conditions.shellCloses(preferencePage));
-		}
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-
-			@Override
-			public void run() {
-				PreferencesUtil.createPreferenceDialogOn(
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-								.getShell(),
-						GlobalConfigurationPreferencePage.ID, null, null)
-						.open();
-			}
-		});
-		bot.waitUntil(Conditions.shellIsActive("Preferences"));
-		preferencePage = bot.shell("Preferences");
+		preferencePage = new Eclipse().openPreferencePage(preferencePage);
+		SWTBotTreeItem team = preferencePage.bot().tree().getTreeItem("Team");
+		team.expand()
+				.getNode(util.getPluginLocalizedValue("GitPreferences_name"))
+				.expand()
+				.getNode(util.getPluginLocalizedValue("ConfigurationPage.name"))
+				.select();
 	}
 
 	@After
 	public void after() throws Exception {
-		if (preferencePage != null) {
+		if (preferencePage != null)
 			preferencePage.close();
-			bot.waitUntil(Conditions.shellCloses(preferencePage));
-			preferencePage = null;
-		}
-		TestUtil.processUIEvents();
-		clean();
 	}
 
 	@AfterClass
 	public static void afterTest() throws Exception {
-		configFile.delete();
-		SystemReader.setInstance(null);
 		// reset saved preferences state
 		SWTBotShell preferencePage = new Eclipse().openPreferencePage(null);
 		preferencePage.bot().tree(0).getTreeItem("General").select();
 		preferencePage.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.processUIEvents();
 	}
 
 	@Test
 	public void testNodes() throws Exception {
-		getGitConfigurationPreferencePage();
 		SWTBotTree configTree = preferencePage.bot().tree(1);
 		for (String section : config.getSections()) {
 			SWTBotTreeItem sectionItem = configTree.getTreeItem(section);
@@ -155,7 +121,6 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testAddSectionEntry() throws Exception {
-		getGitConfigurationPreferencePage();
 		preferencePage.bot().button(
 				UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
@@ -181,7 +146,6 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testAddSubSectionEntry() throws Exception {
-		getGitConfigurationPreferencePage();
 		preferencePage.bot().button(
 				UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
@@ -246,86 +210,38 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testChecksForKey() throws Exception {
-		getGitConfigurationPreferencePage();
 		preferencePage.bot().button(
 				UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
 				.shell(UIText.AddConfigEntryDialog_AddConfigTitle);
 		addDialog.activate();
-		assertFalse("Should be disabled when neither key nor value set",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
+		// neither key nor value set
+		assertTrue(!addDialog.bot().button(IDialogConstants.OK_LABEL)
+				.isEnabled());
 		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_ValueLabel)
 				.setText("Somevalue");
-		assertFalse("Should be disabled when no key",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
+		// key empty
+		assertTrue(!addDialog.bot().button(IDialogConstants.OK_LABEL)
+				.isEnabled());
 		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
 				.setText(TESTSECTION);
-		assertFalse("Should be disabled when no dot",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
+		// no dot
+		assertTrue(!addDialog.bot().button(IDialogConstants.OK_LABEL)
+				.isEnabled());
 		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
 				.setText(TESTSECTION + "." + TESTNAME);
-		assertTrue("Should be enabled with one dot",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
+		// ok: one dot
+		assertTrue(addDialog.bot().button(IDialogConstants.OK_LABEL)
+				.isEnabled());
 		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
 				.setText(TESTSECTION + "." + TESTSUBSECTION + "." + TESTNAME);
-		assertTrue("Should be enabled with two dots",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText(TESTSECTION
-						+ ". some stuff with dots.. and . non-ASCII characters: àéè."
-						+ TESTNAME);
-		// ok: first and last section alphanumeric,subsection will be quoted
-		assertTrue("Should be enabled with strange subsection",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("föö.bar.baz");
-		assertFalse("Should be disabled with non-ASCII in first segment",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foo.bar.bàz");
-		assertFalse("Should be disabled with non-ASCII in last segment",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foo bar.baz");
-		assertFalse("Should be disabled with blank in first segment",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foo.bar baz");
-		assertFalse("Should be disabled with blank in last segment",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foo-bar.baz-");
-		assertTrue("Should be enabled with dashes",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foo.bar.");
-		assertFalse("Should be disabled when ending in dot",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText(".foo.bar.");
-		assertFalse("Should be disabled when beginning with dot",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("..");
-		assertFalse("Should be disabled for \"..\"",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foobar.9nines");
-		assertFalse("Should be disabled for variable name starting with digit",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foobar.-bar");
-		assertFalse("Should be disabled for variable name starting with a dash",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
-		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText("foobar.b-9");
-		assertTrue("Should be enabled for variable name starting with a letter",
-				addDialog.bot().button(IDialogConstants.OK_LABEL).isEnabled());
+		// ok: two dots
+		assertTrue(addDialog.bot().button(IDialogConstants.OK_LABEL)
+				.isEnabled());
 	}
 
 	@Test
 	public void testSubsectionWithDot() throws Exception {
-		getGitConfigurationPreferencePage();
 		preferencePage.bot()
 				.button(UIText.ConfigurationEditorComponent_AddButton).click();
 		SWTBotShell addDialog = bot
@@ -367,9 +283,7 @@ public class GlobalConfigurationPageTest {
 		preferencePage.bot().tree(1).getTreeItem(TESTSECTION).getNode(
 				TESTNAME + "[0]").select();
 
-		preferencePage.bot()
-				.button(UIText.ConfigurationEditorComponent_RemoveButton)
-				.click();
+		bot.button(UIText.ConfigurationEditorComponent_RemoveButton).click();
 		// close the editor
 		preferencePage.bot().button(IDialogConstants.OK_LABEL).click();
 		config.load();
@@ -391,9 +305,7 @@ public class GlobalConfigurationPageTest {
 		preferencePage.bot().tree(1).getTreeItem(TESTSECTION).getNode(
 				TESTSUBSECTION).select();
 
-		preferencePage.bot()
-				.button(UIText.ConfigurationEditorComponent_RemoveButton)
-				.click();
+		bot.button(UIText.ConfigurationEditorComponent_RemoveButton).click();
 		SWTBotShell confirm = bot
 				.shell(UIText.ConfigurationEditorComponent_RemoveSubsectionTitle);
 		confirm.activate();
@@ -416,9 +328,7 @@ public class GlobalConfigurationPageTest {
 		getGitConfigurationPreferencePage();
 		preferencePage.bot().tree(1).getTreeItem(TESTSECTION).select();
 
-		preferencePage.bot()
-				.button(UIText.ConfigurationEditorComponent_RemoveButton)
-				.click();
+		bot.button(UIText.ConfigurationEditorComponent_RemoveButton).click();
 		SWTBotShell confirm = bot
 				.shell(UIText.ConfigurationEditorComponent_RemoveSectionTitle);
 		confirm.activate();
@@ -432,7 +342,6 @@ public class GlobalConfigurationPageTest {
 
 	@Test
 	public void testOpenEditor() throws Exception {
-		getGitConfigurationPreferencePage();
 		try {
 			preferencePage.bot().button(
 					UIText.ConfigurationEditorComponent_OpenEditorButton)

@@ -14,7 +14,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -24,12 +23,12 @@ import org.eclipse.jgit.revwalk.RevObject;
  * table that contain a match to a given pattern.
  *
  * @see FindToolbar
- * @see FindToolbarJob
+ * @see FindToolbarThread
  */
 public class FindResults {
-	private Map<Integer, Integer> matchesMap = new LinkedHashMap<>();
+	private Map<Integer, Integer> matchesMap = new LinkedHashMap<Integer, Integer>();
 
-	private List<RevObject> revObjList = new ArrayList<>();
+	private List<RevObject> revObjList = new ArrayList<RevObject>();
 
 	Integer[] keysArray;
 
@@ -37,40 +36,14 @@ public class FindResults {
 
 	private RevFlag highlight;
 
-	private boolean overflow;
-
-	private final CopyOnWriteArrayList<IFindListener> listeners = new CopyOnWriteArrayList<>();
-
-	/**
-	 * Adds the given listener to be notified when search results are added or
-	 * the results are cleared. Has no effect if the listener is already
-	 * registered.
-	 *
-	 * @param listener
-	 *            to add
-	 */
-	public void addFindListener(IFindListener listener) {
-		listeners.addIfAbsent(listener);
-	}
-
-	/**
-	 * Removes the given listener if it was registered.
-	 *
-	 * @param listener
-	 *            to remove
-	 */
-	public void removeFindListener(IFindListener listener) {
-		listeners.remove(listener);
-	}
-
 	/**
 	 * Returns if the index in the history table matches the find pattern.
 	 *
 	 * @param index
 	 *            history table item index.
-	 * @return boolean <code>true</code> if the history table <code>index</code>
-	 *         contains a match to the find pattern, <code>false</code>
-	 *         otherwise
+	 * @return boolean <code>true</code> if the history table
+	 *         <code>index</code> contains a match to the find pattern,
+	 *         <code>false</code> otherwise
 	 */
 	public synchronized boolean isFoundAt(int index) {
 		return matchesMap.containsKey(Integer.valueOf(index));
@@ -191,13 +164,7 @@ public class FindResults {
 		matchesMap.clear();
 		revObjList.clear();
 		keysArray = null;
-		boolean hadItems = matchesCount > 0;
 		matchesCount = 0;
-		if (hadItems) {
-			for (IFindListener listener : listeners) {
-				listener.cleared();
-			}
-		}
 	}
 
 	/**
@@ -215,9 +182,6 @@ public class FindResults {
 		revObjList.add(revObj);
 		revObj.add(highlight);
 		keysArray = null;
-		for (IFindListener listener : listeners) {
-			listener.itemAdded(matchIx, revObj);
-		}
 	}
 
 	private Integer[] getkeysArray() {
@@ -234,13 +198,5 @@ public class FindResults {
 			clear();
 		}
 		this.highlight = hFlag;
-	}
-
-	synchronized void setOverflow() {
-		overflow = true;
-	}
-
-	synchronized boolean isOverflow() {
-		return overflow;
 	}
 }

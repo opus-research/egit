@@ -1,7 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2017, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -56,6 +55,8 @@ public class DialogsPreferencePage extends FieldEditorPreferencePage implements
 		confirmDialogsGroup
 				.setText(UIText.DialogsPreferencePage_HideConfirmationGroupHeader);
 
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(confirmDialogsGroup);
 		addField(new BooleanFieldEditor(
 				UIPreferences.SHOW_INITIAL_CONFIG_DIALOG,
 				UIText.DialogsPreferencePage_ShowInitialConfigCheckbox,
@@ -79,32 +80,18 @@ public class DialogsPreferencePage extends FieldEditorPreferencePage implements
 				confirmDialogsGroup));
 		updateMargins(confirmDialogsGroup);
 
-		Group infoGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(infoGroup);
-		infoGroup.setText(UIText.DialogsPreferencePage_ShowInfoGroupHeader);
-
-		BooleanFieldEditor editor = new BooleanFieldEditor(
-				UIPreferences.SHOW_FETCH_POPUP_SUCCESS,
-				UIText.DialogsPreferencePage_ShowFetchInfoDialog, infoGroup);
-		addField(editor);
-		editor.getDescriptionControl(infoGroup)
-				.setToolTipText(UIText.DialogsPreferencePage_ShowTooltip);
-		editor = new BooleanFieldEditor(UIPreferences.SHOW_PUSH_POPUP_SUCCESS,
-				UIText.DialogsPreferencePage_ShowPushInfoDialog, infoGroup);
-		addField(editor);
-		editor.getDescriptionControl(infoGroup)
-				.setToolTipText(UIText.DialogsPreferencePage_ShowTooltip);
-
-		updateMargins(infoGroup);
-
 		Group warningsGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
 				.applyTo(warningsGroup);
-		warningsGroup.setText(UIText.DialogsPreferencePage_HideWarningGroupHeader);
+		warningsGroup
+				.setText(UIText.DialogsPreferencePage_HideWarningGroupHeader);
 
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(warningsGroup);
 		addField(new BooleanFieldEditor(UIPreferences.SHOW_HOME_DIR_WARNING,
 				UIText.DialogsPreferencePage_HomeDirWarning, warningsGroup));
+		addField(new BooleanFieldEditor(UIPreferences.SHOW_GIT_PREFIX_WARNING,
+				UIText.DialogsPreferencePage_GitPrefixWarning, warningsGroup));
 		updateMargins(warningsGroup);
 	}
 

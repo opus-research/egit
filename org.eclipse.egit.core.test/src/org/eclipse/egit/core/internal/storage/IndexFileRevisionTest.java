@@ -33,7 +33,6 @@ import org.junit.Test;
 public class IndexFileRevisionTest extends GitTestCase {
 	private Repository repository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -41,7 +40,6 @@ public class IndexFileRevisionTest extends GitTestCase {
 		repository.create();
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		repository.close();

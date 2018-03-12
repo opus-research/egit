@@ -108,15 +108,14 @@ public class StagingViewTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void testMergeConflict() throws Exception {
-		try (Git git = new Git(repository)) {
-			git.checkout().setCreateBranch(true).setName("side").call();
-			commitOneFileChange("on side");
+		Git git = new Git(repository);
+		git.checkout().setCreateBranch(true).setName("side").call();
+		commitOneFileChange("on side");
 
-			git.checkout().setName("master").call();
-			commitOneFileChange("on master");
+		git.checkout().setName("master").call();
+		commitOneFileChange("on master");
 
-			git.merge().include(repository.findRef("side")).call();
-		}
+		git.merge().include(repository.getRef("side")).call();
 		assertEquals(RepositoryState.MERGING, repository.getRepositoryState());
 
 		StagingViewTester stagingView = StagingViewTester

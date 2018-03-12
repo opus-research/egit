@@ -32,7 +32,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.ProjectReference;
 import org.eclipse.egit.core.RepositoryUtil;
@@ -74,15 +73,12 @@ public class ProjectReferenceImporter {
 
 		final List<IProject> importedProjects = new ArrayList<IProject>();
 
-		SubMonitor progress = SubMonitor.convert(monitor, repositories.size());
 		for (final Map.Entry<URIish, Map<String, Set<ProjectReference>>> entry : repositories
 				.entrySet()) {
 			final URIish gitUrl = entry.getKey();
 			final Map<String, Set<ProjectReference>> refs = entry
 					.getValue();
 
-			SubMonitor subProgress = progress.newChild(1)
-					.setWorkRemaining(refs.size());
 			for (final Map.Entry<String, Set<ProjectReference>> refEntry : refs
 					.entrySet()) {
 				final String refName = refEntry.getKey();
@@ -94,13 +90,10 @@ public class ProjectReferenceImporter {
 				if (allRefs.size() == 1)
 					repositoryPath = findConfiguredRepository(gitUrl);
 
-				SubMonitor subSubProgress = subProgress.newChild(1)
-						.setWorkRemaining(repositoryPath == null ? 2 : 1);
 				if (repositoryPath == null) {
 					try {
 						IPath workDir = getWorkingDir(gitUrl, refName, refs.keySet());
-						repositoryPath = cloneIfNecessary(gitUrl, refName,
-								workDir, projects, subSubProgress.newChild(1));
+						repositoryPath = cloneIfNecessary(gitUrl, refName, workDir, projects, monitor);
 					} catch (final InterruptedException e) {
 						// was canceled by user
 						return Collections.emptyList();
@@ -112,7 +105,7 @@ public class ProjectReferenceImporter {
 				IPath newWorkDir = new Path(repositoryPath.getAbsolutePath())
 						.removeLastSegments(1);
 				List<IProject> p = importProjects(projects, newWorkDir,
-						repositoryPath, subSubProgress.newChild(1));
+						repositoryPath, monitor);
 				importedProjects.addAll(p);
 			}
 		}
@@ -155,11 +148,6 @@ public class ProjectReferenceImporter {
 		final Map<URIish, Map<String, Set<ProjectReference>>> repositories = new LinkedHashMap<URIish, Map<String, Set<ProjectReference>>>();
 
 		for (final String reference : referenceStrings) {
-			if (reference == null) {
-				// BundleImporterDelegate doesn't check invalid project URI's,
-				// so we can receive null references.
-				continue;
-			}
 			try {
 				final ProjectReference projectReference = new ProjectReference(
 						reference);
@@ -199,16 +187,16 @@ public class ProjectReferenceImporter {
 	 */
 	private static IPath getWorkingDir(URIish gitUrl, String branch,
 			Set<String> allBranches) {
-		final IPath defaultRepoLocation = new Path(
-				RepositoryUtil.getDefaultRepositoryDir());
+		final IPath workspaceLocation = ResourcesPlugin.getWorkspace()
+				.getRoot().getRawLocation();
 		final String humanishName = gitUrl.getHumanishName();
 		String extendedName;
-		if (allBranches.size() == 1 || branch.equals(Constants.MASTER)) {
+		if (allBranches.size() == 1 || branch.equals(Constants.MASTER))
 			extendedName = humanishName;
-		} else {
+		else
 			extendedName = humanishName + "_" + branch; //$NON-NLS-1$
-		}
-		return defaultRepoLocation.append(extendedName);
+		final IPath workDir = workspaceLocation.append(extendedName);
+		return workDir;
 	}
 
 	static File findConfiguredRepository(URIish gitUrl) {
@@ -290,10 +278,7 @@ public class ProjectReferenceImporter {
 			// import projects from the current repository to workspace
 			final IWorkspace workspace = ResourcesPlugin.getWorkspace();
 			final IWorkspaceRoot root = workspace.getRoot();
-			SubMonitor progress = SubMonitor.convert(monitor, projects.size());
 			for (final ProjectReference projectToImport : projects) {
-				SubMonitor subProgress = SubMonitor
-						.convert(progress.newChild(1), 3);
 				final IPath projectDir = workDir.append(projectToImport
 						.getProjectDir());
 				final IProjectDescription projectDescription = workspace
@@ -302,14 +287,14 @@ public class ProjectReferenceImporter {
 				final IProject project = root.getProject(projectDescription
 						.getName());
 				if (!project.exists()) {
-					project.create(projectDescription, subProgress.newChild(1));
+					project.create(projectDescription, monitor);
 					importedProjects.add(project);
 				}
-				subProgress.setWorkRemaining(2);
-				project.open(subProgress.newChild(1));
+
+				project.open(monitor);
 				final ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
 						project, repositoryPath);
-				connectProviderOperation.execute(subProgress.newChild(1));
+				connectProviderOperation.execute(monitor);
 			}
 
 			return importedProjects;

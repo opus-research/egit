@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -112,7 +112,7 @@ class GitSyncCache {
 		return OrTreeFilter.create(filters);
 	}
 
-	static boolean loadDataFromGit(GitSynchronizeData gsd,
+	private static void loadDataFromGit(GitSynchronizeData gsd,
 			TreeFilter filter, GitSyncObjectCache repoCache) {
 		Repository repo = gsd.getRepository();
 
@@ -152,15 +152,13 @@ class GitSyncCache {
 				tw.addTree(dci);
 				fti.setDirCacheIterator(tw, 3);
 			}
-			List<ThreeWayDiffEntry> diffEntrys = ThreeWayDiffEntry
-					.scan(tw, gsd);
+			List<ThreeWayDiffEntry> diffEntrys = ThreeWayDiffEntry.scan(tw);
+
 			for (ThreeWayDiffEntry diffEntry : diffEntrys)
 				repoCache.addMember(diffEntry);
 		} catch (Exception e) {
 			Activator.logError(e.getMessage(), e);
-			return false;
 		}
-		return true;
 	}
 
 	private static ObjectId getTree(RevCommit commit) {
@@ -177,7 +175,7 @@ class GitSyncCache {
 
 	/**
 	 * @param repo
-	 *            instance of {@link Repository} for which mapping should be
+	 *            instance of {@link Repository} for with mapping should be
 	 *            obtained
 	 * @return instance of {@link GitSyncObjectCache} connected associated with
 	 *         given repository or {@code null} when such mapping wasn't found

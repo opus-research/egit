@@ -5,9 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    wim.jongman@remainsoftware.com - branch normalization
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -16,7 +13,6 @@ import org.eclipse.egit.core.op.RenameBranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.egit.ui.internal.components.BranchNameNormalizer;
 import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -43,8 +39,6 @@ public class BranchRenameDialog extends TitleAreaDialog {
 	private final Ref branchToRename;
 
 	private Text name;
-
-	private String newName;
 
 	/**
 	 * @param parentShell
@@ -111,8 +105,6 @@ public class BranchRenameDialog extends TitleAreaDialog {
 			}
 		});
 
-		BranchNameNormalizer normalizer = new BranchNameNormalizer(name);
-		normalizer.setVisible(false);
 		getButton(OK).setEnabled(false);
 	}
 
@@ -126,7 +118,7 @@ public class BranchRenameDialog extends TitleAreaDialog {
 	protected void buttonPressed(int buttonId) {
 		if (buttonId == OK)
 			try {
-				newName = name.getText();
+				String newName = name.getText();
 				new RenameBranchOperation(repository, branchToRename, newName)
 						.execute(null);
 			} catch (CoreException e) {
@@ -136,14 +128,5 @@ public class BranchRenameDialog extends TitleAreaDialog {
 				return;
 			}
 		super.buttonPressed(buttonId);
-	}
-
-	/**
-	 * @return the name of the branch after the rename operation. This is only
-	 *         valid after the dialog has been opened and finished with the OK
-	 *         button.
-	 */
-	public String getNewName() {
-		return newName;
 	}
 }

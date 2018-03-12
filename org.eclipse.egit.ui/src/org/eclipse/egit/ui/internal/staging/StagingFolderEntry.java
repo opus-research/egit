@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2013, 2016 Stephen Elsemore <selsemore@collab.net> and others.
+ * Copyright (C) 2013, Stephen Elsemore <selsemore@collab.net> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +16,6 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
-import org.eclipse.jgit.annotations.NonNull;
 
 /**
  * A staged/unstaged folder entry in the tree
@@ -41,8 +40,7 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		this.repoLocation = repoLocation;
 		this.repoRelativePath = repoRelativePath;
 		this.nodePath = nodePath;
-		this.container = ResourceUtil.getContainerForLocation(getLocation(),
-				false);
+		this.container = ResourceUtil.getContainerForLocation(getLocation());
 	}
 
 	/**
@@ -60,7 +58,7 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 
 		try {
 			return container.findMaxProblemSeverity(IMarker.PROBLEM, true,
-					IResource.DEPTH_INFINITE);
+					IResource.DEPTH_ONE);
 		} catch (CoreException e) {
 			return SEVERITY_NONE;
 		}
@@ -85,8 +83,6 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 	/**
 	 * @return the absolute path corresponding to the folder entry
 	 */
-	@SuppressWarnings("null")
-	@NonNull
 	public IPath getLocation() {
 		return repoLocation.append(repoRelativePath);
 	}
@@ -138,8 +134,4 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		return getLocation().hashCode();
 	}
 
-	@Override
-	public String toString() {
-		return "StagingFolderEntry[" + repoRelativePath + "]"; //$NON-NLS-1$//$NON-NLS-2$
-	}
 }

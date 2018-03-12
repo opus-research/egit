@@ -19,8 +19,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.CompareCoreUtils;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
@@ -46,6 +46,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.team.core.RepositoryProvider;
 
 class GitDocument extends Document implements RefsChangedListener {
 	private final IResource resource;
@@ -63,7 +64,7 @@ class GitDocument extends Document implements RefsChangedListener {
 
 	private boolean disposed;
 
-	static Map<GitDocument, Repository> doc2repo = new WeakHashMap<>();
+	static Map<GitDocument, Repository> doc2repo = new WeakHashMap<GitDocument, Repository>();
 
 	static GitDocument create(final IResource resource) throws IOException {
 		if (GitTraceLocation.QUICKDIFF.isActive())
@@ -71,7 +72,8 @@ class GitDocument extends Document implements RefsChangedListener {
 					GitTraceLocation.QUICKDIFF.getLocation(),
 					"(GitDocument) create: " + resource); //$NON-NLS-1$
 		GitDocument ret = null;
-		if (ResourceUtil.isSharedWithGit(resource.getProject())) {
+		if (RepositoryProvider.getProvider(resource.getProject(),
+				GitProvider.ID) != null) {
 			ret = new GitDocument(resource);
 			ret.populate();
 			final Repository repository = ret.getRepository();
@@ -142,7 +144,7 @@ class GitDocument extends Document implements RefsChangedListener {
 				return;
 			}
 		} else {
-			if (repository.exactRef(Constants.HEAD) == null) {
+			if (repository.getRef(Constants.HEAD) == null) {
 				// Complain only if not an unborn branch
 				String msg = NLS.bind(UIText.GitDocument_errorResolveQuickdiff,
 						new Object[] { baseline, resource, repository });

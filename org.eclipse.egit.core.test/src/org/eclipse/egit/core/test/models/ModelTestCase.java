@@ -56,7 +56,6 @@ import org.junit.Before;
 public abstract class ModelTestCase extends GitTestCase {
 	protected static final String SAMPLE_FILE_EXTENSION = SampleModelProvider.SAMPLE_FILE_EXTENSION;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -71,7 +70,7 @@ public abstract class ModelTestCase extends GitTestCase {
 			IFile targetFile, String newContents, String commitMessage)
 			throws Exception {
 		targetFile.setContents(
-				new ByteArrayInputStream(newContents.getBytes("UTF-8")),
+				new ByteArrayInputStream(newContents.getBytes()),
 				IResource.FORCE, new NullProgressMonitor());
 		testRepository.addToIndex(targetFile);
 		return testRepository.commit(commitMessage);
@@ -80,7 +79,7 @@ public abstract class ModelTestCase extends GitTestCase {
 	protected void assertContentEquals(IFile file, String expectedContents)
 			throws Exception {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				file.getContents(), file.getCharset()));
+				file.getContents()));
 		StringBuilder contentsBuilder = new StringBuilder();
 		String line = reader.readLine();
 		while (line != null) {
@@ -98,9 +97,7 @@ public abstract class ModelTestCase extends GitTestCase {
 	}
 
 	protected Status status(Repository repository) throws Exception {
-		try (Git git = new Git(repository)) {
-			return git.status().call();
-		}
+		return new Git(repository).status().call();
 	}
 
 	protected IResourceMappingMerger createMerger() throws CoreException {

@@ -39,7 +39,6 @@ public class MergeOperationTest extends GitTestCase {
 	private TestRepository testRepository;
 	private RevCommit secondCommit;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -58,7 +57,6 @@ public class MergeOperationTest extends GitTestCase {
 		testRepository.checkoutBranch(SIDE);
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -144,10 +142,7 @@ public class MergeOperationTest extends GitTestCase {
 	}
 
 	private int countCommitsInHead() throws GitAPIException {
-		LogCommand log;
-		try (Git git = new Git(testRepository.getRepository())) {
-			log = git.log();
-		}
+		LogCommand log = new Git(testRepository.getRepository()).log();
 		Iterable<RevCommit> commits = log.call();
 		int result = 0;
 		for (Iterator i = commits.iterator(); i.hasNext();) {

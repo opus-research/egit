@@ -1,13 +1,10 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2015 Marek Zawirski <marek.zawirski@gmail.com> and others.
+ * Copyright (C) 2008, 2012 Marek Zawirski <marek.zawirski@gmail.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *           Karsten Panier <karsten.panier@aysada.org> - Bug 441357
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.components;
 
@@ -194,7 +191,7 @@ public class RefSpecPanel {
 
 	private static List<RefContentProposal> createProposalsFilteredRemote(
 			final List<RefContentProposal> proposals) {
-		final List<RefContentProposal> result = new ArrayList<>();
+		final List<RefContentProposal> result = new ArrayList<RefContentProposal>();
 		for (final RefContentProposal p : proposals) {
 			final String content = p.getContent();
 			if (content.equals(Constants.HEAD)
@@ -216,7 +213,7 @@ public class RefSpecPanel {
 		control.show();
 	}
 
-	private final List<RefSpec> specs = new ArrayList<>();
+	private final List<RefSpec> specs = new ArrayList<RefSpec>();
 
 	private final Composite panel;
 
@@ -284,7 +281,7 @@ public class RefSpecPanel {
 
 	private final boolean pushSpecs;
 
-	private final List<SelectionChangeListener> listeners = new LinkedList<>();
+	private final List<SelectionChangeListener> listeners = new LinkedList<SelectionChangeListener>();
 
 	private final ImageRegistry imageRegistry;
 
@@ -371,20 +368,20 @@ public class RefSpecPanel {
 		final List<RefContentProposal> remoteProposals = createContentProposals(
 				remoteRefs, null);
 		remoteProposalProvider.setProposals(remoteProposals);
-		remoteRefNames = new HashSet<>();
+		remoteRefNames = new HashSet<String>();
 		for (final RefContentProposal p : remoteProposals)
 			remoteRefNames.add(p.getContent());
 
 		Ref HEAD = null;
 		try {
-			HEAD = localDb.exactRef(Constants.HEAD);
+			HEAD = localDb.getRef(Constants.HEAD);
 		} catch (IOException e) {
 			Activator.logError("Couldn't read HEAD from local repository", e); //$NON-NLS-1$
 		}
 		final List<RefContentProposal> localProposals = createContentProposals(
 				localDb.getAllRefs().values(), HEAD);
 		localProposalProvider.setProposals(localProposals);
-		localRefNames = new HashSet<>();
+		localRefNames = new HashSet<String>();
 		for (final RefContentProposal ref : localProposals)
 			localRefNames.add(ref.getContent());
 
@@ -756,9 +753,6 @@ public class RefSpecPanel {
 		};
 		creationSrcCombo.addModifyListener(validator);
 		creationDstCombo.addModifyListener(validator);
-		Control[] tabList = new Control[] { creationSrcCombo, creationDstCombo,
-				creationButton };
-		creationPanel.setTabList(tabList);
 	}
 
 	private void createDeleteCreationPanel() {
@@ -1319,7 +1313,7 @@ public class RefSpecPanel {
 		forceUpdateAllButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				final List<RefSpec> specsCopy = new ArrayList<>(specs);
+				final List<RefSpec> specsCopy = new ArrayList<RefSpec>(specs);
 				for (final RefSpec spec : specsCopy) {
 					if (!isDeleteRefSpec(spec))
 						setRefSpec(spec, spec.setForceUpdate(true));
@@ -1627,7 +1621,7 @@ public class RefSpecPanel {
 	}
 
 	private void validateSpecsCrossDst() {
-		final Map<String, RefSpec> dstsSpecsMap = new HashMap<>();
+		final Map<String, RefSpec> dstsSpecsMap = new HashMap<String, RefSpec>();
 		try {
 			for (final RefSpec spec : specs) {
 				if (!spec.isWildcard()) {
@@ -1728,7 +1722,7 @@ public class RefSpecPanel {
 
 	private List<RefContentProposal> createContentProposals(
 			final Collection<Ref> refs, final Ref HEAD) {
-		final TreeSet<Ref> set = new TreeSet<>(new Comparator<Ref>() {
+		final TreeSet<Ref> set = new TreeSet<Ref>(new Comparator<Ref>() {
 			@Override
 			public int compare(Ref o1, Ref o2) {
 				// lexicographical ordering by name seems to be fine
@@ -1739,7 +1733,7 @@ public class RefSpecPanel {
 		if (HEAD != null)
 			set.add(HEAD);
 
-		final List<RefContentProposal> result = new ArrayList<>(
+		final List<RefContentProposal> result = new ArrayList<RefContentProposal>(
 				set.size());
 		for (final Ref r : set)
 			result.add(new RefContentProposal(localDb, r));
@@ -1748,7 +1742,7 @@ public class RefSpecPanel {
 
 	private List<RefContentProposal> createProposalsFilteredLocal(
 			final List<RefContentProposal> proposals) {
-		final List<RefContentProposal> result = new ArrayList<>();
+		final List<RefContentProposal> result = new ArrayList<RefContentProposal>();
 		for (final RefContentProposal p : proposals) {
 			final String content = p.getContent();
 			if (pushSpecs) {
@@ -1811,7 +1805,7 @@ public class RefSpecPanel {
 		@Override
 		public IContentProposal[] getProposals(final String contents,
 				int position) {
-			final List<RefContentProposal> result = new ArrayList<>();
+			final List<RefContentProposal> result = new ArrayList<RefContentProposal>();
 
 			if (contents.indexOf('*') != -1 || contents.indexOf('?') != -1) {
 				// contents contains wildcards

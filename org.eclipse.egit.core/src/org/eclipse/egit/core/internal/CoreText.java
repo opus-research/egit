@@ -29,9 +29,6 @@ public class CoreText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.internal.coretext"; //$NON-NLS-1$
 
 	/** */
-	public static String Activator_invalidPreferredMergeStrategy;
-
-	/** */
 	public static String Activator_autoIgnoreDerivedResources;
 
 	/** */
@@ -77,28 +74,13 @@ public class CoreText extends NLS {
 	public static String ConfigureFetchAfterCloneTask_couldNotFetch;
 
 	/** */
-	public static String ConnectProviderOperation_autoIgnoreMetaData;
-
-	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
 	public static String ConnectProviderOperation_ConnectingProject;
 
 	/** */
-	public static String ConnectProviderOperation_ConnectErrors;
-
-	/** */
-	public static String ConnectProviderOperation_NoRepositoriesError;
-
-	/** */
-	public static String ConnectProviderOperation_UnexpectedRepositoryError;
-
-	/** */
 	public static String ContainerTreeIterator_DeletedFile;
-
-	/** */
-	public static String DeleteBranchOperation_Canceled;
 
 	/** */
 	public static String DeleteBranchOperation_TaskName;
@@ -158,9 +140,6 @@ public class CoreText extends NLS {
 	public static String UntrackOperation_writingIndex;
 
 	/** */
-	public static String GerritUtil_ConfigSaveError;
-
-	/** */
 	public static String GitFileHistory_errorParsingHistory;
 
 	/** */
@@ -185,9 +164,6 @@ public class CoreText extends NLS {
 	public static String GitProjectData_failedToCacheRepoMapping;
 
 	/** */
-	public static String GitProjectData_failedToUnmapRepoMapping;
-
-	/** */
 	public static String GitProjectData_FailedToMarkTeamPrivate;
 
 	/** */
@@ -203,19 +179,7 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
-	public static String RepositoryPathChecker_errAbsoluteRepoPath;
-
-	/** */
-	public static String RepositoryPathChecker_errNoCloneCommand;
-
-	/** */
-	public static String RepositoryPathChecker_errNoDirectory;
-
-	/** */
-	public static String RepositoryPathChecker_errNotAbsoluteRepoPath;
-
-	/** */
-	public static String RepositoryPathChecker_errNoURL;
+	public static String RepositoryMapping_ExceptionSubmoduleWalk;
 
 	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
@@ -236,9 +200,6 @@ public class CoreText extends NLS {
 	public static String ResourceUtil_SaveLocalHistoryFailed;
 
 	/** */
-	public static String ResourceUtil_mapProjectJob;
-
-	/** */
 	public static String MergeOperation_InternalError;
 
 	/** */
@@ -249,21 +210,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String MergeOperation_ProgressMerge;
-
-	/** */
-	public static String MergeStrategy_MissingName;
-
-	/** */
-	public static String MergeStrategy_DuplicateName;
-
-	/** */
-	public static String MergeStrategy_ReservedName;
-
-	/** */
-	public static String MergeStrategy_LoadError;
-
-	/** */
-	public static String MergeStrategy_UnloadError;
 
 	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
@@ -290,9 +236,6 @@ public class CoreText extends NLS {
 	public static String CloneOperation_title;
 
 	/** */
-	public static String CloneOperation_configuring;
-
-	/** */
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
 
 	/** */
@@ -306,9 +249,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CreatePatchOperation_patchFileCouldNotBeWritten;
-
-	/** */
-	public static String IndexDiffCacheEntry_cannotReadIndex;
 
 	/** */
 	public static String IndexDiffCacheEntry_errorCalculatingIndexDelta;
@@ -401,9 +341,6 @@ public class CoreText extends NLS {
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
 
 	/** */
-	public static String GitLazyResourceVariantTreeSubscriber_name;
-
-	/** */
 	public static String OperationAlreadyExecuted;
 
 	/** */
@@ -474,9 +411,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String SquashCommitsOperation_squashing;
-
-	/** */
-	public static String Utils_InvalidAdapterError;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
