@@ -11,6 +11,7 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -81,12 +82,6 @@ class CommitFileDiffViewer extends TableViewer {
 
 	private IAction copy;
 
-	private IAction open;
-
-	private IAction compare;
-
-	private final IPageSite site;
-
 	/**
 	 * Shows a list of file changed by a commit.
 	 *
@@ -102,7 +97,6 @@ class CommitFileDiffViewer extends TableViewer {
 		// StackLayout on it instead
 		super(new Composite(parent, SWT.NONE), SWT.MULTI | SWT.H_SCROLL
 				| SWT.V_SCROLL | SWT.BORDER | SWT.FULL_SELECTION);
-		this.site = site;
 		final Table rawTable = getTable();
 		Composite main = rawTable.getParent();
 		stackLayout = new StackLayout();
@@ -165,44 +159,6 @@ class CommitFileDiffViewer extends TableViewer {
 		Control c = getControl();
 		c.setMenu(mgr.createContextMenu(c));
 
-		open = new Action(UIText.CommitFileDiffViewer_OpenInEditorMenuLabel) {
-			@SuppressWarnings("unchecked")
-			@Override
-			public void run() {
-				final ISelection s = getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection))
-					return;
-				final IStructuredSelection iss = (IStructuredSelection) s;
-				for (Iterator<FileDiff> it = iss.iterator();; it.hasNext()) {
-					openFileInEditor(it.next());
-				}
-			}
-		};
-
-		compare = new Action(UIText.CommitFileDiffViewer_CompareMenuLabel) {
-			@Override
-			public void run() {
-				final ISelection s = getSelection();
-				if (s.isEmpty() || !(s instanceof IStructuredSelection))
-					return;
-				final IStructuredSelection iss = (IStructuredSelection) s;
-				final FileDiff d = (FileDiff) iss.getFirstElement();
-				if (d.getBlobs().length <= 2)
-					showTwoWayFileDiff(d);
-				else
-					MessageDialog
-							.openInformation(
-									PlatformUI.getWorkbench()
-											.getActiveWorkbenchWindow()
-											.getShell(),
-									UIText.CommitFileDiffViewer_CanNotOpenCompareEditorTitle,
-									UIText.CommitFileDiffViewer_MergeCommitMultiAncestorMessage);
-			}
-		};
-
-		mgr.add(open);
-		mgr.add(compare);
-
 		mgr.add(new Separator());
 		mgr.add(selectAll = createStandardAction(ActionFactory.SELECT_ALL));
 		mgr.add(copy = createStandardAction(ActionFactory.COPY));
@@ -235,8 +191,6 @@ class CommitFileDiffViewer extends TableViewer {
 				&& sel.size() == getTable().getItemCount();
 		selectAll.setEnabled(!allSelected);
 		copy.setEnabled(!sel.isEmpty());
-		open.setEnabled(!sel.isEmpty());
-		compare.setEnabled(sel.size() == 1);
 	}
 
 	private IAction createStandardAction(final ActionFactory af) {
@@ -345,9 +299,7 @@ class CommitFileDiffViewer extends TableViewer {
 					.getBlobs()[1]);
 
 		in = new GitCompareFileRevisionEditorInput(next, base, null);
-		CompareUtils.openInCompare(site.getWorkbenchWindow().getActivePage(),
-				in);
-
+		CompareUI.openCompareEditor(in);
 	}
 
 	TreeWalk getTreeWalk() {
