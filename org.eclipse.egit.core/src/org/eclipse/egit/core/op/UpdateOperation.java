@@ -12,6 +12,7 @@ package org.eclipse.egit.core.op;
 import java.util.Collection;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.internal.UpdateJob;
@@ -25,7 +26,7 @@ import org.eclipse.egit.core.internal.UpdateJob;
  * collection can be associated with multiple repositories.
  * </p>
  */
-public class UpdateOperation implements IEGitOperation {
+public class UpdateOperation implements IWorkspaceRunnable {
 	private final Collection rsrcList;
 
 	/**
@@ -39,10 +40,7 @@ public class UpdateOperation implements IEGitOperation {
 		rsrcList = rsrcs;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		new UpdateJob(rsrcList).schedule();
 	}
 }

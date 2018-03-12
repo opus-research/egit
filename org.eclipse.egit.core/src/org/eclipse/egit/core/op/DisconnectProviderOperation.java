@@ -13,6 +13,7 @@ import java.util.Collection;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -28,7 +29,7 @@ import org.eclipse.team.core.RepositoryProvider;
  * Once disconnected, Git operations will no longer be available on the project.
  * </p>
  */
-public class DisconnectProviderOperation implements IEGitOperation {
+public class DisconnectProviderOperation implements IWorkspaceRunnable {
 	private final Collection projectList;
 
 	/**
@@ -43,10 +44,7 @@ public class DisconnectProviderOperation implements IEGitOperation {
 		projectList = projs;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		if (m == null) {
 			m = new NullProgressMonitor();
 		}

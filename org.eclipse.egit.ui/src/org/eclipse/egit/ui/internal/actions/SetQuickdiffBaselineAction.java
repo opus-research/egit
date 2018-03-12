@@ -10,7 +10,7 @@ package org.eclipse.egit.ui.internal.actions;
 
 import java.util.List;
 
-import org.eclipse.egit.core.op.IEGitOperation;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.jgit.revwalk.RevObject;
 
 /**
@@ -19,7 +19,7 @@ import org.eclipse.jgit.revwalk.RevObject;
 public class SetQuickdiffBaselineAction extends AbstractRevObjectAction {
 
 	@Override
-	protected IEGitOperation createOperation(List selection) {
+	protected IWorkspaceRunnable createOperation(List selection) {
 		return new QuickdiffBaselineOperation(getActiveRepository(), ((RevObject)selection.get(0)).getId().name());
 	}
 
