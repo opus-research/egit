@@ -95,24 +95,14 @@ class RemoteSelectionCombo extends Composite {
 				refSelectedIndex).getValue();
 	}
 
-	/**
-	 * Preselects given value in widgets.
-	 *
-	 * @param remote
-	 *            name of remote repository that should be selected
-	 * @param ref
-	 *            name of ref in {@code remote} that should be selected
-	 * @return {@code true} when given element was successfully selected, or
-	 *         {@code false} otherwise.
-	 */
-	public boolean setDefaultValue(String remote, String ref) {
+	public void setDefaultValue(String remote, String ref) {
 		int i = 0;
 		for (; i < syncRepos.size(); i++)
 			if (syncRepos.get(i).getName().equals(remote))
 				break;
 
 		if (i == syncRepos.size())
-			return false; // repository name not found
+			return;	// repository name not found
 
 		remotesCombo.select(i);
 		fillRefsCombo();
@@ -124,10 +114,8 @@ class RemoteSelectionCombo extends Composite {
 				break;
 
 		if (i == syncRepos.size())
-			return false; // ref name not found
+			return;	// ref name not found
 		refsCombo.select(i);
-
-		return true;
 	}
 
 	private void fillRefsCombo() {
