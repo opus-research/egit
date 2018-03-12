@@ -25,14 +25,9 @@ import java.util.List;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.RepositoryCacheRule;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -210,60 +205,34 @@ public class GitRepositoriesViewRepoDeletionTest extends
 			}
 			project.delete(true, true, null);
 		}
+		// All this project creation and deletion does trigger again index diff
+		// updates.
+		TestUtil.joinJobs(
+				org.eclipse.egit.core.JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+		waitForDecorations();
+		// And we may have the RepositoryChangeScanner running:
 		TestUtil.waitForJobs(500, 5000);
-		// And we may have the RepositoryChangeScanner running: use a job
-		// with a scheduling rule that ensures we have exclusive access.
-		final String[] results = { null, null };
-		Job verifier = new Job(testName.getMethodName()) {
-
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				// Wait for things to definitely quieten down. Note that
-				// waitForJobs only waits for running and waiting jobs, there
-				// may still be scheduled jobs that might wake up and run after
-				// that. TestUtil.joinJobs does really join, which also waits
-				// for scheduled jobs.
-				try {
-					TestUtil.joinJobs(
-							org.eclipse.egit.core.JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-					// Is this job doing something when the view is hidden?
-					TestUtil.joinJobs(JobFamilies.REPO_VIEW_REFRESH);
-					waitForDecorations();
-				} catch (InterruptedException e) {
-					results[0] = "Interrupted";
-					Thread.currentThread().interrupt();
-					return Status.CANCEL_STATUS;
-				}
-				// Finally... Java does not give any guarantees about when
-				// exactly an only weakly reachable object is finalized and
-				// garbage collected.
-				waitForFinalization(5000);
-				// Experience shows that an explicit garbage collection run very
-				// often does reclaim only weakly reachable objects and set the
-				// weak references' referents to null, but not even that can be
-				// guaranteed! Whether or not it does may also depend on the
-				// configuration of the JVM (such as through command-line
-				// arguments).
-				Repository[] repositories = org.eclipse.egit.core.Activator
-						.getDefault().getRepositoryCache().getAllRepositories();
-				results[0] = Arrays.asList(repositories).toString();
-				IndexDiffCache indexDiffCache = org.eclipse.egit.core.Activator
-						.getDefault().getIndexDiffCache();
-				results[1] = indexDiffCache.currentCacheEntries().toString();
-				return Status.OK_STATUS;
-			}
-
-		};
-		verifier.setRule(new RepositoryCacheRule());
-		verifier.setSystem(true);
-		verifier.schedule();
-		verifier.join();
+		// Finally... Java does not give any guarantees about when exactly a
+		// only weakly reachable object is finalized and garbage collected.
+		waitForFinalization(5000);
+		// Experience shows that an explicit garbage collection run very
+		// often does reclaim only weakly reachable objects an set the weak
+		// references referents to null, but not even that can be guaranteed!
+		// Whether it does or not may also depend on the configuration of
+		// the JVM (such as through command-line arguments).
 		List<String> configuredRepos = org.eclipse.egit.core.Activator
 				.getDefault().getRepositoryUtil().getConfiguredRepositories();
 		assertTrue("Expected no configured repositories",
 				configuredRepos.isEmpty());
-		assertEquals("Expected no cached repositories", "[]", results[0]);
-		assertEquals("Expected no IndexDiffCache entries", "[]", results[1]);
+		Repository[] repositories = org.eclipse.egit.core.Activator.getDefault()
+				.getRepositoryCache().getAllRepositories();
+		assertEquals("Expected no cached repositories", "[]",
+				Arrays.asList(repositories).toString());
+		// A pity we can't mock the cache.
+		IndexDiffCache indexDiffCache = org.eclipse.egit.core.Activator
+				.getDefault().getIndexDiffCache();
+		assertEquals("Expected no IndexDiffCache entries", "[]",
+				indexDiffCache.currentCacheEntries().toString());
 	}
 
 	@Test
@@ -318,7 +287,7 @@ public class GitRepositoriesViewRepoDeletionTest extends
 	}
 
 	@SuppressWarnings("restriction")
-	private void waitForDecorations() throws InterruptedException {
+	private void waitForDecorations() throws Exception {
 		TestUtil.joinJobs(
 				org.eclipse.ui.internal.decorators.DecoratorManager.FAMILY_DECORATE);
 	}
