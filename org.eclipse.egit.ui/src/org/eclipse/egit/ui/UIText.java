@@ -29,6 +29,9 @@ public class UIText extends NLS {
 	public static String AbortRebaseCommand_JobName;
 
 	/** */
+	public static String AbstractHistoryCommanndHandler_CouldNotGetRepositoryMessage;
+
+	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
@@ -692,10 +695,22 @@ public class UIText extends NLS {
 	public static String CompareTreeView_EqualFilesTooltip;
 
 	/** */
+	public static String CompareTreeView_IndexVersionText;
+
+	/** */
 	public static String CompareTreeView_ItemNotFoundInVersionMessage;
 
 	/** */
+	public static String CompareTreeView_MultipleResourcesHeaderText;
+
+	/** */
+	public static String CompareTreeView_NoDifferencesFoundMessage;
+
+	/** */
 	public static String CompareTreeView_NoInputText;
+
+	/** */
+	public static String CompareTreeView_RepositoryRootName;
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
@@ -1487,6 +1502,18 @@ public class UIText extends NLS {
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
+	public static String ConfigurationChecker_checkHomeDirectory;
+
+	/** */
+	public static String ConfigurationChecker_checkConfiguration;
+
+	/** */
+	public static String ConfigurationChecker_doNotShowAgain;
+
+	/** */
+	public static String ConfigurationChecker_homeNotSet;
+
+	/** */
 	public static String ConfigurationEditorComponent_AddButton;
 
 	/** */
@@ -1832,16 +1859,10 @@ public class UIText extends NLS {
 	public static String FetchAction_wrongURIMessage;
 
 	/** */
-	public static String FetchConfiguredRemoteAction_FetchJobName;
-
-	/** */
 	public static String FetchConfiguredRemoteAction_NoSpecsDefinedMessage;
 
 	/** */
 	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
-
-	/** */
-	public static String FetchConfiguredRemoteAction_TransportErrorDuringFetchMessage;
 
 	/** */
 	public static String FetchResultDialog_labelEmptyResult;
@@ -2112,6 +2133,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DeleteBranchCommand_CannotDeleteCheckedOutBranch;
+
+	/** */
+	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryMessage;
+
+	/** */
+	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryTitle;
+
+	/** */
+	public static String DeleteRepositoryConfirmDialog_DeleteRepositoryWindowTitle;
+
+	/** */
+	public static String DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox;
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
@@ -2745,13 +2778,10 @@ public class UIText extends NLS {
 	public static String RemoteSelectionCombo_destinationRef;
 
 	/** */
-	public static String RemoveCommand_DeleteConfirmMultiMessage;
+	public static String RemoveCommand_ConfirmDeleteBareRepositoryMessage;
 
 	/** */
-	public static String RemoveCommand_DeleteConfirmSingleMessage;
-
-	/** */
-	public static String RemoveCommand_DeleteConfirmTitle;
+	public static String RemoveCommand_ConfirmDeleteBareRepositoryTitle;
 
 	/** */
 	public static String RenameBranchCommand_WrongNameMessage;
@@ -2821,6 +2851,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
+
+	/** */
+	public static String CommitSelectionDialog_BuildingCommitListMessage;
+
+	/** */
+	public static String CommitSelectionDialog_DialogMessage;
+
+	/** */
+	public static String CommitSelectionDialog_DialogTitle;
+
+	/** */
+	public static String CommitSelectionDialog_FoundCommitsMessage;
+
+	/** */
+	public static String CommitSelectionDialog_IncompleteListMessage;
+
+	/** */
+	public static String CommitSelectionDialog_WindowTitle;
 
 	/** */
 	public static String EgitUiEditorUtils_openFailed;
