@@ -22,9 +22,7 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.services.IServiceLocator;
@@ -37,23 +35,28 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 
 	private ISelectionService selectionService;
 
+	private Menu menu;
+
 	@Before
 	public void setUp() throws Exception {
+
 		switchToMenu = new SwitchToMenu();
 		selectionService = mock(ISelectionService.class);
 		IServiceLocator serviceLocator = mock(IServiceLocator.class);
 		when(serviceLocator.getService(ISelectionService.class)).thenReturn(
 				selectionService);
 		switchToMenu.initialize(serviceLocator);
+
+		menu = new Menu(new Shell());
 	}
 
 	@Test
 	public void emptySelection() {
 		when(selectionService.getSelection()).thenReturn(new EmptySelection());
 
-		MenuItem[] items = fillMenu();
+		switchToMenu.fill(menu, 0 /* index */);
 
-		assertEquals(0, items.length);
+		assertEquals(0, menu.getItemCount());
 	}
 
 	@Test
@@ -61,9 +64,9 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 		when(selectionService.getSelection()).thenReturn(
 				new StructuredSelection(new Object()));
 
-		MenuItem[] items = fillMenu();
+		switchToMenu.fill(menu, 0 /* index */);
 
-		assertEquals(0, items.length);
+		assertEquals(0, menu.getItemCount());
 	}
 
 	@Test
@@ -74,15 +77,17 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 		when(selectionService.getSelection()).thenReturn(
 				new StructuredSelection(project));
 
-		MenuItem[] items = fillMenu();
+		switchToMenu.fill(menu, 0 /* index */);
 
-		assertEquals(6, items.length);
-		assertTextEquals(UIText.SwitchToMenu_NewBranchMenuLabel, items[0]);
-		assertStyleEquals(SWT.SEPARATOR, items[1]);
-		assertTextEquals("master", items[2]);
-		assertTextEquals("stable", items[3]);
-		assertStyleEquals(SWT.SEPARATOR, items[4]);
-		assertTextEquals(UIText.SwitchToMenu_OtherMenuLabel, items[5]);
+		assertEquals(6, menu.getItemCount());
+		assertEquals(UIText.SwitchToMenu_NewBranchMenuLabel, menu.getItem(0)
+				.getText());
+		assertEquals(SWT.SEPARATOR, menu.getItem(1).getStyle());
+		assertEquals("master", menu.getItem(2).getText());
+		assertEquals("stable", menu.getItem(3).getText());
+		assertEquals(SWT.SEPARATOR, menu.getItem(4).getStyle());
+		assertEquals(UIText.SwitchToMenu_OtherMenuLabel, menu.getItem(5)
+				.getText());
 	}
 
 	@Test
@@ -96,69 +101,41 @@ public class SwitchToMenuTest extends LocalRepositoryTestCase {
 		when(selectionService.getSelection()).thenReturn(
 				new StructuredSelection(project));
 
-		MenuItem[] items = fillMenu();
+		switchToMenu.fill(menu, 0 /* index */);
 
-		assertEquals(24, items.length);
-		assertTextEquals(UIText.SwitchToMenu_NewBranchMenuLabel, items[0]);
-		assertStyleEquals(SWT.SEPARATOR, items[1]);
-		assertTextEquals("change/0", items[2]);
-		assertTextEquals("change/1", items[3]);
-		assertTextEquals("change/10", items[4]);
-		assertTextEquals("change/11", items[5]);
-		assertTextEquals("change/12", items[6]);
-		assertTextEquals("change/13", items[7]);
-		assertTextEquals("change/14", items[8]);
-		assertTextEquals("change/15", items[9]);
-		assertTextEquals("change/16", items[10]);
-		assertTextEquals("change/17", items[11]);
-		assertTextEquals("change/18", items[12]);
-		assertTextEquals("change/19", items[13]);
-		assertTextEquals("change/2", items[14]);
-		assertTextEquals("change/3", items[15]);
-		assertTextEquals("change/4", items[16]);
-		assertTextEquals("change/5", items[17]);
-		assertTextEquals("change/6", items[18]);
-		assertTextEquals("change/7", items[19]);
-		assertTextEquals("change/8", items[20]);
-		assertTextEquals("change/9", items[21]);
+		assertEquals(24, menu.getItemCount());
+		assertEquals(UIText.SwitchToMenu_NewBranchMenuLabel, menu.getItem(0)
+				.getText());
+		assertEquals(SWT.SEPARATOR, menu.getItem(1).getStyle());
+		assertEquals("change/0", menu.getItem(2).getText());
+		assertEquals("change/1", menu.getItem(3).getText());
+		assertEquals("change/10", menu.getItem(4).getText());
+		assertEquals("change/11", menu.getItem(5).getText());
+		assertEquals("change/12", menu.getItem(6).getText());
+		assertEquals("change/13", menu.getItem(7).getText());
+		assertEquals("change/14", menu.getItem(8).getText());
+		assertEquals("change/15", menu.getItem(9).getText());
+		assertEquals("change/16", menu.getItem(10).getText());
+		assertEquals("change/17", menu.getItem(11).getText());
+		assertEquals("change/18", menu.getItem(12).getText());
+		assertEquals("change/19", menu.getItem(13).getText());
+		assertEquals("change/2", menu.getItem(14).getText());
+		assertEquals("change/3", menu.getItem(15).getText());
+		assertEquals("change/4", menu.getItem(16).getText());
+		assertEquals("change/5", menu.getItem(17).getText());
+		assertEquals("change/6", menu.getItem(18).getText());
+		assertEquals("change/7", menu.getItem(19).getText());
+		assertEquals("change/8", menu.getItem(20).getText());
+		assertEquals("change/9", menu.getItem(21).getText());
 		// "master" and "stable" didn't make it
-		assertStyleEquals(SWT.SEPARATOR, items[22]);
-		assertTextEquals(UIText.SwitchToMenu_OtherMenuLabel, items[23]);
-	}
-
-	private MenuItem[] fillMenu() {
-		final MenuItem[][] items = new MenuItem[1][];
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				Menu menu = new Menu(new Shell(Display.getDefault()));
-				switchToMenu.fill(menu, 0 /* index */);
-				items[0] = menu.getItems();
-			}
-		});
-		return items[0];
+		assertEquals(SWT.SEPARATOR, menu.getItem(22).getStyle());
+		assertEquals(UIText.SwitchToMenu_OtherMenuLabel, menu.getItem(23)
+				.getText());
 	}
 
 	private static class EmptySelection implements ISelection {
 		public boolean isEmpty() {
 			return true;
 		}
-	}
-
-	private static void assertTextEquals(final String expectedText,
-			final MenuItem item) {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				assertEquals(expectedText, item.getText());
-			}
-		});
-	}
-
-	private static void assertStyleEquals(final int expectedStyle,
-			final MenuItem item) {
-		Display.getDefault().syncExec(new Runnable() {
-			public void run() {
-				assertEquals(expectedStyle, item.getStyle());
-			}
-		});
 	}
 }
