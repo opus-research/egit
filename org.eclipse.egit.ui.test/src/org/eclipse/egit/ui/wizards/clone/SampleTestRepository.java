@@ -17,10 +17,10 @@ import java.util.Random;
 
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTag;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.Daemon;
 
 /**
@@ -59,7 +59,7 @@ public class SampleTestRepository {
 
 	private static final File trash = new File("trash");
 
-	private final TestRepository<FileRepository> src;
+	private final TestRepository src;
 
 	private Daemon d;
 
@@ -90,14 +90,14 @@ public class SampleTestRepository {
 		serve();
 	}
 
-	private TestRepository<FileRepository> createRepository() throws Exception {
+	private TestRepository createRepository() throws Exception {
 		String gitdirName = "test" + System.currentTimeMillis()
 				+ Constants.DOT_GIT;
 		File gitdir = new File(trash, gitdirName).getCanonicalFile();
-		FileRepository db = new FileRepository(gitdir);
+		Repository db = new Repository(gitdir);
 		assertFalse(gitdir.exists());
 		db.create();
-		return new TestRepository<FileRepository>(db);
+		return new TestRepository(db);
 	}
 
 	private void generateSampleData(int n) throws Exception {

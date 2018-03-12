@@ -22,6 +22,6 @@ public class BranchAction extends RepositoryAction {
 	 * Constructs this action
 	 */
 	public BranchAction() {
-		super(ActionCommands.BRANCH_ACTION, new BranchActionHandler());
+		super(ActionCommands.BRANCH_ACTION);
 	}
 }

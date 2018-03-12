@@ -36,7 +36,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.jgit.lib.AbstractIndexTreeVisitor;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexTreeWalker;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -176,7 +175,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 	private void walk(final Repository db, final ObjectId objId, Tree merge)
 			throws IOException {
 		IndexTreeWalker walker = new IndexTreeWalker(db.getIndex(), merge, db
-				.getWorkTree(), new AbstractIndexTreeVisitor() {
+				.getWorkDir(), new AbstractIndexTreeVisitor() {
 			public void visitEntry(TreeEntry treeEntry, Entry indexEntry,
 					File file) throws IOException {
 				if (treeEntry != null && contains(file)) {
@@ -218,7 +217,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 
 	private IResourceVariant findFolderVariant(IResource resource,
 			Repository repository) {
-		File workDir = repository.getWorkTree();
+		File workDir = repository.getWorkDir();
 		if (resource.getLocation() == null)
 			return null;
 		File resourceLocation = resource.getLocation().toFile();
@@ -244,7 +243,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 		String gitPath = repoMapping.getRepoRelativePath(resource);
 		ObjectId objectId = updated.get(gitPath);
 		if (objectId != null) {
-			File root = repository.getWorkTree();
+			File root = repository.getWorkDir();
 			File file = new File(root, gitPath);
 
 			if (resource.getLocation().toFile().equals(file)) {
@@ -297,7 +296,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 			monitor.beginTask(NLS.bind(
 					CoreText.GitResourceVariantTree_fetchingMembers, container
 							.getLocation()), updated.size());
-			File root = repository.getWorkTree();
+			File root = repository.getWorkDir();
 
 			for (Map.Entry<String, ObjectId> entry : updated.entrySet()) {
 				String entryName = entry.getKey();
@@ -416,8 +415,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 			if (tree.existsBlob(memberRelPath)) {
 				// read file content and add it into store
 				TreeEntry entry = tree.findBlobMember(memberRelPath);
-				ObjectLoader objLoader = repo.open(entry.getId(),
-						Constants.OBJ_BLOB);
+				ObjectLoader objLoader = repo.openBlob(entry.getId());
 				store.setBytes(member, objLoader.getCachedBytes());
 				membersSet.add(member);
 			} else if (tree.existsTree(memberRelPath)) {
@@ -429,7 +427,7 @@ abstract class GitResourceVariantTree extends AbstractResourceVariantTree {
 	}
 
 	private String getMemberRelPath(Repository repo, IResource member) {
-		String repoWorkDir = repo.getWorkTree().toString();
+		String repoWorkDir = repo.getWorkDir().toString();
 		if (!"/".equals(File.separator)) { //$NON-NLS-1$
 			// fix file separator issue on windows
 			repoWorkDir = repoWorkDir.replace(File.separatorChar, '/');

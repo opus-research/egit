@@ -16,6 +16,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.NotEnabledException;
 import org.eclipse.core.commands.NotHandledException;
+import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.egit.ui.Activator;
@@ -25,7 +26,6 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.ui.IObjectActionDelegate;
 import org.eclipse.ui.ISelectionService;
-import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
@@ -37,25 +37,15 @@ import org.eclipse.ui.handlers.IHandlerService;
 public abstract class RepositoryAction extends AbstractHandler implements
 		IObjectActionDelegate {
 
-	/**
-	 * The command id
-	 */
-	protected final String commandId;
+	private final String commandId;
 
-	/**
-	 * The part as set in {@link #setActivePart(IAction, IWorkbenchPart)}
-	 */
-	protected IWorkbenchPart part;
-
-	private final RepositoryActionHandler handler;
+	private IWorkbenchPart part;
 
 	/**
 	 * @param commandId
-	 * @param handler
 	 */
-	protected RepositoryAction(String commandId, RepositoryActionHandler handler) {
+	protected RepositoryAction(String commandId) {
 		this.commandId = commandId;
-		this.handler = handler;
 	}
 
 	/**
@@ -76,22 +66,24 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	}
 
 	public void run(IAction action) {
-
 		ICommandService srv = (ICommandService) part.getSite().getService(
 				ICommandService.class);
 		IHandlerService hsrv = (IHandlerService) part.getSite().getService(
 				IHandlerService.class);
 		Command command = srv.getCommand(commandId);
 
-		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
-		if (event.getApplicationContext() instanceof IEvaluationContext) {
-			((IEvaluationContext) event.getApplicationContext()).addVariable(
-					ISources.ACTIVE_CURRENT_SELECTION_NAME, getSelection());
-		}
+		IEvaluationContext context = hsrv.createContextSnapshot(true);
 
 		try {
-			this.handler.execute(event);
+			hsrv.executeCommandInContext(
+					new ParameterizedCommand(command, null), null, context);
 		} catch (ExecutionException e) {
+			Activator.handleError(e.getMessage(), e, true);
+		} catch (NotDefinedException e) {
+			Activator.handleError(e.getMessage(), e, true);
+		} catch (NotEnabledException e) {
+			Activator.handleError(e.getMessage(), e, true);
+		} catch (NotHandledException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		}
 	}
@@ -120,6 +112,11 @@ public abstract class RepositoryAction extends AbstractHandler implements
 
 	@Override
 	public final boolean isEnabled() {
-		return handler.isEnabled();
+		if (part == null)
+			return false;
+		ICommandService srv = (ICommandService) part.getSite().getService(
+				ICommandService.class);
+		Command command = srv.getCommand(commandId);
+		return command.isEnabled();
 	}
 }

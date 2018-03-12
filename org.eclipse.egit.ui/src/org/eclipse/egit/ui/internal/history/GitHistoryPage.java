@@ -35,7 +35,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
-import org.eclipse.egit.ui.internal.commands.SharedCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
@@ -58,13 +57,13 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.IndexChangedEvent;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.RefsChangedEvent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryListener;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
@@ -107,13 +106,11 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
-import org.eclipse.ui.menus.CommandContributionItem;
-import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
-public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
+public class GitHistoryPage extends HistoryPage implements RepositoryListener {
 	private static final String PREF_COMMENT_WRAP = UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP;
 
 	private static final String PREF_COMMENT_FILL = UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_FILL;
@@ -138,8 +135,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	private IAction compareModeAction;
 
-	private IContributionItem checkoutItem;
-
 	private boolean compareMode = false;
 
 	private CreatePatchAction createPatchAction = new CreatePatchAction();
@@ -150,8 +145,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private final List<BooleanPrefAction> actionsToDispose = new ArrayList<BooleanPrefAction>();
 
 	private final IPersistentPreferenceStore store = (IPersistentPreferenceStore) Activator.getDefault().getPreferenceStore();
-
-	private ListenerHandle myRefsChangedHandle;
 
 	/**
 	 * Determine if the input can be shown in this viewer.
@@ -446,9 +439,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		attachContextMenu(fileViewer.getControl());
 		layout();
 
-		if (myRefsChangedHandle == null)
-			myRefsChangedHandle = Repository.getGlobalListenerList()
-					.addRefsChangedListener(this);
+		Repository.addAnyRepositoryChangedListener(this);
 
 		getSite().setSelectionProvider(revObjectSelectionProvider);
 	}
@@ -519,7 +510,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	private Runnable refschangedRunnable;
 
-	public void onRefsChanged(final RefsChangedEvent e) {
+	public void refsChanged(final RefsChangedEvent e) {
 		if (e.getRepository() != db)
 			return;
 
@@ -549,6 +540,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 		}
 	}
 
+	public void indexChanged(final IndexChangedEvent e) {
+		// We do not use index information here now
+	}
+
 	private void finishContextMenu() {
 		popupMgr.add(new Separator());
 		popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
@@ -561,13 +556,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	private void attachContextMenu(final Control c) {
 		c.setMenu(popupMgr.createContextMenu(c));
 
-		if (checkoutItem == null) {
-			CommandContributionItemParameter p = new CommandContributionItemParameter(
-					getSite(), SharedCommands.CHECKOUT,
-					SharedCommands.CHECKOUT, CommandContributionItem.STYLE_PUSH);
-			checkoutItem = new CommandContributionItem(p);
-		}
-
 		if (c == graph.getControl()) {
 
 			c.addMenuDetectListener(new MenuDetectListener() {
@@ -579,11 +567,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 							compareVersionsAction));
 					popupMgr.remove(new ActionContributionItem(
 							viewVersionsAction));
-					popupMgr.remove(checkoutItem);
 					int size = ((IStructuredSelection) revObjectSelectionProvider
 							.getSelection()).size();
 					if (size == 1) {
-						popupMgr.add(checkoutItem);
 						popupMgr.add(new Separator());
 						popupMgr.add(createPatchAction);
 						createPatchAction.setEnabled(createPatchAction.isEnabled());
@@ -840,11 +826,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	}
 
 	public void dispose() {
-		if (myRefsChangedHandle != null) {
-			myRefsChangedHandle.remove();
-			myRefsChangedHandle = null;
-		}
-
+		Repository.removeAnyRepositoryChangedListener(this);
 		// dispose of the actions (the history framework doesn't do this for us)
 		for (BooleanPrefAction action: actionsToDispose)
 			action.dispose();
@@ -918,10 +900,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return false;
 
 		db = null;
-		if (currentWalk != null) {
-			currentWalk.release();
-			currentWalk = null;
-		}
 
 		final ArrayList<String> paths = new ArrayList<String>(in.length);
 		for (final IResource r : in) {
@@ -963,8 +941,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			return false;
 		}
 
-		if (currentWalk == null || pathChange(pathFilters, paths)
-				|| headId != null && !headId.equals(currentHeadId)) {
+		if (currentWalk == null || currentWalk.getRepository() != db
+				|| pathChange(pathFilters, paths) || headId != null
+				&& !headId.equals(currentHeadId)) {
 			// TODO Do not dispose SWTWalk just because HEAD changed
 			// In theory we should be able to update the graph and
 			// not dispose of the SWTWalk, even if HEAD was reset to
@@ -1001,7 +980,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			currentWalk.setTreeFilter(TreeFilter.ALL);
 			fileWalker.setFilter(TreeFilter.ANY_DIFF);
 		}
-		fileViewer.setTreeWalk(db, fileWalker);
+		fileViewer.setTreeWalk(fileWalker);
 		fileViewer.addSelectionChangedListener(commentViewer);
 		commentViewer.setTreeWalk(fileWalker);
 		commentViewer.setDb(db);

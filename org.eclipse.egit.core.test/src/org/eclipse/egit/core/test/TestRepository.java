@@ -24,7 +24,6 @@ import org.eclipse.jgit.api.JGitInternalException;
 import org.eclipse.jgit.api.NoHeadException;
 import org.eclipse.jgit.api.NoMessageException;
 import org.eclipse.jgit.api.WrongRepositoryStateException;
-import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.GitIndex;
@@ -35,7 +34,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.Tree;
 import org.eclipse.jgit.lib.GitIndex.Entry;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.storage.file.FileRepository;
 
 /**
  * Helper class for creating and filling a test repository
@@ -53,12 +51,12 @@ public class TestRepository {
 	 * @throws IOException
 	 */
 	public TestRepository(File gitDir) throws IOException {
-		repository = new FileRepository(gitDir);
+		repository = new Repository(gitDir);
 		repository.create();
 		try {
-			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+			workdirPrefix = repository.getWorkDir().getCanonicalPath();
 		} catch (IOException err) {
-			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+			workdirPrefix = repository.getWorkDir().getAbsolutePath();
 		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/"))  //$NON-NLS-1$
@@ -73,9 +71,9 @@ public class TestRepository {
 	public TestRepository(Repository repository) throws IOException {
 		this.repository = repository;
 		try {
-			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+			workdirPrefix = repository.getWorkDir().getCanonicalPath();
 		} catch (IOException err) {
-			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+			workdirPrefix = repository.getWorkDir().getAbsolutePath();
 		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/"))  //$NON-NLS-1$
@@ -105,7 +103,7 @@ public class TestRepository {
 	public RevCommit createInitialCommit(String message) throws IOException,
 			NoHeadException, NoMessageException, ConcurrentRefUpdateException,
 			JGitInternalException, WrongRepositoryStateException {
-		String repoPath = repository.getWorkTree().getAbsolutePath();
+		String repoPath = repository.getWorkDir().getAbsolutePath();
 		File file = new File(repoPath, "dummy");
 		file.createNewFile();
 		track(file);
@@ -146,7 +144,7 @@ public class TestRepository {
 	 */
 	public void track(File file) throws IOException {
 		GitIndex index = repository.getIndex();
-		Entry entry = index.add(repository.getWorkTree(), file);
+		Entry entry = index.add(repository.getWorkDir(), file);
 		entry.setAssumeValid(false);
 		index.write();
 	}
@@ -186,8 +184,8 @@ public class TestRepository {
 		GitIndex index = repository.getIndex();
 		Entry entry = index.getEntry(getRepoRelativePath(file.getLocation().toOSString()));
 		assertNotNull(entry);
-		if (entry.isModified(repository.getWorkTree()))
-			entry.update(new File(repository.getWorkTree(), entry.getName()));
+		if (entry.isModified(repository.getWorkDir()))
+			entry.update(new File(repository.getWorkDir(), entry.getName()));
 		index.write();
 	}
 
@@ -205,27 +203,9 @@ public class TestRepository {
 	}
 
 	public boolean inIndex(String path) throws IOException {
-//		String repoPath = getRepoRelativePath(path);
-//		GitIndex index = repository.getIndex();
-//		return index.getEntry(repoPath) != null;
 		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
-
-		return dc.getEntry(repoPath) != null;
-	}
-
-	public long lastModifiedInIndex(String path) throws IOException {
-		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
-
-		return dc.getEntry(repoPath).getLastModified();
-	}
-
-	public int getDirCacheEntryLength(String path) throws IOException {
-		String repoPath = getRepoRelativePath(path);
-		DirCache dc = DirCache.read(repository.getIndexFile(), repository.getFS());
-
-		return dc.getEntry(repoPath).getLength();
+		GitIndex index = repository.getIndex();
+		return index.getEntry(repoPath) != null;
 	}
 
 	public String getRepoRelativePath(String path) {

@@ -56,11 +56,11 @@ public abstract class AbstractRevCommitOperationAction implements IObjectActionD
 
 	/**
 	 * Instantiate an operation on an action on provided objects.
-	 * @param actSelection
+	 * @param selection
 	 *
 	 * @return a {@link IEGitOperation} for invoking this operation later on
 	 */
-	protected abstract IEGitOperation createOperation(final List<RevCommit> actSelection);
+	protected abstract IEGitOperation createOperation(final List<RevCommit> selection);
 
 	/**
 	 * @return the name of the execution Job

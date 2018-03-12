@@ -13,10 +13,13 @@ package org.eclipse.egit.ui.view.repositories;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.util.List;
+
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.repository.tree.ErrorNode;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.lib.RepositoryConfig;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -25,9 +28,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.File;
-import java.util.List;
 
 /**
  * SWTBot Tests for remotes handling
@@ -64,7 +64,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 				repositoryFile).expand();
 		assertEquals("Wrong number of remotes", 0, remotesItem.getNodes()
 				.size());
-		StoredConfig cfg = lookupRepository(repositoryFile).getConfig();
+		RepositoryConfig cfg = lookupRepository(repositoryFile).getConfig();
 		String remoteUri = "file:///" + remoteRepositoryFile.getPath();
 
 		cfg.setString("remote", "test", "url", remoteUri);
@@ -273,7 +273,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 	private void removeRemotesConfig(File file) throws Exception {
 		Repository repo = lookupRepository(file);
-		StoredConfig config = repo.getConfig();
+		RepositoryConfig config = repo.getConfig();
 		for (String remote : config.getSubsections("remote"))
 			config.unsetSection("remote", remote);
 		config.save();
