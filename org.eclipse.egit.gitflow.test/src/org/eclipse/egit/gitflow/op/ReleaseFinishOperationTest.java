@@ -42,18 +42,23 @@ public class ReleaseFinishOperationTest extends AbstractGitFlowOperationTest {
 		GitFlowRepository gfRepo = new GitFlowRepository(repository);
 
 		new ReleaseStartOperation(gfRepo, MY_RELEASE).execute(null);
-		testRepository
+		RevCommit branchCommit = testRepository
 				.createInitialCommit("testReleaseFinish\n\nbranch commit\n");
 		new ReleaseFinishOperation(gfRepo).execute(null);
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
 
 		String branchName = gfRepo.getConfig().getReleaseBranchName(MY_RELEASE);
 		// tag created?
-		RevCommit taggedCommit = gfRepo.findCommitForTag(MY_VERSION_TAG + MY_RELEASE);
-		assertEquals(String.format("Merge branch '%s' into develop", branchName), taggedCommit.getFullMessage());
-
+		assertEquals(branchCommit,
+				gfRepo.findCommitForTag(MY_VERSION_TAG + MY_RELEASE));
 		// branch removed?
 		assertEquals(findBranch(repository, branchName), null);
+
+		RevCommit developHead = gfRepo.findHead();
+		assertEquals(branchCommit, developHead);
+
+		RevCommit masterHead = gfRepo.findHead(MY_MASTER);
+		assertEquals(branchCommit, masterHead);
 	}
 
 	@Test

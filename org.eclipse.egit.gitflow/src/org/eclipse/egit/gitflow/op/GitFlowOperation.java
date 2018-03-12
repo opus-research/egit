@@ -29,7 +29,6 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.internal.CoreText;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
-import static org.eclipse.jgit.api.MergeCommand.FastForwardMode.NO_FF;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
@@ -154,7 +153,6 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			MergeOperation mergeOperation = new MergeOperation(
 					repository.getRepository(), branchName);
-			mergeOperation.setFastForwardMode(NO_FF);
 			mergeOperation.execute(monitor);
 			return mergeOperation.getResult();
 		} catch (GitAPIException e) {
