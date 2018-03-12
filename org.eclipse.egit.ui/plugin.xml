@@ -705,6 +705,17 @@
            tooltip="%ResetAction_tooltip">
 		 </action>
 		 <action
+           class="org.eclipse.egit.ui.internal.actions.MergeAction"
+           definitionId="org.eclipse.egit.ui.team.Merge"
+           icon="icons/obj16/merge.gif"
+           id="org.eclipse.egit.ui.actionmerge"
+           label="%MergeAction_label"
+           menubarPath="org.eclipse.egit.ui.gitmenu/repositoryGroup"
+           style="push"
+           toolbarPath="Normal/additions"
+           tooltip="%MergeAction_tooltip">
+		 </action>
+		 <action
            class="org.eclipse.egit.ui.internal.actions.RebaseAction"
            definitionId="org.eclipse.egit.ui.team.Rebase"
            icon="icons/obj16/rebase.gif"
@@ -1613,31 +1624,6 @@
          </activeWhen>
       </handler>
       <handler
-            commandId="org.eclipse.egit.ui.team.clean">
-         <class
-               class="org.eclipse.egit.ui.internal.repository.tree.command.CleanCommand">
-         </class>
-         <activeWhen>
-             <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <not>
-                           <test
-                                 property="GitRepository.isBare">
-                           </test>
-                        </not>
-                     </and>
-                  </iterate>
-               </and>
-         </activeWhen>
-      </handler>
-      <handler
             commandId="org.eclipse.egit.ui.team.stash.create">
          <class
                class="org.eclipse.egit.ui.internal.repository.tree.command.StashCreateCommand">
@@ -2477,31 +2463,6 @@
                      <instanceof
                            value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
                      </instanceof>
-                  </iterate>
-               </and>
-            </visibleWhen>
-         </command>
-        <command
-               commandId="org.eclipse.egit.ui.team.clean"
-               label="%CleanCommand.label"
-               style="push">
-            <visibleWhen
-                  checkEnabled="false">
-               <and>
-                  <count
-                        value="1">
-                  </count>
-                  <iterate>
-                     <and>
-                        <instanceof
-                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-                        </instanceof>
-                        <not>
-                           <test
-                                 property="GitRepository.isBare">
-                           </test>
-                        </not>
-                     </and>
                   </iterate>
                </and>
             </visibleWhen>
@@ -3934,11 +3895,6 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
-            id="org.eclipse.egit.ui.team.clean"
-            name="%CleanCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.stash.create"
             name="%StashCreateCommand.name">
       </command>
@@ -4177,10 +4133,6 @@
       <image
             commandId="org.eclipse.egit.ui.commit.Revert"
             icon="icons/obj16/revert.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.clean"
-            icon="icons/obj16/clean_obj.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.stash.create"
