@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.ITextSelection;
@@ -277,7 +276,8 @@ public class SelectionUtils {
 		// no active window during Eclipse shutdown
 		if (activeWorkbenchWindow == null)
 			return null;
-		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
+		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
+				.getService(IHandlerService.class);
 		ctx = hsr.getCurrentState();
 		return ctx;
 	}

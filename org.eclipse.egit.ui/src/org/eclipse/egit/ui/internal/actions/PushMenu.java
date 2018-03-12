@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.action.IContributionItem;
@@ -60,7 +59,8 @@ public class PushMenu extends CompoundContributionItem implements
 
 	public void initialize(IServiceLocator locator) {
 		this.serviceLocator = locator;
-		this.handlerService = CommonUtils.getService(locator, IHandlerService.class);
+		this.handlerService = (IHandlerService) locator
+				.getService(IHandlerService.class);
 	}
 
 	@Override
