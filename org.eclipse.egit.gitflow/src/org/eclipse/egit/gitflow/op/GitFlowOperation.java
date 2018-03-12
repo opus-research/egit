@@ -10,7 +10,6 @@ package org.eclipse.egit.gitflow.op;
 
 import static java.lang.String.format;
 import static org.eclipse.egit.gitflow.Activator.error;
-import static org.eclipse.jgit.api.MergeCommand.FastForwardMode.NO_FF;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -34,9 +33,6 @@ import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.RevWalkUtils;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RemoteConfig;
 
@@ -106,13 +102,16 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 *
 	 * @param monitor
 	 * @param branchName
+	 * @param squash
 	 * @throws CoreException
+	 * @since 4.1
 	 */
-	protected void finish(IProgressMonitor monitor, String branchName)
+	protected void finish(IProgressMonitor monitor, String branchName,
+			boolean squash)
 			throws CoreException {
 		try {
-			mergeResult = mergeTo(monitor, branchName,
-					repository.getConfig().getDevelop());
+			mergeResult = mergeTo(monitor, branchName, repository.getConfig()
+					.getDevelop(), squash);
 			if (!mergeResult.getMergeStatus().isSuccessful()) {
 				return;
 			}
@@ -122,7 +121,8 @@ abstract public class GitFlowOperation implements IEGitOperation {
 				throw new IllegalStateException(String.format(
 						CoreText.GitFlowOperation_branchMissing, branchName));
 			}
-			new DeleteBranchOperation(repository.getRepository(), branch, false)
+			boolean forceDelete = squash;
+			new DeleteBranchOperation(repository.getRepository(), branch, forceDelete)
 					.execute(monitor);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -132,12 +132,24 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	/**
 	 * @param monitor
 	 * @param branchName
-	 * @param targetBranchName
-	 * @return result of merging back to targetBranchName
 	 * @throws CoreException
 	 */
+	protected void finish(IProgressMonitor monitor, String branchName)
+			throws CoreException {
+		finish(monitor, branchName, false);
+	}
+
+	/**
+	 * @param monitor
+	 * @param branchName
+	 * @param targetBranchName
+	 * @param squash
+	 * @return result of merging back to targetBranchName
+	 * @throws CoreException
+	 * @since 4.1
+	 */
 	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
-			String targetBranchName) throws CoreException {
+			String targetBranchName, boolean squash) throws CoreException {
 		try {
 			if (!repository.hasBranch(targetBranchName)) {
 				throw new RuntimeException(String.format(
@@ -157,46 +169,31 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			MergeOperation mergeOperation = new MergeOperation(
 					repository.getRepository(), branchName);
-			if (hasMultipleCommits(branchName)) {
-				mergeOperation.setFastForwardMode(NO_FF);
+			mergeOperation.setSquash(squash);
+			if (squash) {
+				mergeOperation.setCommit(true);
 			}
 			mergeOperation.execute(monitor);
+
 			return mergeOperation.getResult();
-		} catch (GitAPIException | IOException e) {
+		} catch (GitAPIException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private boolean hasMultipleCommits(String branchName) throws IOException {
-		return getAheadOfDevelopCount(branchName) > 1;
-	}
-
-	private int getAheadOfDevelopCount(String branchName) throws IOException {
-		String parentBranch = repository.getConfig().getDevelop();
-
-		Ref develop = repository.findBranch(parentBranch);
-		Ref branch = repository.findBranch(branchName);
-
-		RevWalk walk = new RevWalk(repository.getRepository());
-
-		RevCommit branchCommit = walk.parseCommit(branch.getObjectId());
-		RevCommit developCommit = walk.parseCommit(develop.getObjectId());
-
-		RevCommit mergeBase = findCommonBase(walk, branchCommit, developCommit);
-
-		walk.reset();
-		walk.setRevFilter(RevFilter.ALL);
-		int aheadCount = RevWalkUtils.count(walk, branchCommit, mergeBase);
-
-		return aheadCount;
-	}
-
-	private RevCommit findCommonBase(RevWalk walk, RevCommit branchCommit,
-			RevCommit developCommit) throws IOException {
-		walk.setRevFilter(RevFilter.MERGE_BASE);
-		walk.markStart(branchCommit);
-		walk.markStart(developCommit);
-		return walk.next();
+	/**
+	 * Merge without squash:
+	 * {@link org.eclipse.egit.gitflow.op.GitFlowOperation#mergeTo(IProgressMonitor, String, String, boolean)}
+	 *
+	 * @param monitor
+	 * @param branchName
+	 * @param targetBranchName
+	 * @return result of merging back to targetBranchName
+	 * @throws CoreException
+	 */
+	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
+			String targetBranchName) throws CoreException {
+		return mergeTo(monitor, branchName, targetBranchName, false);
 	}
 
 	/**

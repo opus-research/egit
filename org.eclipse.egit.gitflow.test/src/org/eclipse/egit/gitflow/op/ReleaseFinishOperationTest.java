@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
+import org.eclipse.egit.gitflow.InitParameters;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -32,20 +33,25 @@ import org.junit.Test;
 
 public class ReleaseFinishOperationTest extends AbstractGitFlowOperationTest {
 	@Test
-	public void testReleaseFinishFastForward() throws Exception {
+	public void testReleaseFinish() throws Exception {
 		testRepository
 				.createInitialCommit("testReleaseFinish\n\nfirst commit\n");
 
 		Repository repository = testRepository.getRepository();
-		new InitOperation(repository, DEVELOP, MASTER, FEATURE_PREFIX,
-				RELEASE_PREFIX, HOTFIX_PREFIX, MY_VERSION_TAG).execute(null);
+		InitParameters initParameters = new InitParameters();
+		initParameters.setDevelop(DEVELOP);
+		initParameters.setMaster(MASTER);
+		initParameters.setFeature(FEATURE_PREFIX);
+		initParameters.setRelease(RELEASE_PREFIX);
+		initParameters.setHotfix(HOTFIX_PREFIX);
+		initParameters.setVersionTag(MY_VERSION_TAG);
+		new InitOperation(repository, initParameters).execute(null);
 		GitFlowRepository gfRepo = new GitFlowRepository(repository);
 
 		new ReleaseStartOperation(gfRepo, MY_RELEASE).execute(null);
 		RevCommit branchCommit = testRepository
 				.createInitialCommit("testReleaseFinish\n\nbranch commit\n");
-		ReleaseFinishOperation releaseFinishOperation = new ReleaseFinishOperation(gfRepo);
-		releaseFinishOperation.execute(null);
+		new ReleaseFinishOperation(gfRepo).execute(null);
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
 
 		String branchName = gfRepo.getConfig().getReleaseBranchName(MY_RELEASE);
@@ -62,34 +68,6 @@ public class ReleaseFinishOperationTest extends AbstractGitFlowOperationTest {
 		assertEquals(branchCommit, masterHead);
 	}
 
-	@Test
-	public void testReleaseFinish() throws Exception {
-		testRepository
-				.createInitialCommit("testReleaseFinish\n\nfirst commit\n");
-
-		Repository repository = testRepository.getRepository();
-		new InitOperation(repository, DEVELOP, MASTER, FEATURE_PREFIX,
-				RELEASE_PREFIX, HOTFIX_PREFIX, MY_VERSION_TAG).execute(null);
-		GitFlowRepository gfRepo = new GitFlowRepository(repository);
-
-		new ReleaseStartOperation(gfRepo, MY_RELEASE).execute(null);
-		addFileAndCommit("foo.txt", "testReleaseFinish\n\nbranch commit 1\n");
-		addFileAndCommit("bar.txt", "testReleaseFinish\n\nbranch commit 2\n");
-		ReleaseFinishOperation releaseFinishOperation = new ReleaseFinishOperation(gfRepo);
-		releaseFinishOperation.execute(null);
-		assertEquals(gfRepo.getConfig().getDevelopFull(),
-				repository.getFullBranch());
-
-		String branchName = gfRepo.getConfig().getReleaseBranchName(MY_RELEASE);
-		// tag created?
-		RevCommit taggedCommit = gfRepo.findCommitForTag(MY_VERSION_TAG
-				+ MY_RELEASE);
-		assertEquals(formatMergeCommitMessage(branchName),
-				taggedCommit.getFullMessage());
-
-		// branch removed?
-		assertEquals(findBranch(repository, branchName), null);
-	}
 	@Test
 	public void testReleaseFinishFail() throws Exception {
 		testRepository
