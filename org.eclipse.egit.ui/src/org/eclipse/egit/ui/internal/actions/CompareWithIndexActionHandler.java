@@ -20,6 +20,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
@@ -107,7 +108,8 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 		}
 
 		IFileRevision nextFile = GitFileRevision.inIndex(repository, gitPath);
-		final EditableRevision next = new EditableRevision(nextFile);
+		String encoding = CompareCoreUtils.getResourceEncoding(baseFile);
+		final EditableRevision next = new EditableRevision(nextFile, encoding);
 
 		IContentChangeListener listener = new IContentChangeListener() {
 			public void contentChanged(IContentChangeNotifier source) {
