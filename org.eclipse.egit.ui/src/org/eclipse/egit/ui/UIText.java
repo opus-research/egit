@@ -1108,6 +1108,12 @@ public class UIText extends NLS {
 	public static String CommitDialog_StatusUntracked;
 
 	/** */
+	public static String CommitDialog_AddChangeIdLabel;
+
+	/** */
+	public static String CommitDialog_AddChangeIdTooltip;
+
+	/** */
 	public static String ConfigureKeysDialog_AddStandardButton;
 
 	/** */
@@ -1526,15 +1532,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DecoratorPreferencesPage_projectFormatLabel;
-
-	/** */
-	public static String DecoratorPreferencesPage_fileFormatDefault;
-
-	/** */
-	public static String DecoratorPreferencesPage_projectFormatDefault;
-
-	/** */
-	public static String DecoratorPreferencesPage_folderFormatDefault;
 
 	/** */
 	public static String DecoratorPreferencesPage_generalTabFolder;
