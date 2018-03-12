@@ -178,16 +178,10 @@ public class UIText extends NLS {
 	public static String GenerateHistoryJob_NoCommits;
 
 	/** */
-	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
-
-	/** */
 	public static String GerritConfigurationPage_configurePushToGerrit;
 
 	/** */
 	public static String GerritConfigurationPage_errorBranchName;
-
-	/** */
-	public static String GerritConfigurationPage_groupFetch;
 
 	/** */
 	public static String GerritConfigurationPage_groupPush;
@@ -562,12 +556,6 @@ public class UIText extends NLS {
 	public static String GitPreferenceRoot_RepoChangeScannerGroupHeader;
 
 	/** */
-	public static String GitPreferenceRoot_SecureStoreGroupLabel;
-
-	/** */
-	public static String GitPreferenceRoot_SecureStoreUseByDefault;
-
-	/** */
 	public static String GitPreferenceRoot_SynchronizeView;
 
 	/** */
@@ -797,9 +785,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CheckoutDialog_Message;
-
-	/** */
-	public static String CheckoutDialog_OkCheckout;
 
 	/** */
 	public static String CheckoutDialog_Title;
@@ -1495,9 +1480,6 @@ public class UIText extends NLS {
 	public static String ResourceHistory_toggleRelativeDate;
 
 	/** */
-	public static String ResourceHistory_toggleShowNotes;
-
-	/** */
 	public static String ResourceHistory_toggleCommentWrap;
 
 	/** */
@@ -1792,19 +1774,10 @@ public class UIText extends NLS {
 	public static String CommitDialog_Message;
 
 	/** */
-	public static String CommitDialog_MessageNoFilesSelected;
-
-	/** */
 	public static String CommitDialog_Path;
 
 	/** */
 	public static String CommitDialog_Title;
-
-	/** */
-	public static String CommitDialog_Push;
-
-	/** */
-	public static String CommitDialog_ExecutePush;
 
 	/** */
 	public static String ConfigurationChecker_checkHomeDirectory;
@@ -1910,12 +1883,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SpellCheckingMessageArea_selectAll;
-
-	/** */
-	public static String CommitMessageComponent_MessageInvalidAuthor;
-
-	/** */
-	public static String CommitMessageComponent_MessageInvalidCommitter;
 
 	/** */
 	public static String CommitMessageViewer_author;
@@ -2465,30 +2432,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsTitle;
-
-	/** */
-	public static String CheckoutDialog_ErrorCouldNotCreateNewRef;
-
-	/** */
-	public static String CheckoutDialog_ErrorCouldNotDeleteRef;
-
-	/** */
-	public static String CheckoutDialog_ErrorCouldNotRenameRef;
-
-	/** */
-	public static String CheckoutDialog_QuestionNewBranchTitle;
-
-	/** */
-	public static String CheckoutDialog_QuestionNewBranchNameMessage;
-
-	/** */
-	public static String CheckoutDialog_NewBranch;
-
-	/** */
-	public static String CheckoutDialog_Rename;
-
-	/** */
-	public static String CheckoutDialog_Delete;
 
 	/** */
 	public static String CommitDialogPreferencePage_title;
@@ -3200,18 +3143,6 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
-	public static String CommitActionHandler_CommandNotDefined;
-
-	/** */
-	public static String CommitActionHandler_CommandNotEnabled;
-
-	/** */
-	public static String CommitActionHandler_CommandNotHandled;
-
-	/** */
-	public static String CommitActionHandler_NoSelection;
-
-	/** */
 	public static String CommitEditor_couldNotShowRepository;
 
 	/** */
@@ -3824,9 +3755,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenWorkingTreeVersionInEditorMenuLabel;
 
 	/** */
-	public static String CommitHelper_couldNotFindMergeMsg;
-
-	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -4056,9 +3984,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CustomPromptDialog_information_about;
-
-	/** */
-	public static String GitModelSynchonize_fetchGitDataJobName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
