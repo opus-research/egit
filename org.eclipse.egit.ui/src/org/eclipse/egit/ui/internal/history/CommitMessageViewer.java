@@ -236,22 +236,19 @@ class CommitMessageViewer extends TextViewer implements
 			}
 
 			public void done(IJobChangeEvent event) {
-				if (!event.getResult().isOK())
-					return;
-				final StyledText text = getTextWidget();
-				if (text == null || text.isDisposed())
-					return;
-				final FormatJob job = (FormatJob) event.getJob();
-				text.getDisplay().asyncExec(new Runnable() {
-					public void run() {
-						if (text.isDisposed())
-							return;
-						setDocument(new Document(job.getFormatResult()
-								.getCommitInfo()));
-						text.setStyleRanges(job.getFormatResult()
-								.getStyleRange());
-					}
-				});
+				if (event.getResult().isOK()) {
+					if (getTextWidget().isDisposed())
+						return;
+					final FormatJob job = (FormatJob) event.getJob();
+					getTextWidget().getDisplay().asyncExec(new Runnable() {
+						public void run() {
+							if (getTextWidget().isDisposed())
+								return;
+							setDocument(new Document(job.getFormatResult().getCommitInfo()));
+							getTextWidget().setStyleRanges(job.getFormatResult().getStyleRange());
+						}
+					});
+				}
 			}
 
 			public void awake(IJobChangeEvent event) {
@@ -263,6 +260,7 @@ class CommitMessageViewer extends TextViewer implements
 			}
 		});
 	}
+
 
 	@Override
 	protected void handleDispose() {
