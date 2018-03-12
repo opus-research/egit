@@ -10,8 +10,6 @@ package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.ContainerTreeIterator;
@@ -19,7 +17,6 @@ import org.eclipse.egit.core.ContainerTreeIterator.ResourceEntry;
 import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
-import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Constants;
@@ -44,8 +41,6 @@ class DecoratableResourceHelper {
 	static final int T_INDEX = 1;
 
 	static final int T_WORKSPACE = 2;
-
-	private static final Map<Repository, DirCache> repoToDirCache = new WeakHashMap<Repository, DirCache>();
 
 	static IDecoratableResource[] createDecoratableResources(
 			final IResource[] resources) throws IOException {
@@ -117,17 +112,6 @@ class DecoratableResourceHelper {
 		return decoratableResources;
 	}
 
-	static DirCache getDirCache(Repository repository) throws IOException {
-		synchronized(repoToDirCache) {
-			DirCache dirCache = repoToDirCache.get(repository);
-			if (dirCache != null && !dirCache.isOutdated())
-				return dirCache;
-			dirCache = repository.readDirCache();
-			repoToDirCache.put(repository, dirCache);
-			return dirCache;
-		}
-	}
-
 	private static TreeWalk createThreeWayTreeWalk(
 			final RepositoryMapping mapping,
 			final ArrayList<String> resourcePaths) throws IOException {
@@ -152,7 +136,7 @@ class DecoratableResourceHelper {
 			treeWalk.addTree(new EmptyTreeIterator());
 
 		// Index
-		treeWalk.addTree(new DirCacheIterator(getDirCache(repository)));
+		treeWalk.addTree(new DirCacheIterator(repository.readDirCache()));
 
 		// Working directory
 		treeWalk.addTree(IteratorService.createInitialIterator(repository));
@@ -217,7 +201,8 @@ class DecoratableResourceHelper {
 			decoratableResource.dirty = false;
 			decoratableResource.assumeValid = true;
 		} else {
-			if (workspaceIterator.isModified(indexEntry, true))
+			if (workspaceIterator != null
+					&& workspaceIterator.isModified(indexEntry, true))
 				decoratableResource.dirty = true;
 		}
 		return decoratableResource;

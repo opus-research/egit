@@ -2359,9 +2359,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_ErrorHeader;
 
 	/** */
-	public static String RepositoriesView_ExceptionLookingUpRepoMessage;
-
-	/** */
 	public static String RepositoriesView_NothingToPasteMessage;
 
 	/** */

@@ -37,7 +37,6 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ConfigurationChecker;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
@@ -60,7 +59,6 @@ import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
@@ -76,7 +74,6 @@ import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.navigator.CommonViewer;
-import org.eclipse.ui.part.IPage;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 import org.eclipse.ui.views.properties.IPropertySheetPage;
@@ -264,9 +261,9 @@ public class RepositoriesView extends CommonNavigator {
 			unregisterRepositoryListener();
 			// listen for repository changes
 			for (String dir : repositoryUtil.getConfiguredRepositories()) {
-				File repoDir = new File(dir);
 				try {
-					Repository repo = repositoryCache.lookupRepository(repoDir);
+					Repository repo = repositoryCache
+							.lookupRepository(new File(dir));
 					myListeners.add(repo.getListenerList()
 							.addIndexChangedListener(myIndexChangedListener));
 					myListeners.add(repo.getListenerList()
@@ -275,11 +272,7 @@ public class RepositoriesView extends CommonNavigator {
 							.addConfigChangedListener(myConfigChangeListener));
 					repositories.add(repo);
 				} catch (IOException e) {
-					String message = NLS
-							.bind(UIText.RepositoriesView_ExceptionLookingUpRepoMessage,
-									repoDir.getPath());
-					Activator.handleError(message, e, false);
-					repositoryUtil.removeDir(repoDir);
+					Activator.handleError(e.getMessage(), e, false);
 				}
 			}
 		}
@@ -461,11 +454,11 @@ public class RepositoriesView extends CommonNavigator {
 						IViewPart part = PlatformUI.getWorkbench()
 								.getActiveWorkbenchWindow().getActivePage()
 								.findView(IPageLayout.ID_PROP_SHEET);
-						if (part instanceof PropertySheet) {
+						if (part != null) {
 							PropertySheet sheet = (PropertySheet) part;
-							IPage page = sheet.getCurrentPage();
-							if (page instanceof PropertySheetPage)
-								((PropertySheetPage) page).refresh();
+							PropertySheetPage page = (PropertySheetPage) sheet
+									.getCurrentPage();
+							page.refresh();
 						}
 						if (traceActive)
 							GitTraceLocation
