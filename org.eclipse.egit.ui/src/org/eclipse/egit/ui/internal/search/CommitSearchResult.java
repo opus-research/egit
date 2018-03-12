@@ -23,6 +23,8 @@ import org.eclipse.ui.model.IWorkbenchAdapter;
 
 /**
  * Commit search result class.
+ *
+ * @author Kevin Sawicki (kevin@github.com)
  */
 public class CommitSearchResult extends AbstractTextSearchResult implements
 		IWorkbenchAdapter {

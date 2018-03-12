@@ -126,8 +126,7 @@ public class CommitUI  {
 			return;
 		}
 
-		BasicConfigurationDialog.show(repos);
-
+		BasicConfigurationDialog.show();
 		resetState();
 		final IProject[] projects = getProjectsOfRepositories();
 		try {
