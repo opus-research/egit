@@ -34,7 +34,7 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
-               class="org.eclipse.egit.ui.internal.actions.DisconnectAction"
+               class="org.eclipse.egit.ui.internal.actions.Disconnect"
                icon="$nl$/icons/obj16/disconnect_co.gif"
                id="org.eclipse.egit.ui.internal.actions.Disconnect"
                label="%DisconnectAction_label"
@@ -93,10 +93,23 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
-               class="org.eclipse.egit.ui.internal.actions.UntrackAction"
+               class="org.eclipse.egit.ui.internal.actions.Untrack"
                icon="$nl$/icons/obj16/untrack.gif"
                id="org.eclipse.egit.ui.internal.actions.Untrack"
                label="%UntrackAction_label"
+               menubarPath="team.main/group9"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedAction"
+               icon="icons/obj16/no-assume-unchanged.gif"
+               id="org.eclipse.egit.ui.internal.actions.NoAssumeUnchanged"
+               label="%NoAssumeUnchangedAction_label"
+               menubarPath="team.main/group9">
+         </action>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.AssumeUnchangedAction"
+               icon="icons/obj16/assume-unchanged.gif"
+               id="org.eclipse.egit.ui.internal.actions.AssumeUnchanged"
+               label="%AssumeUnchangedAction_label"
                menubarPath="team.main/group9"/>
          <action
                class="org.eclipse.egit.ui.internal.actions.CommitAction"
@@ -2382,10 +2395,10 @@
                   name="org.eclipse.egit.ui.AdvancedSeparator">
             </separator>
             <menu
-                  label="Ad&amp;vanced">
+                  label="%AdvancedMenu.label">
                <command
                      commandId="org.eclipse.egit.ui.team.RenameBranch"
-                     label="Rename Branch..."
+                     label="%RenameBranchMenu.label"
                      style="push">
                   <visibleWhen
                         checkEnabled="false">
@@ -2408,7 +2421,7 @@
                </command>
                <command
                      commandId="org.eclipse.egit.ui.team.DeleteBranch"
-                     label="Delete Branch..."
+                     label="%DeleteBranchMenu.label"
                      style="push">
                   <visibleWhen
                         checkEnabled="false">
@@ -2448,46 +2461,6 @@
                                  </test>
                               </adapt>
                            </and>
-                        </iterate>
-                     </and>
-                  </visibleWhen>
-               </command>
-               <separator
-                     name="org.eclipse.egit.ui.TeamAdvancedFileSeparator"
-                     visible="true">
-               </separator>
-               <command
-                     commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
-                     label="%AssumeUnchangedAction_label"
-                     style="push">
-                  <visibleWhen
-                        checkEnabled="false">
-                     <and>
-                        <count
-                              value="+">
-                        </count>
-                        <iterate>
-                           <test
-                                 property="GitResource.isShared">
-                           </test>
-                        </iterate>
-                     </and>
-                  </visibleWhen>
-               </command>
-               <command
-                     commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
-                     label="%NoAssumeUnchangedAction_label"
-                     style="push">
-                  <visibleWhen
-                        checkEnabled="false">
-                     <and>
-                        <count
-                              value="+">
-                        </count>
-                        <iterate>
-                           <test
-                                 property="GitResource.isShared">
-                           </test>
                         </iterate>
                      </and>
                   </visibleWhen>
@@ -2967,14 +2940,6 @@
             commandId="org.eclipse.egit.ui.team.Tag"
             icon="icons/obj16/tags.gif">
       </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
-            icon="icons/obj16/assume-unchanged.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.team.NoAssumeUnchanged"
-            icon="icons/obj16/no-assume-unchanged.gif">
-      </image>
    </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
@@ -3177,25 +3142,13 @@
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.DeleteBranchActionHandler"
             id="org.eclipse.egit.ui.team.DeleteBranch"
-            name="Delete Branch">
+            name="%DeleteBranchCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             defaultHandler="org.eclipse.egit.ui.internal.actions.RenameBranchActionHandler"
             id="org.eclipse.egit.ui.team.RenameBranch"
-            name="Rename Branch">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.AssumeUnchangedAction"
-            id="org.eclipse.egit.ui.team.AssumeUnchanged"
-            name="Assume Unchanged">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.NoAssumeUnchangedAction"
-            id="org.eclipse.egit.ui.team.NoAssumeUnchanged"
-            name="No Assume Unchanged">
+            name="%RenameBranchCommand.name">
       </command>
    </extension>
    <extension
@@ -3240,7 +3193,7 @@
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CompareVersionsInTreeHandler"
             id="org.eclipse.egit.ui.history.CompareVersionsInTree"
-            name="Compare in Tree">
+            name="%CompareInTreeCommand.name">
       </command>
       <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.CompareWithWorkingTreeHandler"

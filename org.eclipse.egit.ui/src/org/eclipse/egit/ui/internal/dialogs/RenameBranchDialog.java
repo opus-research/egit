@@ -14,6 +14,7 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.window.Window;
@@ -41,17 +42,17 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 
 	private InputDialog getRefNameInputDialog(String prompt,
 			final String refPrefix, String initialValue) {
-		InputDialog labelDialog = new InputDialog(getShell(),
-				"New branch", prompt, //$NON-NLS-1$
-				initialValue, ValidationUtils.getRefNameInputValidator(repo,
-						refPrefix, true));
-		labelDialog.setBlockOnOpen(true);
-		return labelDialog;
+		InputDialog branchNameDialog = new InputDialog(
+				getShell(),
+				UIText.RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle,
+				prompt, initialValue, ValidationUtils.getRefNameInputValidator(
+						repo, refPrefix, true));
+		branchNameDialog.setBlockOnOpen(true);
+		return branchNameDialog;
 	}
 
 	@Override
 	protected void okPressed() {
-		// TODO Auto-generated method stub
 		String refName = refNameFromDialog();
 		String refPrefix;
 
@@ -68,23 +69,18 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 
 		String branchName = refName.substring(refPrefix.length());
 
-		InputDialog labelDialog = getRefNameInputDialog(
-				NLS
-						.bind(
-								"Enter new name of the {0} branch. {1} will be prepended to the name you type", //$NON-NLS-1$
-								branchName, refPrefix), refPrefix,
-				branchName);
+		InputDialog labelDialog = getRefNameInputDialog(NLS.bind(
+				UIText.RenameBranchDialog_NewNameInputDialogPrompt, branchName,
+				refPrefix), refPrefix, branchName);
 		if (labelDialog.open() == Window.OK) {
 			String newRefName = refPrefix + labelDialog.getValue();
 			try {
-				new Git(repo).branchRename().setOldName(refName)
-						.setNewName(labelDialog.getValue()).call();
+				new Git(repo).branchRename().setOldName(refName).setNewName(
+						labelDialog.getValue()).call();
 				branchTree.refresh();
 				markRef(newRefName);
 			} catch (Throwable e1) {
-				reportError(
-						e1,
-						"Failed to rename branch {0} -> {1}, status={2}", //$NON-NLS-1$
+				reportError(e1, UIText.RenameBranchDialog_RenameErrorMessage,
 						refName, newRefName, e1.getMessage());
 			}
 		}
@@ -94,7 +90,8 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		super.createButtonsForButtonBar(parent);
-		getButton(Window.OK).setText("&Rename"); //$NON-NLS-1$
+		getButton(Window.OK).setText(
+				UIText.RenameBranchDialog_RenameButtonLabel);
 
 		// can't advance without a selection
 		getButton(Window.OK).setEnabled(!branchTree.getSelection().isEmpty());
@@ -104,7 +101,7 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 * @return the message shown above the refs tree
 	 */
 	protected String getMessageText() {
-		return "Select a branch to rename"; //$NON-NLS-1$
+		return UIText.RenameBranchDialog_DialogMessage;
 	}
 
 	/**
@@ -122,7 +119,12 @@ public class RenameBranchDialog extends AbstractBranchSelectionDialog {
 	 * @return the title of the dialog
 	 */
 	protected String getTitle() {
-		return "Rename a Branch"; //$NON-NLS-1$
+		return UIText.RenameBranchDialog_DialogTitle;
+	}
+
+	@Override
+	protected String getWindowTitle() {
+		return UIText.RenameBranchDialog_WindowTitle;
 	}
 
 	@Override

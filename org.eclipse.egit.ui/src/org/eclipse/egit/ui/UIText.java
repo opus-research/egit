@@ -3035,6 +3035,27 @@ public class UIText extends NLS {
 	public static String RenameBranchCommand_WrongNameMessage;
 
 	/** */
+	public static String RenameBranchDialog_DialogMessage;
+
+	/** */
+	public static String RenameBranchDialog_DialogTitle;
+
+	/** */
+	public static String RenameBranchDialog_NewNameInputDialogPrompt;
+
+	/** */
+	public static String RenameBranchDialog_RenameBranchDialogNewNameInputWindowTitle;
+
+	/** */
+	public static String RenameBranchDialog_RenameButtonLabel;
+
+	/** */
+	public static String RenameBranchDialog_RenameErrorMessage;
+
+	/** */
+	public static String RenameBranchDialog_WindowTitle;
+
+	/** */
 	public static String RevertHandler_AlreadyRevertedMessae;
 
 	/** */
