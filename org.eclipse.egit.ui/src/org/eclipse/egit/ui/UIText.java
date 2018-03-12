@@ -2216,12 +2216,6 @@ public class UIText extends NLS {
 	public static String CommitAction_MergeHeadErrorTitle;
 
 	/** */
-	public static String CommitActionHandler_caculatingChanges;
-
-	/** */
-	public static String CommitActionHandler_repository;
-
-	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
 
 	/** */
@@ -2300,6 +2294,15 @@ public class UIText extends NLS {
 	public static String RemoteSelectionCombo_sourceRef;
 
 	/** */
+	public static String RefreshPreferencePage_title;
+
+	/** */
+	public static String RefreshPreferencesPage_RefreshOnlyWhenActive;
+
+	/** */
+	public static String RefreshPreferencesPage_RefreshWhenIndexChange;
+
+	/** */
 	public static String RemoteSelectionCombo_destinationName;
 
 	/** */
@@ -2352,6 +2355,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_PleaseEnterNameMessage;
+
+	/** */
+	public static String GitModelIndex_index;
+
+	/** */
+	public static String GitModelWorkingTree_workingTree;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
