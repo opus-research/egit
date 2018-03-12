@@ -363,7 +363,8 @@ public abstract class AbstractGitCloneWizard extends Wizard {
 				for (File file : files)
 					records.add(new ProjectRecord(file));
 				try {
-					ProjectUtils.createProjects(records, sets, monitor);
+					ProjectUtils.createProjects(records, repository, sets,
+							monitor);
 				} catch (InvocationTargetException e) {
 					Activator.logError(e.getLocalizedMessage(), e);
 				} catch (InterruptedException e) {
