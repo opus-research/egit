@@ -191,7 +191,7 @@ public class CompareUtils {
 	 *
 	 * @param resource
 	 *            must be an instance of IEncodedStorage
-	 * @return the encoding used in eclipse for the resource or null if
+	 * @return the encoding used in eclipse for the resource if found or null
 	 */
 	public static String getResourceEncoding(IResource resource) {
 		// Get the encoding for the current version. As a matter of
