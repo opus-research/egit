@@ -8,7 +8,6 @@
  * Copyright (C) 2011, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2012, Tieto Corporation, Peter Bäckman <peter.backman@tieto.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +22,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -541,7 +539,9 @@ public class CommitMessageComponent {
 		if (amending)
 			getHeadCommitInfo();
 
-		commitText.setText(calculateCommitMessage(filesToCommit));
+		String calculatedCommitMessage = calculateCommitMessage(filesToCommit);
+		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(calculatedCommitMessage) > 0;
+		commitText.setText(calculatedCommitMessage);
 		authorText.setText(getSafeString(author));
 		committerText.setText(getSafeString(committer));
 		if (amending) {
@@ -552,7 +552,8 @@ public class CommitMessageComponent {
 				originalChangeId = null;
 			}
 			refreshSignedOffBy();
-			refreshChangeIdText();
+			if (!calculatedMessageHasChangeId)
+				refreshChangeIdText();
 		}
 		updateSignedOffButton();
 		updateChangeIdButton();
@@ -610,7 +611,7 @@ public class CommitMessageComponent {
 
 		if (amending)
 			return previousCommitMessage;
-		String calculatedCommitMessage = EMPTY_STRING;
+		String calculatedCommitMessage = null;
 
 		Set<IResource> resources = new HashSet<IResource>();
 		for (String path : paths) {
@@ -619,43 +620,40 @@ public class CommitMessageComponent {
 				resources.add(file.getProject());
 		}
 		try {
-			List <ICommitMessageProvider> messageProviders = getCommitMessageProviders();
-			for (ICommitMessageProvider messageProvider : messageProviders) {
-				if (messageProvider != null) {
-					IResource[] resourcesArray = resources
-							.toArray(new IResource[0]);
-					calculatedCommitMessage = calculatedCommitMessage+System.getProperty("line.separator") //$NON-NLS-1$
-							+(messageProvider.getMessage(resourcesArray).trim());
-				}
+			ICommitMessageProvider messageProvider = getCommitMessageProvider();
+			if (messageProvider != null) {
+				IResource[] resourcesArray = resources
+						.toArray(new IResource[0]);
+				calculatedCommitMessage = messageProvider
+						.getMessage(resourcesArray);
 			}
 		} catch (CoreException coreException) {
 			Activator.error(coreException.getLocalizedMessage(), coreException);
 		}
-		return calculatedCommitMessage;
+		if (calculatedCommitMessage != null)
+			return calculatedCommitMessage;
+		else
+			return EMPTY_STRING;
 	}
 
-	private List<ICommitMessageProvider> getCommitMessageProviders()
+	private ICommitMessageProvider getCommitMessageProvider()
 			throws CoreException {
-		List<ICommitMessageProvider> providers = new ArrayList<ICommitMessageProvider>();
-
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
 		IConfigurationElement[] config = registry
 				.getConfigurationElementsFor(COMMIT_MESSAGE_PROVIDER_ID);
-		for (int i = 0; i < config.length; i++) {
+		if (config.length > 0) {
 			Object provider;
-			provider = config[i].createExecutableExtension("class");//$NON-NLS-1$
+			provider = config[0].createExecutableExtension("class");//$NON-NLS-1$
 			if (provider instanceof ICommitMessageProvider) {
-				providers.add((ICommitMessageProvider) provider);
+				return (ICommitMessageProvider) provider;
 			} else {
 				Activator.logError(
 						UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
 						null);
 			}
 		}
-		return providers;
+		return null;
 	}
-
-
 
 	private void saveOriginalChangeId() {
 		int changeIdOffset = findOffsetOfChangeIdLine(previousCommitMessage);
@@ -664,7 +662,7 @@ public class CommitMessageComponent {
 					previousCommitMessage);
 			if (endOfChangeId < 0)
 				endOfChangeId = previousCommitMessage.length();
-			int sha1Offset = changeIdOffset + Text.DELIMITER.length() + "Change-Id: I".length(); //$NON-NLS-1$
+			int sha1Offset = changeIdOffset + "Change-Id: I".length(); //$NON-NLS-1$
 			try {
 				originalChangeId = ObjectId.fromString(previousCommitMessage
 						.substring(sha1Offset, endOfChangeId));
@@ -680,7 +678,7 @@ public class CommitMessageComponent {
 	}
 
 	private int findOffsetOfChangeIdLine(String message) {
-		return message.indexOf(Text.DELIMITER + "Change-Id: I"); //$NON-NLS-1$
+		return ChangeIdUtil.indexOfChangeId(message, Text.DELIMITER);
 	}
 
 	private void updateChangeIdButton() {
@@ -714,7 +712,7 @@ public class CommitMessageComponent {
 					cleanedText = text.substring(0, changeIdOffset);
 				else
 					cleanedText = text.substring(0, changeIdOffset)
-							+ text.substring(endOfChangeId);
+							+ text.substring(endOfChangeId + 1);
 				commitText.setText(cleanedText);
 			}
 		}
