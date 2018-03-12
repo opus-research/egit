@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,10 +12,13 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
@@ -78,6 +82,8 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
  */
 public class SpellcheckableMessageArea extends Composite {
 
+	static final int MAX_LINE_WIDTH = 72;
+
 	private static class TextViewerAction extends Action implements IUpdate {
 
 		private int fOperationCode= -1;
@@ -133,7 +139,17 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param initialText
 	 */
 	public SpellcheckableMessageArea(Composite parent, String initialText) {
-		super(parent, SWT.BORDER);
+		this(parent, initialText, SWT.BORDER);
+	}
+
+	/**
+	 * @param parent
+	 * @param initialText
+	 * @param styles
+	 */
+	public SpellcheckableMessageArea(Composite parent, String initialText,
+			int styles) {
+		super(parent, styles);
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
@@ -143,7 +159,7 @@ public class SpellcheckableMessageArea extends Composite {
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
 		int endSpacing = 2;
-		int textWidth = getCharWidth() * 70 + endSpacing;
+		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
 		int textHeight = getLineHeight() * 7;
 		Point size = getTextWidget().computeSize(textWidth, textHeight);
 		getTextWidget().setSize(size);
@@ -160,7 +176,13 @@ public class SpellcheckableMessageArea extends Composite {
 		Document document = new Document(initialText);
 
 		sourceViewer.configure(new TextSourceViewerConfiguration(EditorsUI
-				.getPreferenceStore()));
+				.getPreferenceStore()) {
+
+			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
+				return getHyperlinkTargets();
+			}
+
+		});
 		sourceViewer.setDocument(document, annotationModel);
 
 		getTextWidget().addDisposeListener(new DisposeListener() {
@@ -185,7 +207,9 @@ public class SpellcheckableMessageArea extends Composite {
 							return;
 						}
 						String lineDelimiter = textWidget.getLineDelimiter();
-						List<WrapEdit> wrapEdits = calculateWrapEdits(textWidget.getText(), 70, lineDelimiter);
+						List<WrapEdit> wrapEdits = calculateWrapEdits(
+								textWidget.getText(), MAX_LINE_WIDTH,
+								lineDelimiter);
 						// Prevent infinite loop because replaceTextRange causes a ModifyEvent
 						active = false;
 						for (WrapEdit wrapEdit : wrapEdits) {
@@ -360,9 +384,12 @@ public class SpellcheckableMessageArea extends Composite {
 		return support;
 	}
 
-	private void createMarginPainter() {
+	/**
+	 * Create margin painter and add to source viewer
+	 */
+	protected void createMarginPainter() {
 		MarginPainter marginPainter = new MarginPainter(sourceViewer);
-		marginPainter.setMarginRulerColumn(70);
+		marginPainter.setMarginRulerColumn(MAX_LINE_WIDTH);
 		marginPainter.setMarginRulerColor(Display.getDefault().getSystemColor(
 				SWT.COLOR_GRAY));
 		sourceViewer.addPainter(marginPainter);
@@ -437,6 +464,25 @@ public class SpellcheckableMessageArea extends Composite {
 	 */
 	public void reconfigure() {
 		configureHardWrap();
+	}
+
+	/**
+	 * Get hyperlink targets
+	 *
+	 * @return map of targets
+	 */
+	protected Map<String, IAdaptable> getHyperlinkTargets() {
+		return Collections.singletonMap("org.eclipse.ui.DefaultTextEditor", //$NON-NLS-1$
+				getDefaultTarget());
+	}
+
+	/**
+	 * Get default target for hyperlink presenter
+	 *
+	 * @return target
+	 */
+	protected IAdaptable getDefaultTarget() {
+		return null;
 	}
 
 	/**

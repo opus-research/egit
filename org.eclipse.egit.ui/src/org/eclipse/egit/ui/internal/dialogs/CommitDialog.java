@@ -13,41 +13,33 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.compare.CompareUI;
-import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
-import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.internal.storage.GitFileHistoryProvider;
-import org.eclipse.egit.core.op.AddToIndexOperation;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
+import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -64,6 +56,9 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jface.viewers.ViewerFilter;
+import org.eclipse.jgit.api.AddCommand;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
@@ -96,10 +91,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.team.core.RepositoryProvider;
-import org.eclipse.team.core.history.IFileHistory;
-import org.eclipse.team.core.history.IFileHistoryProvider;
-import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
@@ -119,8 +110,7 @@ public class CommitDialog extends Dialog {
 				return item.status.getText();
 
 			case 1:
-				return item.file.getProject().getName() + ": " //$NON-NLS-1$
-						+ item.file.getProjectRelativePath();
+				return item.path;
 
 			default:
 				return null;
@@ -193,44 +183,15 @@ public class CommitDialog extends Dialog {
 
 		public void widgetDefaultSelected(SelectionEvent e) {
 			IStructuredSelection selection = (IStructuredSelection) filesViewer.getSelection();
-
 			CommitItem commitItem = (CommitItem) selection.getFirstElement();
 			if (commitItem == null) {
 				return;
 			}
-			if (commitItem.status == Status.UNTRACKED)
-				return;
-
-			IProject project = commitItem.file.getProject();
-			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-			if (mapping == null) {
-				return;
-			}
-			Repository repository = mapping.getRepository();
-
-			try {
-				ObjectId id = repository.resolve(Constants.HEAD);
-				if (id == null
-						|| repository.open(id, Constants.OBJ_COMMIT).getType() != Constants.OBJ_COMMIT) {
-					return;
-				}
-			} catch (IOException e1) {
-				return;
-			}
-
-			GitProvider provider = (GitProvider) RepositoryProvider.getProvider(project);
-			GitFileHistoryProvider fileHistoryProvider = (GitFileHistoryProvider) provider.getFileHistoryProvider();
-
-			IFileHistory fileHistory = fileHistoryProvider.getFileHistoryFor(commitItem.file, IFileHistoryProvider.SINGLE_REVISION, null);
-
-			IFileRevision baseFile = fileHistory.getFileRevisions()[0];
-			IFileRevision nextFile = fileHistoryProvider.getWorkspaceFileRevision(commitItem.file);
-
-			ITypedElement base = new FileRevisionTypedElement(baseFile);
-			ITypedElement next = new FileRevisionTypedElement(nextFile);
-
-			GitCompareFileRevisionEditorInput input = new GitCompareFileRevisionEditorInput(next, base, null);
-			CompareUI.openCompareDialog(input);
+			IFile file = findFile(commitItem.path);
+			if (file == null)
+				CompareUtils.compareHeadWithWorkingTree(repository, commitItem.path);
+			else
+				CompareUtils.compareHeadWithWorkspace(repository, file);
 		}
 
 	}
@@ -295,9 +256,11 @@ public class CommitDialog extends Dialog {
 	/**
 	 * A collection of files that should be already checked in the table.
 	 */
-	private Set<IFile> preselectedFiles = Collections.emptySet();
+	private Set<String> preselectedFiles = Collections.emptySet();
 
-	private ArrayList<IFile> selectedFiles = new ArrayList<IFile>();
+	private boolean preselectAll = false;
+
+	private ArrayList<String> selectedFiles = new ArrayList<String>();
 
 	private boolean signedOff = org.eclipse.egit.ui.Activator.getDefault()
 	.getPreferenceStore()
@@ -318,6 +281,8 @@ public class CommitDialog extends Dialog {
 	private IPreviousValueProposalHandler authorHandler;
 
 	private IPreviousValueProposalHandler committerHandler;
+
+	private Repository repository;
 
 	/**
 	 * @param parentShell
@@ -342,19 +307,10 @@ public class CommitDialog extends Dialog {
 	}
 
 	/**
-	 * Pre-select suggested set of resources to commit
-	 *
-	 * @param items
+	 * @return the files selected by the user to commit.
 	 */
-	public void setSelectedFiles(IFile[] items) {
-		Collections.addAll(selectedFiles, items);
-	}
-
-	/**
-	 * @return the resources selected by the user to commit.
-	 */
-	public IFile[] getSelectedFiles() {
-		return selectedFiles.toArray(new IFile[0]);
+	public Collection<String> getSelectedFiles() {
+		return selectedFiles;
 	}
 
 	/**
@@ -364,53 +320,48 @@ public class CommitDialog extends Dialog {
 	 *            the files to be checked in the dialog's table, must not be
 	 *            <code>null</code>
 	 */
-	public void setPreselectedFiles(Set<IFile> preselectedFiles) {
+	public void setPreselectedFiles(Set<String> preselectedFiles) {
 		Assert.isNotNull(preselectedFiles);
 		this.preselectedFiles = preselectedFiles;
 	}
 
 	/**
-	 * Set the total set of changed resources, including additions and
-	 * removals
-	 *
-	 * @param files potentially affected by a new commit
-	 * @param indexDiffs IndexDiffs of the related repositories
+	 * Preselect all changed files in the commit dialog.
+	 * Untracked files are not preselected.
+	 * @param preselectAll
 	 */
-	public void setFiles(Set<IFile> files, Map<Repository, IndexDiff> indexDiffs) {
+	public void setPreselectAll(boolean preselectAll) {
+		this.preselectAll = preselectAll;
+	}
+
+	/**
+	 * Set the total set of changed files, including additions and
+	 * removals
+	 * @param repository
+	 * @param paths paths of files potentially affected by a new commit
+	 * @param indexDiff IndexDiff of the related repository
+	 */
+	public void setFiles(Repository repository, Set<String> paths,
+			IndexDiff indexDiff) {
+		this.repository = repository;
 		items.clear();
-		Set<Repository> repos = new HashSet<Repository>();
-		for (IFile file : files) {
-			RepositoryMapping repositoryMapping = RepositoryMapping
-					.getMapping(file.getProject());
-			Repository repo = repositoryMapping.getRepository();
-			repos.add(repo);
-			String path = repositoryMapping.getRepoRelativePath(file);
+		for (String path : paths) {
 			CommitItem item = new CommitItem();
-			item.status = getFileStatus(path, indexDiffs.get(repo));
-			item.file = file;
+			item.status = getFileStatus(path, indexDiff);
+			item.path = path;
 			items.add(item);
 		}
-		for (Repository repo : repos)
-			createChangeIdDefault = createChangeIdDefault
-					|| repo.getConfig().getBoolean(
-							ConfigConstants.CONFIG_GERRIT_SECTION,
-							ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
+		createChangeIdDefault = repository.getConfig().getBoolean(
+				ConfigConstants.CONFIG_GERRIT_SECTION,
+				ConfigConstants.CONFIG_KEY_CREATECHANGEID, false);
 
-		// initially, we sort by status plus project plus path
+		// initially, we sort by status plus path
 		Collections.sort(items, new Comparator<CommitItem>() {
 			public int compare(CommitItem o1, CommitItem o2) {
 				int diff = o1.status.ordinal() - o2.status.ordinal();
 				if (diff != 0)
 					return diff;
-				diff = o1.file.getProject().getName().compareTo(
-						o2.file.getProject().getName());
-				if (diff != 0)
-					return diff;
-				return o1.file
-				.getProjectRelativePath()
-				.toString()
-				.compareTo(
-						o2.file.getProjectRelativePath().toString());
+				return o1.path.compareTo(o2.path);
 			}
 		});
 	}
@@ -759,7 +710,7 @@ public class CommitDialog extends Dialog {
 		}
 		else {
 			for (CommitItem item : items) {
-				if (preselectedFiles.contains(item.file) &&
+				if ((preselectAll || preselectedFiles.contains(item.path)) &&
 						item.status != Status.UNTRACKED &&
 						item.status != Status.ASSUME_UNCHANGED) {
 					filesViewer.setChecked(item, true);
@@ -768,6 +719,7 @@ public class CommitDialog extends Dialog {
 		}
 
 		applyDialogFont(container);
+		resourceCol.pack();
 		container.pack();
 		return container;
 	}
@@ -783,13 +735,13 @@ public class CommitDialog extends Dialog {
 
 		if (amending)
 			return previousCommitMessage;
-
 		String calculatedCommitMessage = null;
 
 		Set<IResource> resources = new HashSet<IResource>();
 		for (CommitItem item : items) {
-			IResource resource = item.file.getProject();
-			resources.add(resource);
+			IFile file = findFile(item.path);
+			if (file != null)
+				resources.add(file.getProject());
 		}
 		try {
 			ICommitMessageProvider messageProvider = getCommitMessageProvider();
@@ -967,30 +919,30 @@ public class CommitDialog extends Dialog {
 		item.setText(UIText.CommitDialog_AddFileOnDiskToIndex);
 		item.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event arg0) {
-				IStructuredSelection sel = (IStructuredSelection) filesViewer.getSelection();
+				IStructuredSelection sel = (IStructuredSelection) filesViewer
+						.getSelection();
 				if (sel.isEmpty()) {
 					return;
 				}
-				try {
-					List<IResource> filesToAdd = new ArrayList<IResource>();
-					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
-						CommitItem commitItem = (CommitItem) it.next();
-						filesToAdd.add(commitItem.file);
-					}
-					AddToIndexOperation op = new AddToIndexOperation(filesToAdd);
-					op.execute(new NullProgressMonitor());
-					for (Iterator<?> it = sel.iterator(); it.hasNext();) {
-						CommitItem commitItem = (CommitItem) it.next();
-						commitItem.status = getFileStatus(commitItem.file);
-					}
-					filesViewer.refresh(true);
-				} catch (CoreException e) {
-					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
-					return;
-				} catch (IOException e) {
-					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
-					return;
+				AddCommand addCommand = new Git(repository).add();
+				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
+					CommitItem commitItem = (CommitItem) it.next();
+					addCommand.addFilepattern(commitItem.path);
 				}
+				try {
+					addCommand.call();
+				} catch (NoFilepatternException e) {
+					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
+				}
+				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
+					CommitItem commitItem = (CommitItem) it.next();
+					try {
+						commitItem.status = getFileStatus(commitItem.path);
+					} catch (IOException e) {
+						Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
+					}
+				}
+				filesViewer.refresh(true);
 			}
 		});
 
@@ -998,17 +950,14 @@ public class CommitDialog extends Dialog {
 	}
 
 	/** Retrieve file status
-	 * @param file
+	 * @param path
 	 * @return file status
 	 * @throws IOException
 	 */
-	private static Status getFileStatus(IFile file) throws IOException {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
-		String path = mapping.getRepoRelativePath(file);
-		Repository repo = mapping.getRepository();
+	private Status getFileStatus(String path) throws IOException {
 		AdaptableFileTreeIterator fileTreeIterator = new AdaptableFileTreeIterator(
-				repo, ResourcesPlugin.getWorkspace().getRoot());
-		IndexDiff indexDiff = new IndexDiff(repo, Constants.HEAD, fileTreeIterator);
+				repository, ResourcesPlugin.getWorkspace().getRoot());
+		IndexDiff indexDiff = new IndexDiff(repository, Constants.HEAD, fileTreeIterator);
 		Set<String> repositoryPaths = Collections.singleton(path);
 		indexDiff.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
 		indexDiff.diff(null, 0, 0, ""); //$NON-NLS-1$
@@ -1065,7 +1014,7 @@ public class CommitDialog extends Dialog {
 		Object[] checkedElements = filesViewer.getCheckedElements();
 		selectedFiles.clear();
 		for (Object obj : checkedElements)
-			selectedFiles.add(((CommitItem) obj).file);
+			selectedFiles.add(((CommitItem) obj).path);
 
 		if (commitMessage.trim().length() == 0) {
 			MessageDialog.openWarning(getShell(), UIText.CommitDialog_ErrorNoMessage, UIText.CommitDialog_ErrorMustEnterCommitMessage);
@@ -1120,12 +1069,21 @@ public class CommitDialog extends Dialog {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
+	private IFile findFile(String path) {
+		URI uri = new File(repository.getWorkTree(), path).toURI();
+		IFile[] workspaceFiles = ResourcesPlugin.getWorkspace().getRoot()
+				.findFilesForLocationURI(uri);
+		if (workspaceFiles.length > 0)
+			return workspaceFiles[0];
+		else
+			return null;
+	}
 }
 
 class CommitItem {
 	Status status;
 
-	IFile file;
+	String path;
 
 	/** The ordinal of this {@link Enum} is used to provide the "native" sorting of the list */
 	public static enum Status {
@@ -1175,12 +1133,8 @@ class CommitItem {
 		ByFile() {
 
 			public int compare(CommitItem o1, CommitItem o2) {
-				int diff = o1.file.getProject().getName().compareTo(
-						o2.file.getProject().getName());
-				if (diff != 0)
-					return diff;
-				return o1.file.getProjectRelativePath().toString().compareTo(
-						o2.file.getProjectRelativePath().toString());
+				return o1.path.compareTo(
+						o2.path);
 			}
 
 		};

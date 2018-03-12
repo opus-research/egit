@@ -244,6 +244,14 @@ class CommitGraphTable {
 				}
 			}
 		});
+
+		table.getTable().addDisposeListener(new DisposeListener() {
+
+			public void widgetDisposed(DisposeEvent e) {
+				allCommits.dispose();
+				renderer.dispose();
+			}
+		});
 	}
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
@@ -652,6 +660,9 @@ class CommitGraphTable {
 			// copy and such after additions
 			popupMgr.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			popupMgr.add(copyAction);
+			popupMgr.add(getCommandContributionItem(
+					HistoryViewCommands.OPEN_IN_COMMIT_VIEWER,
+					UIText.CommitGraphTable_OpenCommitLabel));
 			popupMgr.add(new Separator());
 		}
 
