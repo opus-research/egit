@@ -909,10 +909,16 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StatusNothingToCommit;
 
 	/** */
+	public static String RebaseResultDialog_StatusInteractivePrepared;
+
+	/** */
 	public static String RebaseResultDialog_StatusOK;
 
 	/** */
 	public static String RebaseResultDialog_StatusStopped;
+
+	/** */
+	public static String RebaseResultDialog_StatusEdit;
 
 	/** */
 	public static String RebaseResultDialog_StatusUpToDate;
@@ -2574,6 +2580,9 @@ public class UIText extends NLS {
 	public static String PushResultDialog_label;
 
 	/** */
+	public static String PushResultDialog_label_failed;
+
+	/** */
 	public static String PushResultDialog_title;
 
 	/** */
@@ -4214,6 +4223,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String InteractiveRebaseView_continueItem_text;
+
+	/** */
+	public static String InteractiveRebaseView_LinkSelection;
 
 	/** */
 	public static String InteractiveRebaseView_refreshItem_text;
