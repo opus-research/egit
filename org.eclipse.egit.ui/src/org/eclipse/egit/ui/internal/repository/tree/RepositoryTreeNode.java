@@ -131,8 +131,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case ADDITIONALREFS:
 			// fall through
-		case SUBMODULES:
-			// fall through
 		case WORKINGDIR:
 			result = prime
 					* result
@@ -247,8 +245,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case ERROR:
 			// fall through
-		case SUBMODULES:
-			// fall through
 		case WORKINGDIR:
 			return 0;
 
@@ -302,8 +298,6 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 		case REMOTETRACKING:
 			// fall through
 		case ADDITIONALREFS:
-			// fall through
-		case SUBMODULES:
 			// fall through
 		case WORKINGDIR:
 			return ((Repository) myObject).getDirectory().equals(
