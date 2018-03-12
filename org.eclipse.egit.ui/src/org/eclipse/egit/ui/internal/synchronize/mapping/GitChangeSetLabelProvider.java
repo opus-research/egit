@@ -18,10 +18,8 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.team.ui.mapping.SynchronizationLabelProvider;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
@@ -29,7 +27,7 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
 /**
  * Label provider for Git ChangeSet model.
  */
-public class GitChangeSetLabelProvider extends SynchronizationLabelProvider implements IStyledLabelProvider {
+public class GitChangeSetLabelProvider extends SynchronizationLabelProvider {
 
 	private static final ILabelProvider workbenchLabelProvider = WorkbenchLabelProvider
 			.getDecoratingWorkbenchLabelProvider();
@@ -83,22 +81,6 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider impl
 			fImageCache.dispose();
 			super.dispose();
 		}
-
-	}
-
-	public StyledString getStyledText(Object element) {
-		String rawText = getText(element);
-		// need to compare classes as everything is 'instanceof GitModelCommit'
-		if (element.getClass().equals(GitModelCommit.class)) {
-			GitModelCommit commit = (GitModelCommit) element;
-			StyledString string = new StyledString(rawText);
-			String commitId = commit.getRemoteCommit().getName();
-			String format = " [" + commitId.substring(0, 6) + "]";  //$NON-NLS-1$//$NON-NLS-2$
-			string.append(format, StyledString.DECORATIONS_STYLER);
-			return string;
-		}
-
-		return new StyledString(rawText);
 	}
 
 }

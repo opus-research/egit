@@ -123,7 +123,8 @@ public class GitModelCommit extends GitModelObject implements
 	@Override
 	public String getName() {
 		if (name == null)
-			name = remoteCommit.getShortMessage();
+			name = remoteCommit.getName().substring(0, 6)
+					+ ": " + remoteCommit.getShortMessage();//$NON-NLS-1$
 
 		return name;
 	}
