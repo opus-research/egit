@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.test.rebase;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -43,6 +44,7 @@ public class RebaseInteractivePlanTest extends GitTestCase {
 
 	private TestRepository testRepository;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -55,6 +57,7 @@ public class RebaseInteractivePlanTest extends GitTestCase {
 		moveHelper = new RebaseInteractivePlan.MoveHelper(toDoElements, plan);
 	}
 
+	@Override
 	@After
 	public void tearDown() throws Exception {
 		plan.dispose();
@@ -439,9 +442,11 @@ public class RebaseInteractivePlanTest extends GitTestCase {
 			checkOriginalDataHasNotBeenAltered();
 		}
 
+		@SuppressWarnings("boxing")
 		@Test
 		public void toArrayTest() {
-
+			assertArrayEquals(new Integer[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 },
+					joined.toArray());
 		}
 	}
 }

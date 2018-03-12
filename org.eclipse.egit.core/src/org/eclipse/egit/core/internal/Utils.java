@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
+ * Copyright (C) 2010, 2015 Jens Baumgart <jens.baumgart@sap.com> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal;
 
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jgit.lib.ObjectId;
 
 /**
@@ -62,5 +63,37 @@ public class Utils {
 			i++;
 		}
 		return result.toString();
+	}
+
+	/**
+	 * @param text
+	 * @param maxLength
+	 * @return {@code text} shortened to {@code maxLength} characters if its
+	 *         string length exceeds {@code maxLength} and an ellipsis is
+	 *         appended to the shortened text
+	 */
+	public static String shortenText(final String text, final int maxLength) {
+		if (text.length() > maxLength)
+			return text.substring(0, maxLength - 1) + "\u2026"; // ellipsis "…" (in UTF-8) //$NON-NLS-1$
+		return text;
+	}
+
+	/**
+	 * Returns the adapter corresponding to the given adapter class.
+	 * <p>
+	 * Workaround for "Unnecessary cast" errors, see bug 460685. Can be removed
+	 * when EGit depends on Eclipse 4.5 or higher.
+	 *
+	 * @param adaptable
+	 *            the adaptable
+	 * @param adapterClass
+	 *            the adapter class to look up
+	 * @return a object of the given class, or <code>null</code> if this object
+	 *         does not have an adapter for the given class
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T getAdapter(IAdaptable adaptable, Class<T> adapterClass) {
+		Object adapter = adaptable.getAdapter(adapterClass);
+		return (T) adapter;
 	}
 }

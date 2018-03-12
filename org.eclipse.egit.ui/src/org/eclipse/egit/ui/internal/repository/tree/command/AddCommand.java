@@ -45,6 +45,7 @@ import org.eclipse.team.core.RepositoryProvider;
  */
 public class AddCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RepositorySearchWizard wizard = new RepositorySearchWizard(
 				util.getConfiguredRepositories());
@@ -86,6 +87,7 @@ public class AddCommand extends
 				continue;
 
 			RepositoryFinder f = new RepositoryFinder(project);
+			f.setFindInChildren(false);
 			try {
 				Collection<RepositoryMapping> mappings = f
 						.find(new NullProgressMonitor());

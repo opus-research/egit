@@ -11,8 +11,11 @@
 
 package org.eclipse.egit.ui.internal.actions;
 
+import java.io.IOException;
+
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -28,6 +31,8 @@ import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.osgi.util.NLS;
@@ -40,12 +45,13 @@ import org.eclipse.ui.PlatformUI;
  */
 public class MergeActionHandler extends RepositoryActionHandler {
 
+	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final Repository repository = getRepository(true, event);
 		if (repository == null)
 			return null;
 
-		if (!canMerge(repository, event))
+		if (!checkMergeIsPossible(repository, getShell(event)))
 			return null;
 		BasicConfigurationDialog.show(repository);
 		MergeTargetSelectionDialog mergeTargetSelectionDialog = new MergeTargetSelectionDialog(
@@ -59,9 +65,9 @@ public class MergeActionHandler extends RepositoryActionHandler {
 			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
 			op.setFastForwardMode(mergeTargetSelectionDialog.getFastForwardMode());
 			op.setCommit(mergeTargetSelectionDialog.isCommit());
-			Job job = new Job(jobname) {
+			Job job = new WorkspaceJob(jobname) {
 				@Override
-				protected IStatus run(IProgressMonitor monitor) {
+				public IStatus runInWorkspace(IProgressMonitor monitor) {
 					try {
 						op.execute(monitor);
 					} catch (final CoreException e) {
@@ -78,6 +84,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 					IStatus result = cevent.getJob().getResult();
 					if (result.getSeverity() == IStatus.CANCEL)
 						Display.getDefault().asyncExec(new Runnable() {
+							@Override
 							public void run() {
 								// don't use getShell(event) here since
 								// the active shell has changed since the
@@ -96,6 +103,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 								.getException(), true);
 					else
 						Display.getDefault().asyncExec(new Runnable() {
+							@Override
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
@@ -116,5 +124,39 @@ public class MergeActionHandler extends RepositoryActionHandler {
 		return repo != null
 				&& repo.getRepositoryState() == RepositoryState.SAFE
 				&& isLocalBranchCheckedout(repo);
+	}
+
+	/**
+	 * Checks if merge is possible:
+	 * <ul>
+	 * <li>HEAD must point to a branch</li>
+	 * <li>Repository State must be SAFE</li>
+	 * </ul>
+	 * Shows an error dialog if a merge is not possible.
+	 *
+	 * @param repository
+	 *            the repository used for the merge
+	 * @param shell
+	 *            used to show a dialog in the error case
+	 * @return true if a merge is possible on the current HEAD
+	 */
+	public static boolean checkMergeIsPossible(Repository repository, Shell shell) {
+		String message = null;
+		try {
+			Ref head = repository.getRef(Constants.HEAD);
+			if (head == null || !head.isSymbolic())
+				message = UIText.MergeAction_HeadIsNoBranch;
+			else if (!repository.getRepositoryState().equals(
+					RepositoryState.SAFE))
+				message = NLS.bind(UIText.MergeAction_WrongRepositoryState,
+						repository.getRepositoryState());
+		} catch (IOException e) {
+			Activator.logError(e.getMessage(), e);
+			message = e.getMessage();
+		}
+
+		if (message != null)
+			MessageDialog.openError(shell, UIText.MergeAction_CannotMerge, message);
+		return (message == null);
 	}
 }

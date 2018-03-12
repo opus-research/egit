@@ -16,6 +16,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.egit.ui.common.EGitTestCase;
 import org.eclipse.egit.ui.internal.UIText;
@@ -82,8 +83,10 @@ public class GlobalConfigurationPageTest {
 
 	@After
 	public void after() throws Exception {
-		if (preferencePage != null)
+		if (preferencePage != null) {
 			preferencePage.close();
+		}
+		TestUtil.processUIEvents();
 	}
 
 	@AfterClass
@@ -92,6 +95,7 @@ public class GlobalConfigurationPageTest {
 		SWTBotShell preferencePage = new Eclipse().openPreferencePage(null);
 		preferencePage.bot().tree(0).getTreeItem("General").select();
 		preferencePage.bot().button(IDialogConstants.OK_LABEL).click();
+		TestUtil.processUIEvents();
 	}
 
 	@Test
@@ -237,13 +241,37 @@ public class GlobalConfigurationPageTest {
 		// ok: two dots
 		assertTrue(addDialog.bot().button(IDialogConstants.OK_LABEL)
 				.isEnabled());
+	}
+
+	@Test
+	public void testSubsectionWithDot() throws Exception {
+		preferencePage.bot()
+				.button(UIText.ConfigurationEditorComponent_AddButton).click();
+		SWTBotShell addDialog = bot
+				.shell(UIText.AddConfigEntryDialog_AddConfigTitle);
+		addDialog.activate();
+
+		// subsection containing a dot
+		String subsection = TESTSUBSECTION + "." + TESTNAME;
 		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_KeyLabel)
-				.setText(
-						TESTSECTION + "." + TESTSUBSECTION + "." + TESTNAME
-								+ "." + TESTNAME);
-		// too many dots
-		assertTrue(!addDialog.bot().button(IDialogConstants.OK_LABEL)
+				.setText(TESTSECTION + "." + subsection + "." + TESTNAME);
+		addDialog.bot().textWithLabel(UIText.AddConfigEntryDialog_ValueLabel)
+				.setText("true");
+		assertTrue(addDialog.bot().button(IDialogConstants.OK_LABEL)
 				.isEnabled());
+
+		// close the dialog
+		addDialog.bot().button(IDialogConstants.OK_LABEL).click();
+		// close the editor
+		preferencePage.bot().button(IDialogConstants.OK_LABEL).click();
+
+		config.load();
+		assertTrue("Missing section", config.getSections()
+				.contains(TESTSECTION));
+		Set<String> subsections = config.getSubsections(TESTSECTION);
+		assertTrue("Missing subsection", subsections.contains(subsection));
+		assertEquals("Wrong value", "true",
+				config.getString(TESTSECTION, subsection, TESTNAME));
 		addDialog.close();
 	}
 

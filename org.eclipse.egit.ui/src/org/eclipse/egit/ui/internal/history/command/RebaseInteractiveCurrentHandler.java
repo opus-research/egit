@@ -30,6 +30,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class RebaseInteractiveCurrentHandler extends AbstractRebaseHistoryCommandHandler {
 
+	@Override
 	public boolean isEnabled() {
 		final Repository repository = getRepository(getPage());
 		if (repository == null)
@@ -37,9 +38,10 @@ public class RebaseInteractiveCurrentHandler extends AbstractRebaseHistoryComman
 		return repository.getRepositoryState().equals(RepositoryState.SAFE);
 	}
 
+	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 
-		PlotCommit commit = (PlotCommit) getSelection(getPage()).getFirstElement();
+		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
 		final Repository repository = getRepository(event);
 		if (repository == null)
 			return null;
@@ -71,6 +73,7 @@ public class RebaseInteractiveCurrentHandler extends AbstractRebaseHistoryComman
 		return null;
 	}
 
+	@Override
 	protected RebaseOperation createRebaseOperation(Repository repository,
 			Ref ref) {
 		return new RebaseOperation(repository, ref,

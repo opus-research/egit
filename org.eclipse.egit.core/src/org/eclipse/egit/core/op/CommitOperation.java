@@ -175,6 +175,7 @@ public class CommitOperation implements IEGitOperation {
 		return result;
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -183,6 +184,7 @@ public class CommitOperation implements IEGitOperation {
 			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
+			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				if (commitAll)
 					commitAll();
@@ -225,6 +227,7 @@ public class CommitOperation implements IEGitOperation {
 			}
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repo);
 	}
@@ -311,8 +314,7 @@ public class CommitOperation implements IEGitOperation {
 		PersonIdent authorIdent;
 		if (repo.getRepositoryState().equals(
 				RepositoryState.CHERRY_PICKING_RESOLVED)) {
-			RevWalk rw = new RevWalk(repo);
-			try {
+			try (RevWalk rw = new RevWalk(repo)) {
 				ObjectId cherryPickHead = repo.readCherryPickHead();
 				authorIdent = rw.parseCommit(cherryPickHead)
 						.getAuthorIdent();
@@ -321,8 +323,6 @@ public class CommitOperation implements IEGitOperation {
 						.error(CoreText.CommitOperation_ParseCherryPickCommitFailed,
 								e);
 				throw new IllegalStateException(e);
-			} finally {
-				rw.release();
 			}
 		} else {
 			authorIdent = new PersonIdent(enteredAuthor, commitDate, timeZone);

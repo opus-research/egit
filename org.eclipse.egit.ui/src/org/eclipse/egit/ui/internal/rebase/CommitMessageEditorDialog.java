@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2013 SAP AG.
+ * Copyright (c) 2013 SAP AG and others.
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -29,7 +30,7 @@ import org.eclipse.ui.forms.widgets.FormToolkit;
 /**
  * Dialog for editing a commit message
  */
-class CommitMessageEditorDialog extends TitleAreaDialog {
+public class CommitMessageEditorDialog extends TitleAreaDialog {
 
 	private String commitMessage;
 
@@ -40,14 +41,28 @@ class CommitMessageEditorDialog extends TitleAreaDialog {
 	private static final String DIALOG_SETTINGS_SECTION_NAME = Activator
 			.getPluginId() + ".COMMIT_MESSAGE_EDITOR_DIALOG_SECTION"; //$NON-NLS-1$
 
+	private String title;
+
 	/**
 	 * @param parentShell
 	 * @param commitMessage
 	 */
-	CommitMessageEditorDialog(Shell parentShell,
+	public CommitMessageEditorDialog(Shell parentShell,
 			String commitMessage) {
+		this(parentShell, commitMessage,
+				UIText.CommitMessageEditorDialog_EditCommitMessageTitle);
+	}
+
+	/**
+	 * @param parentShell
+	 * @param commitMessage
+	 * @param title
+	 */
+	public CommitMessageEditorDialog(Shell parentShell, String commitMessage,
+			String title) {
 		super(parentShell);
 		this.commitMessage = commitMessage;
+		this.title = title;
 	}
 
 	@Override
@@ -60,6 +75,7 @@ class CommitMessageEditorDialog extends TitleAreaDialog {
 		toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				CommitMessageEditorDialog.this.commitMessage = messageArea
 						.getCommitMessage();
@@ -106,5 +122,11 @@ class CommitMessageEditorDialog extends TitleAreaDialog {
 	 */
 	public String getCommitMessage() {
 		return this.commitMessage;
+	}
+
+	@Override
+	protected void configureShell(Shell newShell) {
+		super.configureShell(newShell);
+		newShell.setText(title);
 	}
 }

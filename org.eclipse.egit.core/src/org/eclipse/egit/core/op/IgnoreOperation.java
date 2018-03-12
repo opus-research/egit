@@ -80,20 +80,23 @@ public class IgnoreOperation implements IEGitOperation {
 		}
 	}
 
+	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		monitor.beginTask(CoreText.IgnoreOperation_taskName, paths.size());
 		try {
 			for (IPath path : paths) {
-				if (monitor.isCanceled())
+				if (monitor.isCanceled()) {
 					break;
+				}
 				// TODO This is pretty inefficient; multiple ignores in
 				// the same directory cause multiple writes.
 
 				// NB This does the same thing in
 				// DecoratableResourceAdapter, but neither currently
 				// consult .gitignore
-				if (!RepositoryUtil.isIgnored(path))
+				if (RepositoryUtil.canBeAutoIgnored(path)) {
 					addIgnore(monitor, path);
+				}
 				monitor.worked(1);
 			}
 			monitor.done();
@@ -114,6 +117,7 @@ public class IgnoreOperation implements IEGitOperation {
 		return gitignoreOutsideWSChanged;
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return schedulingRule;
 	}
@@ -123,14 +127,31 @@ public class IgnoreOperation implements IEGitOperation {
 		IPath parent = path.removeLastSegments(1);
 		IResource resource = ResourceUtil.getResourceForLocation(path);
 		IContainer container = null;
-		if (resource != null)
+		boolean isDirectory = false;
+		if (resource != null) {
+			isDirectory = resource instanceof IContainer;
 			container = resource.getParent();
+		} else
+			isDirectory = path.toFile().isDirectory();
 
-		String entry = "/" + path.lastSegment() + "\n"; //$NON-NLS-1$  //$NON-NLS-2$
+		StringBuilder b = new StringBuilder("/"); //$NON-NLS-1$
+		b.append(path.lastSegment());
+		if (isDirectory)
+			b.append('/');
+		b.append('\n');
+		String entry = b.toString();
 
 		if (container == null || container instanceof IWorkspaceRoot) {
-			Repository repository = RepositoryMapping.getMapping(
-					path).getRepository();
+			RepositoryMapping mapping = RepositoryMapping.getMapping(
+					path);
+			if (mapping == null) {
+				String message = NLS.bind(
+						CoreText.IgnoreOperation_parentOutsideRepo,
+						path.toOSString(), null);
+				IStatus status = Activator.error(message, null);
+				throw new CoreException(status);
+			}
+			Repository repository = mapping.getRepository();
 			// .gitignore is not accessible as resource
 			IPath gitIgnorePath = parent.append(Constants.GITIGNORE_FILENAME);
 			IPath repoPath = new Path(repository.getWorkTree()

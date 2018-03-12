@@ -34,6 +34,7 @@ public class StashCreateOperationTest extends GitTestCase {
 
 	Repository repository;
 
+	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -45,6 +46,7 @@ public class StashCreateOperationTest extends GitTestCase {
 		testRepository.commit("initial commit");
 	}
 
+	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepository.dispose();
@@ -60,9 +62,11 @@ public class StashCreateOperationTest extends GitTestCase {
 		StashCreateOperation stashCreateOperation = new StashCreateOperation(repository);
 		stashCreateOperation.execute(null);
 
-		RevWalk revWalk = new RevWalk(repository);
-		RevCommit commit = revWalk.parseCommit(repository.resolve("stash@{0}"));
-		assertTrue(commit.getFullMessage().length() > 0);
+		try (RevWalk revWalk = new RevWalk(repository)) {
+			RevCommit commit = revWalk
+					.parseCommit(repository.resolve("stash@{0}"));
+			assertTrue(commit.getFullMessage().length() > 0);
+		}
 	}
 
 	@Test
@@ -74,9 +78,28 @@ public class StashCreateOperationTest extends GitTestCase {
 		StashCreateOperation stashCreateOperation = new StashCreateOperation(repository, message);
 		stashCreateOperation.execute(null);
 
-		RevWalk revWalk = new RevWalk(repository);
-		RevCommit commit = revWalk.parseCommit(repository.resolve("stash@{0}"));
-		assertEquals(message, commit.getFullMessage());
+		try (RevWalk revWalk = new RevWalk(repository)) {
+			RevCommit commit = revWalk
+					.parseCommit(repository.resolve("stash@{0}"));
+			assertEquals(message, commit.getFullMessage());
+		}
+	}
+
+	@Test
+	public void testUntrackedFlag() throws Exception {
+		testUtils.addFileToProject(project.getProject(), "foo/untracked.txt",
+				"some text");
+		String message = "stash with untracked files";
+		StashCreateOperation stashCreateOperation = new StashCreateOperation(
+				repository, message, true);
+		stashCreateOperation.execute(null);
+
+		try (RevWalk revWalk = new RevWalk(repository)) {
+			RevCommit commit = revWalk
+					.parseCommit(repository.resolve("stash@{0}"));
+			// untracked commit is the third parent
+			assertEquals(commit.getParentCount(), 3);
+		}
 	}
 
 }

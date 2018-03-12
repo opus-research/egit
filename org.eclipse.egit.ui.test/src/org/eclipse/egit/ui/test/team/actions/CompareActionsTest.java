@@ -14,7 +14,9 @@ package org.eclipse.egit.ui.test.team.actions;
 
 import static org.eclipse.jface.dialogs.MessageDialogWithToggle.NEVER;
 import static org.eclipse.team.internal.ui.IPreferenceIds.SYNCHRONIZING_COMPLETE_PERSPECTIVE;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -54,6 +56,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.team.internal.ui.TeamUIPlugin;
 import org.eclipse.team.ui.synchronize.ISynchronizeManager;
+import org.eclipse.team.ui.synchronize.ISynchronizeView;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -216,14 +219,13 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		clickCompareWith(compareWithIndexActionLabel);
 
 		// compare with index should not have any changes
-		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
-				.getAllItems().length);
+		assertTreeCompareNoChange();
 		// change test file -> should have one change
 		setTestFileContent("Hello there");
 
 		clickCompareWith(compareWithIndexActionLabel);
 
-		waitUntilCompareTreeViewTreeHasNodeCount(1);
+		assertTreeCompareChanges(1);
 
 		// add to index -> no more changes
 		new Git(lookupRepository(repositoryFile)).add().addFilepattern(
@@ -231,8 +233,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		clickCompareWith(compareWithIndexActionLabel);
 
-		assertEquals(0, bot.viewById(CompareTreeView.ID).bot().tree()
-				.getAllItems().length);
+		assertTreeCompareNoChange();
 
 		// reset -> there should be no more changes
 		ResetOperation rop = new ResetOperation(
@@ -242,7 +243,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 		clickCompareWith(compareWithIndexActionLabel);
 
-		waitUntilCompareTreeViewTreeHasNodeCount(0);
+		assertTreeCompareNoChange();
 	}
 
 	@Test
@@ -250,7 +251,7 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		String compareWithHeadMenuLabel = util
 				.getPluginLocalizedValue("CompareWithHeadAction_label");
 		clickCompareWithAndWaitForSync(compareWithHeadMenuLabel);
-
+		closeFirstEmptySynchronizeDialog();
 		assertSynchronizeNoChange();
 
 		// change test file -> should have one change
@@ -308,9 +309,10 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		return projectExplorerTree;
 	}
 
-	private void waitUntilCompareTreeViewTreeHasNodeCount(int nodeCount) {
+	private SWTBotTree waitUntilCompareTreeViewTreeHasNodeCount(int nodeCount) {
 		SWTBotTree tree = bot.viewById(CompareTreeView.ID).bot().tree();
 		bot.waitUntil(Conditions.treeHasRows(tree, nodeCount), 10000);
+		return tree;
 	}
 
 	/**
@@ -329,19 +331,24 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 
 	private void assertSynchronizeNoChange() {
 		// 0 => title, 1 => ?, 2 => "no result" Label
-		SWTBotLabel syncViewLabel = bot.viewByTitle("Synchronize").bot()
-				.label(2);
+		SWTBotLabel syncViewLabel = bot.viewById(ISynchronizeView.VIEW_ID).bot()
+				.label(0);
 
 		String noResultLabel = syncViewLabel.getText();
-		assertTrue(noResultLabel.contains("No changes in 'Git (" + PROJ1
-				+ ")'."));
+		String expected = "No changes in 'Git (" + PROJ1 + ")'.";
+		if (!noResultLabel.contains(expected)) {
+			syncViewLabel = bot.viewById(ISynchronizeView.VIEW_ID).bot().label(2);
+			noResultLabel = syncViewLabel.getText();
+			assertTrue(noResultLabel.contains(expected));
+		}
 	}
 
 	private void assertSynchronizeFile1Changed() {
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		SWTBotTree syncViewTree = bot.viewById(ISynchronizeView.VIEW_ID).bot().tree();
 		SWTBotTreeItem[] syncItems = syncViewTree.getAllItems();
 		assertEquals(syncItems.length, 1);
-		assertTrue(syncItems[0].getText().contains(PROJ1));
+		String text = syncItems[0].getText();
+		assertTrue("Received unexpected text: " + text, text.contains(PROJ1));
 
 		syncItems[0].expand();
 		SWTBotTreeItem[] level1Children = syncItems[0].getItems();
@@ -354,4 +361,18 @@ public class CompareActionsTest extends LocalRepositoryTestCase {
 		assertTrue(level2Children[0].getText().contains(FILE1));
 	}
 
+	private void assertTreeCompareNoChange() {
+		SWTBotTree tree = waitUntilCompareTreeViewTreeHasNodeCount(1);
+		SWTBotTreeItem[] items = tree.getAllItems();
+		assertEquals(1, items.length);
+		assertEquals(UIText.CompareTreeView_NoDifferencesFoundMessage,
+				items[0].getText());
+	}
+
+	private void assertTreeCompareChanges(int nodeCount) {
+		SWTBotTree tree = waitUntilCompareTreeViewTreeHasNodeCount(nodeCount);
+		SWTBotTreeItem[] items = tree.getAllItems();
+		assertThat(items[0].getText(),
+				not(UIText.CompareTreeView_NoDifferencesFoundMessage));
+	}
 }

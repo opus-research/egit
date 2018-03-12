@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.resources.mapping.RemoteResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
@@ -44,7 +45,6 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizeParticipant;
@@ -57,8 +57,6 @@ import org.eclipse.ui.PlatformUI;
  * Utility class that launches model synchronization action
  */
 public class GitModelSynchronize {
-
-	private static final String GIT_PROVIDER_ID = "org.eclipse.egit.core.GitProvider"; //$NON-NLS-1$
 
 	/**
 	 * This can be used to open the synchronize view for the given set of
@@ -226,11 +224,9 @@ public class GitModelSynchronize {
 	private static boolean isMappedToGitProvider(ResourceMapping element) {
 		IProject[] projects = element.getProjects();
 		for (IProject project: projects) {
-			RepositoryProvider provider = RepositoryProvider
-					.getProvider(project);
-
-			if (provider != null && provider.getID().equals(GIT_PROVIDER_ID))
+			if (ResourceUtil.isSharedWithGit(project)) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -240,9 +236,11 @@ public class GitModelSynchronize {
 		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
 				gsdSet);
 
-		Job syncJob = new Job(UIText.GitModelSynchonize_fetchGitDataJobName) {
+		Job syncJob = new WorkspaceJob(
+				UIText.GitModelSynchronize_fetchGitDataJobName) {
+
 			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				subscriber.init(monitor);
 
 				return Status.OK_STATUS;

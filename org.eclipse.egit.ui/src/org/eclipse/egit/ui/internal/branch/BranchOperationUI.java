@@ -12,18 +12,34 @@ package org.eclipse.egit.ui.internal.branch;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.core.model.ISourceLocator;
+import org.eclipse.debug.core.sourcelookup.ISourceContainer;
+import org.eclipse.debug.core.sourcelookup.ISourceLookupDirector;
+import org.eclipse.debug.core.sourcelookup.containers.ProjectSourceContainer;
 import org.eclipse.egit.core.RepositoryUtil;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.IEGitOperation.PostExecuteTask;
 import org.eclipse.egit.core.op.IEGitOperation.PreExecuteTask;
@@ -41,6 +57,8 @@ import org.eclipse.egit.ui.internal.repository.CreateBranchWizard;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
+import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
@@ -49,6 +67,8 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.PlatformUI;
@@ -70,13 +90,15 @@ public class BranchOperationUI {
 
 	private String target;
 
+	private String base;
+
 	/**
 	 * In the case of checkout conflicts, a dialog is shown to let the user
 	 * stash, reset or commit. After that, checkout is tried again. The second
 	 * time we do checkout, we don't want to ask any questions we already asked
 	 * the first time, so this will be false then.
 	 */
-	private final boolean showQuestionAboutTarget;
+	private final boolean showQuestionsBeforeCheckout;
 
 	private final int mode;
 
@@ -108,6 +130,19 @@ public class BranchOperationUI {
 	 */
 	public static BranchOperationUI create(Repository repository) {
 		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
+		return op;
+	}
+
+	/**
+	 * Create an operation for creating a local branch with a given base reference
+	 *
+	 * @param repository
+	 * @param baseRef
+	 * @return the {@link BranchOperationUI}
+	 */
+	public static BranchOperationUI createWithRef(Repository repository, String baseRef) {
+		BranchOperationUI op = new BranchOperationUI(repository, MODE_CREATE);
+		op.base = baseRef;
 		return op;
 	}
 
@@ -161,13 +196,13 @@ public class BranchOperationUI {
 	/**
 	 * @param repository
 	 * @param target
-	 * @param showQuestionAboutTarget
+	 * @param showQuestionsBeforeCheckout
 	 */
 	private BranchOperationUI(Repository repository, String target,
-			boolean showQuestionAboutTarget) {
+			boolean showQuestionsBeforeCheckout) {
 		this.repository = repository;
 		this.target = target;
-		this.showQuestionAboutTarget = showQuestionAboutTarget;
+		this.showQuestionsBeforeCheckout = showQuestionsBeforeCheckout;
 		this.mode = 0;
 	}
 
@@ -180,7 +215,7 @@ public class BranchOperationUI {
 	private BranchOperationUI(Repository repository, int mode) {
 		this.repository = repository;
 		this.mode = mode;
-		this.showQuestionAboutTarget = true;
+		this.showQuestionsBeforeCheckout = true;
 	}
 
 	/**
@@ -194,6 +229,9 @@ public class BranchOperationUI {
 									.getRepositoryState().getDescription()));
 			return;
 		}
+
+		if (shouldCancelBecauseOfRunningLaunches(new NullProgressMonitor()))
+			return;
 
 		askForTargetIfNecessary();
 		if (target == null)
@@ -209,9 +247,10 @@ public class BranchOperationUI {
 		final BranchOperation bop = new BranchOperation(repository, target,
 				!restore);
 
-		Job job = new Job(jobname) {
+		Job job = new WorkspaceJob(jobname) {
+
 			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+			public IStatus runInWorkspace(IProgressMonitor monitor) {
 				try {
 					if (restore) {
 						final BranchProjectTracker tracker = new BranchProjectTracker(
@@ -219,6 +258,7 @@ public class BranchOperationUI {
 						final AtomicReference<IMemento> memento = new AtomicReference<IMemento>();
 						bop.addPreExecuteTask(new PreExecuteTask() {
 
+							@Override
 							public void preExecute(Repository pRepo,
 									IProgressMonitor pMonitor)
 									throws CoreException {
@@ -229,6 +269,7 @@ public class BranchOperationUI {
 						});
 						bop.addPostExecuteTask(new PostExecuteTask() {
 
+							@Override
 							public void postExecute(Repository pRepo,
 									IProgressMonitor pMonitor)
 									throws CoreException {
@@ -260,7 +301,7 @@ public class BranchOperationUI {
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (family.equals(JobFamilies.CHECKOUT))
+				if (JobFamilies.CHECKOUT.equals(family))
 					return true;
 				return super.belongsTo(family);
 			}
@@ -289,6 +330,7 @@ public class BranchOperationUI {
 	public void run(IProgressMonitor monitor) throws CoreException {
 		if (!repository.getRepositoryState().canCheckout()) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					MessageDialog.openError(getShell(),
 							UIText.BranchAction_cannotCheckout, NLS.bind(
@@ -299,6 +341,9 @@ public class BranchOperationUI {
 			});
 			return;
 		}
+
+		if (shouldCancelBecauseOfRunningLaunches(monitor))
+			return;
 
 		askForTargetIfNecessary();
 		if (target == null)
@@ -313,7 +358,7 @@ public class BranchOperationUI {
 	private void askForTargetIfNecessary() {
 		if (target == null)
 			target = getTargetWithDialog();
-		if (target != null && showQuestionAboutTarget) {
+		if (target != null && showQuestionsBeforeCheckout) {
 			if (shouldShowCheckoutRemoteTrackingDialog(target))
 				target = getTargetWithCheckoutRemoteTrackingDialog();
 		}
@@ -337,6 +382,17 @@ public class BranchOperationUI {
 	}
 
 	private String getTargetWithDialog() {
+		final String[] dialogResult = new String[1];
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			@Override
+			public void run() {
+				dialogResult[0] = getTargetWithDialogInUI();
+			}
+		});
+		return dialogResult[0];
+	}
+
+	private String getTargetWithDialogInUI() {
 		AbstractBranchSelectionDialog dialog;
 		switch (mode) {
 		case MODE_CHECKOUT:
@@ -345,7 +401,9 @@ public class BranchOperationUI {
 		case MODE_CREATE:
 			CreateBranchWizard wiz;
 			try {
-				wiz = new CreateBranchWizard(repository, repository.getFullBranch());
+				if (base == null)
+					base = repository.getFullBranch();
+				wiz = new CreateBranchWizard(repository, base);
 			} catch (IOException e) {
 				wiz = new CreateBranchWizard(repository);
 			}
@@ -368,6 +426,17 @@ public class BranchOperationUI {
 	}
 
 	private String getTargetWithCheckoutRemoteTrackingDialog() {
+		final String[] dialogResult = new String[1];
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			@Override
+			public void run() {
+				dialogResult[0] = getTargetWithCheckoutRemoteTrackingDialogInUI();
+			}
+		});
+		return dialogResult[0];
+	}
+
+	private String getTargetWithCheckoutRemoteTrackingDialogInUI() {
 		String[] buttons = new String[] {
 				UIText.BranchOperationUI_CheckoutRemoteTrackingAsLocal,
 				UIText.BranchOperationUI_CheckoutRemoteTrackingCommit,
@@ -407,6 +476,7 @@ public class BranchOperationUI {
 	public void show(final CheckoutResult result) {
 		if (result.getStatus() == CheckoutResult.Status.CONFLICTS) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
@@ -437,6 +507,7 @@ public class BranchOperationUI {
 			if (!show)
 				return;
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					Shell shell = PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getShell();
@@ -452,6 +523,7 @@ public class BranchOperationUI {
 
 	private void showDetachedHeadWarning() {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				IPreferenceStore store = Activator.getDefault()
 						.getPreferenceStore();
@@ -468,6 +540,120 @@ public class BranchOperationUI {
 				}
 			}
 		});
+	}
+
+	private boolean shouldCancelBecauseOfRunningLaunches(
+			IProgressMonitor monitor) {
+		if (mode == MODE_CHECKOUT)
+			return false;
+		if (!showQuestionsBeforeCheckout)
+			return false;
+		final IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+		if (!store
+				.getBoolean(UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING))
+			return false;
+
+		final ILaunchConfiguration launchConfiguration = getRunningLaunchConfiguration(monitor);
+		if (launchConfiguration != null) {
+			final boolean[] dialogResult = new boolean[1];
+			PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+				@Override
+				public void run() {
+					dialogResult[0] = showContinueDialogInUI(store,
+							launchConfiguration);
+				}
+			});
+			return dialogResult[0];
+		}
+		return false;
+	}
+
+	private boolean showContinueDialogInUI(final IPreferenceStore store,
+			final ILaunchConfiguration launchConfiguration) {
+		String[] buttons = new String[] { UIText.BranchOperationUI_Continue,
+				IDialogConstants.CANCEL_LABEL };
+		String message = NLS.bind(
+				UIText.BranchOperationUI_RunningLaunchMessage,
+				launchConfiguration.getName());
+		MessageDialogWithToggle continueDialog = new MessageDialogWithToggle(
+				getShell(), UIText.BranchOperationUI_RunningLaunchTitle, null,
+				message, MessageDialog.NONE, buttons, 0,
+				UIText.BranchOperationUI_RunningLaunchDontShowAgain, false);
+		int result = continueDialog.open();
+		// cancel
+		if (result == IDialogConstants.CANCEL_ID || result == SWT.DEFAULT)
+			return true;
+		boolean dontWarnAgain = continueDialog.getToggleState();
+		if (dontWarnAgain)
+			store.setValue(
+					UIPreferences.SHOW_RUNNING_LAUNCH_ON_CHECKOUT_WARNING,
+					false);
+		return false;
+	}
+
+	private ILaunchConfiguration getRunningLaunchConfiguration(
+			IProgressMonitor monitor) {
+		final ILaunchConfiguration[] lc = new ILaunchConfiguration[1];
+		try {
+			ModalContext.run(new IRunnableWithProgress() {
+
+				@Override
+				public void run(IProgressMonitor m)
+						throws InvocationTargetException, InterruptedException {
+
+					Set<IProject> projects = new HashSet<IProject>(Arrays
+							.asList(ProjectUtil.getProjects(repository)));
+
+					ILaunchManager launchManager = DebugPlugin.getDefault()
+							.getLaunchManager();
+					ILaunch[] launches = launchManager.getLaunches();
+					m.beginTask(
+							UIText.BranchOperationUI_SearchLaunchConfiguration,
+							launches.length);
+					for (ILaunch launch : launches) {
+						m.worked(1);
+						if (launch.isTerminated())
+							continue;
+						ISourceLocator locator = launch.getSourceLocator();
+						if (locator instanceof ISourceLookupDirector) {
+							ISourceLookupDirector director = (ISourceLookupDirector) locator;
+							ISourceContainer[] containers = director
+									.getSourceContainers();
+							if (isAnyProjectInSourceContainers(containers,
+									projects)) {
+								lc[0] = launch.getLaunchConfiguration();
+								return;
+							}
+						}
+					}
+				}
+			}, true, monitor, Display.getDefault());
+		} catch (InvocationTargetException e) {
+			// ignore
+		} catch (InterruptedException e) {
+			// ignore
+		}
+		return lc[0];
+	}
+
+	private boolean isAnyProjectInSourceContainers(
+			ISourceContainer[] containers, Set<IProject> projects) {
+		for (ISourceContainer container : containers) {
+			if (container instanceof ProjectSourceContainer) {
+				ProjectSourceContainer projectContainer = (ProjectSourceContainer) container;
+				if (projects.contains(projectContainer.getProject()))
+					return true;
+			}
+			try {
+				boolean found = isAnyProjectInSourceContainers(
+						container.getSourceContainers(), projects);
+				if (found)
+					return true;
+			} catch (CoreException e) {
+				// Ignore the child source containers, continue search
+			}
+		}
+		return false;
 	}
 
 }

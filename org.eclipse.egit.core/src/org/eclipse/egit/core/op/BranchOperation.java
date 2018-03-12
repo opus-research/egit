@@ -95,6 +95,7 @@ public class BranchOperation extends BaseOperation {
 		this.delete = delete;
 	}
 
+	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -104,6 +105,7 @@ public class BranchOperation extends BaseOperation {
 
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
+			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
 				preExecute(pm);
 
@@ -165,6 +167,7 @@ public class BranchOperation extends BaseOperation {
 				IWorkspace.AVOID_UPDATE, monitor);
 	}
 
+	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRule(repository);
 	}
@@ -232,8 +235,7 @@ public class BranchOperation extends BaseOperation {
 
 		List<IProject> toBeClosed = new ArrayList<IProject>();
 		File root = repository.getWorkTree();
-		TreeWalk walk = new TreeWalk(repository);
-		try {
+		try (TreeWalk walk = new TreeWalk(repository)) {
 			walk.addTree(targetTreeId);
 			walk.addTree(currentTreeId);
 			walk.addTree(new FileTreeIterator(repository));
@@ -261,8 +263,6 @@ public class BranchOperation extends BaseOperation {
 			}
 		} catch (IOException e) {
 			return new IProject[0];
-		} finally {
-			walk.release();
 		}
 		return toBeClosed.toArray(new IProject[toBeClosed.size()]);
 	}

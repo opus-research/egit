@@ -89,6 +89,7 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 		availableColors.add(lane.color);
 	}
 
+	@Override
 	public void widgetDisposed(DisposeEvent e) {
 		dispose();
 	}
@@ -100,16 +101,6 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 
 		public SWTLane(final Color color) {
 			this.color = color;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			return super.equals(o) && color.equals(((SWTLane)o).color);
-		}
-
-		@Override
-		public int hashCode() {
-			return super.hashCode() ^ color.hashCode();
 		}
 	}
 }

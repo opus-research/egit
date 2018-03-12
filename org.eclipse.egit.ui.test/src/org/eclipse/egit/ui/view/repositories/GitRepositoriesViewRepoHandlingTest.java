@@ -73,6 +73,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		waitInUI();
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				Clipboard clp = new Clipboard(Display.getCurrent());
 				clp.clearContents();
@@ -104,6 +105,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				UIText.RepositoriesView_messsageEmpty);
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				Clipboard clip = null;
 				try {
@@ -265,11 +267,26 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						myUtil
 								.getPluginLocalizedValue("RepoViewAddRepository.tooltip"))
 				.click();
+		TestUtil.processUIEvents();
 		SWTBotShell shell = bot
 				.shell(UIText.RepositorySearchDialog_AddGitRepositories);
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
 				.setText(getTestDirectory().getPath());
+
+		assertEquals(0, ModalContext.getModalLevel());
+
 		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
+		TestUtil.processUIEvents(500);
+		int max = 5000;
+		int slept = 0;
+		while (ModalContext.getModalLevel() > 0 && slept < max) {
+			TestUtil.processUIEvents(100);
+			slept += 100;
+		}
+
+		shell.activate();
+		SWTBotTreeItem item = shell.bot().tree().getAllItems()[0];
+		item.check();
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		assertHasRepo(repositoryFile);
@@ -317,10 +334,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		SWTBotShell shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle);
 		IPath newPath = new Path(getTestDirectory().getPath());
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
-				.setText(newPath.toOSString());
-		shell.bot()
-				.textWithLabel(UIText.CreateRepositoryPage_RepositoryNameLabel)
-				.setText("NewRepository");
+				.setText(newPath.append("NewRepository").toOSString());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
 		File repoFile = new File(newPath.append("NewRepository").toFile(),
@@ -334,16 +348,14 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						myUtil.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
 				.click();
 		shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle);
-		newPath = new Path(getTestDirectory().getPath()).append("bare");
-		shell.bot()
-				.textWithLabel(UIText.CreateRepositoryPage_RepositoryNameLabel)
-				.setText("NewBareRepository");
+		newPath = new Path(getTestDirectory().getPath()).append("bare").append(
+				"NewBareRepository");
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
 				.setText(newPath.toOSString());
 		shell.bot().checkBox(UIText.CreateRepositoryPage_BareCheckbox).select();
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		refreshAndWait();
-		repoFile = newPath.append("NewBareRepository").toFile();
+		repoFile = newPath.toFile();
 		myRepoViewUtil.getRootItem(getOrOpenView().bot().tree(), repoFile);
 		assertTrue(myRepoViewUtil.lookupRepository(repoFile).isBare());
 	}
@@ -378,15 +390,17 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
 				.setText(getTestDirectory().getPath());
 
-		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
+		assertEquals(0, ModalContext.getModalLevel());
 
+		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
+		TestUtil.processUIEvents(500);
 		int max = 5000;
 		int slept = 0;
 		while (ModalContext.getModalLevel() > 0 && slept < max) {
-			Thread.sleep(100);
+			TestUtil.processUIEvents(100);
 			slept += 100;
 		}
-
+		shell.activate();
 		TestUtil.waitUntilTreeHasNodeContainsText(shell.bot(), shell.bot()
 				.tree(), "BareRepository1", 10000);
 		TestUtil.waitUntilTreeHasNodeContainsText(shell.bot(), shell.bot()

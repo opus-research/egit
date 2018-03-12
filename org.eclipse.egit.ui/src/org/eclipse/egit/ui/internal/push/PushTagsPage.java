@@ -15,10 +15,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.egit.ui.internal.components.CachedCheckboxTreeViewer;
+import org.eclipse.egit.ui.internal.components.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.SelectionType;
 import org.eclipse.egit.ui.internal.repository.RepositoriesViewContentProvider;
@@ -81,6 +81,7 @@ public class PushTagsPage extends WizardPage {
 		}
 	}
 
+	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(GridLayoutFactory.swtDefaults()
@@ -97,6 +98,7 @@ public class PushTagsPage extends WizardPage {
 				.setItems(getRemoteConfigs());
 		remoteSelectionCombo
 				.addRemoteSelectionListener(new RemoteSelectionCombo.IRemoteSelectionListener() {
+					@Override
 					public void remoteSelected(RemoteConfig remoteConfig) {
 						selectedRemoteConfig = remoteConfig;
 					}
@@ -119,6 +121,7 @@ public class PushTagsPage extends WizardPage {
 		forceUpdateButton.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).span(2, 1).create());
 		forceUpdateButton.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				forceUpdateSelected = forceUpdateButton.getSelection();
 			}
@@ -139,6 +142,7 @@ public class PushTagsPage extends WizardPage {
 		initiallySelectTags(tagNodes, treeViewer);
 
 		treeViewer.addCheckStateListener(new ICheckStateListener() {
+			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				setSelectedTags(treeViewer.getCheckedElements());
 			}

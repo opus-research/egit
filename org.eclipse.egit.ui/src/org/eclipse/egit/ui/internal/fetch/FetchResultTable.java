@@ -16,6 +16,7 @@ import java.util.Map;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.DecorationOverlayDescriptor;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.WorkbenchStyledLabelProvider;
@@ -29,6 +30,7 @@ import org.eclipse.jface.util.OpenStrategy;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
+import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StyledString;
@@ -72,10 +74,12 @@ class FetchResultTable {
 			this.update = update;
 		}
 
+		@Override
 		public String getLabel(Object object) {
 			return getStyledText(object).getString();
 		}
 
+		@Override
 		public ImageDescriptor getImageDescriptor(Object object) {
 			switch (update.getResult()) {
 			case IO_FAILURE:
@@ -85,6 +89,17 @@ class FetchResultTable {
 				return PlatformUI.getWorkbench().getSharedImages()
 						.getImageDescriptor(ISharedImages.IMG_OBJS_ERROR_TSK);
 			case FORCED:
+				if (isPruned()) {
+					ImageDescriptor icon = UIIcons.BRANCH;
+					if (update.getLocalName().startsWith(Constants.R_TAGS))
+						icon = UIIcons.TAG;
+					if (update.getLocalName().startsWith(Constants.R_NOTES))
+						icon = UIIcons.NOTE;
+					return new DecorationOverlayDescriptor(icon,
+							UIIcons.OVR_STAGED_REMOVE, IDecoration.TOP_RIGHT);
+				}
+				// else
+				//$FALL-THROUGH$
 			case RENAMED:
 			case FAST_FORWARD:
 				if (update.getRemoteName().startsWith(Constants.R_HEADS))
@@ -123,15 +138,19 @@ class FetchResultTable {
 					StyledString.COUNTER_STYLER);
 		}
 
+		@Override
 		public Object[] getChildren(Object object) {
 			if (children != null)
 				return children;
 
 			switch (update.getResult()) {
 			case FORCED:
+				if (isPruned())
+					return NO_CHILDREN;
+				// else
+				//$FALL-THROUGH$
 			case FAST_FORWARD:
-				RevWalk walk = new RevWalk(reader);
-				try {
+				try (RevWalk walk = new RevWalk(reader)) {
 					walk.setRetainBody(true);
 					walk.markStart(walk.parseCommit(update.getNewObjectId()));
 					walk.markUninteresting(walk.parseCommit(update
@@ -144,8 +163,6 @@ class FetchResultTable {
 				} catch (IOException e) {
 					Activator.logError(
 							"Error parsing commits from fetch result", e); //$NON-NLS-1$
-				} finally {
-					walk.release();
 				}
 				//$FALL-THROUGH$
 			default:
@@ -164,6 +181,7 @@ class FetchResultTable {
 			return NoteMap.shortenRefName(Repository.shortenRefName(ref));
 		}
 
+		@Override
 		public StyledString getStyledText(Object object) {
 			StyledString styled = new StyledString();
 			final String remote = update.getRemoteName();
@@ -193,7 +211,11 @@ class FetchResultTable {
 							StyledString.DECORATIONS_STYLER);
 				break;
 			case FORCED:
-				addCommits(styled, "..."); //$NON-NLS-1$
+				if (isPruned())
+					styled.append(UIText.FetchResultTable_statusPruned,
+							StyledString.DECORATIONS_STYLER);
+				else
+					addCommits(styled, "..."); //$NON-NLS-1$
 				break;
 			case FAST_FORWARD:
 				addCommits(styled, ".."); //$NON-NLS-1$
@@ -210,6 +232,10 @@ class FetchResultTable {
 				break;
 			}
 			return styled;
+		}
+
+		private boolean isPruned() {
+			return update.getNewObjectId().equals(ObjectId.zeroId());
 		}
 	}
 
@@ -233,6 +259,7 @@ class FetchResultTable {
 
 		final IStyledLabelProvider styleProvider = new WorkbenchStyledLabelProvider() {
 
+			@Override
 			public StyledString getStyledText(Object element) {
 				// TODO Replace with use of IWorkbenchAdapter3 when is no longer
 				// supported
@@ -271,6 +298,7 @@ class FetchResultTable {
 		});
 		treeViewer.setSorter(new ViewerSorter() {
 
+			@Override
 			public int compare(Viewer viewer, Object e1, Object e2) {
 				if (e1 instanceof FetchResultAdapter
 						&& e2 instanceof FetchResultAdapter) {
@@ -304,17 +332,18 @@ class FetchResultTable {
 		ColumnViewerToolTipSupport.enableFor(treeViewer);
 		final Tree tree = treeViewer.getTree();
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree);
-		tree.setLinesVisible(true);
 
 		treePanel.addDisposeListener(new DisposeListener() {
+			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				if (reader != null)
-					reader.release();
+					reader.close();
 			}
 		});
 
 		treeViewer.setContentProvider(new WorkbenchContentProvider() {
 
+			@Override
 			public Object[] getElements(Object inputElement) {
 				if (inputElement == null)
 					return new FetchResultAdapter[0];
@@ -328,12 +357,23 @@ class FetchResultTable {
 				return elements;
 			}
 
+			@Override
 			public Object[] getChildren(Object element) {
-				if (element instanceof RepositoryCommit)
+				if (element instanceof RepositoryCommit) {
 					return ((RepositoryCommit) element).getDiffs();
+				}
 				return super.getChildren(element);
 			}
 
+			@Override
+			public boolean hasChildren(Object element) {
+				if (element instanceof RepositoryCommit) {
+					// always return true for commits to avoid commit diff
+					// calculation in UI thread, see bug 458839
+					return true;
+				}
+				return super.hasChildren(element);
+			}
 		});
 
 		new OpenAndLinkWithEditorHelper(treeViewer) {

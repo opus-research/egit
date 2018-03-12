@@ -26,14 +26,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.clone.ProjectRecord;
 import org.eclipse.egit.ui.internal.clone.ProjectUtils;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.WorkbenchException;
 import org.eclipse.ui.XMLMemento;
@@ -131,16 +130,19 @@ class BranchProjectTracker {
 		final String workDir = repository.getWorkTree().getAbsolutePath();
 		for (IProject project : projects) {
 			IPath path = project.getLocation();
-			if (path == null)
+			if (path == null) {
 				continue;
+			}
 			// Only remember mapped projects
-			if (!(RepositoryProvider.getProvider(project) instanceof GitProvider))
+			if (!ResourceUtil.isSharedWithGit(project)) {
 				continue;
+			}
 			String fullPath = path.toOSString();
 			if (fullPath.startsWith(workDir)) {
 				String relative = fullPath.substring(workDir.length());
-				if (relative.length() == 0)
+				if (relative.length() == 0) {
 					relative = REPO_ROOT;
+				}
 				IMemento child = memento.createChild(KEY_PROJECT);
 				child.putTextData(relative);
 			}
@@ -266,8 +268,7 @@ class BranchProjectTracker {
 		else
 			importMonitor = new NullProgressMonitor();
 		try {
-			ProjectUtils.createProjects(records, true, repository, null,
-					importMonitor);
+			ProjectUtils.createProjects(records, true, null, importMonitor);
 		} catch (InvocationTargetException e) {
 			Activator
 					.logError("Error restoring branch-project associations", e); //$NON-NLS-1$

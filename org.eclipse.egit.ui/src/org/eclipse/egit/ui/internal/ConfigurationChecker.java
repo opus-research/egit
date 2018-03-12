@@ -18,7 +18,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.PlatformUI;
@@ -41,12 +40,17 @@ public class ConfigurationChecker {
 		Job job = new Job(UIText.ConfigurationChecker_checkConfiguration) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				PlatformUI.getWorkbench().getDisplay()
-						.asyncExec(new Runnable() {
-							public void run() {
-								check();
-							}
-						});
+				if (PlatformUI.isWorkbenchRunning()) {
+					PlatformUI.getWorkbench().getDisplay()
+							.asyncExec(new Runnable() {
+								@Override
+								public void run() {
+									check();
+								}
+							});
+				} else {
+					schedule(1000L);
+				}
 				return Status.OK_STATUS;
 			}
 		};
@@ -54,18 +58,7 @@ public class ConfigurationChecker {
 	}
 
 	private static void check() {
-		checkGitPrefix();
 		checkHome();
-	}
-
-	private static void checkGitPrefix() {
-		IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-		boolean hidden = !store
-				.getBoolean(UIPreferences.SHOW_GIT_PREFIX_WARNING);
-		if (!hidden && FS.DETECTED.gitPrefix() == null)
-			Activator.handleIssue(IStatus.WARNING,
-					UIText.ConfigurationChecker_gitPrefixWarningMessage, null,
-					false);
 	}
 
 	private static void checkHome() {

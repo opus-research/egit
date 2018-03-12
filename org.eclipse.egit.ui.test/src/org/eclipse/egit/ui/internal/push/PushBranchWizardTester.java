@@ -1,11 +1,14 @@
 /*******************************************************************************
- * Copyright (c) 2013 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (c) 2013, 2014 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -15,8 +18,8 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
@@ -29,9 +32,8 @@ public class PushBranchWizardTester {
 
 	public static PushBranchWizardTester startWizard(SWTBotTree projectTree,
 			String branchName) {
-		TestUtil util = new TestUtil();
-		String pushBranchMenu = util
-				.getPluginLocalizedValue("PushBranchAction.label");
+		String pushBranchMenu = NLS
+				.bind(UIText.PushMenu_PushBranch, branchName);
 		ContextMenuHelper.clickContextMenu(projectTree, "Team", pushBranchMenu);
 		return forBranchName(branchName);
 	}
@@ -86,8 +88,16 @@ public class PushBranchWizardTester {
 	}
 
 	public void enterBranchName(String branchName) {
-		wizard.textWithLabel(UIText.PushBranchPage_BranchNameLabel).setText(
+		wizard.textWithLabel(UIText.PushBranchPage_RemoteBranchNameLabel)
+				.setText(
 				branchName);
+	}
+
+	public void assertBranchName(String branchName) {
+		assertEquals(branchName,
+				wizard.textWithLabel(
+						UIText.PushBranchPage_RemoteBranchNameLabel)
+						.getText());
 	}
 
 	public void deselectConfigureUpstream() {
@@ -105,6 +115,29 @@ public class PushBranchWizardTester {
 		wizard.checkBox(UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
 				.select();
 		wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio).click();
+	}
+
+	public void assertConfigureUpstreamSelected() {
+		assertTrue(wizard.checkBox(
+				UIText.UpstreamConfigComponent_ConfigureUpstreamCheck)
+				.isChecked());
+	}
+
+	public void assertMergeSelected() {
+		assertConfigureUpstreamSelected();
+		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_MergeRadio)
+				.isSelected());
+	}
+
+	public void assertRebaseSelected() {
+		assertConfigureUpstreamSelected();
+		assertTrue(wizard.radio(UIText.UpstreamConfigComponent_RebaseRadio)
+				.isSelected());
+	}
+
+	public boolean isUpstreamConfigOverwriteWarningShown() {
+		return wizard.text(1).getText()
+				.contains(UIText.PushBranchPage_UpstreamConfigOverwriteWarning);
 	}
 
 	public void next() {

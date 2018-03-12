@@ -13,6 +13,7 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,14 +55,24 @@ import org.eclipse.ui.model.WorkbenchAdapter;
  */
 public class FileDiff extends WorkbenchAdapter {
 
+	/**
+	 * Comparator for sorting FileDiffs based on getPath().
+	 */
+	public static final Comparator<FileDiff> PATH_COMPARATOR = new Comparator<FileDiff>() {
+		@Override
+		public int compare(FileDiff o1, FileDiff o2) {
+			return o1.getPath().compareTo(o2.getPath());
+		}
+	};
+
 	private final RevCommit commit;
 
 	private DiffEntry diffEntry;
 
-	private static ObjectId[] trees(final RevCommit commit) {
-		final ObjectId[] r = new ObjectId[commit.getParentCount() + 1];
+	static ObjectId[] trees(final RevCommit commit, final RevCommit[] parents) {
+		final ObjectId[] r = new ObjectId[parents.length + 1];
 		for (int i = 0; i < r.length - 1; i++)
-			r[i] = commit.getParent(i).getTree().getId();
+			r[i] = parents[i].getTree().getId();
 		r[r.length - 1] = commit.getTree().getId();
 		return r;
 	}
@@ -85,11 +96,36 @@ public class FileDiff extends WorkbenchAdapter {
 			final TreeWalk walk, final RevCommit commit,
 			final TreeFilter... markTreeFilters) throws MissingObjectException,
 			IncorrectObjectTypeException, CorruptObjectException, IOException {
+		return compute(repository, walk, commit, commit.getParents(),
+				markTreeFilters);
+	}
+
+	/**
+	 * Computer file diffs for specified tree walk and commit
+	 *
+	 * @param repository
+	 * @param walk
+	 * @param commit
+	 * @param parents
+	 * @param markTreeFilters
+	 *            optional filters for marking entries, see
+	 *            {@link #isMarked(int)}
+	 * @return non-null but possibly empty array of file diffs
+	 * @throws MissingObjectException
+	 * @throws IncorrectObjectTypeException
+	 * @throws CorruptObjectException
+	 * @throws IOException
+	 */
+	public static FileDiff[] compute(final Repository repository,
+			final TreeWalk walk, final RevCommit commit,
+			final RevCommit[] parents,
+			final TreeFilter... markTreeFilters) throws MissingObjectException,
+			IncorrectObjectTypeException, CorruptObjectException, IOException {
 		final ArrayList<FileDiff> r = new ArrayList<FileDiff>();
 
-		if (commit.getParentCount() > 0)
-			walk.reset(trees(commit));
-		else {
+		if (parents.length > 0) {
+			walk.reset(trees(commit, parents));
+		} else {
 			walk.reset();
 			walk.addTree(new EmptyTreeIterator());
 			walk.addTree(commit.getTree());
@@ -195,11 +231,8 @@ public class FileDiff extends WorkbenchAdapter {
 			return;
 		}
 
-		ObjectReader reader = db.newObjectReader();
-		try {
+		try (ObjectReader reader = db.newObjectReader()) {
 			outputEclipseDiff(d, db, reader, diffFmt);
-		} finally {
-			reader.release();
 		}
 	}
 
@@ -345,7 +378,8 @@ public class FileDiff extends WorkbenchAdapter {
 	/**
 	 * Whether the mark tree filter with the specified index matched during scan
 	 * or not, see
-	 * {@link #compute(Repository, TreeWalk, RevCommit, TreeFilter...)}.
+	 * {@link #compute(Repository, TreeWalk, RevCommit, RevCommit[], TreeFilter...)}
+	 * .
 	 *
 	 * @param index
 	 *            the tree filter index to check
@@ -379,6 +413,7 @@ public class FileDiff extends WorkbenchAdapter {
 				|| diffEntry.getNewMode() == FileMode.GITLINK;
 	}
 
+	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		final ImageDescriptor base;
 		if (!isSubmodule())
@@ -400,6 +435,7 @@ public class FileDiff extends WorkbenchAdapter {
 		}
 	}
 
+	@Override
 	public String getLabel(Object object) {
 		return getPath();
 	}

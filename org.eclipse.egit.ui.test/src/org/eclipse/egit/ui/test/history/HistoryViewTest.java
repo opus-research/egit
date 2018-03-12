@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.test.history;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +30,7 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -45,6 +47,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTableItem;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarToggleButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.team.ui.history.IHistoryView;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -170,7 +173,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	private void initFilter(int filter) throws Exception {
 		getHistoryViewTable(PROJ1);
 		SWTBotView view = bot
-				.viewById("org.eclipse.team.ui.GenericHistoryView");
+				.viewById(IHistoryView.VIEW_ID);
 		SWTBotToolbarToggleButton folder = (SWTBotToolbarToggleButton) view
 				.toolbarButton(UIText.GitHistoryPage_AllInParentTooltip);
 		SWTBotToolbarToggleButton project = (SWTBotToolbarToggleButton) view
@@ -243,20 +246,23 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 			explorerItem = TestUtil.getChildNode(childItem.expand(), path[2]);
 		}
 		explorerItem.select();
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Show In",
-				"History");
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
+				"Show in History");
 		// join GenerateHistoryJob
 		Job.getJobManager().join(JobFamilies.GENERATE_HISTORY, null);
 		// join UI update triggered by GenerateHistoryJob
 		projectExplorerTree.widget.getDisplay().syncExec(new Runnable() {
-
+			@Override
 			public void run() {
 				// empty
 			}
 		});
-		String genericHistoryViewId = "org.eclipse.team.ui.GenericHistoryView";
-		TestUtil.waitUntilViewWithGivenIdShows(genericHistoryViewId);
-		return bot.viewById(genericHistoryViewId).bot().table();
+
+		return getHistoryViewBot().table();
+	}
+
+	private SWTBot getHistoryViewBot() {
+		return TestUtil.showHistoryView().bot();
 	}
 
 	@Test
@@ -274,6 +280,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		// for some reason, checkboxwithlabel doesn't seem to work
 		dialog.bot().checkBox().deselect();
 		dialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		assertNotNull(repo.resolve(Constants.R_HEADS + "NewBranch"));
 	}
 
@@ -287,6 +294,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				TableItem tableItem = table.widget.getSelection()[0];
 				ensureTableItemLoaded(tableItem);
@@ -344,6 +352,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				TableItem tableItem = table.widget.getSelection()[0];
 				ensureTableItemLoaded(tableItem);
@@ -359,6 +368,31 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 		assertEquals(1, dialog.tree().getAllItems()[0].rowCount());
 		assertTrue(dialog.tree().getAllItems()[0].getItems()[0].getText()
 				.startsWith(FILE1));
+	}
+
+	@Test
+	public void testOpenOfDeletedFile() throws Exception {
+		Git git = Git.wrap(lookupRepository(repoFile));
+		git.rm().addFilepattern(FILE1_PATH).call();
+		RevCommit commit = git.commit().setMessage("Delete file").call();
+
+		SWTBotTable commitsTable = getHistoryViewTable(PROJ1);
+		assertEquals(commitCount + 1, commitsTable.rowCount());
+		commitsTable.select(0);
+
+		SWTBot viewBot = getHistoryViewBot();
+		SWTBotTable fileDiffTable = viewBot.table(1);
+		assertEquals(1, fileDiffTable.rowCount());
+
+		fileDiffTable.select(0);
+		assertFalse(fileDiffTable.contextMenu(
+				UIText.CommitFileDiffViewer_OpenInEditorMenuLabel).isEnabled());
+		fileDiffTable.contextMenu(
+				UIText.CommitFileDiffViewer_OpenPreviousInEditorMenuLabel)
+				.click();
+
+		// Editor for old file version should be opened
+		bot.editorByTitle(FILE1 + " " + commit.getParent(0).getName());
 	}
 
 	@Test
@@ -380,6 +414,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 
 		Display.getDefault().syncExec(new Runnable() {
 
+			@Override
 			public void run() {
 				TableItem tableItem = table.widget.getSelection()[0];
 				ensureTableItemLoaded(tableItem);
@@ -406,7 +441,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 	private void toggleShowAllBranchesButton(boolean checked) throws Exception{
 		getHistoryViewTable(PROJ1);
 		SWTBotView view = bot
-				.viewById("org.eclipse.team.ui.GenericHistoryView");
+				.viewById(IHistoryView.VIEW_ID);
 		SWTBotToolbarToggleButton showAllBranches = (SWTBotToolbarToggleButton) view
 				.toolbarButton(UIText.GitHistoryPage_showAllBranches);
 		boolean isChecked = showAllBranches.isChecked();

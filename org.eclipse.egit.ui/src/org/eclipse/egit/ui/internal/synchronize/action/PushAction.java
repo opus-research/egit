@@ -48,6 +48,7 @@ public class PushAction extends SynchronizeModelAction {
 	protected SynchronizeModelOperation getSubscriberOperation(
 			ISynchronizePageConfiguration configuration, IDiffElement[] elements) {
 		return new SynchronizeModelOperation(configuration, elements) {
+			@Override
 			public void run(IProgressMonitor monitor) throws InvocationTargetException,
 					InterruptedException {
 				runPushOperation();
@@ -71,7 +72,7 @@ public class PushAction extends SynchronizeModelAction {
 				.getProperty(SYNCHRONIZATION_DATA);
 
 		for (GitSynchronizeData gsd : gsds) {
-			String remoteName = gsd.getSrcRemoteName();
+			String remoteName = gsd.getDstRemoteName();
 			if (remoteName == null)
 				continue;
 
