@@ -186,8 +186,7 @@ public class SpellcheckableMessageAreaTest {
 	}
 
 	private static String wrap(String text, String lineDelimiter) {
-		String wrapped = SpellcheckableMessageArea
-				.hardWrap(Utils.normalizeLineEndings(text));
+		String wrapped = SpellcheckableMessageArea.hardWrap(Utils.normalizeLineEndings(text));
 		return wrapped.replaceAll("\n", lineDelimiter);
 	}
 
