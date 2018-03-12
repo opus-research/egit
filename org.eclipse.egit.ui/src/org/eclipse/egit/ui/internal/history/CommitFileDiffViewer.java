@@ -32,7 +32,6 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.DND;
@@ -104,15 +103,7 @@ class CommitFileDiffViewer extends TableViewer {
 			IWorkbenchPage page = window.getActivePage();
 			IFileRevision rev = CompareUtils.getFileRevision(d.path, d.commit,
 					db, d.blobs[0]);
-			if (rev != null)
-				EgitUiEditorUtils.openEditor(page, rev,
-						new NullProgressMonitor());
-			else {
-				String message = NLS.bind(
-						UIText.CommitFileDiffViewer_notContainedInCommit, d.path,
-						d.commit.getId().getName());
-				Activator.showError(message, null);
-			}
+			EgitUiEditorUtils.openEditor(page, rev, new NullProgressMonitor());
 		} catch (IOException e) {
 			Activator.logError(UIText.GitHistoryPage_openFailed, e);
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);

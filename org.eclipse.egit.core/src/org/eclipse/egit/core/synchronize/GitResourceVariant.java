@@ -24,7 +24,7 @@ import org.eclipse.team.core.variants.IResourceVariant;
 
 abstract class GitResourceVariant implements IResourceVariant {
 
-	private final String variantPath;
+	private final String path;
 
 	private final Repository repo;
 
@@ -52,10 +52,10 @@ abstract class GitResourceVariant implements IResourceVariant {
 		TreeWalk tw = getTreeWalk(repo, revCommit.getTree(), path);
 		if (tw == null) {
 			objectId = null;
-			this.variantPath = null;
+			this.path = null;
 		} else {
 			objectId = tw.getObjectId(0);
-			this.variantPath = new String(tw.getRawPath());
+			this.path = new String(tw.getRawPath());
 		}
 	}
 
@@ -64,12 +64,12 @@ abstract class GitResourceVariant implements IResourceVariant {
 	}
 
 	public String getName() {
-		if (name == null && variantPath != null) {
-			int lastSeparator = variantPath.lastIndexOf('/');
+		if (name == null && path != null) {
+			int lastSeparator = path.lastIndexOf('/');
 			if (lastSeparator > -1)
-				name = variantPath.substring(lastSeparator + 1);
+				name = path.substring(lastSeparator + 1);
 			else
-				name = variantPath;
+				name = path;
 		}
 
 		return name;
@@ -90,12 +90,12 @@ abstract class GitResourceVariant implements IResourceVariant {
 
 	@Override
 	public String toString() {
-		return variantPath + "(" + objectId.getName() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+		return path + "(" + objectId.getName() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/**
 	 *
-	 * @param repository
+	 * @param repo
 	 * @param revTree
 	 *            base commit
 	 * @param path
@@ -105,7 +105,7 @@ abstract class GitResourceVariant implements IResourceVariant {
 	 * @throws IOException
 	 *             when something goes wrong during tree walk initialization
 	 */
-	protected abstract TreeWalk getTreeWalk(Repository repository, RevTree revTree,
+	protected abstract TreeWalk getTreeWalk(Repository repo, RevTree revTree,
 			String path) throws IOException;
 
 	protected ObjectId getObjectId() {
@@ -121,12 +121,12 @@ abstract class GitResourceVariant implements IResourceVariant {
 	}
 
 	protected String getPath() {
-		return variantPath;
+		return path;
 	}
 
 	protected IPath getFullPath() {
 		if (fullPath == null)
-			fullPath = new Path(variantPath);
+			fullPath = new Path(path);
 
 		return fullPath;
 	}
