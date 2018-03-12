@@ -104,9 +104,7 @@ public class CommitEditorInputFactory implements IElementFactory {
 				walk.parseBody(parent);
 			RepositoryCommit repositoryCommit = new RepositoryCommit(
 					repository, commit);
-			Boolean isStash = memento.getBoolean(STASH);
-			if (isStash != null)
-				repositoryCommit.setStash(isStash.booleanValue());
+			repositoryCommit.setStash(memento.getBoolean(STASH).booleanValue());
 			return repositoryCommit;
 		} catch (IOException e) {
 			return null;
