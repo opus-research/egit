@@ -82,9 +82,11 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 
 	@Override
 	protected SWTLane createLane() {
+		final SWTLane lane = new SWTLane();
 		if (availableColors.isEmpty())
 			repackColors();
-		return new SWTLane(availableColors.removeFirst());
+		lane.color = availableColors.removeFirst();
+		return lane;
 	}
 
 	@Override
@@ -99,12 +101,7 @@ class SWTCommitList extends PlotCommitList<SWTCommitList.SWTLane> implements Dis
 	static class SWTLane extends PlotLane {
 		private static final long serialVersionUID = 1L;
 
-		final Color color;
-
-		public SWTLane(final Color color) {
-			this.color = color;
-		}
-
+		Color color;
 		@Override
 		public boolean equals(Object o) {
 			return super.equals(o) && color.equals(((SWTLane)o).color);
