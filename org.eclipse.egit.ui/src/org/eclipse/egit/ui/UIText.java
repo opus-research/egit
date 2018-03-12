@@ -665,6 +665,18 @@ public class UIText extends NLS {
 	public static String CheckoutHandler_SelectBranchTitle;
 
 	/** */
+	public static String CherryPickHandler_NoCherryPickPerformedMessage;
+
+	/** */
+	public static String CherryPickHandler_NoCherryPickPerformedTitle;
+
+	/** */
+	public static String CherryPickOperation_Failed;
+
+	/** */
+	public static String CherryPickOperation_InternalError;
+
+	/** */
 	public static String CompareWithIndexAction_FileNotInIndex;
 
 	/** */
@@ -1796,16 +1808,10 @@ public class UIText extends NLS {
 	public static String FetchAction_wrongURIMessage;
 
 	/** */
-	public static String FetchConfiguredRemoteAction_FetchJobName;
-
-	/** */
 	public static String FetchConfiguredRemoteAction_NoSpecsDefinedMessage;
 
 	/** */
 	public static String FetchConfiguredRemoteAction_NoUrisDefinedMessage;
-
-	/** */
-	public static String FetchConfiguredRemoteAction_TransportErrorDuringFetchMessage;
 
 	/** */
 	public static String FetchResultDialog_labelEmptyResult;
@@ -2719,6 +2725,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RenameBranchCommand_WrongNameMessage;
+
+	/** */
+	public static String RevertHandler_AlreadyRevertedMessae;
+
+	/** */
+	public static String RevertHandler_NoRevertTitle;
+
+	/** */
+	public static String RevertOperation_Failed;
+
+	/** */
+	public static String RevertOperation_InternalError;
 
 	/** */
 	public static String SelectSynchronizeResourceDialog_header;

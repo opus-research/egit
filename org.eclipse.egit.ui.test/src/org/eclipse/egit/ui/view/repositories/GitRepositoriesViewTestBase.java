@@ -46,7 +46,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
@@ -183,11 +182,10 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		myRepository.getConfig().save();
 		// and push
-		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
 		PushConfiguredRemoteAction pa = new PushConfiguredRemoteAction(
-				myRepository, config, 0);
+				myRepository, "push");
 
-		pa.execute(null);
+		pa.run(null, false);
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		try {
 			// delete the stable branch again
