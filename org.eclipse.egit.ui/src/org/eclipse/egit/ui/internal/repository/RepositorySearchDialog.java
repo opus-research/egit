@@ -25,29 +25,23 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
+import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
-import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.CheckboxTreeViewer;
+import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.IColorProvider;
-import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
@@ -60,34 +54,30 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Searches for Git directories under a path that can be selected by the user
  */
-public class RepositorySearchDialog extends TitleAreaDialog {
+public class RepositorySearchDialog extends Dialog {
 
 	private static final String PREF_DEEP_SEARCH = "RepositorySearchDialogDeepSearch"; //$NON-NLS-1$
 
 	private static final String PREF_PATH = "RepositorySearchDialogSearchPath"; //$NON-NLS-1$
 
-	private final Set<String> fExistingDirectories = new HashSet<String>();
+	private final Set<String> existingRepositoryDirs = new HashSet<String>();
 
-	private Set<String> fResult;
+	private Set<String> result;
 
-	private FilteredCheckboxTree fTree;
+	CheckboxTableViewer tv;
 
-	private CheckboxTreeViewer fTreeViewer;
+	private Button btnToggleSelect;
 
-	private Button fSelectAllButton;
+	private Table tab;
 
-	private Button fDeselectAllButton;
-
-	private final ResourceManager fImageCache = new LocalResourceManager(JFaceResources
-			.getResources());
-
-	private final class ContentProvider implements ITreeContentProvider {
+	private final class ContentProvider implements IStructuredContentProvider {
 
 		@SuppressWarnings("unchecked")
 		public Object[] getElements(Object inputElement) {
@@ -102,32 +92,16 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 			// nothing
 		}
 
-		public Object[] getChildren(Object parentElement) {
-			// nothing
-			return null;
-		}
-
-		public Object getParent(Object element) {
-			// nothing
-			return null;
-		}
-
-		public boolean hasChildren(Object element) {
-			// nothing
-			return false;
-		}
-
 	}
 
-	private final class RepositoryLabelProvider extends LabelProvider implements IColorProvider {
+	private final class LabelProvider extends BaseLabelProvider implements
+			ITableLabelProvider, IColorProvider {
 
-		@Override
-		public Image getImage(Object element) {
-			return fImageCache.createImage(UIIcons.REPOSITORY);
+		public Image getColumnImage(Object element, int columnIndex) {
+			return null;
 		}
 
-		@Override
-		public String getText(Object element) {
+		public String getColumnText(Object element, int columnIndex) {
 			return element.toString();
 		}
 
@@ -136,14 +110,10 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 		}
 
 		public Color getForeground(Object element) {
-			if (fExistingDirectories.contains(element))
+			if (existingRepositoryDirs.contains(element))
 				return getShell().getDisplay().getSystemColor(SWT.COLOR_GRAY);
 
 			return null;
-		}
-
-		public void dispose() {
-			fImageCache.dispose();
 		}
 
 	}
@@ -155,7 +125,7 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 	public RepositorySearchDialog(Shell parentShell,
 			Collection<String> existingDirs) {
 		super(parentShell);
-		this.fExistingDirectories.addAll(existingDirs);
+		this.existingRepositoryDirs.addAll(existingDirs);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 	}
 
@@ -164,31 +134,28 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 	 * @return the directories
 	 */
 	public Set<String> getDirectories() {
-		return fResult;
+		return result;
 	}
 
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		newShell.setText(UIText.RepositorySearchDialog_searchRepositories);
-		setTitleImage(fImageCache.createImage(UIIcons.WIZBAN_IMPORT_REPO));
 	}
 
 	@Override
 	protected void okPressed() {
-		fResult = new HashSet<String>();
-		Object[] checked = fTreeViewer.getCheckedElements();
+		result = new HashSet<String>();
+		Object[] checked = tv.getCheckedElements();
 		for (Object o : checked) {
-			fResult.add((String) o);
+			result.add((String) o);
 		}
 		super.okPressed();
 	}
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
-		super.createDialogArea(parent);
-		setTitle(UIText.RepositorySearchDialog_searchRepositories);
-		setMessage(UIText.RepositorySearchDialog_searchRepositoriesMessage);
+
 		final IEclipsePreferences prefs = new InstanceScope().getNode(Activator
 				.getPluginId());
 
@@ -231,24 +198,22 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 
 		});
 
-		fTree = new FilteredCheckboxTree(main, null, SWT.BORDER);
-		fTreeViewer = fTree.getCheckboxTreeViewer();
-		GridDataFactory.fillDefaults().grab(true, true).span(4, 1).minSize(0, 300).applyTo(fTree);
-		fTree.setEnabled(false);
+		// we fill the room under the "Directory" label
+		new Label(main, SWT.NONE);
 
-		final Button lookForNestedButton = new Button(main, SWT.CHECK);
-		lookForNestedButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER,
+		final Button btnLookForNested = new Button(main, SWT.CHECK);
+		btnLookForNested.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER,
 				false, false, 2, 1));
-		lookForNestedButton
+		btnLookForNested
 				.setSelection(prefs.getBoolean(PREF_DEEP_SEARCH, false));
-		lookForNestedButton
+		btnLookForNested
 				.setText(UIText.RepositorySearchDialog_DeepSearch_button);
 
-		lookForNestedButton.addSelectionListener(new SelectionAdapter() {
+		btnLookForNested.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				prefs.putBoolean(PREF_DEEP_SEARCH, lookForNestedButton
+				prefs.putBoolean(PREF_DEEP_SEARCH, btnLookForNested
 						.getSelection());
 				try {
 					prefs.flush();
@@ -259,48 +224,57 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 
 		});
 
+		Button search = new Button(main, SWT.PUSH);
+		search.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false,
+				1, 1));
+		search.setText(UIText.RepositorySearchDialog_search);
 
-		fSelectAllButton = new Button(main, SWT.NONE);
-		fSelectAllButton.setLayoutData(new GridData(SWT.RIGHT, SWT.TOP, false,
+		tv = CheckboxTableViewer.newCheckList(main, SWT.BORDER);
+		tab = tv.getTable();
+		tab.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1));
+		tab.setEnabled(false);
+
+		btnToggleSelect = new Button(main, SWT.NONE);
+		btnToggleSelect.setLayoutData(new GridData(SWT.FILL, SWT.TOP, false,
 				false, 1, 1));
-		fSelectAllButton
-				.setText(UIText.RepositorySearchDialog_SelectAll_button);
-		fSelectAllButton.setEnabled(false);
-		fSelectAllButton.addSelectionListener(new SelectionAdapter() {
+		btnToggleSelect
+				.setText(UIText.RepositorySearchDialog_ToggleSelection_button);
+		btnToggleSelect.setEnabled(false);
+		btnToggleSelect.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				fTreeViewer.setAllChecked(true);
+
+				for (int i = 0; i < tab.getItemCount(); i++) {
+					if (!existingRepositoryDirs.contains(tv.getElementAt(i)))
+						tv.setChecked(tv.getElementAt(i), !tv.getChecked(tv
+								.getElementAt(i)));
+				}
 				getButton(IDialogConstants.OK_ID).setEnabled(
-						fTreeViewer.getCheckedElements().length > 0);
+						tv.getCheckedElements().length > 0);
 			}
 		});
 
-		fDeselectAllButton = new Button(main, SWT.NONE);
-		fDeselectAllButton.setLayoutData(new GridData(SWT.RIGHT, SWT.TOP, false,
-				false, 1, 1));
-		fDeselectAllButton
-				.setText(UIText.RepositorySearchDialog_DeselectAll_button);
-		fDeselectAllButton.setEnabled(false);
-		fDeselectAllButton.addSelectionListener(new SelectionAdapter() {
+		tv.addCheckStateListener(new ICheckStateListener() {
+
+			public void checkStateChanged(CheckStateChangedEvent event) {
+				if (existingRepositoryDirs.contains(event.getElement()))
+					event.getCheckable().setChecked(event.getElement(), false);
+				getButton(IDialogConstants.OK_ID).setEnabled(
+						tv.getCheckedElements().length > 0);
+			}
+		});
+
+		tv.setContentProvider(new ContentProvider());
+		tv.setLabelProvider(new LabelProvider());
+
+		search.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				fTreeViewer.setAllChecked(false);
-				getButton(IDialogConstants.OK_ID).setEnabled(
-						fTreeViewer.getCheckedElements().length > 0);
-			}
-		});
-
-		// TODO this isn't the most optimal way of handling this... ideally we should have some type of delay
-		// if we could use databinding an observeDelayedValue would totally work here
-		dir.addModifyListener(new ModifyListener() {
-
-			public void modifyText(ModifyEvent e) {
-				// perform the search...
 				final TreeSet<String> directories = new TreeSet<String>();
 				final File file = new File(dir.getText());
-				final boolean lookForNested = lookForNestedButton.getSelection();
+				final boolean lookForNested = btnLookForNested.getSelection();
 				if (file.exists()) {
 					try {
 						prefs.put(PREF_PATH, file.getCanonicalPath());
@@ -350,34 +324,29 @@ public class RepositorySearchDialog extends TitleAreaDialog {
 					boolean foundNew = false;
 
 					for (String foundDir : directories) {
-						if (!fExistingDirectories.contains(foundDir)) {
+						if (!existingRepositoryDirs.contains(foundDir)) {
 							foundNew = true;
 							break;
 						}
 					}
 
-					fSelectAllButton.setEnabled(foundNew);
-					fDeselectAllButton.setEnabled(foundNew);
-					fTree.setEnabled(directories.size() > 0);
-					fTreeViewer.setInput(directories);
+					btnToggleSelect.setEnabled(foundNew);
+					tab.setEnabled(directories.size() > 0);
+					tv.setInput(directories);
 				}
 			}
+
 		});
-
-		fTreeViewer.addCheckStateListener(new ICheckStateListener() {
-
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				if (fExistingDirectories.contains(event.getElement()))
-					event.getCheckable().setChecked(event.getElement(), false);
-				getButton(IDialogConstants.OK_ID).setEnabled(
-						fTreeViewer.getCheckedElements().length > 0);
-			}
-		});
-
-		fTreeViewer.setContentProvider(new ContentProvider());
-		fTreeViewer.setLabelProvider(new RepositoryLabelProvider());
 
 		return main;
+	}
+
+	@Override
+	protected Control createButtonBar(Composite parent) {
+		// disable the OK button until the user selects something
+		Control bar = super.createButtonBar(parent);
+		getButton(IDialogConstants.OK_ID).setEnabled(false);
+		return bar;
 	}
 
 	private void findGitDirsRecursive(File root, TreeSet<String> strings,
