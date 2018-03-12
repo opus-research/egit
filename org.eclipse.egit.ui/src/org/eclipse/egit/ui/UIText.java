@@ -88,6 +88,15 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_enableGit;
 
 	/** */
+	public static String SelectRemoteNamePage_ConfigureFetch_button;
+
+	/** */
+	public static String SelectRemoteNamePage_ConfigurePush_button;
+
+	/** */
+	public static String SelectRemoteNamePage_MustConfigureSomething_message;
+
+	/** */
 	public static String SelectRemoteNamePage_NameInUseMessage;
 
 	/** */
@@ -182,6 +191,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitDocument_errorResolveQuickdiff;
+
+	/** */
+	public static String GitHistoryPage_compareMode;
 
 	/** */
 	public static String GitHistoryPage_CompareVersions;
@@ -988,6 +1000,33 @@ public class UIText extends NLS {
 	public static String ConfigureRemoteWizard_WizardTitle_New;
 
 	/** */
+	public static String ConfigureUriPage_Add_button;
+
+	/** */
+	public static String ConfigureUriPage_Change_button;
+
+	/** */
+	public static String ConfigureUriPage_ConfigureFetch_pagetitle;
+
+	/** */
+	public static String ConfigureUriPage_ConfigurePush_pagetitle;
+
+	/** */
+	public static String ConfigureUriPage_FetchUri_label;
+
+	/** */
+	public static String ConfigureUriPage_MissingUri_message;
+
+	/** */
+	public static String ConfigureUriPage_MissingUris_message;
+
+	/** */
+	public static String ConfigureUriPage_ParsingProblem_message;
+
+	/** */
+	public static String ConfigureUriPage_Remove_button;
+
+	/** */
 	public static String CommitDialog_ValueHelp_Message;
 
 	/** */
@@ -1267,10 +1306,7 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_ErrorCouldNotRenameRef2;
 
 	/** */
-	public static String BranchSelectionDialog_BranchSelectionDialog_CreateBranchFailedTitle;
-
-	/** */
-	public static String BranchSelectionDialog_BranchSelectionDialog_CreateTagFailedTitle;
+	public static String BranchSelectionDialog_BranchSelectionDialog_CreateFailedTitle;
 
 	/** */
 	public static String BranchSelectionDialog_BranchSelectionDialog_RenamedFailedTitle;
@@ -1315,19 +1351,10 @@ public class UIText extends NLS {
 	public static String BranchSelectionDialog_QuestionNewBranchNameMessage;
 
 	/** */
-	public static String BranchSelectionDialog_QuestionNewTagNameMessage;
-
-	/** */
 	public static String BranchSelectionDialog_QuestionNewBranchMessage;
 
 	/** */
-	public static String BranchSelectionDialog_QuestionNewTagMessage;
-
-	/** */
 	public static String BranchSelectionDialog_NewBranch;
-
-	/** */
-	public static String BranchSelectionDialog_NewTag;
 
 	/** */
 	public static String BranchSelectionDialog_ErrorAlreadyExists;
@@ -1489,6 +1516,9 @@ public class UIText extends NLS {
 	public static String RepositoriesView_Checking_Message;
 
 	/** */
+	public static String RepositoriesView_CheckingOutMessage;
+
+	/** */
 	public static String RepositoriesView_CheckOut_MenuItem;
 
 	/** */
@@ -1511,6 +1541,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_ConfirmProjectDeletion_WindowTitle;
+
+	/** */
+	public static String RepositoriesView_CreateFetch_menu;
+
+	/** */
+	public static String RepositoriesView_CreatePush_menu;
 
 	/** */
 	public static String RepositoriesView_Error_WindowTitle;
@@ -1555,6 +1591,12 @@ public class UIText extends NLS {
 	public static String RepositoriesView_Remove_MenuItem;
 
 	/** */
+	public static String RepositoriesView_RemoveFetch_menu;
+
+	/** */
+	public static String RepositoriesView_RemovePush_menu;
+
+	/** */
 	public static String RepositoriesView_RemoveRemoteMenu;
 
 	/** */
@@ -1589,27 +1631,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String UIIcons_errorLoadingPluginImage;
-
-	/** */
-	public static String TagInputDialog_ErrorAlreadyExists;
-
-	/** */
-	public static String TagInputDialog_ErrorCouldNotResolve;
-
-	/** */
-	public static String TagInputDialog_ErrorInvalidRefName;
-
-	/** */
-	public static String TagInputDialog_QuestionNewTagTitle;
-
-	/** */
-	public static String TagInputDialog_TagMessage;
-
-	/** */
-	public static String TagInputDialog_ErrorNoMessage;
-
-	/** */
-	public static String TagInputDialog_ErrorMustEnterCommitMessage;
 
 	static {
 		initializeMessages("org.eclipse.egit.ui.uitext", UIText.class); //$NON-NLS-1$

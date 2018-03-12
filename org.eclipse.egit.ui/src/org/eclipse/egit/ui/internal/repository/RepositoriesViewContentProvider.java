@@ -12,7 +12,9 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,6 +36,7 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 
@@ -164,6 +167,19 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 				return null;
 
 			File[] childFiles = workingDir.listFiles();
+			Arrays.sort(childFiles, new Comparator<File>() {
+				public int compare(File o1, File o2) {
+					if (o1.isDirectory()) {
+						if (o2.isDirectory()) {
+							return o1.compareTo(o2);
+						}
+						return -1;
+					} else if (o2.isDirectory()) {
+						return 1;
+					}
+					return o1.compareTo(o2);
+				}
+			});
 			for (File file : childFiles) {
 				if (file.isDirectory()) {
 					children.add(new RepositoryTreeNode<File>(node,
@@ -183,6 +199,19 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 			File parent = ((File) node.getObject());
 
 			File[] childFiles = parent.listFiles();
+			Arrays.sort(childFiles, new Comparator<File>() {
+				public int compare(File o1, File o2) {
+					if (o1.isDirectory()) {
+						if (o2.isDirectory()) {
+							return o1.compareTo(o2);
+						}
+						return -1;
+					} else if (o2.isDirectory()) {
+						return 1;
+					}
+					return o1.compareTo(o2);
+				}
+			});
 			for (File file : childFiles) {
 				if (file.isDirectory()) {
 					children.add(new RepositoryTreeNode<File>(node,
@@ -196,9 +225,48 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 			return children.toArray();
 		}
 
-		default:
-			return null;
+		case REMOTE: {
+
+			List<RepositoryTreeNode<String>> children = new ArrayList<RepositoryTreeNode<String>>();
+
+			String remoteName = (String) node.getObject();
+			RemoteConfig rc;
+			try {
+				rc = new RemoteConfig(node.getRepository().getConfig(),
+						remoteName);
+			} catch (URISyntaxException e) {
+				return null;
+			}
+
+			if (!rc.getURIs().isEmpty())
+				children.add(new RepositoryTreeNode<String>(node,
+						RepositoryTreeNodeType.FETCH, node.getRepository(), rc
+								.getURIs().get(0).toPrivateString()));
+
+			if (!rc.getPushURIs().isEmpty())
+				if (rc.getPushURIs().size() == 1)
+					children.add(new RepositoryTreeNode<String>(node,
+							RepositoryTreeNodeType.PUSH, node.getRepository(),
+							rc.getPushURIs().get(0).toPrivateString()));
+				else
+					children.add(new RepositoryTreeNode<String>(node,
+							RepositoryTreeNodeType.PUSH, node.getRepository(),
+							rc.getPushURIs().get(0).toPrivateString() + "...")); //$NON-NLS-1$
+
+			return children.toArray();
+
 		}
+
+		case FILE: // fall through
+		case REF: // fall through
+		case PUSH: // fall through
+		case PROJ: // fall through
+		case FETCH:
+			return null;
+
+		}
+
+		return null;
 
 	}
 
@@ -221,8 +289,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider {
 		if (monitor.isCanceled()) {
 			return false;
 		}
-		monitor.subTask(NLS.bind(
-				UIText.RepositoriesView_Checking_Message,
+		monitor.subTask(NLS.bind(UIText.RepositoriesView_Checking_Message,
 				directory.getPath()));
 		File[] contents = directory.listFiles();
 		if (contents == null)
