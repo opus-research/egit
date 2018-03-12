@@ -346,36 +346,37 @@ public class CommitActionHandler extends RepositoryActionHandler {
 		FileReader reader;
 		try {
 			reader = new FileReader(mergeMsg);
+			BufferedReader br = new BufferedReader(reader);
+			try {
+				StringBuffer message = new StringBuffer();
+				String s;
+				String newLine = newLine();
+				while ((s = br.readLine()) != null) {
+					message.append(s).append(newLine);
+				}
+				return message.toString();
+			} catch (IOException e) {
+				MessageDialog.openError(getShell(event),
+						UIText.CommitAction_MergeHeadErrorTitle,
+						UIText.CommitAction_ErrorReadingMergeMsg);
+				throw new IllegalStateException(e);
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					// Empty
+				}
+			}
 		} catch (FileNotFoundException e) {
 			MessageDialog.openError(getShell(event),
 					UIText.CommitAction_MergeHeadErrorTitle,
 					UIText.CommitAction_MergeHeadErrorMessage);
 			throw new IllegalStateException(e);
 		}
-		BufferedReader br = new BufferedReader(reader);
-		StringBuffer message = new StringBuffer();
-		String s;
-		String newLine = newLine();
-		try {
-			while ((s = br.readLine()) != null) {
-				message.append(s).append(newLine);
-			}
-		} catch (IOException e) {
-			MessageDialog.openError(getShell(event),
-					UIText.CommitAction_MergeHeadErrorTitle,
-					UIText.CommitAction_ErrorReadingMergeMsg);
-			throw new IllegalStateException(e);
-		}
-		return message.toString();
 	}
 
-	private String newLine(){
-		if(System.getProperty("os.name").indexOf("Windows") != -1){ //$NON-NLS-1$ //$NON-NLS-2$
-			return "\r\n"; //$NON-NLS-1$
-		}
-		else {
-			return "\n"; //$NON-NLS-1$
-		}
+	private String newLine() {
+		return System.getProperty("line.separator"); //$NON-NLS-1$
 	}
 
 }

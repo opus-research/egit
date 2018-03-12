@@ -161,7 +161,6 @@ public class CreateTagDialog extends Dialog {
 
 		public void dispose() {
 			fImageCache.dispose();
-			super.dispose();
 		}
 
 	}
