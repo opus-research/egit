@@ -8,7 +8,6 @@
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Added context menu to the Commit Editor's header text
- *    Tomasz Zarna <Tomasz.Zarna@pl.ibm.com> - Add "Revert" action to Commit Editor
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
@@ -21,7 +20,6 @@ import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler;
 import org.eclipse.egit.ui.internal.commit.command.CreateTagHandler;
 import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
-import org.eclipse.egit.ui.internal.commit.command.RevertHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
@@ -192,7 +190,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
 		toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
 		toolbar.add(createCommandContributionItem(CherryPickHandler.ID));
-		toolbar.add(createCommandContributionItem(RevertHandler.ID));
 		addContributions(toolbar);
 		toolbar.update(true);
 		getSite().setSelectionProvider(new ISelectionProvider() {
@@ -249,9 +246,10 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 	 */
 	public void init(IEditorSite site, IEditorInput input)
 			throws PartInitException {
-		if (input.getAdapter(RepositoryCommit.class) == null)
+		if (input.getAdapter(RepositoryCommit.class) == null) {
 			throw new PartInitException(
 					"Input could not be adapted to commit object"); //$NON-NLS-1$
+		}
 		super.init(site, input);
 		setPartName(input.getName());
 		setTitleToolTip(input.getToolTipText());
