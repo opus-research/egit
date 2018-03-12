@@ -19,7 +19,6 @@ import org.eclipse.compare.IContentChangeNotifier;
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
@@ -48,12 +47,14 @@ import org.eclipse.ui.PlatformUI;
  * of the repository.
  */
 public class CompareWithIndexActionHandler extends RepositoryActionHandler {
-
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final IResource resource = getSelectedResources(event)[0];
+		// assert all resources map to the same repository
+		if (getRepository(true, event) == null)
+			return null;
+		final IResource[] resources = getSelectedResources(event);
 
-		if (resource instanceof IFile) {
-			final IFile baseFile = (IFile) resource;
+		if (resources.length == 1 && resources[0] instanceof IFile) {
+			final IFile baseFile = (IFile) resources[0];
 			final ITypedElement base = SaveableCompareEditorInput
 					.createFileElement(baseFile);
 
@@ -70,13 +71,13 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 			final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
 					base, next, null);
 			CompareUI.openCompareEditor(in);
-		} else if (resource instanceof IContainer) {
+		} else {
 			CompareTreeView view;
 			try {
 				view = (CompareTreeView) PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getActivePage().showView(
 								CompareTreeView.ID);
-				view.setInput(resource, CompareTreeView.INDEX_VERSION);
+				view.setInput(resources, CompareTreeView.INDEX_VERSION);
 			} catch (PartInitException e) {
 				Activator.handleError(e.getMessage(), e, true);
 			}
@@ -165,14 +166,6 @@ public class CompareWithIndexActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public boolean isEnabled() {
-		final IResource[] selectedResources = getSelectedResources();
-		if (selectedResources.length != 1)
-			return false;
-
-		final IResource resource = selectedResources[0];
-		final RepositoryMapping mapping = RepositoryMapping.getMapping(resource
-				.getProject());
-		return mapping != null;
+		return getRepository() != null;
 	}
-
 }
