@@ -134,7 +134,7 @@ public class GitModelTree extends GitModelCommit {
 
 			while (tw.next()) {
 				GitModelObject obj = getModelObject(tw, ancestorCommit, ancestorNth,
-						remoteNth, baseNth);
+						baseNth, remoteNth);
 				if (obj != null)
 					result.add(obj);
 			}
