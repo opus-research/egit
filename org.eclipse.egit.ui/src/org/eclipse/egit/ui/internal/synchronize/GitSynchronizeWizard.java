@@ -70,7 +70,7 @@ public class GitSynchronizeWizard extends Wizard {
 						repo, HEAD, branchesEntry.getValue(),
 						shouldIncludeLocal);
 				Set<IContainer> containers = getSelectedContainers(repo);
-				if (containers != null && containers.size() > 0)
+				if (containers != null)
 					data.setIncludedPaths(containers);
 				gsdSet.add(data);
 			} catch (IOException e) {
@@ -107,7 +107,7 @@ public class GitSynchronizeWizard extends Wizard {
 					continue;
 
 				int type = res.getType();
-				if (type == IResource.FOLDER) {
+				if (type == IResource.FOLDER || type == IResource.PROJECT) {
 					Repository selRepo = RepositoryMapping.getMapping(res)
 							.getRepository();
 					if (workTree.equals(selRepo.getWorkTree()))
