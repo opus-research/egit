@@ -69,7 +69,8 @@ public class PushActionTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	@Ignore // should be fixed with http://egit.eclipse.org/r/#change,1413
+	@Ignore
+	// TODO fails because of a NPE
 	public void testPushToPushDestination() throws Exception {
 		pushTo("push", true);
 		pushTo("push", false);

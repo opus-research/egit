@@ -185,17 +185,13 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 				}
 				return refName;
 			case WORKINGDIR:
-				StyledString dirString = new StyledString(
-						UIText.RepositoriesView_WorkingDir_treenode);
+				StyledString dirString = new StyledString(UIText.RepositoriesView_WorkingDir_treenode);
 				dirString.append(" - ", StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
-				if (node.getRepository().isBare()) {
-					dirString
-							.append(
-									UIText.RepositoriesViewLabelProvider_BareRepositoryMessage,
-									StyledString.QUALIFIER_STYLER);
+				if (node.getRepository().getConfig().getBoolean(
+						"core", "bare", false)) { //$NON-NLS-1$ //$NON-NLS-2$
+					dirString.append(UIText.RepositoriesViewLabelProvider_BareRepositoryMessage, StyledString.QUALIFIER_STYLER);
 				} else {
-					dirString.append(node.getRepository().getWorkTree()
-							.getAbsolutePath(), StyledString.QUALIFIER_STYLER);
+					dirString.append(node.getRepository().getWorkTree().getAbsolutePath(), StyledString.QUALIFIER_STYLER);
 				}
 				return dirString;
 			case PUSH:
@@ -279,13 +275,14 @@ public class RepositoriesViewLabelProvider extends LabelProvider implements ISty
 			}
 			return refName;
 		case WORKINGDIR:
-			if (node.getRepository().isBare())
+			if (node.getRepository().getConfig().getBoolean(
+					"core", "bare", false)) //$NON-NLS-1$ //$NON-NLS-2$
 				return UIText.RepositoriesView_WorkingDir_treenode
-						+ " - " //$NON-NLS-1$
-						+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
+				+ " - " //$NON-NLS-1$
+				+ UIText.RepositoriesViewLabelProvider_BareRepositoryMessage;
 			else
 				return UIText.RepositoriesView_WorkingDir_treenode + " - " //$NON-NLS-1$
-						+ node.getRepository().getWorkTree().getAbsolutePath();
+				+ node.getRepository().getWorkTree().getAbsolutePath();
 		case PUSH:
 			// fall through
 		case FETCH:
