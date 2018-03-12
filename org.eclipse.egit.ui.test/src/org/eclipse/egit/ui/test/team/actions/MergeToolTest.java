@@ -20,7 +20,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.op.MergeOperation;
-import org.eclipse.egit.ui.common.CompareEditorTester;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -30,7 +29,10 @@ import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
+import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.After;
@@ -93,10 +95,11 @@ public class MergeToolTest extends LocalRepositoryTestCase {
 		shell.bot().radio(UIText.MergeModeDialog_MergeMode_2_Label).click();
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
 
-		CompareEditorTester compareEditor = CompareEditorTester
-				.forTitleContaining("Merging");
+		SWTBotEditor editor = bot.editorById("org.eclipse.compare.CompareEditor");
+		SWTBotStyledText styledText = editor.bot().styledText(0);
+		bot.waitUntil(Conditions.widgetIsEnabled(styledText));
 
-		String text = compareEditor.getLeftEditor().getText();
+		String text = styledText.getText();
 		assertThat(text, is("master"));
 	}
 }
