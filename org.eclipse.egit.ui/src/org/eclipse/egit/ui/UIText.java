@@ -445,6 +445,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_OpenMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_PreferencesLink;
+
+	/** */
 	public static String GitHistoryPage_ProjectType;
 
 	/** */
@@ -667,6 +670,18 @@ public class UIText extends NLS {
 	public static String RebaseTargetSelectionDialog_RebaseTitle;
 
 	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceButton;
+
+	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceMessage;
+
+	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceTitle;
+
+	/** */
+	public static String ReplaceTargetSelectionDialog_ReplaceWindowTitle;
+
+	/** */
 	public static String RepositoryPropertySource_EditConfigButton;
 
 	/** */
@@ -887,6 +902,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoryAction_multiRepoSelectionTitle;
+
+	/** */
+	public static String RepositoryCommit_UserAndDate;
 
 	/** */
 	public static String RepositorySearchDialog_browse;
@@ -2059,6 +2077,9 @@ public class UIText extends NLS {
 	public static String PushResultTable_columnMode;
 
 	/** */
+	public static String PushResultTable_MesasgeText;
+
+	/** */
 	public static String PushResultTable_statusUnexpected;
 
 	/** */
@@ -2236,13 +2257,13 @@ public class UIText extends NLS {
 	public static String FetchResultDialog_title;
 
 	/** */
-	public static String FetchResultTable_columnDst;
+	public static String FetchResultTable_collapseAll;
 
 	/** */
-	public static String FetchResultTable_columnSrc;
+	public static String FetchResultTable_counterCommits;
 
 	/** */
-	public static String FetchResultTable_columnStatus;
+	public static String FetchResultTable_expandAll;
 
 	/** */
 	public static String FetchResultTable_statusDetailCouldntLock;
@@ -3065,6 +3086,12 @@ public class UIText extends NLS {
 	public static String CommitActionHandler_repository;
 
 	/** */
+	public static String CommitEditor_couldNotShowRepository;
+
+	/** */
+	public static String CommitEditor_showGitRepo;
+
+	/** */
 	public static String CommitEditor_TitleHeader;
 
 	/** */
@@ -3306,6 +3333,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RefreshPreferencesPage_RefreshWhenIndexChange;
+
+	/** */
+	public static String RefUpdateElement_CommitCountDecoration;
+
+	/** */
+	public static String RefUpdateElement_CommitRangeDecoration;
+
+	/** */
+	public static String RefUpdateElement_UrisDecoration;
 
 	/** */
 	public static String RemoteSelectionCombo_destinationName;

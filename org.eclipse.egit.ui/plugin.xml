@@ -814,9 +814,6 @@
                     <adapt
                         type="org.eclipse.core.resources.mapping.ResourceMapping">
                     </adapt>
-                    <adapt
-                        type="org.eclipse.ui.IContributorResourceAdapter">
-                    </adapt>
                   </or>
                </iterate>
             </and>
@@ -3730,25 +3727,25 @@
      <variable
 	   description="%GitVariable_git_dir"
 	   name="git_dir"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable_git_repo_relative_path"
 	   name="git_repo_relative_path"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable__git_work_tree_description"
 	   name="git_work_tree"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
      <variable
 	   description="%GitVariable_git_branch_description"
 	   name="git_branch"
-	   resolver="org.eclipse.egit.ui.variables.GitVariableResolver"
+	   resolver="org.eclipse.egit.ui.internal.variables.GitVariableResolver"
 	   supportsArgument="true">
      </variable>
   </extension>
