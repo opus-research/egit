@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, 2012 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,10 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.core.AdapterUtils;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.ui.Activator;
@@ -29,7 +30,6 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.egit.ui.internal.synchronize.GitSynchronizeWizard;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -148,9 +148,9 @@ public class SynchronizeWithMenu extends ContributionItem implements
 					try {
 						data = new GitSynchronizeData(repo, HEAD, name, true);
 						if (!(selectedResource instanceof IProject)) {
-							HashSet<IResource> resources = new HashSet<IResource>();
-							resources.add(selectedResource);
-							data.setIncludedResources(resources);
+							HashSet<IContainer> containers = new HashSet<IContainer>();
+							containers.add((IContainer) selectedResource);
+							data.setIncludedPaths(containers);
 						}
 
 						GitModelSynchronize.launch(data, new IResource[] { selectedResource });
@@ -182,9 +182,9 @@ public class SynchronizeWithMenu extends ContributionItem implements
 		});
 	}
 
-	@Override
 	public void initialize(IServiceLocator serviceLocator) {
-		srv = CommonUtils.getService(serviceLocator, ISelectionService.class);
+		srv = (ISelectionService) serviceLocator
+				.getService(ISelectionService.class);
 	}
 
 	@Override
@@ -197,16 +197,21 @@ public class SynchronizeWithMenu extends ContributionItem implements
 		branchImage.dispose();
 	}
 
-	@Nullable
 	private IResource getSelection() {
 		ISelection sel = srv.getSelection();
 
-		if (!(sel instanceof IStructuredSelection)) {
+		if (!(sel instanceof IStructuredSelection))
 			return null;
-		}
 
 		Object selected = ((IStructuredSelection) sel).getFirstElement();
-		return AdapterUtils.adapt(selected, IResource.class);
+		if (selected instanceof IAdaptable)
+			return (IResource) ((IAdaptable) selected)
+					.getAdapter(IResource.class);
+
+		if (selected instanceof IResource)
+			return (IResource) selected;
+
+		return null;
 	}
 
 	private boolean excludeTag(Ref ref, Repository repo) {
@@ -219,7 +224,6 @@ public class SynchronizeWithMenu extends ContributionItem implements
 			} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
 			} finally {
-				rw.close();
 				rw.dispose();
 			}
 		}

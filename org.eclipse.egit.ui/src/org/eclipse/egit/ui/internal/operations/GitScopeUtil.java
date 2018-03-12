@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Tasktop Technologies Inc. and others.
- * Copyright (C) 2015, Obeo.
+ * Copyright (C) 2011, Tasktop Technologies Inc.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -21,16 +20,14 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.team.core.subscribers.Subscriber;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.ui.IContributorResourceAdapter;
 import org.eclipse.ui.IWorkbenchPart;
@@ -64,20 +61,13 @@ public class GitScopeUtil {
 		if (resources == null)
 			return new IResource[0];
 		IResource[] resourcesInScope;
-		// Only builds the logical model if the preference holds true
-		if (Activator.getDefault().getPreferenceStore()
-				.getBoolean(UIPreferences.USE_LOGICAL_MODEL)) {
-
-			try {
-				resourcesInScope = findRelatedChanges(part, resources);
-			} catch (InvocationTargetException e) {
-				Activator.handleError(
-						UIText.CommitActionHandler_errorBuildingScope,
-						e.getCause(), true);
-				// fallback to initial resource set
-				resourcesInScope = resources;
-			}
-		} else {
+		try {
+			resourcesInScope = findRelatedChanges(part, resources);
+		} catch (InvocationTargetException e) {
+			Activator.handleError(
+					UIText.CommitActionHandler_errorBuildingScope,
+					e.getCause(), true);
+			// fallback to initial resource set
 			resourcesInScope = resources;
 		}
 		return resourcesInScope;
@@ -88,37 +78,38 @@ public class GitScopeUtil {
 	 * {@link IResource}s
 	 *
 	 * @param resources
-	 * @param monitor
 	 * @return {@link SubscriberScopeManager}
 	 */
 	private static SubscriberScopeManager createScopeManager(
-			final IResource[] resources, IProgressMonitor monitor) {
+			final IResource[] resources) {
 		ResourceMapping[] mappings = GitScopeUtil
 				.getResourceMappings(resources);
 		GitSynchronizeDataSet set = new GitSynchronizeDataSet();
-		final GitResourceVariantTreeSubscriber subscriber = new GitResourceVariantTreeSubscriber(
-				set);
-		monitor.setTaskName(UIText.GitModelSynchronize_fetchGitDataJobName);
-		subscriber.init(monitor);
+		Subscriber subscriber = new GitResourceVariantTreeSubscriber(set);
 		SubscriberScopeManager manager = new SubscriberScopeManager(
 				UIText.GitScopeOperation_GitScopeManager, mappings, subscriber,
 				true);
 		return manager;
 	}
 
-	@Nullable
 	private static ResourceMapping getResourceMapping(Object o) {
-		ResourceMapping mapping = AdapterUtils.adapt(o, ResourceMapping.class);
-		if (mapping != null) {
-			return mapping;
-		}
+		if (o instanceof ResourceMapping)
+			return (ResourceMapping) o;
 		if (o instanceof IAdaptable) {
-			IContributorResourceAdapter adapted = AdapterUtils.adapt(o,
-					IContributorResourceAdapter.class);
+			IAdaptable adaptable = (IAdaptable) o;
+			Object adapted = adaptable.getAdapter(ResourceMapping.class);
+			if (adapted instanceof ResourceMapping)
+				return (ResourceMapping) adapted;
+			adapted = adaptable.getAdapter(IContributorResourceAdapter.class);
 			if (adapted instanceof IContributorResourceAdapter2) {
 				IContributorResourceAdapter2 cra = (IContributorResourceAdapter2) adapted;
-				return cra.getAdaptedResourceMapping((IAdaptable) o);
+				return cra.getAdaptedResourceMapping(adaptable);
 			}
+		} else {
+			Object adapted = Platform.getAdapterManager().getAdapter(o,
+					ResourceMapping.class);
+			if (adapted instanceof ResourceMapping)
+				return (ResourceMapping) adapted;
 		}
 		return null;
 	}
@@ -142,7 +133,6 @@ public class GitScopeUtil {
 
 		final List<IResource> relatedChanges = new ArrayList<IResource>();
 		IRunnableWithProgress runnable = new IRunnableWithProgress() {
-			@Override
 			public void run(IProgressMonitor monitor)
 					throws InvocationTargetException, InterruptedException {
 				try {
@@ -158,7 +148,8 @@ public class GitScopeUtil {
 
 		};
 
-		IProgressService progressService = CommonUtils.getService(part.getSite(), IProgressService.class);
+		IProgressService progressService = (IProgressService) part.getSite()
+				.getService(IProgressService.class);
 		progressService.run(true, true, runnable);
 
 		return relatedChanges.toArray(new IResource[relatedChanges.size()]);
@@ -169,8 +160,8 @@ public class GitScopeUtil {
 			IProgressMonitor monitor) throws InterruptedException,
 			InvocationTargetException {
 
-		SubscriberScopeManager manager = GitScopeUtil.createScopeManager(
-				selectedResources, new SubProgressMonitor(monitor, 50));
+		SubscriberScopeManager manager = GitScopeUtil
+				.createScopeManager(selectedResources);
 		GitScopeOperation buildScopeOperation = GitScopeOperationFactory
 				.getFactory().createGitScopeOperation(part, manager);
 

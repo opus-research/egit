@@ -4,7 +4,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
- * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -34,8 +33,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Constants;
@@ -125,28 +124,31 @@ public class ProjectUtil {
 	 *
 	 * @throws CoreException
 	 */
-	public static void refreshValidProjects(IProject[] projects, boolean delete,
-			IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor,
-				CoreText.ProjectUtil_refreshingProjects, projects.length);
-		for (IProject p : projects) {
-			if (progress.isCanceled())
-				break;
-			IPath projectLocation = p.getLocation();
-			if (projectLocation == null) {
-				progress.worked(1);
-				continue;
+	public static void refreshValidProjects(IProject[] projects,
+			boolean delete, IProgressMonitor monitor) throws CoreException {
+		try {
+			monitor.beginTask(CoreText.ProjectUtil_refreshingProjects,
+					projects.length);
+			for (IProject p : projects) {
+				if (monitor.isCanceled())
+					break;
+				IPath projectLocation = p.getLocation();
+				if (projectLocation == null)
+					continue;
+				String projectFilePath = projectLocation.append(
+						IProjectDescription.DESCRIPTION_FILE_NAME).toOSString();
+				File projectFile = new File(projectFilePath);
+				if (projectFile.exists())
+					p.refreshLocal(IResource.DEPTH_INFINITE,
+							new SubProgressMonitor(monitor, 1));
+				else if (delete)
+					p.delete(false, true, new SubProgressMonitor(monitor, 1));
+				else
+					closeMissingProject(p, projectFile, monitor);
+				monitor.worked(1);
 			}
-			String projectFilePath = projectLocation
-					.append(IProjectDescription.DESCRIPTION_FILE_NAME)
-					.toOSString();
-			File projectFile = new File(projectFilePath);
-			if (projectFile.exists())
-				p.refreshLocal(IResource.DEPTH_INFINITE, progress.newChild(1));
-			else if (delete)
-				p.delete(false, true, progress.newChild(1));
-			else
-				closeMissingProject(p, projectFile, progress.newChild(1));
+		} finally {
+			monitor.done();
 		}
 	}
 
@@ -164,7 +166,6 @@ public class ProjectUtil {
 	 */
 	static void closeMissingProject(IProject p, File projectFile,
 			IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor, 1);
 		// Don't close/delete if already closed
 		if (p.exists() && !p.isOpen())
 			return;
@@ -178,7 +179,7 @@ public class ProjectUtil {
 				if (!hasRoot)
 					FileUtils.mkdirs(projectRoot, true);
 				if (projectFile.createNewFile())
-					p.close(progress.newChild(1));
+					p.close(new SubProgressMonitor(monitor, 1));
 				else
 					closeFailed = true;
 			} catch (IOException e) {
@@ -204,7 +205,7 @@ public class ProjectUtil {
 			closeFailed = true;
 		// Delete projects that can't be closed
 		if (closeFailed)
-			p.delete(false, true, progress.newChild(1));
+			p.delete(false, true, new SubProgressMonitor(monitor, 1));
 	}
 
 	/**
@@ -218,60 +219,19 @@ public class ProjectUtil {
 	public static void refreshResources(IResource[] resources,
 			IProgressMonitor monitor) throws CoreException {
 		try {
-			SubMonitor progress = SubMonitor.convert(monitor,
-					CoreText.ProjectUtil_refreshing, resources.length);
+			monitor.beginTask(CoreText.ProjectUtil_refreshing,
+					resources.length);
 			for (IResource resource : resources) {
-				if (progress.isCanceled())
+				if (monitor.isCanceled())
 					break;
 				resource.refreshLocal(IResource.DEPTH_INFINITE,
-						progress.newChild(1));
+						new SubProgressMonitor(monitor, 1));
+				monitor.worked(1);
 			}
 		} finally {
 			monitor.done();
 		}
-	}
 
-	/**
-	 * Refresh the resources that are within the passed repository paths.
-	 *
-	 * @param repository
-	 * @param relativePaths
-	 *            repository-relative paths to refresh
-	 * @param monitor
-	 * @throws CoreException
-	 */
-	public static void refreshRepositoryResources(Repository repository,
-			Collection<String> relativePaths, IProgressMonitor monitor)
-			throws CoreException {
-		if (relativePaths.isEmpty() || relativePaths.contains("")) { //$NON-NLS-1$
-			refreshResources(getProjects(repository), monitor);
-			return;
-		}
-
-		IPath repositoryPath = new Path(repository.getWorkTree().getAbsolutePath());
-		IProject[] projects = null;
-		Set<IResource> resources = new LinkedHashSet<IResource>();
-		for (String relativePath : relativePaths) {
-			IPath location = repositoryPath.append(relativePath);
-			IResource resource = ResourceUtil
-					.getResourceForLocation(location, false);
-			if (resource != null) {
-				// Resource exists for path, refresh it
-				resources.add(resource);
-			} else {
-				// Resource doesn't exist. Check if there are any projects
-				// contained in the path, we need to refresh them.
-				if (projects == null)
-					projects = getProjects(repository);
-				for (IProject project : projects) {
-					IPath projectLocation = project.getLocation();
-					if (projectLocation != null
-							&& location.isPrefixOf(projectLocation))
-						resources.add(project);
-				}
-			}
-		}
-		refreshResources(resources.toArray(new IResource[0]), monitor);
 	}
 
 	/**
@@ -359,18 +319,12 @@ public class ProjectUtil {
 
 		// Sorting makes us look into nested projects first
 		Arrays.sort(allProjects, new Comparator<IProject>() {
-			@Override
 			public int compare(IProject o1, IProject o2) {
 				IPath l1 = o1.getLocation();
 				IPath l2 = o2.getLocation();
 				if (l1 != null && l2 != null)
 					return -l1.toFile().compareTo(l2.toFile());
-				else if (l1 != null)
-					return -1;
-				else if (l2 != null)
-					return 1;
-				else
-					return 0;
+				return 0;
 			}
 
 		});
@@ -394,32 +348,12 @@ public class ProjectUtil {
 	}
 
 	/**
-	 * Find projects located under the given path
-	 *
-	 * @param path
-	 *            absolute path under which to look for projects
-	 * @return projects located under the given path
-	 */
-	public static IProject[] getProjectsUnderPath(final IPath path) {
-		IProject[] allProjects = getProjectsForContainerMatch(ResourcesPlugin
-				.getWorkspace().getRoot());
-		Set<IProject> projects = new HashSet<IProject>();
-		for (IProject p : allProjects)
-			if (path.isPrefixOf(p.getLocation()))
-				projects.add(p);
-		return projects.toArray(new IProject[projects.size()]);
-	}
-
-	/**
 	 * Find directories containing .project files recursively starting at given
 	 * directory
 	 *
-	 * @param files
-	 *            the collection to add the found projects to
-	 * @param directory
-	 *            where to search for project files
-	 * @param searchNested
-	 *            whether to search for nested projects or not
+	 * @param files the collection to add the found projects to
+	 * @param directory where to search for project files
+	 * @param searchNested whether to search for nested projects or not
 	 * @param monitor
 	 * @return true if projects files found, false otherwise
 	 */
@@ -456,7 +390,11 @@ public class ProjectUtil {
 		// Initialize recursion guard for recursive symbolic links
 		if (visistedDirs == null) {
 			directoriesVisited = new HashSet<String>();
-			directoriesVisited.add(directory.getAbsolutePath());
+			try {
+				directoriesVisited.add(directory.getCanonicalPath());
+			} catch (IOException exception) {
+				Activator.logError(exception.getLocalizedMessage(), exception);
+			}
 		} else
 			directoriesVisited = visistedDirs;
 
@@ -480,10 +418,15 @@ public class ProjectUtil {
 			// Skip .metadata folders
 			if (contents[i].getName().equals(METADATA_FOLDER))
 				continue;
-			String path = contents[i].getAbsolutePath();
-			if (!directoriesVisited.add(path))
-				// already been here --> do not recurse
-				continue;
+			try {
+				String canonicalPath = contents[i].getCanonicalPath();
+				if (!directoriesVisited.add(canonicalPath))
+					// already been here --> do not recurse
+					continue;
+			} catch (IOException exception) {
+				Activator.logError(exception.getLocalizedMessage(), exception);
+
+			}
 			findProjectFiles(files, contents[i], searchNested,
 					directoriesVisited, pm);
 		}

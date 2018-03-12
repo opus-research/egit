@@ -127,7 +127,6 @@ class ExistingOrNewPage extends WizardPage {
 		this.myWizard = w;
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		final RepositoryUtil util = Activator.getDefault().getRepositoryUtil();
 		Composite main = new Composite(parent, SWT.NONE);
@@ -205,7 +204,6 @@ class ExistingOrNewPage extends WizardPage {
 				.setText(UIText.ExistingOrNewPage_RelativePathLabel);
 		relPath = new Text(externalComposite, SWT.BORDER);
 		relPath.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				updateControls();
 			}
@@ -254,7 +252,6 @@ class ExistingOrNewPage extends WizardPage {
 		projectMoveViewer.setLabelProvider(moveProjectsLabelProvider);
 		projectMoveViewer.setInput(myWizard.projects);
 		projectMoveViewer.addCheckStateListener(new ICheckStateListener() {
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				updateControls();
 			}
@@ -264,7 +261,6 @@ class ExistingOrNewPage extends WizardPage {
 			TableItem item = children[i];
 			IProject data = (IProject) item.getData();
 			RepositoryFinder repositoryFinder = new RepositoryFinder(data);
-			repositoryFinder.setFindInChildren(false);
 			try {
 				Collection<RepositoryMapping> find = repositoryFinder
 						.find(new NullProgressMonitor());
@@ -289,7 +285,6 @@ class ExistingOrNewPage extends WizardPage {
 				.span(3, 1).create());
 		viewer.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				if (event.getChecked()) {
 					ProjectAndRepo checkable = (ProjectAndRepo) event
@@ -323,7 +318,6 @@ class ExistingOrNewPage extends WizardPage {
 		boolean allProjectsInExistingRepos = true;
 		for (IProject project : myWizard.projects) {
 			RepositoryFinder repositoryFinder = new RepositoryFinder(project);
-			repositoryFinder.setFindInChildren(false);
 			try {
 				Collection<RepositoryMapping> mappings;
 				mappings = repositoryFinder.find(new NullProgressMonitor());
@@ -339,45 +333,35 @@ class ExistingOrNewPage extends WizardPage {
 					allProjectsInExistingRepos = false;
 				} else if (!mi.hasNext()) {
 					// exactly one mapping found
-					IPath path = m.getGitDirAbsolutePath();
-					if (path != null) {
-						TreeItem treeItem = new TreeItem(tree, SWT.NONE);
-						updateProjectTreeItem(treeItem, project);
-						treeItem.setText(1, project.getLocation().toOSString());
-						fillTreeItemWithGitDirectory(m, treeItem, path, false);
-						treeItem.setData(
-								new ProjectAndRepo(project, path.toOSString()));
-						treeItem.setChecked(true);
-					}
+					TreeItem treeItem = new TreeItem(tree, SWT.NONE);
+					updateProjectTreeItem(treeItem, project);
+					treeItem.setText(1, project.getLocation().toOSString());
+					fillTreeItemWithGitDirectory(m, treeItem, false);
+					treeItem.setData(new ProjectAndRepo(project, treeItem
+							.getText(2)));
+					treeItem.setChecked(true);
 				}
 
 				else {
-					IPath path = m.getGitDirAbsolutePath();
-					if (path != null) {
-						TreeItem treeItem = new TreeItem(tree, SWT.NONE);
-						updateProjectTreeItem(treeItem, project);
-						treeItem.setText(1, project.getLocation().toOSString());
-						treeItem.setData(new ProjectAndRepo(project, "")); //$NON-NLS-1$
+					TreeItem treeItem = new TreeItem(tree, SWT.NONE);
+					updateProjectTreeItem(treeItem, project);
+					treeItem.setText(1, project.getLocation().toOSString());
+					treeItem.setData(new ProjectAndRepo(project, "")); //$NON-NLS-1$
 
-						TreeItem treeItem2 = new TreeItem(treeItem, SWT.NONE);
+					TreeItem treeItem2 = new TreeItem(treeItem, SWT.NONE);
+					updateProjectTreeItem(treeItem2, project);
+					fillTreeItemWithGitDirectory(m, treeItem2, true);
+					treeItem2.setData(new ProjectAndRepo(project, treeItem2
+							.getText(2)));
+					while (mi.hasNext()) { // fill in additional mappings
+						m = mi.next();
+						treeItem2 = new TreeItem(treeItem, SWT.NONE);
 						updateProjectTreeItem(treeItem2, project);
-						fillTreeItemWithGitDirectory(m, treeItem2, path, true);
-						treeItem2.setData(
-								new ProjectAndRepo(project,
-								path.toOSString()));
-						while (mi.hasNext()) { // fill in additional mappings
-							m = mi.next();
-							path = m.getGitDirAbsolutePath();
-							if(path != null){
-								treeItem2 = new TreeItem(treeItem, SWT.NONE);
-								updateProjectTreeItem(treeItem2, project);
-								fillTreeItemWithGitDirectory(m, treeItem2, path, true);
-								treeItem2.setData(new ProjectAndRepo(m.getContainer()
-										.getProject(), path.toOSString()));
-							}
-						}
-						treeItem.setExpanded(true);
+						fillTreeItemWithGitDirectory(m, treeItem2, true);
+						treeItem2.setData(new ProjectAndRepo(m.getContainer()
+								.getProject(), treeItem2.getText(2)));
 					}
+					treeItem.setExpanded(true);
 					allProjectsInExistingRepos = false;
 				}
 			} catch (CoreException e) {
@@ -390,7 +374,6 @@ class ExistingOrNewPage extends WizardPage {
 		createRepo.setLayoutData(GridDataFactory.fillDefaults().create());
 		createRepo.setText(UIText.ExistingOrNewPage_CreateButton);
 		createRepo.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				File gitDir = new File(repositoryToCreate.getText(),
 						Constants.DOT_GIT);
@@ -440,7 +423,6 @@ class ExistingOrNewPage extends WizardPage {
 		repositoryToCreate.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).span(1, 1).create());
 		repositoryToCreate.addListener(SWT.Modify, new Listener() {
-			@Override
 			public void handleEvent(Event e) {
 				if (repositoryToCreate.getText().equals("")) { //$NON-NLS-1$
 					createRepo.setEnabled(false);
@@ -460,7 +442,6 @@ class ExistingOrNewPage extends WizardPage {
 				.align(SWT.LEFT, SWT.CENTER).create());
 
 		tree.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				tree.select((TreeItem) e.item);
 				updateControls();
@@ -513,12 +494,15 @@ class ExistingOrNewPage extends WizardPage {
 	}
 
 	private void fillTreeItemWithGitDirectory(RepositoryMapping m,
-			TreeItem treeItem, IPath gitDir, boolean isAlternative) {
+			TreeItem treeItem, boolean isAlternative) {
 		if (m.getGitDir() == null)
 			treeItem.setText(2,
 					UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
-			IPath relativePath = new Path(m.getGitDir());
+			IPath container = m.getContainerPath();
+			if (!container.isEmpty())
+				container = Path.fromOSString("."); //$NON-NLS-1$
+			IPath relativePath = container.append(m.getGitDir());
 			if (isAlternative) {
 				IPath withoutLastSegment = relativePath.removeLastSegments(1);
 				IPath path;
@@ -531,8 +515,8 @@ class ExistingOrNewPage extends WizardPage {
 			treeItem.setText(2, relativePath.toOSString());
 			try {
 				IProject project = m.getContainer().getProject();
-				Repository repo = new RepositoryBuilder()
-						.setGitDir(gitDir.toFile()).build();
+				Repository repo = new RepositoryBuilder().setGitDir(
+						m.getGitDirAbsolutePath().toFile()).build();
 				File workTree = repo.getWorkTree();
 				IPath workTreePath = Path.fromOSString(workTree
 						.getAbsolutePath());
@@ -544,17 +528,17 @@ class ExistingOrNewPage extends WizardPage {
 					ObjectId headCommitId = repo.resolve(Constants.HEAD);
 					if (headCommitId != null) {
 						// Not an empty repo
-						try (RevWalk revWalk = new RevWalk(repo)) {
-							RevCommit headCommit = revWalk
-									.parseCommit(headCommitId);
-							RevTree headTree = headCommit.getTree();
-							TreeWalk projectInRepo = TreeWalk.forPath(repo,
-									repoRelativePath, headTree);
-							if (projectInRepo != null) {
-								// the .project file is tracked by this repo
-								treeItem.setChecked(true);
-							}
+						RevWalk revWalk = new RevWalk(repo);
+						RevCommit headCommit = revWalk
+								.parseCommit(headCommitId);
+						RevTree headTree = headCommit.getTree();
+						TreeWalk projectInRepo = TreeWalk.forPath(repo,
+								repoRelativePath, headTree);
+						if (projectInRepo != null) {
+							// the .project file is tracked by this repo
+							treeItem.setChecked(true);
 						}
+						revWalk.dispose();
 					}
 				}
 				repo.close();

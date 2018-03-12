@@ -12,10 +12,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Collections;
 import java.util.Set;
 
@@ -39,7 +37,6 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 
 	private File file;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -48,8 +45,7 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 		repository.create();
 
 		file = new File(project.getProject().getLocation().toFile(), "a.txt");
-		final Writer fileWriter = new OutputStreamWriter(new FileOutputStream(
-				file), "UTF-8");
+		final FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write("aaaaaaaaaaa");
 		fileWriter.close();
 
@@ -63,26 +59,23 @@ public class AdaptableFileTreeIteratorTest extends GitTestCase {
 		final IWorkspaceRoot root = project.getProject().getWorkspace()
 				.getRoot();
 
-		try (final TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(new AdaptableFileTreeIterator(repository, root));
-			treeWalk.setRecursive(true);
+		final TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(new AdaptableFileTreeIterator(repository, root));
+		treeWalk.setRecursive(true);
 
-			final IFile eclipseFile = project.getProject()
-					.getFile(file.getName());
-			final RepositoryMapping mapping = RepositoryMapping
-					.getMapping(eclipseFile);
-			final Set<String> repositoryPaths = Collections
-					.singleton(mapping.getRepoRelativePath(eclipseFile));
+		final IFile eclipseFile = project.getProject().getFile(file.getName());
+		final RepositoryMapping mapping = RepositoryMapping
+				.getMapping(eclipseFile);
+		final Set<String> repositoryPaths = Collections.singleton(mapping
+				.getRepoRelativePath(eclipseFile));
 
-			assertEquals(1, repositoryPaths.size());
-			treeWalk.setFilter(
-					PathFilterGroup.createFromStrings(repositoryPaths));
+		assertEquals(1, repositoryPaths.size());
+		treeWalk.setFilter(PathFilterGroup.createFromStrings(repositoryPaths));
 
-			assertTrue(treeWalk.next());
+		assertTrue(treeWalk.next());
 
-			final WorkingTreeIterator iterator = treeWalk.getTree(0,
-					WorkingTreeIterator.class);
-			assertTrue(iterator instanceof ContainerTreeIterator);
-		}
+		final WorkingTreeIterator iterator = treeWalk.getTree(0,
+				WorkingTreeIterator.class);
+		assertTrue(iterator instanceof ContainerTreeIterator);
 	}
 }

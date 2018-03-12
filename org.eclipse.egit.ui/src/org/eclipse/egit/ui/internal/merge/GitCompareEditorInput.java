@@ -33,10 +33,9 @@ import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
-import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -79,15 +78,12 @@ public class GitCompareEditorInput extends CompareEditorInput {
 	 * @param baseVersion
 	 *            (shown on the right side in compare); currently only commit
 	 *            IDs are supported
-	 * @param repository
-	 *            repository where resources are coming from
 	 * @param resources
 	 *            as selected by the user
 	 */
 	public GitCompareEditorInput(String compareVersion, String baseVersion,
-			Repository repository, IResource... resources) {
+			IResource... resources) {
 		super(new CompareConfiguration());
-		this.repository = repository;
 		this.resources = convertResourceInput(resources);
 		this.baseVersion = baseVersion;
 		this.compareVersion = compareVersion;
@@ -116,19 +112,15 @@ public class GitCompareEditorInput extends CompareEditorInput {
 	protected Object prepareInput(IProgressMonitor monitor)
 			throws InvocationTargetException, InterruptedException {
 		// make sure all resources belong to the same repository
-		try (RevWalk rw = new RevWalk(repository)) {
+		RevWalk rw = null;
+		try {
 			monitor.beginTask(
 					UIText.GitCompareEditorInput_CompareResourcesTaskName,
 					IProgressMonitor.UNKNOWN);
 
 			for (IResource resource : resources) {
-				RepositoryMapping map = RepositoryMapping
-						.getMapping(resource.getProject());
-				if (map == null) {
-					throw new InvocationTargetException(
-							new IllegalStateException(
-									UIText.GitCompareEditorInput_ResourcesInDifferentReposMessagge));
-				}
+				RepositoryMapping map = RepositoryMapping.getMapping(resource
+						.getProject());
 				if (repository != null && repository != map.getRepository())
 					throw new InvocationTargetException(
 							new IllegalStateException(
@@ -141,81 +133,77 @@ public class GitCompareEditorInput extends CompareEditorInput {
 						return FOLDER_IMAGE;
 					}
 				};
-				diffRoots.put(new Path(map.getRepoRelativePath(resource)),
-						node);
+				diffRoots
+						.put(new Path(map.getRepoRelativePath(resource)), node);
 				repository = map.getRepository();
 			}
 
 			if (repository == null)
-				throw new InvocationTargetException(new IllegalStateException(
-						UIText.GitCompareEditorInput_ResourcesInDifferentReposMessagge));
+				throw new InvocationTargetException(
+						new IllegalStateException(
+								UIText.GitCompareEditorInput_ResourcesInDifferentReposMessagge));
 
 			if (monitor.isCanceled())
 				throw new InterruptedException();
 
+			rw = new RevWalk(repository);
+
 			final RevCommit baseCommit;
 			try {
-				try {
-					baseCommit = rw
-							.parseCommit(repository.resolve(baseVersion));
-				} catch (IOException e) {
-					throw new InvocationTargetException(e);
-				}
-
-				final RevCommit compareCommit;
-				if (compareVersion == null) {
-					compareCommit = null;
-				} else {
-					try {
-						compareCommit = rw.parseCommit(
-								repository.resolve(compareVersion));
-					} catch (IOException e) {
-						throw new InvocationTargetException(e);
-					}
-				}
-				if (monitor.isCanceled())
-					throw new InterruptedException();
-
-				// set the labels
-				CompareConfiguration config = getCompareConfiguration();
-				config.setLeftLabel(compareVersion);
-				config.setRightLabel(baseVersion);
-				// set title and icon
-				if (resources.length == 0) {
-					Object[] titleParameters = new Object[] {
-							Activator.getDefault().getRepositoryUtil()
-									.getRepositoryName(repository),
-							CompareUtils.truncatedRevision(compareVersion),
-							CompareUtils.truncatedRevision(baseVersion) };
-					setTitle(NLS.bind(UIText.GitCompareEditorInput_EditorTitle,
-							titleParameters));
-				} else if (resources.length == 1) {
-					Object[] titleParameters = new Object[] {
-							resources[0].getFullPath().makeRelative()
-									.toString(),
-							CompareUtils.truncatedRevision(compareVersion),
-							CompareUtils.truncatedRevision(baseVersion) };
-					setTitle(NLS.bind(
-							UIText.GitCompareEditorInput_EditorTitleSingleResource,
-							titleParameters));
-				} else {
-					setTitle(NLS
-							.bind(UIText.GitCompareEditorInput_EditorTitleMultipleResources,
-									CompareUtils.truncatedRevision(
-											compareVersion),
-							CompareUtils.truncatedRevision(baseVersion)));
-				}
-
-				// build the nodes
-				try {
-					return buildDiffContainer(baseCommit, compareCommit,
-							monitor);
-				} catch (IOException e) {
-					throw new InvocationTargetException(e);
-				}
-			} finally {
-				monitor.done();
+				baseCommit = rw.parseCommit(repository.resolve(baseVersion));
+			} catch (IOException e) {
+				throw new InvocationTargetException(e);
 			}
+
+			final RevCommit compareCommit;
+			if (compareVersion == null)
+				compareCommit = null;
+			else
+				try {
+					compareCommit = rw.parseCommit(repository
+							.resolve(compareVersion));
+				} catch (IOException e) {
+					throw new InvocationTargetException(e);
+				}
+
+			if (monitor.isCanceled())
+				throw new InterruptedException();
+
+			// set the labels
+			CompareConfiguration config = getCompareConfiguration();
+			config.setLeftLabel(compareVersion);
+			config.setRightLabel(baseVersion);
+			// set title and icon
+			if (resources.length == 0) {
+				Object[] titleParameters = new Object[] {
+						Activator.getDefault().getRepositoryUtil()
+								.getRepositoryName(repository), compareVersion,
+						baseVersion };
+				setTitle(NLS.bind(UIText.GitCompareEditorInput_EditorTitle,
+						titleParameters));
+			} else if (resources.length == 1) {
+				Object[] titleParameters = new Object[] {
+						resources[0].getFullPath().makeRelative().toString(),
+						compareVersion, baseVersion };
+				setTitle(NLS.bind(
+						UIText.GitCompareEditorInput_EditorTitleSingleResource,
+						titleParameters));
+			} else
+				setTitle(NLS
+						.bind(
+								UIText.GitCompareEditorInput_EditorTitleMultipleResources,
+								compareVersion, baseVersion));
+
+			// build the nodes
+			try {
+				return buildDiffContainer(baseCommit, compareCommit, monitor);
+			} catch (IOException e) {
+				throw new InvocationTargetException(e);
+			}
+		} finally {
+			if (rw != null)
+				rw.dispose();
+			monitor.done();
 		}
 	}
 
@@ -240,41 +228,42 @@ public class GitCompareEditorInput extends CompareEditorInput {
 
 		IDiffContainer result = new DiffNode(Differencer.CONFLICTING);
 
-		try (TreeWalk tw = new TreeWalk(repository)) {
+		TreeWalk tw = new TreeWalk(repository);
 
-			// filter by selected resources
-			if (filterPathStrings.size() > 1) {
-				List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
-				for (String filterPath : filterPathStrings)
-					suffixFilters.add(PathFilter.create(filterPath));
-				TreeFilter otf = OrTreeFilter.create(suffixFilters);
-				tw.setFilter(otf);
-			} else if (filterPathStrings.size() > 0) {
-				String path = filterPathStrings.get(0);
-				if (path.length() != 0)
-					tw.setFilter(PathFilter.create(path));
-			}
+		// filter by selected resources
+		if (filterPathStrings.size() > 1) {
+			List<TreeFilter> suffixFilters = new ArrayList<TreeFilter>();
+			for (String filterPath : filterPathStrings)
+				suffixFilters.add(PathFilter.create(filterPath));
+			TreeFilter otf = OrTreeFilter.create(suffixFilters);
+			tw.setFilter(otf);
+		} else if (filterPathStrings.size() > 0) {
+			String path = filterPathStrings.get(0);
+			if (path.length() != 0)
+				tw.setFilter(PathFilter.create(path));
+		}
 
-			tw.setRecursive(true);
+		tw.setRecursive(true);
 
-			int baseTreeIndex;
-			if (baseCommit == null) {
-				// compare workspace with something
-				checkIgnored = true;
-				baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
-						repository, ResourcesPlugin.getWorkspace().getRoot()));
-			} else
-				baseTreeIndex = tw.addTree(new CanonicalTreeParser(null,
-						repository.newObjectReader(), baseCommit.getTree()));
-			int compareTreeIndex;
-			if (!useIndex)
-				compareTreeIndex = tw.addTree(new CanonicalTreeParser(null,
-						repository.newObjectReader(), compareCommit.getTree()));
-			else
-				// compare something with the index
-				compareTreeIndex = tw.addTree(new DirCacheIterator(repository
-						.readDirCache()));
+		int baseTreeIndex;
+		if (baseCommit == null) {
+			// compare workspace with something
+			checkIgnored = true;
+			baseTreeIndex = tw.addTree(new AdaptableFileTreeIterator(
+					repository, ResourcesPlugin.getWorkspace().getRoot()));
+		} else
+			baseTreeIndex = tw.addTree(new CanonicalTreeParser(null, repository
+					.newObjectReader(), baseCommit.getTree()));
+		int compareTreeIndex;
+		if (!useIndex)
+			compareTreeIndex = tw.addTree(new CanonicalTreeParser(null,
+					repository.newObjectReader(), compareCommit.getTree()));
+		else
+			// compare something with the index
+			compareTreeIndex = tw.addTree(new DirCacheIterator(repository
+					.readDirCache()));
 
+		try {
 			while (tw.next()) {
 				if (monitor.isCanceled())
 					throw new InterruptedException();
@@ -353,6 +342,8 @@ public class GitCompareEditorInput extends CompareEditorInput {
 					throw new InterruptedException();
 			}
 			return result;
+		} finally {
+			tw.release();
 		}
 	}
 

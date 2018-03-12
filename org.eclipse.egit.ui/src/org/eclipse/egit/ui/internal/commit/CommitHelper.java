@@ -14,6 +14,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 
 import org.eclipse.egit.ui.Activator;
@@ -99,14 +103,11 @@ public class CommitHelper {
 	}
 
 	private static RevCommit getHeadCommit(Repository repository) {
-		if (repository == null) {
-			return null;
-		}
 		RevCommit headCommit = null;
-		try (RevWalk rw = new RevWalk(repository)) {
+		try {
 			ObjectId parentId = repository.resolve(Constants.HEAD);
 			if (parentId != null)
-				headCommit = rw.parseCommit(parentId);
+				headCommit = new RevWalk(repository).parseCommit(parentId);
 		} catch (IOException e) {
 			Activator.handleError(UIText.CommitAction_errorRetrievingCommit, e,
 					true);
@@ -115,21 +116,37 @@ public class CommitHelper {
 	}
 
 	private String getMergeResolveMessage(Repository mergeRepository) {
-		try {
-			String message = mergeRepository.readMergeCommitMsg();
-			if (message != null)
-				return message;
-		} catch (IOException e) {
-			// Return "Could not find ..." below
-		}
-		return NLS.bind(UIText.CommitHelper_couldNotFindMergeMsg,
+		File mergeMsg = new File(mergeRepository.getDirectory(),
 				Constants.MERGE_MSG);
+		FileReader reader;
+		try {
+			reader = new FileReader(mergeMsg);
+			BufferedReader br = new BufferedReader(reader);
+			try {
+				StringBuilder message = new StringBuilder();
+				String s;
+				String newLine = newLine();
+				while ((s = br.readLine()) != null)
+					message.append(s).append(newLine);
+				return message.toString();
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					// Empty
+				}
+			}
+		} catch (FileNotFoundException e) {
+			return NLS.bind(UIText.CommitHelper_couldNotFindMergeMsg, Constants.MERGE_MSG);
+		}
 	}
 
 	private static String getCherryPickOriginalAuthor(Repository mergeRepository) {
-		try (RevWalk rw = new RevWalk(mergeRepository)) {
+		try {
 			ObjectId cherryPickHead = mergeRepository.readCherryPickHead();
-			PersonIdent author = rw.parseCommit(
+			PersonIdent author = new RevWalk(mergeRepository).parseCommit(
 					cherryPickHead).getAuthorIdent();
 			return author.getName() + " <" + author.getEmailAddress() + ">"; //$NON-NLS-1$//$NON-NLS-2$
 		} catch (IOException e) {
@@ -137,6 +154,10 @@ public class CommitHelper {
 					true);
 			throw new IllegalStateException(e);
 		}
+	}
+
+	private String newLine() {
+		return System.getProperty("line.separator"); //$NON-NLS-1$
 	}
 
 	/**

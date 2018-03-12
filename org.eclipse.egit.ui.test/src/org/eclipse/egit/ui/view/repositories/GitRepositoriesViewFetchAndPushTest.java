@@ -23,7 +23,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -34,6 +33,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,16 +44,16 @@ import org.junit.runner.RunWith;
 public class GitRepositoriesViewFetchAndPushTest extends
 		GitRepositoriesViewTestBase {
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	private File remoteRepositoryFile;
+	private static File remoteRepositoryFile;
 
-	private File clonedRepositoryFile;
+	private static File clonedRepositoryFile;
 
-	private File clonedRepositoryFile2;
+	private static File clonedRepositoryFile2;
 
-	@Before
-	public void before() throws Exception {
+	@BeforeClass
+	public static void beforeClass() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		// now let's clone the remote repository
@@ -75,11 +75,13 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		op.run(null);
 
 		clonedRepositoryFile2 = new File(workdir, Constants.DOT_GIT);
+	}
 
+	@Before
+	public void before() throws Exception {
 		clearView();
 		deleteAllProjects();
 	}
-
 	@Test
 	public void testPushToOriginPushNode() throws Exception {
 		testPushToOrigin(false);
@@ -94,7 +96,8 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
 				clonedRepositoryFile);
 		shareProjects(clonedRepositoryFile);
-
+		SWTBotTree tree = getOrOpenView().bot().tree();
+		tree.select(0);
 
 		Repository repository = lookupRepository(clonedRepositoryFile);
 		// add the configuration for push
@@ -108,10 +111,6 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		new Git(repository).branchRename().setOldName(currentBranch)
 				.setNewName("" + System.currentTimeMillis()).call();
 
-		SWTBotTree tree = getOrOpenView().bot().tree();
-		tree.select(0);
-
-		TestUtil.waitForJobs(50, 5000);
 		selectNode(tree, useRemote, false);
 
 		runPush(tree);
@@ -156,11 +155,9 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		objectIdBefore = objectIdBefore.substring(0, 7);
 		touchAndSubmit(null);
 
-		SWTBotTree updatedTree = getOrOpenView().bot().tree();
-		updatedTree.select(0);
-		selectNode(updatedTree, useRemote, false);
+		selectNode(tree, useRemote, false);
 
-		runPush(updatedTree);
+		runPush(tree);
 
 		confirmed = bot.shell(dialogTitle);
 		treeItems = confirmed.bot().tree().getAllItems();
@@ -220,7 +217,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		objid = objid.substring(0, 7);
 		touchAndSubmit(null);
 		// push from other repository
-		PushOperationUI op =new PushOperationUI(repository, "origin", false);
+		PushOperationUI op =new PushOperationUI(repository, "origin", 0, false);
 		op.start();
 
 		String pushdialogTitle = NLS.bind(UIText.PushResultDialog_title,

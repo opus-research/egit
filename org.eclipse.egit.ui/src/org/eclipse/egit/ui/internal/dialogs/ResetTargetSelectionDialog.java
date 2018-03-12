@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,15 +8,12 @@
  * Contributors:
  *    Stefan Lay (SAP AG) - initial implementation
  *    Mathias Kinzler (SAP AG) - use the abstract super class
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.io.IOException;
 
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -26,12 +23,12 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.GitDateFormatter;
+import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.FocusEvent;
@@ -66,8 +63,8 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 
 	private Label committer;
 
-	private final GitDateFormatter gitDateFormatter = PreferenceBasedDateFormatter
-			.create();
+	private final GitDateFormatter gitDateFormatter = new GitDateFormatter(
+			Format.LOCALE);
 
 	/**
 	 * Construct a dialog to select a branch to reset to
@@ -119,17 +116,14 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		g.setLayout(new GridLayout(1, false));
 
 		anySha1.addFocusListener(new FocusListener() {
-			@Override
 			public void focusLost(FocusEvent e) {
 				// Do nothing
 			}
-			@Override
 			public void focusGained(FocusEvent e) {
 				branchTree.setSelection(null);
 			}
 		});
 		anySha1.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				String text = anySha1.getText();
 				if (text.length() == 0) {
@@ -151,35 +145,23 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 						committer.setText(""); //$NON-NLS-1$
 						return;
 					} else {
-						if (RepositoryUtil.isDetachedHead(repo)) {
-							setMessage(
-									UIText.ResetTargetSelectionDialog_DetachedHeadState,
-									IMessageProvider.INFORMATION);
-						} else {
-							setMessage(""); //$NON-NLS-1$
-						}
+						setMessage(""); //$NON-NLS-1$
 						parsedCommitish = text;
 						getButton(OK).setEnabled(true);
-						try (RevWalk rw = new RevWalk(repo)) {
-							RevCommit commit = rw.parseCommit(resolved);
-							sha1.setText(AbbreviatedObjectId
-									.fromObjectId(commit).name());
-							subject.setText(commit.getShortMessage());
-							author.setText(
-									commit.getAuthorIdent().getName() + " <" //$NON-NLS-1$
-											+ commit.getAuthorIdent()
-													.getEmailAddress()
-											+ "> " //$NON-NLS-1$
-											+ gitDateFormatter.formatDate(
-													commit.getAuthorIdent()));
-							committer.setText(commit.getCommitterIdent()
-									.getName()
-									+ " <" //$NON-NLS-1$
-									+ commit.getCommitterIdent()
-											.getEmailAddress()
-									+ "> " + gitDateFormatter.formatDate( //$NON-NLS-1$
-											commit.getCommitterIdent()));
-						}
+						RevWalk rw = new RevWalk(repo);
+						RevCommit commit = rw.parseCommit(resolved);
+						sha1.setText(AbbreviatedObjectId.fromObjectId(commit)
+								.name());
+						subject.setText(commit.getShortMessage());
+						author.setText(commit.getAuthorIdent().getName()
+								+ " <" //$NON-NLS-1$
+								+ commit.getAuthorIdent().getEmailAddress()
+								+ "> " + gitDateFormatter.formatDate(commit.getAuthorIdent())); //$NON-NLS-1$
+						committer.setText(commit.getCommitterIdent().getName()
+								+ " <" //$NON-NLS-1$
+								+ commit.getCommitterIdent().getEmailAddress()
+								+ "> " + gitDateFormatter.formatDate(commit.getCommitterIdent())); //$NON-NLS-1$
+						rw.dispose();
 					}
 				} catch (IOException e1) {
 					setMessage(e1.getMessage(), IMessageProvider.ERROR);
@@ -190,7 +172,6 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		});
 		branchTree.addSelectionChangedListener(new ISelectionChangedListener() {
 
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				if (!event.getSelection().isEmpty()) {
 					String refName = refNameFromDialog();
@@ -201,29 +182,33 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 				}
 			}
 		});
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeSoftButton,
-				ResetType.SOFT);
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeMixedButton,
-				ResetType.MIXED).setSelection(true);
-		createResetButton(g,
-				UIText.ResetTargetSelectionDialog_ResetTypeHardButton,
-				ResetType.HARD);
-	}
-
-	private Button createResetButton(Composite parent, String text,
-			final ResetType type) {
-		Button button = new Button(parent, SWT.RADIO);
-		button.setText(text);
-		button.addListener(SWT.Selection, new Listener() {
-			@Override
+		Button soft = new Button(g, SWT.RADIO);
+		soft.setText(UIText.ResetTargetSelectionDialog_ResetTypeSoftButton);
+		soft.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection())
-					resetType = type;
+					resetType = ResetType.SOFT;
 			}
 		});
-		return button;
+
+		Button medium = new Button(g, SWT.RADIO);
+		medium.setSelection(true);
+		medium.setText(UIText.ResetTargetSelectionDialog_ResetTypeMixedButton);
+		medium.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.MIXED;
+			}
+		});
+
+		Button hard = new Button(g, SWT.RADIO);
+		hard.setText(UIText.ResetTargetSelectionDialog_ResetTypeHardButton);
+		hard.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event event) {
+				if (((Button) event.widget).getSelection())
+					resetType = ResetType.HARD;
+			}
+		});
 	}
 
 	@Override
@@ -281,13 +266,5 @@ public class ResetTargetSelectionDialog extends AbstractBranchSelectionDialog {
 		if (selected != null)
 			return selected;
 		return parsedCommitish;
-	}
-
-	@Override
-	protected boolean markRef(String refName) {
-		// preselect HEAD if in the detached HEAD state
-		return super
-				.markRef(RepositoryUtil.isDetachedHead(repo) ? Constants.HEAD
-						: refName);
 	}
 }

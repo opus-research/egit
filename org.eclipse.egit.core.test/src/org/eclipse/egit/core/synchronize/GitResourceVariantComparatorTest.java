@@ -8,8 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -50,7 +50,6 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 	private TestRepository testRepo;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -211,8 +210,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	public void shouldReturnFalseWhenContentLengthIsDifferent()
 			throws Exception {
 		// when
-		byte[] shortContent = "short content".getBytes("UTF-8");
-		byte[] longContent = "very long long content".getBytes("UTF-8");
+		byte[] shortContent = "short content".getBytes();
+		byte[] longContent = "very long long content".getBytes();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
@@ -248,9 +247,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	@SuppressWarnings("boxing")
 	public void shouldReturnFalseWhenShortContentIsDifferent() throws Exception {
 		// when
-		byte[] localContent = "very long long content".getBytes("UTF-8");
+		byte[] localContent = "very long long content".getBytes();
 		// this typo should be here
-		byte[] remoteContent = "very long lonk content".getBytes("UTF-8");
+		byte[] remoteContent = "very long lonk content".getBytes();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
@@ -370,8 +369,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 	@SuppressWarnings("boxing")
 	public void shouldReturnTrueWhenShortContentIsDifferent() throws Exception {
 		// when
-		byte[] localContent = "very long long content".getBytes("UTF-8");
-		byte[] remoteContent = "very long long content".getBytes("UTF-8");
+		byte[] localContent = "very long long content".getBytes();
+		byte[] remoteContent = "very long long content".getBytes();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD, true);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
 		GitResourceVariantComparator grvc = new GitResourceVariantComparator(
@@ -587,22 +586,21 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		testRepo.addToIndex(testRepo.getIFile(iProject, file2));
 		RevCommit commit = testRepo.commit("initial commit");
 
-		try (TreeWalk tw = new TreeWalk(repo)) {
-			int nth = tw.addTree(commit.getTree());
+		TreeWalk tw = new TreeWalk(repo);
+		int nth = tw.addTree(commit.getTree());
 
-			tw.next();
-			tw.enterSubtree(); // enter project node
-			tw.next();
-			GitRemoteFolder base = new GitRemoteFolder(repo, null, commit,
-					tw.getObjectId(nth), tw.getNameString());
+		tw.next();
+		tw.enterSubtree(); // enter project node
+		tw.next();
+		GitRemoteFolder base = new GitRemoteFolder(repo, null, commit,
+				tw.getObjectId(nth), tw.getNameString());
 
-			tw.next();
-			GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
-					tw.getObjectId(nth), tw.getNameString());
+		tw.next();
+		GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
+				tw.getObjectId(nth), tw.getNameString());
 
-			// then
-			assertFalse(grvc.compare(base, remote));
-		}
+		// then
+		assertFalse(grvc.compare(base, remote));
 	}
 
 	/**

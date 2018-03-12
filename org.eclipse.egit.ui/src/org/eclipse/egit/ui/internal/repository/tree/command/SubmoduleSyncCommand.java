@@ -16,7 +16,6 @@ import java.util.Map.Entry;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -36,15 +35,13 @@ import org.eclipse.jgit.lib.Repository;
 public class SubmoduleSyncCommand extends
 		SubmoduleCommand<RepositoryTreeNode<?>> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final Map<Repository, List<String>> repoPaths = getSubmodules(getSelectedNodes(event));
 
 		if (!repoPaths.isEmpty()) {
-			Job job = new WorkspaceJob(UIText.SubmoduleSyncCommand_Title) {
-
+			Job job = new Job(UIText.SubmoduleSyncCommand_Title) {
 				@Override
-				public IStatus runInWorkspace(IProgressMonitor monitor) {
+				protected IStatus run(IProgressMonitor monitor) {
 					monitor.beginTask("", repoPaths.size()); //$NON-NLS-1$
 					try {
 						for (Entry<Repository, List<String>> entry : repoPaths

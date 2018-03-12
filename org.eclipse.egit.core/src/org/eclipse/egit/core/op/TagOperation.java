@@ -48,7 +48,6 @@ public class TagOperation implements IEGitOperation {
 	}
 
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -95,9 +94,12 @@ public class TagOperation implements IEGitOperation {
 		try {
 			ObjectId tagId;
 			repo.open(startPointRef);
-			try (ObjectInserter inserter = repo.newObjectInserter()) {
+			ObjectInserter inserter = repo.newObjectInserter();
+			try {
 				tagId = inserter.insert(tag);
 				inserter.flush();
+			} finally {
+				inserter.release();
 			}
 			return tagId;
 		} catch (IOException e) {
@@ -107,7 +109,6 @@ public class TagOperation implements IEGitOperation {
 	}
 
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

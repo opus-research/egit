@@ -15,17 +15,14 @@ package org.eclipse.egit.core.internal.indexdiff;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -33,6 +30,8 @@ import org.eclipse.jgit.lib.Repository;
  * interesting resources. Also collects list of paths and resources to update
  */
 public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
+
+	private static final String GITIGNORE_NAME = ".gitignore"; //$NON-NLS-1$
 
 	/**
 	 * Bit-mask describing interesting changes for IResourceChangeListener
@@ -65,47 +64,20 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 		resourcesToUpdate = new HashSet<IResource>();
 	}
 
-	@Override
 	public boolean visit(IResourceDelta delta) throws CoreException {
 		final IResource resource = delta.getResource();
-		if (resource.getType() == IResource.ROOT) {
+		// If the resource is not part of a project under
+		// Git revision control
+		final RepositoryMapping mapping = RepositoryMapping
+				.getMapping(resource);
+		if (mapping == null || mapping.getRepository() != repository)
+			// Ignore the change
 			return true;
-		}
 
-		if (resource.getType() == IResource.PROJECT) {
-			// If the resource is not part of a project under
-			// Git revision control or from a different repository
-			final RepositoryMapping mapping = RepositoryMapping
-					.getMapping((IProject) resource);
-			if (mapping == null || mapping.getRepository() != repository) {
-				// Ignore the change for project and its children
-				return false;
-			}
-
-			// continue with children
-			return true;
-		}
-
-		if (resource.isLinked()) {
-			// Ignore linked files, folders and their children
-			return false;
-		}
-
-		if (resource.getType() == IResource.FOLDER) {
-			if (delta.getKind() == IResourceDelta.ADDED) {
-				String repoRelativePath = getRepoRelativePath(resource);
-				if (repoRelativePath == null) {
-					return false;
-				}
-				String path = repoRelativePath + "/"; //$NON-NLS-1$
-				if (isIgnoredInOldIndex(path)) {
-					return true; // keep going to catch .gitignore files.
-				}
-				filesToUpdate.add(path);
-				resourcesToUpdate.add(resource);
-			}
-
-			// continue with children
+		if (resource instanceof IFolder
+				&& delta.getKind() == IResourceDelta.ADDED) {
+			filesToUpdate.add(mapping.getRepoRelativePath(resource) + "/"); //$NON-NLS-1$
+			resourcesToUpdate.add(resource);
 			return true;
 		}
 
@@ -113,82 +85,24 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 		// care about (e.g. marker changes to files) then
 		// ignore
 		if (delta.getKind() == IResourceDelta.CHANGED
-				&& (delta.getFlags() & INTERESTING_CHANGES) == 0) {
-			return false;
-		}
+				&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
+			return true;
 
-		if (resource.getName().equals(Constants.DOT_GIT_IGNORE)) {
+		// skip any non-FILE resources
+		if (resource.getType() != IResource.FILE)
+			return true;
+
+		if (resource.getName().equals(GITIGNORE_NAME)) {
 			gitIgnoreChanged = true;
 			return false;
 		}
 
-		String repoRelativePath = getRepoRelativePath(resource);
-		if (repoRelativePath == null) {
-			resourcesToUpdate.add(resource);
-			return true;
-		}
-
-		if (isIgnoredInOldIndex(repoRelativePath)) {
-			// This file is ignored in the old index, and ignore rules did not
-			// change: ignore the delta to avoid unnecessary index updates
-			return false;
-		}
-
-		filesToUpdate.add(repoRelativePath);
+		String repoRelativePath = mapping.getRepoRelativePath(resource);
+		if (repoRelativePath!= null)
+			filesToUpdate.add(repoRelativePath);
 		resourcesToUpdate.add(resource);
+
 		return true;
-	}
-
-	private static String getRepoRelativePath(IResource resource) {
-		final RepositoryMapping mapping = RepositoryMapping
-				.getMapping(resource.getProject());
-		if (mapping == null) {
-			return null;
-		}
-		return mapping.getRepoRelativePath(resource);
-	}
-
-	/**
-	 * @param path
-	 *            the repository relative path of the resource to check
-	 * @return whether the given path is ignored by the given
-	 *         {@link IndexDiffCacheEntry}
-	 */
-	private boolean isIgnoredInOldIndex(String path) {
-		if (gitIgnoreChanged) {
-			return false;
-		}
-		IndexDiffCacheEntry entry = null;
-		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
-		if (cache != null) {
-			entry = cache.getIndexDiffCacheEntry(repository);
-		}
-		// fall back to processing all changes as long as there is no old index.
-		if (entry == null) {
-			return false;
-		}
-
-		IndexDiffData indexDiff = entry.getIndexDiff();
-		if (indexDiff == null) {
-			return false;
-		}
-
-		String p = path;
-		Set<String> ignored = indexDiff.getIgnoredNotInIndex();
-		while (p != null) {
-			if (ignored.contains(p)) {
-				return true;
-			}
-
-			p = skipLastSegment(p);
-		}
-
-		return false;
-	}
-
-	private String skipLastSegment(String path) {
-		int slashPos = path.lastIndexOf('/');
-		return slashPos == -1 ? null : path.substring(0, slashPos);
 	}
 
 	/**

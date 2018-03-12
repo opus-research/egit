@@ -12,6 +12,7 @@
 package org.eclipse.egit.core.test;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.util.Collection;
@@ -27,6 +28,7 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.indexdiff.GitResourceDeltaVisitor;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.lib.Repository;
@@ -64,11 +66,9 @@ public class GitResourceDeltaTestHelper {
 
 	public void setUp() {
 		resourceChangeListener = new IResourceChangeListener() {
-			@Override
 			public void resourceChanged(final IResourceChangeEvent event) {
 				try {
 					event.getDelta().accept(new IResourceDeltaVisitor() {
-						@Override
 						public boolean visit(IResourceDelta delta)
 								throws CoreException {
 							final IResource resource = delta.getResource();
@@ -86,8 +86,8 @@ public class GitResourceDeltaTestHelper {
 							try {
 								event.getDelta().accept(visitor);
 							} catch (CoreException e) {
-								String msg = "Exception during accept of GitResourceDeltaVisitor for resource delta";
-								throw new RuntimeException(msg, e);
+								Activator.logError(e.getMessage(), e);
+								return false;
 							}
 							IPath gitDirAbsolutePath = mapping
 									.getGitDirAbsolutePath();
@@ -104,9 +104,8 @@ public class GitResourceDeltaTestHelper {
 						}
 					});
 				} catch (CoreException e) {
-					throw new RuntimeException(
-							"Exception during accept of test visitor for resource delta",
-							e);
+					Activator.logError(e.getMessage(), e);
+					return;
 				}
 			}
 		};
@@ -138,5 +137,6 @@ public class GitResourceDeltaTestHelper {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		for (String file : expected)
 			assertThat(changedResources, hasItem(root.findMember(file)));
+		assertEquals(expected.length, changedResources.size());
 	}
 }

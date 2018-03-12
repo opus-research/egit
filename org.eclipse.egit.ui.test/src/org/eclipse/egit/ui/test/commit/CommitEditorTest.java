@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011, 2013 GitHub Inc and others.
+ *  Copyright (c) 2011, 2012 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -19,7 +19,6 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
@@ -37,7 +36,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -45,22 +44,26 @@ import org.junit.Test;
  */
 public class CommitEditorTest extends LocalRepositoryTestCase {
 
-	private Repository repository;
+	private static Repository repository;
 
-	private RevCommit commit;
+	private static RevCommit commit;
 
-	@Before
-	public void setup() throws Exception {
+	@BeforeClass
+	public static void setup() throws Exception {
+		closeWelcomePage();
 		File repoFile = createProjectAndCommitToRepository();
 		assertNotNull(repoFile);
 		repository = Activator.getDefault().getRepositoryCache()
 				.lookupRepository(repoFile);
 		assertNotNull(repository);
 
-		try (RevWalk walk = new RevWalk(repository)) {
+		RevWalk walk = new RevWalk(repository);
+		try {
 			commit = walk.parseCommit(repository.resolve(Constants.HEAD));
 			assertNotNull(commit);
 			walk.parseBody(commit.getParent(0));
+		} finally {
+			walk.release();
 		}
 	}
 
@@ -69,7 +72,6 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				RepositoryCommit repoCommit = new RepositoryCommit(repository,
 						commit);
@@ -79,8 +81,8 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		assertNotNull(editorRef.get());
 		IEditorPart editor = editorRef.get();
 		assertTrue(editor instanceof CommitEditor);
-		RepositoryCommit adaptedCommit = Utils.getAdapter(editor,
-				RepositoryCommit.class);
+		RepositoryCommit adaptedCommit = (RepositoryCommit) editor
+				.getAdapter(RepositoryCommit.class);
 		assertNotNull(adaptedCommit);
 		assertEquals(commit, adaptedCommit.getRevCommit());
 		assertEquals(repository.getDirectory(), adaptedCommit.getRepository()
@@ -101,7 +103,6 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				RepositoryCommit repoCommit = new RepositoryCommit(repository,
 						commit);

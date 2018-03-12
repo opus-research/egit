@@ -1,5 +1,8 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2015 Benjamin Muskalla <bmuskalla@eclipsesource.com> and others.
+ * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
+ * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
+ * Copyright (C) 2011-2012, IBM Corporation
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -9,8 +12,6 @@
  * Contributors:
  *    Benjamin Muskalla (EclipseSource) - initial implementation
  *    Tomasz Zarna (IBM) - show whitespace action, bug 371353
- *    Wayne Beaton (Eclipse Foundation) - Bug 433721
- *    Thomas Wolf (Paranor) - Hyperlink syntax coloring; bug 471355
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -26,7 +27,6 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -37,7 +37,6 @@ import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.action.SubMenuManager;
 import org.eclipse.jface.commands.ActionHandler;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
@@ -52,12 +51,12 @@ import org.eclipse.jface.text.TextEvent;
 import org.eclipse.jface.text.WhitespaceCharacterPainter;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistant;
-import org.eclipse.jface.text.presentation.IPresentationReconciler;
-import org.eclipse.jface.text.presentation.PresentationReconciler;
+import org.eclipse.jface.text.hyperlink.IHyperlinkDetector;
+import org.eclipse.jface.text.hyperlink.IHyperlinkPresenter;
+import org.eclipse.jface.text.hyperlink.MultipleHyperlinkPresenter;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
 import org.eclipse.jface.text.quickassist.IQuickAssistProcessor;
 import org.eclipse.jface.text.reconciler.IReconciler;
-import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.AnnotationModel;
 import org.eclipse.jface.text.source.IAnnotationAccess;
@@ -73,12 +72,13 @@ import org.eclipse.jgit.util.IntList;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BidiSegmentEvent;
 import org.eclipse.swt.custom.BidiSegmentListener;
+import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -86,7 +86,9 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Layout;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.ActiveShellExpression;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
@@ -108,6 +110,11 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
 public class SpellcheckableMessageArea extends Composite {
 
 	static final int MAX_LINE_WIDTH = 72;
+
+	private static final Cursor SYS_LINK_CURSOR = PlatformUI.getWorkbench()
+			.getDisplay().getSystemCursor(SWT.CURSOR_HAND);
+
+	private final Cursor sys_normalCursor;
 
 	private static class TextViewerAction extends Action implements IUpdate {
 
@@ -132,7 +139,6 @@ public class SpellcheckableMessageArea extends Composite {
 		 *
 		 * @see Action#firePropertyChange(String, Object, Object)
 		 */
-		@Override
 		public void update() {
 			// XXX: workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=206111
 			if (fOperationCode == ITextOperationTarget.REDO)
@@ -149,7 +155,6 @@ public class SpellcheckableMessageArea extends Composite {
 		/**
 		 * @see Action#run()
 		 */
-		@Override
 		public void run() {
 			if (fOperationCode != -1 && fOperationTarget != null)
 				fOperationTarget.doOperation(fOperationCode);
@@ -172,7 +177,6 @@ public class SpellcheckableMessageArea extends Composite {
 			synchronizeWithPreference();
 		}
 
-		@Override
 		public void propertyChange(PropertyChangeEvent event) {
 			if (event.getProperty().equals(getPreferenceKey()))
 				synchronizeWithPreference();
@@ -191,7 +195,7 @@ public class SpellcheckableMessageArea extends Composite {
 			}
 		}
 
-		protected String getPreferenceKey() {
+		private String getPreferenceKey() {
 			return preferenceKey;
 		}
 
@@ -215,10 +219,6 @@ public class SpellcheckableMessageArea extends Composite {
 
 		protected ITextViewer getTextViewer() {
 			return viewer;
-		}
-
-		protected IPreferenceStore getStore() {
-			return store;
 		}
 	}
 
@@ -266,12 +266,12 @@ public class SpellcheckableMessageArea extends Composite {
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
-		sourceViewer = new HyperlinkSourceViewer(this, null, null, true,
-				SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
-		getTextWidget().setAlwaysShowScrollBars(false);
+		sourceViewer = new SourceViewer(this, null, null, true, SWT.MULTI
+				| SWT.V_SCROLL | SWT.WRAP);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
+		sys_normalCursor = sourceViewer.getTextWidget().getCursor();
 		int endSpacing = 2;
 		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
 		int textHeight = getLineHeight() * 7;
@@ -286,11 +286,9 @@ public class SpellcheckableMessageArea extends Composite {
 
 		configureHardWrap();
 		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
 					getDisplay().asyncExec(new Runnable() {
-						@Override
 						public void run() {
 							configureHardWrap();
 							if (brokenBidiPlatformTextWidth != -1) {
@@ -302,24 +300,7 @@ public class SpellcheckableMessageArea extends Composite {
 			}
 		};
 		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
-		final IPropertyChangeListener syntaxColoringChangeListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				if (JFacePreferences.HYPERLINK_COLOR
-						.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							if (!isDisposed()) {
-								sourceViewer.refresh();
-							}
-						}
-					});
-				}
-			}
-		};
-		JFacePreferences.getPreferenceStore()
-				.addPropertyChangeListener(syntaxColoringChangeListener);
+
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
 		if (isEditable(sourceViewer)) {
 			quickFixActionHandler = createQuickFixActionHandler(sourceViewer);
@@ -327,20 +308,35 @@ public class SpellcheckableMessageArea extends Composite {
 
 		Document document = new Document(initialText);
 
-		configuration = new HyperlinkSourceViewer.Configuration(
-				EditorsUI.getPreferenceStore()) {
+		configuration = new TextSourceViewerConfiguration(
+				EditorsUI
+				.getPreferenceStore()) {
 
-			@Override
 			public int getHyperlinkStateMask(ISourceViewer targetViewer) {
-				if (!targetViewer.isEditable()) {
-					return SWT.NONE;
-				}
-				return super.getHyperlinkStateMask(targetViewer);
+				return SWT.NONE;
+			}
+
+			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
+				return getHyperlinkTargets();
 			}
 
 			@Override
-			protected Map getHyperlinkDetectorTargets(ISourceViewer targetViewer) {
-				return getHyperlinkTargets();
+			public IHyperlinkPresenter getHyperlinkPresenter(
+					ISourceViewer targetViewer) {
+				return new MultipleHyperlinkPresenter(PlatformUI.getWorkbench()
+						.getDisplay().getSystemColor(SWT.COLOR_BLUE).getRGB()) {
+
+					@Override
+					public void hideHyperlinks() {
+						// We want links to always show.
+					}
+
+				};
+			}
+
+			public IHyperlinkDetector[] getHyperlinkDetectors(
+					ISourceViewer targetViewer) {
+				return getRegisteredHyperlinkDetectors(sourceViewer);
 			}
 
 			@Override
@@ -350,7 +346,6 @@ public class SpellcheckableMessageArea extends Composite {
 				return super.getReconciler(sourceViewer);
 			}
 
-			@Override
 			public IContentAssistant getContentAssistant(ISourceViewer viewer) {
 				if (!viewer.isEditable())
 					return null;
@@ -361,36 +356,22 @@ public class SpellcheckableMessageArea extends Composite {
 				return assistant;
 			}
 
-			@Override
-			public IPresentationReconciler getPresentationReconciler(
-					ISourceViewer viewer) {
-				PresentationReconciler reconciler = new PresentationReconciler();
-				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(viewer));
-				DefaultDamagerRepairer hyperlinkDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(this, viewer));
-				reconciler.setDamager(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				reconciler.setRepairer(hyperlinkDamagerRepairer,
-						IDocument.DEFAULT_CONTENT_TYPE);
-				return reconciler;
-			}
-
 		};
 
 		sourceViewer.configure(configuration);
 		sourceViewer.setDocument(document, annotationModel);
 
+		for (StyleRange styleRange : UIUtils
+				.getHyperlinkDetectorStyleRanges(sourceViewer,
+						configuration.getHyperlinkDetectors(sourceViewer)))
+			sourceViewer.getTextWidget().setStyleRange(styleRange);
+
 		configureContextMenu();
 
 		getTextWidget().addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
 				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
-				JFacePreferences.getPreferenceStore()
-						.removePropertyChangeListener(
-								syntaxColoringChangeListener);
 			}
 		});
 	}
@@ -399,7 +380,6 @@ public class SpellcheckableMessageArea extends Composite {
 		class BidiSegmentListenerTester implements BidiSegmentListener {
 			boolean called;
 
-			@Override
 			public void lineGetSegments(BidiSegmentEvent event) {
 				called = true;
 			}
@@ -423,16 +403,7 @@ public class SpellcheckableMessageArea extends Composite {
 			if (hardWrapSegmentListener == null) {
 				final StyledText textWidget = getTextWidget();
 				hardWrapSegmentListener = new BidiSegmentListener() {
-					@Override
 					public void lineGetSegments(BidiSegmentEvent e) {
-						if (e.widget == textWidget) {
-							int footerOffset = CommonUtils
-									.getFooterOffset(textWidget.getText());
-							if (footerOffset >= 0
-									&& e.lineOffset >= footerOffset) {
-								return;
-							}
-						}
 						int[] segments = calculateWrapOffsets(e.lineText, MAX_LINE_WIDTH);
 						if (segments != null) {
 							char[] segmentsChars = new char[segments.length];
@@ -540,38 +511,6 @@ public class SpellcheckableMessageArea extends Composite {
 			private IPainter whitespaceCharPainter;
 
 			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (property.equals(getPreferenceKey())
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED
-								.equals(property)
-						|| AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE
-								.equals(property)) {
-					synchronizeWithPreference();
-				}
-			}
-
-			@Override
 			protected void toggleState(boolean checked) {
 				if (checked)
 					installPainter();
@@ -586,21 +525,7 @@ public class SpellcheckableMessageArea extends Composite {
 				Assert.isTrue(whitespaceCharPainter == null);
 				ITextViewer v = getTextViewer();
 				if (v instanceof ITextViewerExtension2) {
-					IPreferenceStore store = getStore();
-					whitespaceCharPainter = new WhitespaceCharacterPainter(
-							v,
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_IDEOGRAPHIC_SPACES),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LEADING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_ENCLOSED_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_TRAILING_TABS),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_CARRIAGE_RETURN),
-							store.getBoolean(AbstractTextEditor.PREFERENCE_SHOW_LINE_FEED),
-							store.getInt(AbstractTextEditor.PREFERENCE_WHITESPACE_CHARACTER_ALPHA_VALUE));
+					whitespaceCharPainter = new WhitespaceCharacterPainter(v);
 					((ITextViewerExtension2) v).addPainter(whitespaceCharPainter);
 				}
 			}
@@ -639,7 +564,6 @@ public class SpellcheckableMessageArea extends Composite {
 			final SubMenuManager quickFixMenu = new SubMenuManager(contextMenu);
 			quickFixMenu.setVisible(true);
 			quickFixMenu.addMenuListener(new IMenuListener() {
-				@Override
 				public void menuAboutToShow(IMenuManager manager) {
 					quickFixMenu.removeAll();
 					addProposals(quickFixMenu);
@@ -661,7 +585,6 @@ public class SpellcheckableMessageArea extends Composite {
 			private IHandlerActivation quickFixHandlerActivation;
 			private IHandlerActivation contentAssistHandlerActivation;
 
-			@Override
 			public void focusGained(FocusEvent e) {
 				IHandlerService service = getHandlerService();
 				if (service == null)
@@ -711,7 +634,6 @@ public class SpellcheckableMessageArea extends Composite {
 							new ActiveShellExpression(getParent().getShell()));
 			}
 
-			@Override
 			public void focusLost(FocusEvent e) {
 				IHandlerService service = getHandlerService();
 				if (service == null)
@@ -746,7 +668,6 @@ public class SpellcheckableMessageArea extends Composite {
 
         sourceViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 
-					@Override
 					public void selectionChanged(SelectionChangedEvent event) {
 						if (cutAction != null)
 							cutAction.update();
@@ -755,24 +676,55 @@ public class SpellcheckableMessageArea extends Composite {
 
 				});
 
-		if (editable) {
+		if (editable)
 			sourceViewer.addTextListener(new ITextListener() {
-				@Override
+
 				public void textChanged(TextEvent event) {
+					textWidget.setStyleRanges(
+							new StyleRange[0]);
+					for (StyleRange styleRange : UIUtils
+							.getHyperlinkDetectorStyleRanges(
+									sourceViewer,
+									configuration
+											.getHyperlinkDetectors(sourceViewer)))
+						textWidget.setStyleRange(styleRange);
 					if (undoAction != null)
 						undoAction.update();
 					if (redoAction != null)
 						redoAction.update();
 				}
 			});
-		}
+
+		// set the cursor when hovering over a link
+		textWidget.addListener(SWT.MouseMove, new Listener() {
+			public void handleEvent(final Event e) {
+				StyleRange styleRange = getStyleRange(e.x, e.y);
+				if (styleRange != null && styleRange.underline)
+					textWidget.setCursor(SYS_LINK_CURSOR);
+				else
+					textWidget.setCursor(sys_normalCursor);
+			}
+		});
 
 		textWidget.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				showWhitespaceAction.dispose();
 			}
 		});
+	}
+
+	private StyleRange getStyleRange(final int x, final int y) {
+		final StyledText t = sourceViewer.getTextWidget();
+		final int offset;
+		try {
+			offset = t.getOffsetAtLocation(new Point(x, y));
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+		if (offset < t.getCharCount())
+			return t.getStyleRangeAtOffset(offset);
+		else
+			return null;
 	}
 
 	private void addProposals(final SubMenuManager quickFixMenu) {
@@ -808,12 +760,10 @@ public class SpellcheckableMessageArea extends Composite {
 	private IAction createQuickFixAction(final ICompletionProposal proposal) {
 		return new Action(proposal.getDisplayString()) {
 
-			@Override
 			public void run() {
 				proposal.apply(sourceViewer.getDocument());
 			}
 
-			@Override
 			public ImageDescriptor getImageDescriptor() {
 				Image image = proposal.getImage();
 				if (image != null)
@@ -833,7 +783,8 @@ public class SpellcheckableMessageArea extends Composite {
 	 *         found.
 	 */
 	protected IHandlerService getHandlerService() {
-		return CommonUtils.getService(PlatformUI.getWorkbench(), IHandlerService.class);
+		return (IHandlerService) PlatformUI.getWorkbench().getService(
+				IHandlerService.class);
 	}
 
 	private SourceViewerDecorationSupport configureAnnotationPreferences() {
@@ -893,7 +844,6 @@ public class SpellcheckableMessageArea extends Composite {
 			final ITextOperationTarget textOperationTarget) {
 		Action quickFixAction = new Action() {
 
-			@Override
 			public void run() {
 				textOperationTarget.doOperation(ISourceViewer.QUICK_ASSIST);
 			}
@@ -906,7 +856,6 @@ public class SpellcheckableMessageArea extends Composite {
 	private ActionHandler createContentAssistActionHandler(
 			final ITextOperationTarget textOperationTarget) {
 		Action proposalAction = new Action() {
-			@Override
 			public void run() {
 				if (textOperationTarget
 						.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS)
@@ -929,43 +878,18 @@ public class SpellcheckableMessageArea extends Composite {
 	public String getCommitMessage() {
 		String text = getText();
 		text = Utils.normalizeLineEndings(text);
-		if (shouldHardWrap()) {
-			text = wrapCommitMessage(text);
-		}
+		if (shouldHardWrap())
+			text = hardWrap(text);
 		return text;
-	}
-
-	/**
-	 * Wraps a commit message, leaving the footer as defined by
-	 * {@link CommonUtils#getFooterOffset(String)} unwrapped.
-	 *
-	 * @param text
-	 *            of the whole commit message, including footer, using '\n' as
-	 *            line delimiter
-	 * @return the wrapped text
-	 */
-	protected static String wrapCommitMessage(String text) {
-		// protected in order to be easily testable
-		int footerStart = CommonUtils.getFooterOffset(text);
-		if (footerStart < 0) {
-			return hardWrap(text);
-		} else {
-			// Do not wrap footer lines.
-			String footer = text.substring(footerStart);
-			text = hardWrap(text.substring(0, footerStart));
-			return text + footer;
-		}
 	}
 
 	/**
 	 * Hard-wraps the given text.
 	 *
-	 * @param text
-	 *            the text to wrap, must use '\n' as line delimiter
+	 * @param text the text to wrap, must use '\n' as line delimiter
 	 * @return the wrapped text
 	 */
-	protected static String hardWrap(String text) {
-		// protected for testing
+	public static String hardWrap(String text) {
 		int[] wrapOffsets = calculateWrapOffsets(text, MAX_LINE_WIDTH);
 		if (wrapOffsets != null) {
 			StringBuilder builder = new StringBuilder(text.length() + wrapOffsets.length);
@@ -989,7 +913,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @return map of targets
 	 */
 	protected Map<String, IAdaptable> getHyperlinkTargets() {
-		return Collections.singletonMap(EditorsUI.DEFAULT_TEXT_EDITOR_ID,
+		return Collections.singletonMap("org.eclipse.ui.DefaultTextEditor", //$NON-NLS-1$
 				getDefaultTarget());
 	}
 
@@ -1016,7 +940,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @return text
 	 */
 	public String getText() {
-		return getDocument().get();
+		return getTextWidget().getText();
 	}
 
 	/**
@@ -1030,26 +954,14 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param text
 	 */
 	public void setText(String text) {
-		if (text != null) {
-			getDocument().set(text);
-		}
-	}
-
-	/**
-	 * Set the same background color to the styledText widget as the Composite
-	 */
-	@Override
-	public void setBackground(Color color) {
-		super.setBackground(color);
-		StyledText textWidget = getTextWidget();
-		textWidget.setBackground(color);
+		if (text != null)
+			getTextWidget().setText(text);
 	}
 
 	/**
 	 *
 	 */
-	@Override
-	public boolean forceFocus() {
+	public boolean setFocus() {
 		return getTextWidget().setFocus();
 	}
 

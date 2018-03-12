@@ -11,7 +11,7 @@
 package org.eclipse.egit.core.test.op;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertTrue;
+import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
 import java.io.ByteArrayInputStream;
@@ -41,7 +41,6 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 	private TestRepository testRepo2;
 	private TestProject project2;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -59,7 +58,6 @@ public class RemoveFromIndexOperationTest extends GitTestCase {
 		testRepo2.commit("initial commit repo 2");
 	}
 
-	@Override
 	@After
 	public void tearDown() throws Exception {
 		testRepo.dispose();

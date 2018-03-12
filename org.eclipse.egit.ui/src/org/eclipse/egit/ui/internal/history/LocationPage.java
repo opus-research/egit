@@ -27,7 +27,6 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.op.CreatePatchOperation;
-import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
@@ -49,6 +48,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -98,12 +98,10 @@ public class LocationPage extends WizardPage {
 
 	private IContainer wsSelectedContainer;
 
-	private static class LocationPageContentProvider extends
-			BaseWorkbenchContentProvider {
+	private class LocationPageContentProvider extends BaseWorkbenchContentProvider {
 		//Never show closed projects
 		boolean showClosedProjects = false;
 
-		@Override
 		public Object[] getChildren(Object element) {
 			if (element instanceof IWorkspace) {
 				// check if closed projects should be shown
@@ -133,7 +131,6 @@ public class LocationPage extends WizardPage {
 			super(shell);
 		}
 
-		@Override
 		protected Control createContents(Composite parent) {
 			Control control = super.createContents(parent);
 			setTitle(UIText.GitCreatePatchWizard_WorkspacePatchDialogTitle);
@@ -145,7 +142,6 @@ public class LocationPage extends WizardPage {
 			return control;
 		}
 
-		@Override
 		protected Control createDialogArea(Composite parent){
 			Composite parentComposite = (Composite) super.createDialogArea(parent);
 
@@ -200,7 +196,6 @@ public class LocationPage extends WizardPage {
 			return parent;
 		}
 
-		@Override
 		protected Button createButton(Composite parent, int id,
 				String label, boolean defaultButton) {
 			Button button = super.createButton(parent, id, label,
@@ -252,7 +247,6 @@ public class LocationPage extends WizardPage {
 			getButton(IDialogConstants.OK_ID).setEnabled(true);
 		}
 
-		@Override
 		protected void okPressed() {
 			IFile file = wsSelectedContainer.getFile(new Path(
 					wsFilenameText.getText()));
@@ -272,13 +266,11 @@ public class LocationPage extends WizardPage {
 			return wsSelectedContainer;
 		}
 
-		@Override
 		protected void cancelPressed() {
 			validatePage();
 			super.cancelPressed();
 		}
 
-		@Override
 		public boolean close() {
 			if (dlgTitleImage != null)
 				dlgTitleImage.dispose();
@@ -288,7 +280,6 @@ public class LocationPage extends WizardPage {
 		void setupListeners(){
 			wsTreeViewer.addSelectionChangedListener(
 					new ISelectionChangedListener() {
-						@Override
 						public void selectionChanged(SelectionChangedEvent event) {
 							IStructuredSelection s = (IStructuredSelection)event.getSelection();
 							Object obj=s.getFirstElement();
@@ -305,7 +296,6 @@ public class LocationPage extends WizardPage {
 
 			wsTreeViewer.addDoubleClickListener(
 					new IDoubleClickListener() {
-						@Override
 						public void doubleClick(DoubleClickEvent event) {
 							ISelection s= event.getSelection();
 							if (s instanceof IStructuredSelection) {
@@ -320,7 +310,6 @@ public class LocationPage extends WizardPage {
 					});
 
 			wsFilenameText.addModifyListener(new ModifyListener() {
-				@Override
 				public void modifyText(ModifyEvent e) {
 					modified = true;
 					validateDialog();
@@ -339,7 +328,6 @@ public class LocationPage extends WizardPage {
 		super(pageName, title, titleImage);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		final Composite composite = new Composite(parent, SWT.NULL);
 		GridLayout gridLayout = new GridLayout();
@@ -374,7 +362,12 @@ public class LocationPage extends WizardPage {
 
 		fsBrowseButton = new Button(composite, SWT.PUSH);
 		fsBrowseButton.setText(UIText.GitCreatePatchWizard_Browse);
-		UIUtils.setButtonLayoutData(fsBrowseButton);
+		GridData data = new GridData(GridData.HORIZONTAL_ALIGN_FILL);
+		int widthHint = convertHorizontalDLUsToPixels(IDialogConstants.BUTTON_WIDTH);
+		Point minSize = fsBrowseButton.computeSize(SWT.DEFAULT,
+				SWT.DEFAULT, true);
+		data.widthHint = Math.max(widthHint, minSize.x);
+		fsBrowseButton.setLayoutData(data);
 		fsBrowseButton.setEnabled(isFileSystemSelected);
 
 		// workspace
@@ -389,11 +382,10 @@ public class LocationPage extends WizardPage {
 
 		wsBrowseButton = new Button(composite, SWT.PUSH);
 		wsBrowseButton.setText(UIText.GitCreatePatchWizard_Browse);
-		UIUtils.setButtonLayoutData(wsBrowseButton);
+		wsBrowseButton.setLayoutData(data);
 		wsBrowseButton.setEnabled(isWorkspaceSelected);
 
 		cpRadio.addListener(SWT.Selection, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				// disable other input controls
 				if (((Button) event.widget).getSelection()) {
@@ -409,7 +401,6 @@ public class LocationPage extends WizardPage {
 
 		fsRadio.addListener(SWT.Selection, new Listener() {
 
-			@Override
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection()) {
 					// enable filesystem input controls
@@ -427,7 +418,6 @@ public class LocationPage extends WizardPage {
 
 		fsPathText.addModifyListener(new ModifyListener() {
 
-			@Override
 			public void modifyText(ModifyEvent e) {
 				if (validatePage()) {
 					IPath filePath= Path.fromOSString(fsPathText.getText()).removeLastSegments(1);
@@ -437,7 +427,6 @@ public class LocationPage extends WizardPage {
 		});
 
 		fsBrowseButton.addListener(SWT.Selection, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				final FileDialog dialog = new FileDialog(getShell(),
 						SWT.PRIMARY_MODAL | SWT.SAVE);
@@ -457,7 +446,6 @@ public class LocationPage extends WizardPage {
 
 		wsRadio.addListener(SWT.Selection, new Listener() {
 
-			@Override
 			public void handleEvent(Event event) {
 				if (((Button) event.widget).getSelection()) {
 					fsPathText.setEnabled(false);
@@ -475,7 +463,6 @@ public class LocationPage extends WizardPage {
 
 		wsPathText.addModifyListener(new ModifyListener() {
 
-			@Override
 			public void modifyText(ModifyEvent e) {
 				if (validatePage()) {
 					IPath filePath= Path.fromOSString(wsPathText.getText()).removeLastSegments(1);
@@ -485,7 +472,6 @@ public class LocationPage extends WizardPage {
 		});
 
 		wsBrowseButton.addListener(SWT.Selection, new Listener() {
-			@Override
 			public void handleEvent(Event event) {
 				final WorkspaceDialog dialog = new WorkspaceDialog(getShell());
 				wsBrowsed = true;

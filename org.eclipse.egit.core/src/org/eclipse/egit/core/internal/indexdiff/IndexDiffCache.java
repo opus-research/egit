@@ -8,30 +8,14 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.indexdiff;
 
-import java.io.File;
-import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.IFileBuffer;
-import org.eclipse.core.filebuffers.IFileBufferListener;
-import org.eclipse.core.filebuffers.ITextFileBufferManager;
-import org.eclipse.core.filesystem.IFileStore;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
 
@@ -47,178 +31,18 @@ public class IndexDiffCache {
 
 	private IndexDiffChangedListener globalListener;
 
-	private ExternalFileBufferListener bufferListener;
-
-	/**
-	 * Listener on buffer changes related to the workspace external files.
-	 */
-	class ExternalFileBufferListener implements IFileBufferListener {
-
-		private void updateRepoState(IFileBuffer buffer) {
-			IFile file = getResource(buffer);
-			if (file != null) {
-				// this is a workspace file. Changes on those files are
-				// monitored better (and differently) in IndexDiffCacheEntry.
-				return;
-			}
-
-			// the file is not known in the workspace: we should check if it
-			// contained in a Git repository we aware of
-			Repository repo = getRepository(buffer);
-			if (repo == null || repo.isBare()) {
-				return;
-			}
-			IPath relativePath = getRelativePath(repo, buffer);
-			if (relativePath == null || relativePath.isEmpty()) {
-				return;
-			}
-
-			// manually trigger update of IndexDiffCacheEntry state
-			IndexDiffCacheEntry diffEntry = getIndexDiffCacheEntry(repo);
-			if (diffEntry != null) {
-				// since .gitignore change can affect other files, reload index
-				if (Constants.DOT_GIT_IGNORE
-						.equals(relativePath.lastSegment())) {
-					diffEntry.refresh();
-				} else {
-					diffEntry.refreshFiles(
-						Collections.singleton(relativePath.toString()));
-				}
-			}
-		}
-
-		@Nullable
-		private IPath getRelativePath(Repository repo, IFileBuffer buffer) {
-			IPath path = getPath(buffer);
-			if (path == null) {
-				return null;
-			}
-			IPath repositoryRoot = new Path(repo.getWorkTree().getPath());
-			return path.makeRelativeTo(repositoryRoot);
-		}
-
-		@Nullable
-		private IFile getResource(IFileBuffer buffer) {
-			IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-			IPath location = buffer.getLocation();
-			if (location == null) {
-				return null;
-			}
-			IFile file = root.getFile(location);
-			if (!file.isAccessible()) {
-				return null;
-			}
-			return file;
-		}
-
-		@Nullable
-		private Repository getRepository(IFileBuffer buffer) {
-			IPath location = getPath(buffer);
-			if (location != null) {
-				return Activator.getDefault().getRepositoryCache()
-						.getRepository(location);
-			}
-			return null;
-		}
-
-		@Nullable
-		private IPath getPath(IFileBuffer buffer) {
-			IPath location = buffer.getLocation();
-			if (location != null) {
-				return location;
-			}
-			IFileStore store = buffer.getFileStore();
-			if (store != null) {
-				URI uri = store.toURI();
-				if (uri != null) {
-					try {
-						File file = new File(uri);
-						return new Path(file.getAbsolutePath());
-					} catch (IllegalArgumentException e) {
-						// ignore
-					}
-				}
-			}
-			return null;
-		}
-
-		@Override
-		public void underlyingFileDeleted(IFileBuffer buffer) {
-			updateRepoState(buffer);
-		}
-
-		@Override
-		public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
-			if (!isDirty) {
-				updateRepoState(buffer);
-			}
-		}
-
-		@Override
-		public void underlyingFileMoved(IFileBuffer buffer, IPath path) {
-			// nop
-		}
-
-		@Override
-		public void stateValidationChanged(IFileBuffer buffer,
-				boolean isStateValidated) {
-			// nop
-		}
-
-		@Override
-		public void stateChanging(IFileBuffer buffer) {
-			// nop
-		}
-
-		@Override
-		public void stateChangeFailed(IFileBuffer buffer) {
-			// nop
-		}
-
-		@Override
-		public void bufferDisposed(IFileBuffer buffer) {
-			// nop
-		}
-
-		@Override
-		public void bufferCreated(IFileBuffer buffer) {
-			// nop
-		}
-
-		@Override
-		public void bufferContentReplaced(IFileBuffer buffer) {
-			// nop
-		}
-
-		@Override
-		public void bufferContentAboutToBeReplaced(IFileBuffer buffer) {
-			// nop
-		}
-	}
-
 	/**
 	 * constructor
 	 */
 	public IndexDiffCache() {
 		createGlobalListener();
-		registerBufferListener();
-	}
-
-	private void registerBufferListener() {
-		bufferListener = new ExternalFileBufferListener();
-		ITextFileBufferManager bufferManager = FileBuffers
-				.getTextFileBufferManager();
-		if (bufferManager != null) {
-			bufferManager.addFileBufferListener(bufferListener);
-		}
 	}
 
 	/**
 	 * @param repository
 	 * @return cache entry
 	 */
-	@Nullable
-	public IndexDiffCacheEntry getIndexDiffCacheEntry(@NonNull Repository repository) {
+	public IndexDiffCacheEntry getIndexDiffCacheEntry(Repository repository) {
 		IndexDiffCacheEntry entry;
 		synchronized (entries) {
 			entry = entries.get(repository);
@@ -257,7 +81,6 @@ public class IndexDiffCache {
 
 	private void createGlobalListener() {
 		globalListener = new IndexDiffChangedListener() {
-			@Override
 			public void indexDiffChanged(Repository repository,
 					IndexDiffData indexDiffData) {
 				notifyListeners(repository, indexDiffData);
@@ -286,17 +109,8 @@ public class IndexDiffCache {
 	 * Used by {@link Activator}
 	 */
 	public void dispose() {
-		if (bufferListener != null) {
-			ITextFileBufferManager bufferManager = FileBuffers
-					.getTextFileBufferManager();
-			if (bufferManager != null) {
-				bufferManager.removeFileBufferListener(bufferListener);
-				bufferListener = null;
-			}
-		}
-		for (IndexDiffCacheEntry entry : entries.values()) {
+		for (IndexDiffCacheEntry entry : entries.values())
 			entry.dispose();
-		}
 		Job.getJobManager().cancel(JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 		try {
 			Job.getJobManager().join(JobFamilies.INDEX_DIFF_CACHE_UPDATE, null);

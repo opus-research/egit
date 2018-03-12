@@ -10,9 +10,8 @@ package org.eclipse.egit.core.test;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -58,7 +57,7 @@ public abstract class GitTestCase {
 		SystemReader.setInstance(mockSystemReader);
 		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
-						.getParentFile().getAbsoluteFile().toString());
+						.getAbsoluteFile().toString());
 		project = new TestProject(true);
 		gitDir = new File(project.getProject().getWorkspace().getRoot()
 				.getRawLocation().toFile(), Constants.DOT_GIT);
@@ -72,20 +71,21 @@ public abstract class GitTestCase {
 		Activator.getDefault().getRepositoryCache().clear();
 		if (gitDir.exists())
 			FileUtils.delete(gitDir, FileUtils.RECURSIVE | FileUtils.RETRY);
-		SystemReader.setInstance(null);
 	}
 
 	protected ObjectId createFile(Repository repository, IProject actProject, String name, String content) throws IOException {
 		File file = new File(actProject.getProject().getLocation().toFile(), name);
-		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(
-				file), "UTF-8");
+		FileWriter fileWriter = new FileWriter(file);
 		fileWriter.write(content);
 		fileWriter.close();
 		byte[] fileContents = IO.readFully(file);
-		try (ObjectInserter inserter = repository.newObjectInserter()) {
+		ObjectInserter inserter = repository.newObjectInserter();
+		try {
 			ObjectId objectId = inserter.insert(Constants.OBJ_BLOB, fileContents);
 			inserter.flush();
 			return objectId;
+		} finally {
+			inserter.release();
 		}
 	}
 
@@ -98,14 +98,10 @@ public abstract class GitTestCase {
 		byte[] readFully = IO.readFully(file);
 		FileUtils.delete(file);
 		FileOutputStream fileOutputStream = new FileOutputStream(file);
-		try {
-			byte[] truncatedData = new byte[readFully.length - 1];
-			System.arraycopy(readFully, 0, truncatedData, 0,
-					truncatedData.length);
-			fileOutputStream.write(truncatedData);
-		} finally {
-			fileOutputStream.close();
-		}
+		byte[] truncatedData = new byte[readFully.length - 1];
+		System.arraycopy(readFully, 0, truncatedData, 0, truncatedData.length);
+		fileOutputStream.write(truncatedData);
+		fileOutputStream.close();
 		return id;
 	}
 }

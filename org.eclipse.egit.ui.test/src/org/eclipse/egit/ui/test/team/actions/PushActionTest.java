@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,18 +18,19 @@ import java.io.IOException;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -38,15 +39,25 @@ import org.junit.runner.RunWith;
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class PushActionTest extends LocalRepositoryTestCase {
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	private File remoteRepositoryFile;
+	private static File remoteRepositoryFile;
 
-	@Before
-	public void setup() throws Exception {
+	private static SWTBotPerspective perspective;
+
+	@BeforeClass
+	public static void setup() throws Exception {
+		perspective = bot.activePerspective();
+		bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
 		touchAndSubmit(null);
+		waitInUI();
+	}
+
+	@AfterClass
+	public static void shutdown() {
+		perspective.activate();
 	}
 
 	@Test
@@ -65,56 +76,55 @@ public class PushActionTest extends LocalRepositoryTestCase {
 			throws Exception, MissingObjectException,
 			IncorrectObjectTypeException, IOException {
 		Repository repo = lookupRepository(remoteRepositoryFile);
-		try (RevWalk rw = new RevWalk(repo)) {
-			String previous = rw.parseCommit(repo.resolve("HEAD")).name();
-			touchAndSubmit(null);
-			SWTBotShell pushDialog = openPushDialog();
+		RevWalk rw = new RevWalk(repo);
+		String previous = rw.parseCommit(repo.resolve("HEAD")).name();
 
-			SWTBotCombo destinationCombo = pushDialog.bot().comboBox();
-			String[] items = destinationCombo.items();
-			for (int i = 0; i < items.length; i++) {
-				if (items[i].startsWith(destination))
-					destinationCombo.setSelection(i);
-			}
+		touchAndSubmit(null);
+		SWTBotShell pushDialog = openPushDialog();
 
-			pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
-			if (withConfirmPage)
-				pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
-			pushDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-			SWTBotShell confirm = bot.shell(
-					NLS.bind(UIText.PushResultDialog_title, destination));
-			String result = confirm.bot().tree().getAllItems()[0].getText();
-
-			assertTrue("Wrong result",
-					result.contains(previous.substring(0, 7)));
-
-			confirm.close();
-
-			pushDialog = openPushDialog();
-
-			destinationCombo = pushDialog.bot().comboBox();
-			for (int i = 0; i < items.length; i++) {
-				if (items[i].startsWith(destination))
-					destinationCombo.setSelection(i);
-			}
-
-			pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
-			if (withConfirmPage)
-				pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
-			pushDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
-			confirm = bot.shell(
-					NLS.bind(UIText.PushResultDialog_title, destination));
-			result = confirm.bot().tree().getAllItems()[0].getText();
-
-			confirm.close();
-
-			assertTrue("Wrong result",
-					result.contains(UIText.PushResultTable_statusUpToDate));
+		SWTBotCombo destinationCombo = pushDialog.bot().comboBox();
+		String[] items = destinationCombo.items();
+		for (int i = 0; i < items.length; i++) {
+			if (items[i].startsWith(destination))
+				destinationCombo.setSelection(i);
 		}
+
+		pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
+		if (withConfirmPage)
+			pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
+		pushDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		SWTBotShell confirm = bot.shell(NLS.bind(UIText.PushResultDialog_title,
+				destination));
+		String result = confirm.bot().tree().getAllItems()[0].getText();
+
+		assertTrue("Wrong result", result.contains(previous.substring(0, 7)));
+
+		confirm.close();
+
+		pushDialog = openPushDialog();
+
+		destinationCombo = pushDialog.bot().comboBox();
+		for (int i = 0; i < items.length; i++) {
+			if (items[i].startsWith(destination))
+				destinationCombo.setSelection(i);
+		}
+
+		pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
+		if (withConfirmPage)
+			pushDialog.bot().button(IDialogConstants.NEXT_LABEL).click();
+		pushDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
+		confirm = bot.shell(NLS.bind(UIText.PushResultDialog_title, destination));
+		result = confirm.bot().tree().getAllItems()[0].getText();
+
+		confirm.close();
+
+		assertTrue("Wrong result",
+				result.contains(UIText.PushResultTable_statusUpToDate));
 	}
 
 	private SWTBotShell openPushDialog() throws Exception {
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
+		SWTBotTree projectExplorerTree = bot.viewById(
+				"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 		getProjectItem(projectExplorerTree, PROJ1).select();
 		String menuString = util.getPluginLocalizedValue("PushAction_label");
 		String submenuString = util

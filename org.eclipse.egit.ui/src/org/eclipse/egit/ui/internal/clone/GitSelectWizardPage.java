@@ -122,13 +122,10 @@ public class GitSelectWizardPage extends WizardPage {
 		if (repo != null)
 			input.add(new WorkingDirNode(null, repo));
 		tv.setInput(input);
-		// expand root node
-		tv.expandToLevel(2);
 		// select the working directory as default
 		tv.setSelection(new StructuredSelection(input.get(0)));
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 
 		Composite main = new Composite(parent, SWT.NO_RADIO_GROUP);
@@ -198,7 +195,6 @@ public class GitSelectWizardPage extends WizardPage {
 
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
 
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				checkPage();
 			}
@@ -209,8 +205,6 @@ public class GitSelectWizardPage extends WizardPage {
 			WorkingDirNode node = new WorkingDirNode(null, initialRepository);
 			input.add(node);
 			tv.setInput(input);
-			// expand root node
-			tv.expandToLevel(2);
 			// select the working directory as default
 			if (initialPath == null)
 				tv.setSelection(new StructuredSelection(input.get(0)));

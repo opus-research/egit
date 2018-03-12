@@ -122,25 +122,27 @@ public class LinkedResourcesTest {
 			throws Exception {
 		// Create linked folder in project1 that points to project2
 		IFolder folder = project1.getFolder("link2project2");
-		folder.createLink(project2.getLocation(), 0, null);
+		folder.createLink(project2.getLocation(),
+				IResource.ALLOW_MISSING_LOCAL, null);
 		// Create linked file in project1 that points to a file in project2
 		IFile file = project1.getFile("link2project2folder1file1.txt");
 		file.createLink(
 				project2.getFile("project2folder1/project2folder1file1.txt")
-						.getLocation(), 0, null);
-		// Make sure linked folder is refreshed
-		folder.refreshLocal(IResource.DEPTH_INFINITE, null);
-		project2.getFile("project2folder1/project2folder1file1.txt")
-				.touch(null);
-
+						.getLocation(), IResource.ALLOW_MISSING_LOCAL, null);
+		// Add file to project2
+		testUtils.addFileToProject(project2,
+				"project2folder1/project2folder1file2.txt", "Hello world");
 		// Links are written to the .project file
 		resourceDeltaTestHelper1
 				.assertChangedResources(new String[] { "/project1/.project" });
-
-
 		// Changes to linked resources are reported against their repository
 		resourceDeltaTestHelper2.assertChangedResources(new String[] {
-				"/project2/project2folder1/project2folder1file1.txt" });
+						"/project1/link2project2/project2folder1",
+						"/project1/link2project2/project2folder1/project2folder1file2.txt",
+						"/project1/link2project2/.project",
+						"/project1/link2project2/project2folder1/project2folder1file1.txt",
+						"/project1/link2project2",
+				"/project2/project2folder1/project2folder1file2.txt" });
 	}
 
 	@Test

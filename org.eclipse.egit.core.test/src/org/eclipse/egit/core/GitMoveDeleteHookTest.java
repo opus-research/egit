@@ -76,9 +76,8 @@ public class GitMoveDeleteHookTest {
 		SystemReader.setInstance(mockSystemReader);
 		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
-						.getParentFile().getAbsoluteFile().toString());
+						.getAbsoluteFile().toString());
 		workspaceSupplement = testUtils.createTempDir("wssupplement");
-		testDirs.add(testUtils.getBaseTempDir());
 		workspace = ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().getAbsoluteFile();
 	}
 
@@ -91,7 +90,6 @@ public class GitMoveDeleteHookTest {
 		for (File d : testDirs)
 			if (d.exists())
 				FileUtils.delete(d, FileUtils.RECURSIVE | FileUtils.RETRY);
-		SystemReader.setInstance(null);
 	}
 
 	private TestProject initRepoInsideProjectInsideWorkspace() throws IOException,
@@ -146,9 +144,8 @@ public class GitMoveDeleteHookTest {
 				"some text");
 		testUtils.addFileToProject(project.getProject(), "file2.txt",
 				"some  more text");
-		IFile file = project.getProject().getFile("file.txt");
 		AddToIndexOperation addToIndexOperation = new AddToIndexOperation(
-				new IResource[] { file,
+				new IResource[] { project.getProject().getFile("file.txt"),
 						project.getProject().getFile("file2.txt") });
 		addToIndexOperation.execute(null);
 
@@ -159,12 +156,9 @@ public class GitMoveDeleteHookTest {
 		assertNotNull(dirCache.getEntry("file.txt"));
 		assertNotNull(dirCache.getEntry("file2.txt"));
 		// Modify the content before the move
-		testUtils.changeContentOfFile(project.getProject(), file, "other text");
-		testUtils.waitForJobs(10000, 1000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
-
-		file.delete(true, null);
-
-		testUtils.waitForJobs(10000, 1000, JobFamilies.INDEX_DIFF_CACHE_UPDATE);
+		testUtils.changeContentOfFile(project.getProject(), project
+				.getProject().getFile("file.txt"), "other text");
+		project.getProject().getFile("file.txt").delete(true, null);
 
 		// Check index for the deleted file
 		dirCache.read();
@@ -172,7 +166,7 @@ public class GitMoveDeleteHookTest {
 		assertNull(dirCache.getEntry("file.txt"));
 		assertNotNull(dirCache.getEntry("file2.txt"));
 		// Actual file is deleted
-		assertFalse(file.exists());
+		assertFalse(project.getProject().getFile("file.txt").exists());
 		// But a non-affected file remains
 		assertTrue(project.getProject().getFile("file2.txt").exists());
 	}

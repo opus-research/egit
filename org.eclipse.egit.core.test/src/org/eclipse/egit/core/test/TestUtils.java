@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -33,8 +32,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.IJobManager;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -47,47 +44,17 @@ public class TestUtils {
 
 	public final static String COMMITTER = "The Commiter <The.committer@some.com>";
 
-	private final static File rootDir = customTestDirectory();
-
-	/**
-	 * Allow to set a custom directory for running tests
-	 *
-	 * @return custom directory defined by system property
-	 *         {@code egit.test.tmpdir} or {@code ~/egit.test.tmpdir} if this
-	 *         property isn't defined
-	 */
-	private static File customTestDirectory() {
-		final String p = System.getProperty("egit.test.tmpdir"); //$NON-NLS-1$
-		File testDir = null;
-		boolean isDefault = true;
-		if (p == null || p.length() == 0)
-			testDir = new File(FS.DETECTED.userHome(), "egit.test.tmpdir"); //$NON-NLS-1$
-		else {
-			isDefault = false;
-			testDir = new File(p).getAbsoluteFile();
-		}
-		System.out.println("egit.test.tmpdir" //$NON-NLS-1$
-				+ (isDefault ? "[default]: " : ": ") //$NON-NLS-1$ $NON-NLS-2$
-				+ testDir.getAbsolutePath());
-		return testDir;
-	}
-
-	private File baseTempDir;
-
-	public TestUtils() {
-		// ensure that concurrent test runs don't use the same directory
-		baseTempDir = new File(rootDir, UUID.randomUUID().toString()
-				.replace("-", ""));
-	}
-
 	/**
 	 * Return the base directory in which temporary directories are created.
 	 * Current implementation returns a "temporary" folder in the user home.
 	 *
 	 * @return a "temporary" folder in the user home that may not exist.
+	 * @throws IOException
 	 */
-	public File getBaseTempDir() {
-		return baseTempDir;
+	public File getBaseTempDir() throws IOException {
+		File userHome = FS.DETECTED.userHome();
+		File rootDir = new File(userHome, "EGitCoreTestTempDir");
+		return rootDir;
 	}
 
 	/**
@@ -103,7 +70,6 @@ public class TestUtils {
 		File result = new File(getBaseTempDir(), name);
 		if (result.exists())
 			FileUtils.delete(result, FileUtils.RECURSIVE | FileUtils.RETRY);
-		FileUtils.mkdirs(result, true);
 		return result;
 	}
 
@@ -113,6 +79,7 @@ public class TestUtils {
 	 * @throws IOException
 	 */
 	public void deleteTempDirs() throws IOException {
+		File rootDir = getBaseTempDir();
 		if (rootDir.exists())
 			FileUtils.delete(rootDir, FileUtils.RECURSIVE | FileUtils.RETRY);
 	}
@@ -148,7 +115,7 @@ public class TestUtils {
 	 *            the contents
 	 * @return the file
 	 * @throws CoreException
-	 *             if the file cannot be created
+	 *             if the file can not be created
 	 * @throws UnsupportedEncodingException
 	 */
 	public IFile addFileToProject(IProject project, String path, String content) throws CoreException, UnsupportedEncodingException {
@@ -238,16 +205,14 @@ public class TestUtils {
 		Set<String> expectedfiles = new HashSet<String>();
 		for (String path : paths)
 			expectedfiles.add(path);
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-			treeWalk.setRecursive(true);
-			while (treeWalk.next()) {
-				String path = treeWalk.getPathString();
-				if (!expectedfiles.contains(path))
-					fail("Repository contains unexpected expected file "
-							+ path);
-				expectedfiles.remove(path);
-			}
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+		treeWalk.setRecursive(true);
+		while (treeWalk.next()) {
+			String path = treeWalk.getPathString();
+			if (!expectedfiles.contains(path))
+				fail("Repository contains unexpected expected file " + path);
+			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -275,25 +240,23 @@ public class TestUtils {
 	public void assertRepositoryContainsFilesWithContent(Repository repository,
 			String... args) throws Exception {
 		HashMap<String, String> expectedfiles = mkmap(args);
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			treeWalk.addTree(repository.resolve("HEAD^{tree}"));
-			treeWalk.setRecursive(true);
-			while (treeWalk.next()) {
-				String path = treeWalk.getPathString();
-				assertTrue(expectedfiles.containsKey(path));
-				ObjectId objectId = treeWalk.getObjectId(0);
-				byte[] expectedContent = expectedfiles.get(path)
-						.getBytes("UTF-8");
-				byte[] repoContent = treeWalk.getObjectReader().open(objectId)
-						.getBytes();
-				if (!Arrays.equals(repoContent, expectedContent)) {
-					fail("File " + path + " has repository content "
-							+ new String(repoContent, "UTF-8")
-							+ " instead of expected content "
-							+ new String(expectedContent, "UTF-8"));
-				}
-				expectedfiles.remove(path);
+		TreeWalk treeWalk = new TreeWalk(repository);
+		treeWalk.addTree(repository.resolve("HEAD^{tree}"));
+		treeWalk.setRecursive(true);
+		while (treeWalk.next()) {
+			String path = treeWalk.getPathString();
+			assertTrue(expectedfiles.containsKey(path));
+			ObjectId objectId = treeWalk.getObjectId(0);
+			byte[] expectedContent = expectedfiles.get(path).getBytes();
+			byte[] repoContent = treeWalk.getObjectReader().open(objectId)
+					.getBytes();
+			if (!Arrays.equals(repoContent, expectedContent)) {
+				fail("File " + path + " has repository content "
+						+ new String(repoContent)
+						+ " instead of expected content "
+						+ new String(expectedContent));
 			}
+			expectedfiles.remove(path);
 		}
 		if (expectedfiles.size() > 0) {
 			StringBuilder message = new StringBuilder(
@@ -306,43 +269,6 @@ public class TestUtils {
 		}
 	}
 
-	/**
-	 * Waits at least 50 milliseconds until no jobs of given family are running
-	 *
-	 * @param maxWaitTime
-	 * @param family
-	 * @throws InterruptedException
-	 */
-	public void waitForJobs(long maxWaitTime, Object family)
-			throws InterruptedException {
-		waitForJobs(maxWaitTime, 50, family);
-	}
-
-	/**
-	 * Waits at least <code>minWaitTime</code> milliseconds until no jobs of
-	 * given family are running
-	 *
-	 * @param maxWaitTime
-	 * @param minWaitTime
-	 * @param family
-	 * @throws InterruptedException
-	 */
-	public void waitForJobs(long maxWaitTime, long minWaitTime, Object family)
-			throws InterruptedException {
-		Thread.sleep(minWaitTime);
-		long start = System.currentTimeMillis();
-		IJobManager jobManager = Job.getJobManager();
-
-		Job[] jobs = jobManager.find(family);
-		while (jobs.length > 0) {
-			Thread.sleep(100);
-			jobs = jobManager.find(family);
-			if (System.currentTimeMillis() - start > maxWaitTime) {
-				return;
-			}
-		}
-	}
-
 	private static HashMap<String, String> mkmap(String... args) {
 		if ((args.length % 2) > 0)
 			throw new IllegalArgumentException("needs to be pairs");
@@ -351,6 +277,10 @@ public class TestUtils {
 			map.put(args[i], args[i+1]);
 		}
 		return map;
+	}
+
+	File getWorkspaceSupplement() throws IOException {
+		return createTempDir("wssupplement");
 	}
 
 }

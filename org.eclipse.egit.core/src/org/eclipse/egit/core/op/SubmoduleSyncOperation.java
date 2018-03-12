@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -57,11 +56,9 @@ public class SubmoduleSyncOperation implements IEGitOperation {
 		return this;
 	}
 
-	@Override
 	public void execute(final IProgressMonitor monitor) throws CoreException {
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
-			@Override
 			public void run(IProgressMonitor pm) throws CoreException {
 				pm.beginTask("", 1); //$NON-NLS-1$
 				Map<String, String> updates = null;
@@ -81,12 +78,10 @@ public class SubmoduleSyncOperation implements IEGitOperation {
 				}
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE,
+		ResourcesPlugin.getWorkspace().run(action,
 				monitor != null ? monitor : new NullProgressMonitor());
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return null;
 	}

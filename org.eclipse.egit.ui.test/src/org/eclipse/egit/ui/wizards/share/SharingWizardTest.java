@@ -29,16 +29,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.QualifiedName;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.DisconnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.common.ExistingOrNewPage;
 import org.eclipse.egit.ui.common.ExistingOrNewPage.Row;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.common.SharingWizard;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.Eclipse;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -54,7 +54,6 @@ import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotCombo;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -77,16 +76,12 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		SystemReader.setInstance(mockSystemReader);
 		mockSystemReader.setProperty(Constants.GIT_CEILING_DIRECTORIES_KEY,
 				ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile()
-						.getParentFile().getAbsoluteFile().toString());
+						.getAbsoluteFile().toString());
 
-		TestUtil.showExplorerView();
+		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
+		bot.viewByTitle("Package Explorer").show();
 
 		ResourcesPlugin.getWorkspace().getRoot().refreshLocal(IResource.DEPTH_INFINITE, null);
-	}
-
-	@AfterClass
-	public static void afterClass() {
-		SystemReader.setInstance(null);
 	}
 
 	private static String createProject(String projectName) {
@@ -132,7 +127,7 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				if (!(gitDirParent.toString() + File.separator)
 						.startsWith(workspacePath.toString() + File.separator))
 					if (!(gitDirParent.toString() + File.separator)
-							.startsWith(getTestDirectory().getAbsolutePath()
+							.startsWith(getTestDirectory().getCanonicalPath()
 									.toString() + File.separator))
 						fail("Attempting cleanup of directory neither in workspace nor test directory"
 								+ canonicalFile);
@@ -146,7 +141,8 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 
 	@Before
 	public void setupViews() {
-		TestUtil.showExplorerView();
+		bot.perspectiveById("org.eclipse.jdt.ui.JavaPerspective").activate();
+		bot.viewByTitle("Package Explorer").show();
 		sharingWizard = new SharingWizard();
 	}
 
@@ -196,7 +192,7 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 	public void shareProjectWithAlreadyCreatedRepos() throws IOException,
 			InterruptedException, JGitInternalException, GitAPIException {
 		Repository repo1 = FileRepositoryBuilder.create(new File(
-				new File(createProject(projectName1)).getParent(), ".git"));
+				createProject(projectName1), "../.git"));
 		repo1.create();
 		repo1.close();
 		Repository repo2 = FileRepositoryBuilder.create(new File(
@@ -241,10 +237,10 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 		existingOrNewPage.assertEnabling(false, false, true);
 		bot.button("Finish").click();
 		Thread.sleep(1000);
-		assertEquals(repo1.getDirectory().getAbsolutePath(), RepositoryMapping
+		assertEquals(repo1.getDirectory().getCanonicalPath(), RepositoryMapping
 				.getMapping(workspace.getRoot().getProject(projectName1))
 				.getRepository().getDirectory().toString());
-		assertEquals(repo2.getDirectory().getAbsolutePath(), RepositoryMapping
+		assertEquals(repo2.getDirectory().getCanonicalPath(), RepositoryMapping
 				.getMapping(workspace.getRoot().getProject(projectName2))
 				.getRepository().getDirectory().toString());
 	}
@@ -261,11 +257,15 @@ public class SharingWizardTest extends LocalRepositoryTestCase {
 				projectName1, projectName2);
 		SWTBotShell createRepoDialog = existingOrNewPage
 				.clickCreateRepository();
-		String repoDir = RepositoryUtil.getDefaultRepositoryDir();
+		String repoDir = Activator.getDefault().getPreferenceStore()
+				.getString(UIPreferences.DEFAULT_REPO_DIR);
 		File repoFolder = new File(repoDir, repoName);
 		createRepoDialog.bot()
 				.textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
-				.setText(repoFolder.getAbsolutePath());
+				.setText(repoDir);
+		createRepoDialog.bot()
+				.textWithLabel(UIText.CreateRepositoryPage_RepositoryNameLabel)
+				.setText(repoName);
 		createRepoDialog.bot().button(IDialogConstants.FINISH_LABEL).click();
 
 		SWTBotCombo combo = bot

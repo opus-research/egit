@@ -6,7 +6,6 @@
  * Copyright (C) 2010, Wim Jongman <wim.jongman@remainsoftware.com>
  * Copyright (C) 2010, Ryan Schmitt <ryan.schmitt@boeing.com>
  * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
- * Copyright (C) 2013, Lars Vogel <Lars.Vogel@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,10 +29,10 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
+import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.components.CachedCheckboxTreeViewer;
-import org.eclipse.egit.ui.internal.components.FilteredCheckboxTree;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -44,7 +43,6 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
-import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -72,30 +70,16 @@ public class GitProjectsImportPage extends WizardPage {
 	private final class ProjectLabelProvider extends GitLabelProvider implements
 			IColorProvider {
 
-		@Override
 		public Color getForeground(Object element) {
 			if (isProjectInWorkspace(((ProjectRecord) element).getProjectName()))
-				return PlatformUI.getWorkbench().getDisplay()
-						.getSystemColor(SWT.COLOR_GRAY);
+				return PlatformUI.getWorkbench().getDisplay().getSystemColor(
+						SWT.COLOR_GRAY);
 			return null;
 		}
 
-		@Override
 		public Color getBackground(Object element) {
 			return null;
 		}
-	}
-
-	/**
-	 * A filter to remove conflicting projects
-	 */
-	class ConflictingProjectFilter extends ViewerFilter {
-		@Override
-		public boolean select(Viewer viewer, Object parentElement,
-				Object element) {
-			return !((ProjectRecord) element).hasConflicts();
-		}
-
 	}
 
 	private final static String STORE_NESTED_PROJECTS = "GitProjectsImportPage.STORE_NESTED_PROJECTS"; //$NON-NLS-1$
@@ -108,10 +92,6 @@ public class GitProjectsImportPage extends WizardPage {
 	private CachedCheckboxTreeViewer projectsList;
 
 	private Button nestedProjectsCheckbox;
-
-	private Button hideConflictingProjectsCheckBox;
-
-	private ConflictingProjectFilter conflictingProjectsFilter = new ConflictingProjectFilter();
 
 	private boolean nestedProjects = true;
 
@@ -144,7 +124,6 @@ public class GitProjectsImportPage extends WizardPage {
 		setDescription(UIText.WizardProjectsImportPage_ImportProjectsDescription);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 
 		initializeDialogUnits(parent);
@@ -230,7 +209,6 @@ public class GitProjectsImportPage extends WizardPage {
 		projectsList.getControl().setLayoutData(listData);
 		projectsList.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				ProjectRecord element = (ProjectRecord) event.getElement();
 				if (isProjectInWorkspace(element.getProjectName())) {
@@ -245,32 +223,26 @@ public class GitProjectsImportPage extends WizardPage {
 
 		projectsList.setContentProvider(new ITreeContentProvider() {
 
-			@Override
 			public Object[] getChildren(Object parentElement) {
 				return children;
 			}
 
-			@Override
 			public Object[] getElements(Object inputElement) {
 				return selectedProjects;
 			}
 
-			@Override
 			public boolean hasChildren(Object element) {
 				return false;
 			}
 
-			@Override
 			public Object getParent(Object element) {
 				return null;
 			}
 
-			@Override
 			public void dispose() {
 				// ignore
 			}
 
-			@Override
 			public void inputChanged(Viewer viewer, Object oldInput,
 					Object newInput) {
 				// ignore
@@ -279,7 +251,6 @@ public class GitProjectsImportPage extends WizardPage {
 		});
 
 		projectsList.getTree().addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				checkPageComplete();
 			}
@@ -310,7 +281,6 @@ public class GitProjectsImportPage extends WizardPage {
 		selectAll = new Button(buttonsComposite, SWT.PUSH);
 		selectAll.setText(UIText.WizardProjectsImportPage_selectAll);
 		selectAll.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				selectAllNewProjects();
 				enableSelectAllButtons();
@@ -323,7 +293,6 @@ public class GitProjectsImportPage extends WizardPage {
 		deselectAll = new Button(buttonsComposite, SWT.PUSH);
 		deselectAll.setText(UIText.WizardProjectsImportPage_deselectAll);
 		deselectAll.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				for (TreeItem item : projectsList.getTree().getItems())
 					projectsList.setChecked(item.getData(), false);
@@ -357,24 +326,6 @@ public class GitProjectsImportPage extends WizardPage {
 				setProjectsList(lastPath);
 			}
 		});
-
-		hideConflictingProjectsCheckBox = new Button(optionsGroup, SWT.CHECK);
-		hideConflictingProjectsCheckBox
-				.setText(UIText.GitProjectsImportPage_HideConflictingProjects);
-		hideConflictingProjectsCheckBox.setLayoutData(new GridData(
-				GridData.FILL_HORIZONTAL));
-		hideConflictingProjectsCheckBox
-				.addSelectionListener(new SelectionAdapter() {
-					@Override
-					public void widgetSelected(SelectionEvent e) {
-						projectsList.removeFilter(conflictingProjectsFilter);
-						if (hideConflictingProjectsCheckBox
-								.getSelection()) {
-							projectsList.addFilter(conflictingProjectsFilter);
-						}
-					}
-				});
-
 	}
 
 	private void selectAllNewProjects() {
@@ -438,7 +389,6 @@ public class GitProjectsImportPage extends WizardPage {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 
-				@Override
 				public void run(IProgressMonitor monitor) {
 
 					monitor.beginTask(
@@ -471,7 +421,6 @@ public class GitProjectsImportPage extends WizardPage {
 						if (files.isEmpty())
 							// run in UI thread
 							Display.getDefault().syncExec(new Runnable() {
-								@Override
 								public void run() {
 									setErrorMessage(UIText.GitProjectsImportPage_NoProjectsMessage);
 								}
@@ -546,10 +495,7 @@ public class GitProjectsImportPage extends WizardPage {
 		List<ProjectRecord> validProjects = new ArrayList<ProjectRecord>();
 		for (int i = 0; i < selectedProjects.length; i++) {
 			if (!isProjectInWorkspace(selectedProjects[i].getProjectName())) {
-				selectedProjects[i].setHasConflicts(false);
 				validProjects.add(selectedProjects[i]);
-			} else {
-				selectedProjects[i].setHasConflicts(true);
 			}
 		}
 		return validProjects.toArray(new ProjectRecord[validProjects.size()]);

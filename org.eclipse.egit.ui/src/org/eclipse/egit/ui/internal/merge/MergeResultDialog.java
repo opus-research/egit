@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2013 Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2010, 2012 Jens Baumgart <jens.baumgart@sap.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -53,6 +53,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
@@ -101,7 +102,7 @@ public class MergeResultDialog extends Dialog {
 	@Override
 	protected void createButtonsForButtonBar(final Composite parent) {
 		createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL,
-				true).setFocus();
+				true);
 	}
 
 	@Override
@@ -116,11 +117,10 @@ public class MergeResultDialog extends Dialog {
 		resultLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
 				false));
 		Text resultText = new Text(composite, SWT.READ_ONLY);
-		MergeStatus status = mergeResult.getMergeStatus();
-		resultText.setText(status.toString());
+		resultText.setText(mergeResult.getMergeStatus().toString());
 		resultText.setSelection(resultText.getCaretPosition());
 		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		if (status == MergeStatus.FAILED) {
+		if (mergeResult.getMergeStatus() == MergeStatus.FAILED) {
 			resultText.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_RED));
 
 			StringBuilder paths = new StringBuilder();
@@ -148,9 +148,7 @@ public class MergeResultDialog extends Dialog {
 			pathsText.setText(paths.toString());
 		}
 
-		if (status == MergeStatus.FAST_FORWARD
-				|| status == MergeStatus.FAST_FORWARD_SQUASHED
-				|| status == MergeStatus.MERGED) {
+		if (mergeResult.getMergeStatus() != MergeStatus.FAILED) {
 			// new head
 			Label newHeadLabel = new Label(composite, SWT.NONE);
 			newHeadLabel.setText(UIText.MergeResultDialog_newHead);
@@ -173,47 +171,41 @@ public class MergeResultDialog extends Dialog {
 		TableViewer viewer = new TableViewer(composite);
 		viewer.setContentProvider(new IStructuredContentProvider() {
 
-			@Override
 			public void dispose() {
 				// empty
 			}
 
-			@Override
 			public void inputChanged(Viewer theViewer, Object oldInput,
 					Object newInput) {
 				// empty
 			}
 
-			@Override
 			public Object[] getElements(Object inputElement) {
 				return getCommits(mergeResult.getMergedCommits());
 			}
 		});
+		Table table = viewer.getTable();
+		table.setLinesVisible(true);
 		final IStyledLabelProvider styleProvider = new IStyledLabelProvider() {
 
 			private final WorkbenchLabelProvider wrapped = new WorkbenchLabelProvider();
 
-			@Override
 			public void removeListener(ILabelProviderListener listener) {
 				// Empty
 			}
 
-			@Override
 			public boolean isLabelProperty(Object element, String property) {
 				return false;
 			}
 
-			@Override
 			public void dispose() {
 				wrapped.dispose();
 			}
 
-			@Override
 			public void addListener(ILabelProviderListener listener) {
 				// Empty
 			}
 
-			@Override
 			public StyledString getStyledText(Object element) {
 				// TODO Replace with use of IWorkbenchAdapter3 when is no longer
 				// supported
@@ -223,7 +215,6 @@ public class MergeResultDialog extends Dialog {
 				return new StyledString(wrapped.getText(element));
 			}
 
-			@Override
 			public Image getImage(Object element) {
 				return wrapped.getImage(element);
 			}
@@ -262,61 +253,26 @@ public class MergeResultDialog extends Dialog {
 		return composite;
 	}
 
-	/**
-	 * @param mergeStatus
-	 * @return text describing merge status in short form
-	 */
-	public static String getStatusText(MergeStatus mergeStatus) {
-		switch (mergeStatus) {
-		case FAST_FORWARD:
-			return UIText.MergeResultDialog_StatusFastForward;
-		case FAST_FORWARD_SQUASHED:
-			return UIText.MergeResultDialog_StatusFastForwardSquashed;
-		case ALREADY_UP_TO_DATE:
-			return UIText.MergeResultDialog_StatusAlreadyUpToDate;
-		case FAILED:
-			return UIText.MergeResultDialog_StatusFailed;
-		case MERGED:
-			return UIText.MergeResultDialog_StatusMerged;
-		case MERGED_SQUASHED:
-			return UIText.MergeResultDialog_StatusMergedSquashed;
-		case MERGED_SQUASHED_NOT_COMMITTED:
-			return UIText.MergeResultDialog_StatusMergedSquashedNotCommitted;
-		case CONFLICTING:
-			return UIText.MergeResultDialog_StatusConflicting;
-		case ABORTED:
-			return UIText.MergeResultDialog_StatusAborted;
-		case MERGED_NOT_COMMITTED:
-			return UIText.MergeResultDialog_StatusMergedNotCommitted;
-		case NOT_SUPPORTED:
-			return UIText.MergeResultDialog_StatusNotSupported;
-		case CHECKOUT_CONFLICT:
-			return UIText.MergeResultDialog_StatusCheckoutConflict;
-		}
-		return mergeStatus.toString();
-	}
-
 	private RepositoryCommit[] getCommits(final ObjectId[] merges) {
 		final List<RepositoryCommit> commits = new ArrayList<RepositoryCommit>();
-		try (final RevWalk walk = new RevWalk(objectReader)) {
-			walk.setRetainBody(true);
-			for (ObjectId merge : merges)
-				try {
-					commits.add(new RepositoryCommit(repository,
-							walk.parseCommit(merge)));
-				} catch (IOException e) {
-					Activator.logError(MessageFormat.format(
-							UIText.MergeResultDialog_couldNotFindCommit,
-							merge.name()), e);
-				}
-			return commits.toArray(new RepositoryCommit[commits.size()]);
-		}
+		final RevWalk walk = new RevWalk(objectReader);
+		walk.setRetainBody(true);
+		for (ObjectId merge : merges)
+			try {
+				commits.add(new RepositoryCommit(repository, walk
+						.parseCommit(merge)));
+			} catch (IOException e) {
+				Activator.logError(MessageFormat.format(
+						UIText.MergeResultDialog_couldNotFindCommit,
+						merge.name()), e);
+			}
+		return commits.toArray(new RepositoryCommit[commits.size()]);
 	}
 
 	private String getCommitMessage(ObjectId id) {
 		RevCommit commit;
-		try (RevWalk rw = new RevWalk(objectReader)) {
-			commit = rw.parseCommit(id);
+		try {
+			commit = new RevWalk(objectReader).parseCommit(id);
 		} catch (IOException e) {
 			Activator.logError(UIText.MergeResultDialog_couldNotFindCommit, e);
 			return UIText.MergeResultDialog_couldNotFindCommit;
@@ -343,15 +299,13 @@ public class MergeResultDialog extends Dialog {
 		super.configureShell(newShell);
 		newShell.setText(UIText.MergeAction_MergeResultTitle);
 		newShell.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				if (objectReader != null)
-					objectReader.close();
+					objectReader.release();
 			}
 		});
 	}
 
-	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
 		return UIUtils.getDialogBoundSettings(getClass());
 	}

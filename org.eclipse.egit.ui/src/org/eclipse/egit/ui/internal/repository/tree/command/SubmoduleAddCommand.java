@@ -15,7 +15,6 @@ import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -37,7 +36,6 @@ import org.eclipse.jgit.lib.Repository;
 public class SubmoduleAddCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode<?>> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<RepositoryTreeNode<?>> nodes = getSelectedNodes(event);
 		if (nodes.isEmpty())
@@ -54,11 +52,10 @@ public class SubmoduleAddCommand extends
 			final String uri = wizard.getUri().toPrivateASCIIString();
 			final SubmoduleAddOperation op = new SubmoduleAddOperation(repo,
 					path, uri);
-			Job job = new WorkspaceJob(MessageFormat.format(
+			Job job = new Job(MessageFormat.format(
 					UIText.SubmoduleAddCommand_JobTitle, path, uri)) {
-
 				@Override
-				public IStatus runInWorkspace(IProgressMonitor monitor) {
+				protected IStatus run(IProgressMonitor monitor) {
 					monitor.beginTask("", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
 					try {
 						op.execute(monitor);

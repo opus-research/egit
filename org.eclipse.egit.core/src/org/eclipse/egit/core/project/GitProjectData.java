@@ -2,7 +2,6 @@
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Google Inc.
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +31,6 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.QualifiedName;
@@ -43,20 +41,16 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.RepositoryProvider;
-import org.eclipse.team.core.TeamException;
 
 /**
  * This class keeps information about how a project is mapped to
@@ -72,7 +66,6 @@ public class GitProjectData {
 	private static final IResourceChangeListener rcl = new RCL();
 
 	private static class RCL implements IResourceChangeListener {
-		@Override
 		@SuppressWarnings("synthetic-access")
 		public void resourceChanged(final IResourceChangeEvent event) {
 			switch (event.getType()) {
@@ -202,11 +195,11 @@ public class GitProjectData {
 	 *         Git provider is not associated with the project or an exception
 	 *         occurred
 	 */
-	@Nullable
-	public synchronized static GitProjectData get(final @NonNull IProject p) {
+	public synchronized static GitProjectData get(final IProject p) {
 		try {
 			GitProjectData d = lookup(p);
-			if (d == null && ResourceUtil.isSharedWithGit(p)) {
+			if (d == null
+					&& RepositoryProvider.getProvider(p) instanceof GitProvider) {
 				d = new GitProjectData(p).load();
 				cache(p, d);
 			}
@@ -362,9 +355,7 @@ public class GitProjectData {
 	 * @param resource any workbench resource contained within this project.
 	 * @return the mapping for the specified project
 	 */
-	@Nullable
-	public /* TODO static */ RepositoryMapping getRepositoryMapping(
-			@Nullable IResource resource) {
+	public RepositoryMapping getRepositoryMapping(IResource resource) {
 		IResource r = resource;
 		try {
 			for (; r != null; r = r.getParent()) {
@@ -491,23 +482,20 @@ public class GitProjectData {
 		if (r instanceof IContainer) {
 			c = (IContainer) r;
 		} else if (r != null) {
-			c = Utils.getAdapter(r, IContainer.class);
+			c = (IContainer) r.getAdapter(IContainer.class);
 		}
 
 		if (c == null) {
-			logAndUnmapGoneMappedResource(m);
+			logGoneMappedResource(m);
+			m.clear();
 			return;
 		}
 		m.setContainer(c);
 
-		IPath absolutePath = m.getGitDirAbsolutePath();
-		if (absolutePath == null) {
-			logAndUnmapGoneMappedResource(m);
-			return;
-		}
-		git = absolutePath.toFile();
+		git = c.getLocation().append(m.getGitDirPath()).toFile();
 		if (!git.isDirectory() || !new File(git, "config").isFile()) { //$NON-NLS-1$
-			logAndUnmapGoneMappedResource(m);
+			logGoneMappedResource(m);
+			m.clear();
 			return;
 		}
 
@@ -515,7 +503,8 @@ public class GitProjectData {
 			m.setRepository(Activator.getDefault().getRepositoryCache()
 					.lookupRepository(git));
 		} catch (IOException ioe) {
-			logAndUnmapGoneMappedResource(m);
+			logGoneMappedResource(m);
+			m.clear();
 			return;
 		}
 
@@ -538,13 +527,10 @@ public class GitProjectData {
 		}
 	}
 
-	private void logAndUnmapGoneMappedResource(final RepositoryMapping m) {
+	private void logGoneMappedResource(final RepositoryMapping m) {
 		Activator.logError(MessageFormat.format(
 				CoreText.GitProjectData_mappedResourceGone, m.toString()),
 				new FileNotFoundException(m.getContainerPath().toString()));
-		m.clear();
-		UnmapJob unmapJob = new UnmapJob(getProject());
-		unmapJob.schedule();
 	}
 
 	private void protect(IResource resource) {
@@ -561,28 +547,6 @@ public class GitProjectData {
 						e);
 			}
 			c = c.getParent();
-		}
-	}
-
-	private static class UnmapJob extends Job {
-
-		private final IProject project;
-
-		private UnmapJob(IProject project) {
-			super(MessageFormat.format(CoreText.GitProjectData_UnmapJobName,
-					project.getName()));
-			this.project = project;
-		}
-
-		@Override
-		protected IStatus run(IProgressMonitor monitor) {
-			try {
-				RepositoryProvider.unmap(project);
-				return Status.OK_STATUS;
-			} catch (TeamException e) {
-				return new Status(IStatus.ERROR, Activator.getPluginId(),
-						CoreText.GitProjectData_UnmappingGoneResourceFailed, e);
-			}
 		}
 	}
 }

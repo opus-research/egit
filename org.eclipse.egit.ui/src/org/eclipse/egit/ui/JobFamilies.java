@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com> and others.
+ * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,6 @@ public class JobFamilies {
 	 * GenerateHistoryJob
 	 */
 	public final static Object GENERATE_HISTORY = new Object();
-
-	/**
-	 * History diff jobs
-	 */
-	public final static Object HISTORY_DIFF = new Object();
 
 	/**
 	 * Commit job
@@ -115,29 +110,9 @@ public class JobFamilies {
 	public static final Object REMOVE_FROM_INDEX = new Object();
 
 	/**
-	 * Updates staging view repository on selection change
-	 */
-	public static final Object UPDATE_SELECTION = new Object();
-
-	/**
 	 * Cherry pick commit job
 	 */
 	public static final Object CHERRY_PICK = new Object();
-
-	/**
-	 * Squash commits job
-	 */
-	public static final Object SQUASH = new Object();
-
-	/**
-	 * Reword commit job
-	 */
-	public static final Object REWORD = new Object();
-
-	/**
-	 * Edit commit job
-	 */
-	public static final Object EDIT = new Object();
 
 	/**
 	 * Revert commit job

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2015 SAP SE and others.
+ * Copyright (c) 2012 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,12 +7,10 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Christian Georgi (SAP SE) - Bug 466900 (Make PushResultDialog amodal)
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,14 +23,15 @@ import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.core.op.PushOperationSpecification;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
@@ -40,7 +39,6 @@ import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
@@ -58,10 +56,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IWorkbenchCommandConstants;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Push the current HEAD to Gerrit
@@ -103,7 +98,6 @@ class PushToGerritPage extends WizardPage {
 		lastBranchKey = repository + LAST_BRANCH_POSTFIX;
 	}
 
-	@Override
 	protected IDialogSettings getDialogSettings() {
 		IDialogSettings s = Activator.getDefault().getDialogSettings();
 		IDialogSettings section = s.getSection(PUSH_TO_GERRIT_PAGE_SECTION);
@@ -112,7 +106,6 @@ class PushToGerritPage extends WizardPage {
 		return section;
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(3, false));
@@ -122,7 +115,6 @@ class PushToGerritPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
 				.applyTo(uriCombo);
 		uriCombo.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -132,7 +124,7 @@ class PushToGerritPage extends WizardPage {
 
 		// we visualize the prefix here
 		prefixCombo = new Combo(main, SWT.READ_ONLY | SWT.DROP_DOWN);
-		prefixCombo.add(GerritUtil.REFS_FOR);
+		prefixCombo.add("refs/for/"); //$NON-NLS-1$
 		prefixCombo.add("refs/drafts/"); //$NON-NLS-1$
 		prefixCombo.select(0);
 
@@ -140,7 +132,6 @@ class PushToGerritPage extends WizardPage {
 		branchText = new Text(main, SWT.SINGLE | SWT.BORDER);
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(branchText);
 		branchText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -148,7 +139,6 @@ class PushToGerritPage extends WizardPage {
 
 		// give focus to the nameText if label is activated using the mnemonic
 		branchTextlabel.addTraverseListener(new TraverseListener() {
-			@Override
 			public void keyTraversed(TraverseEvent e) {
 				branchText.setFocus();
 				branchText.selectAll();
@@ -222,8 +212,10 @@ class PushToGerritPage extends WizardPage {
 		}
 	}
 
-	void doPush() {
+	void doPush(IProgressMonitor monitor) {
 		try {
+			int timeout = Activator.getDefault().getPreferenceStore()
+					.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 			URIish uri = new URIish(uriCombo.getText());
 			Ref currentHead = repository.getRef(Constants.HEAD);
 			RemoteRefUpdate update = new RemoteRefUpdate(repository,
@@ -233,57 +225,38 @@ class PushToGerritPage extends WizardPage {
 			PushOperationSpecification spec = new PushOperationSpecification();
 
 			spec.addURIRefUpdates(uri, Arrays.asList(update));
-			final PushOperationUI op = new PushOperationUI(repository, spec,
+			PushOperationUI op = new PushOperationUI(repository, spec, timeout,
 					false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
-			final PushOperationResult[] result = new PushOperationResult[1];
-			getContainer().run(true, true, new IRunnableWithProgress() {
-				@Override
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException {
-					try {
-						result[0] = op.execute(monitor);
-					} catch (CoreException e) {
-						throw new InvocationTargetException(e);
-					}
-				}
-			});
-			getShell().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					Shell shell = PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getShell();
-					PushResultDialog dlg = new PushResultDialog(shell,
-							repository, result[0], op.getDestinationString(),
-							false);
-					dlg.showConfigureButton(false);
-					dlg.open();
-				}
-			});
+			PushOperationResult result = op.execute(monitor);
+			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
+					result, op.getDestinationString());
+			dlg.showConfigureButton(false);
+			dlg.open();
 			storeLastUsedUri(uriCombo.getText());
 			storeLastUsedBranch(branchText.getText());
+		} catch (CoreException e) {
+			Activator.handleError(e.getMessage(), e, true);
 		} catch (URISyntaxException e) {
 			Activator.handleError(e.getMessage(), e, true);
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, true);
-		} catch (InvocationTargetException e) {
-			Throwable cause = e.getCause();
-			Activator.handleError(cause.getMessage(), cause, true);
-		} catch (InterruptedException e) {
-			// cancellation
 		}
 	}
 
 	private void addRefContentProposalToText(final Text textField) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke != null)
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("CTRL+SPACE"); //$NON-NLS-1$
 			UIUtils.addBulbDecorator(textField, NLS.bind(
 					UIText.PushToGerritPage_ContentProposalHoverText,
 					stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
+		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
-			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 				List<IContentProposal> resultList = new ArrayList<IContentProposal>();
 
@@ -315,8 +288,7 @@ class PushToGerritPage extends WizardPage {
 					pattern = null;
 				}
 
-				Set<String> proposals = new TreeSet<String>(
-						String.CASE_INSENSITIVE_ORDER);
+				Set<String> proposals = new TreeSet<String>();
 
 				try {
 					Set<String> remotes = repository.getRefDatabase()
@@ -359,22 +331,18 @@ class PushToGerritPage extends WizardPage {
 			myString = string;
 		}
 
-		@Override
 		public String getContent() {
 			return myString;
 		}
 
-		@Override
 		public int getCursorPosition() {
 			return 0;
 		}
 
-		@Override
 		public String getDescription() {
 			return myString;
 		}
 
-		@Override
 		public String getLabel() {
 			return myString;
 		}

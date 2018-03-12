@@ -24,7 +24,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.notes.NoteMap;
 import org.eclipse.jgit.util.IO;
-import org.eclipse.jgit.util.RawParseUtils;
 import org.eclipse.ui.model.IWorkbenchAdapter;
 
 /**
@@ -71,14 +70,13 @@ public class RepositoryCommitNote extends PlatformObject implements
 						(int) loader.getSize()).array();
 			else
 				contents = loader.getCachedBytes();
-			return RawParseUtils.decode(contents);
+			return new String(contents);
 		} catch (IOException e) {
 			Activator.logError("Error loading note text", e); //$NON-NLS-1$
 		}
 		return ""; //$NON-NLS-1$
 	}
 
-	@Override
 	public Object getAdapter(Class adapter) {
 		if (RepositoryCommit.class == adapter)
 			return this.commit;
@@ -89,22 +87,18 @@ public class RepositoryCommitNote extends PlatformObject implements
 		return super.getAdapter(adapter);
 	}
 
-	@Override
 	public Object[] getChildren(Object o) {
 		return new Object[0];
 	}
 
-	@Override
 	public ImageDescriptor getImageDescriptor(Object object) {
 		return UIIcons.NOTE;
 	}
 
-	@Override
 	public String getLabel(Object o) {
 		return NoteMap.shortenRefName(ref.getName());
 	}
 
-	@Override
 	public Object getParent(Object o) {
 		return commit;
 	}

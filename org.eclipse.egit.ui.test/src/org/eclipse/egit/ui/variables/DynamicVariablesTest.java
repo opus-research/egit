@@ -10,6 +10,7 @@ package org.eclipse.egit.ui.variables;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.Collections;
 
 import org.eclipse.core.resources.IProject;
@@ -24,16 +25,13 @@ import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.common.EGitTestCase;
-import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.junit.JGitTestUtil;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.PlatformUI;
@@ -85,8 +83,8 @@ public class DynamicVariablesTest extends EGitTestCase {
 		repository2 = FileRepositoryBuilder.create(gitDir2);
 		repository2.create();
 
-		RepositoryMapping mapping = RepositoryMapping.create(project, gitDir);
-		RepositoryMapping mapping2 = RepositoryMapping.create(project2, gitDir2);
+		RepositoryMapping mapping = new RepositoryMapping(project, gitDir);
+		RepositoryMapping mapping2 = new RepositoryMapping(project2, gitDir2);
 
 		GitProjectData projectData = new GitProjectData(project);
 		GitProjectData projectData2 = new GitProjectData(project2);
@@ -100,10 +98,12 @@ public class DynamicVariablesTest extends EGitTestCase {
 		RepositoryProvider.map(project, GitProvider.class.getName());
 		RepositoryProvider.map(project2, GitProvider.class.getName());
 
-		JGitTestUtil.write(new File(repository.getWorkTree(), TEST_PROJECT
-				+ "/" + TEST_FILE), "Some data");
-		JGitTestUtil.write(new File(repository2.getWorkTree(), TEST_FILE2),
-				"Some other data");
+		FileWriter fileWriter = new FileWriter(new File(repository.getWorkTree(), TEST_PROJECT+"/"+TEST_FILE));
+		fileWriter.write("Some data");
+		fileWriter.close();
+		FileWriter fileWriter2 = new FileWriter(new File(repository2.getWorkTree(), TEST_FILE2));
+		fileWriter2.write("Some other data");
+		fileWriter2.close();
 		project.refreshLocal(IResource.DEPTH_INFINITE, null);
 		project2.refreshLocal(IResource.DEPTH_INFINITE, null);
 		git = new Git(repository);
@@ -172,15 +172,11 @@ public class DynamicVariablesTest extends EGitTestCase {
 			String argument) throws CoreException {
 		IResource findMember = project.findMember(TEST_FILE);
 
-		SWTBotView explorerView = TestUtil.showExplorerView();
-		final ISelectionProvider selectionProvider = explorerView
-				.getViewReference().getView(true).getSite()
-				.getSelectionProvider();
+		final ISelectionProvider selectionProvider = bot.viewByTitle("Package Explorer").getViewReference().getView(true).getSite().getSelectionProvider();
 		final StructuredSelection structuredSelection = new StructuredSelection(
 				findMember);
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
-			@Override
 			public void run() {
 				selectionProvider.setSelection(structuredSelection);
 			}

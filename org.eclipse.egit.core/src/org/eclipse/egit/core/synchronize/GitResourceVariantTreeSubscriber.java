@@ -27,6 +27,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -55,7 +56,6 @@ import org.eclipse.team.internal.core.mapping.SyncInfoToDiffConverter;
 /**
  *
  */
-@SuppressWarnings("restriction")
 public class GitResourceVariantTreeSubscriber extends
 		ResourceVariantTreeSubscriber {
 
@@ -108,8 +108,7 @@ public class GitResourceVariantTreeSubscriber extends
 	@Override
 	public boolean isSupervised(IResource res) throws TeamException {
 		return IResource.FILE == res.getType()
-				&& gsds.contains(res.getProject())
-				&& gsds.shouldBeIncluded(res);
+				&& gsds.contains(res.getProject()) && shouldBeIncluded(res);
 	}
 
 	/**
@@ -120,7 +119,7 @@ public class GitResourceVariantTreeSubscriber extends
 	 */
 	@Override
 	public IResource[] members(IResource res) throws TeamException {
-		if (res.getType() == IResource.FILE || !gsds.shouldBeIncluded(res))
+		if(res.getType() == IResource.FILE || !shouldBeIncluded(res))
 			return new IResource[0];
 
 		GitSynchronizeData gsd = gsds.getData(res.getProject());
@@ -161,7 +160,8 @@ public class GitResourceVariantTreeSubscriber extends
 			// check to see if there is a full refresh
 			if (resource.getType() == IResource.ROOT) {
 				// refresh entire cache
-				cache = GitSyncCache.getAllData(gsds, monitor);
+				GitSyncCache newCache = GitSyncCache.getAllData(gsds, monitor);
+				cache.merge(newCache);
 				super.refresh(resources, depth, monitor);
 				return;
 			}
@@ -196,7 +196,9 @@ public class GitResourceVariantTreeSubscriber extends
 		// scan only the repositories that were affected
 		if (!updateRequests.isEmpty()) {
 			// refresh cache
-			GitSyncCache.mergeAllDataIntoCache(updateRequests, monitor, cache);
+			GitSyncCache newCache = GitSyncCache.getAllData(updateRequests,
+					monitor);
+			cache.merge(newCache);
 		}
 
 		super.refresh(resources, depth, monitor);
@@ -206,8 +208,6 @@ public class GitResourceVariantTreeSubscriber extends
 	public IResource[] roots() {
 		if (roots == null)
 			roots = gsds.getAllProjects();
-		if (roots == null)
-			return new IResource[0];
 		IResource[] result = new IResource[roots.length];
 		System.arraycopy(roots, 0, result, 0, roots.length);
 		return result;
@@ -413,7 +413,7 @@ public class GitResourceVariantTreeSubscriber extends
 	 * comment, timestamp... or any information that could be provided by the
 	 * Git resource variant. This implementation uses the variant's information.
 	 */
-	private static class GitResourceVariantFileRevision extends
+	private class GitResourceVariantFileRevision extends
 			ResourceVariantFileRevision {
 		private final IResourceVariant variant;
 
@@ -480,7 +480,7 @@ public class GitResourceVariantTreeSubscriber extends
 	 * As opposed to the other repository providers, EGit allows for
 	 * synchronization between three remote branches. This will return the
 	 * "source" tree for such synchronization use cases.
-	 *
+	 * 
 	 * @return The source tree of this subscriber.
 	 * @since 3.0
 	 */
@@ -494,7 +494,7 @@ public class GitResourceVariantTreeSubscriber extends
 	/**
 	 * This can be used to retrieve the version of the given resource
 	 * corresponding to the source tree of this subscriber.
-	 *
+	 * 
 	 * @param resource
 	 *            The resource for which we need a variant.
 	 * @return The revision of the given resource cached in the source tree of
@@ -533,6 +533,27 @@ public class GitResourceVariantTreeSubscriber extends
 
 		info.init();
 		return info;
+	}
+
+	private boolean shouldBeIncluded(IResource res) {
+		if (res == null || res.isLinked(IResource.CHECK_ANCESTORS))
+			return false;
+		final IProject proj = res.getProject();
+		if (proj == null)
+			return false;
+		final GitSynchronizeData d = gsds.getData(proj);
+		if (d == null)
+			return false;
+		final Set<IContainer> includedPaths = d.getIncludedPaths();
+		if (includedPaths == null)
+			return true;
+
+		IPath path = res.getLocation();
+		for (IContainer container : includedPaths)
+			if (container.getLocation().isPrefixOf(path))
+				return true;
+
+		return false;
 	}
 
 }

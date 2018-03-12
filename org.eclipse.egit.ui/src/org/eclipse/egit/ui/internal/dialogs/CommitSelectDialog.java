@@ -10,6 +10,8 @@
 package org.eclipse.egit.ui.internal.dialogs;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.egit.ui.internal.UIText;
@@ -19,10 +21,8 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
-import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -34,8 +34,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 
 /**
- * Allows to select a single commit from a list of {@link RevCommit}s. The
- * commits are shown in the order in which they are passed.
+ * Allows to select a single commit from a list of {@link RevCommit}s
  */
 public class CommitSelectDialog extends TitleAreaDialog {
 	private final List<RevCommit> commits = new ArrayList<RevCommit>();
@@ -49,7 +48,14 @@ public class CommitSelectDialog extends TitleAreaDialog {
 	public CommitSelectDialog(Shell parent, List<RevCommit> commits) {
 		super(parent);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
+		// sort by date ascending
 		this.commits.addAll(commits);
+		Collections.sort(this.commits, new Comparator<RevCommit>() {
+			public int compare(RevCommit o1, RevCommit o2) {
+				return o1.getAuthorIdent().getWhen()
+						.compareTo(o2.getAuthorIdent().getWhen());
+			}
+		});
 		setHelpAvailable(false);
 	}
 
@@ -65,20 +71,12 @@ public class CommitSelectDialog extends TitleAreaDialog {
 		Composite main = new Composite(parent, SWT.NONE);
 		GridLayoutFactory.fillDefaults().applyTo(main);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
-		final TableViewer tv = new TableViewer(main,
-				SWT.SINGLE | SWT.BORDER
+		TableViewer tv = new TableViewer(main, SWT.SINGLE | SWT.BORDER
 				| SWT.FULL_SELECTION);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(tv.getControl());
 		tv.setContentProvider(ArrayContentProvider.getInstance());
-		CommitLabelProvider labelProvider = new CommitLabelProvider();
-		labelProvider.addListener(new ILabelProviderListener() {
-			@Override
-			public void labelProviderChanged(LabelProviderChangedEvent event) {
-				tv.refresh();
-			}
-		});
-		tv.setLabelProvider(labelProvider);
+		tv.setLabelProvider(new CommitLabelProvider());
 		Table table = tv.getTable();
 		TableColumn c0 = new TableColumn(table, SWT.NONE);
 		c0.setWidth(70);
@@ -94,8 +92,8 @@ public class CommitSelectDialog extends TitleAreaDialog {
 		c3.setText(UIText.CommitSelectDialog_DateColumn);
 		tv.setInput(commits);
 		table.setHeaderVisible(true);
+		table.setLinesVisible(true);
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
 				if (!event.getSelection().isEmpty())
 					selected = (RevCommit) ((IStructuredSelection) event
@@ -106,7 +104,6 @@ public class CommitSelectDialog extends TitleAreaDialog {
 			}
 		});
 		tv.addDoubleClickListener(new IDoubleClickListener() {
-			@Override
 			public void doubleClick(DoubleClickEvent event) {
 				okPressed();
 			}

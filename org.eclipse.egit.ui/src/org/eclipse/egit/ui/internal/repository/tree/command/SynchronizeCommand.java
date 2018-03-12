@@ -18,7 +18,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -39,7 +38,6 @@ import org.eclipse.osgi.util.NLS;
 public class SynchronizeCommand extends
 		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final RepositoryTreeNode node = getSelectedNodes(event).get(0);
 		final String refName = getRefName(node);
@@ -58,11 +56,11 @@ public class SynchronizeCommand extends
 		final boolean includeLocal = getSelectedNodes(event).size() == 1;
 
 		final Repository repo = node.getRepository();
-		Job job = new WorkspaceJob(NLS.bind(UIText.SynchronizeCommand_jobName,
+		Job job = new Job(NLS.bind(UIText.SynchronizeCommand_jobName,
 				repo.getDirectory())) {
 
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) {
+			protected IStatus run(IProgressMonitor monitor) {
 				GitSynchronizeData data;
 				try {
 					data = new GitSynchronizeData(repo, secondRefNameParam,

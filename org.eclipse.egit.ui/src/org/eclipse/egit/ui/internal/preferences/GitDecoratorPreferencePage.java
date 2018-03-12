@@ -2,7 +2,6 @@
  * Copyright (c) 2000, 2012 IBM Corporation and others.
  * Copyright (C) 2009, Tor Arne Vestbø <torarnv@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +11,7 @@
 package org.eclipse.egit.ui.internal.preferences;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +25,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.SWTUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator.DecorationHelper;
@@ -107,13 +106,7 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 	private static final Map<String, String> CHANGESET_LABEL_BINDINGS;
 
-	private IPropertyChangeListener themeListener;
-
-	/**
-	 * Listens to changes in the date preferences and updates the
-	 * changeSetPreview if the preferences change.
-	 */
-	private IPropertyChangeListener uiPrefsListener;
+	private static IPropertyChangeListener themeListener;
 
 	static {
 		final PreviewResource project = new PreviewResource(
@@ -198,7 +191,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	/**
 	 * @see PreferencePage#createContents(Composite)
 	 */
-	@Override
 	protected Control createContents(Composite parent) {
 
 		Composite composite = SWTUtils.createHVFillComposite(parent,
@@ -214,7 +206,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		tabFolder.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (navigatorPreview != null && changeSetPreview != null) {
 					if (UIText.DecoratorPreferencesPage_otherDecorations.equals(e.item.getData())) {
@@ -253,7 +244,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		// TODO: Add help text for this preference page
 
 		themeListener = new IPropertyChangeListener() {
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				navigatorPreview.refresh();
 				changeSetPreview.refresh();
@@ -261,18 +251,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		};
 		PlatformUI.getWorkbench().getThemeManager().addPropertyChangeListener(
 				themeListener);
-
-		uiPrefsListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				String property = event.getProperty();
-				if (UIPreferences.DATE_FORMAT.equals(property)
-						|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
-					changeSetPreview.refresh();
-				}
-			}
-		};
-		getPreferenceStore().addPropertyChangeListener(uiPrefsListener);
 
 		Dialog.applyDialogFont(parent);
 
@@ -331,32 +309,27 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			tabItem.setControl(composite);
 		}
 
-		@Override
 		public void initializeValues(IPreferenceStore store) {
 			recomputeAncestorDecorations.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			recomputeAncestorDecorations
 					.setSelection(store
 							.getDefaultBoolean(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS));
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			store.setValue(UIPreferences.DECORATOR_RECOMPUTE_ANCESTORS,
 					recomputeAncestorDecorations.getSelection());
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			setChanged();
 			notifyObservers();
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			// Not interesting for us
 		}
@@ -403,28 +376,24 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			tabItem.setControl(composite);
 		}
 
-		@Override
 		public void initializeValues(IPreferenceStore store) {
 			fileTextFormat.initializeValue(store);
 			folderTextFormat.initializeValue(store);
 			projectTextFormat.initializeValue(store);
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			fileTextFormat.performDefaults(store);
 			folderTextFormat.performDefaults(store);
 			projectTextFormat.performDefaults(store);
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			fileTextFormat.performOk(store);
 			folderTextFormat.performOk(store);
 			projectTextFormat.performOk(store);
 		}
 
-		@Override
 		public void modifyText(ModifyEvent e) {
 			setChanged();
 			notifyObservers();
@@ -435,6 +404,14 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	private class OtherDecorationTab extends Tab implements ModifyListener {
 
 		private final FormatEditor changeSetLabelFormat;
+
+		private final Text dateFormat;
+
+		private final Label dateFormatPreview;
+
+		private final Date exampleDate = new Date();
+
+		private boolean formatValid;
 
 		public OtherDecorationTab(TabFolder parent) {
 			Composite composite = SWTUtils.createHVFillComposite(parent,
@@ -448,30 +425,56 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 			final TabItem tabItem = new TabItem(parent, SWT.NONE);
 
+			Label dfLabel = SWTUtils.createLabel(composite, UIText.DecoratorPreferencesPage_dateFormat);
+			dfLabel.setLayoutData(SWTUtils.createGridData(SWT.DEFAULT,
+					SWT.DEFAULT, false, false));
+			dateFormat = SWTUtils.createText(composite, 2);
+
+			Label dpLabel = SWTUtils.createLabel(composite, UIText.DecoratorPreferencesPage_dateFormatPreview);
+			dpLabel.setLayoutData(SWTUtils.createGridData(SWT.DEFAULT,
+					SWT.DEFAULT, false, false));
+			dateFormatPreview = SWTUtils.createLabel(composite, null, 2);
+
 			tabItem.setText(UIText.DecoratorPreferencesPage_otherDecorations);
 			tabItem.setControl(composite);
 			tabItem.setData(UIText.DecoratorPreferencesPage_otherDecorations);
 
 			changeSetLabelFormat.addModifyListener(this);
+			dateFormat.addModifyListener(this);
 		}
 
-		@Override
+		private void updateDateFormatPreview() {
+			SimpleDateFormat sdf;
+			try {
+				sdf = new SimpleDateFormat(dateFormat.getText());
+				dateFormatPreview.setText(sdf.format(exampleDate));
+				formatValid = true;
+			} catch (Exception ex) {
+				dateFormatPreview.setText(UIText.DecoratorPreferencesPage_wrongDateFormat);
+				formatValid = false;
+			}
+		}
+
 		public void initializeValues(IPreferenceStore store) {
 			changeSetLabelFormat.initializeValue(store);
+			dateFormat.setText(store.getString(UIPreferences.DATE_FORMAT));
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			changeSetLabelFormat.performDefaults(store);
+			dateFormat.setText(store.getDefaultString(UIPreferences.DATE_FORMAT));
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			changeSetLabelFormat.performOk(store);
+
+			if (formatValid) {
+				store.setValue(UIPreferences.DATE_FORMAT, dateFormat.getText());
+			}
 		}
 
-		@Override
 		public void modifyText(ModifyEvent e) {
+			updateDateFormatPreview();
 			setChanged();
 			notifyObservers();
 		}
@@ -507,10 +510,8 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			text.addModifyListener(listener);
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			final ILabelProvider labelProvider = new LabelProvider() {
-				@Override
 				public String getText(Object element) {
 					return ((Map.Entry) element).getKey()
 					+ " - " + ((Map.Entry) element).getValue(); //$NON-NLS-1$
@@ -596,7 +597,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			tabItem.setControl(composite);
 		}
 
-		@Override
 		public void initializeValues(IPreferenceStore store) {
 			showTracked.setSelection(store
 					.getBoolean(UIPreferences.DECORATOR_SHOW_TRACKED_ICON));
@@ -613,7 +613,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
-		@Override
 		public void performDefaults(IPreferenceStore store) {
 			showTracked
 					.setSelection(store
@@ -635,7 +634,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 							.getDefaultBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON));
 		}
 
-		@Override
 		public void performOk(IPreferenceStore store) {
 			store.setValue(UIPreferences.DECORATOR_SHOW_TRACKED_ICON,
 					showTracked.getSelection());
@@ -651,13 +649,11 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					showDirty.getSelection());
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			setChanged();
 			notifyObservers();
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			// Not interesting for us
 		}
@@ -679,7 +675,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	/**
 	 * @see IWorkbenchPreferencePage#init(IWorkbench)
 	 */
-	@Override
 	public void init(IWorkbench workbench) {
 		// No-op
 	}
@@ -689,7 +684,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 *
 	 * @return whether it is okay to close the preference page
 	 */
-	@Override
 	public boolean performOk() {
 		IPreferenceStore store = getPreferenceStore();
 		final boolean okToClose = performOk(store);
@@ -725,7 +719,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 * Defaults was clicked. Restore the Git decoration preferences to their
 	 * default values
 	 */
-	@Override
 	protected void performDefaults() {
 		IPreferenceStore store = getPreferenceStore();
 		generalTab.performDefaults(store);
@@ -745,7 +738,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 *
 	 * @return the preference store for this plugin
 	 */
-	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
 	}
@@ -755,11 +747,9 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 	 *
 	 * @see org.eclipse.jface.dialogs.DialogPage#dispose()
 	 */
-	@Override
 	public void dispose() {
 		PlatformUI.getWorkbench().getThemeManager()
 				.removePropertyChangeListener(themeListener);
-		getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
 		super.dispose();
 	}
 
@@ -784,7 +774,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			fViewer.getControl().setLayoutData(SWTUtils.createHVFillGridData());
 		}
 
-		@Override
 		public void update(Observable o, Object arg) {
 			refresh();
 		}
@@ -826,12 +815,11 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 					return super.getImage(element);
 				}
 
-				@Override
 				public String getText(Object element) {
 					if (element instanceof GitModelCommitMockup) {
 						String format = store.getString(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT);
-						return ((GitModelCommitMockup) element)
-								.getMokeupText(format);
+						String dateFormat = store.getString(UIPreferences.DATE_FORMAT);
+						return ((GitModelCommitMockup)element).getMokeupText(format, dateFormat);
 					}
 					return super.getText(element);
 				}
@@ -840,32 +828,26 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			fViewer.setInput(new GitModelCommitMockup());
 		}
 
-		@Override
 		public Object[] getChildren(Object parentElement) {
 			return new Object[0];
 		}
 
-		@Override
 		public Object getParent(Object element) {
 			return null;
 		}
 
-		@Override
 		public boolean hasChildren(Object element) {
 			return false;
 		}
 
-		@Override
 		public Object[] getElements(Object inputElement) {
 			return new Object[] { inputElement };
 		}
 
-		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 			// No-op
 		}
 
-		@Override
 		public void refresh() {
 			store = new PreferenceStore();
 			performOk(store);
@@ -903,7 +885,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			fHelper = new DecorationHelper(store);
 		}
 
-		@Override
 		public void refresh() {
 			reloadDecorationHelper();
 			fViewer.refresh(true);
@@ -920,27 +901,22 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			}
 		}
 
-		@Override
 		public Object[] getChildren(Object parentElement) {
 			return ((PreviewResource) parentElement).children.toArray();
 		}
 
-		@Override
 		public Object getParent(Object element) {
 			return null;
 		}
 
-		@Override
 		public boolean hasChildren(Object element) {
 			return !((PreviewResource) element).children.isEmpty();
 		}
 
-		@Override
 		public Object[] getElements(Object inputElement) {
 			return ((Collection) inputElement).toArray();
 		}
 
-		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 			// No-op
 		}
@@ -953,7 +929,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 
 		private class ResLabelProvider extends LabelProvider {
 
-			@Override
 			public String getText(Object element) {
 				final DecorationResult decoration = getDecoration(element);
 				final StringBuilder buffer = new StringBuilder();
@@ -967,7 +942,6 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 				return buffer.toString();
 			}
 
-			@Override
 			public Image getImage(Object element) {
 				final String s;
 				switch (((PreviewResource) element).type) {
@@ -1005,13 +979,11 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 		private static final Date date = new Date();
 		private static final String committer = "Committer Name";  //$NON-NLS-1$
 
-		public String getMokeupText(String format) {
-			PreferenceBasedDateFormatter formatter = PreferenceBasedDateFormatter
-					.create();
+		public String getMokeupText(String format, String dateFormat) {
+			SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
 
 			Map<String, String> bindings = new HashMap<String, String>();
-			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_DATE,
-					formatter.formatDate(date));
+			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_DATE, sdf.format(date));
 			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_AUTHOR, author);
 			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_COMMITTER, committer);
 			bindings.put(GitChangeSetLabelProvider.BINDING_CHANGESET_SHORT_MESSAGE, message);
@@ -1063,57 +1035,46 @@ public class GitDecoratorPreferencePage extends PreferencePage implements
 			this.assumeValid = assumeValid;
 		}
 
-		@Override
 		public String getName() {
 			return name;
 		}
 
-		@Override
 		public String getRepositoryName() {
 			return repositoryName;
 		}
 
-		@Override
 		public int getType() {
 			return type;
 		}
 
-		@Override
 		public String getBranch() {
 			return branch;
 		}
 
-		@Override
 		public String getBranchStatus() {
 			return branchStatus;
 		}
 
-		@Override
 		public boolean isTracked() {
 			return tracked;
 		}
 
-		@Override
 		public boolean isIgnored() {
 			return ignored;
 		}
 
-		@Override
 		public boolean isDirty() {
 			return dirty;
 		}
 
-		@Override
 		public Staged staged() {
 			return staged;
 		}
 
-		@Override
 		public boolean hasConflicts() {
 			return conflicts;
 		}
 
-		@Override
 		public boolean isAssumeValid() {
 			return assumeValid;
 		}

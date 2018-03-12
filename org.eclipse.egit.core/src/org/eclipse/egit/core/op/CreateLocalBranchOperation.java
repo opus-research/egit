@@ -10,7 +10,6 @@ package org.eclipse.egit.core.op;
 
 import java.io.IOException;
 
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -19,11 +18,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.job.RuleUtil;
-import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -79,7 +76,6 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 		this.upstreamConfig = null;
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor;
 		if (m == null)
@@ -88,7 +84,6 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 			monitor = m;
 
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
-			@Override
 			public void run(IProgressMonitor actMonitor) throws CoreException {
 				String taskName = NLS
 						.bind(
@@ -131,13 +126,11 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 			}
 		};
 		// lock workspace to protect working tree changes
-		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+		ResourcesPlugin.getWorkspace().run(action, monitor);
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
-		return RuleUtil.getRule(repository);
+		return ResourcesPlugin.getWorkspace().getRoot();
 	}
 
 	/**
@@ -150,44 +143,5 @@ public class CreateLocalBranchOperation implements IEGitOperation {
 		MERGE(),
 		/** No configuration */
 		NONE();
-
-		/**
-		 * Get the default upstream config for the specified repository and
-		 * upstream branch ref.
-		 *
-		 * @param repo
-		 * @param upstreamRefName
-		 * @return the default upstream config
-		 */
-		public static UpstreamConfig getDefault(Repository repo,
-				String upstreamRefName) {
-			String autosetupMerge = repo.getConfig().getString(
-					ConfigConstants.CONFIG_BRANCH_SECTION, null,
-					ConfigConstants.CONFIG_KEY_AUTOSETUPMERGE);
-			if (autosetupMerge == null)
-				autosetupMerge = ConfigConstants.CONFIG_KEY_TRUE;
-			boolean isLocalBranch = upstreamRefName.startsWith(Constants.R_HEADS);
-			boolean isRemoteBranch = upstreamRefName.startsWith(Constants.R_REMOTES);
-			if (!isLocalBranch && !isRemoteBranch)
-				return NONE;
-			boolean setupMerge = autosetupMerge
-					.equals(ConfigConstants.CONFIG_KEY_ALWAYS)
-					|| (isRemoteBranch && autosetupMerge
-							.equals(ConfigConstants.CONFIG_KEY_TRUE));
-			if (!setupMerge)
-				return NONE;
-			String autosetupRebase = repo.getConfig().getString(
-					ConfigConstants.CONFIG_BRANCH_SECTION, null,
-					ConfigConstants.CONFIG_KEY_AUTOSETUPREBASE);
-			if (autosetupRebase == null)
-				autosetupRebase = ConfigConstants.CONFIG_KEY_NEVER;
-			boolean setupRebase = autosetupRebase
-					.equals(ConfigConstants.CONFIG_KEY_ALWAYS)
-					|| (autosetupRebase.equals(ConfigConstants.CONFIG_KEY_LOCAL) && isLocalBranch)
-					|| (autosetupRebase.equals(ConfigConstants.CONFIG_KEY_REMOTE) && isRemoteBranch);
-			if (setupRebase)
-				return REBASE;
-			return MERGE;
-		}
 	}
 }

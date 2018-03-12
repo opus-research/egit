@@ -21,9 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
@@ -70,55 +67,6 @@ public class RepositoryCache {
 		return repositories.toArray(new Repository[repositories.size()]);
 	}
 
-	/**
-	 * Lookup the closest git repository with a working tree containing the
-	 * given resource. If there are repositories nested above in the file system
-	 * hierarchy we select the closest one above the given resource.
-	 *
-	 * @param resource
-	 *            the resource to find the repository for
-	 * @return the git repository which has the given resource in its working
-	 *         tree, or null if none found
-	 * @since 3.2
-	 */
-	public Repository getRepository(final IResource resource) {
-		IPath location = resource.getLocation();
-		if (location == null)
-			return null;
-		return getRepository(location);
-	}
-
-	/**
-	 * Lookup the closest git repository with a working tree containing the
-	 * given file location. If there are repositories nested above in the file
-	 * system hierarchy we select the closest one above the given location.
-	 *
-	 * @param location
-	 *            the file location to find the repository for
-	 * @return the git repository which has the given location in its working
-	 *         tree, or null if none found
-	 * @since 3.2
-	 */
-	public Repository getRepository(final IPath location) {
-		Repository[] repositories = org.eclipse.egit.core.Activator
-				.getDefault().getRepositoryCache().getAllRepositories();
-		Repository repository = null;
-		int largestSegmentCount = 0;
-		for (Repository r : repositories) {
-			if (!r.isBare()) {
-				IPath repoPath = new Path(r.getWorkTree().getAbsolutePath());
-				if (location != null && repoPath.isPrefixOf(location)) {
-					if (repository == null
-							|| repoPath.segmentCount() > largestSegmentCount) {
-						repository = r;
-						largestSegmentCount = repoPath.segmentCount();
-					}
-				}
-			}
-		}
-		return repository;
-	}
-
 	private static void prune(Map<File, Reference<Repository>> map) {
 		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = map.entrySet()
 				.iterator(); i.hasNext();) {
@@ -133,7 +81,7 @@ public class RepositoryCache {
 	 * TESTING ONLY!
 	 * Unit tests can use this method to get a clean beginning state
 	 */
-	public synchronized void clear() {
+	public void clear() {
 		repositoryCache.clear();
 	}
 

@@ -153,7 +153,7 @@ public class RepositoryPropertySource implements IPropertySource {
 
 		effectiveConfig = repository.getConfig();
 		systemConfig = SystemReader.getInstance().openSystemConfig(null, FS.DETECTED);
-		userHomeConfig = SystemReader.getInstance().openUserConfig(null, FS.DETECTED);
+		userHomeConfig = SystemReader.getInstance().openUserConfig(systemConfig, FS.DETECTED);
 
 		if (effectiveConfig instanceof FileBasedConfig) {
 			File configFile = ((FileBasedConfig) effectiveConfig).getFile();
@@ -332,12 +332,10 @@ public class RepositoryPropertySource implements IPropertySource {
 		return sb.toString();
 	}
 
-	@Override
 	public Object getEditableValue() {
 		return null;
 	}
 
-	@Override
 	public IPropertyDescriptor[] getPropertyDescriptors() {
 		try {
 			systemConfig.load();
@@ -355,13 +353,11 @@ public class RepositoryPropertySource implements IPropertySource {
 		StoredConfig config;
 		String category;
 		String prefix;
-		boolean recursive = false;
 		switch (getCurrentMode()) {
 		case EFFECTIVE:
 			prefix = EFFECTIVE_ID_PREFIX;
 			category = UIText.RepositoryPropertySource_EffectiveConfigurationCategory;
 			config = effectiveConfig;
-			recursive = true;
 			break;
 		case REPO: {
 			prefix = REPO_ID_PREFIX;
@@ -399,7 +395,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			return new IPropertyDescriptor[0];
 		}
 		for (String key : config.getSections()) {
-			for (String sectionItem : config.getNames(key, recursive)) {
+			for (String sectionItem : config.getNames(key)) {
 				String sectionId = key + "." + sectionItem; //$NON-NLS-1$
 				PropertyDescriptor desc = new PropertyDescriptor(prefix
 						+ sectionId, sectionId);
@@ -407,7 +403,7 @@ public class RepositoryPropertySource implements IPropertySource {
 				resultList.add(desc);
 			}
 			for (String sub : config.getSubsections(key)) {
-				for (String sectionItem : config.getNames(key, sub, recursive)) {
+				for (String sectionItem : config.getNames(key, sub)) {
 					String sectionId = key + "." + sub + "." + sectionItem; //$NON-NLS-1$ //$NON-NLS-2$
 					PropertyDescriptor desc = new PropertyDescriptor(prefix
 							+ sectionId, sectionId);
@@ -420,7 +416,6 @@ public class RepositoryPropertySource implements IPropertySource {
 		return resultList.toArray(new IPropertyDescriptor[0]);
 	}
 
-	@Override
 	public Object getPropertyValue(Object id) {
 		String actId = ((String) id);
 		Object value = null;
@@ -440,17 +435,14 @@ public class RepositoryPropertySource implements IPropertySource {
 		return value;
 	}
 
-	@Override
 	public boolean isPropertySet(Object id) {
 		return false;
 	}
 
-	@Override
 	public void resetPropertyValue(Object id) {
 		// no editing here
 	}
 
-	@Override
 	public void setPropertyValue(Object id, Object value) {
 		// no editing here
 	}
@@ -507,7 +499,7 @@ public class RepositoryPropertySource implements IPropertySource {
 			Composite main = (Composite) super.createDialogArea(parent);
 			GridDataFactory.fillDefaults().align(SWT.FILL, SWT.FILL).grab(true,
 					true).applyTo(main);
-			editor = new ConfigurationEditorComponent(main, myConfig, true) {
+			editor = new ConfigurationEditorComponent(main, myConfig, true, false) {
 				@Override
 				protected void setErrorMessage(String message) {
 					EditDialog.this.setErrorMessage(message);

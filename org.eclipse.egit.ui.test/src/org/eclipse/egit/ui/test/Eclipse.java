@@ -39,7 +39,7 @@ public class Eclipse {
 	private void closeAllShells() {
 		SWTBotShell[] shells = bot.shells();
 		for (SWTBotShell shell : shells) {
-			if (shell.isOpen() && !isEclipseShell(shell)) {
+			if (!isEclipseShell(shell)) {
 				shell.close();
 			}
 		}
@@ -48,7 +48,7 @@ public class Eclipse {
 	@SuppressWarnings("boxing")
 	public static boolean isEclipseShell(final SWTBotShell shell) {
 		return UIThreadRunnable.syncExec(new BoolResult() {
-			@Override
+
 			public Boolean run() {
 				return PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 						.getShell() == shell.widget;
@@ -81,11 +81,11 @@ public class Eclipse {
 	public SWTBotShell openPreferencePage(SWTBotShell preferencePage) {
 		if (preferencePage != null)
 			preferencePage.close();
+		bot.perspectiveById("org.eclipse.ui.resourcePerspective").activate();
 		// This does not work on Mac
 		// bot.menu("Window").menu("Preferences").click();
 		// Launch preferences programmatically instead
 		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
 			public void run() {
 				IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow();
@@ -93,7 +93,6 @@ public class Eclipse {
 
 			}
 		});
-		TestUtil.processUIEvents();
 		return bot.shell("Preferences").activate();
 	}
 

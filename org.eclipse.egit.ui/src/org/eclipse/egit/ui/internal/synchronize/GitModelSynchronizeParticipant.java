@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, 2014 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import org.eclipse.compare.structuremergeviewer.ICompareInput;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IEncodedStorage;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.mapping.ModelProvider;
@@ -38,7 +39,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.storage.WorkspaceFileRevision;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.synchronize.GitResourceVariantTreeSubscriber;
@@ -48,9 +48,9 @@ import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.FileRevisionTypedElement;
+import org.eclipse.egit.ui.internal.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.revision.FileRevisionTypedElement;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -76,7 +76,6 @@ import org.eclipse.ui.PartInitException;
 /**
  * Git model synchronization participant
  */
-@SuppressWarnings("restriction")
 public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant {
 
 	/**
@@ -143,7 +142,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		setSecondaryId(Long.toString(System.currentTimeMillis()));
 	}
 
-	@Override
 	protected void initializeConfiguration(
 			final ISynchronizePageConfiguration configuration) {
 		configuration.setProperty(ISynchronizePageConfiguration.P_VIEWER_ID,
@@ -174,7 +172,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 		configuration.addPropertyChangeListener(new IPropertyChangeListener() {
 
-			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				String property = event.getProperty();
 				if (property.equals(
@@ -279,14 +276,9 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 
 	@Override
 	public void run(final IWorkbenchPart part) {
-		boolean fetchPossible = false;
-		for (GitSynchronizeData data : gsds)
-			if (data.getDstRemoteName() != null)
-				fetchPossible = true;
-
 		boolean launchFetch = Activator.getDefault().getPreferenceStore()
 				.getBoolean(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH);
-		if (fetchPossible && (launchFetch || gsds.forceFetch())) {
+		if (launchFetch || gsds.forceFetch()) {
 			Job fetchJob = new SynchronizeFetchJob(gsds);
 			fetchJob.setUser(true);
 			fetchJob.addJobChangeListener(new JobChangeAdapter() {
@@ -309,16 +301,15 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			RepositoryMapping mapping = RepositoryMapping.findRepositoryMapping(repo);
 			if (mapping != null) {
 				IMemento child = memento.createChild(DATA_NODE_KEY);
-				child.putString(CONTAINER_PATH_KEY,
-						getPathForResource(mapping.getContainer()));
+				child.putString(CONTAINER_PATH_KEY, getPathForContainer(mapping.getContainer()));
 				child.putString(SRC_REV_KEY, gsd.getSrcRev());
 				child.putString(DST_REV_KEY, gsd.getDstRev());
 				child.putBoolean(INCLUDE_LOCAL_KEY, gsd.shouldIncludeLocal());
-				Set<IResource> includedResources = gsd.getIncludedResources();
-				if (includedResources != null && !includedResources.isEmpty()) {
+				Set<IContainer> includedPaths = gsd.getIncludedPaths();
+				if (includedPaths != null && !includedPaths.isEmpty()) {
 					IMemento paths = child.createChild(INCLUDED_PATHS_NODE_KEY);
-					for (IResource resource : includedResources) {
-						String path = getPathForResource(resource);
+					for (IContainer container : includedPaths) {
+						String path = getPathForContainer(container);
 						paths.createChild(INCLUDED_PATH_KEY).putString(
 								INCLUDED_PATH_KEY, path);
 					}
@@ -376,12 +367,12 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 			String dstRev = child.getString(DST_REV_KEY);
 			boolean includeLocal = getBoolean(
 					child.getBoolean(INCLUDE_LOCAL_KEY), true);
-			Set<IResource> includedResources = getIncludedResources(child);
+			Set<IContainer> includedPaths = getIncludedPaths(child);
 			try {
 				GitSynchronizeData data = new GitSynchronizeData(repo, srcRev,
 						dstRev, includeLocal);
-				if (includedResources != null)
-					data.setIncludedResources(includedResources);
+				if (includedPaths != null)
+					data.setIncludedPaths(includedPaths);
 				gsds.add(data);
 			} catch (IOException e) {
 				Activator.logError(e.getMessage(), e);
@@ -394,14 +385,9 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		IPath path = Path.fromPortableString(containerPath);
 		IContainer mappedContainer = ResourcesPlugin.getWorkspace().getRoot()
 				.getContainerForLocation(path);
-		if (mappedContainer == null) {
+		GitProjectData projectData = GitProjectData.get((IProject) mappedContainer);
+		if (projectData == null)
 			return null;
-		}
-		GitProjectData projectData = GitProjectData
-				.get(mappedContainer.getProject());
-		if (projectData == null) {
-			return null;
-		}
 		RepositoryMapping mapping = projectData.getRepositoryMapping(mappedContainer);
 		if (mapping != null)
 			return mapping.getRepository();
@@ -412,22 +398,21 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		return value != null ? value.booleanValue() : defaultValue;
 	}
 
-	private String getPathForResource(IResource resource) {
-		return resource.getLocation().toPortableString();
+	private String getPathForContainer(IContainer container) {
+		return container.getLocation().toPortableString();
 	}
 
-	private Set<IResource> getIncludedResources(IMemento memento) {
+	private Set<IContainer> getIncludedPaths(IMemento memento) {
 		IMemento child = memento.getChild(INCLUDED_PATHS_NODE_KEY);
-		Set<IResource> result = new HashSet<IResource>();
+		Set<IContainer> result = new HashSet<IContainer>();
 		if (child != null) {
 			IMemento[] pathNode = child.getChildren(INCLUDED_PATH_KEY);
 			if (pathNode != null) {
 				for (IMemento path : pathNode) {
 					String includedPath = path.getString(INCLUDED_PATH_KEY);
-					IResource resource = ResourceUtil
-							.getResourceForLocation(new Path(includedPath), false);
-					if (resource != null)
-						result.add(resource);
+					IContainer container = ResourcesPlugin.getWorkspace().getRoot()
+							.getContainerForLocation(new Path(includedPath));
+					result.add(container);
 				}
 				return result;
 			}

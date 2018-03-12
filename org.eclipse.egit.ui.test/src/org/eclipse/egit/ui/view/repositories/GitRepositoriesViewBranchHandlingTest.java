@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2013 SAP AG and others.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -20,7 +20,6 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
@@ -42,14 +41,15 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.ui.IPageLayout;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,15 +60,14 @@ import org.junit.runner.RunWith;
 public class GitRepositoriesViewBranchHandlingTest extends
 		GitRepositoriesViewTestBase {
 
-	private File repositoryFile;
+	private static File repositoryFile;
 
-	private File remoteRepositoryFile;
+	private static File remoteRepositoryFile;
 
-	private File clonedRepositoryFile;
+	private static File clonedRepositoryFile;
 
-	@Before
-	public void setUp() throws Exception {
-		clearView();
+	@BeforeClass
+	public static void beforeClass() throws Exception {
 		setVerboseBranchMode(false);
 		repositoryFile = createProjectAndCommitToRepository();
 		remoteRepositoryFile = createRemoteRepository(repositoryFile);
@@ -81,16 +80,19 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		op.run(null);
 
 		clonedRepositoryFile = new File(workdir, Constants.DOT_GIT);
+	}
 
-		RepositoryUtil repositoryUtil = Activator.getDefault()
-				.getRepositoryUtil();
-		repositoryUtil.addConfiguredRepository(repositoryFile);
-		repositoryUtil.addConfiguredRepository(remoteRepositoryFile);
-		repositoryUtil.addConfiguredRepository(clonedRepositoryFile);
+	@Before
+	public void before() throws Exception {
+		clearView();
+		deleteAllProjects();
 	}
 
 	@Test
 	public void testCreateCheckoutDeleteLocalBranch() throws Exception {
+		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
+				repositoryFile);
+		refreshAndWait();
 		final SWTBotView view = getOrOpenView();
 		SWTBotTreeItem localItem = myRepoViewUtil.getLocalBranchesItem(view
 				.bot().tree(), repositoryFile);
@@ -111,6 +113,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		createPage.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
 				.deselect();
 		createPage.bot().button(IDialogConstants.FINISH_LABEL).click();
+		getOrOpenView().toolbarButton("Refresh").click();
 		refreshAndWait();
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
@@ -150,6 +153,10 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 	@Test
 	public void testCreateDeleteLocalBranchWithUnmerged() throws Exception {
+		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
+				repositoryFile);
+		shareProjects(repositoryFile);
+		refreshAndWait();
 		final SWTBotView view = getOrOpenView();
 		SWTBotTreeItem localItem = myRepoViewUtil.getLocalBranchesItem(view
 				.bot().tree(), repositoryFile);
@@ -171,6 +178,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				.select();
 		createPage.bot().button(IDialogConstants.FINISH_LABEL).click();
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
+		getOrOpenView().toolbarButton("Refresh").click();
 		refreshAndWait();
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
@@ -203,6 +211,10 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 	@Test
 	public void testClonedRepository() throws Exception {
+		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
+				clonedRepositoryFile);
+		refreshAndWait();
+
 		SWTBotTree tree = getOrOpenView().bot().tree();
 
 		SWTBotTreeItem item = myRepoViewUtil.getLocalBranchesItem(tree,
@@ -234,61 +246,78 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 	@Test
 	public void testCheckoutRemote() throws Exception {
-		Repository repo = lookupRepository(clonedRepositoryFile);
-		BranchOperation bop = new BranchOperation(repo, "refs/heads/master");
-		bop.execute(null);
+		SWTBotPerspective perspective = null;
+		try {
+			perspective = bot.activePerspective();
+			bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
+			clearView();
+			Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
+					clonedRepositoryFile);
+			shareProjects(clonedRepositoryFile);
+			refreshAndWait();
 
-		assertEquals("master", repo.getBranch());
-		SWTBotTree tree = getOrOpenView().bot().tree();
+			Repository repo = lookupRepository(clonedRepositoryFile);
+			BranchOperation bop = new BranchOperation(repo, "refs/heads/master");
+			bop.execute(null);
 
-		SWTBotTreeItem item = myRepoViewUtil.getLocalBranchesItem(tree,
-				clonedRepositoryFile).expand();
+			assertEquals("master", repo.getBranch());
+			SWTBotTree tree = getOrOpenView().bot().tree();
 
-		touchAndSubmit(null);
-		refreshAndWait();
+			SWTBotTreeItem item = myRepoViewUtil.getLocalBranchesItem(tree,
+					clonedRepositoryFile).expand();
 
-		item = myRepoViewUtil.getRemoteBranchesItem(tree, clonedRepositoryFile)
-				.expand();
-		List<String> children = item.getNodes();
-		assertEquals("Wrong number of remote children", 2, children.size());
+			touchAndSubmit(null);
+			refreshAndWait();
 
-		item.getNode("origin/stable").select();
-		ContextMenuHelper.clickContextMenuSync(tree,
-				myUtil.getPluginLocalizedValue("CheckoutCommand"));
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		refreshAndWait();
+			item = myRepoViewUtil.getRemoteBranchesItem(tree,
+					clonedRepositoryFile).expand();
+			List<String> children = item.getNodes();
+			assertEquals("Wrong number of remote children", 2, children.size());
 
-		GitLightweightDecorator.refresh();
+			item.getNode("origin/stable").select();
+			ContextMenuHelper.clickContextMenuSync(tree, myUtil
+					.getPluginLocalizedValue("CheckoutCommand"));
+			TestUtil.joinJobs(JobFamilies.CHECKOUT);
+			refreshAndWait();
 
-		assertTrue("Branch should not be symbolic",
-				ObjectId.isId(lookupRepository(clonedRepositoryFile)
-						.getBranch()));
+			GitLightweightDecorator.refresh();
 
-		// now let's try to create a local branch from the remote one
-		item = myRepoViewUtil.getRemoteBranchesItem(tree, clonedRepositoryFile)
-				.expand();
-		item.getNode("origin/stable").select();
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("CreateBranchCommand"));
+			assertTrue("Branch should not be symbolic", ObjectId
+					.isId(lookupRepository(clonedRepositoryFile).getBranch()));
 
-		SWTBotShell createPage = bot
-				.shell(UIText.CreateBranchWizard_NewBranchTitle);
-		createPage.activate();
-		assertEquals("Wrong suggested branch name", "stable", createPage.bot()
-				.textWithId("BranchName").getText());
-		createPage.close();
-		// checkout master again
+			// now let's try to create a local branch from the remote one
+			item = myRepoViewUtil.getRemoteBranchesItem(tree,
+					clonedRepositoryFile).expand();
+			item.getNode("origin/stable").select();
+			ContextMenuHelper.clickContextMenu(tree, myUtil
+					.getPluginLocalizedValue("CreateBranchCommand"));
 
-		myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
-				.expand().getNode("master").select();
-		ContextMenuHelper.clickContextMenu(tree,
-				myUtil.getPluginLocalizedValue("CheckoutCommand"));
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		refreshAndWait();
+			SWTBotShell createPage = bot
+					.shell(UIText.CreateBranchWizard_NewBranchTitle);
+			createPage.activate();
+			assertEquals("Wrong suggested branch name", "stable", createPage
+					.bot().textWithId("BranchName").getText());
+			createPage.close();
+			// checkout master again
+
+			myRepoViewUtil.getLocalBranchesItem(tree, clonedRepositoryFile)
+					.expand().getNode("master").select();
+			ContextMenuHelper.clickContextMenu(tree, myUtil
+					.getPluginLocalizedValue("CheckoutCommand"));
+			TestUtil.joinJobs(JobFamilies.CHECKOUT);
+			refreshAndWait();
+
+		} finally {
+			if (perspective != null)
+				perspective.activate();
+		}
 	}
 
 	@Test
 	public void testRenameBranch() throws Exception {
+		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
+				clonedRepositoryFile);
+
 		SWTBotTree tree = getOrOpenView().bot().tree();
 
 		SWTBotTreeItem item = myRepoViewUtil.getLocalBranchesItem(tree,
@@ -337,6 +366,9 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 	@Test
 	public void testMergeOnRepo() throws Exception {
+		Activator.getDefault().getRepositoryUtil().addConfiguredRepository(
+				clonedRepositoryFile);
+
 		SWTBotTree tree = getOrOpenView().bot().tree();
 
 		myRepoViewUtil.getRootItem(tree, clonedRepositoryFile).select();
@@ -366,6 +398,9 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				ConfigConstants.CONFIG_KEY_REBASE, false);
 		assertFalse(rebase);
 
+		Activator.getDefault().getRepositoryUtil()
+				.addConfiguredRepository(clonedRepositoryFile);
+
 		SWTBotView view = getOrOpenView();
 
 		SWTBotTreeItem localItem = myRepoViewUtil.getLocalBranchesItem(view
@@ -376,7 +411,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				myUtil.getPluginLocalizedValue("ShowIn"),
 				"Properties");
 
-		SWTBotView propsView = bot.viewById(IPageLayout.ID_PROP_SHEET);
+		SWTBotView propsView = bot.viewByTitle("Properties");
 		SWTBotTreeItem rootItem = propsView
 				.bot()
 				.tree()
@@ -434,7 +469,6 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		final AtomicBoolean changed = new AtomicBoolean();
 		ConfigChangedListener listener =
 		new ConfigChangedListener() {
-			@Override
 			public void onConfigChanged(ConfigChangedEvent event) {
 				changed.set(true);
 			}
@@ -461,7 +495,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				myUtil.getPluginLocalizedValue("ShowIn"),
 				"Properties");
 
-		propsView = bot.viewById(IPageLayout.ID_PROP_SHEET);
+		propsView = bot.viewByTitle("Properties");
 		rootItem = propsView
 				.bot()
 				.tree()

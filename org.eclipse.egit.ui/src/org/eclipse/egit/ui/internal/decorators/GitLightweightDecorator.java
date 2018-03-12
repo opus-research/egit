@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2007, 2013 IBM Corporation and others.
+ * Copyright (C) 2007, IBM Corporation and others
  * Copyright (C) 2007, Dave Watson <dwatson@mimvista.com>
  * Copyright (C) 2008, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
@@ -7,7 +7,6 @@
  * Copyright (C) 2008, Tor Arne Vestbø <torarnv@gmail.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
- * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +17,7 @@
 package org.eclipse.egit.ui.internal.decorators;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IResource;
@@ -31,8 +28,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
@@ -42,8 +37,6 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.IDecoratableResource.Staged;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -53,13 +46,10 @@ import org.eclipse.jface.viewers.ILightweightLabelDecorator;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.osgi.util.TextProcessor;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.team.internal.ui.Utils;
 import org.eclipse.team.ui.ISharedImages;
@@ -89,35 +79,30 @@ public class GitLightweightDecorator extends LabelProvider implements
 	/**
 	 * Collector for keeping the error view from filling up with exceptions
 	 */
-	private static final ExceptionCollector EXCEPTION_COLLECTOR = new ExceptionCollector(
-			UIText.Decorator_exceptionMessageCommon, Activator.getPluginId(),
+	private static ExceptionCollector exceptions = new ExceptionCollector(
+			UIText.Decorator_exceptionMessage, Activator.getPluginId(),
 			IStatus.ERROR, Activator.getDefault().getLog());
 
-	private static final List<String> FONT_IDS = Arrays.asList(
-			UIPreferences.THEME_UncommittedChangeFont,
-			UIPreferences.THEME_IgnoredResourceFont);
+	private static String[] fonts = new String[]  {
+		UIPreferences.THEME_UncommittedChangeFont};
 
-	private static final List<String> COLOR_IDS = Arrays.asList(
+	private static String[] colors = new String[] {
 		UIPreferences.THEME_UncommittedChangeBackgroundColor,
-			UIPreferences.THEME_UncommittedChangeForegroundColor,
-			UIPreferences.THEME_IgnoredResourceBackgroundColor,
-			UIPreferences.THEME_IgnoredResourceForegroundColor);
-
-	private static RGB defaultBackgroundRgb;
+		UIPreferences.THEME_UncommittedChangeForegroundColor};
 
 	/**
 	 * Constructs a new Git resource decorator
 	 */
 	public GitLightweightDecorator() {
-		// This is an optimization to ensure that while decorating our fonts and
-		// colors are pre-created and decoration can occur without having to syncExec.
-		ensureFontAndColorsCreated(FONT_IDS, COLOR_IDS);
 		TeamUI.addPropertyChangeListener(this);
 		Activator.addPropertyChangeListener(this);
 		PlatformUI.getWorkbench().getThemeManager().getCurrentTheme()
 				.addPropertyChangeListener(this);
 
 		org.eclipse.egit.core.Activator.getDefault().getIndexDiffCache().addIndexDiffChangedListener(this);
+		// This is an optimization to ensure that while decorating our fonts and colors are
+		// pre-created and decoration can occur without having to syncExec.
+		ensureFontAndColorsCreated(fonts, colors);
 	}
 
 	/**
@@ -128,26 +113,26 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @param actFonts fonts ids to cache
 	 * @param actColors color ids to cache
 	 */
-	private void ensureFontAndColorsCreated(final List<String> actFonts,
-			final List<String> actColors) {
-		final Display display = PlatformUI.getWorkbench().getDisplay();
-		display.syncExec(new Runnable() {
-			@Override
+	private void ensureFontAndColorsCreated(final String[] actFonts, final String[] actColors) {
+		Display.getDefault().syncExec(new Runnable() {
 			public void run() {
 				ITheme theme  = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
-				for (int i = 0; i < actColors.size(); i++) {
-					theme.getColorRegistry().get(actColors.get(i));
+				for (int i = 0; i < actColors.length; i++) {
+					theme.getColorRegistry().get(actColors[i]);
 
 				}
-				for (int i = 0; i < actFonts.size(); i++) {
-					theme.getFontRegistry().get(actFonts.get(i));
+				for (int i = 0; i < actFonts.length; i++) {
+					theme.getFontRegistry().get(actFonts[i]);
 				}
-				defaultBackgroundRgb = display.getSystemColor(
-						SWT.COLOR_LIST_BACKGROUND).getRGB();
 			}
 		});
 	}
 
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.eclipse.jface.viewers.IBaseLabelProvider#dispose()
+	 */
 	@Override
 	public void dispose() {
 		super.dispose();
@@ -164,30 +149,23 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @see org.eclipse.jface.viewers.ILightweightLabelDecorator#decorate(java.lang.Object,
 	 *      org.eclipse.jface.viewers.IDecoration)
 	 */
-	@Override
 	public void decorate(Object element, IDecoration decoration) {
 		// Don't decorate if UI plugin is not running
-		if (Activator.getDefault() == null) {
+		if (Activator.getDefault() == null)
 			return;
-		}
 
 		// Don't decorate if the workbench is not running
-		if (!PlatformUI.isWorkbenchRunning()) {
+		if (!PlatformUI.isWorkbenchRunning())
 			return;
-		}
 
 		final IResource resource = getResource(element);
 		try {
-			if (resource == null) {
+			if (resource == null)
 				decorateResourceMapping(element, decoration);
-			} else {
+			else
 				decorateResource(resource, decoration);
-			}
 		} catch (CoreException e) {
 			handleException(resource, e);
-		} catch (Exception e) {
-			handleException(resource, new CoreException(Activator
-					.createErrorStatus(NLS.bind(UIText.Decorator_exceptionMessage, resource), e)));
 		}
 	}
 
@@ -198,65 +176,46 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * @param decoration the decoration
 	 * @throws CoreException
 	 */
-	private void decorateResource(@NonNull IResource resource,
-			IDecoration decoration) throws CoreException {
+	private void decorateResource(IResource resource, IDecoration decoration) throws CoreException {
 		IndexDiffData indexDiffData = getIndexDiffDataOrNull(resource);
 
-		if(indexDiffData == null) {
+		if(indexDiffData == null)
 			return;
-		}
+
 		IDecoratableResource decoratableResource = null;
 		final DecorationHelper helper = new DecorationHelper(
 				Activator.getDefault().getPreferenceStore());
 		try {
 			decoratableResource = new DecoratableResourceAdapter(indexDiffData, resource);
 		} catch (IOException e) {
-			throw new CoreException(Activator.createErrorStatus(
-					NLS.bind(UIText.Decorator_exceptionMessage, resource), e));
+			throw new CoreException(Activator.createErrorStatus(UIText.Decorator_exceptionMessage, e));
 		}
 		helper.decorate(decoration, decoratableResource);
 	}
 
-	@Nullable
 	static IndexDiffData getIndexDiffDataOrNull(IResource resource) {
-		if (resource.getType() == IResource.ROOT) {
+		if (resource.getType() == IResource.ROOT)
 			return null;
-		}
 
 		// Don't decorate non-existing resources
-		if (!resource.exists() && !resource.isPhantom()) {
+		if (!resource.exists() && !resource.isPhantom())
 			return null;
-		}
 
 		// Make sure we're dealing with a project under Git revision control
 		final RepositoryMapping mapping = RepositoryMapping
 				.getMapping(resource);
-		if (mapping == null) {
+		if (mapping == null)
 			return null;
-		}
 
-		Repository repo = mapping.getRepository();
-		if(repo == null){
-			return null;
-		}
-
-		// For bare repository just return empty data
-		if (repo.isBare()) {
-			return new IndexDiffData();
-		}
-		
 		// Cannot decorate linked resources
-		if (mapping.getRepoRelativePath(resource) == null) {
+		if (mapping.getRepoRelativePath(resource) == null)
 			return null;
-		}
 
-		IndexDiffCacheEntry diffCacheEntry = org.eclipse.egit.core.Activator
+		IndexDiffData indexDiffData = org.eclipse.egit.core.Activator
 				.getDefault().getIndexDiffCache()
-				.getIndexDiffCacheEntry(repo);
-		if (diffCacheEntry == null) {
-			return null;
-		}
-		return diffCacheEntry.getIndexDiff();
+				.getIndexDiffCacheEntry(mapping.getRepository()).getIndexDiff();
+
+		return indexDiffData;
 	}
 
 	/**
@@ -274,8 +233,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		try {
 			decoRes = new DecoratableResourceMapping(mapping);
 		} catch (IOException e) {
-			throw new CoreException(Activator.createErrorStatus(
-					NLS.bind(UIText.Decorator_exceptionMessage, element), e));
+			throw new CoreException(Activator.createErrorStatus(UIText.Decorator_exceptionMessage, e));
 		}
 
 		/*
@@ -345,7 +303,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 				this.descriptor = descriptor;
 			}
 
-			@Override
 			public ImageData getImageData() {
 				if (data == null) {
 					data = descriptor.getImageData();
@@ -406,55 +363,31 @@ public class GitLightweightDecorator extends LabelProvider implements
 		 */
 		public void decorate(IDecoration decoration,
 				IDecoratableResource resource) {
-			decorateFontAndColour(decoration, resource);
-
 			if (resource.isIgnored())
 				return;
 
 			decorateText(decoration, resource);
 			decorateIcons(decoration, resource);
+			decorateFontAndColour(decoration, resource);
 		}
 
 		private void decorateFontAndColour(IDecoration decoration,
 				IDecoratableResource resource) {
 			ITheme current = PlatformUI.getWorkbench().getThemeManager().getCurrentTheme();
-			Color bc = null;
-			Color fc = null;
-			Font f = null;
 			if (resource.isIgnored()) {
-				bc = current.getColorRegistry().get(
-						UIPreferences.THEME_IgnoredResourceBackgroundColor);
-				fc = current.getColorRegistry().get(
-						UIPreferences.THEME_IgnoredResourceForegroundColor);
-				f = current.getFontRegistry().get(
-						UIPreferences.THEME_IgnoredResourceFont);
-			} else if (!resource.isTracked()
+				return;
+			}
+			if (!resource.isTracked()
 					|| resource.isDirty()
 					|| resource.staged() != Staged.NOT_STAGED) {
-				bc = current.getColorRegistry().get(
-						UIPreferences.THEME_UncommittedChangeBackgroundColor);
-				fc = current.getColorRegistry().get(
-						UIPreferences.THEME_UncommittedChangeForegroundColor);
-				f = current.getFontRegistry().get(
-						UIPreferences.THEME_UncommittedChangeFont);
-			}
-			if (bc != null) {
-				setBackgroundColor(decoration, bc);
-			}
-			if (fc != null) {
+				Color bc = current.getColorRegistry().get(UIPreferences.THEME_UncommittedChangeBackgroundColor);
+				Color fc = current.getColorRegistry().get(UIPreferences.THEME_UncommittedChangeForegroundColor);
+				Font f = current.getFontRegistry().get(UIPreferences.THEME_UncommittedChangeFont);
+
+				decoration.setBackgroundColor(bc);
 				decoration.setForegroundColor(fc);
-			}
-			if (f != null) {
 				decoration.setFont(f);
 			}
-		}
-
-		private void setBackgroundColor(IDecoration decoration, Color color) {
-			// In case the color is not changed from the default, do not set the
-			// background because it paints over things from the theme such as
-			// alternating line colors (see bug 412183).
-			if (!color.getRGB().equals(defaultBackgroundRgb))
-				decoration.setBackgroundColor(color);
 		}
 
 		private void decorateText(IDecoration decoration,
@@ -649,8 +582,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 * Perform a blanket refresh of all decorations
 	 */
 	public static void refresh() {
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
+		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
 				Activator.getDefault().getWorkbench().getDecoratorManager()
 						.update(DECORATOR_ID);
@@ -666,7 +598,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 *
 	 * @see org.eclipse.jface.util.IPropertyChangeListener#propertyChange(org.eclipse.jface.util.PropertyChangeEvent)
 	 */
-	@Override
 	public void propertyChange(PropertyChangeEvent event) {
 		final String prop = event.getProperty();
 		// If the property is of any interest to us
@@ -676,20 +607,14 @@ public class GitLightweightDecorator extends LabelProvider implements
 			postLabelEvent();
 		} else if (prop.equals(UIPreferences.THEME_UncommittedChangeBackgroundColor)
 				|| prop.equals(UIPreferences.THEME_UncommittedChangeFont)
-				|| prop.equals(UIPreferences.THEME_UncommittedChangeForegroundColor)
-				|| prop.equals(UIPreferences.THEME_IgnoredResourceFont)
-				|| prop.equals(UIPreferences.THEME_IgnoredResourceBackgroundColor)
-				|| prop.equals(UIPreferences.THEME_IgnoredResourceForegroundColor)) {
-			ensureFontAndColorsCreated(FONT_IDS, COLOR_IDS);
+				|| prop.equals(UIPreferences.THEME_UncommittedChangeForegroundColor)) {
+			ensureFontAndColorsCreated(fonts, colors);
 			postLabelEvent(); // TODO do I really need this?
 		}
 	}
 
-	@Override
 	public void indexDiffChanged(Repository repository,
 			IndexDiffData indexDiffData) {
-		// clear calculated repo data
-		DecoratableResourceHelper.clearState(repository);
 		postLabelEvent();
 	}
 
@@ -706,9 +631,10 @@ public class GitLightweightDecorator extends LabelProvider implements
 			resource = (IResource) element;
 		} else if (element instanceof IAdaptable) {
 			final IAdaptable adaptable = (IAdaptable) element;
-			resource = AdapterUtils.adapt(adaptable, IResource.class);
+			resource = (IResource) adaptable.getAdapter(IResource.class);
 			if (resource == null) {
-				final IContributorResourceAdapter adapter = AdapterUtils.adapt(adaptable, IContributorResourceAdapter.class);
+				final IContributorResourceAdapter adapter = (IContributorResourceAdapter) adaptable
+						.getAdapter(IContributorResourceAdapter.class);
 				if (adapter != null)
 					resource = adapter.getAdaptedResource(adaptable);
 			}
@@ -733,8 +659,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		final LabelProviderChangedEvent event = new LabelProviderChangedEvent(
 				this);
 		// Re-trigger decoration process (in UI thread)
-		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-			@Override
+		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
 				fireLabelProviderChanged(event);
 			}
@@ -752,7 +677,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 	 */
 	private static void handleException(IResource resource, CoreException e) {
 		if (resource == null || resource.isAccessible())
-			EXCEPTION_COLLECTOR.handleException(e);
+			exceptions.handleException(e);
 	}
 }
 
@@ -783,7 +708,7 @@ class LabelEventJob extends Job {
 		super(name);
 	}
 
-	private GitLightweightDecorator glwDecorator;
+	private GitLightweightDecorator glwDecorator = null;
 
 	/**
 	 * Post a label event
@@ -793,8 +718,8 @@ class LabelEventJob extends Job {
 	 *            LabelProviderChangedEvent
 	 */
 	void postLabelEvent(final GitLightweightDecorator decorator) {
-		if (glwDecorator == null)
-			glwDecorator = decorator;
+		if (this.glwDecorator == null)
+			this.glwDecorator = decorator;
 		if (getState() == SLEEPING || getState() == WAITING)
 			cancel();
 		schedule(DELAY);

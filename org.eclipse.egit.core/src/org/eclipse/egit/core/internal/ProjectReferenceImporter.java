@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2011, 2012 Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -76,24 +76,24 @@ public class ProjectReferenceImporter {
 		for (final Map.Entry<URIish, Map<String, Set<ProjectReference>>> entry : repositories
 				.entrySet()) {
 			final URIish gitUrl = entry.getKey();
-			final Map<String, Set<ProjectReference>> refs = entry
+			final Map<String, Set<ProjectReference>> branches = entry
 					.getValue();
 
-			for (final Map.Entry<String, Set<ProjectReference>> refEntry : refs
+			for (final Map.Entry<String, Set<ProjectReference>> branchEntry : branches
 					.entrySet()) {
-				final String refName = refEntry.getKey();
-				final Set<ProjectReference> projects = refEntry.getValue();
+				final String branch = branchEntry.getKey();
+				final Set<ProjectReference> projects = branchEntry.getValue();
 
-				final Set<String> allRefs = refs.keySet();
+				final Set<String> allBranches = branches.keySet();
 
 				File repositoryPath = null;
-				if (allRefs.size() == 1)
+				if (allBranches.size() == 1)
 					repositoryPath = findConfiguredRepository(gitUrl);
 
 				if (repositoryPath == null) {
 					try {
-						IPath workDir = getWorkingDir(gitUrl, refName, refs.keySet());
-						repositoryPath = cloneIfNecessary(gitUrl, refName, workDir, projects, monitor);
+						IPath workDir = getWorkingDir(gitUrl, branch, branches.keySet());
+						repositoryPath = cloneIfNecessary(gitUrl, branch, workDir, projects, monitor);
 					} catch (final InterruptedException e) {
 						// was canceled by user
 						return Collections.emptyList();
@@ -112,7 +112,7 @@ public class ProjectReferenceImporter {
 		return importedProjects;
 	}
 
-	private static File cloneIfNecessary(final URIish gitUrl, final String refToCheckout, final IPath workDir,
+	private static File cloneIfNecessary(final URIish gitUrl, final String branch, final IPath workDir,
 			final Set<ProjectReference> projects, IProgressMonitor monitor) throws TeamException, InterruptedException {
 
 		final File repositoryPath = workDir.append(Constants.DOT_GIT_EXT).toFile();
@@ -131,8 +131,9 @@ public class ProjectReferenceImporter {
 		} else {
 			try {
 				int timeout = 60;
+				String refName = Constants.R_HEADS + branch;
 				final CloneOperation cloneOperation = new CloneOperation(
-						gitUrl, true, null, workDir.toFile(), refToCheckout,
+						gitUrl, true, null, workDir.toFile(), refName,
 						Constants.DEFAULT_REMOTE_NAME, timeout);
 				cloneOperation.run(monitor);
 
@@ -148,11 +149,6 @@ public class ProjectReferenceImporter {
 		final Map<URIish, Map<String, Set<ProjectReference>>> repositories = new LinkedHashMap<URIish, Map<String, Set<ProjectReference>>>();
 
 		for (final String reference : referenceStrings) {
-			if (reference == null) {
-				// BundleImporterDelegate doesn't check invalid project URI's,
-				// so we can receive null references.
-				continue;
-			}
 			try {
 				final ProjectReference projectReference = new ProjectReference(
 						reference);
@@ -192,19 +188,19 @@ public class ProjectReferenceImporter {
 	 */
 	private static IPath getWorkingDir(URIish gitUrl, String branch,
 			Set<String> allBranches) {
-		final IPath defaultRepoLocation = new Path(
-				RepositoryUtil.getDefaultRepositoryDir());
+		final IPath workspaceLocation = ResourcesPlugin.getWorkspace()
+				.getRoot().getRawLocation();
 		final String humanishName = gitUrl.getHumanishName();
 		String extendedName;
-		if (allBranches.size() == 1 || branch.equals(Constants.MASTER)) {
+		if (allBranches.size() == 1 || branch.equals(Constants.MASTER))
 			extendedName = humanishName;
-		} else {
+		else
 			extendedName = humanishName + "_" + branch; //$NON-NLS-1$
-		}
-		return defaultRepoLocation.append(extendedName);
+		final IPath workDir = workspaceLocation.append(extendedName);
+		return workDir;
 	}
 
-	static File findConfiguredRepository(URIish gitUrl) {
+	private static File findConfiguredRepository(URIish gitUrl) {
 		for (String repoDir : getRepositoryUtil().getConfiguredRepositories()) {
 			File repoDirFile = new File(repoDir);
 			if (repositoryAlreadyExistsForUrl(repoDirFile, gitUrl))
@@ -248,29 +244,14 @@ public class ProjectReferenceImporter {
 			if (existingUrl.equals(url))
 				return true;
 
-			// there may be slight differences in the URLs...
-			URIish canonExistingUrl = canonicalizeURL(existingUrl);
-			URIish canonUrl = canonicalizeURL(url);
-			if (canonExistingUrl.equals(canonUrl))
+			// try URLs without user name, since often project sets contain
+			// anonymous URLs, and remote URL might be anonymous as well
+			URIish anonExistingUrl = existingUrl.setUser(null);
+			URIish anonUrl = url.setUser(null);
+			if (anonExistingUrl.equals(anonUrl))
 				return true;
 		}
 		return false;
-	}
-
-	private static URIish canonicalizeURL(URIish existingUrl) {
-		// try URLs without user name, since often project sets contain
-		// anonymous URLs, and remote URL might be anonymous as well
-		URIish newURL = existingUrl.setUser(null);
-
-		// some URLs end with .git, some don't
-		String path = existingUrl.getPath();
-		if (path.endsWith(".git")) { //$NON-NLS-1$
-			newURL = newURL
-					.setPath(path.substring(0,
-					path.lastIndexOf(".git"))); //$NON-NLS-1$
-		}
-
-		return newURL;
 	}
 
 	private List<IProject> importProjects(final Set<ProjectReference> projects,

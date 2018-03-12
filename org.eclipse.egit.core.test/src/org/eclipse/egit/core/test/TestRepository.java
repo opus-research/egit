@@ -12,10 +12,8 @@
 package org.eclipse.egit.core.test;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
@@ -78,7 +76,11 @@ public class TestRepository {
 		tmpRepository.close();
 		// use repository instance from RepositoryCache!
 		repository = Activator.getDefault().getRepositoryCache().lookupRepository(gitDir);
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -92,7 +94,11 @@ public class TestRepository {
 	 */
 	public TestRepository(Repository repository) throws IOException {
 		this.repository = repository;
-		workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		try {
+			workdirPrefix = repository.getWorkTree().getCanonicalPath();
+		} catch (IOException err) {
+			workdirPrefix = repository.getWorkTree().getAbsolutePath();
+		}
 		workdirPrefix = workdirPrefix.replace('\\', '/');
 		if (!workdirPrefix.endsWith("/")) //$NON-NLS-1$
 			workdirPrefix += "/"; //$NON-NLS-1$
@@ -178,8 +184,8 @@ public class TestRepository {
 	 */
 	public RevCommit appendContentAndCommit(IProject project, File file,
 			byte[] content, String commitMessage) throws Exception {
-		return appendContentAndCommit(project, file, new String(content,
-				"UTF-8"), commitMessage);
+		return appendContentAndCommit(project, file, new String(content),
+				commitMessage);
 	}
 
 	/**
@@ -252,7 +258,6 @@ public class TestRepository {
 	public void trackAllFiles(IProject project) throws CoreException {
 		project.accept(new IResourceVisitor() {
 
-			@Override
 			public boolean visit(IResource resource) throws CoreException {
 				if (resource instanceof IFile) {
 					try {
@@ -357,7 +362,7 @@ public class TestRepository {
 	 * @throws NoFilepatternException
 	 */
 	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
-		String repoPath = getRepoRelativePath(resource.getLocation().toString());
+		String repoPath = getRepoRelativePath(resource.getLocation().toOSString());
 		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 
@@ -369,7 +374,7 @@ public class TestRepository {
 	 * @throws IOException
 	 */
 	public void appendFileContent(File file, byte[] content) throws IOException {
-		appendFileContent(file, new String(content, "UTF-8"), true);
+		appendFileContent(file, new String(content), true);
 	}
 
 	/**
@@ -395,7 +400,7 @@ public class TestRepository {
 	 */
 	public void appendFileContent(File file, byte[] content, boolean append)
 			throws IOException {
-		appendFileContent(file, new String(content, "UTF-8"), append);
+		appendFileContent(file, new String(content), append);
 	}
 
 	/**
@@ -410,10 +415,9 @@ public class TestRepository {
 	 */
 	public void appendFileContent(File file, String content, boolean append)
 			throws IOException {
-		Writer fw = null;
+		FileWriter fw = null;
 		try {
-			fw = new OutputStreamWriter(new FileOutputStream(file, append),
-					"UTF-8");
+			fw = new FileWriter(file, append);
 			fw.append(content);
 		} finally {
 			if (fw != null)
@@ -430,10 +434,16 @@ public class TestRepository {
 	 */
 	public boolean inHead(String path) throws IOException {
 		ObjectId headId = repository.resolve(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository);
-				TreeWalk tw = TreeWalk.forPath(repository, path,
-						rw.parseTree(headId))) {
+		RevWalk rw = new RevWalk(repository);
+		TreeWalk tw = null;
+		try {
+			tw = TreeWalk.forPath(repository, path, rw.parseTree(headId));
 			return tw != null;
+		} finally {
+			rw.release();
+			rw.dispose();
+			if (tw != null)
+				tw.release();
 		}
 	}
 
@@ -447,14 +457,10 @@ public class TestRepository {
 			return true;
 
 		Ref ref = repository.getRef(Constants.HEAD);
-		try (RevWalk rw = new RevWalk(repository)) {
-			RevCommit c = rw.parseCommit(ref.getObjectId());
+		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
+		TreeWalk tw = TreeWalk.forPath(repository, getRepoRelativePath(absolutePath), c.getTree());
 
-			try (TreeWalk tw = TreeWalk.forPath(repository,
-					getRepoRelativePath(absolutePath), c.getTree())) {
-				return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
-			}
-		}
+		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {

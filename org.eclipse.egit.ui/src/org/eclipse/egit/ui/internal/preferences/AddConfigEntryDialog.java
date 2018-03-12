@@ -70,7 +70,6 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 		}
 
 		keyText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				check();
 			}
@@ -80,7 +79,6 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 				.setText(UIText.AddConfigEntryDialog_ValueLabel);
 		valueText = new Text(main, SWT.BORDER);
 		valueText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				check();
 			}
@@ -108,7 +106,7 @@ public class AddConfigEntryDialog extends TitleAreaDialog {
 				return;
 			}
 			StringTokenizer st = new StringTokenizer(keyText.getText(), "."); //$NON-NLS-1$
-			if (st.countTokens() < 2) {
+			if (st.countTokens() < 2 || st.countTokens() > 3) {
 				setErrorMessage(UIText.AddConfigEntryDialog_KeyComponentsMessage);
 				hasError = true;
 				return;

@@ -27,7 +27,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.ResetCommand;
@@ -64,7 +63,6 @@ public class RemoveFromIndexOperation implements IEGitOperation {
 		this.pathsByRepository = ResourceUtil.splitResourcesByRepository(resources);
 	}
 
-	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 		IProgressMonitor monitor = (m != null) ? m : new NullProgressMonitor();
 
@@ -84,17 +82,13 @@ public class RemoveFromIndexOperation implements IEGitOperation {
 			} catch (GitAPIException e) {
 				Activator.logError(e.getMessage(), e);
 			} finally {
-				RepositoryMapping mapping = findRepositoryMapping(repository);
-				if (mapping != null) {
-					mapping.fireRepositoryChanged();
-				}
+				findRepositoryMapping(repository).fireRepositoryChanged();
 			}
 		}
 
 		monitor.done();
 	}
 
-	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(pathsByRepository.keySet());
 	}

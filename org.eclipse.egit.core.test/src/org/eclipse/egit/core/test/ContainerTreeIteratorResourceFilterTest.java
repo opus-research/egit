@@ -12,10 +12,10 @@ import static org.eclipse.core.resources.IResourceFilterDescription.EXCLUDE_ALL;
 import static org.eclipse.core.resources.IResourceFilterDescription.FILES;
 import static org.eclipse.core.resources.IResourceFilterDescription.FOLDERS;
 import static org.eclipse.core.resources.IResourceFilterDescription.INHERITABLE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -54,7 +54,6 @@ public class ContainerTreeIteratorResourceFilterTest extends GitTestCase {
 
 	private Repository repository;
 
-	@Override
 	@Before
 	public void setUp() throws Exception {
 		super.setUp();
@@ -175,21 +174,17 @@ public class ContainerTreeIteratorResourceFilterTest extends GitTestCase {
 	}
 
 	private List<Entry> walkTree() throws IOException {
-		try (TreeWalk treeWalk = new TreeWalk(repository)) {
-			ContainerTreeIterator tree = new ContainerTreeIterator(repository,
-					project.getProject());
-			int treeIndex = treeWalk.addTree(tree);
-			treeWalk.setRecursive(true);
-			List<Entry> entries = new ArrayList<Entry>();
-			while (treeWalk.next()) {
-				AbstractTreeIterator it = treeWalk.getTree(treeIndex,
-						AbstractTreeIterator.class);
-				Entry entry = new Entry(treeWalk.getPathString(),
-						it.getClass());
-				entries.add(entry);
-			}
-			return entries;
+		TreeWalk treeWalk = new TreeWalk(repository);
+		ContainerTreeIterator tree = new ContainerTreeIterator(repository, project.getProject());
+		int treeIndex = treeWalk.addTree(tree);
+		treeWalk.setRecursive(true);
+		List<Entry> entries = new ArrayList<Entry>();
+		while (treeWalk.next()) {
+			AbstractTreeIterator it = treeWalk.getTree(treeIndex, AbstractTreeIterator.class);
+			Entry entry = new Entry(treeWalk.getPathString(), it.getClass());
+			entries.add(entry);
 		}
+		return entries;
 	}
 
 	private static Entry containerTreeEntry(String path) {

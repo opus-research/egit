@@ -6,7 +6,7 @@
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  * Copyright (C) 2013, François Rey <eclipse.org_@_francois_._rey_._name>
  *
@@ -17,7 +17,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,31 +35,23 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.AdaptableFileTreeIterator;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.CachedCheckboxTreeViewer;
 import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
-import org.eclipse.egit.ui.internal.components.CachedCheckboxTreeViewer;
-import org.eclipse.egit.ui.internal.components.FilteredCheckboxTree;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitItem.Status;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent.CommitStatus;
-import org.eclipse.egit.ui.internal.staging.StagingView;
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.IMessageProvider;
@@ -70,6 +64,8 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
+import org.eclipse.jface.text.DocumentEvent;
+import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
@@ -92,35 +88,35 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Link;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.dialogs.PreferencesUtil;
@@ -129,7 +125,6 @@ import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.model.BaseWorkbenchContentProvider;
-import org.eclipse.ui.progress.WorkbenchJob;
 
 /**
  * Dialog is shown to user when they request to commit files. Changes in the
@@ -151,17 +146,14 @@ public class CommitDialog extends TitleAreaDialog {
 			return new Object[0];
 		}
 
-		@Override
 		public Object[] getChildren(Object parentElement) {
 			return new Object[0];
 		}
 
-		@Override
 		public Object getParent(Object element) {
 			return null;
 		}
 
-		@Override
 		public boolean hasChildren(Object element) {
 			return false;
 		}
@@ -198,12 +190,10 @@ public class CommitDialog extends TitleAreaDialog {
 			return (Image) this.resourceManager.get(decorated);
 		}
 
-		@Override
 		public StyledString getStyledText(Object element) {
 			return new StyledString();
 		}
 
-		@Override
 		public Image getImage(Object element) {
 			CommitItem item = (CommitItem) element;
 			ImageDescriptor decorator = null;
@@ -237,12 +227,10 @@ public class CommitDialog extends TitleAreaDialog {
 
 	static class CommitPathLabelProvider extends ColumnLabelProvider {
 
-		@Override
 		public String getText(Object obj) {
 			return ((CommitItem) obj).path;
 		}
 
-		@Override
 		public String getToolTipText(Object element) {
 			return ((CommitItem) element).status.getText();
 		}
@@ -261,11 +249,11 @@ public class CommitDialog extends TitleAreaDialog {
 
 		@Override
 		public void widgetSelected(SelectionEvent e) {
-			TreeColumn column = (TreeColumn) e.widget;
-			Tree tree = column.getParent();
+			TableColumn column = (TableColumn) e.widget;
+			Table table = column.getParent();
 
-			if (column == tree.getSortColumn()) {
-				int currentDirection = tree.getSortDirection();
+			if (column == table.getSortColumn()) {
+				int currentDirection = table.getSortDirection();
 				switch (currentDirection) {
 				case SWT.NONE:
 					reversed = Boolean.FALSE;
@@ -283,20 +271,20 @@ public class CommitDialog extends TitleAreaDialog {
 				reversed = Boolean.FALSE;
 
 			if (reversed == null) {
-				tree.setSortColumn(null);
-				tree.setSortDirection(SWT.NONE);
+				table.setSortColumn(null);
+				table.setSortDirection(SWT.NONE);
 				filesViewer.setComparator(null);
 				return;
 			}
-			tree.setSortColumn(column);
+			table.setSortColumn(column);
 
 			Comparator<CommitItem> comparator;
 			if (reversed.booleanValue()) {
 				comparator = order.descending();
-				tree.setSortDirection(SWT.DOWN);
+				table.setSortDirection(SWT.DOWN);
 			} else {
 				comparator = order;
-				tree.setSortDirection(SWT.UP);
+				table.setSortDirection(SWT.UP);
 			}
 
 			filesViewer.setComparator(new CommitViewerComparator(comparator));
@@ -306,14 +294,19 @@ public class CommitDialog extends TitleAreaDialog {
 
 	class CommitItemSelectionListener extends SelectionAdapter {
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			IStructuredSelection selection = (IStructuredSelection) filesViewer.getSelection();
 			CommitItem commitItem = (CommitItem) selection.getFirstElement();
 			if (commitItem == null) {
 				return;
 			}
-			compare(commitItem);
+			IFile file = findFile(commitItem.path);
+			if (file == null
+					|| RepositoryProvider.getProvider(file.getProject()) == null)
+				CompareUtils.compareHeadWithWorkingTree(repository,
+						commitItem.path);
+			else
+				CompareUtils.compareHeadWithWorkspace(repository, file);
 		}
 
 	}
@@ -369,8 +362,6 @@ public class CommitDialog extends TitleAreaDialog {
 	Button commitButton;
 
 	Button commitAndPushButton;
-
-	Button ignoreErrors;
 
 	ArrayList<CommitItem> items = new ArrayList<CommitItem>();
 
@@ -475,7 +466,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 		// initially, we sort by status plus path
 		Collections.sort(items, new Comparator<CommitItem>() {
-			@Override
 			public int compare(CommitItem o1, CommitItem o2) {
 				int diff = o1.status.ordinal() - o2.status.ordinal();
 				if (diff != 0)
@@ -576,7 +566,6 @@ public class CommitDialog extends TitleAreaDialog {
 		updateMessage();
 	}
 
-	@Override
 	protected void buttonPressed(int buttonId) {
 		if (IDialogConstants.OK_ID == buttonId)
 			okPressed();
@@ -596,39 +585,9 @@ public class CommitDialog extends TitleAreaDialog {
 	@Override
 	protected Control createHelpControl(Composite parent) {
 		toolkit.adapt(parent, false, false);
-		Link link = new Link(parent, SWT.WRAP | SWT.NO_FOCUS);
-		((GridLayout) parent.getLayout()).numColumns++;
-		link.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
-		link.setText(UIText.CommitDialog_OpenStagingViewLink);
-		link.setToolTipText(UIText.CommitDialog_OpenStagingViewToolTip);
-		link.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				openStagingViewLinkClicked();
-			}
-		});
-
-		toolkit.adapt(link, false, false);
-		return link;
-	}
-
-	private void openStagingViewLinkClicked() {
-		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
-		IWorkbenchPage workbenchPage = workbenchWindow.getActivePage();
-		try {
-			StagingView view = (StagingView) workbenchPage
-					.showView(StagingView.VIEW_ID);
-			view.reload(repository);
-			String message = commitMessageComponent.getCommitMessage();
-			if (message != null && message.length() > 0)
-				view.setCommitMessage(message);
-			setReturnCode(CANCEL);
-			close();
-		} catch (PartInitException e) {
-			Activator.handleError(UIText.CommitDialog_OpenStagingViewError, e,
-					true);
-		}
+		Control help = super.createHelpControl(parent);
+		toolkit.adapt(help, false, false);
+		return help;
 	}
 
 	@Override
@@ -655,7 +614,6 @@ public class CommitDialog extends TitleAreaDialog {
 		final Menu menu = new Menu(dropDownBar);
 		dropDownItem.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				menu.dispose();
 			}
@@ -664,7 +622,6 @@ public class CommitDialog extends TitleAreaDialog {
 		preferencesItem.setText(UIText.CommitDialog_ConfigureLink);
 		preferencesItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				String[] pages = new String[] { UIPreferences.PAGE_COMMIT_PREFERENCES };
 				PreferencesUtil.createPreferenceDialogOn(getShell(), pages[0],
@@ -674,7 +631,6 @@ public class CommitDialog extends TitleAreaDialog {
 		});
 		dropDownItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Rectangle b = dropDownItem.getBounds();
 				Point p = dropDownItem.getParent().toDisplay(
@@ -692,7 +648,6 @@ public class CommitDialog extends TitleAreaDialog {
 		toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				toolkit.dispose();
 			}
@@ -726,17 +681,28 @@ public class CommitDialog extends TitleAreaDialog {
 		UIUtils.hookDisposal(parent, titleImage);
 		setTitleImage(titleImage);
 		setTitle(UIText.CommitDialog_Title);
-		if (ignoreErrors != null) {
-			setMessage(UIText.CommitDialog_MessageErrors,
-					IMessageProvider.WARNING);
-		} else {
-			setMessage(UIText.CommitDialog_Message,
-					IMessageProvider.INFORMATION);
-		}
+		setMessage(UIText.CommitDialog_Message, IMessageProvider.INFORMATION);
 
+		ModifyListener validator = new ModifyListener() {
+
+			public void modifyText(ModifyEvent e) {
+				updateMessage();
+			}
+		};
+		commitText.getDocument().addDocumentListener(new IDocumentListener() {
+
+			public void documentChanged(DocumentEvent event) {
+				updateMessage();
+			}
+
+			public void documentAboutToBeChanged(DocumentEvent event) {
+				// Intentionally empty
+			}
+		});
+		authorText.addModifyListener(validator);
+		committerText.addModifyListener(validator);
 		filesViewer.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				updateMessage();
 			}
@@ -773,28 +739,7 @@ public class CommitDialog extends TitleAreaDialog {
 		};
 		patternFilter.setIncludeLeadingWildcard(true);
 		FilteredCheckboxTree resourcesTreeComposite = new FilteredCheckboxTree(
-				filesArea, toolkit, SWT.FULL_SELECTION, patternFilter) {
-			@Override
-			protected WorkbenchJob doCreateRefreshJob() {
-				// workaround for file filter not having an explicit change
-				// listener
-				WorkbenchJob filterJob = super.doCreateRefreshJob();
-				filterJob.addJobChangeListener(new JobChangeAdapter() {
-					@Override
-					public void done(IJobChangeEvent event) {
-						if (event.getResult().isOK()) {
-							getDisplay().asyncExec(new Runnable() {
-								@Override
-								public void run() {
-									updateFileSectionText();
-								}
-							});
-						}
-					}
-				});
-				return filterJob;
-			}
-		};
+				filesArea, toolkit, SWT.FULL_SELECTION, patternFilter);
 		Tree resourcesTree = resourcesTreeComposite.getViewer().getTree();
 		resourcesTree.setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
@@ -802,28 +747,8 @@ public class CommitDialog extends TitleAreaDialog {
 				.hint(600, 200).grab(true, true).create());
 
 		resourcesTree.addSelectionListener(new CommitItemSelectionListener());
+
 		resourcesTree.setHeaderVisible(true);
-
-		if (getPreferenceStore()
-				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
-				&& getPreferenceStore()
-						.getBoolean(UIPreferences.BLOCK_COMMIT)) {
-			ignoreErrors = new Button(resourcesTreeComposite, SWT.CHECK);
-			ignoreErrors.setText(UIText.CommitDialog_IgnoreErrors);
-
-			ignoreErrors.setSelection(false);
-			ignoreErrors.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					Button button = (Button) e.getSource();
-					boolean enable = button.getSelection();
-					updateMessage();
-					updateCommitButtons(enable);
-				}
-			});
-		}
-
 		TreeColumn statCol = new TreeColumn(resourcesTree, SWT.LEFT);
 		statCol.setText(UIText.CommitDialog_Status);
 		statCol.setWidth(150);
@@ -858,14 +783,9 @@ public class CommitDialog extends TitleAreaDialog {
 
 		filesViewer.addFilter(new CommitItemFilter());
 		filesViewer.setInput(items.toArray());
-		MenuManager menuManager = new MenuManager();
-		menuManager.setRemoveAllWhenShown(true);
-		menuManager.addMenuListener(createContextMenuListener());
-		filesViewer.getTree().setMenu(
-				menuManager.createContextMenu(filesViewer.getTree()));
+		filesViewer.getTree().setMenu(getContextMenu());
 		filesViewer.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				updateFileSectionText();
 			}
@@ -880,7 +800,6 @@ public class CommitDialog extends TitleAreaDialog {
 		showUntrackedItem.setSelection(showUntracked);
 		showUntrackedItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				showUntracked = showUntrackedItem.getSelection();
 				filesViewer.refresh(true);
@@ -897,7 +816,6 @@ public class CommitDialog extends TitleAreaDialog {
 		checkAllItem.setToolTipText(UIText.CommitDialog_SelectAll);
 		checkAllItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				filesViewer.setAllChecked(true);
 				updateFileSectionText();
@@ -913,7 +831,6 @@ public class CommitDialog extends TitleAreaDialog {
 		uncheckAllItem.setToolTipText(UIText.CommitDialog_DeselectAll);
 		uncheckAllItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				filesViewer.setAllChecked(false);
 				updateFileSectionText();
@@ -932,7 +849,6 @@ public class CommitDialog extends TitleAreaDialog {
 
 			filesViewer.addCheckStateListener(new ICheckStateListener() {
 
-				@Override
 				public void checkStateChanged(CheckStateChangedEvent event) {
 					if (!event.getChecked())
 						filesViewer.setAllChecked(true);
@@ -956,11 +872,6 @@ public class CommitDialog extends TitleAreaDialog {
 		statCol.pack();
 		resourceCol.pack();
 		return filesSection;
-	}
-
-	private void updateCommitButtons(boolean enable) {
-		commitAndPushButton.setEnabled(enable);
-		commitButton.setEnabled(enable);
 	}
 
 	private Composite createMessageAndPersonArea(Composite container) {
@@ -1037,10 +948,6 @@ public class CommitDialog extends TitleAreaDialog {
 				.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TEXT_BORDER);
 		authorText.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).create());
-		if (repository != null
-				&& repository.getRepositoryState().equals(
-						RepositoryState.CHERRY_PICKING_RESOLVED))
-			authorText.setEnabled(false);
 
 		toolkit.createLabel(personArea, UIText.CommitDialog_Committer)
 				.setForeground(
@@ -1078,19 +985,12 @@ public class CommitDialog extends TitleAreaDialog {
 
 		final ICommitMessageComponentNotifications listener = new ICommitMessageComponentNotifications() {
 
-			@Override
 			public void updateSignedOffToggleSelection(boolean selection) {
 				signedOffItem.setSelection(selection);
 			}
 
-			@Override
 			public void updateChangeIdToggleSelection(boolean selection) {
 				changeIdItem.setSelection(selection);
-			}
-
-			@Override
-			public void statusUpdated() {
-				updateMessage();
 			}
 		};
 
@@ -1107,7 +1007,6 @@ public class CommitDialog extends TitleAreaDialog {
 		commitMessageComponent.setFilesToCommit(getFileList());
 
 		amendingItem.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent arg0) {
 				commitMessageComponent.setAmendingButtonSelection(amendingItem
 						.getSelection());
@@ -1115,7 +1014,6 @@ public class CommitDialog extends TitleAreaDialog {
 		});
 
 		changeIdItem.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent arg0) {
 				commitMessageComponent.setChangeIdButtonSelection(changeIdItem
 						.getSelection());
@@ -1123,7 +1021,6 @@ public class CommitDialog extends TitleAreaDialog {
 		});
 
 		signedOffItem.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent arg0) {
 				commitMessageComponent
 						.setSignedOffButtonSelection(signedOffItem
@@ -1149,53 +1046,27 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private void updateMessage() {
-		if (commitButton == null)
-			// Not yet fully initialized.
-			return;
-
 		String message = null;
 		int type = IMessageProvider.NONE;
 
-		boolean ignoreErrorsValue = ignoreErrors == null ? true
-				: !ignoreErrors.getSelection();
-		@SuppressWarnings("boxing")
-		boolean hasErrorsOrWarnings = getPreferenceStore()
-				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
-						? (getProblemsSeverity() >= Integer
-								.valueOf(getPreferenceStore().getString(
-										UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
-								&& ignoreErrorsValue)
-						: false;
-		if (hasErrorsOrWarnings) {
-			message = UIText.CommitDialog_MessageErrors;
-			type = IMessageProvider.WARNING;
+		String commitMsg = commitMessageComponent.getCommitMessage();
+		if (commitMsg == null || commitMsg.trim().length() == 0) {
+			message = UIText.CommitDialog_Message;
+			type = IMessageProvider.INFORMATION;
+		} else if (!isCommitWithoutFilesAllowed()) {
+			message = UIText.CommitDialog_MessageNoFilesSelected;
+			type = IMessageProvider.INFORMATION;
 		} else {
-			String commitMsg = commitMessageComponent.getCommitMessage();
-			if (commitMsg == null || commitMsg.trim().length() == 0) {
-				message = UIText.CommitDialog_Message;
-				type = IMessageProvider.INFORMATION;
-			} else if (!isCommitWithoutFilesAllowed()) {
-				message = UIText.CommitDialog_MessageNoFilesSelected;
-				type = IMessageProvider.INFORMATION;
-			} else {
-				CommitStatus status = commitMessageComponent.getStatus();
-				message = status.getMessage();
-				type = status.getMessageType();
-			}
+			CommitStatus status = commitMessageComponent.getStatus();
+			message = status.getMessage();
+			type = status.getMessageType();
 		}
+
 		setMessage(message, type);
-		@SuppressWarnings("boxing")
-		boolean commitBlocked = getPreferenceStore()
-				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
-				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
-						? (getProblemsSeverity() >= Integer
-								.valueOf(getPreferenceStore().getString(
-										UIPreferences.BLOCK_COMMIT_LEVEL))
-								&& ignoreErrorsValue)
-						: false;
-		boolean commitEnabled = (type == IMessageProvider.WARNING
-				|| type == IMessageProvider.NONE) && !commitBlocked;
-		updateCommitButtons(commitEnabled);
+		boolean commitEnabled = type == IMessageProvider.WARNING
+				|| type == IMessageProvider.NONE;
+		commitButton.setEnabled(commitEnabled);
+		commitAndPushButton.setEnabled(commitEnabled);
 	}
 
 	private boolean isCommitWithoutFilesAllowed() {
@@ -1222,55 +1093,27 @@ public class CommitDialog extends TitleAreaDialog {
 				Integer.valueOf(filesViewer.getTree().getItemCount())));
 	}
 
-	private IMenuListener createContextMenuListener() {
-		return new IMenuListener() {
-			@Override
-			public void menuAboutToShow(IMenuManager manager) {
-				if (!allowToChangeSelection)
-					return;
+	private Menu getContextMenu() {
+		if (!allowToChangeSelection)
+			return null;
+		final Menu menu = new Menu(filesViewer.getTree());
+		filesViewer.getTree().addDisposeListener(new DisposeListener() {
 
-				final IStructuredSelection selection = (IStructuredSelection) filesViewer
+			public void widgetDisposed(DisposeEvent e) {
+				menu.dispose();
+			}
+		});
+		MenuItem item = new MenuItem(menu, SWT.PUSH);
+		item.setText(UIText.CommitDialog_AddFileOnDiskToIndex);
+		item.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event arg0) {
+				IStructuredSelection sel = (IStructuredSelection) filesViewer
 						.getSelection();
-				if (selection.isEmpty())
+				if (sel.isEmpty()) {
 					return;
-
-				if (selection.size() == 1
-						&& selection.getFirstElement() instanceof CommitItem) {
-					CommitItem commitItem = (CommitItem) selection
-							.getFirstElement();
-					manager.add(createCompareAction(commitItem));
 				}
-
-				boolean hasUnselected = false;
-				for (Object element : selection.toList()) {
-					if (!filesViewer.getChecked(element)) {
-						hasUnselected = true;
-						break;
-					}
-				}
-
-				if (hasUnselected)
-					manager.add(createSelectAction(selection));
-				manager.add(createAddAction(selection));
-			}
-		};
-	}
-
-	private Action createCompareAction(final CommitItem commitItem) {
-		return new Action(UIText.CommitDialog_CompareWithHeadRevision) {
-			@Override
-			public void run() {
-				compare(commitItem);
-			}
-		};
-	}
-
-	private Action createAddAction(final IStructuredSelection selection) {
-		return new Action(UIText.CommitDialog_AddFileOnDiskToIndex) {
-			@Override
-			public void run() {
 				AddCommand addCommand = new Git(repository).add();
-				for (Iterator<?> it = selection.iterator(); it.hasNext();) {
+				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
 					CommitItem commitItem = (CommitItem) it.next();
 					addCommand.addFilepattern(commitItem.path);
 				}
@@ -1279,28 +1122,19 @@ public class CommitDialog extends TitleAreaDialog {
 				} catch (Exception e) {
 					Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 				}
-				for (Iterator<?> it = selection.iterator(); it.hasNext();) {
+				for (Iterator<?> it = sel.iterator(); it.hasNext();) {
 					CommitItem commitItem = (CommitItem) it.next();
 					try {
 						commitItem.status = getFileStatus(commitItem.path);
 					} catch (IOException e) {
-						Activator.logError(
-								UIText.CommitDialog_ErrorAddingFiles, e);
+						Activator.logError(UIText.CommitDialog_ErrorAddingFiles, e);
 					}
 				}
 				filesViewer.refresh(true);
 			}
-		};
-	}
+		});
 
-	private IAction createSelectAction(final IStructuredSelection selection) {
-		return new Action(UIText.CommitDialog_SelectForCommit) {
-			@Override
-			public void run() {
-				for (Object item : selection.toList())
-					filesViewer.setChecked(item, true);
-			}
-		};
+		return menu;
 	}
 
 	/** Retrieve file status
@@ -1358,7 +1192,7 @@ public class CommitDialog extends TitleAreaDialog {
 	}
 
 	private static int getProblemSeverity(Repository repository, String path) {
-		IFile file = ResourceUtil.getFileForLocation(repository, path, false);
+		IFile file = ResourceUtil.getFileForLocation(repository, path);
 		if (file != null) {
 			try {
 				int severity = file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
@@ -1398,40 +1232,19 @@ public class CommitDialog extends TitleAreaDialog {
 		super.okPressed();
 	}
 
-	private int getProblemsSeverity() {
-		int result = IProblemDecoratable.SEVERITY_NONE;
-		Object[] checkedElements = filesViewer.getCheckedElements();
-		ArrayList<String> selectedFiles = new ArrayList<>();
-		for (Object obj : checkedElements)
-			selectedFiles.add(((CommitItem) obj).path);
-		for (final CommitItem item : items) {
-			if (item.getProblemSeverity() >= IMarker.SEVERITY_WARNING
-					&& selectedFiles.contains(item.path)) {
-				if (result < item.getProblemSeverity()) {
-					result = item.getProblemSeverity();
-				}
-			}
-		}
-		return result;
-	}
-
 	@Override
 	protected int getShellStyle() {
 		return super.getShellStyle() | SWT.RESIZE;
 	}
 
-	private void compare(CommitItem commitItem) {
-		IFile file = findFile(commitItem.path);
-		if (file == null || !ResourceUtil.isSharedWithGit(file.getProject())) {
-			CompareUtils.compareHeadWithWorkingTree(repository,
-					commitItem.path);
-		} else {
-			CompareUtils.compareHeadWithWorkspace(repository, file);
-		}
-	}
-
 	private IFile findFile(String path) {
-		return ResourceUtil.getFileForLocation(repository, path, false);
+		URI uri = new File(repository.getWorkTree(), path).toURI();
+		IFile[] workspaceFiles = ResourcesPlugin.getWorkspace().getRoot()
+				.findFilesForLocationURI(uri);
+		if (workspaceFiles.length > 0)
+			return workspaceFiles[0];
+		else
+			return null;
 	}
 }
 
@@ -1445,7 +1258,6 @@ class CommitItem implements IProblemDecoratable {
 
 	int problemSeverity;
 
-	@Override
 	public int getProblemSeverity() {
 		return problemSeverity;
 	}
@@ -1489,7 +1301,6 @@ class CommitItem implements IProblemDecoratable {
 	public static enum Order implements Comparator<CommitItem> {
 		ByStatus() {
 
-			@Override
 			public int compare(CommitItem o1, CommitItem o2) {
 				return o1.status.compareTo(o2.status);
 			}
@@ -1498,7 +1309,6 @@ class CommitItem implements IProblemDecoratable {
 
 		ByFile() {
 
-			@Override
 			public int compare(CommitItem o1, CommitItem o2) {
 				return o1.path.compareTo(
 						o2.path);

@@ -38,7 +38,6 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 		gsd = dataSet;
 	}
 
-	@Override
 	@SuppressWarnings("resource")
 	public boolean compare(IResource local, IResourceVariant remote) {
 		if (!local.exists() || remote == null) {
@@ -96,7 +95,6 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 		return false;
 	}
 
-	@Override
 	public boolean compare(IResourceVariant base, IResourceVariant remote) {
 		GitRemoteResource gitBase = (GitRemoteResource) base;
 		GitRemoteResource gitRemote = (GitRemoteResource) remote;
@@ -109,7 +107,6 @@ class GitResourceVariantComparator implements IResourceVariantComparator {
 		return equalType && exists && equalSha1;
 	}
 
-	@Override
 	public boolean isThreeWay() {
 		return true;
 	}

@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.jgit.lib.Repository;
@@ -47,11 +48,13 @@ public class PushAction extends SynchronizeModelAction {
 	@Override
 	protected SynchronizeModelOperation getSubscriberOperation(
 			ISynchronizePageConfiguration configuration, IDiffElement[] elements) {
+		final int timeout = Activator.getDefault().getPreferenceStore()
+				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
+
 		return new SynchronizeModelOperation(configuration, elements) {
-			@Override
 			public void run(IProgressMonitor monitor) throws InvocationTargetException,
 					InterruptedException {
-				runPushOperation();
+				runPushOperation(timeout);
 			}
 		};
 	}
@@ -67,12 +70,12 @@ public class PushAction extends SynchronizeModelAction {
 		return false;
 	}
 
-	private void runPushOperation() {
+	private void runPushOperation(final int timeout) {
 		GitSynchronizeDataSet gsds = (GitSynchronizeDataSet) getConfiguration()
 				.getProperty(SYNCHRONIZATION_DATA);
 
 		for (GitSynchronizeData gsd : gsds) {
-			String remoteName = gsd.getDstRemoteName();
+			String remoteName = gsd.getSrcRemoteName();
 			if (remoteName == null)
 				continue;
 
@@ -90,7 +93,7 @@ public class PushAction extends SynchronizeModelAction {
 
 			if (rc.getPushRefSpecs().isEmpty())
 				rc.addPushRefSpec(new RefSpec(HEAD + ":" + gsd.getDstMerge())); //$NON-NLS-1$
-			PushOperationUI push = new PushOperationUI(repo, rc, false);
+			PushOperationUI push = new PushOperationUI(repo, rc, timeout, false);
 			push.setCredentialsProvider(new EGitCredentialsProvider());
 			push.start();
 		}

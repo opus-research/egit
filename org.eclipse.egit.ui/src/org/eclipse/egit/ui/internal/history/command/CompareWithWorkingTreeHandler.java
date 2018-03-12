@@ -11,21 +11,19 @@
 package org.eclipse.egit.ui.internal.history.command;
 
 import java.io.File;
+import java.io.IOException;
 
-import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CompareUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.history.GitHistoryPage;
-import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
+import org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.team.ui.synchronize.SaveableCompareEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.handlers.HandlerUtil;
 
@@ -34,47 +32,33 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CompareWithWorkingTreeHandler extends
 		AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IStructuredSelection selection = getSelection(event);
+		IStructuredSelection selection = getSelection(getPage());
 		if (selection.isEmpty())
 			return null;
 
 		// Even if there's more than one element, only consider the first
 		RevCommit commit = (RevCommit) selection.getFirstElement();
-		Object input = getPage(event).getInputInternal().getSingleFile();
-		IWorkbenchPage workBenchPage = HandlerUtil
-				.getActiveWorkbenchWindowChecked(event).getActivePage();
-		if (input instanceof IFile) {
-			IFile file = (IFile) input;
-			final RepositoryMapping mapping = RepositoryMapping.getMapping(file
-					.getProject());
-			if (mapping != null) {
-				final String gitPath = mapping.getRepoRelativePath(file);
-				final String commitPath = getRenamedPath(gitPath, commit);
-				ITypedElement right = CompareUtils.getFileRevisionTypedElement(
-						commitPath, commit, mapping.getRepository());
-				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-						SaveableCompareEditorInput.createFileElement(file),
-						right, null);
-				CompareUtils.openInCompare(workBenchPage, in);
-			}
-		} else if (input instanceof File) {
-			File file = (File) input;
-			// TODO can we create a ITypedElement from the local file?
-			Repository repo = getRepository(event);
-			RevCommit leftCommit;
-			try (RevWalk rw = new RevWalk(repo)) {
-				leftCommit = rw.parseCommit(repo
-						.resolve(Constants.HEAD));
-			} catch (Exception e) {
-				throw new ExecutionException(e.getMessage(), e);
-			}
-			final String leftCommitPath = getRepoRelativePath(repo, file);
-			final String rightCommitPath = getRenamedPath(leftCommitPath,
-					commit);
-			CompareUtils.openInCompare(leftCommit, commit, leftCommitPath,
-					rightCommitPath, repo, workBenchPage);
+		Object input = getPage().getInputInternal().getSingleFile();
+		Repository repository = getRepository(event);
+
+		try {
+			IWorkbenchPage workBenchPage = HandlerUtil
+					.getActiveWorkbenchWindowChecked(event).getActivePage();
+			if (input instanceof IFile) {
+				IFile file = (IFile) input;
+				if (CompareUtils.canDirectlyOpenInCompare(file))
+					CompareUtils.compareWorkspaceWithRef(repository, file,
+							commit.getId().getName(), workBenchPage);
+				else
+					GitModelSynchronize.synchronizeModelWithWorkspace(file,
+							repository, commit.getName());
+			} else
+				CompareUtils.compareLocalWithRef(repository, (File) input,
+						commit.getId().getName(), workBenchPage);
+		} catch (IOException e) {
+			Activator.handleError(
+					UIText.CompareWithRefAction_errorOnSynchronize, e, true);
 		}
 		return null;
 	}

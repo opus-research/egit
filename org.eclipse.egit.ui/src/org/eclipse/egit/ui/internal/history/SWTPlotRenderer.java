@@ -12,9 +12,7 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -24,6 +22,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revplot.AbstractPlotRenderer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
@@ -55,9 +54,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private static final RGB INNER_OTHER = new RGB(250, 250, 250);
 
-	private static final int MAX_LABEL_LENGTH = 18;
-
-	private static final String ELLIPSIS = "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
+	private static final int MAX_LABEL_LENGTH = 15;
 
 	private final Color sys_black;
 
@@ -69,17 +66,11 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private final Color commitDotOutline;
 
-	/**
-	 * Map from ref name to its label coordinates
-	 */
 	private final Map<String, Point> labelCoordinates = new HashMap<String, Point>();
 
-	/**
-	 * Set of ref names that are shown as an ellipsis
-	 */
-	private final Set<String> ellipsisTags = new HashSet<String>();
-
 	private int textHeight;
+
+	private boolean enableAntialias = true;
 
 	private final ResourceManager resources;
 
@@ -95,12 +86,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	private Ref headRef;
 
-	/**
-	 * Number of tags of the current commit being rendered. Reset after each
-	 * commit.
-	 */
-	private int tagCount = 0;
-
 	SWTPlotRenderer(final Display d, final ResourceManager resources) {
 		this.resources = resources;
 		sys_black = d.getSystemColor(SWT.COLOR_BLACK);
@@ -113,6 +98,13 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 
 	void paint(final Event event, Ref actHeadRef) {
 		g = event.gc;
+
+		if (this.enableAntialias)
+			try {
+				g.setAntialias(SWT.ON);
+			} catch (SWTException e) {
+				this.enableAntialias = false;
+			}
 
 		this.headRef = actHeadRef;
 		cellX = event.x;
@@ -133,7 +125,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		paintCommit(commit , event.height);
 	}
 
-	@Override
 	protected void drawLine(final Color color, final int x1, final int y1,
 			final int x2, final int y2, final int width) {
 		g.setForeground(color);
@@ -154,27 +145,22 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		g.drawOval(dotX, dotY, dotW, dotH);
 	}
 
-	@Override
 	protected void drawCommitDot(final int x, final int y, final int w,
 			final int h) {
 		drawDot(commitDotOutline, commitDotFill, x, y, w, h);
 	}
 
-	@Override
 	protected void drawBoundaryDot(final int x, final int y, final int w,
 			final int h) {
 		drawDot(sys_gray, sys_white, x, y, w, h);
 	}
 
-	@Override
 	protected void drawText(final String msg, final int x, final int y) {
 		final Point textsz = g.textExtent(msg);
-		final int texty = (y - textsz.y) / 2;
+		final int texty = (y * 2 - textsz.y) / 2;
 		g.setForeground(cellFG);
 		g.setBackground(cellBG);
 		g.drawString(msg, cellX + x, cellY + texty, true);
-
-		tagCount = 0;
 	}
 
 	@Override
@@ -196,8 +182,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 			labelInner = INNER_REMOTE;
 			txt = name.substring(Constants.R_REMOTES.length());
 		} else if (name.startsWith(Constants.R_TAGS)) {
-			tagCount++;
-
 			tag = true;
 			if (ref.getPeeledObjectId() != null) {
 				labelOuter = OUTER_ANNOTATED;
@@ -207,17 +191,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 				labelInner = INNER_TAG;
 			}
 
-			int maxNumberOfTags = 1;
-			if (tagCount == maxNumberOfTags) {
-				txt = name.substring(Constants.R_TAGS.length());
-			} else if (tagCount == maxNumberOfTags + 1) {
-				txt = ELLIPSIS;
-				ellipsisTags.add(name);
-			} else {
-				// Don't draw additional tags, they are shown when hovering the
-				// ellipsis
-				return 0;
-			}
+			txt = name.substring(Constants.R_TAGS.length());
 		} else {
 			labelOuter = OUTER_OTHER;
 			labelInner = INNER_OTHER;
@@ -237,15 +211,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 					.getInt(UIPreferences.HISTORY_MAX_BRANCH_LENGTH);
 		else
 			maxLength = MAX_LABEL_LENGTH;
-		if (txt.length() > maxLength) {
-			// Account for the ellipsis length
-			int textLength = maxLength - 3;
-			if (Activator.getDefault().getPreferenceStore()
-					.getBoolean(UIPreferences.HISTORY_CUT_AT_START))
-				txt = ELLIPSIS + txt.substring(txt.length() - textLength);
-			else
-				txt = txt.substring(0, textLength) + ELLIPSIS;
-		}
+		if (txt.length() > maxLength)
+			txt = txt.substring(0, maxLength) + "\u2026"; // ellipsis "..." (in UTF-8) //$NON-NLS-1$
 
 		// highlight checked out branch
 		Font oldFont = g.getFont();
@@ -256,7 +223,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		Point textsz = g.stringExtent(txt);
 		int arc = textsz.y / 2;
 		final int texty = (y * 2 - textsz.y) / 2;
-		final int outerWidth = textsz.x + 7;
 
 		// Draw backgrounds
 		g.setLineWidth(1);
@@ -270,7 +236,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 				textsz.y - 2, arc - 1, arc - 1);
 
 		g.setForeground(resources.createColor(labelOuter));
-		g.drawRoundRectangle(cellX + x, cellY + texty - 1, outerWidth,
+		g.drawRoundRectangle(cellX + x, cellY + texty - 1, textsz.x + 7,
 				textsz.y + 1, arc, arc);
 
 		g.setForeground(sys_black);
@@ -281,7 +247,7 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		if (isHead)
 			g.setFont(oldFont);
 
-		labelCoordinates.put(name, new Point(x, x + outerWidth));
+		labelCoordinates.put(name, new Point(x, x + textsz.x));
 		return 10 + textsz.x;
 	}
 
@@ -295,7 +261,6 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 		return isHead;
 	}
 
-	@Override
 	protected Color laneColor(final SWTLane myLane) {
 		return myLane != null ? myLane.color : sys_black;
 	}
@@ -314,12 +279,8 @@ class SWTPlotRenderer extends AbstractPlotRenderer<SWTLane, Color> {
 	 * @return a Point where x and y designate the start and end x position of
 	 *         the label
 	 */
-	Point getRefHSpan(Ref ref) {
+	public Point getRefHSpan(Ref ref) {
 		return labelCoordinates.get(ref.getName());
-	}
-
-	boolean isShownAsEllipsis(Ref ref) {
-		return ellipsisTags.contains(ref.getName());
 	}
 
 	/**

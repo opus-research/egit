@@ -28,7 +28,6 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.GitURI;
 import org.eclipse.egit.core.internal.ProjectReferenceImporter;
 import org.eclipse.egit.core.project.RepositoryMapping;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.osgi.util.NLS;
@@ -48,22 +47,14 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 	public String[] asReference(IProject[] projects,
 			ProjectSetSerializationContext context, IProgressMonitor monitor)
 			throws TeamException {
-		List<String> references = new ArrayList<>(projects.length);
-		for (int i = 0; i < projects.length; i++) {
-			String reference = asReference(projects[i]);
-			if(reference != null){
-				references.add(reference);
-			}
-		}
-		return references.toArray(new String[references.size()]);
+		String[] references = new String[projects.length];
+		for (int i = 0; i < projects.length; i++)
+			references[i] = asReference(projects[i]);
+		return references;
 	}
 
-	@Nullable
 	private String asReference(IProject project) throws TeamException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-		if (mapping == null) {
-			return null;
-		}
 		String branch;
 		try {
 			branch = mapping.getRepository().getBranch();
@@ -83,9 +74,6 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 					project.getName()));
 
 		String projectPath = mapping.getRepoRelativePath(project);
-		if (projectPath == null) {
-			return null;
-		}
 		if (projectPath.equals("")) //$NON-NLS-1$
 			projectPath = "."; //$NON-NLS-1$
 
@@ -114,7 +102,6 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 
 		try{
 			ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
-				@Override
 				public void run(IProgressMonitor wsOpMonitor) throws CoreException {
 					ProjectReferenceImporter importer = new ProjectReferenceImporter(referenceStrings);
 					List<IProject> p = importer.run(wsOpMonitor);
@@ -129,17 +116,9 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 		return result;
 	}
 
-	@Nullable
 	@Override
 	public String asReference(URI uri, String projectName) {
-		try {
-			GitURI gitURI = new GitURI(uri);
-			return asReference(gitURI.getRepository().toString(),
-					gitURI.getTag(), gitURI.getPath().toString());
-		} catch (IllegalArgumentException e) {
-			Activator.error(e.getMessage(), e);
-			// we must not fail but return null on invalid or unknown URI's.
-			return null;
-		}
+		GitURI gitURI = new GitURI(uri);
+		return asReference(gitURI.getRepository().toString(), gitURI.getTag(), gitURI.getPath().toString());
 	}
 }
