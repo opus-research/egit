@@ -78,6 +78,15 @@ public class CoreText extends NLS {
 	public static String DeleteTagOperation_exceptionMessage;
 
 	/** */
+	public static String DiffHeaderFormat_Email;
+
+	/** */
+	public static String DiffHeaderFormat_None;
+
+	/** */
+	public static String DiffHeaderFormat_Oneline;
+
+	/** */
 	public static String DiscardChangesOperation_discardFailed;
 
 	/** */
@@ -196,9 +205,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String Error_CanonicalFile;
-
-	/** */
-	public static String CleanOperation_title;
 
 	/** */
 	public static String CloneOperation_checkingOutFiles;

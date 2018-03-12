@@ -829,27 +829,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
-	public static String CleanProjectsConfirmDialog_cleanDirs;
-
-	/** */
-	public static String CleanProjectsConfirmDialog_dryRun;
-
-	/** */
-	public static String CleanProjectsConfirmDialog_message;
-
-	/** */
-	public static String CleanProjectsConfirmDialog_title;
-
-	/** */
-	public static String CleanResultDialog_messagePretend;
-
-	/** */
-	public static String CleanResultDialog_messageResult;
-
-	/** */
-	public static String CleanResultDialog_title;
-
-	/** */
 	public static String ClearCredentialsCommand_clearingCredentialsFailed;
 
 	/** */
@@ -3001,7 +2980,7 @@ public class UIText extends NLS {
 	public static String GitCreatePatchWizard_File;
 
 	/** */
-	public static String GitCreatePatchWizard_GitFormat;
+	public static String GitCreatePatchWizard_Format;
 
 	/** */
 	public static String GitCreatePatchWizard_InternalError;
