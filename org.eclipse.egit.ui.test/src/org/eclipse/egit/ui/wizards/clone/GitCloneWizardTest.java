@@ -179,7 +179,7 @@ public class GitCloneWizardTest {
 	public void canCloneARemoteRepo() throws Exception {
 		File destRepo = new File(new File(ResourcesPlugin.getWorkspace()
 				.getRoot().getLocation().toFile().getParent(),
-				"data"), "egit");
+				"junit-workspace"), "egit");
 
 		RepoPropertiesPage propertiesPage = importWizard.openWizard();
 
