@@ -9,7 +9,6 @@
 package org.eclipse.egit.ui.test;
 
 import org.eclipse.egit.ui.dialogs.commit.SpellcheckableMessageAreaTest;
-import org.eclipse.egit.ui.httpauth.PushTest;
 import org.eclipse.egit.ui.prefpages.configuration.GlobalConfigurationPageTest;
 import org.eclipse.egit.ui.test.history.HistoryViewTest;
 import org.eclipse.egit.ui.test.team.actions.AllTeamActionTests;
@@ -29,7 +28,6 @@ import org.junit.runners.Suite.SuiteClasses;
 		SharingWizardTest.class,					//
 		AllTeamActionTests.class,                   //
 		HistoryViewTest.class,                      //
-		PushTest.class,
 		SpellcheckableMessageAreaTest.class,
 		TraceConfigurationDialogTest.class,
 		SynchronizeViewTest.class})
