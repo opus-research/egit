@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
+import static org.eclipse.jgit.junit.JGitTestUtil.writeTrashFile;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -23,7 +24,7 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceAddition() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").call();
 
 		// when
@@ -37,8 +38,8 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceAdditions() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").addFilepattern("b.txt").call();
 
 		// when
@@ -53,7 +54,7 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceAdditionInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").call();
 
 		// when
@@ -67,8 +68,8 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceAdditionsInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
 
 		// when
@@ -84,7 +85,7 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceDeletion() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 		git.add().addFilepattern("a.txt").call();
 		git.commit().setMessage("initial add").call();
 		git.rm().addFilepattern("a.txt").call();
@@ -101,8 +102,8 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListTwoWorkspaceDeletions() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 		git.add().addFilepattern("a.txt").addFilepattern("b.txt").call();
 		git.commit().setMessage("new commit").call();
 		git.rm().addFilepattern("a.txt").addFilepattern("b.txt").call();
@@ -120,7 +121,7 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceDeletionInFolder() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 		git.add().addFilepattern("folder/a.txt").call();
 		git.commit().setMessage("new commit").call();
 		git.rm().addFilepattern("folder/a.txt").call();
@@ -137,8 +138,8 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListTwoWorkspaceDeletionsInFolder() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 		git.add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
 		git.commit().setMessage("new commit").call();
 		git.rm().addFilepattern("folder/a.txt").call();
@@ -157,10 +158,10 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceChange() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 		git.add().addFilepattern("a.txt").call();
 		git.commit().setMessage("initial a.txt commit").call();
-		writeTrashFile("a.txt", "modification");
+		writeTrashFile(db, "a.txt", "modification");
 		git.add().addFilepattern("a.txt").call();
 
 		// when
@@ -175,12 +176,12 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListTwoWorkspaceChanges() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 		git.add().addFilepattern("a.txt").addFilepattern("b.txt").call();
 		git.commit().setMessage("new commmit").call();
-		writeTrashFile("a.txt", "modification");
-		writeTrashFile("b.txt", "modification");
+		writeTrashFile(db, "a.txt", "modification");
+		writeTrashFile(db, "b.txt", "modification");
 		git.add().addFilepattern("a.txt").addFilepattern("b.txt").call();
 
 		// when
@@ -196,10 +197,10 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListSingleWorkspaceChangeInFolder() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 		git.add().addFilepattern("folder/a.txt").call();
 		git.commit().setMessage("new commit").call();
-		writeTrashFile("folder/a.txt", "modification");
+		writeTrashFile(db, "folder/a.txt", "modification");
 		git.add().addFilepattern("folder/a.txt").call();
 
 		// when
@@ -214,12 +215,12 @@ public class StagedChangeCacheTest extends AbstractCacheTest {
 	public void shouldListTwoWorkspaceChagneInFolder() throws Exception {
 		// given
 		Git git = new Git(db);
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 		git.add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
 		git.commit().setMessage("new commit").call();
-		writeTrashFile("folder/a.txt", "modification");
-		writeTrashFile("folder/b.txt", "modification");
+		writeTrashFile(db, "folder/a.txt", "modification");
+		writeTrashFile(db, "folder/b.txt", "modification");
 		git.add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
 
 		// when

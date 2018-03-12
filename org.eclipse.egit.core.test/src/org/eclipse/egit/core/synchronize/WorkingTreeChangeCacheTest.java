@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
+import static org.eclipse.jgit.junit.JGitTestUtil.deleteTrashFile;
+import static org.eclipse.jgit.junit.JGitTestUtil.writeTrashFile;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -23,7 +25,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceAddition() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -36,8 +38,8 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceAdditions() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -51,7 +53,7 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceAdditionInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -64,8 +66,8 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceAdditionsInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -79,9 +81,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceDeletion() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").call();
-		deleteTrashFile("a.txt");
+		deleteTrashFile(db, "a.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -94,11 +96,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceDeletions() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").addFilepattern("b.txt").call();
-		deleteTrashFile("a.txt");
-		deleteTrashFile("b.txt");
+		deleteTrashFile(db, "a.txt");
+		deleteTrashFile(db, "b.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -112,9 +114,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceDeletionInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").call();
-		deleteTrashFile("folder/a.txt");
+		deleteTrashFile(db, "folder/a.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -127,11 +129,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceDeletionsInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
-		deleteTrashFile("folder/a.txt");
-		deleteTrashFile("folder/b.txt");
+		deleteTrashFile(db, "folder/a.txt");
+		deleteTrashFile(db, "folder/b.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -145,9 +147,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceChange() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").call();
-		writeTrashFile("a.txt", "modification");
+		writeTrashFile(db, "a.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -160,11 +162,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceChanges() throws Exception {
 		// given
-		writeTrashFile("a.txt", "trash");
-		writeTrashFile("b.txt", "trash");
+		writeTrashFile(db, "a.txt", "trash");
+		writeTrashFile(db, "b.txt", "trash");
 		new Git(db).add().addFilepattern("a.txt").addFilepattern("b.txt").call();
-		writeTrashFile("a.txt", "modification");
-		writeTrashFile("b.txt", "modification");
+		writeTrashFile(db, "a.txt", "modification");
+		writeTrashFile(db, "b.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -178,9 +180,9 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListSingleWorkspaceChangeInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").call();
-		writeTrashFile("folder/a.txt", "modification");
+		writeTrashFile(db, "folder/a.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -193,11 +195,11 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldListTwoWorkspaceChagneInFolder() throws Exception {
 		// given
-		writeTrashFile("folder/a.txt", "trash");
-		writeTrashFile("folder/b.txt", "trash");
+		writeTrashFile(db, "folder/a.txt", "trash");
+		writeTrashFile(db, "folder/b.txt", "trash");
 		new Git(db).add().addFilepattern("folder/a.txt").addFilepattern("folder/b.txt").call();
-		writeTrashFile("folder/a.txt", "modification");
-		writeTrashFile("folder/b.txt", "modification");
+		writeTrashFile(db, "folder/a.txt", "modification");
+		writeTrashFile(db, "folder/b.txt", "modification");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);
@@ -211,8 +213,8 @@ public class WorkingTreeChangeCacheTest extends AbstractCacheTest {
 	@Test
 	public void shouldNotListIgnorefFile() throws Exception {
 		// given
-		writeTrashFile("a.txt", "content");
-		writeTrashFile(".gitignore", "a.txt");
+		writeTrashFile(db, "a.txt", "content");
+		writeTrashFile(db, ".gitignore", "a.txt");
 
 		// when
 		Map<String, Change> result = WorkingTreeChangeCache.build(db);

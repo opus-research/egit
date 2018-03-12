@@ -18,8 +18,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 
 import org.eclipse.egit.core.synchronize.GitCommitsModelCache.Change;
@@ -28,7 +26,6 @@ import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
 
 @SuppressWarnings("boxing")
@@ -77,19 +74,4 @@ public abstract class AbstractCacheTest extends LocalDiskRepositoryTestCase {
 		assertTrue(result.containsKey(path));
 		assertThat(result.get(path).getName(), is(fileName));
 	}
-
-	// copied from org.eclipse.jgit.lib.RepositoryTestCase
-	protected File writeTrashFile(final String name, final String data)
-			throws IOException {
-		File path = new File(db.getWorkTree(), name);
-		write(path, data);
-		return path;
-	}
-
-	protected void deleteTrashFile(final String name) throws IOException {
-		File path = new File(db.getWorkTree(), name);
-		FileUtils.delete(path);
-	}
-
-
 }
