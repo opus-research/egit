@@ -15,7 +15,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
@@ -139,15 +138,8 @@ public class GitCreatePatchWizard extends Wizard {
 		try {
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor) {
-					final StringBuilder sb = new StringBuilder();
-					DiffFormatter diffFmt = new DiffFormatter(new OutputStream() {
-
-						@Override
-						public void write(int c) throws IOException {
-							sb.append((char) c);
-
-						}
-					});
+					StringBuilder sb = new StringBuilder();
+					DiffFormatter diffFmt = new DiffFormatter();
 					try {
 						if (isGit)
 							writeGitPatch(sb, diffFmt);

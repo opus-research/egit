@@ -10,14 +10,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.common;
 
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellCloses;
-
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 
 public class GitImportRepoWizard {
 
@@ -41,86 +34,6 @@ public class GitImportRepoWizard {
 		bot.shell("Clone Git Repository").activate();
 
 		return new RepoPropertiesPage();
-	}
-
-	public int configuredRepoCount() {
-		bot.shell("Import Projects from Git").activate();
-
-		return bot.table(0).rowCount();
-	}
-
-	public boolean containsRepo(String projectName) {
-		SWTBotTable table = bot.table(0);
-		int repoCount = configuredRepoCount();
-
-		for (int i = 0; i < repoCount; i++) {
-			String rowName = table.getTableItem(i).getText();
-			if (rowName.contains(projectName))
-				return true;
-		}
-		return false;
-	}
-
-	public void selectAndCloneRepository(String repoName) throws Exception {
-		SWTBotShell importShell = bot.shell("Import Projects from Git")
-				.activate();
-
-		SWTBotTable table = bot.table(0);
-		for (int i = 0; i < table.rowCount(); i++) {
-			String rowName = table.getTableItem(i).getText();
-			if (rowName != null && rowName.startsWith(repoName)) {
-				table.select(i);
-				break;
-			}
-		}
-		// TODO investigate why we need Thread.sleep here
-		bot.button("Next >").click();
-		Thread.sleep(1000);
-		// set the radio buttons properly
-		pressAltAndChar(importShell, 'E');
-		Thread.sleep(1000);
-		pressAltAndChar(importShell, 'a');
-		Thread.sleep(1000);
-
-		bot.button("Next >").click();
-		Thread.sleep(1000);
-
-		bot.button("Select All").click();
-		Thread.sleep(1000);
-	}
-
-	public void waitForCreate() {
-		bot.button("Finish").click();
-
-		SWTBotShell shell = bot.shell("Import Projects from Git");
-
-		bot.waitUntil(shellCloses(shell), 120000);
-	}
-
-	// TODO: move this to some utility class
-	private void pressAltAndChar(final SWTBotShell shell, final char charToPress) {
-		final Display display = Display.getDefault();
-		display.syncExec(new Runnable() {
-			public void run() {
-				Event evt = new Event();
-				// Alt down
-				evt.type = SWT.KeyDown;
-				evt.item = shell.widget;
-				evt.keyCode = SWT.ALT;
-				display.post(evt);
-				// G down
-				evt.keyCode = 0;
-				evt.character = charToPress;
-				display.post(evt);
-				// G up
-				evt.type = SWT.KeyUp;
-				display.post(evt);
-				// Alt up
-				evt.keyCode = SWT.ALT;
-				evt.character = ' ';
-				display.post(evt);
-			}
-		});
 	}
 
 }
