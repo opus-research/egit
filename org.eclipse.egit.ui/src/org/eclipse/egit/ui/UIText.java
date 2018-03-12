@@ -280,9 +280,6 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_CreateTagMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_DifferentRepositoriesMessage;
-
-	/** */
 	public static String GitHistoryPage_errorLookingUpPath;
 
 	/** */
@@ -317,9 +314,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_MultiResourcesType;
-
-	/** */
-	public static String GitHistoryPage_NoInputMessage;
 
 	/** */
 	public static String GitHistoryPage_OpenMenuLabel;
@@ -1049,6 +1043,24 @@ public class UIText extends NLS {
 
 	/** */
 	public static String HistoryPreferencePage_title;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullCanceledMessage;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullCanceledTitle;
+
+	/** */
+	public static String PullCurrentBranchActionHandler_PullJobname;
+
+	/** */
+	public static String PullResultDialog_DialogTitle;
+
+	/** */
+	public static String PullResultDialog_FetchResultGroupHeader;
+
+	/** */
+	public static String PullResultDialog_MergeResultGroupHeader;
 
 	/** */
 	public static String PushAction_wrongURIDescription;
@@ -2203,6 +2215,12 @@ public class UIText extends NLS {
 	public static String CreateTagDialog_CreateTagOnCommitTitle;
 
 	/** */
+	public static String CreateTagDialog_GetTagJobName;
+
+	/** */
+	public static String CreateTagDialog_LoadingMessageText;
+
+	/** */
 	public static String CreateTagDialog_Message;
 
 	/** */
@@ -2235,6 +2253,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitActionHandler_repository;
+
+	/** */
+	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
+
+	/** */
+	public static String CommitFileDiffViewer_MergeCommitMultiAncestorMessage;
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
