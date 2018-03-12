@@ -153,13 +153,11 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 	}
 
 	protected IStructuredSelection getSelection(GitHistoryPage page) {
-		if (page == null)
-			return StructuredSelection.EMPTY;
 		ISelection pageSelection = page.getSelectionProvider().getSelection();
-		if (pageSelection instanceof IStructuredSelection)
+		if (pageSelection instanceof IStructuredSelection) {
 			return (IStructuredSelection) pageSelection;
-		else
-			return StructuredSelection.EMPTY;
+		} else
+			return new StructuredSelection();
 	}
 
 	/**
