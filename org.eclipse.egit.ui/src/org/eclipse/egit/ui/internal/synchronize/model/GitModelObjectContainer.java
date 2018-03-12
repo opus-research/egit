@@ -38,10 +38,7 @@ import org.eclipse.team.ui.mapping.SaveableComparison;
 public abstract class GitModelObjectContainer extends GitModelObject implements
 		ISynchronizationCompareInput {
 
-	/**
-	 * Describe what kind of change is connected with this object
-	 */
-	protected int kind = -1;
+	private int kind = -1;
 
 	private String name;
 
@@ -220,10 +217,6 @@ public abstract class GitModelObjectContainer extends GitModelObject implements
 		else
 			objAncestorId = ObjectId.zeroId();
 		int objectType = tw.getFileMode(actualNth).getObjectType();
-		if (objectType == Constants.OBJ_BAD)
-			objectType = tw.getFileMode(baseNth).getObjectType();
-		if (objectType == Constants.OBJ_BAD && ancestorNth > -1)
-			objectType = tw.getFileMode(ancestorNth).getObjectType();
 
 		if (objectType == Constants.OBJ_BLOB)
 			return new GitModelBlob(this, getBaseCommit(), ancestorCommit,
