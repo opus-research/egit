@@ -9,7 +9,6 @@
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2015, Stefan Dirix (Stefan Dirix <sdirix@eclipsesource.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -50,6 +49,7 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
+import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
@@ -57,7 +57,6 @@ import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.action.Action;
@@ -89,6 +88,7 @@ import org.eclipse.jface.text.rules.DefaultDamagerRepairer;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
 import org.eclipse.jface.text.source.ISourceViewer;
+import org.eclipse.jface.text.source.SourceViewerConfiguration;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelection;
@@ -153,7 +153,6 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
@@ -905,7 +904,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				.getBackground());
 
 
-		TextSourceViewerConfiguration configuration = new TextSourceViewerConfiguration(
+		HyperlinkSourceViewer.Configuration configuration = new HyperlinkSourceViewer.Configuration(
 				EditorsUI.getPreferenceStore()) {
 
 			@Override
@@ -914,16 +913,23 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 
 			@Override
-			public IHyperlinkDetector[] getHyperlinkDetectors(
+			protected IHyperlinkDetector[] internalGetHyperlinkDetectors(
 					ISourceViewer sourceViewer) {
-				IHyperlinkDetector[] registered = getRegisteredHyperlinkDetectors(
+				IHyperlinkDetector[] registered = super.internalGetHyperlinkDetectors(
 						sourceViewer);
-				// Add our special detector for commit hyperlinks.
-				IHyperlinkDetector[] result = new IHyperlinkDetector[registered.length
-						+ 1];
-				System.arraycopy(registered, 0, result, 0, registered.length);
-				result[registered.length] = new CommitMessageViewer.KnownHyperlinksDetector();
-				return result;
+				// Always add our special detector for commit hyperlinks; we
+				// want those to show always.
+				if (registered == null) {
+					return new IHyperlinkDetector[] {
+							new CommitMessageViewer.KnownHyperlinksDetector() };
+				} else {
+					IHyperlinkDetector[] result = new IHyperlinkDetector[registered.length
+							+ 1];
+					System.arraycopy(registered, 0, result, 0,
+							registered.length);
+					result[registered.length] = new CommitMessageViewer.KnownHyperlinksDetector();
+					return result;
+				}
 			}
 
 			@Override
@@ -939,11 +945,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					ISourceViewer viewer) {
 				PresentationReconciler reconciler = new PresentationReconciler();
 				reconciler.setDocumentPartitioning(
-						getConfiguredDocumentPartitioning(commentViewer));
+						getConfiguredDocumentPartitioning(viewer));
 				DefaultDamagerRepairer hyperlinkDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(
-								getHyperlinkDetectors(commentViewer),
-								commentViewer));
+						new HyperlinkTokenScanner(this, viewer));
 				reconciler.setDamager(hyperlinkDamagerRepairer,
 						IDocument.DEFAULT_CONTENT_TYPE);
 				reconciler.setRepairer(hyperlinkDamagerRepairer,
@@ -952,17 +956,13 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 						PlatformUI.getWorkbench().getDisplay()
 								.getSystemColor(SWT.COLOR_DARK_GRAY));
 				DefaultDamagerRepairer headerDamagerRepairer = new DefaultDamagerRepairer(
-						new HyperlinkTokenScanner(
-								getHyperlinkDetectors(commentViewer),
-								commentViewer, headerDefault));
+						new HyperlinkTokenScanner(this, viewer, headerDefault));
 				reconciler.setDamager(headerDamagerRepairer,
 						CommitMessageViewer.HEADER_CONTENT_TYPE);
 				reconciler.setRepairer(headerDamagerRepairer,
 						CommitMessageViewer.HEADER_CONTENT_TYPE);
 				DefaultDamagerRepairer footerDamagerRepairer = new DefaultDamagerRepairer(
-						new FooterTokenScanner(
-								getHyperlinkDetectors(commentViewer),
-								commentViewer));
+						new FooterTokenScanner(this, viewer));
 				reconciler.setDamager(footerDamagerRepairer,
 						CommitMessageViewer.FOOTER_CONTENT_TYPE);
 				reconciler.setRepairer(footerDamagerRepairer,
@@ -1353,32 +1353,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	@Override
 	public boolean setInput(Object object) {
 		try {
-			Object useAsInput = object;
-
-			// Workaround for the limitation of GenericHistoryView to only
-			// forward the first part of a selection and adapting it
-			// immediately to IResource.
-			ISelection selection = getSite().getPage().getSelection();
-			if (selection instanceof IStructuredSelection) {
-				IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-				HistoryPageInput mostFittingInput = SelectionUtils
-						.getMostFittingInput(structuredSelection, object);
-				if (mostFittingInput != null) {
-					useAsInput = mostFittingInput;
-				}
-			}
-
 			// hide the warning text initially
 			setWarningText(null);
 			trace = GitTraceLocation.HISTORYVIEW.isActive();
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation(), useAsInput);
+						GitTraceLocation.HISTORYVIEW.getLocation(), object);
 
-			if (useAsInput == getInput())
+			if (object == getInput())
 				return true;
 			this.input = null;
-			return super.setInput(useAsInput);
+			return super.setInput(object);
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
@@ -2420,9 +2405,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		private final IToken italicToken;
 
-		public FooterTokenScanner(IHyperlinkDetector[] hyperlinkDetectors,
+		public FooterTokenScanner(SourceViewerConfiguration configuration,
 				ISourceViewer viewer) {
-			super(hyperlinkDetectors, viewer);
+			super(configuration, viewer);
 			Object defaults = defaultToken.getData();
 			TextAttribute italic;
 			if (defaults instanceof TextAttribute) {
