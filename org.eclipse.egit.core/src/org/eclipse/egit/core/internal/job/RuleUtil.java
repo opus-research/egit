@@ -20,7 +20,6 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceRuleFactory;
-import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
@@ -93,11 +92,9 @@ public class RuleUtil {
 			IResource resource = ResourceUtil.getResourceForLocation(path);
 			if (resource != null) {
 				IContainer container = resource.getParent();
-				if (!(container instanceof IWorkspaceRoot)) {
-					ISchedulingRule rule = ruleFactory.modifyRule(container);
-					if (rule != null)
-						rules.add(rule);
-				}
+				ISchedulingRule rule = ruleFactory.modifyRule(container);
+				if (rule != null)
+					rules.add(rule);
 			}
 		}
 		if (rules.size() == 0)
