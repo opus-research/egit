@@ -61,7 +61,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.eclipse.team.ui.synchronize.ISynchronizeManager;
+import org.eclipse.team.internal.ui.synchronize.RefreshParticipantJob;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -534,9 +534,8 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 			implements ICondition {
 		private boolean state = false;
 
-		public void done(IJobChangeEvent event) {
-			if (event.getJob().belongsTo(
-					ISynchronizeManager.FAMILY_SYNCHRONIZE_OPERATION))
+		@SuppressWarnings("restriction") public void done(IJobChangeEvent event) {
+			if (event.getJob() instanceof RefreshParticipantJob)
 				state = true;
 		}
 
