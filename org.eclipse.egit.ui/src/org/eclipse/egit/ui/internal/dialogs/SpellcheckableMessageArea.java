@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2010, Benjamin Muskalla <bmuskalla@eclipsesource.com>
- * Copyright (C) 2011, Matthias Sohn <matthias.sohn@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -82,8 +81,6 @@ import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
  */
 public class SpellcheckableMessageArea extends Composite {
 
-	static final int MAX_LINE_WIDTH = 72;
-
 	private static class TextViewerAction extends Action implements IUpdate {
 
 		private int fOperationCode= -1;
@@ -139,17 +136,7 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param initialText
 	 */
 	public SpellcheckableMessageArea(Composite parent, String initialText) {
-		this(parent, initialText, SWT.BORDER);
-	}
-
-	/**
-	 * @param parent
-	 * @param initialText
-	 * @param styles
-	 */
-	public SpellcheckableMessageArea(Composite parent, String initialText,
-			int styles) {
-		super(parent, styles);
+		super(parent, SWT.BORDER);
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
@@ -159,7 +146,7 @@ public class SpellcheckableMessageArea extends Composite {
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
 
 		int endSpacing = 2;
-		int textWidth = getCharWidth() * MAX_LINE_WIDTH + endSpacing;
+		int textWidth = getCharWidth() * 70 + endSpacing;
 		int textHeight = getLineHeight() * 7;
 		Point size = getTextWidget().computeSize(textWidth, textHeight);
 		getTextWidget().setSize(size);
@@ -207,9 +194,7 @@ public class SpellcheckableMessageArea extends Composite {
 							return;
 						}
 						String lineDelimiter = textWidget.getLineDelimiter();
-						List<WrapEdit> wrapEdits = calculateWrapEdits(
-								textWidget.getText(), MAX_LINE_WIDTH,
-								lineDelimiter);
+						List<WrapEdit> wrapEdits = calculateWrapEdits(textWidget.getText(), 70, lineDelimiter);
 						// Prevent infinite loop because replaceTextRange causes a ModifyEvent
 						active = false;
 						for (WrapEdit wrapEdit : wrapEdits) {
@@ -384,12 +369,9 @@ public class SpellcheckableMessageArea extends Composite {
 		return support;
 	}
 
-	/**
-	 * Create margin painter and add to source viewer
-	 */
-	protected void createMarginPainter() {
+	private void createMarginPainter() {
 		MarginPainter marginPainter = new MarginPainter(sourceViewer);
-		marginPainter.setMarginRulerColumn(MAX_LINE_WIDTH);
+		marginPainter.setMarginRulerColumn(70);
 		marginPainter.setMarginRulerColor(Display.getDefault().getSystemColor(
 				SWT.COLOR_GRAY));
 		sourceViewer.addPainter(marginPainter);

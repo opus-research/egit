@@ -148,21 +148,6 @@
                label="%DiscardChangesAction_label"
                menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
-               id="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
-               label="%ReplaceWithRefAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
-               id="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadAction"
-               label="%ReplaceWithHeadAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
-         <action
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
-               id="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
-               label="%ReplaceWithCommitAction_label"
-               menubarPath="replaceWithMenu/gitReplaceWithGroup"/>
-         <action
                class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
                definitionId="org.eclipse.egit.ui.team.ApplyPatch"
                enablesFor="*"
@@ -2943,14 +2928,6 @@
             icon="icons/obj16/new_branch_obj.gif">
       </image>
       <image
-            commandId="org.eclipse.egit.ui.commit.CreateTag"
-            icon="icons/obj16/new_tag_obj.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.commit.CreateBranch"
-            icon="icons/obj16/new_branch_obj.gif">
-      </image>
-      <image
             commandId="org.eclipse.egit.ui.CheckoutCommand"
             icon="icons/obj16/checkout.gif">
       </image>
@@ -3104,7 +3081,7 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.Tag"
-            icon="icons/obj16/new_tag_obj.gif">
+            icon="icons/obj16/tags.gif">
       </image>
       <image
             commandId="org.eclipse.egit.ui.team.AssumeUnchanged"
@@ -3273,24 +3250,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.actions.DiscardChangesActionHandler"
             id="org.eclipse.egit.ui.team.Discard"
             name="%ReplaceWithIndexCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadActionHandler"
-            id="org.eclipse.egit.ui.team.ReplaceWithHead"
-            name="%ReplaceWithHeadCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitActionHandler"
-            id="org.eclipse.egit.ui.team.ReplaceWithCommit"
-            name="%ReplaceWithCommitCommand.name">
-      </command>
-      <command
-            categoryId="org.eclipse.egit.ui.commandCategory"
-            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithRefActionHandler"
-            id="org.eclipse.egit.ui.team.ReplaceWithRef"
-            name="%ReplaceWithRefCommand.name">
       </command>
             <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -3505,20 +3464,6 @@
       </command>
    </extension>
    <extension
-         name="%CommitViewerCommands.extension.name"
-         point="org.eclipse.ui.commands">
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.commit.command.CreateTagHandler"
-            id="org.eclipse.egit.ui.commit.CreateTag"
-            name="%CreateTagCommand">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler"
-            id="org.eclipse.egit.ui.commit.CreateBranch"
-            name="%CreateBranchCommand">
-      </command>
-   </extension>
-   <extension
          point="org.eclipse.ui.newWizards">
       <wizard
             category="org.eclipse.egit.ui.wizardCategory"
@@ -3585,39 +3530,4 @@
 	         </adapter>
 	      </factory>
 	</extension>
-    <extension point="org.eclipse.search.searchPages">
-      <page
-            class="org.eclipse.egit.ui.internal.search.CommitSearchPage"
-            icon="icons/obj16/search-commit.gif"
-            id="org.eclipse.egit.ui.commitSearchPage"
-            label="%CommitSearchPage.label">
-      </page>
-   </extension>
-   <extension
-         point="org.eclipse.search.searchResultViewPages">
-      <viewPage
-            class="org.eclipse.egit.ui.internal.search.CommitSearchResultsPage"
-            icon="icons/obj16/search-commit.gif"
-            id="org.eclipse.egit.ui.commitSearchResultsPage"
-            label="%CommitSearchResults.label"
-            searchResultClass="org.eclipse.egit.ui.internal.search.CommitSearchResult">
-      </viewPage>
-   </extension>
-   <extension
-         point="org.eclipse.ui.actionSets">
-      <actionSet
-            id="org.eclipse.egit.ui.navigation"
-            label="%NavigationActionSet.label"
-            visible="true">
-        <action
-               class="org.eclipse.egit.ui.internal.commit.OpenCommitAction"
-               icon="icons/obj16/open-commit.gif"
-               id="org.eclipse.egit.ui.commit.OpenCommitAction"
-               label="%OpenCommitAction.label"
-               menubarPath="navigate/open.ext3"
-               style="push"
-               toolbarPath="org.eclipse.search.searchActionSet/Search"
-               tooltip="%OpenCommitAction.tooltip"/>
-       </actionSet>
-   </extension>
 </plugin>
