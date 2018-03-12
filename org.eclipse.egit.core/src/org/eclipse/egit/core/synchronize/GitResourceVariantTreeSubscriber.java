@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.egit.core.Utils.copyOf;
 import static org.eclipse.team.core.Team.isIgnoredHint;
 
 import org.eclipse.core.resources.IResource;
@@ -59,10 +58,12 @@ public class GitResourceVariantTreeSubscriber extends
 
 	@Override
 	public IResource[] roots() {
-		if (roots == null)
-			roots = gsds.getAllProjects();
+		if (roots != null) {
+			return roots;
+		}
 
-		return copyOf(roots);
+		roots = gsds.getAllProjects();
+		return roots;
 	}
 
 	/**
