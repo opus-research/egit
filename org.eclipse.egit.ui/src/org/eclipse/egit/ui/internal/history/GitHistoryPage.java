@@ -4,7 +4,6 @@
  * Copyright (c) 2010, Stefan Lay <stefan.lay@sap.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010-2011, Matthias Sohn <matthias.sohn@sap.com>
- * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -595,12 +594,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 
 	// react on changes to the relative date preference
 	private final IPropertyChangeListener listener = new IPropertyChangeListener() {
-		@SuppressWarnings("boxing")
 		public void propertyChange(PropertyChangeEvent event) {
 			if (UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE.equals(event
 					.getProperty()))
-				graph.setRelativeDate(((Boolean) event.getNewValue()));
-				graph.getTableView().refresh();
+				if (graph.setRelativeDate(((Boolean) event.getNewValue())
+						.booleanValue()))
+					graph.getTableView().refresh();
 			}
 	};
 
@@ -710,7 +709,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 				graphDetailSplit);
 		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr);
 
-		graph.setRelativeDate(isShowingRelativeDates());
+		graph.setRelativeDate(Activator.getDefault().getPreferenceStore()
+				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE));
 		Activator.getDefault().getPreferenceStore()
 				.addPropertyChangeListener(listener);
 
@@ -1864,9 +1864,5 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			}
 			job = null;
 		}
-	}
-
-	private boolean isShowingRelativeDates() {
-		return Activator.getDefault().getPreferenceStore().getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE);
 	}
 }

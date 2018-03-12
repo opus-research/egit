@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
- * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -48,13 +47,12 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 			return null;
 		final IResource[] resources = getSelectedResources(event);
 		final IFile baseFile = (IFile) resources[0];
-		final String gitPath = RepositoryMapping.getMapping(baseFile)
-				.getRepoRelativePath(baseFile);
-		ITypedElement base;
+		final String gitPath = RepositoryMapping.getMapping(
+				baseFile.getProject()).getRepoRelativePath(baseFile);
+		final ITypedElement base = CompareUtils.getFileCachedRevisionTypedElement(gitPath, repository);
 
 		ITypedElement next;
 		try {
-			base = CompareUtils.getHeadTypedElement(baseFile);
 			Ref head = repository.getRef(Constants.HEAD);
 			RevWalk rw = new RevWalk(repository);
 			RevCommit commit = rw.parseCommit(head.getObjectId());
@@ -82,9 +80,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 			return false;
 
 		IResource resource = (IResource) getAdapter(selection.getFirstElement(), IResource.class);
-		// action is only working on files. Avoid calculation
-		// of unnecessary expensive IndexDiff on a folder
-		if (resource == null || !(resource instanceof IFile))
+		if (resource == null)
 			return false;
 
 		Repository repository = getRepository();
