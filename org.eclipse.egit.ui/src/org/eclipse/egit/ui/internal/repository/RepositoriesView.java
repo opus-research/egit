@@ -719,7 +719,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 
 			@Override
 			public boolean belongsTo(Object family) {
-				if (JobFamilies.REPO_VIEW_REFRESH.equals(family))
+				if (family.equals(JobFamilies.REPO_VIEW_REFRESH))
 					return true;
 				return super.belongsTo(family);
 			}

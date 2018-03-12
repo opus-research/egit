@@ -10,7 +10,6 @@
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
  * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
- * Copyright (C) 2014, Red Hat Inc.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -943,12 +942,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebaseTargetSelectionDialog_RebaseTitleWithBranch;
-
-	/** */
-	public static String RebaseTargetSelectionDialog_InteractiveButton;
-
-	/** */
-	public static String RebaseTargetSelectionDialog_PreserveMergesButton;
 
 	/** */
 	public static String ReplaceTargetSelectionDialog_ReplaceButton;
@@ -1983,19 +1976,7 @@ public class UIText extends NLS {
 	public static String PushAction_wrongURITitle;
 
 	/** */
-	public static String PushBranchPage_RemoteBranchNameLabel;
-
-	/** */
-	public static String PushBranchPage_CannotAccessCommitDescription;
-
-	/** */
-	public static String PushBranchPage_LocalBranchLabel;
-
-	/** */
-	public static String PushBranchPage_Source;
-
-	/** */
-	public static String PushBranchPage_Destination;
+	public static String PushBranchPage_BranchNameLabel;
 
 	/** */
 	public static String PushBranchPage_ChooseBranchNameError;
@@ -2862,19 +2843,10 @@ public class UIText extends NLS {
 	public static String WindowCachePreferencePage_streamFileThreshold;
 
 	/** */
-	public static String BasicConfigurationDialog_ConfigLocationInfo;
-
-	/** */
 	public static String BasicConfigurationDialog_DialogMessage;
 
 	/** */
 	public static String BasicConfigurationDialog_DialogTitle;
-
-	/** */
-	public static String BasicConfigurationDialog_DontShowAgain;
-
-	/** */
-	public static String BasicConfigurationDialog_OpenPreferencePage;
 
 	/** */
 	public static String BasicConfigurationDialog_UserEmailLabel;
@@ -4393,15 +4365,6 @@ public class UIText extends NLS {
 	public static String RevertHandler_AlreadyRevertedMessage;
 
 	/** */
-	public static String RevertHandler_CommitsNotOnCurrentBranch;
-
-	/** */
-	public static String RevertHandler_Error_Title;
-
-	/** */
-	public static String RevertHandler_ErrorCheckingIfCommitsAreOnCurrentBranch;
-
-	/** */
 	public static String RevertHandler_JobName;
 
 	/** */
@@ -4610,6 +4573,18 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SimplePushActionHandler_NothingToPushDialogTitle;
+
+	/** */
+	public static String SimplePushSpecPage_message;
+
+	/** */
+	public static String SimplePushSpecPage_pushAheadInfo;
+
+	/** */
+	public static String SimplePushSpecPage_TargetRefName;
+
+	/** */
+	public static String SimplePushSpecPage_title;
 
 	/** */
 	public static String SkipRebaseCommand_CancelDialogMessage;
@@ -5014,18 +4989,6 @@ public class UIText extends NLS {
 	public static String StashDropCommand_jobTitle;
 
 	/** */
-	public static String StashesMenu_StashChangesActionText;
-
-	/** */
-	public static String StashesMenu_StashListError;
-
-	/** */
-	public static String StashesMenu_NoStashedChangesText;
-
-	/** */
-	public static String StashesMenu_StashItemText;
-
-	/** */
 	public static String SubmoduleAddCommand_AddError;
 
 	/** */
@@ -5186,12 +5149,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchEditDialog_Title;
-
-	/** */
-	public static String PushMenu_PushHEAD;
-
-	/** */
-	public static String PushMenu_PushBranch;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
