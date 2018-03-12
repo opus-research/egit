@@ -12,108 +12,87 @@ package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.eclipse.core.filesystem.EFS;
-import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.op.BranchOperation;
-import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.clone.GitCloneWizard;
-import org.eclipse.egit.ui.internal.clone.GitCreateProjectViaWizardWizard;
-import org.eclipse.egit.ui.internal.repository.RepositoryTreeNode.RepositoryTreeNodeType;
+import org.eclipse.egit.ui.internal.clone.GitProjectsImportPage;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IToolBarManager;
-import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.dialogs.ProgressMonitorDialog;
-import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.viewers.IOpenListener;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.resource.CompositeImageDescriptor;
+import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.text.DefaultInformationControl;
+import org.eclipse.jface.text.TextPresentation;
+import org.eclipse.jface.text.DefaultInformationControl.IInformationPresenter;
+import org.eclipse.jface.viewers.BaseLabelProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.jface.viewers.OpenEvent;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
-import org.eclipse.jgit.lib.RepositoryConfig;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.dnd.Clipboard;
-import org.eclipse.swt.dnd.TextTransfer;
-import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
-import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IFileEditorInput;
-import org.eclipse.ui.IPageLayout;
-import org.eclipse.ui.ISelectionListener;
-import org.eclipse.ui.ISelectionService;
-import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.ide.FileStoreEditorInput;
-import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.part.IShowInTarget;
-import org.eclipse.ui.part.ShowInContext;
+import org.eclipse.ui.ide.IDE.SharedImages;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
-import org.eclipse.ui.views.properties.IPropertySheetPage;
-import org.eclipse.ui.views.properties.PropertySheet;
-import org.eclipse.ui.views.properties.PropertySheetPage;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.eclipse.ui.wizards.datatransfer.ExternalProjectImportWizard;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
@@ -124,37 +103,19 @@ import org.osgi.service.prefs.BackingStoreException;
  * a Git Repository. This list is stored in some Preferences object and used to
  * build the tree in the view.
  * <p>
- * Implements {@link ISelectionProvider} in order to integrate with the
- * Properties view.
- * <p>
  * TODO
+ * <li>Icons</li>
+ * <li>String externalization</li>
  * <li>Clarification whether to show projects, perhaps configurable switch</li>
  *
  */
-public class RepositoriesView extends ViewPart implements ISelectionProvider,
-		IShowInTarget {
-
-	/** The view ID */
-	public static final String VIEW_ID = "org.eclipse.egit.ui.RepositoriesView"; //$NON-NLS-1$
-
-	// TODO central constants? RemoteConfig ones are private
-	static final String REMOTE = "remote"; //$NON-NLS-1$
-
-	static final String URL = "url"; //$NON-NLS-1$
-
-	static final String PUSHURL = "pushurl"; //$NON-NLS-1$
-
-	static final String FETCH = "fetch"; //$NON-NLS-1$
-
-	static final String PUSH = "push"; //$NON-NLS-1$
+public class RepositoriesView extends ViewPart {
 
 	private static final String PREFS_DIRECTORIES = "GitRepositoriesView.GitDirectories"; //$NON-NLS-1$
 
-	private static final String PREFS_SYNCED = "GitRepositoriesView.SyncWithSelection"; //$NON-NLS-1$
-
-	private final List<ISelectionChangedListener> selectionListeners = new ArrayList<ISelectionChangedListener>();
-
-	private ISelection currentSelection = new StructuredSelection();
+	private static final ImageDescriptor CHECKEDOUT_OVERLAY = Activator
+			.getDefault().getImageRegistry().getDescriptor(
+					Activator.ICON_CHECKEDOUT_OVR);
 
 	private Job scheduledJob;
 
@@ -166,20 +127,574 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	private IAction refreshAction;
 
-	private IAction linkWithSelectionAction;
+	enum RepositoryTreeNodeType {
 
-	private IAction copyAction;
+		REPO(Activator.ICON_REPOSITORY), REF(PlatformUI.getWorkbench()
+				.getSharedImages().getImage(ISharedImages.IMG_OBJ_FOLDER)), PROJ(
+				PlatformUI.getWorkbench().getSharedImages().getImage(
+						SharedImages.IMG_OBJ_PROJECT_CLOSED)), BRANCHES(
+				Activator.ICON_BRANCHES), PROJECTS(PlatformUI.getWorkbench()
+				.getSharedImages().getImage(ISharedImages.IMG_OBJ_FOLDER));
 
-	private IAction pasteAction;
+		private final Image myImage;
 
-	/**
-	 * TODO move to utility class
-	 *
-	 * @return the directories as configured for this view
-	 */
-	public static List<String> getDirs() {
+		private RepositoryTreeNodeType(String iconName) {
+
+			if (iconName != null) {
+				myImage = Activator.getDefault().getImageRegistry().get(
+						iconName);
+			} else {
+				myImage = null;
+			}
+
+		}
+
+		private RepositoryTreeNodeType(Image icon) {
+			myImage = icon;
+
+		}
+
+		public Image getIcon() {
+			return myImage;
+		}
+
+	}
+
+	private static final class RepositoryTreeNode<T> {
+
+		private final Repository myRepository;
+
+		private final T myObject;
+
+		private final RepositoryTreeNodeType myType;
+
+		private final RepositoryTreeNode myParent;
+
+		private String branch;
+
+		public RepositoryTreeNode(RepositoryTreeNode parent,
+				RepositoryTreeNodeType type, Repository repository, T treeObject) {
+			myParent = parent;
+			myRepository = repository;
+			myType = type;
+			myObject = treeObject;
+		}
+
+		@SuppressWarnings("unchecked")
+		private RepositoryTreeNode<Repository> getRepositoryNode() {
+			if (myType == RepositoryTreeNodeType.REPO) {
+				return (RepositoryTreeNode<Repository>) this;
+			} else {
+				return getParent().getRepositoryNode();
+			}
+		}
+
+		/**
+		 * We keep this cached in the repository node to avoid repeated lookups
+		 *
+		 * @return the full branch
+		 * @throws IOException
+		 */
+		public String getBranch() throws IOException {
+			if (myType != RepositoryTreeNodeType.REPO) {
+				return getRepositoryNode().getBranch();
+			}
+			if (branch == null) {
+				branch = getRepository().getBranch();
+			}
+			return branch;
+		}
+
+		public RepositoryTreeNode getParent() {
+			return myParent;
+		}
+
+		public RepositoryTreeNodeType getType() {
+			return myType;
+		}
+
+		public Repository getRepository() {
+			return myRepository;
+		}
+
+		public T getObject() {
+			return myObject;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			switch (myType) {
+			case REPO:
+			case PROJECTS:
+			case BRANCHES:
+				result = prime
+						* result
+						+ ((myObject == null) ? 0 : ((Repository) myObject)
+								.getDirectory().hashCode());
+				break;
+			case REF:
+				result = prime
+						* result
+						+ ((myObject == null) ? 0 : ((Ref) myObject).getName()
+								.hashCode());
+				break;
+			case PROJ:
+				result = prime
+						* result
+						+ ((myObject == null) ? 0 : ((File) myObject).getPath()
+								.hashCode());
+				break;
+
+			default:
+				break;
+			}
+
+			result = prime * result
+					+ ((myParent == null) ? 0 : myParent.hashCode());
+			result = prime
+					* result
+					+ ((myRepository == null) ? 0 : myRepository.getDirectory()
+							.hashCode());
+			result = prime * result
+					+ ((myType == null) ? 0 : myType.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+
+			RepositoryTreeNode other = (RepositoryTreeNode) obj;
+
+			if (myType == null) {
+				if (other.myType != null)
+					return false;
+			} else if (!myType.equals(other.myType))
+				return false;
+			if (myParent == null) {
+				if (other.myParent != null)
+					return false;
+			} else if (!myParent.equals(other.myParent))
+				return false;
+			if (myRepository == null) {
+				if (other.myRepository != null)
+					return false;
+			} else if (!myRepository.getDirectory().equals(
+					other.myRepository.getDirectory()))
+				return false;
+			if (myObject == null) {
+				if (other.myObject != null)
+					return false;
+			} else if (!checkObjectsEqual(other.myObject))
+				return false;
+
+			return true;
+		}
+
+		private boolean checkObjectsEqual(Object otherObject) {
+			switch (myType) {
+			case REPO:
+			case PROJECTS:
+			case BRANCHES:
+				return ((Repository) myObject).getDirectory().equals(
+						((Repository) otherObject).getDirectory());
+			case REF:
+				return ((Ref) myObject).getName().equals(
+						((Ref) otherObject).getName());
+			case PROJ:
+				return ((File) myObject).getPath().equals(
+						((File) otherObject).getPath());
+			default:
+				return false;
+			}
+		}
+	}
+
+	private static final class ContentProvider implements ITreeContentProvider {
+
+		@SuppressWarnings("unchecked")
+		public Object[] getElements(Object inputElement) {
+
+			Comparator<RepositoryTreeNode<Repository>> sorter = new Comparator<RepositoryTreeNode<Repository>>() {
+
+				public int compare(RepositoryTreeNode<Repository> o1,
+						RepositoryTreeNode<Repository> o2) {
+					return getRepositoryName(o1.getObject()).compareTo(
+							getRepositoryName(o2.getObject()));
+				}
+
+			};
+
+			Set<RepositoryTreeNode<Repository>> output = new TreeSet<RepositoryTreeNode<Repository>>(
+					sorter);
+
+			for (Repository repo : ((List<Repository>) inputElement)) {
+				output.add(new RepositoryTreeNode<Repository>(null,
+						RepositoryTreeNodeType.REPO, repo, repo));
+			}
+
+			return output.toArray();
+		}
+
+		public void dispose() {
+			// nothing
+		}
+
+		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+			// nothing
+		}
+
+		public Object[] getChildren(Object parentElement) {
+
+			RepositoryTreeNode node = (RepositoryTreeNode) parentElement;
+			Repository repo = node.getRepository();
+
+			switch (node.getType()) {
+
+			case BRANCHES:
+
+				List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
+
+				Repository rep = node.getRepository();
+				for (Ref ref : rep.getAllRefs().values()) {
+					refs.add(new RepositoryTreeNode<Ref>(node,
+							RepositoryTreeNodeType.REF, repo, ref));
+				}
+
+				return refs.toArray();
+
+			case REPO:
+
+				List<RepositoryTreeNode<Repository>> branches = new ArrayList<RepositoryTreeNode<Repository>>();
+
+				branches.add(new RepositoryTreeNode<Repository>(node,
+						RepositoryTreeNodeType.BRANCHES, node.getRepository(),
+						node.getRepository()));
+
+				branches.add(new RepositoryTreeNode<Repository>(node,
+						RepositoryTreeNodeType.PROJECTS, node.getRepository(),
+						node.getRepository()));
+
+				return branches.toArray();
+
+			case PROJECTS:
+
+				List<RepositoryTreeNode<File>> projects = new ArrayList<RepositoryTreeNode<File>>();
+
+				// TODO do we want to show the projects here?
+				Collection<File> result = new HashSet<File>();
+				Set<String> traversed = new HashSet<String>();
+				collectProjectFilesFromDirectory(result, repo.getDirectory()
+						.getParentFile(), traversed, new NullProgressMonitor());
+				for (File file : result) {
+					projects.add(new RepositoryTreeNode<File>(node,
+							RepositoryTreeNodeType.PROJ, repo, file));
+				}
+
+				Comparator<RepositoryTreeNode<File>> sorter = new Comparator<RepositoryTreeNode<File>>() {
+
+					public int compare(RepositoryTreeNode<File> o1,
+							RepositoryTreeNode<File> o2) {
+						return o1.getObject().getName().compareTo(
+								o2.getObject().getName());
+					}
+				};
+				Collections.sort(projects, sorter);
+
+				return projects.toArray();
+
+			default:
+				return null;
+			}
+
+		}
+
+		public Object getParent(Object element) {
+
+			return ((RepositoryTreeNode) element).getParent();
+		}
+
+		public boolean hasChildren(Object element) {
+			Object[] children = getChildren(element);
+			return children != null && children.length > 0;
+		}
+
+		private boolean collectProjectFilesFromDirectory(
+				Collection<File> files, File directory,
+				Set<String> directoriesVisited, IProgressMonitor monitor) {
+
+			// stolen from the GitCloneWizard; perhaps we should completely drop
+			// the projects from this view, though
+			if (monitor.isCanceled()) {
+				return false;
+			}
+			monitor.subTask(NLS.bind(
+					RepositoryViewUITexts.RepositoriesView_Checking_Message,
+					directory.getPath()));
+			File[] contents = directory.listFiles();
+			if (contents == null)
+				return false;
+
+			// first look for project description files
+			final String dotProject = IProjectDescription.DESCRIPTION_FILE_NAME;
+			for (int i = 0; i < contents.length; i++) {
+				File file = contents[i];
+				if (file.isFile() && file.getName().equals(dotProject)) {
+					files.add(file.getParentFile());
+					// don't search sub-directories since we can't have nested
+					// projects
+					return true;
+				}
+			}
+			// no project description found, so recurse into sub-directories
+			for (int i = 0; i < contents.length; i++) {
+				if (contents[i].isDirectory()) {
+					if (!contents[i].getName().equals(
+							GitProjectsImportPage.METADATA_FOLDER)) {
+						try {
+							String canonicalPath = contents[i]
+									.getCanonicalPath();
+							if (!directoriesVisited.add(canonicalPath)) {
+								// already been here --> do not recurse
+								continue;
+							}
+						} catch (IOException exception) {
+							StatusManager.getManager().handle(
+									new Status(IStatus.ERROR, Activator
+											.getPluginId(), exception
+											.getLocalizedMessage(), exception));
+
+						}
+						collectProjectFilesFromDirectory(files, contents[i],
+								directoriesVisited, monitor);
+					}
+				}
+			}
+			return true;
+		}
+
+	}
+
+	private static final class LabelProvider extends BaseLabelProvider
+			implements ITableLabelProvider {
+
+		private DefaultInformationControl infoControl;
+
+		/**
+		 *
+		 * @param viewer
+		 */
+		LabelProvider(final TreeViewer viewer) {
+
+			viewer.setLabelProvider(this);
+			Tree tree = viewer.getTree();
+			TreeColumn col = new TreeColumn(tree, SWT.NONE);
+			col.setWidth(400);
+			viewer.getTree().addMouseTrackListener(new MouseTrackAdapter() {
+
+				@Override
+				public void mouseHover(MouseEvent e) {
+
+					Point eventPoint = new Point(e.x, e.y);
+
+					TreeItem item = viewer.getTree().getItem(eventPoint);
+					if (item != null) {
+
+						RepositoryTreeNode node = (RepositoryTreeNode) item
+								.getData();
+						String text = node.getRepository().getDirectory()
+								.getAbsolutePath();
+
+						final ViewerCell cell = viewer.getCell(eventPoint);
+
+						if (infoControl != null && infoControl.isVisible()) {
+							infoControl.setVisible(false);
+						}
+
+						GC testGc = new GC(cell.getControl());
+						final Point textExtent = testGc.textExtent(text);
+						testGc.dispose();
+
+						if (infoControl == null || !infoControl.isVisible()) {
+
+							IInformationPresenter ips = new IInformationPresenter() {
+
+								public String updatePresentation(
+										Display display, String hoverInfo,
+										TextPresentation presentation,
+										int maxWidth, int maxHeight) {
+									return hoverInfo;
+								}
+
+							};
+
+							infoControl = new DefaultInformationControl(Display
+									.getCurrent().getActiveShell().getShell(),
+									ips) {
+
+								@Override
+								public void setInformation(String content) {
+									super.setInformation(content);
+									super.setSize(textExtent.x, textExtent.y);
+								}
+
+							};
+						}
+
+						Point dispPoint = viewer.getControl().toDisplay(
+								eventPoint);
+
+						infoControl.setLocation(dispPoint);
+
+						// the default info provider works better with \r ...
+						infoControl.setInformation(text);
+
+						final MouseMoveListener moveListener = new MouseMoveListener() {
+
+							public void mouseMove(MouseEvent evt) {
+								infoControl.setVisible(false);
+								cell.getControl().removeMouseMoveListener(this);
+
+							}
+						};
+
+						cell.getControl().addMouseMoveListener(moveListener);
+
+						infoControl.setVisible(true);
+
+					}
+
+				}
+
+			});
+
+		}
+
+		public Image getColumnImage(Object element, int columnIndex) {
+			return decorateImage(((RepositoryTreeNode) element).getType()
+					.getIcon(), element);
+		}
+
+		public String getColumnText(Object element, int columnIndex) {
+
+			RepositoryTreeNode node = (RepositoryTreeNode) element;
+			switch (node.getType()) {
+			case REPO:
+				File directory = ((Repository) node.getObject()).getDirectory()
+						.getParentFile();
+				return (directory.getName() + " - " + directory //$NON-NLS-1$
+						.getAbsolutePath());
+			case BRANCHES:
+				return RepositoryViewUITexts.RepositoriesView_Branches_Nodetext;
+			case PROJECTS:
+				return RepositoryViewUITexts.RepositoriesView_ExistingProjects_Nodetext;
+			case REF:
+				Ref ref = (Ref) node.getObject();
+				// shorten the name
+				String refName = node.getRepository().shortenRefName(
+						ref.getName());
+				if (ref.isSymbolic()) {
+					refName = refName
+							+ " - " //$NON-NLS-1$
+							+ node.getRepository().shortenRefName(
+									ref.getLeaf().getName());
+				}
+				return refName;
+			case PROJ:
+
+				File file = (File) node.getObject();
+				return file.getName();
+
+			default:
+				return null;
+			}
+		}
+
+		public Image decorateImage(final Image image, Object element) {
+
+			RepositoryTreeNode node = (RepositoryTreeNode) element;
+			switch (node.getType()) {
+
+			case REF:
+				Ref ref = (Ref) node.getObject();
+				// shorten the name
+				String refName = node.getRepository().shortenRefName(
+						ref.getName());
+				try {
+					String branch = node.getBranch();
+					if (refName.equals(branch)) {
+						CompositeImageDescriptor cd = new CompositeImageDescriptor() {
+
+							@Override
+							protected Point getSize() {
+								return new Point(image.getBounds().width, image
+										.getBounds().width);
+							}
+
+							@Override
+							protected void drawCompositeImage(int width,
+									int height) {
+								drawImage(image.getImageData(), 0, 0);
+								drawImage(CHECKEDOUT_OVERLAY.getImageData(), 0,
+										0);
+
+							}
+						};
+						return cd.createImage();
+					}
+				} catch (IOException e1) {
+					// simply ignore here
+				}
+				return image;
+
+			case PROJ:
+
+				File file = (File) node.getObject();
+
+				for (IProject proj : ResourcesPlugin.getWorkspace().getRoot()
+						.getProjects()) {
+					if (proj.getLocation().equals(
+							new Path(file.getAbsolutePath()))) {
+						CompositeImageDescriptor cd = new CompositeImageDescriptor() {
+
+							@Override
+							protected Point getSize() {
+								return new Point(image.getBounds().width, image
+										.getBounds().width);
+							}
+
+							@Override
+							protected void drawCompositeImage(int width,
+									int height) {
+								drawImage(image.getImageData(), 0, 0);
+								drawImage(CHECKEDOUT_OVERLAY.getImageData(), 0,
+										0);
+
+							}
+						};
+						return cd.createImage();
+					}
+				}
+				return image;
+
+			default:
+				return image;
+			}
+		}
+
+	}
+
+	private List<String> getGitDirs() {
 		List<String> resultStrings = new ArrayList<String>();
-		String dirs = getPrefs().get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
+		String dirs = new InstanceScope().getNode(Activator.getPluginId()).get(
+				PREFS_DIRECTORIES, ""); //$NON-NLS-1$
 		if (dirs != null && dirs.length() > 0) {
 			StringTokenizer tok = new StringTokenizer(dirs, File.pathSeparator);
 			while (tok.hasMoreTokens()) {
@@ -194,16 +709,10 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		return resultStrings;
 	}
 
-	private static void removeDir(File file) {
+	private void removeDir(String dir) {
 
-		String dir;
-		try {
-			dir = file.getCanonicalPath();
-		} catch (IOException e1) {
-			dir = file.getAbsolutePath();
-		}
-
-		IEclipsePreferences prefs = getPrefs();
+		IEclipsePreferences prefs = new InstanceScope().getNode(Activator
+				.getPluginId());
 
 		TreeSet<String> resultStrings = new TreeSet<String>();
 		String dirs = prefs.get(PREFS_DIRECTORIES, ""); //$NON-NLS-1$
@@ -213,11 +722,7 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 				String dirName = tok.nextToken();
 				File testFile = new File(dirName);
 				if (testFile.exists()) {
-					try {
-						resultStrings.add(testFile.getCanonicalPath());
-					} catch (IOException e) {
-						resultStrings.add(testFile.getAbsolutePath());
-					}
+					resultStrings.add(dirName);
 				}
 			}
 		}
@@ -243,156 +748,36 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	@Override
 	public Object getAdapter(Class adapter) {
-		// integrate with Properties view
-		if (adapter == IPropertySheetPage.class) {
-			PropertySheetPage page = new PropertySheetPage();
-			page
-					.setPropertySourceProvider(new RepositoryPropertySourceProvider(
-							page));
-			return page;
-		}
-
 		return super.getAdapter(adapter);
 	}
 
 	@Override
 	public void createPartControl(Composite parent) {
-		tv = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
-		tv.setContentProvider(new RepositoriesViewContentProvider());
-		// the label provider registers itself
-		new RepositoriesViewLabelProvider(tv);
 
-		getSite().setSelectionProvider(this);
+		Composite main = new Composite(parent, SWT.NONE);
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
+		main.setLayout(new GridLayout(1, false));
 
-		tv.addSelectionChangedListener(new ISelectionChangedListener() {
+		tv = new TreeViewer(main);
+		tv.setContentProvider(new ContentProvider());
+		new LabelProvider(tv);
 
-			public void selectionChanged(SelectionChangedEvent event) {
-
-				copyAction.setEnabled(false);
-
-				IStructuredSelection ssel = (IStructuredSelection) event
-						.getSelection();
-				if (ssel.size() == 1) {
-					RepositoryTreeNode node = (RepositoryTreeNode) ssel
-							.getFirstElement();
-					// allow copy on repository, file, or folder (copying the
-					// directory)
-					if (node.getType() == RepositoryTreeNodeType.REPO
-							|| node.getType() == RepositoryTreeNodeType.WORKINGDIR
-							|| node.getType() == RepositoryTreeNodeType.FOLDER
-							|| node.getType() == RepositoryTreeNodeType.FILE) {
-						copyAction.setEnabled(true);
-					}
-					setSelection(new StructuredSelection(ssel.getFirstElement()));
-				} else {
-					setSelection(new StructuredSelection());
-				}
-
-			}
-		});
-		tv.addOpenListener(new IOpenListener() {
-			public void open(OpenEvent event) {
-				IStructuredSelection selection = (IStructuredSelection) event
-						.getSelection();
-				if (selection.isEmpty()) {
-					// nothing selected, ignore
-					return;
-				}
-
-				Object element = selection.getFirstElement();
-				ITreeContentProvider contentProvider = (ITreeContentProvider) tv
-						.getContentProvider();
-				if (contentProvider.hasChildren(element)) {
-					// this element has children, expand/collapse it
-					tv.setExpandedState(element, !tv.getExpandedState(element));
-				} else {
-					Object[] selectionArray = selection.toArray();
-					for (Object selectedElement : selectionArray) {
-						RepositoryTreeNode node = (RepositoryTreeNode) selectedElement;
-						// if any of the selected elements are not files, ignore
-						// the open request
-						if (node.getType() != RepositoryTreeNodeType.FILE
-								&& node.getType() != RepositoryTreeNodeType.REF) {
-							return;
-						}
-					}
-
-					// open the files the user has selected
-					for (Object selectedElement : selectionArray) {
-						RepositoryTreeNode node = (RepositoryTreeNode) selectedElement;
-						if (node.getType() == RepositoryTreeNodeType.FILE)
-							openFile((File) node.getObject());
-						else if (node.getType() == RepositoryTreeNodeType.REF) {
-							Ref ref = (Ref) node.getObject();
-							if (ref.getName().startsWith(Constants.R_HEADS)
-									|| ref.getName().startsWith(
-											Constants.R_REMOTES))
-								checkoutBranch(node, ref.getName());
-						}
-					}
-				}
-			}
-		});
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(tv.getTree());
 
 		addContextMenu();
 
 		addActionsToToolbar();
 
 		scheduleRefresh();
-
-		ISelectionService srv = (ISelectionService) getSite().getService(
-				ISelectionService.class);
-		srv.addPostSelectionListener(new ISelectionListener() {
-
-			public void selectionChanged(IWorkbenchPart part,
-					ISelection selection) {
-
-				// if the "link with selection" toggle is off, we're done
-				if (linkWithSelectionAction == null
-						|| !linkWithSelectionAction.isChecked())
-					return;
-
-				// this may happen if we switch between editors
-				if (part instanceof IEditorPart) {
-					IEditorInput input = ((IEditorPart) part).getEditorInput();
-					if (input instanceof IFileEditorInput)
-						reactOnSelection(new StructuredSelection(
-								((IFileEditorInput) input).getFile()));
-
-				} else {
-					reactOnSelection(selection);
-				}
-			}
-
-		});
-	}
-
-	private void reactOnSelection(ISelection selection) {
-		if (selection instanceof StructuredSelection) {
-			StructuredSelection ssel = (StructuredSelection) selection;
-			if (ssel.size() != 1)
-				return;
-			if (ssel.getFirstElement() instanceof IResource) {
-				showResource((IResource) ssel.getFirstElement());
-			}
-			if (ssel.getFirstElement() instanceof IAdaptable) {
-				IResource adapted = (IResource) ((IAdaptable) ssel
-						.getFirstElement()).getAdapter(IResource.class);
-				if (adapted != null)
-					showResource(adapted);
-			}
-		}
 	}
 
 	private void addContextMenu() {
 		tv.getTree().addMenuDetectListener(new MenuDetectListener() {
 
 			public void menuDetected(MenuDetectEvent e) {
-				Menu men = tv.getTree().getMenu();
-				if (men != null) {
-					men.dispose();
-				}
-				men = new Menu(tv.getTree());
+
+				tv.getTree().setMenu(null);
+				Menu men = new Menu(tv.getTree());
 
 				TreeItem testItem = tv.getTree().getItem(
 						tv.getTree().toControl(new Point(e.x, e.y)));
@@ -400,6 +785,9 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 					addMenuItemsForPanel(men);
 				} else {
 					addMenuItemsForTreeSelection(men);
+					if (men.getItemCount() > 0)
+						new MenuItem(men, SWT.SEPARATOR);
+					addMenuItemsForPanel(men);
 				}
 
 				tv.getTree().setMenu(men);
@@ -410,7 +798,8 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 	private void addMenuItemsForPanel(Menu men) {
 
 		MenuItem importItem = new MenuItem(men, SWT.PUSH);
-		importItem.setText(UIText.RepositoriesView_ImportRepository_MenuItem);
+		importItem
+				.setText(RepositoryViewUITexts.RepositoriesView_ImportRepository_MenuItem);
 		importItem.addSelectionListener(new SelectionAdapter() {
 
 			@Override
@@ -421,23 +810,13 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		});
 
 		MenuItem addItem = new MenuItem(men, SWT.PUSH);
-		addItem.setText(UIText.RepositoriesView_AddRepository_MenuItem);
+		addItem
+				.setText(RepositoryViewUITexts.RepositoriesView_AddRepository_MenuItem);
 		addItem.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				addAction.run();
-			}
-
-		});
-
-		MenuItem pasteItem = new MenuItem(men, SWT.PUSH);
-		pasteItem.setText(UIText.RepositoriesView_PasteMenu);
-		pasteItem.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				pasteAction.run();
 			}
 
 		});
@@ -455,103 +834,347 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	}
 
+	@SuppressWarnings("unchecked")
 	private void addMenuItemsForTreeSelection(Menu men) {
+		final List<RepositoryTreeNode<Ref>> refs = new ArrayList<RepositoryTreeNode<Ref>>();
+		final List<RepositoryTreeNode<File>> projects = new ArrayList<RepositoryTreeNode<File>>();
+		final List<RepositoryTreeNode<Repository>> repos = new ArrayList<RepositoryTreeNode<Repository>>();
 
-		final IStructuredSelection sel = (IStructuredSelection) tv
-				.getSelection();
-
-		boolean repoOnly = true;
-		for (Object selected : sel.toArray()) {
-
-			if (((RepositoryTreeNode) selected).getType() != RepositoryTreeNodeType.REPO) {
-				repoOnly = false;
+		TreeItem[] selectedItems = tv.getTree().getSelection();
+		for (TreeItem item : selectedItems) {
+			RepositoryTreeNode node = (RepositoryTreeNode) item.getData();
+			switch (node.getType()) {
+			case PROJ:
+				projects.add(node);
+				break;
+			case REF:
+				refs.add(node);
+				break;
+			case REPO:
+				repos.add(node);
+				break;
+			default:
 				break;
 			}
 		}
 
-		if (sel.size() > 1 && repoOnly) {
-			List nodes = sel.toList();
-			final Repository[] repos = new Repository[nodes.size()];
-			for (int i = 0; i < sel.size(); i++)
-				repos[i] = ((RepositoryTreeNode) nodes.get(i)).getRepository();
+		boolean importableProjectsOnly = !projects.isEmpty() && repos.isEmpty()
+				&& refs.isEmpty();
 
-			MenuItem remove = new MenuItem(men, SWT.PUSH);
-			remove.setText(UIText.RepositoriesView_Remove_MenuItem);
-			remove.addSelectionListener(new SelectionAdapter() {
+		for (RepositoryTreeNode<File> prj : projects) {
+			if (!importableProjectsOnly)
+				break;
 
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					// TODO progress monitoring/cancellation
-					removeRepository(new NullProgressMonitor(), repos);
-				}
-			});
-
-		}
-
-		// from here on, we only deal with single selection
-		if (sel.size() > 1)
-			return;
-
-		final RepositoryTreeNode node = (RepositoryTreeNode) sel
-				.getFirstElement();
-
-		if (node.getType() == RepositoryTreeNodeType.REF) {
-
-			final Ref ref = (Ref) node.getObject();
-
-			// we don't check out symbolic references
-			if (!ref.isSymbolic()) {
-
-				MenuItem checkout = new MenuItem(men, SWT.PUSH);
-				checkout.setText(UIText.RepositoriesView_CheckOut_MenuItem);
-
-				try {
-					if (node.getRepository().getFullBranch().equals(
-							ref.getName())) {
-						// no checkout on current branch
-						checkout.setEnabled(false);
-					}
-				} catch (IOException e2) {
-					// ignore
-				}
-
-				checkout.addSelectionListener(new SelectionAdapter() {
-
-					@Override
-					public void widgetSelected(SelectionEvent e) {
-						checkoutBranch(node, ref.getLeaf().getName());
-					}
-				});
-
-				new MenuItem(men, SWT.SEPARATOR);
-
-				createCreateBranchItem(men, node);
-				createDeleteBranchItem(men, node);
+			for (IProject proj : ResourcesPlugin.getWorkspace().getRoot()
+					.getProjects()) {
+				if (proj.getLocation().equals(
+						new Path(prj.getObject().getAbsolutePath())))
+					importableProjectsOnly = false;
 
 			}
+
 		}
 
-		if (node.getType() == RepositoryTreeNodeType.LOCALBRANCHES
-				|| node.getType() == RepositoryTreeNodeType.REMOTEBRANCHES)
-			createCreateBranchItem(men, node);
+		boolean singleRef = refs.size() == 1 && projects.isEmpty()
+				&& repos.isEmpty();
+		boolean singleRepo = repos.size() == 1 && projects.isEmpty()
+				&& refs.isEmpty();
 
-		// for Repository: import existing projects, remove, (delete), open
-		// properties
-		if (node.getType() == RepositoryTreeNodeType.REPO) {
+		try {
+			singleRef = singleRef
+					&& !refs.get(0).getObject().getName()
+							.equals(Constants.HEAD)
+					&& (refs.get(0).getRepository().mapCommit(
+							refs.get(0).getObject().getLeaf().getObjectId()) != null);
+		} catch (IOException e2) {
+			singleRef = false;
+		}
 
-			final Repository repo = (Repository) node.getObject();
+		if (importableProjectsOnly) {
+			MenuItem sync = new MenuItem(men, SWT.PUSH);
+			sync
+					.setText(RepositoryViewUITexts.RepositoriesView_ImportProject_MenuItem);
+
+			sync.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+
+					IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+						public void run(IProgressMonitor monitor)
+								throws CoreException {
+
+							for (RepositoryTreeNode<File> projectNode : projects) {
+								File file = projectNode.getObject();
+
+								IProjectDescription pd = ResourcesPlugin
+										.getWorkspace().newProjectDescription(
+												file.getName());
+								IPath locationPath = new Path(file
+										.getAbsolutePath());
+
+								pd.setLocation(locationPath);
+
+								ResourcesPlugin.getWorkspace().getRoot()
+										.getProject(pd.getName()).create(pd,
+												monitor);
+								IProject project = ResourcesPlugin
+										.getWorkspace().getRoot().getProject(
+												pd.getName());
+								project.open(monitor);
+
+								File gitDir = projectNode.getRepository()
+										.getDirectory();
+
+								ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
+										project, gitDir);
+								connectProviderOperation
+										.run(new SubProgressMonitor(monitor, 20));
+
+							}
+
+						}
+					};
+
+					try {
+
+						ResourcesPlugin.getWorkspace().run(wsr,
+								ResourcesPlugin.getWorkspace().getRoot(),
+								IWorkspace.AVOID_UPDATE,
+								new NullProgressMonitor());
+
+						scheduleRefresh();
+					} catch (CoreException e1) {
+						Activator.getDefault().getLog().log(e1.getStatus());
+					}
+
+				}
+
+			});
+		}
+
+		if (singleRef) {
+
+			MenuItem checkout = new MenuItem(men, SWT.PUSH);
+			checkout
+					.setText(RepositoryViewUITexts.RepositoriesView_CheckOut_MenuItem);
+			checkout.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					Repository repo = refs.get(0).getRepository();
+					String refName = refs.get(0).myObject.getLeaf().getName();
+					final BranchOperation op = new BranchOperation(repo,
+							refName);
+					IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+						public void run(IProgressMonitor monitor)
+								throws CoreException {
+							op.run(monitor);
+						}
+					};
+					try {
+						ResourcesPlugin.getWorkspace().run(wsr,
+								ResourcesPlugin.getWorkspace().getRoot(),
+								IWorkspace.AVOID_UPDATE,
+								new NullProgressMonitor());
+						scheduleRefresh();
+					} catch (CoreException e1) {
+						MessageDialog
+								.openError(
+										getSite().getShell(),
+										RepositoryViewUITexts.RepositoriesView_Error_WindowTitle,
+										e1.getMessage());
+					}
+
+				}
+
+			});
+		}
+
+		if (singleRepo) {
+
+			MenuItem importProjects = new MenuItem(men, SWT.PUSH);
+			importProjects
+					.setText(RepositoryViewUITexts.RepositoriesView_ImportExistingProjects_MenuItem);
+			importProjects.addSelectionListener(new SelectionAdapter() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					Wizard wiz = new ExternalProjectImportWizard(repos.get(0)
+							.getRepository().getWorkDir().getAbsolutePath()) {
+
+						@Override
+						public void addPages() {
+							super.addPages();
+							// we could add some page with a single
+							// checkbox to indicate if we wan
+							// addPage(new WizardPage("Share") {
+							//
+							// public void createControl(
+							// Composite parent) {
+							// Composite main = new Composite(
+							// parent, SWT.NONE);
+							// main.setLayout(new GridLayout(1,
+							// false));
+							// GridDataFactory.fillDefaults()
+							// .grab(true, true).applyTo(
+							// main);
+							// Button but = new Button(main,
+							// SWT.PUSH);
+							// but.setText("Push me");
+							// setControl(main);
+							//
+							// }
+							// });
+						}
+
+						@Override
+						public boolean performFinish() {
+
+							final Set<IPath> previousLocations = new HashSet<IPath>();
+							// we want to share only new projects
+							for (IProject project : ResourcesPlugin
+									.getWorkspace().getRoot().getProjects()) {
+								previousLocations.add(project.getLocation());
+							}
+
+							boolean success = super.performFinish();
+							if (success) {
+								// IWizardPage page = getPage("Share");
+								// TODO evaluate checkbox or such, but
+								// if we do share
+								// always, we don't even need another
+								// page
+
+								IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+									public void run(IProgressMonitor monitor)
+											throws CoreException {
+										File gitDir = repos.get(0)
+												.getRepository().getDirectory();
+										File gitWorkDir = repos.get(0)
+												.getRepository().getWorkDir();
+										Path workPath = new Path(gitWorkDir
+												.getAbsolutePath());
+
+										// we check which projects are
+										// in the workspace
+										// pointing to a location in the
+										// repo's
+										// working directory
+										// and share them
+										for (IProject prj : ResourcesPlugin
+												.getWorkspace().getRoot()
+												.getProjects()) {
+
+											if (workPath.isPrefixOf(prj
+													.getLocation())) {
+												if (previousLocations
+														.contains(prj
+																.getLocation())) {
+													continue;
+												}
+												ConnectProviderOperation connectProviderOperation = new ConnectProviderOperation(
+														prj, gitDir);
+												connectProviderOperation
+														.run(new SubProgressMonitor(
+																monitor, 20));
+
+											}
+										}
+
+									}
+								};
+
+								try {
+									ResourcesPlugin.getWorkspace().run(
+											wsr,
+											ResourcesPlugin.getWorkspace()
+													.getRoot(),
+											IWorkspace.AVOID_UPDATE,
+											new NullProgressMonitor());
+									scheduleRefresh();
+								} catch (CoreException ce) {
+									MessageDialog
+											.openError(
+													getShell(),
+													RepositoryViewUITexts.RepositoriesView_Error_WindowTitle,
+													ce.getMessage());
+								}
+
+							}
+							return success;
+						}
+
+					};
+
+					WizardDialog dlg = new WizardDialog(getSite().getShell(),
+							wiz);
+					dlg.open();
+				}
+
+			});
 
 			// TODO "import existing plug-in" menu item
+			// TODO "configure" menu item
 
 			MenuItem remove = new MenuItem(men, SWT.PUSH);
-			remove.setText(UIText.RepositoriesView_Remove_MenuItem);
+			remove
+					.setText(RepositoryViewUITexts.RepositoriesView_Remove_MenuItem);
 			remove.addSelectionListener(new SelectionAdapter() {
 
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					// TODO progress monitoring/cancellation
-					removeRepository(new NullProgressMonitor(), repo);
+
+					List<IProject> projectsToDelete = new ArrayList<IProject>();
+					File workDir = repos.get(0).getRepository().getWorkDir();
+					final IPath wdPath = new Path(workDir.getAbsolutePath());
+					for (IProject prj : ResourcesPlugin.getWorkspace()
+							.getRoot().getProjects()) {
+						if (wdPath.isPrefixOf(prj.getLocation())) {
+							projectsToDelete.add(prj);
+						}
+					}
+
+					if (!projectsToDelete.isEmpty()) {
+						boolean confirmed;
+						confirmed = confirmProjectDeletion(projectsToDelete);
+						if (!confirmed) {
+							return;
+						}
+					}
+
+					IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
+
+						public void run(IProgressMonitor monitor)
+								throws CoreException {
+
+							for (IProject prj : ResourcesPlugin.getWorkspace()
+									.getRoot().getProjects()) {
+								if (wdPath.isPrefixOf(prj.getLocation())) {
+									prj.delete(false, false, monitor);
+								}
+							}
+
+							Repository repo = repos.get(0).getRepository();
+							removeDir(repo.getDirectory().getAbsolutePath());
+							scheduleRefresh();
+						}
+					};
+
+					try {
+						ResourcesPlugin.getWorkspace().run(wsr,
+								ResourcesPlugin.getWorkspace().getRoot(),
+								IWorkspace.AVOID_UPDATE,
+								new NullProgressMonitor());
+					} catch (CoreException e1) {
+						Activator.getDefault().getLog().log(e1.getStatus());
+					}
+
 				}
+
 			});
 
 			// TODO delete does not work because of file locks on .pack-files
@@ -655,775 +1278,62 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 			// }
 			//
 			// });
-
-			new MenuItem(men, SWT.SEPARATOR);
-
-			createImportProjectItem(men, repo, repo.getWorkDir().getPath());
-
-			new MenuItem(men, SWT.SEPARATOR);
-
-			MenuItem openPropsView = new MenuItem(men, SWT.PUSH);
-			openPropsView.setText(UIText.RepositoriesView_OpenPropertiesMenu);
-			openPropsView.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					try {
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-								.getActivePage().showView(
-										IPageLayout.ID_PROP_SHEET);
-					} catch (PartInitException e1) {
-						// just ignore
-					}
-				}
-
-			});
-
-			new MenuItem(men, SWT.SEPARATOR);
-
-			createCopyPathItem(men, repo.getDirectory().getPath());
 		}
-
-		if (node.getType() == RepositoryTreeNodeType.REMOTES) {
-
-			MenuItem remoteConfig = new MenuItem(men, SWT.PUSH);
-			remoteConfig.setText(UIText.RepositoriesView_NewRemoteMenu);
-			remoteConfig.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					WizardDialog dlg = new WizardDialog(getSite().getShell(),
-							new NewRemoteWizard(node.getRepository()));
-					if (dlg.open() == Window.OK)
-						scheduleRefresh();
-
-				}
-
-			});
-		}
-
-		if (node.getType() == RepositoryTreeNodeType.REMOTE) {
-
-			final String configName = (String) node.getObject();
-
-			RemoteConfig rconfig;
-			try {
-				rconfig = new RemoteConfig(node.getRepository().getConfig(),
-						configName);
-			} catch (URISyntaxException e2) {
-				// TODO Exception handling
-				rconfig = null;
-			}
-
-			boolean fetchExists = rconfig != null
-					&& !rconfig.getURIs().isEmpty();
-			boolean pushExists = rconfig != null
-					&& !rconfig.getPushURIs().isEmpty();
-
-			if (!fetchExists) {
-				MenuItem configureUrlFetch = new MenuItem(men, SWT.PUSH);
-				configureUrlFetch
-						.setText(UIText.RepositoriesView_CreateFetch_menu);
-
-				configureUrlFetch.addSelectionListener(new SelectionAdapter() {
-
-					@Override
-					public void widgetSelected(SelectionEvent e) {
-
-						WizardDialog dlg = new WizardDialog(getSite()
-								.getShell(), new ConfigureRemoteWizard(node
-								.getRepository(), configName, false));
-						if (dlg.open() == Window.OK)
-							scheduleRefresh();
-
-					}
-
-				});
-			}
-
-			if (!pushExists) {
-				MenuItem configureUrlPush = new MenuItem(men, SWT.PUSH);
-
-				configureUrlPush
-						.setText(UIText.RepositoriesView_CreatePush_menu);
-
-				configureUrlPush.addSelectionListener(new SelectionAdapter() {
-
-					@Override
-					public void widgetSelected(SelectionEvent e) {
-
-						WizardDialog dlg = new WizardDialog(getSite()
-								.getShell(), new ConfigureRemoteWizard(node
-								.getRepository(), configName, true));
-						if (dlg.open() == Window.OK)
-							scheduleRefresh();
-
-					}
-
-				});
-			}
-
-			if (!fetchExists || !pushExists)
-				// add a separator dynamically
-				new MenuItem(men, SWT.SEPARATOR);
-
-			MenuItem removeRemote = new MenuItem(men, SWT.PUSH);
-			removeRemote.setText(UIText.RepositoriesView_RemoveRemoteMenu);
-			removeRemote.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					boolean ok = MessageDialog
-							.openConfirm(
-									getSite().getShell(),
-									UIText.RepositoriesView_ConfirmDeleteRemoteHeader,
-									NLS
-											.bind(
-													UIText.RepositoriesView_ConfirmDeleteRemoteMessage,
-													configName));
-					if (ok) {
-						RepositoryConfig config = node.getRepository()
-								.getConfig();
-						config.unsetSection(REMOTE, configName);
-						try {
-							config.save();
-							scheduleRefresh();
-						} catch (IOException e1) {
-							Activator.handleError(
-									UIText.RepositoriesView_ErrorHeader, e1,
-									true);
-						}
-					}
-
-				}
-
-			});
-
-			new MenuItem(men, SWT.SEPARATOR);
-
-			MenuItem openPropsView = new MenuItem(men, SWT.PUSH);
-			openPropsView.setText(UIText.RepositoriesView_OpenPropertiesMenu);
-			openPropsView.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					try {
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-								.getActivePage().showView(
-										IPageLayout.ID_PROP_SHEET);
-					} catch (PartInitException e1) {
-						// just ignore
-					}
-				}
-
-			});
-		}
-
-		if (node.getType() == RepositoryTreeNodeType.FETCH) {
-
-			final String configName = (String) node.getParent().getObject();
-
-			MenuItem configureUrlFetch = new MenuItem(men, SWT.PUSH);
-			configureUrlFetch
-					.setText(UIText.RepositoriesView_ConfigureFetchMenu);
-
-			configureUrlFetch.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					WizardDialog dlg = new WizardDialog(getSite().getShell(),
-							new ConfigureRemoteWizard(node.getRepository(),
-									configName, false));
-					if (dlg.open() == Window.OK)
-						scheduleRefresh();
-
-				}
-
-			});
-
-			MenuItem deleteFetch = new MenuItem(men, SWT.PUSH);
-			deleteFetch.setText(UIText.RepositoriesView_RemoveFetch_menu);
-			deleteFetch.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					RepositoryConfig config = node.getRepository().getConfig();
-					config.unset("remote", configName, "url"); //$NON-NLS-1$ //$NON-NLS-2$
-					config.unset("remote", configName, "fetch"); //$NON-NLS-1$//$NON-NLS-2$
-					try {
-						config.save();
-						scheduleRefresh();
-					} catch (IOException e1) {
-						MessageDialog.openError(getSite().getShell(),
-								UIText.RepositoriesView_ErrorHeader, e1
-										.getMessage());
-					}
-				}
-
-			});
-
-		}
-
-		if (node.getType() == RepositoryTreeNodeType.PUSH) {
-
-			final String configName = (String) node.getParent().getObject();
-
-			MenuItem configureUrlPush = new MenuItem(men, SWT.PUSH);
-
-			configureUrlPush.setText(UIText.RepositoriesView_ConfigurePushMenu);
-
-			configureUrlPush.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-
-					WizardDialog dlg = new WizardDialog(getSite().getShell(),
-							new ConfigureRemoteWizard(node.getRepository(),
-									configName, true));
-					if (dlg.open() == Window.OK)
-						scheduleRefresh();
-				}
-
-			});
-
-			MenuItem deleteFetch = new MenuItem(men, SWT.PUSH);
-			deleteFetch.setText(UIText.RepositoriesView_RemovePush_menu);
-			deleteFetch.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					RepositoryConfig config = node.getRepository().getConfig();
-					config.unset("remote", configName, "pushurl"); //$NON-NLS-1$ //$NON-NLS-2$
-					config.unset("remote", configName, "push"); //$NON-NLS-1$ //$NON-NLS-2$
-					try {
-						config.save();
-						scheduleRefresh();
-					} catch (IOException e1) {
-						MessageDialog.openError(getSite().getShell(),
-								UIText.RepositoriesView_ErrorHeader, e1
-										.getMessage());
-					}
-				}
-
-			});
-		}
-
-		if (node.getType() == RepositoryTreeNodeType.FILE) {
-
-			final File file = (File) node.getObject();
-
-			MenuItem openInTextEditor = new MenuItem(men, SWT.PUSH);
-			openInTextEditor
-					.setText(UIText.RepositoriesView_OpenInTextEditor_menu);
-			openInTextEditor.addSelectionListener(new SelectionAdapter() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					openFile(file);
-				}
-
-			});
-
-			new MenuItem(men, SWT.SEPARATOR);
-			createCopyPathItem(men, file.getPath());
-		}
-
-		if (node.getType() == RepositoryTreeNodeType.WORKINGDIR) {
-			String path = node.getRepository().getWorkDir().getAbsolutePath();
-			createImportProjectItem(men, node.getRepository(), path);
-			new MenuItem(men, SWT.SEPARATOR);
-			createCopyPathItem(men, path);
-		}
-
-		if (node.getType() == RepositoryTreeNodeType.FOLDER) {
-			String path = ((File) node.getObject()).getPath();
-			createImportProjectItem(men, node.getRepository(), path);
-			new MenuItem(men, SWT.SEPARATOR);
-			createCopyPathItem(men, path);
-		}
-
-	}
-
-	private void createCopyPathItem(Menu men, final String path) {
-
-		MenuItem copyPath;
-		copyPath = new MenuItem(men, SWT.PUSH);
-		copyPath.setText(UIText.RepositoriesView_CopyPathToClipboardMenu);
-		copyPath.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				Clipboard clipboard = new Clipboard(null);
-				TextTransfer textTransfer = TextTransfer.getInstance();
-				Transfer[] transfers = new Transfer[] { textTransfer };
-				Object[] data = new Object[] { path };
-				clipboard.setContents(data, transfers);
-				clipboard.dispose();
-			}
-
-		});
-
-	}
-
-	private void createCreateBranchItem(Menu men, final RepositoryTreeNode node) {
-
-		final boolean remoteMode;
-		final Ref ref;
-		if (node.getType() == RepositoryTreeNodeType.REF) {
-			remoteMode = node.getParent().getType() == RepositoryTreeNodeType.REMOTEBRANCHES;
-			ref = (Ref) node.getObject();
-		} else if (node.getType() == RepositoryTreeNodeType.LOCALBRANCHES) {
-			remoteMode = false;
-			ref = null;
-		} else if (node.getType() == RepositoryTreeNodeType.REMOTEBRANCHES) {
-			remoteMode = true;
-			ref = null;
-		} else
-			return;
-
-		MenuItem createLocal = new MenuItem(men, SWT.PUSH);
-		if (remoteMode)
-			createLocal.setText(UIText.RepositoriesView_NewRemoteBranchMenu);
-		else
-			createLocal.setText(UIText.RepositoriesView_NewLocalBranchMenu);
-
-		createLocal.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-
-				Wizard wiz = new Wizard() {
-
-					@Override
-					public void addPages() {
-						addPage(new CreateBranchPage(node.getRepository(), ref,
-								remoteMode));
-						setWindowTitle(UIText.RepositoriesView_NewBranchTitle);
-					}
-
-					@Override
-					public boolean performFinish() {
-
-						try {
-							getContainer().run(false, true,
-									new IRunnableWithProgress() {
-
-										public void run(IProgressMonitor monitor)
-												throws InvocationTargetException,
-												InterruptedException {
-											CreateBranchPage cp = (CreateBranchPage) getPages()[0];
-											try {
-												cp.createBranch(monitor);
-											} catch (CoreException ce) {
-												throw new InvocationTargetException(
-														ce);
-											} catch (IOException ioe) {
-												throw new InvocationTargetException(
-														ioe);
-											}
-
-										}
-									});
-						} catch (InvocationTargetException ite) {
-							Activator
-									.handleError(
-											UIText.RepositoriesView_BranchCreationFailureMessage,
-											ite.getCause(), true);
-							return false;
-						} catch (InterruptedException ie) {
-							// ignore here
-						}
-						return true;
-					}
-				};
-				if (new WizardDialog(getSite().getShell(), wiz).open() == Window.OK)
-					scheduleRefresh();
-			}
-
-		});
-
-	}
-
-	private void createDeleteBranchItem(Menu men, final RepositoryTreeNode node) {
-
-		final Ref ref = (Ref) node.getObject();
-
-		MenuItem deleteBranch = new MenuItem(men, SWT.PUSH);
-		deleteBranch.setText(UIText.RepositoriesView_DeleteBranchMenu);
-
-		try {
-			if (node.getRepository().getFullBranch().equals(ref.getName())) {
-				deleteBranch.setEnabled(false);
-			}
-		} catch (IOException e2) {
-			// ignore
-		}
-
-		deleteBranch.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-
-				if (!MessageDialog
-						.openConfirm(
-								getSite().getShell(),
-								UIText.RepositoriesView_ConfirmDeleteTitle,
-								NLS
-										.bind(
-												UIText.RepositoriesView_ConfirmBranchDeletionMessage,
-												ref.getName())))
-					return;
-
-				try {
-					new ProgressMonitorDialog(getSite().getShell()).run(false,
-							false, new IRunnableWithProgress() {
-
-								public void run(IProgressMonitor monitor)
-										throws InvocationTargetException,
-										InterruptedException {
-
-									try {
-										RefUpdate op = node.getRepository()
-												.updateRef(ref.getName());
-										op.setRefLogMessage("branch deleted", //$NON-NLS-1$
-												false);
-										// we set the force update in order
-										// to avoid having this rejected
-										// due to minor issues
-										op.setForceUpdate(true);
-										op.delete();
-										scheduleRefresh();
-									} catch (IOException ioe) {
-										throw new InvocationTargetException(ioe);
-									}
-
-								}
-							});
-				} catch (InvocationTargetException e1) {
-					Activator
-							.handleError(
-									UIText.RepositoriesView_BranchDeletionFailureMessage,
-									e1.getCause(), true);
-					e1.printStackTrace();
-				} catch (InterruptedException e1) {
-					// ignore
-				}
-			}
-
-		});
-
-	}
-
-	private void openFile(File file) {
-		IFileStore store = EFS.getLocalFileSystem().getStore(
-				new Path(file.getAbsolutePath()));
-		try {
-			// TODO do we need a read-only editor here?
-			IDE.openEditor(getSite().getPage(),
-					new FileStoreEditorInput(store),
-					EditorsUI.DEFAULT_TEXT_EDITOR_ID);
-		} catch (PartInitException e) {
-			Activator.handleError(UIText.RepositoriesView_Error_WindowTitle, e,
-					true);
-		}
-	}
-
-	private void checkoutBranch(final RepositoryTreeNode node,
-			final String refName) {
-		// for the sake of UI responsiveness, let's start a job
-		Job job = new Job(NLS.bind(UIText.RepositoriesView_CheckingOutMessage,
-				refName)) {
-
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-
-				Repository repo = node.getRepository();
-
-				final BranchOperation op = new BranchOperation(repo, refName);
-				IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-
-					public void run(IProgressMonitor myMonitor)
-							throws CoreException {
-						op.execute(myMonitor);
-					}
-				};
-
-				try {
-					ResourcesPlugin.getWorkspace().run(wsr,
-							ResourcesPlugin.getWorkspace().getRoot(),
-							IWorkspace.AVOID_UPDATE, monitor);
-					scheduleRefresh();
-				} catch (CoreException e1) {
-					return new Status(IStatus.ERROR, Activator.getPluginId(),
-							e1.getMessage(), e1);
-				}
-
-				return Status.OK_STATUS;
-			}
-		};
-
-		job.setUser(true);
-		job.schedule();
-	}
-
-	private void createImportProjectItem(Menu men, final Repository repo,
-			final String path) {
-
-		MenuItem startWizard;
-		startWizard = new MenuItem(men, SWT.PUSH);
-		startWizard.setText(UIText.RepositoriesView_ImportProjectsMenu);
-		startWizard.addSelectionListener(new SelectionAdapter() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				WizardDialog dlg = new WizardDialog(getSite().getShell(),
-						new GitCreateProjectViaWizardWizard(repo, path));
-				if (dlg.open() == Window.OK)
-					scheduleRefresh();
-
-			}
-
-		});
-
-		// we could start the ImportWizard here,
-		// unfortunately, this fails within a wizard
-		// startWizard = new MenuItem(men, SWT.PUSH);
-		// startWizard.setText("Start the Import wizard...");
-		// startWizard.addSelectionListener(new SelectionAdapter() {
-		//
-		// @Override
-		// public void widgetSelected(SelectionEvent e) {
-		//
-		// IHandlerService handlerService = (IHandlerService) getSite()
-		// .getWorkbenchWindow().getWorkbench().getService(
-		// IHandlerService.class);
-		//
-		// try {
-		//					handlerService.executeCommand("org.eclipse.ui.file.import", //$NON-NLS-1$
-		// null);
-		// } catch (ExecutionException e1) {
-		// Activator.handleError(e1.getMessage(), e1, true);
-		// } catch (NotDefinedException e1) {
-		// Activator.handleError(e1.getMessage(), e1, true);
-		// } catch (NotEnabledException e1) {
-		// Activator.handleError(e1.getMessage(), e1, true);
-		// } catch (NotHandledException e1) {
-		// Activator.handleError(e1.getMessage(), e1, true);
-		// }
-		// }
-		//
-		// });
 	}
 
 	private void addActionsToToolbar() {
+		importAction = new Action(
+				RepositoryViewUITexts.RepositoriesView_Import_Button) {
 
-		IToolBarManager manager = getViewSite().getActionBars()
-				.getToolBarManager();
+			@Override
+			public void run() {
+				GitCloneWizard wiz = new GitCloneWizard();
+				wiz.init(null, null);
+				new WizardDialog(getSite().getShell(), wiz).open();
+				updateDirStrings(new NullProgressMonitor());
+			}
+		};
+		importAction
+				.setToolTipText(RepositoryViewUITexts.RepositoriesView_Clone_Tooltip);
 
-		refreshAction = new Action(UIText.RepositoriesView_Refresh_Button) {
+		getViewSite().getActionBars().getToolBarManager().add(importAction);
+
+		addAction = new Action(
+				RepositoryViewUITexts.RepositoriesView_Add_Button) {
+
+			@Override
+			public void run() {
+				RepositorySearchDialog sd = new RepositorySearchDialog(
+						getSite().getShell(), ResourcesPlugin.getWorkspace()
+								.getRoot().getLocation().toOSString(),
+						getGitDirs());
+				if (sd.open() == Window.OK) {
+					Set<String> dirs = new HashSet<String>();
+					dirs.addAll(getGitDirs());
+					if (dirs.addAll(sd.getDirectories()))
+						saveDirStrings(dirs);
+					scheduleRefresh();
+				}
+
+			}
+		};
+		addAction
+				.setToolTipText(RepositoryViewUITexts.RepositoriesView_AddRepository_Tooltip);
+
+		getViewSite().getActionBars().getToolBarManager().add(addAction);
+
+		// TODO if we don't show projects, then we probably don't need refresh
+
+		refreshAction = new Action(
+				RepositoryViewUITexts.RepositoriesView_Refresh_Button) {
 
 			@Override
 			public void run() {
 				scheduleRefresh();
 			}
 		};
-		refreshAction.setImageDescriptor(UIIcons.ELCL16_REFRESH);
-		manager.add(refreshAction);
 
-		linkWithSelectionAction = new Action(
-				UIText.RepositoriesView_LinkWithSelection_action,
-				IAction.AS_CHECK_BOX) {
-
-			@Override
-			public void run() {
-				IEclipsePreferences prefs = getPrefs();
-				prefs.putBoolean(PREFS_SYNCED, isChecked());
-				try {
-					prefs.flush();
-				} catch (BackingStoreException e) {
-					// ignore here
-				}
-				if (isChecked()) {
-					ISelectionService srv = (ISelectionService) getSite()
-							.getService(ISelectionService.class);
-					reactOnSelection(srv.getSelection());
-				}
-
-			}
-
-		};
-
-		linkWithSelectionAction
-				.setToolTipText(UIText.RepositoriesView_LinkWithSelection_action);
-		linkWithSelectionAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
-		linkWithSelectionAction.setChecked(getPrefs().getBoolean(PREFS_SYNCED,
-				false));
-
-		manager.add(linkWithSelectionAction);
-
-		manager.add(new Separator());
-
-		IAction collapseAllAction = new Action(
-				UIText.RepositoriesView_CollapseAllMenu) {
-
-			@Override
-			public void run() {
-				tv.collapseAll();
-			}
-		};
-		collapseAllAction.setImageDescriptor(UIIcons.COLLAPSEALL);
-		manager.add(collapseAllAction);
-
-		manager.add(new Separator());
-
-		importAction = new Action(UIText.RepositoriesView_Import_Button) {
-
-			@Override
-			public void run() {
-				WizardDialog dlg = new WizardDialog(getSite().getShell(),
-						new GitCloneWizard());
-				if (dlg.open() == Window.OK)
-					scheduleRefresh();
-			}
-		};
-		importAction.setToolTipText(UIText.RepositoriesView_Clone_Tooltip);
-		importAction.setImageDescriptor(UIIcons.CLONEGIT);
-
-		manager.add(importAction);
-
-		addAction = new Action(UIText.RepositoriesView_Add_Button) {
-
-			@Override
-			public void run() {
-				RepositorySearchDialog sd = new RepositorySearchDialog(
-						getSite().getShell(), getDirs());
-				if (sd.open() == Window.OK) {
-					Set<String> dirs = new HashSet<String>();
-					dirs.addAll(getDirs());
-					if (dirs.addAll(sd.getDirectories()))
-						saveDirs(dirs);
-					scheduleRefresh();
-				}
-
-			}
-		};
-		addAction.setToolTipText(UIText.RepositoriesView_AddRepository_Tooltip);
-		addAction.setImageDescriptor(UIIcons.NEW_REPOSITORY);
-
-		manager.add(addAction);
-
-		// copy and paste are global actions; we just implement them
-		// and register them with the global action handler
-		// we enable/disable them upon tree selection changes
-
-		copyAction = new Action("") { //$NON-NLS-1$
-
-			@Override
-			public void run() {
-				// for REPO, WORKINGDIR, FILE, FOLDER: copy directory
-				IStructuredSelection sel = (IStructuredSelection) tv
-						.getSelection();
-				if (sel.size() == 1) {
-					RepositoryTreeNode node = (RepositoryTreeNode) sel
-							.getFirstElement();
-					String dir = null;
-					if (node.getType() == RepositoryTreeNodeType.REPO) {
-						dir = node.getRepository().getDirectory().getPath();
-					} else if (node.getType() == RepositoryTreeNodeType.FILE
-							|| node.getType() == RepositoryTreeNodeType.FOLDER) {
-						dir = ((File) node.getObject()).getPath();
-					} else if (node.getType() == RepositoryTreeNodeType.WORKINGDIR) {
-						dir = node.getRepository().getWorkDir().getPath();
-					}
-					if (dir != null) {
-						Clipboard clip = null;
-						try {
-							clip = new Clipboard(getSite().getShell()
-									.getDisplay());
-							clip
-									.setContents(new Object[] { dir },
-											new Transfer[] { TextTransfer
-													.getInstance() });
-						} finally {
-							if (clip != null)
-								// we must dispose ourselves
-								clip.dispose();
-						}
-					}
-				}
-			}
-
-		};
-		copyAction.setEnabled(false);
-
-		getViewSite().getActionBars().setGlobalActionHandler(
-				ActionFactory.COPY.getId(), copyAction);
-
-		pasteAction = new Action("") { //$NON-NLS-1$
-
-			@Override
-			public void run() {
-				// we check if the pasted content is a directory
-				// repository location and try to add this
-				String errorMessage = null;
-
-				Clipboard clip = null;
-				try {
-					clip = new Clipboard(getSite().getShell().getDisplay());
-					String content = (String) clip.getContents(TextTransfer
-							.getInstance());
-					if (content == null) {
-						errorMessage = UIText.RepositoriesView_NothingToPasteMessage;
-						return;
-					}
-
-					File file = new File(content);
-					if (!file.exists() || !file.isDirectory()) {
-						errorMessage = UIText.RepositoriesView_ClipboardContentNotDirectoryMessage;
-						return;
-					}
-
-					if (!RepositoryCache.FileKey.isGitRepository(file)) {
-						errorMessage = NLS
-								.bind(
-										UIText.RepositoriesView_ClipboardContentNoGitRepoMessage,
-										content);
-						return;
-					}
-
-					if (addDir(file))
-						scheduleRefresh();
-					else
-						errorMessage = NLS.bind(
-								UIText.RepositoriesView_PasteRepoAlreadyThere,
-								content);
-				} finally {
-					if (clip != null)
-						// we must dispose ourselves
-						clip.dispose();
-					if (errorMessage != null)
-						// TODO String ext
-						MessageDialog.openWarning(getSite().getShell(),
-								UIText.RepositoriesView_PasteFailureTitle,
-								errorMessage);
-				}
-			}
-
-		};
-
-		getViewSite().getActionBars().setGlobalActionHandler(
-				ActionFactory.PASTE.getId(), pasteAction);
-
-	}
-
-	/**
-	 * @return the preferences
-	 */
-	protected static IEclipsePreferences getPrefs() {
-		return new InstanceScope().getNode(Activator.getPluginId());
+		getViewSite().getActionBars().getToolBarManager().add(refreshAction);
 	}
 
 	@Override
@@ -1436,38 +1346,20 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		super.dispose();
 	}
 
-	/**
-	 * Schedules a refreh
-	 */
-	public void scheduleRefresh() {
+	private void scheduleRefresh() {
 
 		Job job = new Job("Refreshing Git Repositories view") { //$NON-NLS-1$
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 
-				final List<RepositoryTreeNode<Repository>> input;
+				final List<Repository> input;
 				try {
 					input = getRepositoriesFromDirs(monitor);
 				} catch (InterruptedException e) {
 					return new Status(IStatus.ERROR, Activator.getPluginId(), e
 							.getMessage(), e);
 				}
-
-				boolean needsNewInput = tv.getInput() == null;
-				List oldInput = (List) tv.getInput();
-				if (!needsNewInput)
-					needsNewInput = oldInput.size() != input.size();
-
-				if (!needsNewInput) {
-					for (int i = 0; i < input.size(); i++) {
-						needsNewInput = !input.get(i).equals(oldInput.get(i));
-						if (needsNewInput)
-							break;
-					}
-				}
-
-				final boolean updateInput = needsNewInput;
 
 				Display.getDefault().syncExec(new Runnable() {
 
@@ -1478,25 +1370,12 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 						Object[] expanded = tv.getExpandedElements();
 						IStructuredSelection sel = (IStructuredSelection) tv
 								.getSelection();
-						if (updateInput)
-							tv.setInput(input);
-						else
-							tv.refresh();
+						tv.setInput(input);
 						tv.setExpandedElements(expanded);
 
 						Object selected = sel.getFirstElement();
 						if (selected != null)
 							tv.reveal(selected);
-
-						IViewPart part = PlatformUI.getWorkbench()
-								.getActiveWorkbenchWindow().getActivePage()
-								.findView(IPageLayout.ID_PROP_SHEET);
-						if (part != null) {
-							PropertySheet sheet = (PropertySheet) part;
-							PropertySheetPage page = (PropertySheetPage) sheet
-									.getCurrentPage();
-							page.refresh();
-						}
 					}
 				});
 
@@ -1516,61 +1395,20 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 
 	}
 
-	/**
-	 * Adds a directory to the list if it is not already there
-	 *
-	 * @param file
-	 * @return see {@link Collection#add(Object)}
-	 */
-	public static boolean addDir(File file) {
+	private List<Repository> getRepositoriesFromDirs(IProgressMonitor monitor)
+			throws InterruptedException {
 
-		String dirString;
-		try {
-			dirString = file.getCanonicalPath();
-		} catch (IOException e) {
-			dirString = file.getAbsolutePath();
-		}
-
-		List<String> dirStrings = getDirs();
-		if (dirStrings.contains(dirString)) {
-			return false;
-		} else {
-			Set<String> dirs = new HashSet<String>();
-			dirs.addAll(dirStrings);
-			dirs.add(dirString);
-			saveDirs(dirs);
-			return true;
-		}
-	}
-
-	/**
-	 * Converts the directories as configured for this view into a list of
-	 * {@link Repository} objects suitable for the tree content provider
-	 * <p>
-	 * TODO move to some utility class
-	 *
-	 * @param monitor
-	 * @return a list of nodes
-	 * @throws InterruptedException
-	 */
-	public static List<RepositoryTreeNode<Repository>> getRepositoriesFromDirs(
-			IProgressMonitor monitor) throws InterruptedException {
-
-		List<String> gitDirStrings = getDirs();
-		List<RepositoryTreeNode<Repository>> input = new ArrayList<RepositoryTreeNode<Repository>>();
-
+		List<String> gitDirStrings = getGitDirs();
+		List<Repository> input = new ArrayList<Repository>();
 		for (String dirString : gitDirStrings) {
-			if (monitor != null && monitor.isCanceled()) {
+			if (monitor.isCanceled()) {
 				throw new InterruptedException(
-						UIText.RepositoriesView_ActionCanceled_Message);
+						RepositoryViewUITexts.RepositoriesView_ActionCanceled_Message);
 			}
 			try {
 				File dir = new File(dirString);
 				if (dir.exists() && dir.isDirectory()) {
-					Repository repo = new Repository(dir);
-					RepositoryTreeNode<Repository> node = new RepositoryTreeNode<Repository>(
-							null, RepositoryTreeNodeType.REPO, repo, repo);
-					input.add(node);
+					input.add(new Repository(dir));
 				}
 			} catch (IOException e) {
 				IStatus error = new Status(IStatus.ERROR, Activator
@@ -1578,18 +1416,29 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 				Activator.getDefault().getLog().log(error);
 			}
 		}
-		Collections.sort(input);
 		return input;
 	}
 
-	private static void saveDirs(Set<String> gitDirStrings) {
+	private void updateDirStrings(IProgressMonitor monitor) {
+
+		IPath path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
+		File root = path.toFile();
+		TreeSet<String> dirStrings = new TreeSet<String>();
+		recurseDir(root, dirStrings, monitor);
+		saveDirStrings(dirStrings);
+		scheduleRefresh();
+
+	}
+
+	private void saveDirStrings(Set<String> gitDirStrings) {
 		StringBuilder sb = new StringBuilder();
 		for (String gitDirString : gitDirStrings) {
 			sb.append(gitDirString);
 			sb.append(File.pathSeparatorChar);
 		}
 
-		IEclipsePreferences prefs = getPrefs();
+		IEclipsePreferences prefs = new InstanceScope().getNode(Activator
+				.getPluginId());
 		prefs.put(PREFS_DIRECTORIES, sb.toString());
 		try {
 			prefs.flush();
@@ -1600,9 +1449,44 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		}
 	}
 
+	/**
+	 *
+	 * @param root
+	 * @param strings
+	 * @param monitor
+	 */
+	public static void recurseDir(File root, TreeSet<String> strings,
+			IProgressMonitor monitor) {
+
+		if (!root.exists() || !root.isDirectory()) {
+			return;
+		}
+		File[] children = root.listFiles();
+		for (File child : children) {
+			if (monitor.isCanceled()) {
+				return;
+			}
+
+			if (child.exists() && child.isDirectory()
+					&& RepositoryCache.FileKey.isGitRepository(child)) {
+				strings.add(child.getAbsolutePath());
+				return;
+			}
+			if (child.isDirectory()) {
+				monitor.setTaskName(child.getPath());
+				recurseDir(child, strings, monitor);
+			}
+		}
+
+	}
+
+	private static String getRepositoryName(Repository repository) {
+		return repository.getDirectory().getParentFile().getName();
+	}
+
 	@Override
 	public void setFocus() {
-		tv.getTree().setFocus();
+		// nothing special
 	}
 
 	@SuppressWarnings("boxing")
@@ -1611,185 +1495,12 @@ public class RepositoriesView extends ViewPart implements ISelectionProvider,
 		confirmed = MessageDialog
 				.openConfirm(
 						getSite().getShell(),
-						UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle,
+						RepositoryViewUITexts.RepositoriesView_ConfirmProjectDeletion_WindowTitle,
 						NLS
 								.bind(
-										UIText.RepositoriesView_ConfirmProjectDeletion_Question,
+										RepositoryViewUITexts.RepositoriesView_ConfirmProjectDeletion_Question,
 										projectsToDelete.size()));
 		return confirmed;
 	}
 
-	public void addSelectionChangedListener(ISelectionChangedListener listener) {
-		selectionListeners.add(listener);
-	}
-
-	public ISelection getSelection() {
-		return currentSelection;
-	}
-
-	public void removeSelectionChangedListener(
-			ISelectionChangedListener listener) {
-		selectionListeners.remove(listener);
-
-	}
-
-	public void setSelection(ISelection selection) {
-		currentSelection = selection;
-		for (ISelectionChangedListener listener : selectionListeners) {
-			listener.selectionChanged(new SelectionChangedEvent(
-					RepositoriesView.this, selection));
-		}
-	}
-
-	/**
-	 * Opens the tree and marks the folder to which a project is pointing
-	 *
-	 * @param resource
-	 *            TODO exceptions?
-	 */
-	@SuppressWarnings("unchecked")
-	public void showResource(final IResource resource) {
-		IProject project = resource.getProject();
-		RepositoryMapping mapping = RepositoryMapping.getMapping(project);
-		if (mapping == null)
-			return;
-
-		if (addDir(mapping.getRepository().getDirectory())) {
-			scheduleRefresh();
-		}
-
-		boolean doSetSelection = false;
-
-		if (this.scheduledJob != null) {
-			int state = this.scheduledJob.getState();
-			if (state == Job.WAITING || state == Job.RUNNING) {
-				this.scheduledJob.addJobChangeListener(new JobChangeAdapter() {
-
-					@Override
-					public void done(IJobChangeEvent event) {
-						showResource(resource);
-					}
-				});
-			} else {
-				doSetSelection = true;
-			}
-		}
-
-		if (doSetSelection) {
-			RepositoriesViewContentProvider cp = (RepositoriesViewContentProvider) tv
-					.getContentProvider();
-			RepositoryTreeNode currentNode = null;
-			Object[] repos = cp.getElements(tv.getInput());
-			for (Object repo : repos) {
-				RepositoryTreeNode node = (RepositoryTreeNode) repo;
-				// TODO equals implementation of Repository?
-				if (mapping.getRepository().getDirectory().equals(
-						((Repository) node.getObject()).getDirectory())) {
-					for (Object child : cp.getChildren(node)) {
-						RepositoryTreeNode childNode = (RepositoryTreeNode) child;
-						if (childNode.getType() == RepositoryTreeNodeType.WORKINGDIR) {
-							currentNode = childNode;
-							break;
-						}
-					}
-					break;
-				}
-			}
-
-			IPath relPath = new Path(mapping.getRepoRelativePath(resource));
-
-			for (String segment : relPath.segments()) {
-				for (Object child : cp.getChildren(currentNode)) {
-					RepositoryTreeNode<File> childNode = (RepositoryTreeNode<File>) child;
-					if (childNode.getObject().getName().equals(segment)) {
-						currentNode = childNode;
-						break;
-					}
-				}
-			}
-
-			final RepositoryTreeNode selNode = currentNode;
-
-			Display.getDefault().asyncExec(new Runnable() {
-
-				public void run() {
-					tv.setSelection(new StructuredSelection(selNode), true);
-				}
-			});
-
-		}
-
-	}
-
-	public boolean show(ShowInContext context) {
-		ISelection selection = context.getSelection();
-		if (selection instanceof IStructuredSelection) {
-			IStructuredSelection ss = (IStructuredSelection) selection;
-			if (ss.size() == 1) {
-				Object element = ss.getFirstElement();
-				if (element instanceof IAdaptable) {
-					IResource resource = (IResource) ((IAdaptable) element)
-							.getAdapter(IResource.class);
-					if (resource != null) {
-						showResource(resource);
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-	private void removeRepository(final IProgressMonitor monitor,
-			final Repository... repository) {
-		final List<IProject> projectsToDelete = new ArrayList<IProject>();
-
-		monitor
-				.setTaskName(UIText.RepositoriesView_DeleteRepoDeterminProjectsMessage);
-
-		for (Repository repo : repository) {
-			File workDir = repo.getWorkDir();
-			final IPath wdPath = new Path(workDir.getAbsolutePath());
-			for (IProject prj : ResourcesPlugin.getWorkspace().getRoot()
-					.getProjects()) {
-				if (monitor.isCanceled())
-					return;
-				if (wdPath.isPrefixOf(prj.getLocation())) {
-					projectsToDelete.add(prj);
-				}
-			}
-		}
-
-		if (!projectsToDelete.isEmpty()) {
-			boolean confirmed;
-			confirmed = confirmProjectDeletion(projectsToDelete);
-			if (!confirmed) {
-				return;
-			}
-		}
-
-		if (monitor.isCanceled())
-			return;
-
-		IWorkspaceRunnable wsr = new IWorkspaceRunnable() {
-
-			public void run(IProgressMonitor actMonitor) throws CoreException {
-
-				for (IProject prj : projectsToDelete) {
-					prj.delete(false, false, actMonitor);
-				}
-				for (Repository repo : repository)
-					removeDir(repo.getDirectory());
-				scheduleRefresh();
-			}
-		};
-
-		try {
-			ResourcesPlugin.getWorkspace().run(wsr,
-					ResourcesPlugin.getWorkspace().getRoot(),
-					IWorkspace.AVOID_UPDATE, monitor);
-		} catch (CoreException e1) {
-			Activator.logError(e1.getMessage(), e1);
-		}
-	}
 }

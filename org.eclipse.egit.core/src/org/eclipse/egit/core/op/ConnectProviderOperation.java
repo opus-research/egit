@@ -16,20 +16,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.MultiRule;
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.GitProvider;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -40,7 +38,7 @@ import org.eclipse.team.core.RepositoryProvider;
 /**
  * Connects Eclipse to an existing Git repository
  */
-public class ConnectProviderOperation implements IEGitOperation {
+public class ConnectProviderOperation implements IWorkspaceRunnable {
 	private final Map<IProject, File> projects = new HashMap<IProject, File>();
 
 	/**
@@ -78,10 +76,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 		this.projects.putAll(projects);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
-	 */
-	public void execute(IProgressMonitor m) throws CoreException {
+	public void run(IProgressMonitor m) throws CoreException {
 		if (m == null) {
 			m = new NullProgressMonitor();
 		}
@@ -95,12 +90,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 				m.setTaskName(NLS.bind(
 						CoreText.ConnectProviderOperation_ConnectingProject,
 						project.getName()));
-				// TODO is this the right location?
-				if (GitTraceLocation.CORE.isActive())
-					GitTraceLocation.getTrace().trace(
-							GitTraceLocation.CORE.getLocation(),
-							"Locating repository for " + project); //$NON-NLS-1$
-
+				Activator.trace("Locating repository for " + project); //$NON-NLS-1$
 				Collection<RepositoryMapping> repos = new RepositoryFinder(
 						project).find(new SubProgressMonitor(m, 40));
 				File suggestedRepo = projects.get(project);
@@ -124,26 +114,15 @@ public class ConnectProviderOperation implements IEGitOperation {
 							new SubProgressMonitor(m, 50));
 					m.worked(10);
 				} else {
-					// TODO is this the right location?
-					if (GitTraceLocation.CORE.isActive())
-						GitTraceLocation.getTrace().trace(
-								GitTraceLocation.CORE.getLocation(),
-								"Attempted to share project without repository ignored :" //$NON-NLS-1$
-										+ project);
+					Activator
+							.trace("Attempted to share project without repository ignored :" //$NON-NLS-1$
+									+ project);
 					m.worked(60);
 				}
 			}
 		} finally {
 			m.done();
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
-	 */
-	public ISchedulingRule getSchedulingRule() {
-		Set<IProject> projectSet = projects.keySet();
-		return new MultiRule(projectSet.toArray(new IProject[projectSet.size()]));
 	}
 
 	/**

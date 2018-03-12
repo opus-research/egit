@@ -10,22 +10,19 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.actions;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.internal.dialogs.BranchSelectionDialog;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * An action to reset the current branch to a specific revision.
@@ -35,39 +32,44 @@ import org.eclipse.osgi.util.NLS;
 public class ResetAction extends RepositoryAction {
 
 	@Override
-	public void execute(IAction action) {
+	public void run(IAction action) {
 		final Repository repository = getRepository(true);
 		if (repository == null)
 			return;
+
 		if (!repository.getRepositoryState().canResetHead()) {
-			MessageDialog.openError(getShell(), UIText.ResetAction_errorResettingHead,
-					NLS.bind(UIText.ResetAction_repositoryState, repository.getRepositoryState().getDescription()));
+			MessageDialog.openError(getShell(), "Cannot reset HEAD now",
+					"Repository state:"
+							+ repository.getRepositoryState().getDescription());
 			return;
 		}
-		BranchSelectionDialog branchSelectionDialog = new BranchSelectionDialog(getShell(), repository, true);
+
+		BranchSelectionDialog branchSelectionDialog = new BranchSelectionDialog(getShell(), repository);
 		if (branchSelectionDialog.open() == IDialogConstants.OK_ID) {
 			final String refName = branchSelectionDialog.getRefName();
 			final ResetType type = branchSelectionDialog.getResetType();
-			String jobname = NLS.bind(UIText.ResetAction_reset, refName);
-			final ResetOperation operation = new ResetOperation(repository,
-					refName, type);
-			Job job = new Job(jobname) {
-				@Override
-				protected IStatus run(IProgressMonitor monitor) {
-					try {
-						operation.execute(monitor);
-						GitLightweightDecorator.refresh();
-					} catch (CoreException e) {
-						return Activator.createErrorStatus(e.getStatus()
-								.getMessage(), e);
+
+			try {
+				getTargetPart().getSite().getWorkbenchWindow().run(true, false,
+						new IRunnableWithProgress() {
+					public void run(final IProgressMonitor monitor)
+					throws InvocationTargetException {
+						try {
+							new ResetOperation(repository, refName, type).run(monitor);
+							GitLightweightDecorator.refresh();
+						} catch (CoreException ce) {
+							ce.printStackTrace();
+							throw new InvocationTargetException(ce);
+						}
 					}
-					return Status.OK_STATUS;
-				}
-			};
-			job.setRule(operation.getSchedulingRule());
-			job.setUser(true);
-			job.schedule();
+				});
+			} catch (InvocationTargetException e) {
+				MessageDialog.openError(getShell(),"Reset failed", e.getMessage());
+			} catch (InterruptedException e) {
+				MessageDialog.openError(getShell(),"Reset failed", e.getMessage());
+			}
 		}
+
 	}
 
 	@Override

@@ -20,46 +20,16 @@ public class CoreText extends NLS {
 	public static String AssumeUnchangedOperation_adding;
 
 	/** */
-	public static String AssumeUnchangedOperation_writingIndex;
-
-	/** */
-	public static String UpdateOperation_writingIndex;
-
-	/** */
 	public static String UpdateOperation_updating;
 
 	/** */
 	public static String UpdateOperation_failed;
 
 	/** */
-	public static String CommitFileRevision_errorLookingUpPath;
-
-	/** */
-	public static String CommitFileRevision_pathNotIn;
-
-	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
 	public static String ConnectProviderOperation_ConnectingProject;
-
-	/** */
-	public static String DiscardChangesOperation_discardFailed;
-
-	/** */
-	public static String DiscardChangesOperation_discardFailedSeeLog;
-
-	/** */
-	public static String DiscardChangesOperation_discardingChanges;
-
-	/** */
-	public static String DiscardChangesOperation_refreshFailed;
-
-	/** */
-	public static String DiscardChangesOperation_repoNotFound;
-
-	/** */
-	public static String DiscardChangesOperation_writeIndexFailed;
 
 	/** */
 	public static String DisconnectProviderOperation_disconnecting;
@@ -71,55 +41,10 @@ public class CoreText extends NLS {
 	public static String AddOperation_failed;
 
 	/** */
-	public static String BlobStorage_blobNotFound;
-
-	/** */
-	public static String BlobStorage_errorReadingBlob;
-
-	/** */
-	public static String BranchOperation_checkoutMovingTo;
-
-	/** */
-	public static String BranchOperation_CheckoutOnlyBranchOrTag;
-
-	/** */
-	public static String BranchOperation_checkoutProblem;
-
-	/** */
-	public static String BranchOperation_mappingCommit;
-
-	/** */
-	public static String BranchOperation_mappingCommitHead;
-
-	/** */
-	public static String BranchOperation_mappingTrees;
-
-	/** */
-	public static String BranchOperation_updatingHeadToRef;
-
-	/** */
-	public static String BranchOperation_writingIndex;
-
-	/** */
 	public static String UntrackOperation_adding;
 
 	/** */
 	public static String UntrackOperation_failed;
-
-	/** */
-	public static String UntrackOperation_writingIndex;
-
-	/** */
-	public static String GitFileHistory_errorParsingHistory;
-
-	/** */
-	public static String GitFileHistory_gitNotAttached;
-
-	/** */
-	public static String GitFileHistory_invalidHeadRevision;
-
-	/** */
-	public static String GitFileHistory_noHeadRevisionAvailable;
 
 	/** */
 	public static String GitProjectData_lazyResolveFailed;
@@ -129,12 +54,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitProjectData_cannotReadHEAD;
-
-	/** */
-	public static String GitProjectData_failedFindingRepoMapping;
-
-	/** */
-	public static String GitProjectData_failedToCacheRepoMapping;
 
 	/** */
 	public static String GitProjectData_missing;
@@ -149,30 +68,6 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
-	public static String ResetOperation_cantUpdate;
-
-	/** */
-	public static String ResetOperation_lookingUpCommit;
-
-	/** */
-	public static String ResetOperation_lookingUpRef;
-
-	/** */
-	public static String ResetOperation_mappingTreeForCommit;
-
-	/** */
-	public static String ResetOperation_performingReset;
-
-	/** */
-	public static String ResetOperation_readingIndex;
-
-	/** */
-	public static String ResetOperation_updatingFailed;
-
-	/** */
-	public static String ResetOperation_writingIndex;
-
-	/** */
 	public static String MoveDeleteHook_cannotModifyFolder;
 
 	/** */
@@ -182,31 +77,10 @@ public class CoreText extends NLS {
 	public static String Error_CanonicalFile;
 
 	/** */
-	public static String CloneOperation_checkingOutFiles;
-
-	/** */
-	public static String CloneOperation_initializingRepository;
-
-	/** */
 	public static String CloneOperation_title;
 
 	/** */
-	public static String CloneOperation_writingIndex;
-
-	/** */
-	public static String IndexFileRevision_errorLookingUpPath;
-
-	/** */
-	public static String IndexFileRevision_indexEntryNotFound;
-
-	/** */
 	public static String ListRemoteOperation_title;
-
-	/** */
-	public static String ProjectUtil_refreshingProjects;
-
-	/** */
-	public static String ProjectUtil_refreshing;
 
 	/** */
 	public static String PushOperation_resultCancelled;
@@ -229,14 +103,7 @@ public class CoreText extends NLS {
 	/** */
 	public static String AddToIndexOperation_failed;
 
-	/** */
-	public static String TrackOperation_writingIndex;
-
-	/** */
-	public static String BranchOperation_performingBranch;
-
 	static {
-		initializeMessages("org.eclipse.egit.core.coretext", //$NON-NLS-1$
-				CoreText.class);
+		initializeMessages("org.eclipse.egit.core.coretext", CoreText.class);
 	}
 }
