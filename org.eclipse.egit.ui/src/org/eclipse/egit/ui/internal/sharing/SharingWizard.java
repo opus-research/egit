@@ -58,7 +58,7 @@ public class SharingWizard extends Wizard implements IConfigurationWizard,
 
 	public boolean performFinish() {
 		final ConnectProviderOperation op = new ConnectProviderOperation(
-				existingPage.getProjects(true));
+				existingPage.getProjects());
 		try {
 			getContainer().run(true, false, new IRunnableWithProgress() {
 				public void run(final IProgressMonitor monitor)
