@@ -1403,15 +1403,6 @@
    <extension
          point="org.eclipse.ui.menus">
       <menuContribution
-            locationURI="popup:org.eclipse.egit.ui.internal.reflogview.popup">
-         <command
-               commandId="org.eclipse.egit.ui.internal.reflog.CheckoutCommand"
-               icon="icons/obj16/checkout.gif"
-               label="%RefLogViewCheckout.label"
-               style="push">
-         </command>
-      </menuContribution>
-      <menuContribution
             locationURI="popup:org.eclipse.egit.ui.RepositoriesView">
          <separator
                name="##Branch-1"
@@ -2158,44 +2149,21 @@
                style="push">
             <visibleWhen
                   checkEnabled="false">
-               <or>
-	               <and>
-	                  <count
-	                        value="1">
-	                  </count>
-	                  <iterate>
-	                     <and>
-	                        <test
-	                              property="GitRepository.canMerge">
-	                        </test>
-	                        <instanceof
-	                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
-	                        </instanceof>
-	                     </and>
-	                  </iterate>
-	               </and>
-	               <and>
-	                  <count
-	                        value="1">
-	                  </count>
-	                  <iterate>
-	                     <and>
-	                        <test
-	                              property="GitRepository.canMerge">
-	                        </test>
-	                        <test
-	                              property="GitRepository.isRefCheckedOut">
-	                        </test>
-	                        <instanceof
-	                              value="org.eclipse.egit.ui.internal.repository.tree.RefNode">
-	                        </instanceof>
-	                        <test
-	                             property="GitRepository.isLocalBranch">
-	                        </test>
-	                     </and>
-	                  </iterate>
-	               </and>
-               </or>
+               <and>
+                  <count
+                        value="1">
+                  </count>
+                  <iterate>
+                     <and>
+                        <test
+                              property="GitRepository.canMerge">
+                        </test>
+                        <instanceof
+                              value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode">
+                        </instanceof>
+                     </and>
+                  </iterate>
+               </and>
             </visibleWhen>
          </command>
          <menu
@@ -3272,10 +3240,6 @@
             commandId="org.eclipse.egit.ui.commit.CreateBranch"
             icon="icons/obj16/new_branch_obj.gif">
       </image>
-       <image
-            commandId="org.eclipse.egit.ui.commit.Checkout"
-            icon="icons/obj16/checkout.gif">
-      </image>
       <image
             commandId="org.eclipse.egit.ui.CheckoutCommand"
             icon="icons/obj16/checkout.gif">
@@ -3294,10 +3258,6 @@
       </image>
       <image
             commandId="org.eclipse.egit.ui.history.CheckoutCommand"
-            icon="icons/obj16/checkout.gif">
-      </image>
-      <image
-            commandId="org.eclipse.egit.ui.internal.reflog.CheckoutCommand"
             icon="icons/obj16/checkout.gif">
       </image>
       <image
@@ -3740,12 +3700,6 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+C">
       </key>
-      <key
-            commandId="org.eclipse.egit.ui.RepositoriesViewRemoveRemote"
-            contextId="org.eclipse.egit.ui.RepositoriesView"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="DEL">
-      </key>
    </extension>
    <extension
          name="%HistoryViewCommands.extension.name"
@@ -3821,11 +3775,6 @@
             name="%CheckoutCommand.name">
       </command>
       <command
-            defaultHandler="org.eclipse.egit.ui.internal.reflog.command.CheckoutHandler"
-            id="org.eclipse.egit.ui.internal.reflog.CheckoutCommand"
-            name="%CheckoutCommand.name">
-      </command>
-      <command
             defaultHandler="org.eclipse.egit.ui.internal.history.command.OpenInTextEditorHandler"
             id="org.eclipse.egit.ui.history.OpenInTextEditorCommand"
             name="%OpenInTextEditorCommand.name">
@@ -3868,11 +3817,6 @@
             defaultHandler="org.eclipse.egit.ui.internal.commit.command.CreateBranchHandler"
             id="org.eclipse.egit.ui.commit.CreateBranch"
             name="%CreateBranchCommand">
-      </command>
-      <command
-            defaultHandler="org.eclipse.egit.ui.internal.commit.command.CheckoutHandler"
-            id="org.eclipse.egit.ui.commit.Checkout"
-            name="%CheckoutCommand">
       </command>
    </extension>
    <extension
