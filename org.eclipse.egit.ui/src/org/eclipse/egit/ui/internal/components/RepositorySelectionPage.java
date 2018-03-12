@@ -26,7 +26,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
-import org.eclipse.egit.ui.internal.KnownHosts;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
@@ -332,20 +331,16 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			try {
 				if (text != null) {
 					text = stripGitCloneCommand(text);
-					// Split on any whitespace character
-					text = text.split(
-							"[ \\f\\n\\r\\x0B\\t\\xA0\\u1680\\u180e\\u2000-\\u200a\\u202f\\u205f\\u3000]", //$NON-NLS-1$
-							2)[0];
+					int index = text.indexOf(' ');
+					if (index > 0)
+						text = text.substring(0, index);
 					URIish u = new URIish(text);
-					if (canHandleProtocol(u)) {
+					if (canHandleProtocol(u))
 						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
-								|| (Protocol.HTTP.handles(u)
-										|| Protocol.HTTPS.handles(u))
-										&& KnownHosts.isKnownHost(u.getHost())
-								|| text.endsWith(Constants.DOT_GIT_EXT)) {
+								|| Protocol.HTTP.handles(u)
+								|| Protocol.HTTPS.handles(u)
+								|| text.endsWith(Constants.DOT_GIT_EXT))
 							preset = text;
-						}
-					}
 				}
 			} catch (URISyntaxException e) {
 				// ignore, preset is null
@@ -883,7 +878,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		if (input.startsWith(GIT_CLONE_COMMAND_PREFIX)) {
 			return input.substring(GIT_CLONE_COMMAND_PREFIX.length()).trim();
 		}
-		return input;
+		return input.trim();
 	}
 
 	private boolean setSafePassword(String p) {
