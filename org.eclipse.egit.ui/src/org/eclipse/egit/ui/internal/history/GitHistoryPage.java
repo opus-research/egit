@@ -8,7 +8,6 @@
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2015, Stefan Dirix (Stefan Dirix <sdirix@eclipsesource.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -52,7 +51,6 @@ import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -258,6 +256,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		BooleanPrefAction showTagSequenceAction;
 
+		BooleanPrefAction showBranchSequenceAction;
+
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -310,6 +310,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			createShowEmailAddressesAction();
 			createShowNotesAction();
 			createShowTagSequenceAction();
+			createShowBranchSequenceAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 			createFollowRenamesAction();
@@ -519,6 +520,20 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			};
 			showTagSequenceAction.apply(showTagSequenceAction.isChecked());
 			actionsToDispose.add(showTagSequenceAction);
+		}
+
+		private void createShowBranchSequenceAction() {
+			showBranchSequenceAction = new BooleanPrefAction(
+					UIPreferences.HISTORY_SHOW_BRANCH_SEQUENCE,
+					UIText.ResourceHistory_ShowBranchSequence) {
+				@Override
+				void apply(boolean value) {
+					// nothing, just set the Preference
+				}
+			};
+			showBranchSequenceAction
+					.apply(showBranchSequenceAction.isChecked());
+			actionsToDispose.add(showBranchSequenceAction);
 		}
 
 		private void createWrapCommentAction() {
@@ -1112,6 +1127,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		IMenuManager showInMessageManager = new MenuManager(
 				UIText.GitHistoryPage_InRevisionCommentSubMenuLabel);
 		showSubMenuMgr.add(showInMessageManager);
+		showInMessageManager.add(actions.showBranchSequenceAction);
 		showInMessageManager.add(actions.showTagSequenceAction);
 		showInMessageManager.add(actions.wrapCommentAction);
 		showInMessageManager.add(actions.fillCommentAction);
@@ -1259,32 +1275,17 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	@Override
 	public boolean setInput(Object object) {
 		try {
-			Object useAsInput = object;
-
-			// Workaround for the limitation of GenericHistoryView to only
-			// forward the first part of a selection and adapting it
-			// immediately to IResource.
-			ISelection selection = getSite().getPage().getSelection();
-			if (selection instanceof IStructuredSelection) {
-				IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-				HistoryPageInput mostFittingInput = SelectionUtils
-						.getMostFittingInput(structuredSelection, object);
-				if (mostFittingInput != null) {
-					useAsInput = mostFittingInput;
-				}
-			}
-
 			// hide the warning text initially
 			setWarningText(null);
 			trace = GitTraceLocation.HISTORYVIEW.isActive();
 			if (trace)
 				GitTraceLocation.getTrace().traceEntry(
-						GitTraceLocation.HISTORYVIEW.getLocation(), useAsInput);
+						GitTraceLocation.HISTORYVIEW.getLocation(), object);
 
-			if (useAsInput == getInput())
+			if (object == getInput())
 				return true;
 			this.input = null;
-			return super.setInput(useAsInput);
+			return super.setInput(object);
 		} finally {
 			if (trace)
 				GitTraceLocation.getTrace().traceExit(
