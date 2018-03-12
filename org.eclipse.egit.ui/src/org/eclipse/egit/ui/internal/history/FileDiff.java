@@ -21,11 +21,10 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.MyersDiff;
 import org.eclipse.jgit.diff.RawText;
-import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -153,7 +152,7 @@ class FileDiff {
 
 		final RawText a = getRawText(id1, reader);
 		final RawText b = getRawText(id2, reader);
-		final MyersDiff diff = new MyersDiff(RawTextComparator.DEFAULT, a, b);
+		final MyersDiff diff = new MyersDiff(a, b);
 		diffFmt.format(diff.getEdits(), a, b);
 	}
 
