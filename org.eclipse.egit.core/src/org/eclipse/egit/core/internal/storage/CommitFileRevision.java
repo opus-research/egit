@@ -128,14 +128,4 @@ class CommitFileRevision extends GitFileRevision {
 							.getId().name(), path), e));
 		}
 	}
-
-	@Override
-	public int hashCode() {
-		return commit.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		return commit.equals(obj);
-	}
 }
