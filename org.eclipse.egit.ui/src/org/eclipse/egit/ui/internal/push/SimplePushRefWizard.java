@@ -108,11 +108,9 @@ public class SimplePushRefWizard extends Wizard {
 
 						assist = new RefContentAssistProvider(
 								SimplePushRefWizard.this.repo, repoPage
-										.getSelection().getURI(true), true, getShell());
+										.getSelection().getURI(true), getShell());
 
 					} finally {
-						// pre-fetch to avoid interrupting the user later
-						assist.preFetchPushDestinationRefs();
 						updateDestinationField();
 					}
 			}
