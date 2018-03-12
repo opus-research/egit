@@ -43,7 +43,7 @@ public class GitURITest {
 	public void testInvalidScmUriWithoutPath() throws Exception {
 		new GitURI(URI
 				.create("scm:git:git://git.eclipse.org/gitroot/cdo/cdo.git"));
-		// expected IAE, it's doesn't contain semicolon and path part
+		// expected IAE, it doesn't contain semicolon and path part
 	}
 
 	@SuppressWarnings("unused")

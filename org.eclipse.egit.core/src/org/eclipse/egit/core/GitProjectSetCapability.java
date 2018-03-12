@@ -129,17 +129,9 @@ public final class GitProjectSetCapability extends ProjectSetCapability {
 		return result;
 	}
 
-	@Nullable
 	@Override
 	public String asReference(URI uri, String projectName) {
-		try {
-			GitURI gitURI = new GitURI(uri);
-			return asReference(gitURI.getRepository().toString(),
-					gitURI.getTag(), gitURI.getPath().toString());
-		} catch (IllegalArgumentException e) {
-			Activator.error(e.getMessage(), e);
-			// we must not fail but return null on invalid or unknown URI's.
-			return null;
-		}
+		GitURI gitURI = new GitURI(uri);
+		return asReference(gitURI.getRepository().toString(), gitURI.getTag(), gitURI.getPath().toString());
 	}
 }
