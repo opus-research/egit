@@ -8,9 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.history.command;
 
-import static org.eclipse.egit.ui.internal.CompareUtils.canDirectlyOpenInCompare;
-import static org.eclipse.egit.ui.internal.synchronize.GitModelSynchronize.synchronizeModelWithWorkspace;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -51,36 +48,31 @@ public class CompareWithWorkingTreeHandler extends
 			}
 			if (input instanceof IFile) {
 				IFile file = (IFile) input;
-				if(canDirectlyOpenInCompare(file)) {
-					final RepositoryMapping mapping = RepositoryMapping
-							.getMapping(file.getProject());
-					final String gitPath = mapping.getRepoRelativePath(file);
-					ITypedElement right = CompareUtils.getFileRevisionTypedElement(
-							gitPath, commit, mapping.getRepository());
-					final ITypedElement ancestor = CompareUtils.
-							getFileRevisionTypedElementForCommonAncestor(
-							gitPath, headCommit, commit, repo);
+				final RepositoryMapping mapping = RepositoryMapping
+						.getMapping(file.getProject());
+				final String gitPath = mapping.getRepoRelativePath(file);
+				ITypedElement right = CompareUtils.getFileRevisionTypedElement(
+						gitPath, commit, mapping.getRepository());
+				final ITypedElement ancestor = CompareUtils.
+						getFileRevisionTypedElementForCommonAncestor(
+						gitPath, headCommit, commit, repo);
 
-					final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
-							SaveableCompareEditorInput.createFileElement(file),
-							right, ancestor, null);
-					openInCompare(event, in);
-				} else {
-					try {
-						synchronizeModelWithWorkspace(file, repo, commit.getName());
-					} catch (IOException e) {
-						throw new ExecutionException(e.getMessage(), e);
-					}
-				}
+				final GitCompareFileRevisionEditorInput in = new GitCompareFileRevisionEditorInput(
+						SaveableCompareEditorInput.createFileElement(file),
+						right, ancestor, null);
+				openInCompare(event, in);
 			}
 			if (input instanceof File) {
 				File file = (File) input;
 				// TODO can we create a ITypedElement from the local file?
 				RevCommit leftCommit;
+				RevWalk walk = new RevWalk(repo);
 				try {
-					leftCommit = new RevWalk(repo).parseCommit(headCommit);
+					leftCommit = walk.parseCommit(headCommit);
 				} catch (Exception e) {
 					throw new ExecutionException(e.getMessage(), e);
+				} finally {
+					walk.release();
 				}
 				final String gitPath = getRepoRelativePath(repo, file);
 				ITypedElement left = CompareUtils.getFileRevisionTypedElement(

@@ -222,21 +222,21 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	public ICompareInput asCompareInput(Object object) {
 		ICompareInput compareInput = super.asCompareInput(object);
 
-		if(compareInput != null) {
+		if (compareInput != null) {
 			// note, ResourceDiffCompareInput maybe returned from super;
 			// it always has the local resource on the left side!
 			// this is only ok if we are comparing with the working tree
 
 			// handle file comparison outside working tree
 			ITypedElement left = compareInput.getLeft();
-			if(left instanceof ResourceNode) {
+			if (left instanceof ResourceNode) {
 				// the left side can only be a resource node if
 				// we are comparing against the local working tree
 				IResource resource = ((ResourceNode) left).getResource();
 				if (resource.getType() == IResource.FILE) {
 					GitSynchronizeData gsd = gsds
 							.getData(resource.getProject());
-					if (!gsd.shouldIncludeLocal())
+					if (gsd != null && !gsd.shouldIncludeLocal())
 						return getFileFromGit(gsd, resource.getLocation());
 				}
 			}
@@ -274,20 +274,22 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	public void saveState(IMemento memento) {
 		super.saveState(memento);
 		for (GitSynchronizeData gsd : gsds) {
-			IMemento child = memento.createChild(DATA_NODE_KEY);
 			Repository repo = gsd.getRepository();
 			RepositoryMapping mapping = RepositoryMapping.findRepositoryMapping(repo);
-			child.putString(CONTAINER_PATH_KEY, getPathForContainer(mapping.getContainer()));
-			child.putString(SRC_REV_KEY, gsd.getSrcRev());
-			child.putString(DST_REV_KEY, gsd.getDstRev());
-			child.putBoolean(INCLUDE_LOCAL_KEY, gsd.shouldIncludeLocal());
-			Set<IContainer> includedPaths = gsd.getIncludedPaths();
-			if (includedPaths != null && !includedPaths.isEmpty()) {
-				IMemento paths = child.createChild(INCLUDED_PATHS_NODE_KEY);
-				for (IContainer container : includedPaths) {
-					String path = getPathForContainer(container);
-					paths.createChild(INCLUDED_PATH_KEY).putString(
-							INCLUDED_PATH_KEY, path);
+			if (mapping != null) {
+				IMemento child = memento.createChild(DATA_NODE_KEY);
+				child.putString(CONTAINER_PATH_KEY, getPathForContainer(mapping.getContainer()));
+				child.putString(SRC_REV_KEY, gsd.getSrcRev());
+				child.putString(DST_REV_KEY, gsd.getDstRev());
+				child.putBoolean(INCLUDE_LOCAL_KEY, gsd.shouldIncludeLocal());
+				Set<IContainer> includedPaths = gsd.getIncludedPaths();
+				if (includedPaths != null && !includedPaths.isEmpty()) {
+					IMemento paths = child.createChild(INCLUDED_PATHS_NODE_KEY);
+					for (IContainer container : includedPaths) {
+						String path = getPathForContainer(container);
+						paths.createChild(INCLUDED_PATH_KEY).putString(
+								INCLUDED_PATH_KEY, path);
+					}
 				}
 			}
 		}
