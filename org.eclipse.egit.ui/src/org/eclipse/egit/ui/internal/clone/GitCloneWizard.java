@@ -26,7 +26,6 @@ import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Ref;
@@ -148,7 +147,6 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 				protected IStatus run(final IProgressMonitor monitor) {
 					try {
 						op.run(monitor);
-						cloneSource.saveUriInPrefs(uri.toString());
 						return Status.OK_STATUS;
 					} catch (InterruptedException e) {
 						return Status.CANCEL_STATUS;
@@ -158,7 +156,6 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 								.getPluginId(), 0, thr.getMessage(), thr);
 					}
 				}
-
 			};
 			job.setUser(true);
 			job.schedule();
@@ -167,14 +164,7 @@ public class GitCloneWizard extends Wizard implements IImportWizard {
 			try {
 				// Perform clone in ModalContext thread with progress
 				// reporting on the wizard.
-				getContainer().run(true, true, new IRunnableWithProgress() {
-					public void run(IProgressMonitor monitor)
-							throws InvocationTargetException,
-							InterruptedException {
-						op.run(monitor);
-					}
-				});
-				cloneSource.saveUriInPrefs(uri.toString());
+				getContainer().run(true, true, op);
 				return true;
 			} catch (InterruptedException e) {
 				MessageDialog.openInformation(getShell(),

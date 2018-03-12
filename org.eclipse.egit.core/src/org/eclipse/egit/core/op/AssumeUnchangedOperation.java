@@ -30,7 +30,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Tell JGit to ignore changes in selected files
@@ -75,9 +74,7 @@ public class AssumeUnchangedOperation implements IWorkspaceRunnable {
 			for (Map.Entry<Repository, DirCache> e : caches.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCache editor = e.getValue();
-				m.setTaskName(NLS.bind(
-						CoreText.AssumeUnchangedOperation_writingIndex, db
-								.getDirectory()));
+				m.setTaskName("Writing index for " + db.getDirectory());
 				editor.write();
 				editor.commit();
 			}
