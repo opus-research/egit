@@ -32,12 +32,6 @@ public class ResourceState implements IResourceState {
 	private boolean dirty;
 
 	/**
-	 * Flag indicating whether or not the resource has been deleted locally
-	 * (unstaged deletion).
-	 */
-	private boolean missing;
-
-	/**
 	 * Staged state of the resource
 	 */
 	@NonNull
@@ -66,11 +60,6 @@ public class ResourceState implements IResourceState {
 	@Override
 	public boolean isDirty() {
 		return dirty;
-	}
-
-	@Override
-	public boolean isMissing() {
-		return missing;
 	}
 
 	@Override
@@ -141,16 +130,6 @@ public class ResourceState implements IResourceState {
 	 */
 	protected void setDirty(boolean dirty) {
 		this.dirty = dirty;
-	}
-
-	/**
-	 * Sets the missing property.
-	 *
-	 * @param missing
-	 *            value to set.
-	 */
-	protected void setMissing(boolean missing) {
-		this.missing = missing;
 	}
 
 	/**
