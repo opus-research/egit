@@ -24,7 +24,7 @@ public class WorkspaceFileRevision extends GitFileRevision {
 	 * @param resource
 	 */
 	public WorkspaceFileRevision(final IResource resource) {
-		super(resource.getFullPath().toString());
+		super(resource.getName());
 		rsrc = resource;
 	}
 
