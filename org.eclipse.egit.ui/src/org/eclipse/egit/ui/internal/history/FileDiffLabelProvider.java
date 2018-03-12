@@ -12,17 +12,14 @@ import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.viewers.BaseLabelProvider;
-import org.eclipse.jface.viewers.ITableColorProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 
 /**
  * Label provider for {@link FileDiff} objects
  */
 public class FileDiffLabelProvider extends BaseLabelProvider implements
-		ITableLabelProvider, ITableColorProvider {
+		ITableLabelProvider {
 
 	private ResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
@@ -47,18 +44,4 @@ public class FileDiffLabelProvider extends BaseLabelProvider implements
 		super.dispose();
 	}
 
-	public Color getForeground(Object element, int columnIndex) {
-		if (columnIndex == 0) {
-			final FileDiff c = (FileDiff) element;
-			if (!c.isMarked()) {
-				return resourceManager.getDevice().getSystemColor(SWT.COLOR_DARK_GRAY);
-			}
-		}
-		return null;
-	}
-
-	public Color getBackground(Object element, int columnIndex) {
-		// Use default color
-		return null;
-	}
 }
