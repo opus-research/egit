@@ -22,6 +22,7 @@ import static org.eclipse.jgit.lib.Constants.MASTER;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 
 import java.io.BufferedWriter;
@@ -56,7 +57,9 @@ import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
+import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotRadio;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarDropDownButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -142,7 +145,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	@Ignore // failing rather often on Hudson
 	public void shouldOpenCompareEditorInGitChangeSet() throws Exception {
 		// given
 		resetRepositoryToCreateInitialTag();
@@ -315,9 +317,14 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		// then
 		// asserts for Git Change Set model
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
+		bot.waitUntil(Conditions.treeHasRows(syncViewTree, syncViewTree.rowCount()), 20000);
+
 		syncViewTree.expandNode(UIText.GitModelWorkingTree_workingTree);
+		bot.waitUntil(Conditions.treeHasRows(syncViewTree, syncViewTree.rowCount()), 20000);
 		assertEquals(1, syncViewTree.getAllItems().length);
+
 		SWTBotTreeItem proj1Node = syncViewTree.getAllItems()[0];
+		bot.waitUntil(Conditions.treeHasRows(syncViewTree, syncViewTree.rowCount()), 20000);
 		proj1Node.getItems()[0].expand();
 		assertEquals(1, proj1Node.getItems()[0].getItems().length);
 
@@ -351,7 +358,6 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 	}
 
 	@Test
-	@Ignore // failing rather often on Hudson
 	public void shouldShowCompareEditorForNonWorkspaceFileFromSynchronization()
 			throws Exception {
 		// given
@@ -377,8 +383,11 @@ public class SynchronizeViewTest extends LocalRepositoryTestCase {
 		SWTBotEditor editor = bot.editorByTitle(name);
 		editor.setFocus();
 
-		assertNotNull(editor);
-		assertThat(editor.bot().styledText(1).getText(), equalTo(content));
+		// the WidgetNotFoundException will be thrown when widget with given content cannot be not found
+		SWTBotStyledText left = editor.bot().styledText(content);
+		SWTBotStyledText right = editor.bot().styledText("");
+		// to be complete sure asert that both sides are not the same
+		assertNotSame(left, right);
 	}
 
 	// this test always fails with cause:
