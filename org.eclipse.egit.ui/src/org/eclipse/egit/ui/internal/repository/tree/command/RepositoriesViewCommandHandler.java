@@ -196,10 +196,4 @@ abstract class RepositoriesViewCommandHandler<T extends RepositoryTreeNode<?>>
 		}
 		return paths;
 	}
-
-	static <T> T getFirstOrNull(List<T> list) {
-		if (list.isEmpty())
-			return null;
-		return list.get(0);
-	}
 }

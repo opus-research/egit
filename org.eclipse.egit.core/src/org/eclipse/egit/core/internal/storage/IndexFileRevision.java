@@ -27,8 +27,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.history.IFileRevision;
 
 /** An {@link IFileRevision} for the version in the Git index. */
-public class IndexFileRevision extends GitFileRevision implements
-		OpenWorkspaceVersionEnabled {
+public class IndexFileRevision extends GitFileRevision {
 
 	// This is to maintain compatibility with the old behavior
 	private static final int FIRST_AVAILABLE = -1;
@@ -102,13 +101,5 @@ public class IndexFileRevision extends GitFileRevision implements
 			throw new CoreException(Activator.error(NLS.bind(
 					CoreText.IndexFileRevision_errorLookingUpPath, path), e));
 		}
-	}
-
-	public Repository getRepository() {
-		return db;
-	}
-
-	public String getGitPath() {
-		return path;
 	}
 }

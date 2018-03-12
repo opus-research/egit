@@ -48,21 +48,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 		RevCommit c = git.commit().setMessage("initial commit").call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(c.getTree());
-			walk.addTree(new EmptyTreeIterator());
-			walk.addTree(new EmptyTreeIterator());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(c.getTree());
+		walk.addTree(new EmptyTreeIterator());
+		walk.addTree(new EmptyTreeIterator());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.OUTGOING));
-			assertThat(entry.getChangeType(), is(ChangeType.ADD));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.OUTGOING));
+		assertThat(entry.getChangeType(), is(ChangeType.ADD));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	@Test
@@ -74,21 +73,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 		RevCommit c = git.commit().setMessage("initial commit").call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(new EmptyTreeIterator());
-			walk.addTree(new EmptyTreeIterator());
-			walk.addTree(c.getTree());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(new EmptyTreeIterator());
+		walk.addTree(new EmptyTreeIterator());
+		walk.addTree(c.getTree());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.INCOMING));
-			assertThat(entry.getChangeType(), is(ChangeType.ADD));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.INCOMING));
+		assertThat(entry.getChangeType(), is(ChangeType.ADD));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	@Test
@@ -100,21 +98,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 		RevCommit c = git.commit().setMessage("initial commit").call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(new EmptyTreeIterator());
-			walk.addTree(c.getTree());
-			walk.addTree(c.getTree());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(new EmptyTreeIterator());
+		walk.addTree(c.getTree());
+		walk.addTree(c.getTree());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.OUTGOING));
-			assertThat(entry.getChangeType(), is(ChangeType.DELETE));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.OUTGOING));
+		assertThat(entry.getChangeType(), is(ChangeType.DELETE));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	@Test
@@ -126,21 +123,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 		RevCommit c = git.commit().setMessage("initial commit").call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(c.getTree());
-			walk.addTree(c.getTree());
-			walk.addTree(new EmptyTreeIterator());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(c.getTree());
+		walk.addTree(c.getTree());
+		walk.addTree(new EmptyTreeIterator());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.INCOMING));
-			assertThat(entry.getChangeType(), is(ChangeType.DELETE));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.INCOMING));
+		assertThat(entry.getChangeType(), is(ChangeType.DELETE));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	@Test
@@ -152,21 +148,21 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 		RevCommit c = git.commit().setMessage("initial commit").call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(new EmptyTreeIterator());
-			walk.addTree(c.getTree());
-			walk.addTree(new EmptyTreeIterator());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(new EmptyTreeIterator());
+		walk.addTree(c.getTree());
+		walk.addTree(new EmptyTreeIterator());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.CONFLICTING));
-			assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
-			// assertThat(entry.getNewPath(), is("a.txt"));
-			// assertThat(entry.getOldPath(), is(DEV_NULL));
-		}
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.CONFLICTING));
+		assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
+		// assertThat(entry.getNewPath(), is("a.txt"));
+		// assertThat(entry.getOldPath(), is(DEV_NULL));
 	}
 
 	@Test
@@ -178,20 +174,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 		RevCommit c = git.commit().setMessage("initial commit").call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(c.getTree());
-			walk.addTree(new EmptyTreeIterator());
-			walk.addTree(c.getTree());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(c.getTree());
+		walk.addTree(new EmptyTreeIterator());
+		walk.addTree(c.getTree());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.CONFLICTING));
-			assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.CONFLICTING));
+		assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	@Test
@@ -206,21 +202,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 				.call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(c.getTree());
-			walk.addTree(c.getTree());
-			walk.addTree(c1.getTree());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(c.getTree());
+		walk.addTree(c.getTree());
+		walk.addTree(c1.getTree());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.INCOMING));
-			assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.INCOMING));
+		assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	@Test
@@ -235,21 +230,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 				.call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(c1.getTree());
-			walk.addTree(c.getTree());
-			walk.addTree(c.getTree());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(c1.getTree());
+		walk.addTree(c.getTree());
+		walk.addTree(c.getTree());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.OUTGOING));
-			assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.OUTGOING));
+		assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	@Test
@@ -264,21 +258,20 @@ public class ThreeWayDiffEntryTest extends LocalDiskRepositoryTestCase {
 				.call();
 
 		// when
-		try (TreeWalk walk = new TreeWalk(db)) {
-			walk.addTree(c1.getTree());
-			walk.addTree(c.getTree());
-			walk.addTree(c1.getTree());
-			List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
+		TreeWalk walk = new TreeWalk(db);
+		walk.addTree(c1.getTree());
+		walk.addTree(c.getTree());
+		walk.addTree(c1.getTree());
+		List<ThreeWayDiffEntry> result = ThreeWayDiffEntry.scan(walk);
 
-			// then
-			assertThat(result, notNullValue());
-			assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
+		// then
+		assertThat(result, notNullValue());
+		assertThat(Integer.valueOf(result.size()), is(Integer.valueOf(1)));
 
-			ThreeWayDiffEntry entry = result.get(0);
-			assertThat(entry.getDirection(), is(Direction.CONFLICTING));
-			assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
-			assertThat(entry.getPath(), is("a.txt"));
-		}
+		ThreeWayDiffEntry entry = result.get(0);
+		assertThat(entry.getDirection(), is(Direction.CONFLICTING));
+		assertThat(entry.getChangeType(), is(ChangeType.MODIFY));
+		assertThat(entry.getPath(), is("a.txt"));
 	}
 
 	// copied from org.eclipse.jgit.lib.RepositoryTestCase

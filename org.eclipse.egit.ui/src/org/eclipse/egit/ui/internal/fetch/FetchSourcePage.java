@@ -66,7 +66,6 @@ public class FetchSourcePage extends WizardPage {
 		setTitle(UIText.FetchSourcePage_PageTitle);
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		Composite main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
@@ -83,7 +82,6 @@ public class FetchSourcePage extends WizardPage {
 		sourceLabel.setText(UIText.FetchSourcePage_SourceLabel);
 		sourceText = new Text(main, SWT.BORDER);
 		sourceText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -91,7 +89,6 @@ public class FetchSourcePage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(sourceText);
 		UIUtils.addRefContentProposalToText(sourceText, repository,
 				new IRefListProvider() {
-					@Override
 					public List<Ref> getRefList() {
 						return getRemoteRefs();
 					}
@@ -142,9 +139,8 @@ public class FetchSourcePage extends WizardPage {
 					uriToCheck, Activator.getDefault().getPreferenceStore()
 							.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT));
 			try {
-				new ProgressMonitorDialog(getShell()).run(true, true,
+				new ProgressMonitorDialog(getShell()).run(false, true,
 						new IRunnableWithProgress() {
-							@Override
 							public void run(IProgressMonitor monitor)
 									throws InvocationTargetException,
 									InterruptedException {
@@ -162,7 +158,6 @@ public class FetchSourcePage extends WizardPage {
 						proposals.add(ref);
 				}
 				Collections.sort(proposals, new Comparator<Ref>() {
-					@Override
 					public int compare(Ref o1, Ref o2) {
 						return o1.getName().compareTo(o2.getName());
 					}

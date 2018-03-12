@@ -11,7 +11,7 @@
 package org.eclipse.egit.ui.internal.rebase;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan;
@@ -85,7 +85,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		createToolBarItems();
 		this.theToolbar.addDisposeListener(new DisposeListener() {
 
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				dispose();
 			}
@@ -106,7 +105,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		itemPick.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.PICK));
 		itemPick.setText(UIText.RebaseInteractiveStepActionToolBarProvider_PickText);
-		itemPick.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_PickDesc);
 		rebaseActionItems[0] = itemPick;
 
 		itemSkip = new ToolItem(theToolbar, SWT.RADIO);
@@ -114,7 +112,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		itemSkip.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.SKIP));
 		itemSkip.setText(UIText.RebaseInteractiveStepActionToolBarProvider_SkipText);
-		itemSkip.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_SkipDesc);
 		rebaseActionItems[1] = itemSkip;
 
 		itemEdit = new ToolItem(theToolbar, SWT.RADIO);
@@ -122,27 +119,22 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		itemEdit.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.EDIT));
 		itemEdit.setText(UIText.RebaseInteractiveStepActionToolBarProvider_EditText);
-		itemEdit.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_EditDesc);
 		rebaseActionItems[2] = itemEdit;
 
 		itemSquash = new ToolItem(theToolbar, SWT.RADIO);
-		itemSquash.setImage(getImage(UIIcons.SQUASH_UP));
+		itemSquash.setImage(getImage(UIIcons.SQUASH));
 		itemSquash.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.SQUASH));
 		itemSquash
 				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_SquashText);
-		itemSquash
-				.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_SquashDesc);
 		rebaseActionItems[3] = itemSquash;
 
 		itemFixup = new ToolItem(theToolbar, SWT.RADIO);
-		itemFixup.setImage(getImage(UIIcons.FIXUP_UP));
+		itemFixup.setImage(getImage(UIIcons.FIXUP));
 		itemFixup.addSelectionListener(new ActionSelectionListener(
 				RebaseInteractivePlan.ElementAction.FIXUP));
 		itemFixup
 				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_FixupText);
-		itemFixup
-				.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_FixupDesc);
 		rebaseActionItems[4] = itemFixup;
 
 		itemReword = new ToolItem(theToolbar, SWT.RADIO);
@@ -151,8 +143,6 @@ public class RebaseInteractiveStepActionToolBarProvider {
 				RebaseInteractivePlan.ElementAction.REWORD));
 		itemReword
 				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_RewordText);
-		itemReword
-				.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_RewordDesc);
 		rebaseActionItems[5] = itemReword;
 
 		new ToolItem(theToolbar, SWT.SEPARATOR);
@@ -161,24 +151,15 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		itemMoveUp.setImage(getImage(UIIcons.ELCL16_PREVIOUS));
 		itemMoveUp
 				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_MoveUpText);
-		itemMoveUp
-				.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_MoveUpDesc);
 		itemMoveUp.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				List<PlanElement> selectedRebaseTodoLines = getSelectedRebaseTodoLines();
-				for (PlanElement planElement : selectedRebaseTodoLines) {
-					if (planElement.getElementType() != ElementType.TODO)
-						return;
-
-					if (!RebaseInteractivePreferences.isOrderReversed())
-						view.getCurrentPlan().moveTodoEntryUp(planElement);
-					else
-						view.getCurrentPlan().moveTodoEntryDown(planElement);
-
-					mapActionItemsToSelection(view.planTreeViewer
-							.getSelection());
-				}
+				RebaseInteractivePlan.PlanElement selectedEntry = getSingleSelectedTodoLine(false);
+				if (selectedEntry == null)
+					return;
+				if (selectedEntry.getElementType() != ElementType.TODO)
+					return;
+				view.getCurrentPlan().moveTodoEntryUp(selectedEntry);
 			}
 		});
 
@@ -186,25 +167,15 @@ public class RebaseInteractiveStepActionToolBarProvider {
 		itemMoveDown.setImage(getImage(UIIcons.ELCL16_NEXT));
 		itemMoveDown
 				.setText(UIText.RebaseInteractiveStepActionToolBarProvider_MoveDownText);
-		itemMoveDown
-				.setToolTipText(UIText.RebaseInteractiveStepActionToolBarProvider_MoveDownDesc);
 		itemMoveDown.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				List<PlanElement> selectedRebaseTodoLines = getSelectedRebaseTodoLines();
-				Collections.reverse(selectedRebaseTodoLines);
-				for (PlanElement planElement : selectedRebaseTodoLines) {
-					if (planElement.getElementType() != ElementType.TODO)
-						return;
-
-					if (!RebaseInteractivePreferences.isOrderReversed())
-						view.getCurrentPlan().moveTodoEntryDown(planElement);
-					else
-						view.getCurrentPlan().moveTodoEntryUp(planElement);
-
-					mapActionItemsToSelection(view.planTreeViewer
-							.getSelection());
-				}
+				RebaseInteractivePlan.PlanElement selectedEntry = getSingleSelectedTodoLine(false);
+				if (selectedEntry == null)
+					return;
+				if (selectedEntry.getElementType() != ElementType.TODO)
+					return;
+				view.getCurrentPlan().moveTodoEntryDown(selectedEntry);
 			}
 		});
 	}
@@ -216,34 +187,55 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			this.type = action;
 		}
 
-		@Override
 		public void widgetSelected(SelectionEvent e) {
 			List<RebaseInteractivePlan.PlanElement> selected = getSelectedRebaseTodoLines();
 			if (selected == null || selected.isEmpty())
 				return;
-
-			ElementAction typeToSet = type;
-			if (type != ElementAction.PICK) {
-				boolean allItemsHaveTargetType = true;
-				for (RebaseInteractivePlan.PlanElement element : selected)
-					allItemsHaveTargetType &= element.getPlanElementAction() == type;
-				if (allItemsHaveTargetType) {
-					typeToSet = ElementAction.PICK;
-					itemPick.setSelection(true);
-					if (e.getSource() instanceof ToolItem)
-						((ToolItem) e.getSource()).setSelection(false);
-				}
-			}
-
 			for (RebaseInteractivePlan.PlanElement element : selected)
-				element.setPlanElementAction(typeToSet);
+				element.setPlanElementAction(type);
 			mapActionItemsToSelection(view.planTreeViewer.getSelection());
 		}
 
-		@Override
 		public void widgetDefaultSelected(SelectionEvent e) {
 			widgetSelected(e);
 		}
+	}
+
+	/**
+	 * Return a single instance of
+	 * {@link org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.PlanElement}
+	 * representing the current selection in
+	 * {@link RebaseInteractiveView#planTreeViewer}
+	 *
+	 * @param firstOfMultipleSelection
+	 *            indicating whether to pick first element if multiple instances
+	 *            of
+	 *            {@link org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.PlanElement}
+	 *            are selected
+	 * @return the selected instance of
+	 *         {@link org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.PlanElement}
+	 *         if a single instance is selected. The first element of multiple
+	 *         selected
+	 *         {@link org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.PlanElement}
+	 *         instances only if firstOfMultipleSelection is set, null otherwise
+	 *         or null if no instance of
+	 *         {@link org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan.PlanElement}
+	 *         is selected.
+	 */
+	protected RebaseInteractivePlan.PlanElement getSingleSelectedTodoLine(
+			boolean firstOfMultipleSelection) {
+		List<RebaseInteractivePlan.PlanElement> selected = getSelectedRebaseTodoLines();
+		switch (selected.size()) {
+		case 0:
+			return null;
+		case 1:
+			return selected.get(0);
+		default:
+			if (firstOfMultipleSelection)
+				return selected.get(0);
+			break;
+		}
+		return null;
 	}
 
 	/**
@@ -271,13 +263,8 @@ public class RebaseInteractiveStepActionToolBarProvider {
 
 	void mapActionItemsToSelection(ISelection selection) {
 		setMoveItemsEnabled(false);
-		if (selection == null || selection.isEmpty()) {
-			if (theToolbar.isEnabled())
-				theToolbar.setEnabled(false);
-
-			unselectAllActionItemsExecpt(null);
+		if (selection == null || selection.isEmpty())
 			return;
-		}
 		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection structured = (IStructuredSelection) selection;
 
@@ -285,56 +272,29 @@ public class RebaseInteractiveStepActionToolBarProvider {
 			if (!(obj instanceof PlanElement))
 				return;
 			PlanElement firstSelectedEntry = (PlanElement) obj;
-			PlanElement lastSelectedEntry = firstSelectedEntry;
-
-			ElementAction type = firstSelectedEntry.getPlanElementAction();
-
-			boolean singleTypeSelected = true;
-
-			if (!theToolbar.isEnabled()
-					&& !view.getCurrentPlan().hasRebaseBeenStartedYet())
-				theToolbar.setEnabled(true);
 
 			if (structured.size() > 1) {
 				// multi selection
-				for (Object selectedObj : structured.toList()) {
+				setMoveItemsEnabled(false);
+				ElementAction type = firstSelectedEntry.getPlanElementAction();
+				for (Iterator iterator = structured.iterator(); iterator
+						.hasNext();) {
+					Object selectedObj = iterator.next();
 					if (!(selectedObj instanceof PlanElement))
 						continue;
 					PlanElement entry = (PlanElement) selectedObj;
-					lastSelectedEntry = entry;
 					if (type != entry.getPlanElementAction()) {
-						singleTypeSelected = false;
+						unselectAllActionItemsExecpt(null);
+						break;
 					}
 				}
+				return;
 			}
 
-			if (singleTypeSelected)
-				unselectAllActionItemsExecpt(getItemFor(type));
-			else
-				unselectAllActionItemsExecpt(null);
-
-			enableMoveButtons(firstSelectedEntry, lastSelectedEntry);
-
-		}
-	}
-
-	private void enableMoveButtons(
-			PlanElement firstSelectedEntry, PlanElement lastSelectedEntry) {
-		List<PlanElement> list = view.getCurrentPlan().getList();
-		List<PlanElement> stepList = new ArrayList<PlanElement>();
-		for (PlanElement planElement : list) {
-			if (!planElement.isComment())
-				stepList.add(planElement);
-		}
-
-		int firstEntryIndex = stepList.indexOf(firstSelectedEntry);
-		int lastEntryIndex = stepList.indexOf(lastSelectedEntry);
-		if (!RebaseInteractivePreferences.isOrderReversed()) {
-			itemMoveUp.setEnabled(firstEntryIndex > 0);
-			itemMoveDown.setEnabled(lastEntryIndex < stepList.size() - 1);
-		} else {
-			itemMoveUp.setEnabled(firstEntryIndex < stepList.size() - 1);
-			itemMoveDown.setEnabled(lastEntryIndex > 0);
+			// single selection
+			setMoveItemsEnabled(true);
+			unselectAllActionItemsExecpt(getItemFor(firstSelectedEntry
+					.getPlanElementAction()));
 		}
 	}
 

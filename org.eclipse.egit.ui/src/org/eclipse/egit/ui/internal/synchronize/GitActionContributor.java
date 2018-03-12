@@ -28,7 +28,6 @@ import static org.eclipse.ui.menus.CommandContributionItem.STYLE_PUSH;
 
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.action.ExpandAllModelAction;
 import org.eclipse.egit.ui.internal.synchronize.action.GitOpenInCompareAction;
@@ -61,7 +60,6 @@ class GitActionContributor extends SynchronizePageActionGroup {
 
 	private OpenWorkingFileAction openWorkingFileAction;
 
-	@Override
 	public void fillContextMenu(IMenuManager menu) {
 		IStructuredSelection selection = (IStructuredSelection) getContext()
 				.getSelection();
@@ -116,7 +114,8 @@ class GitActionContributor extends SynchronizePageActionGroup {
 
 		IWorkbenchWindow activeWorkbenchWindow = workbench
 				.getActiveWorkbenchWindow();
-		IHandlerService hsr = CommonUtils.getService(activeWorkbenchWindow, IHandlerService.class);
+		IHandlerService hsr = (IHandlerService) activeWorkbenchWindow
+				.getService(IHandlerService.class);
 		IEvaluationContext ctx = hsr.getCurrentState();
 		ctx.addVariable(ACTIVE_MENU_SELECTION_NAME, getContext().getSelection());
 

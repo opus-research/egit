@@ -27,7 +27,6 @@ public class CheckoutHandler extends CommitCommandHandler {
 	 */
 	public static final String ID = "org.eclipse.egit.ui.commit.Checkout"; //$NON-NLS-1$
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final List<RepositoryCommit> commits = getCommits(event);
 		if (commits.size() == 1) {

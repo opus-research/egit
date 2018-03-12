@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2015 Greg Amerson <gregory.amerson@liferay.com> and others.
+ * Copyright (C) 2011, Greg Amerson <gregory.amerson@liferay.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,7 +14,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.jface.dialogs.ErrorDialog;
@@ -107,7 +106,6 @@ public class OpenWorkingFileAction extends SelectionListenerAction {
 	/*
 	 * (non-Javadoc) Method declared on IAction.
 	 */
-	@Override
 	public void run() {
 		IStructuredSelection selection = getStructuredSelection();
 
@@ -131,7 +129,8 @@ public class OpenWorkingFileAction extends SelectionListenerAction {
 		Object element = selection.getFirstElement();
 
 		if (element instanceof IAdaptable) {
-			IResource resource = CommonUtils.getAdapter(((IAdaptable) element), IResource.class);
+			IResource resource = (IResource) ((IAdaptable) element)
+					.getAdapter(IResource.class);
 
 			if (resource != null && resource.exists())
 				return resource;
@@ -143,7 +142,6 @@ public class OpenWorkingFileAction extends SelectionListenerAction {
 	/**
 	 * Enable the action only if the selection contains IFiles
 	 */
-	@Override
 	protected boolean updateSelection(IStructuredSelection selection) {
 		return super.updateSelection(selection)
 				&& selectionIsOfType(IResource.FILE);

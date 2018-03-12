@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2012, 2015 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -7,9 +7,6 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -29,8 +26,6 @@ public class RepositorySaveableFilter extends SaveFilter {
 
 	private final IPath workDir;
 
-	private final List<Saveable> saveCandidates = new ArrayList<Saveable>();
-
 	/**
 	 * @param repository
 	 *            to check
@@ -40,18 +35,15 @@ public class RepositorySaveableFilter extends SaveFilter {
 		this.workDir = new Path(repository.getWorkTree().getAbsolutePath());
 	}
 
-	@Override
 	public boolean select(Saveable saveable, IWorkbenchPart[] containingParts) {
 		boolean selected = super.select(saveable, containingParts);
 		if (!selected)
-			selected = isTextFileBufferInWorkDir(saveable);
-		if (selected)
-			saveCandidates.add(saveable);
+			return isTextFileBufferInWorkDir(saveable);
 		return selected;
 	}
 
 	private boolean isTextFileBufferInWorkDir(Saveable saveable) {
-		IDocument document = CommonUtils.getAdapter(saveable, IDocument.class);
+		IDocument document = (IDocument) saveable.getAdapter(IDocument.class);
 		if (document == null)
 			return true; // be conservative and assume this needs to be saved
 		ITextFileBuffer textFileBuffer = FileBuffers.getTextFileBufferManager()
@@ -63,17 +55,5 @@ public class RepositorySaveableFilter extends SaveFilter {
 
 	private boolean isInWorkDir(IPath location) {
 		return location != null && workDir.isPrefixOf(location);
-	}
-
-	/**
-	 * @return true if any of the Savables that successfully passed
-	 *         {@link #select(Saveable, IWorkbenchPart[])} have been actually
-	 *         saved (are not dirty anymore)
-	 */
-	public boolean isAnythingSaved() {
-		for (Saveable savable : saveCandidates)
-			if (!savable.isDirty())
-				return true;
-		return false;
 	}
 }

@@ -32,23 +32,21 @@ import org.eclipse.ui.handlers.HandlerUtil;
  * Create a branch based on a commit.
  */
 public class CreateBranchOnCommitHandler extends AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		GitHistoryPage page = getPage();
 		Repository repo = getRepository(event);
-		IStructuredSelection selection = getSelection(event);
 
 		IWizard wiz = null;
-		List<Ref> branches = getBranches(selection, repo);
+		List<Ref> branches = getBranches(page, repo);
 
 		if (branches.isEmpty()) {
-			PlotCommit commit = (PlotCommit) selection
+			PlotCommit commit = (PlotCommit) getSelection(page)
 					.getFirstElement();
 			wiz = new CreateBranchWizard(repo, commit.name());
 		} else {
 			// prefer to create new branch based on a remote tracking branch
 			Collections.sort(branches, new Comparator<Ref>() {
 
-				@Override
 				public int compare(Ref o1, Ref o2) {
 					String refName1 = o1.getName();
 					String refName2 = o2.getName();
@@ -76,10 +74,10 @@ public class CreateBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 		return null;
 	}
 
-	private List<Ref> getBranches(IStructuredSelection selection,
+	private List<Ref> getBranches(GitHistoryPage page,
 			Repository repo) {
 		try {
-			return getBranchesOfCommit(selection, repo, false);
+			return getBranchesOfCommit(page, repo, false);
 		} catch (IOException e) {
 			// ignore, use commit name
 			return Collections.<Ref> emptyList();

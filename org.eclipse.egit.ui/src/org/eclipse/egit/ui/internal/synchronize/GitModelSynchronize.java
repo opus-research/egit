@@ -45,6 +45,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.CompareTreeView;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.team.ui.synchronize.ISynchronizeParticipant;
@@ -57,6 +58,8 @@ import org.eclipse.ui.PlatformUI;
  * Utility class that launches model synchronization action
  */
 public class GitModelSynchronize {
+
+	private static final String GIT_PROVIDER_ID = "org.eclipse.egit.core.GitProvider"; //$NON-NLS-1$
 
 	/**
 	 * This can be used to open the synchronize view for the given set of
@@ -224,9 +227,11 @@ public class GitModelSynchronize {
 	private static boolean isMappedToGitProvider(ResourceMapping element) {
 		IProject[] projects = element.getProjects();
 		for (IProject project: projects) {
-			if (ResourceUtil.isSharedWithGit(project)) {
+			RepositoryProvider provider = RepositoryProvider
+					.getProvider(project);
+
+			if (provider != null && provider.getID().equals(GIT_PROVIDER_ID))
 				return true;
-			}
 		}
 		return false;
 	}
@@ -237,7 +242,7 @@ public class GitModelSynchronize {
 				gsdSet);
 
 		Job syncJob = new WorkspaceJob(
-				UIText.GitModelSynchronize_fetchGitDataJobName) {
+				UIText.GitModelSynchonize_fetchGitDataJobName) {
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) {

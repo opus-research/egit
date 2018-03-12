@@ -58,7 +58,6 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		/* (non-Javadoc)
 		 * @see org.eclipse.jface.viewers.ILabelProvider#getImage(java.lang.Object)
 		 */
-		@Override
 		public Image getImage(Object element) {
 			return PlatformUI.getWorkbench().getSharedImages().getImage(IDE.SharedImages.IMG_OBJ_PROJECT);
 		}
@@ -66,7 +65,6 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		/* (non-Javadoc)
 		 * @see org.eclipse.jface.viewers.ILabelProvider#getText(java.lang.Object)
 		 */
-		@Override
 		public String getText(Object element) {
 			return getStyledText(element).getString();
 		}
@@ -74,7 +72,6 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		/* (non-Javadoc)
 		 * @see org.eclipse.jface.viewers.StyledCellLabelProvider#update(org.eclipse.jface.viewers.ViewerCell)
 		 */
-		@Override
 		public void update(ViewerCell cell) {
 			StyledString string = getStyledText(cell.getElement());
 			cell.setText(string.getString());
@@ -118,7 +115,6 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 	/* (non-Javadoc)
 	 * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets.Composite)
 	 */
-	@Override
 	public void createControl(Composite parent) {
 		Composite comp = SWTUtils.createHVFillComposite(parent, SWTUtils.MARGINS_NONE, 1);
 		Composite group = SWTUtils.createHFillComposite(comp, SWTUtils.MARGINS_NONE, 1);
@@ -128,7 +124,6 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		useMaster = SWTUtils.createRadioButton(group,
 				UIText.GitScmUrlImportWizardPage_importMaster);
 		SelectionListener listener = new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				bundlesViewer.refresh(true);
 			}
@@ -152,11 +147,14 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 		setPageComplete(true);
 
 		// Initialize versions versus master
-		IDialogSettings settings = getWizard().getDialogSettings();
-		boolean useMasterSetting = settings != null
-				&& settings.getBoolean(GIT_PAGE_USE_MASTER);
-		useMaster.setSelection(useMasterSetting);
-		versions.setSelection(!useMasterSetting);
+		// TODO: temporarily disabled, until bug 367712 is fixed
+		// IDialogSettings settings = getWizard().getDialogSettings();
+		// boolean useHEAD = settings != null
+		//		&& settings.getBoolean(GIT_PAGE_USE_MASTER);
+		// useHead.setSelection(useHEAD);
+		// versions.setSelection(!useHEAD);
+		useMaster.setSelection(true);
+		versions.setEnabled(false);
 
 		if (descriptions != null) {
 			bundlesViewer.setInput(descriptions);
@@ -165,7 +163,6 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 
 	}
 
-	@Override
 	public boolean finish() {
 		boolean head = false;
 		if (getControl() != null) {
@@ -194,12 +191,10 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 	/* (non-Javadoc)
 	 * @see org.eclipse.team.ui.IScmUrlImportWizardPage#getSelection()
 	 */
-	@Override
 	public ScmUrlImportDescription[] getSelection() {
 		return descriptions;
 	}
 
-	@Override
 	public void setSelection(ScmUrlImportDescription[] descriptions) {
 		this.descriptions = descriptions;
 		// fill viewer

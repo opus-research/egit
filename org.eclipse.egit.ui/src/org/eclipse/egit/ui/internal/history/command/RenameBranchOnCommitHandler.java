@@ -26,13 +26,14 @@ import org.eclipse.swt.widgets.Shell;
  * Rename a branch pointing to a commit.
  */
 public class RenameBranchOnCommitHandler extends AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final Repository repository = getRepository(event);
+		GitHistoryPage page = getPage();
+
+		final Repository repository = getRepository(page);
 		if (repository == null)
 			return null;
 
-		List<Ref> branchesOfCommit = getBranchesOfCommit(getSelection(event));
+		List<Ref> branchesOfCommit = getBranchesOfCommit(page);
 		// this should have been checked by isEnabled()
 		if (branchesOfCommit.isEmpty())
 			return null;
@@ -61,6 +62,6 @@ public class RenameBranchOnCommitHandler extends AbstractHistoryCommandHandler {
 	public boolean isEnabled() {
 		GitHistoryPage page = getPage();
 		return getRepository(page) != null
-				&& !(getBranchesOfCommit(getSelection(page)).isEmpty());
+				&& !(getBranchesOfCommit(page).isEmpty());
 	}
 }

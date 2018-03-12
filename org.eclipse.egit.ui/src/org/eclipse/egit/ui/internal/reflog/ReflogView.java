@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2015 Chris Aniszczyk <caniszczyk@gmail.com> and others.
+ * Copyright (c) 2011, 2012 Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -21,10 +21,8 @@ import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.reflog.ReflogViewContentProvider.ReflogInput;
@@ -128,7 +126,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 		toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
-			@Override
 			public void widgetDisposed(DisposeEvent e) {
 				toolkit.dispose();
 			}
@@ -206,13 +203,17 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			}
 
 			private RevCommit getCommit(final ReflogEntry entry) {
-				try (RevWalk walk = new RevWalk(getRepository())) {
-					walk.setRetainBody(true);
-					return walk.parseCommit(entry.getNewId());
+				RevWalk walk = new RevWalk(getRepository());
+				walk.setRetainBody(true);
+				RevCommit c = null;
+				try {
+					c = walk.parseCommit(entry.getNewId());
 				} catch (IOException ignored) {
 					// ignore
-					return null;
+				} finally {
+					walk.release();
 				}
+				return c;
 			}
 		});
 
@@ -248,7 +249,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				return entry.getComment();
 			}
 
-			@Override
 			public Image getImage(Object element) {
 				String comment = ((ReflogEntry) element).getComment();
 				if (comment.startsWith("commit:") || comment.startsWith("commit (initial):")) //$NON-NLS-1$ //$NON-NLS-2$
@@ -272,7 +272,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				return null;
 			}
 
-			@Override
 			public void dispose() {
 				resourceManager.dispose();
 				super.dispose();
@@ -300,7 +299,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				Repository repo = getRepository();
 				if (repo == null)
 					return;
-				try (RevWalk walk = new RevWalk(repo)) {
+				RevWalk walk = new RevWalk(repo);
+				try {
 					for (Object element : ((IStructuredSelection)selection).toArray()) {
 						ReflogEntry entry = (ReflogEntry) element;
 						ObjectId id = entry.getNewId();
@@ -312,12 +312,13 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 					}
 				} catch (IOException e) {
 					Activator.logError(UIText.ReflogView_ErrorOnOpenCommit, e);
+				} finally {
+					walk.release();
 				}
 			}
 		};
 
 		selectionChangedListener = new ISelectionListener() {
-			@Override
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
 				if (part instanceof IEditorPart) {
@@ -331,7 +332,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		};
 
 		IWorkbenchPartSite site = getSite();
-		ISelectionService service = CommonUtils.getService(site, ISelectionService.class);
+		ISelectionService service = (ISelectionService) site
+				.getService(ISelectionService.class);
 		service.addPostSelectionListener(selectionChangedListener);
 
 		// Use current selection to populate reflog view
@@ -348,10 +350,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		menuManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		Tree tree = refLogTableTreeViewer.getTree();
 		tree.setMenu(menuManager.createContextMenu(tree));
-
-		MenuManager resetManager = ResetMenu.createMenu(getSite());
-		menuManager.add(resetManager);
-
 		getSite().registerContextMenu(POPUP_MENU_ID, menuManager, refLogTableTreeViewer);
 	}
 
@@ -362,7 +360,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 	}
 
 	private void activateContextService() {
-		IContextService contextService = CommonUtils.getService(getSite(), IContextService.class);
+		IContextService contextService = (IContextService) getSite()
+				.getService(IContextService.class);
 		if (contextService != null)
 			contextService.activateContext(VIEW_ID);
 
@@ -371,7 +370,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 	@Override
 	public void dispose() {
 		super.dispose();
-		ISelectionService service = CommonUtils.getService(getSite(), ISelectionService.class);
+		ISelectionService service = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		service.removePostSelectionListener(selectionChangedListener);
 		if (addRefsChangedListener != null)
 			addRefsChangedListener.remove();
@@ -393,8 +393,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 				selectedRepo = mapping.getRepository();
 		}
 		if (selectedRepo == null && first instanceof IAdaptable) {
-			IResource adapted = CommonUtils.getAdapter(((IAdaptable) ssel
-					.getFirstElement()), IResource.class);
+			IResource adapted = (IResource) ((IAdaptable) ssel
+					.getFirstElement()).getAdapter(IResource.class);
 			if (adapted != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(adapted);
@@ -469,7 +469,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		return null;
 	}
 
-	@Override
 	public boolean show(ShowInContext context) {
 		ISelection selection = context.getSelection();
 		if (selection instanceof IStructuredSelection) {
@@ -529,10 +528,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			return repoName;
 	}
 
-	@Override
 	public void onRefsChanged(RefsChangedEvent event) {
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				refLogTableTreeViewer.refresh();
 			}

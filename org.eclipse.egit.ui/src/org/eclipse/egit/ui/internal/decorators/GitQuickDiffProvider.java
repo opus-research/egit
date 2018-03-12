@@ -16,15 +16,17 @@ import java.util.WeakHashMap;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.egit.core.GitProvider;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.ide.ResourceUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.texteditor.quickdiff.IQuickDiffReferenceProvider;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * This class provides input for the Eclipse Quick Diff feature.
@@ -47,7 +49,6 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 			GitTraceLocation.getTrace().traceEntry(GitTraceLocation.QUICKDIFF.getLocation());
 	}
 
-	@Override
 	public void dispose() {
 		if (GitTraceLocation.QUICKDIFF.isActive())
 			GitTraceLocation.getTrace().traceEntry(GitTraceLocation.QUICKDIFF.getLocation());
@@ -55,12 +56,10 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 			document.dispose();
 	}
 
-	@Override
 	public String getId() {
 		return id;
 	}
 
-	@Override
 	public IDocument getReference(IProgressMonitor monitor)
 			throws CoreException {
 		if (GitTraceLocation.QUICKDIFF.isActive())
@@ -69,30 +68,26 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 					"(GitQuickDiffProvider) file: " + resource); //$NON-NLS-1$
 		if (resource == null)
 			return null;
-
-		// Document must only be created once
-		if (document == null)
-			document = createDocument(resource);
-		return document;
-	}
-
-	private static GitDocument createDocument(IResource resource) {
-		try {
-			return GitDocument.create(resource);
-		} catch (IOException e) {
-			Activator.error(UIText.QuickDiff_failedLoading, e);
+		RepositoryProvider provider = RepositoryProvider.getProvider(resource
+				.getProject());
+		if (provider != null) {
+			try {
+				document = GitDocument.create(resource);
+			} catch (IOException e) {
+				Activator.error(UIText.QuickDiff_failedLoading, e);
+			}
+			return document;
+		} else {
 			return null;
 		}
 	}
 
-	@Override
 	public boolean isEnabled() {
 		return resource != null
-				&& org.eclipse.egit.core.internal.util.ResourceUtil
-						.isSharedWithGit(resource.getProject());
+				&& RepositoryProvider.getProvider(resource.getProject(),
+						GitProvider.ID) != null;
 	}
 
-	@Override
 	public void setActiveEditor(ITextEditor editor) {
 		if (GitTraceLocation.QUICKDIFF.isActive())
 			GitTraceLocation.getTrace().traceEntry(
@@ -101,7 +96,6 @@ public class GitQuickDiffProvider implements IQuickDiffReferenceProvider {
 		resource = ResourceUtil.getResource(editorInput);
 	}
 
-	@Override
 	public void setId(String id) {
 		this.id = id;
 	}
