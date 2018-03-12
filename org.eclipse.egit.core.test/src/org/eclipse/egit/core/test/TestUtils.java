@@ -19,8 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,32 +45,28 @@ public class TestUtils {
 	public final static String COMMITTER = "The Commiter <The.committer@some.com>";
 
 	/**
-	 * allow to overwrite user.home for tests
+	 * allow to set a custom directory for running tests
 	 *
-	 * @return custom user home defined by system property
-	 *         {@code custom.user.home} or {@code null} if this property isn't
+	 * @return custom directory defined by system property
+	 *         {@code egit.test.tmpdir} or {@code null} if this property isn't
 	 *         defined
 	 */
-	private static File customUserHome() {
-		final String home = AccessController
-				.doPrivileged(new PrivilegedAction<String>() {
-					public String run() {
-						return System.getProperty("custom.user.home"); //$NON-NLS-1$
-					}
-				});
-		if (home == null || home.length() == 0)
+	private static File customTestDirectory() {
+		final String testDir = System.getProperty("egit.test.tmpdir"); //$NON-NLS-1$
+		if (testDir == null || testDir.length() == 0)
 			return null;
-		return new File(home).getAbsoluteFile();
+		return new File(testDir).getAbsoluteFile();
 	}
 
 	private File rootDir;
 
 	public TestUtils() {
-		File userHome = customUserHome();
-		if (userHome == null)
-			userHome = FS.DETECTED.userHome();
-		rootDir = new File(userHome, "egitTest" + System.currentTimeMillis()
-				+ "-" + Integer.toHexString(System.identityHashCode(this)));
+		File testDir = customTestDirectory();
+		if (testDir == null) {
+			testDir = FS.DETECTED.userHome();
+			rootDir = new File(testDir, "egit.test.tmpdir");
+		} else
+			rootDir = testDir;
 	}
 
 	/**
