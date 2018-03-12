@@ -1275,7 +1275,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		String[] parts = s.split(","); //$NON-NLS-1$
 		int[] ints = new int[parts.length];
 		for (int i = 0; i < parts.length; i++) {
-			ints[i] = Integer.parseInt(parts[i]);
+			ints[i] = Integer.valueOf(parts[i]).intValue();
 		}
 		return ints;
 	}
@@ -2970,18 +2970,18 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private boolean hasErrorsOrWarnings() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
-						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore()
+				? (getProblemsSeverity() >= Integer.valueOf(getPreferenceStore()
 						.getString(UIPreferences.WARN_BEFORE_COMMITTING_LEVEL))
 				&& !ignoreErrors.getSelection()) : false;
 	}
 
+	@SuppressWarnings("boxing")
 	private boolean isCommitBlocked() {
 		return getPreferenceStore()
 				.getBoolean(UIPreferences.WARN_BEFORE_COMMITTING)
 				&& getPreferenceStore().getBoolean(UIPreferences.BLOCK_COMMIT)
 						? (getProblemsSeverity() >= Integer
-								.parseInt(getPreferenceStore().getString(
+								.valueOf(getPreferenceStore().getString(
 										UIPreferences.BLOCK_COMMIT_LEVEL))
 								&& !ignoreErrors.getSelection())
 						: false;

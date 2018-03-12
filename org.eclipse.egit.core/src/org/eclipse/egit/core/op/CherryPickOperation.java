@@ -74,14 +74,14 @@ public class CherryPickOperation implements IEGitOperation {
 				progress.subTask(MessageFormat.format(
 						CoreText.CherryPickOperation_cherryPicking,
 						commit.name()));
-				try (Git git = new Git(repo)) {
-					CherryPickCommand command = git.cherryPick()
-							.include(commit.getId());
-					MergeStrategy strategy = Activator.getDefault()
-							.getPreferredMergeStrategy();
-					if (strategy != null) {
-						command.setStrategy(strategy);
-					}
+				CherryPickCommand command = new Git(repo).cherryPick().include(
+						commit.getId());
+				MergeStrategy strategy = Activator.getDefault()
+						.getPreferredMergeStrategy();
+				if (strategy != null) {
+					command.setStrategy(strategy);
+				}
+				try {
 					result = command.call();
 				} catch (GitAPIException e) {
 					throw new TeamException(e.getLocalizedMessage(),
