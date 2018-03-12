@@ -13,7 +13,7 @@ package org.eclipse.egit.ui.internal.repository.tree;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -82,12 +82,10 @@ public class BranchHierarchyNode extends RepositoryTreeNode<IPath> {
 
 	private List<IPath> getPathList() throws IOException {
 		List<IPath> result = new ArrayList<IPath>();
-		Map<String, Ref> refsMap = getRepository().getRefDatabase().getRefs(
-				getObject().toPortableString());
-		for (Map.Entry<String, Ref> entry : refsMap.entrySet()) {
-			if (entry.getValue().isSymbolic())
-				continue;
-			result.add(getObject().append(new Path(entry.getKey())));
+		Set<String> children = getRepository().getRefDatabase().getRefs(
+				getObject().toPortableString()).keySet();
+		for (String pathEntry : children) {
+			result.add(getObject().append(new Path(pathEntry)));
 		}
 		return result;
 	}

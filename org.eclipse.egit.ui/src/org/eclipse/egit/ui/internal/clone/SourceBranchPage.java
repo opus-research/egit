@@ -26,7 +26,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.components.RepositorySelection;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
@@ -230,9 +229,7 @@ class SourceBranchPage extends WizardPage {
 		try {
 			final URIish uri = newRepoSelection.getURI();
 			final Repository db = new FileRepository(new File("/tmp")); //$NON-NLS-1$
-			int timeout = Activator.getDefault().getPreferenceStore().getInt(
-					UIPreferences.REMOTE_CONNECTION_TIMEOUT);
-			listRemoteOp = new ListRemoteOperation(db, uri, timeout);
+			listRemoteOp = new ListRemoteOperation(db, uri);
 			getContainer().run(true, true, new IRunnableWithProgress() {
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException, InterruptedException {
