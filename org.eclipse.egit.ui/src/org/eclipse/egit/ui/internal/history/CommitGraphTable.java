@@ -31,7 +31,6 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.layout.TableColumnLayout;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -42,6 +41,7 @@ import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.revplot.PlotCommit;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -60,7 +60,6 @@ import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
@@ -120,20 +119,17 @@ class CommitGraphTable {
 
 	CommitGraphTable(final Composite parent, final IPageSite site,
 			final MenuManager menuMgr) {
-		parent.setLayout(new FillLayout());
-
-		Composite tableParent = new Composite(parent, SWT.NONE);
-		TableColumnLayout layout = new TableColumnLayout();
-		tableParent.setLayout(layout);
-
 		nFont = UIUtils.getFont(UIPreferences.THEME_CommitGraphNormalFont);
 		hFont = highlightFont();
 
-		Table rawTable = new Table(tableParent, SWT.MULTI | SWT.H_SCROLL
+		Table rawTable = new Table(parent, SWT.MULTI | SWT.H_SCROLL
 				| SWT.V_SCROLL | SWT.BORDER | SWT.FULL_SELECTION | SWT.VIRTUAL);
 		rawTable.setHeaderVisible(true);
 		rawTable.setLinesVisible(false);
 		rawTable.setFont(nFont);
+
+		final TableLayout layout = new TableLayout();
+		rawTable.setLayout(layout);
 
 		createColumns(rawTable, layout);
 		createPaintListener(rawTable);
@@ -282,31 +278,36 @@ class CommitGraphTable {
 		}
 	}
 
-	private void createColumns(final Table rawTable, final TableColumnLayout layout) {
+	private void createColumns(final Table rawTable, final TableLayout layout) {
 		final TableColumn graph = new TableColumn(rawTable, SWT.NONE);
 		graph.setResizable(true);
 		graph.setText(""); //$NON-NLS-1$
-		layout.setColumnData(graph, new ColumnWeightData(20, true));
+		graph.setWidth(250);
+		layout.addColumnData(new ColumnWeightData(20, true));
 
 		final TableColumn author = new TableColumn(rawTable, SWT.NONE);
 		author.setResizable(true);
 		author.setText(UIText.HistoryPage_authorColumn);
-		layout.setColumnData(author, new ColumnWeightData(10, true));
+		author.setWidth(250);
+		layout.addColumnData(new ColumnWeightData(10, true));
 
 		final TableColumn date = new TableColumn(rawTable, SWT.NONE);
 		date.setResizable(true);
 		date.setText(UIText.HistoryPage_dateColumn);
-		layout.setColumnData(date, new ColumnWeightData(5, true));
+		date.setWidth(250);
+		layout.addColumnData(new ColumnWeightData(5, true));
 
 		final TableColumn commitId = new TableColumn(rawTable, SWT.NONE);
 		commitId.setResizable(true);
 		commitId.setText(UIText.CommitGraphTable_CommitId);
-		layout.setColumnData(commitId, new ColumnWeightData(5, true));
+		commitId.setWidth(100);
+		layout.addColumnData(new ColumnWeightData(5, true));
 
 		final TableColumn committer = new TableColumn(rawTable, SWT.NONE);
 		committer.setResizable(true);
 		committer.setText(UIText.CommitGraphTable_Committer);
-		layout.setColumnData(committer, new ColumnWeightData(5, true));
+		committer.setWidth(100);
+		layout.addColumnData(new ColumnWeightData(5, true));
 	}
 
 	private void createPaintListener(final Table rawTable) {
