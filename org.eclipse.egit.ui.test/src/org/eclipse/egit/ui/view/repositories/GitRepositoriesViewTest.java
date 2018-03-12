@@ -246,14 +246,14 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(Constants.DOT_GIT, wizardNode);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		shell.bot().label("Import Projects"); // wait for import projects page
-		assertEquals(0, shell.bot().tree().getAllItems().length);
+		assertEquals(0, shell.bot().tree().getAllItems().length );
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// go to project with .project
 		shell.bot().tree().getAllItems()[0].getNode(PROJ1).select();
 		// next is 1
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		bot.button(UIText.WizardProjectsImportPage_deselectAll).click();
-		assertEquals(1, shell.bot().tree().getAllItems().length);
+		assertEquals(1, shell.bot().tree().getAllItems().length );
 		assertTrue(!shell.bot().button(IDialogConstants.FINISH_LABEL)
 				.isEnabled());
 		shell.bot().button(UIText.WizardProjectsImportPage_selectAll).click();
@@ -288,7 +288,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		assertEquals(PROJ2, wizardNode);
 		shell.bot().button(IDialogConstants.NEXT_LABEL).click();
 		shell.bot().text(" " + UIText.GitProjectsImportPage_NoProjectsMessage);
-		assertEquals(0, shell.bot().tree().getAllItems().length);
+		assertEquals(0, shell.bot().tree().getAllItems().length );
 		shell.bot().button(IDialogConstants.BACK_LABEL).click();
 		// import as general
 		shell.bot().radio(UIText.GitSelectWizardPage_ImportAsGeneralButton).click();
