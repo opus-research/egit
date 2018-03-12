@@ -20,7 +20,6 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.internal.job.JobUtil;
-import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.op.FeatureFinishOperation;
@@ -29,8 +28,6 @@ import org.eclipse.egit.gitflow.ui.internal.JobFamilies;
 import org.eclipse.egit.gitflow.ui.internal.UIText;
 import org.eclipse.egit.gitflow.ui.internal.dialogs.FinishFeatureDialog;
 import org.eclipse.egit.ui.internal.UIRepositoryUtils;
-import org.eclipse.egit.ui.internal.commit.CommitHelper;
-import org.eclipse.egit.ui.internal.rebase.CommitMessageEditorDialog;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jgit.api.MergeResult;
@@ -84,11 +81,6 @@ public class FeatureFinishHandler extends AbstractGitFlowHandler {
 			jobMan.join(JobFamilies.GITFLOW_FAMILY, null);
 
 			MergeResult mergeResult = operation.getMergeResult();
-
-			if (squash && mergeResult.getMergedCommits().length > 1) {
-				rewordCommitMessage(activeShell, gfRepo);
-			}
-
 			MergeStatus mergeStatus = mergeResult.getMergeStatus();
 			if (MergeStatus.CONFLICTING.equals(mergeStatus)) {
 				MultiStatus status = createMergeConflictInfo(develop, featureBranch, mergeResult);
@@ -100,35 +92,5 @@ public class FeatureFinishHandler extends AbstractGitFlowHandler {
 		}
 
 		return null;
-	}
-
-	private void rewordCommitMessage(Shell activeShell,
-			final GitFlowRepository gfRepo) throws CoreException, IOException {
-		Repository repository = gfRepo.getRepository();
-		CommitHelper commitHelper = new CommitHelper(repository);
-
-		CommitMessageEditorDialog messageEditorDialog = new CommitMessageEditorDialog(
-				activeShell, repository.readSquashCommitMsg(),
-				UIText.FeatureFinishHandler_rewordSquashedCommitMessage);
-
-		if (Window.OK == messageEditorDialog.open()) {
-			String commitMessage = stripCommentLines(messageEditorDialog
-					.getCommitMessage());
-			CommitOperation commitOperation = new CommitOperation(repository,
-					commitHelper.getAuthor(), commitHelper.getCommitter(),
-					commitMessage);
-			commitOperation.execute(null);
-		}
-	}
-
-	private static String stripCommentLines(String commitMessage) {
-		StringBuilder result = new StringBuilder();
-		for (String line : commitMessage.split("\n")) { //$NON-NLS-1$
-			if (!line.trim().startsWith("#")) //$NON-NLS-1$
-				result.append(line).append("\n"); //$NON-NLS-1$
-		}
-		if (!commitMessage.endsWith("\n")) //$NON-NLS-1$
-			result.deleteCharAt(result.length() - 1);
-		return result.toString();
 	}
 }
