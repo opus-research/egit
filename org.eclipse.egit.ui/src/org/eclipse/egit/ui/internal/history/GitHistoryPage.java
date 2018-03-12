@@ -5,7 +5,7 @@
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2010-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012, Daniel megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
+ * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  *
  * All rights reserved. This program and the accompanying materials
@@ -115,7 +115,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.team.ui.history.HistoryPage;
-import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
@@ -125,13 +124,12 @@ import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
 import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
 /** Graphical commit history viewer. */
 public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
-		ISchedulingRule, TableLoader, IShowInSource, IShowInTargetList {
+		ISchedulingRule, TableLoader, IShowInSource {
 
 	private static final int INITIAL_ITEM = -1;
 
@@ -1501,16 +1499,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return this.input;
 	}
 
-	void setWarningTextInUIThread(final Job j) {
-		graph.getControl().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				if (!graph.getControl().isDisposed() && job == j) {
-					setWarningText(UIText.GitHistoryPage_ListIncompleteWarningMessage);
-				}
-			}
-		});
-	}
-
 	@SuppressWarnings("boxing")
 	void showCommitList(final Job j, final SWTCommitList list,
 			final SWTCommit[] asArray, final RevCommit toSelect, final boolean incomplete, final RevFlag highlightFlag) {
@@ -1979,10 +1967,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private void markStartRef(RevWalk walk, Ref ref) throws IOException,
 			IncorrectObjectTypeException {
 		try {
-			RevObject refTarget = walk.parseAny(ref.getLeaf().getObjectId());
-			RevObject peeled = walk.peel(refTarget);
-			if (peeled instanceof RevCommit)
-				walk.markStart((RevCommit) peeled);
+			Object refTarget = walk.parseAny(ref.getLeaf().getObjectId());
+			if (refTarget instanceof RevCommit)
+				walk.markStart((RevCommit) refTarget);
 		} catch (MissingObjectException e) {
 			// If there is a ref which points to Nirvana then we should simply
 			// ignore this ref. We should not let a corrupt ref cause that the
@@ -2034,9 +2021,5 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			return fileViewer.getShowInContext();
 		else
 			return null;
-	}
-
-	public String[] getShowInTargetIds() {
-		return new String[] { IHistoryView.VIEW_ID };
 	}
 }

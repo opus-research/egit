@@ -105,28 +105,9 @@ public class ResourcePropertyTester extends PropertyTester {
 			if ("hasGerritConfiguration".equals(property)) //$NON-NLS-1$
 				return hasGerritConfiguration(repository);
 
-			RepositoryState state = repository.getRepositoryState();
-
-			if ("canAbortRebase".equals(property)) //$NON-NLS-1$
-				switch (state) {
-				case REBASING_INTERACTIVE:
-					return true;
-				case REBASING_REBASING:
-					return true;
-				default:
-					return false;
-				}
-
-			if ("canContinueRebase".equals(property)) //$NON-NLS-1$
-				switch (state) {
-				case REBASING_INTERACTIVE:
-					return true;
-				default:
-					return false;
-				}
-
 			// isSTATE checks repository state where STATE is the CamelCase version
 			// of the RepositoryState enum values.
+			RepositoryState state = repository.getRepositoryState();
 			if (property.length() > 3 && property.startsWith("is")) { //$NON-NLS-1$
 				// e.g. isCherryPickingResolved => CHERRY_PICKING_RESOLVED
 				String lookFor = property.substring(2,3) + property.substring(3).replaceAll("([A-Z])","_$1").toUpperCase();  //$NON-NLS-1$//$NON-NLS-2$
@@ -147,11 +128,7 @@ public class ResourcePropertyTester extends PropertyTester {
 		return false;
 	}
 
-	/**
-	 * @param repository
-	 * @return {@code true} if repository has been configured for Gerrit
-	 */
-	public static boolean hasGerritConfiguration(Repository repository) {
+	private static boolean hasGerritConfiguration(Repository repository) {
 		Config config = repository.getConfig();
 		if (GerritUtil.getCreateChangeId(config))
 			return true;
@@ -159,10 +136,10 @@ public class ResourcePropertyTester extends PropertyTester {
 			List<RemoteConfig> remoteConfigs = RemoteConfig.getAllRemoteConfigs(config);
 			for (RemoteConfig remoteConfig : remoteConfigs) {
 				for (RefSpec pushSpec : remoteConfig.getPushRefSpecs()) {
-					String destination = pushSpec.getDestination();
-					if (destination == null)
-						continue;
-					return destination.startsWith(GerritUtil.REFS_FOR);
+					boolean gerritPushRef = pushSpec.getDestination().startsWith(
+							GerritUtil.REFS_FOR);
+					if (gerritPushRef)
+						return true;
 				}
 			}
 		} catch (URISyntaxException e) {

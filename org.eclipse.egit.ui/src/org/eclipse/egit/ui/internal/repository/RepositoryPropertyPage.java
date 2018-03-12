@@ -17,8 +17,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.preferences.ConfigurationEditorComponent;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jgit.events.ConfigChangedEvent;
-import org.eclipse.jgit.events.ConfigChangedListener;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
@@ -39,7 +37,7 @@ public class RepositoryPropertyPage extends PropertyPage {
 		GridLayoutFactory.fillDefaults().applyTo(displayArea);
 		GridDataFactory.fillDefaults().applyTo(displayArea);
 
-		final Repository repo = (Repository) getElement()
+		Repository repo = (Repository) getElement()
 				.getAdapter(Repository.class);
 		if (repo == null)
 			return displayArea;
@@ -48,12 +46,6 @@ public class RepositoryPropertyPage extends PropertyPage {
 		if (config instanceof FileBasedConfig) {
 			File configFile = ((FileBasedConfig) config).getFile();
 			config = new FileBasedConfig(configFile, repo.getFS());
-			config.addChangeListener(new ConfigChangedListener() {
-
-				public void onConfigChanged(ConfigChangedEvent event) {
-					repo.fireEvent(new ConfigChangedEvent());
-				}
-			});
 		}
 		editor = new ConfigurationEditorComponent(displayArea, config, true, false) {
 			@Override

@@ -395,8 +395,6 @@ public class CommitMessageComponent {
 	 */
 	public void enableListeners(boolean enable) {
 		this.listenersEnabled = enable;
-		if (enable)
-			listener.statusUpdated();
 	}
 
 	/**
@@ -492,18 +490,11 @@ public class CommitMessageComponent {
 	private void addListeners() {
 		authorHandler = UIUtils.addPreviousValuesContentProposalToText(
 				authorText, AUTHOR_VALUES_PREF);
-		authorText.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled || !authorText.isEnabled())
-					return;
-				listener.statusUpdated();
-			}
-		});
 		committerText.addModifyListener(new ModifyListener() {
 			String oldCommitter = committerText.getText();
 
 			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled || !committerText.isEnabled())
+				if (!listenersEnabled)
 					return;
 				if (signedOff) {
 					// the commit message is signed
@@ -515,18 +506,16 @@ public class CommitMessageComponent {
 							oldSignOff, newSignOff));
 					oldCommitter = newCommitter;
 				}
-				listener.statusUpdated();
 			}
 		});
 		committerHandler = UIUtils.addPreviousValuesContentProposalToText(
 				committerText, COMMITTER_VALUES_PREF);
 		commitText.getTextWidget().addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				if (!listenersEnabled || !commitText.isEnabled())
+				if (!listenersEnabled)
 					return;
 				updateSignedOffButton();
 				updateChangeIdButton();
-				listener.statusUpdated();
 			}
 		});
 	}

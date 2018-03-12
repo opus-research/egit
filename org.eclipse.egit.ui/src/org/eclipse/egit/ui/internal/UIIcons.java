@@ -4,7 +4,6 @@
  * Copyright (C) 2007, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2013, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2013, Robin Stocker <robin@nibor.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +17,6 @@ import java.net.URL;
 
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.resource.ResourceManager;
-import org.eclipse.swt.graphics.Image;
 
 /**
  * Icons for the the Eclipse plugin. Mostly decorations.
@@ -129,9 +126,6 @@ public class UIIcons {
 	/** Repository tree node */
 	public final static ImageDescriptor REPOSITORY;
 
-	/** Gerrit Repository tree node */
-	public final static ImageDescriptor REPOSITORY_GERRIT;
-
 	/** New Repository button */
 	public final static ImageDescriptor NEW_REPOSITORY;
 
@@ -207,9 +201,6 @@ public class UIIcons {
 	/** Commit icon */
 	public final static ImageDescriptor COMMIT;
 
-	/** Cherry-pick icon */
-	public final static ImageDescriptor CHERRY_PICK;
-
 	/** Rebase icon */
 	public final static ImageDescriptor REBASE;
 
@@ -221,9 +212,6 @@ public class UIIcons {
 
 	/** Rebase abort icon */
 	public final static ImageDescriptor REBASE_ABORT;
-
-	/** Rebase process steps icon */
-	public final static ImageDescriptor REBASE_PROCESS_STEPS;
 
 	/** Merge icon */
 	public final static ImageDescriptor MERGE;
@@ -240,9 +228,6 @@ public class UIIcons {
 	/** Stash icon */
 	public final static ImageDescriptor STASH;
 
-	/** Search commit icon */
-	public final static ImageDescriptor SEARCH_COMMIT;
-
 	/** Hierarchy layout icon */
 	public final static ImageDescriptor HIERARCHY;
 
@@ -251,24 +236,6 @@ public class UIIcons {
 
 	/** Compact tree presentation icon */
 	public final static ImageDescriptor COMPACT;
-
-	/** Squash icon */
-	public final static ImageDescriptor SQUASH;
-
-	/** Fixup icon */
-	public final static ImageDescriptor FIXUP;
-
-	/** Reword icon */
-	public final static ImageDescriptor REWORD;
-
-	/** Icon for done rebase step */
-	public final static ImageDescriptor DONE_STEP;
-
-	/** Reword for current rebase step */
-	public final static ImageDescriptor CURRENT_STEP;
-
-	/** Reword for todo rebase step */
-	public final static ImageDescriptor TODO_STEP;
 
 	/** base URL */
 	public final static URL base;
@@ -314,7 +281,6 @@ public class UIIcons {
 		PUSH = map("obj16/push.gif"); //$NON-NLS-1$
 		PULL = map("obj16/pull.gif"); //$NON-NLS-1$
 		REPOSITORY = map("obj16/repository_rep.gif"); //$NON-NLS-1$
-		REPOSITORY_GERRIT = map("obj16/repository_gerrit.gif"); //$NON-NLS-1$
 		NEW_REPOSITORY = map("etool16/newlocation_wiz.gif"); //$NON-NLS-1$
 		REMOTE_REPOSITORY = map("obj16/remote_entry_tbl.gif"); //$NON-NLS-1$
 		REMOTE_SPEC = map("obj16/remotespec.gif"); //$NON-NLS-1$
@@ -340,12 +306,10 @@ public class UIIcons {
 		NOTE = map("obj16/note.png"); //$NON-NLS-1$
 		ANNOTATE = map("etool16/annotate.gif"); //$NON-NLS-1$
 		COMMIT = map("obj16/commit.gif"); //$NON-NLS-1$
-		CHERRY_PICK = map("obj16/cherry-pick.png"); //$NON-NLS-1$
 		REBASE = map("obj16/rebase.gif"); //$NON-NLS-1$
 		REBASE_CONTINUE = map("elcl16/continue.gif"); //$NON-NLS-1$
 		REBASE_SKIP = map("elcl16/skip.gif"); //$NON-NLS-1$
 		REBASE_ABORT = map("elcl16/progress_stop.gif"); //$NON-NLS-1$
-		REBASE_PROCESS_STEPS = map("elcl16/start.gif"); //$NON-NLS-1$
 		OVR_ERROR = map("ovr/error.png"); //$NON-NLS-1$
 		MERGE = map("obj16/merge.gif"); //$NON-NLS-1$
 		TAG_ANNOTATED = map("obj16/annotated-tag.gif"); //$NON-NLS-1$
@@ -353,16 +317,9 @@ public class UIIcons {
 		SUBMODULES = map("obj16/submodules.gif"); //$NON-NLS-1$
 		CLEAN = map("obj16/clean_obj.gif"); //$NON-NLS-1$
 		STASH = map("obj16/stash.png"); //$NON-NLS-1$
-		SEARCH_COMMIT = map("obj16/search-commit.gif"); //$NON-NLS-1$
 		HIERARCHY = map("elcl16/hierarchicalLayout.gif"); //$NON-NLS-1$
 		FLAT = map("elcl16/flatLayout.gif"); //$NON-NLS-1$
 		COMPACT = map("elcl16/compactLayout.gif"); //$NON-NLS-1$
-		SQUASH = map("obj16/squash.gif"); //$NON-NLS-1$
-		FIXUP = map("obj16/fixup.gif"); //$NON-NLS-1$
-		REWORD = map("obj16/reword.gif"); //$NON-NLS-1$
-		DONE_STEP = map("obj16/done_step.gif"); //$NON-NLS-1$
-		CURRENT_STEP = map("obj16/current_step.gif"); //$NON-NLS-1$
-		TODO_STEP = map("obj16/todo_step.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {
@@ -383,21 +340,5 @@ public class UIIcons {
 			Activator.logError(UIText.UIIcons_errorDeterminingIconBase, mux);
 			return null;
 		}
-	}
-
-	/**
-	 * Get the image for the given descriptor from the resource manager which
-	 * handles disposal of the image when the resource manager itself is
-	 * disposed.
-	 *
-	 * @param resourceManager
-	 *            {code ResourceManager} managing the image resources
-	 * @param descriptor
-	 *            object describing an image
-	 * @return the image for the given descriptor
-	 */
-	public static Image getImage(ResourceManager resourceManager,
-			ImageDescriptor descriptor) {
-		return (Image) resourceManager.get(descriptor);
 	}
 }

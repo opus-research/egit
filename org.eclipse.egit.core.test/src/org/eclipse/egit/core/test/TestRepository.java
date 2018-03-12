@@ -12,10 +12,8 @@
 package org.eclipse.egit.core.test;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
@@ -186,8 +184,8 @@ public class TestRepository {
 	 */
 	public RevCommit appendContentAndCommit(IProject project, File file,
 			byte[] content, String commitMessage) throws Exception {
-		return appendContentAndCommit(project, file, new String(content,
-				"UTF-8"), commitMessage);
+		return appendContentAndCommit(project, file, new String(content),
+				commitMessage);
 	}
 
 	/**
@@ -376,7 +374,7 @@ public class TestRepository {
 	 * @throws IOException
 	 */
 	public void appendFileContent(File file, byte[] content) throws IOException {
-		appendFileContent(file, new String(content, "UTF-8"), true);
+		appendFileContent(file, new String(content), true);
 	}
 
 	/**
@@ -402,7 +400,7 @@ public class TestRepository {
 	 */
 	public void appendFileContent(File file, byte[] content, boolean append)
 			throws IOException {
-		appendFileContent(file, new String(content, "UTF-8"), append);
+		appendFileContent(file, new String(content), append);
 	}
 
 	/**
@@ -417,10 +415,9 @@ public class TestRepository {
 	 */
 	public void appendFileContent(File file, String content, boolean append)
 			throws IOException {
-		Writer fw = null;
+		FileWriter fw = null;
 		try {
-			fw = new OutputStreamWriter(new FileOutputStream(file, append),
-					"UTF-8");
+			fw = new FileWriter(file, append);
 			fw.append(content);
 		} finally {
 			if (fw != null)

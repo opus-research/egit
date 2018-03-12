@@ -10,8 +10,6 @@
 package org.eclipse.egit.ui.internal.credentials;
 
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
-import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -89,9 +87,7 @@ class LoginDialog extends Dialog {
 			Label storeLabel = new Label(composite, SWT.NONE);
 			storeLabel.setText(UIText.LoginDialog_storeInSecureStore);
 			storeCheckbox = new Button(composite, SWT.CHECK);
-			storeCheckbox.setSelection(Activator.getDefault()
-					.getPreferenceStore()
-					.getBoolean(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE));
+			storeCheckbox.setSelection(true);
 		}
 
 		if (isUserSet)

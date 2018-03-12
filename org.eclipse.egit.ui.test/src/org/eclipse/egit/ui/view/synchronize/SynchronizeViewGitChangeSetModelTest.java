@@ -27,8 +27,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
+import java.io.FileWriter;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -251,9 +250,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
 		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(nonWorkspace), "UTF-8"));
-
+		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
 		writer.append("file content");
 		writer.close();
 		// TODO Synchronize currently shows "No changes" when the only thing that has
@@ -277,8 +274,7 @@ public class SynchronizeViewGitChangeSetModelTest extends
 		String name = "non-workspace.txt";
 		File root = new File(getTestDirectory(), REPO1);
 		File nonWorkspace = new File(root, name);
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-				new FileOutputStream(nonWorkspace), "UTF-8"));
+		BufferedWriter writer = new BufferedWriter(new FileWriter(nonWorkspace));
 		writer.append(content);
 		writer.close();
 		// TODO Synchronize currently shows "No changes" when the only thing that has
