@@ -473,8 +473,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 	/** Repository of the last input*/
 	private Repository currentRepo;
 
-	private boolean currentShowAllBranches;
-
 	/**
 	 * Highlight flag that can be applied to commits to make them stand out.
 	 * <p>
@@ -1201,7 +1199,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 			List<String> paths = buildFilterPaths(input.getItems(), input
 					.getFileList(), db);
 
-			if (forceNewWalk || shouldRedraw(db, headId, paths)) {
+			boolean pathChange = pathChange(pathFilters, paths);
+			boolean headChange = !headId.equals(currentHeadId);
+			boolean repoChange = false;
+			if (!db.equals(currentRepo))
+			{
+				repoChange = true;
+				currentRepo = db;
+			}
+			if (forceNewWalk || pathChange
+					|| currentWalk == null || headChange || repoChange) {
 				// TODO Do not dispose SWTWalk just because HEAD changed
 				// In theory we should be able to update the graph and
 				// not dispose of the SWTWalk, even if HEAD was reset to
@@ -1223,26 +1230,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener {
 						GitTraceLocation.HISTORYVIEW.getLocation());
 
 		}
-	}
-
-	private boolean shouldRedraw(Repository db, AnyObjectId headId, List<String> paths) {
-		boolean pathChange = pathChange(pathFilters, paths);
-		boolean headChange = !headId.equals(currentHeadId);
-		boolean repoChange = false;
-
-		boolean allBrancheChange = currentShowAllBranches != store
-			.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES);
-		currentShowAllBranches = store
-			.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ALL_BRANCHES);
-
-		if (!db.equals(currentRepo))
-		{
-			repoChange = true;
-			currentRepo = db;
-		}
-
-		return pathChange
-			|| currentWalk == null || headChange || repoChange || allBrancheChange;
 	}
 
 	private AnyObjectId resolveHead(Repository db, boolean acceptNull) {
