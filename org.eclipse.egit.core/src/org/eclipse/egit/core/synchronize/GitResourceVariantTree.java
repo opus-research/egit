@@ -71,15 +71,13 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		TreeWalk tw = initializeTreeWalk(repo, path);
 
 		try {
-			int nth = tw.addTree(revCommit.getTree());
+			tw.addTree(revCommit.getTree());
 			if (resource.getType() == IResource.FILE) {
 				tw.setRecursive(true);
 				if (tw.next())
-					return new GitBlobResourceVariant(repo,
-							tw.getObjectId(nth), path);
+					return new GitBlobResourceVariant(repo, revCommit, path);
 			} else
-				return new GitFolderResourceVariant(repo, tw.getObjectId(nth),
-						path);
+				return new GitFolderResourceVariant(repo, revCommit, path);
 		} catch (IOException e) {
 			throw new TeamException(
 					NLS.bind(
@@ -135,8 +133,8 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 	private IResourceVariant handleRepositoryRoot(final IResource resource,
 			Repository repo, RevCommit revCommit) throws TeamException {
 		try {
-			return new GitFolderResourceVariant(repo, revCommit.getTree(),
-					resource.getLocation().toString());
+			return new GitFolderResourceVariant(repo, revCommit, resource
+					.getLocation().toString());
 		} catch (IOException e) {
 			throw new TeamException(
 					NLS.bind(
