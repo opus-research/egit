@@ -90,7 +90,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 				.expand();
 		List<String> testnodes = remotesItem.getNode("test").expand()
 				.getNodes();
-		assertEquals(2, testnodes.size());
+		assertTrue(testnodes.size() == 1);
 		List<String> test2nodes = remotesItem.getNode("test2").expand()
 				.getNodes();
 		assertTrue(test2nodes.size() == 2);
@@ -170,7 +170,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		SWTBotTreeItem item = myRepoViewUtil.getRemotesItem(tree,
 				repositoryFile).expand().getNode("testRemote").expand();
 		List<String> children = item.getNodes();
-		assertEquals(2, children.size());
+		assertTrue(children.size() == 1);
 		item.select();
 		// now we add push
 		ContextMenuHelper.clickContextMenu(tree, myUtil
@@ -264,13 +264,13 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertEquals(2, children.size());
+		assertTrue(children.size() == 1);
 
 		// we remove the fetch again
 		item = myRepoViewUtil.getRemotesItem(tree, repositoryFile).expand()
 				.getNode("testRemote").expand();
 		children = item.getNodes();
-		assertEquals(2, children.size());
+		assertTrue(children.size() == 1);
 		item.getNode(0).select();
 		ContextMenuHelper.clickContextMenu(tree, myUtil
 				.getPluginLocalizedValue("RemoveFetchCommand"));

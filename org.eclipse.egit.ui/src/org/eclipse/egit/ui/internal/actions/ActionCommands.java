@@ -20,9 +20,6 @@ public class ActionCommands {
 	/** "Apply patch" action command id */
 	public static final String APPLY_PATCH = "org.eclipse.egit.ui.team.ApplyPatch"; //$NON-NLS-1$
 
-	/** "Assume Unchanged" action command id */
-	public static final String ASSUME_UNCHANGED = "org.eclipse.egit.ui.team.AssumeUnchanged"; //$NON-NLS-1$
-
 	/** "Branch" action command id */
 	public static final String BRANCH_ACTION = "org.eclipse.egit.ui.team.Branch"; //$NON-NLS-1$
 
@@ -50,14 +47,8 @@ public class ActionCommands {
 	/** "Configure push" action command id */
 	public static final String CONFIGURE_PUSH = "org.eclipse.egit.ui.team.ConfigurePush"; //$NON-NLS-1$
 
-	/** "Delete Branch" action command id */
-	public static final String DELETE_BRANCH_ACTION = "org.eclipse.egit.ui.team.DeleteBranch"; //$NON-NLS-1$
-
 	/** "Discard changes" action command id */
 	public static final String DISCARD_CHANGES_ACTION = "org.eclipse.egit.ui.team.Discard"; //$NON-NLS-1$
-
-	/** "Disconnect" action command id */
-	public static final String DISCONNECT_ACTION = "org.eclipse.egit.ui.internal.actions.Disconnect"; //$NON-NLS-1$
 
 	/** "Fetch" action command id */
 	public static final String FETCH_ACTION = "org.eclipse.egit.ui.team.Fetch"; //$NON-NLS-1$
@@ -68,14 +59,8 @@ public class ActionCommands {
 	/** "Merge" action command id */
 	public static final String MERGE_ACTION = "org.eclipse.egit.ui.team.Merge"; //$NON-NLS-1$
 
-	/** "No Assume Unchanged" action command id */
-	public static final String NO_ASSUME_UNCHANGED = "org.eclipse.egit.ui.team.NoAssumeUnchanged"; //$NON-NLS-1$
-
 	/** "Push" action command id */
 	public static final String PUSH_ACTION = "org.eclipse.egit.ui.team.Push"; //$NON-NLS-1$
-
-	/** "Rename Branch" action command id */
-	public static final String RENAME_BRANCH_ACTION = "org.eclipse.egit.ui.team.RenameBranch"; //$NON-NLS-1$
 
 	/** "Simple Push" action command id */
 	public static final String SIMPLE_PUSH_ACTION = "org.eclipse.egit.ui.team.SimplePush"; //$NON-NLS-1$
@@ -100,9 +85,6 @@ public class ActionCommands {
 
 	/** "Track" action command id */
 	public static final String TRACK_ACTION = "org.eclipse.egit.ui.team.Track"; //$NON-NLS-1$
-
-	/** "Untrack" action command id */
-	public static final String UNTRACK_ACTION = "org.eclipse.egit.ui.internal.actions.Untrack"; //$NON-NLS-1$
 
 	/** "Pull from upstream configuration" action command id */
 	public static final String PULL_FROM_UPSTREAM_CONFIG = "org.eclipse.egit.ui.team.PullFromUpstreamConfig"; //$NON-NLS-1$
