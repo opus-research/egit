@@ -8,7 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.commands.shared;
+package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -22,6 +22,7 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.rebase.RebaseResultDialog;
+import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.lib.Repository;
@@ -32,7 +33,8 @@ import org.eclipse.ui.PlatformUI;
 /**
  * Rebase command base class
  */
-public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommandHandler {
+public abstract class AbstractRebaseCommand extends
+		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	private final Operation operation;
 
 	private final String jobname;
@@ -44,7 +46,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	 * @param jobname
 	 * @param dialogMessage
 	 */
-	protected AbstractRebaseCommandHandler(Operation operation, String jobname,
+	protected AbstractRebaseCommand(Operation operation, String jobname,
 			String dialogMessage) {
 		this.operation = operation;
 		this.jobname = jobname;
@@ -52,7 +54,11 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	}
 
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		final Repository repository = getRepository(event);
+
+		RepositoryTreeNode node = getSelectedNodes(event).get(0);
+
+		final Repository repository = node.getRepository();
+
 		final RebaseOperation rebase = new RebaseOperation(repository,
 				this.operation);
 		Job job = new Job(jobname) {

@@ -112,7 +112,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 	public boolean isEnabled() {
 		Repository repo = getRepository();
 		return repo != null
-				&& repo.getRepositoryState() == RepositoryState.SAFE
-				&& containsHead();
+				&& repo.getRepositoryState() == RepositoryState.SAFE;
 	}
 }

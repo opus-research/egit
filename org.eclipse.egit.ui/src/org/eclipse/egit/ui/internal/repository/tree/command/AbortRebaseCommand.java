@@ -8,20 +8,20 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.egit.ui.internal.commands.shared;
+package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 
 /**
- * Implements "Skip Rebase"
+ * Implements "Abort Rebase"
  */
-public class SkipRebaseCommand extends AbstractRebaseCommandHandler {
+public class AbortRebaseCommand extends AbstractRebaseCommand {
 	/**
 	 * Default constructor
 	 */
-	public SkipRebaseCommand() {
-		super(Operation.SKIP, UIText.SkipRebaseCommand_JobName,
-				UIText.SkipRebaseCommand_CancelDialogMessage);
+	public AbortRebaseCommand() {
+		super(Operation.ABORT, UIText.AbortRebaseCommand_JobName,
+				UIText.AbortRebaseCommand_CancelDialogMessage);
 	}
 }
