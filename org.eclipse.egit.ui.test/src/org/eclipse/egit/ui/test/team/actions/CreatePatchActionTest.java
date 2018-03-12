@@ -23,13 +23,13 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.egit.core.CoreText;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ResetOperation;
+import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.core.op.TagOperation;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.CreatePatchWizard;
 import org.eclipse.egit.ui.common.CreatePatchWizard.NoChangesPopup;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.test.TestUtil;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
@@ -165,20 +165,6 @@ public class CreatePatchActionTest extends LocalRepositoryTestCase {
 	@Test
 	public void testNoChanges() throws Exception {
 		CreatePatchWizard.openWizard(PROJ1);
-		NoChangesPopup popup = new NoChangesPopup(
-				bot.shell(UIText.GitCreatePatchAction_cannotCreatePatch));
-		popup.cancelPopup();
-	}
-
-	@Test
-	public void testNoChangesInSelection() throws Exception {
-		IFile fileToStage = touch(PROJ1, "folder/test.txt", "new content in "
-				+ PROJ1);
-		stage(fileToStage);
-		touch(PROJ2, "folder/test.txt", "new content in " + PROJ2);
-
-		CreatePatchWizard.openWizard(PROJ1);
-
 		NoChangesPopup popup = new NoChangesPopup(
 				bot.shell(UIText.GitCreatePatchAction_cannotCreatePatch));
 		popup.cancelPopup();

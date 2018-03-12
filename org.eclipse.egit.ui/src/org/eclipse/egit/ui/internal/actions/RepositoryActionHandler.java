@@ -16,9 +16,9 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -41,19 +41,10 @@ import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
-import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.NullProgressMonitor;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
-import org.eclipse.jgit.revwalk.FollowFilter;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
@@ -107,8 +98,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		for (ResourceMapping mapping : (ResourceMapping[]) getSelectedAdaptables(
 				selection, ResourceMapping.class)) {
 			IProject[] projects = mapping.getProjects();
-			if (projects != null)
-				ret.addAll(Arrays.asList(projects));
+			ret.addAll(Arrays.asList(projects));
 		}
 		return ret;
 	}
@@ -306,7 +296,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection(event);
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new LinkedHashSet<Repository>();
+			Set<Repository> repos = new HashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);
@@ -333,7 +323,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 			return getRepositoriesFor(selectedProjects);
 		IStructuredSelection selection = getSelection();
 		if (!selection.isEmpty()) {
-			Set<Repository> repos = new LinkedHashSet<Repository>();
+			Set<Repository> repos = new HashSet<Repository>();
 			for (Object o : selection.toArray())
 				if (o instanceof Repository)
 					repos.add((Repository) o);
@@ -398,7 +388,7 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 		Object selection;
 		if (aSelection == null && ctx != null) {
 			selection = ctx.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (!(selection instanceof ISelection))
+			if (selection == null)
 				selection = ctx
 						.getVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME);
 		} else if (aSelection != null)
@@ -615,83 +605,4 @@ abstract class RepositoryActionHandler extends AbstractHandler {
 
 		return false;
 	}
-
-	protected String getPreviousPath(Repository repository,
-			ObjectReader reader, RevCommit headCommit,
-			RevCommit previousCommit, String path) throws IOException {
-		TreeWalk walk = new TreeWalk(reader);
-		walk.setRecursive(true);
-		walk.addTree(previousCommit.getTree());
-		walk.addTree(headCommit.getTree());
-
-		List<DiffEntry> entries = DiffEntry.scan(walk);
-		if (entries.size() < 2)
-			return path;
-
-		for (DiffEntry diff : entries)
-			if (diff.getChangeType() == ChangeType.MODIFY
-					&& path.equals(diff.getNewPath()))
-				return path;
-
-		RenameDetector detector = new RenameDetector(repository);
-		detector.addAll(entries);
-		List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
-				NullProgressMonitor.INSTANCE);
-		for (DiffEntry diff : renames)
-			if (diff.getChangeType() == ChangeType.RENAME
-					&& path.equals(diff.getNewPath()))
-				return diff.getOldPath();
-
-		return path;
-	}
-
-	protected List<PreviousCommit> findPreviousCommits() throws IOException {
-		List<PreviousCommit> result = new ArrayList<PreviousCommit>();
-		Repository repository = getRepository();
-		IResource resource = getSelectedResources()[0];
-		String path = RepositoryMapping.getMapping(resource.getProject())
-				.getRepoRelativePath(resource);
-		RevWalk rw = new RevWalk(repository);
-		try {
-			if (path.length() > 0) {
-				FollowFilter filter = FollowFilter.create(path);
-				rw.setTreeFilter(filter);
-			}
-
-			RevCommit headCommit = rw.parseCommit(repository.getRef(
-					Constants.HEAD).getObjectId());
-			rw.markStart(headCommit);
-			headCommit = rw.next();
-
-			if (headCommit == null)
-				return result;
-			List<RevCommit> directParents = Arrays.asList(headCommit
-					.getParents());
-
-			RevCommit previousCommit = rw.next();
-			while (previousCommit != null && result.size() < directParents.size()) {
-				if (directParents.contains(previousCommit)) {
-					String previousPath = getPreviousPath(repository,
-							rw.getObjectReader(), headCommit, previousCommit,
-							path);
-					result.add(new PreviousCommit(previousCommit, previousPath));
-				}
-				previousCommit = rw.next();
-			}
-		} finally {
-			rw.dispose();
-		}
-		return result;
-	}
-
-	// keep track of the path of an ancestor (for following renames)
-	protected static final class PreviousCommit {
-		final RevCommit commit;
-		final String path;
-		PreviousCommit(final RevCommit commit, final String path) {
-			this.commit = commit;
-			this.path = path;
-		}
-	}
-
 }

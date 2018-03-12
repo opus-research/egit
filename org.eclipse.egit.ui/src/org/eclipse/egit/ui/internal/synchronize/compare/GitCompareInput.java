@@ -163,11 +163,7 @@ public class GitCompareInput implements ISynchronizationCompareInput {
 		return false;
 	}
 
-	/**
-	 * @param element
-	 * @return compare editor description
-	 */
-	public static String getFileRevisionLabel(ITypedElement element) {
+	private String getFileRevisionLabel(ITypedElement element) {
 		if (element instanceof FileRevisionTypedElement) {
 			FileRevisionTypedElement castElement = (FileRevisionTypedElement) element;
 			if (INDEX.equals(castElement.getContentIdentifier()))
