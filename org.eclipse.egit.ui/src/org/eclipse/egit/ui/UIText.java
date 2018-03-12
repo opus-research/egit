@@ -2227,9 +2227,6 @@ public class UIText extends NLS {
 	public static String FetchResultTable_columnStatus;
 
 	/** */
-	public static String FetchResultTable_CounterCommits;
-
-	/** */
 	public static String FetchResultTable_statusDetailCouldntLock;
 
 	/** */
