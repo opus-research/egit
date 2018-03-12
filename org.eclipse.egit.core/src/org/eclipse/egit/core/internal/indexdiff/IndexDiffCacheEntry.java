@@ -258,7 +258,7 @@ public class IndexDiffCacheEntry {
 				try {
 					long startTime = System.currentTimeMillis();
 					IndexDiff result = calcIndexDiff(monitor, getName());
-					if (monitor.isCanceled() || (result == null))
+					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
 					indexDiffData = new IndexDiffData(result);
 					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
@@ -340,7 +340,7 @@ public class IndexDiffCacheEntry {
 					long startTime = System.currentTimeMillis();
 					IndexDiffData result = calcIndexDiffData(monitor,
 							getName(), filesToUpdate, resourcesToUpdate);
-					if (monitor.isCanceled() || (result == null))
+					if (monitor.isCanceled())
 						return Status.CANCEL_STATUS;
 					indexDiffData = result;
 					if (GitTraceLocation.INDEXDIFFCACHE.isActive()) {
@@ -386,9 +386,8 @@ public class IndexDiffCacheEntry {
 
 		List<String> treeFilterPaths = calcTreeFilterPaths(filesToUpdate);
 
-		WorkingTreeIterator iterator = IteratorService.createInitialIterator(repository);
-		if (iterator == null)
-			return null; // workspace is closed
+		WorkingTreeIterator iterator = IteratorService
+				.createInitialIterator(repository);
 		IndexDiff diffForChangedResources = new IndexDiff(repository,
 				Constants.HEAD, iterator);
 		diffForChangedResources.setFilter(PathFilterGroup
@@ -438,8 +437,6 @@ public class IndexDiffCacheEntry {
 		IndexDiff newIndexDiff;
 		WorkingTreeIterator iterator = IteratorService
 				.createInitialIterator(repository);
-		if (iterator == null)
-			return null; // workspace is closed
 		newIndexDiff = new IndexDiff(repository, Constants.HEAD, iterator);
 		newIndexDiff.diff(jgitMonitor, 0, 0, jobName);
 		return newIndexDiff;

@@ -196,7 +196,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		localItem.getNode(1).select();
 		refreshAndWait();
-		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
+		ContextMenuHelper.clickContextMenu(bot.tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		SWTBotShell confirmPopup = bot
 				.shell(UIText.UnmergedBranchDialog_Title);
