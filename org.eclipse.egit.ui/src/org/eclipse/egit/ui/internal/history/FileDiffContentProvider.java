@@ -35,7 +35,6 @@ class FileDiffContentProvider implements IStructuredContentProvider {
 			try {
 				diff = FileDiff.compute(walk, commit);
 			} catch (IOException err) {
-				// TODO trace or throw?
 				Activator.error("Can't get file difference of "
 						+ commit.getId() + ".", err);
 			}

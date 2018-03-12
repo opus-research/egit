@@ -225,9 +225,10 @@ public class GitProjectData {
 			}
 		}
 
-		final Reference r = repositoryCache.get(gitDir);
-		Repository d = r != null ? (Repository) r.get() : null;
-		if (d == null) {
+		final Repository d;
+		if (repositoryCache.containsKey(gitDir)) {
+			d = (Repository) repositoryCache.get(gitDir).get();
+		} else {
 			d = new Repository(gitDir);
 			repositoryCache.put(gitDir, new WeakReference<Repository>(d));
 		}
@@ -304,8 +305,7 @@ public class GitProjectData {
 						dotGit.setTeamPrivateMember(true);
 					}
 				} catch (IOException err) {
-					throw new CoreException(Activator.error(
-							CoreText.Error_CanonicalFile, err));
+					throw Activator.error(CoreText.Error_CanonicalFile, err);
 				}
 			}
 		}
@@ -377,9 +377,8 @@ public class GitProjectData {
 			final FileOutputStream o = new FileOutputStream(tmp);
 			try {
 				final Properties p = new Properties();
-				final Iterator i = mappings.iterator();
-				while (i.hasNext()) {
-					((RepositoryMapping) i.next()).store(p);
+				for (final RepositoryMapping repoMapping : mappings) {
+					repoMapping.store(p);
 				}
 				p.store(o, "GitProjectData");  //$NON-NLS-1$
 				ok = true;
@@ -390,15 +389,15 @@ public class GitProjectData {
 				}
 			}
 		} catch (IOException ioe) {
-			throw new CoreException(Activator.error(NLS.bind(
-					CoreText.GitProjectData_saveFailed, dat), ioe));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), ioe);
 		}
 
 		dat.delete();
 		if (!tmp.renameTo(dat)) {
 			tmp.delete();
-			throw new CoreException(Activator.error(NLS.bind(
-					CoreText.GitProjectData_saveFailed, dat), null));
+			throw Activator.error(NLS.bind(CoreText.GitProjectData_saveFailed,
+					dat), null);
 		}
 	}
 
@@ -418,9 +417,8 @@ public class GitProjectData {
 			p.load(o);
 
 			mappings.clear();
-			final Iterator keyItr = p.keySet().iterator();
-			while (keyItr.hasNext()) {
-				final String key = keyItr.next().toString();
+			for (final Object keyObj : p.keySet()) {
+				final String key = keyObj.toString();
 				if (RepositoryMapping.isInitialKey(key)) {
 					mappings.add(new RepositoryMapping(p, key));
 				}
@@ -435,9 +433,8 @@ public class GitProjectData {
 
 	private void remapAll() {
 		protectedResources.clear();
-		final Iterator i = mappings.iterator();
-		while (i.hasNext()) {
-			map((RepositoryMapping) i.next());
+		for (final RepositoryMapping repoMapping : mappings) {
+			map(repoMapping);
 		}
 	}
 

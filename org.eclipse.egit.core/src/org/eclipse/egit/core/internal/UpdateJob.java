@@ -111,15 +111,11 @@ public class UpdateJob extends Job {
 											}
 											fm.worked(1);
 										}
-											} catch (IOException e) {
-												if (GitTraceLocation.CORE.isActive())
-													GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-												throw new CoreException(
-														Activator
-																.error(
-																		CoreText.UpdateOperation_failed,
-																		e));
-											}
+									} catch (IOException e) {
+										if (GitTraceLocation.CORE.isActive())
+											GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
+										throw Activator.error(CoreText.UpdateOperation_failed, e);
+									}
 									return true;
 								}
 							},IResource.DEPTH_INFINITE, IContainer.EXCLUDE_DERIVED);
@@ -139,19 +135,19 @@ public class UpdateJob extends Job {
 					rm.getRepository().getIndex().write();
 				}
 			} catch (NotSupportedException e) {
-				return Activator.error(e.getMessage(),e);
+				return Activator.error(e.getMessage(),e).getStatus();
 			} catch (RuntimeException e) {
 				if (GitTraceLocation.CORE.isActive())
 					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-				return Activator.error(CoreText.UpdateOperation_failed, e);
+				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} catch (IOException e) {
 				if (GitTraceLocation.CORE.isActive())
 					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-				return Activator.error(CoreText.UpdateOperation_failed, e);
+				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} catch (CoreException e) {
 				if (GitTraceLocation.CORE.isActive())
 					GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-				return Activator.error(CoreText.UpdateOperation_failed, e);
+				return Activator.error(CoreText.UpdateOperation_failed, e).getStatus();
 			} finally {
 				try {
 					final Iterator i = tomerge.keySet().iterator();
