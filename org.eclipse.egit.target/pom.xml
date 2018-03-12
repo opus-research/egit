@@ -36,7 +36,7 @@
             <configuration>
               <artifacts>
                 <artifact>
-                  <file>${target-platform}</file>
+                  <file>${target-platform}.target</file>
                   <type>target</type>
                   <classifier>${target-platform}</classifier>
                 </artifact>
