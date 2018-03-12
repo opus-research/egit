@@ -14,7 +14,6 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.op.ResetOperation.ResetType;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
@@ -58,10 +57,9 @@ public class ResetAction extends RepositoryAction {
 						try {
 							new ResetOperation(repository, refName, type).run(monitor);
 							GitLightweightDecorator.refresh();
-						} catch (CoreException e) {
-							if (GitTraceLocation.CORE.isActive())
-								GitTraceLocation.getTrace().trace(GitTraceLocation.CORE.getLocation(), e.getMessage(), e);
-							throw new InvocationTargetException(e);
+						} catch (CoreException ce) {
+							ce.printStackTrace();
+							throw new InvocationTargetException(ce);
 						}
 					}
 				});

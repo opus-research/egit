@@ -97,14 +97,6 @@
                menubarPath="team.main/group1"
                tooltip="%ShowResourceInHistoryAction_tooltip"/>
          <action
-               class="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesViewAction"
-               definitionId="org.eclipse.egit.ui.ShowInRepositoriesView"
-               enablesFor="1"
-               id="org.eclipse.egit.ui.internal.actions.ShowInRepositoriesView"
-               label="&amp;Show in Git Repositories View"
-               menubarPath="team.main/group1">
-         </action>
-         <action
                class="org.eclipse.egit.ui.internal.actions.Update"
                id="org.eclipse.egit.ui.internal.actions.Update"
                label="%UpdateAction_label"
@@ -455,20 +447,5 @@
                values="org.eclipse.egit.ui.internal.commands.ProjectNameParameterValues">
          </commandParameter>
       </command>
-   </extension>
-   <extension
-         point="org.eclipse.ui.views">
-      <view
-            category="org.eclipse.egit.ui.GitCategory"
-            class="org.eclipse.egit.ui.internal.repository.RepositoriesView"
-            icon="icons/eview16/repo_rep.gif"
-            id="org.eclipse.egit.ui.RepositoriesView"
-            name="Git Repositories"
-            restorable="true">
-      </view>
-      <category
-            id="org.eclipse.egit.ui.GitCategory"
-            name="Git">
-      </category>
    </extension>
 </plugin>

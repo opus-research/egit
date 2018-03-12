@@ -30,7 +30,6 @@ import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheEditor;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.osgi.util.NLS;
 
 /**
  * Remove one or more existing files/folders from the Git repository.
@@ -83,7 +82,7 @@ public class UntrackOperation implements IWorkspaceRunnable {
 			for (Map.Entry<Repository, DirCacheEditor> e : edits.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCacheEditor editor = e.getValue();
-				m.setTaskName(NLS.bind(CoreText.UntrackOperation_writingIndex, db.getDirectory()));
+				m.setTaskName("Writing index for " + db.getDirectory());
 				editor.commit();
 			}
 		} catch (RuntimeException e) {
