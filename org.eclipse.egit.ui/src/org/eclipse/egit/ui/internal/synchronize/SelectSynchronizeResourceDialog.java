@@ -8,10 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.synchronize;
 
-import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
-import static org.eclipse.jgit.lib.Constants.HEAD;
-import static org.eclipse.jgit.lib.Constants.MASTER;
-
 import java.io.File;
 import java.util.List;
 
@@ -110,7 +106,6 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 				.setText(UIText.SelectSynchronizeResourceDialog_srcRef);
 
 		srcRefCombo = new RemoteSelectionCombo(composite, syncRepos);
-		srcRefCombo.setDefautlValue(UIText.SynchronizeWithAction_localRepoName, HEAD);
 		srcRefCombo.setLayoutData(data);
 		srcRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
@@ -123,7 +118,6 @@ public class SelectSynchronizeResourceDialog extends TitleAreaDialog {
 				.setText(UIText.SelectSynchronizeResourceDialog_dstRef);
 
 		dstRefCombo = new RemoteSelectionCombo(composite, syncRepos);
-		dstRefCombo.setDefautlValue(DEFAULT_REMOTE_NAME, MASTER);
 		dstRefCombo.setLayoutData(data);
 		dstRefCombo.setLayoutData(GridDataFactory.fillDefaults().grab(true,
 				false).create());
