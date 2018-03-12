@@ -22,71 +22,9 @@
   <artifactId>org.eclipse.egit-updatesite</artifactId>
   <packaging>eclipse-update-site</packaging>
 
-  <name>Eclipse Git Plugin Update Site (Incubation)</name>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jgit</groupId>
-      <artifactId>org.eclipse.jgit</artifactId>
-      <version>${jgit-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jgit</groupId>
-      <artifactId>org.eclipse.jgit.feature</artifactId>
-      <version>${jgit-version}</version>
-    </dependency>
-  </dependencies>
+  <name>Eclipse Git Plugin Update Site</name>
 
   <!-- see http://issues.sonatype.org/browse/TYCHO-313 -->
   <version>0.6.0</version>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.2-beta-4</version>
-        <configuration>
-          <descriptors>
-            <descriptor>assembly.xml</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-resources</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/site</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>.</directory>
-                  <includes>
-                    <include>index.html</include>
-	            <include>web/*</include>
-                  </includes>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>
