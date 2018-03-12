@@ -175,9 +175,6 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
-	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
-
-	/** */
 	public static String RepositoryUtil_noHead;
 
 	/** */
