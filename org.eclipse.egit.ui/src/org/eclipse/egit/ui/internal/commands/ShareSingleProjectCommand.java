@@ -45,7 +45,6 @@ public class ShareSingleProjectCommand extends AbstractHandler {
 		wizard.init(workbench, projectToShare);
 		final Shell shell = HandlerUtil.getActiveShell(event);
 		WizardDialog wizardDialog = new WizardDialog(shell, wizard);
-		wizardDialog.setHelpAvailable(false);
 		wizardDialog.open();
 		return null;
 	}
