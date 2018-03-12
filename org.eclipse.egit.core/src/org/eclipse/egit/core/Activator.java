@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.eclipse.egit.core;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.core.runtime.Status;
@@ -40,14 +41,16 @@ public class Activator extends Plugin {
 	}
 
 	/**
-	 * Utility to create an error status for this plug-in.
+	 * Utility method to help throwing errors in the Egit plugin. This method
+	 * does not actually throw the exception, but just creates an instance.
 	 *
 	 * @param message User comprehensible message
 	 * @param thr cause
-	 * @return an initialized error status
+	 * @return an Initialized {@link CoreException}
 	 */
-	public static IStatus error(final String message, final Throwable thr) {
-		return new Status(IStatus.ERROR, getPluginId(), 0,	message, thr);
+	public static CoreException error(final String message, final Throwable thr) {
+		return new CoreException(new Status(IStatus.ERROR, getPluginId(), 0,
+				message, thr));
 	}
 
 	/**

@@ -290,9 +290,7 @@ class CommitMessageViewer extends TextViewer implements ISelectionChangedListene
 					outputDiff(d, diff);
 			}
 		} catch (IOException e) {
-			// TODO throw an exception or log this?
-			Activator.error(NLS.bind(
-					UIText.CommitMessageViewer_errorGettingFileDifference,
+			Activator.error(NLS.bind(UIText.CommitMessageViewer_errorGettingFileDifference,
 					commit.getId()), e);
 		}
 	}
