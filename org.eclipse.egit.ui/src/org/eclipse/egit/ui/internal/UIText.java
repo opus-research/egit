@@ -1713,6 +1713,12 @@ public class UIText extends NLS {
 	public static String RefSpecPage_annotatedTagsNoTags;
 
 	/** */
+	public static String RefSpecWizard_pushTitle;
+
+	/** */
+	public static String RefSpecWizard_fetchTitle;
+
+	/** */
 	public static String QuickDiff_failedLoading;
 
 	/** */
@@ -3970,7 +3976,7 @@ public class UIText extends NLS {
 	public static String GitBranchSynchronizeWizardPage_description;
 
 	/** */
-	public static String GitBranchSynchronizeWizardPage_repository;
+	public static String GitBranchSynchronizeWizardPage_repositories;
 
 	/** */
 	public static String GitBranchSynchronizeWizardPage_destination;
