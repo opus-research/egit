@@ -566,14 +566,6 @@ public class FetchGerritChangePage extends WizardPage {
 		public Integer getPatchSetNumber() {
 			return patchSetNumber;
 		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Object#toString()
-		 */
-		@Override
-		public String toString() {
-			return refName;
-		}
 	}
 
 	private final static class ChangeContentProposal implements
@@ -601,14 +593,6 @@ public class FetchGerritChangePage extends WizardPage {
 		public String getLabel() {
 			return NLS
 					.bind("{0} - {1}", myChange.getChangeNumber(), myChange.getPatchSetNumber()); //$NON-NLS-1$
-		}
-
-		/* (non-Javadoc)
-		 * @see java.lang.Object#toString()
-		 */
-		@Override
-		public String toString() {
-			return getContent();
 		}
 	}
 }

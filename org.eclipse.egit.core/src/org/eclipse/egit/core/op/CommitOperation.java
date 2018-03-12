@@ -247,7 +247,7 @@ public class CommitOperation implements IEGitOperation {
 			Entry idxEntry = index.getEntry(string);
 			if (notIndexed.contains(file)) {
 				File thisfile = new File(repositoryMapping.getWorkTree(),
-						string);
+						idxEntry.getName());
 				if (!thisfile.isFile()) {
 					index.remove(repositoryMapping.getWorkTree(), thisfile);
 					// TODO is this the right Location?
@@ -255,7 +255,7 @@ public class CommitOperation implements IEGitOperation {
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.CORE.getLocation(),
 								"Phantom file, so removing from index"); //$NON-NLS-1$
-					while (treeWithDeletedEntry != null && treeWithDeletedEntry.memberCount() == 0) {
+					while (treeWithDeletedEntry.memberCount() == 0) {
 						Tree toDelete = treeWithDeletedEntry;
 						treeWithDeletedEntry = treeWithDeletedEntry.getParent();
 						toDelete.delete();
@@ -336,7 +336,7 @@ public class CommitOperation implements IEGitOperation {
 					commitMessage = commitMessage.replaceAll("\nChange-Id: I0000000000000000000000000000000000000000\n", "\nChange-Id: I" + changeId.getName() + "\n");  //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
 			}
 			CommitBuilder commit = new CommitBuilder();
-			commit.setTreeId(tree.getId());
+			commit.setTreeId(tree.getTreeId());
 			commit.setParentIds(parentIds);
 			commit.setMessage(commitMessage);
 			commit.setAuthor(new PersonIdent(authorIdent, commitDate,
