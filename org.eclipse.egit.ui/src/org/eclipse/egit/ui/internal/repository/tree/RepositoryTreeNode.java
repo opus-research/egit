@@ -132,6 +132,8 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			// fall through
 		case ADDITIONALREFS:
 			// fall through
+		case SUBMODULES:
+			// fall through
 		case WORKINGDIR:
 			result = prime
 					* result
@@ -246,6 +248,8 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			// fall through
 		case ERROR:
 			// fall through
+		case SUBMODULES:
+			// fall through
 		case WORKINGDIR:
 			return 0;
 
@@ -269,21 +273,29 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 			return ((Ref) myObject).getName().compareTo(
 					((Ref) otherNode.getObject()).getName());
 		case REPO:
-			int nameCompare = ((Repository) myObject).getDirectory()
-					.getParentFile().getName().compareTo(
-							(((Repository) otherNode.getObject())
-									.getDirectory().getParentFile().getName()));
+			int nameCompare = getDirectoryContainingRepo((Repository) myObject)
+					.getName()
+					.compareTo(
+							getDirectoryContainingRepo((Repository) otherNode.getObject())
+									.getName());
 			if (nameCompare != 0)
 				return nameCompare;
 			// if the name is not unique, let's look at the whole path
-			return ((Repository) myObject).getDirectory().getParentFile()
-					.getParentFile().getPath().compareTo(
-							(((Repository) otherNode.getObject())
-									.getDirectory().getParentFile()
-									.getParentFile().getPath()));
-
+			return getDirectoryContainingRepo((Repository) myObject)
+					.getParentFile()
+					.getPath()
+					.compareTo(
+							getDirectoryContainingRepo((Repository) otherNode.getObject())
+									.getParentFile().getPath());
 		}
 		return 0;
+	}
+
+	private File getDirectoryContainingRepo(Repository repo) {
+		if (!repo.isBare())
+			return repo.getDirectory().getParentFile();
+		else
+			return repo.getDirectory();
 	}
 
 	private boolean checkObjectsEqual(Object otherObject) {
@@ -299,6 +311,8 @@ public abstract class RepositoryTreeNode<T> extends PlatformObject implements Co
 		case REMOTETRACKING:
 			// fall through
 		case ADDITIONALREFS:
+			// fall through
+		case SUBMODULES:
 			// fall through
 		case WORKINGDIR:
 			return ((Repository) myObject).getDirectory().equals(

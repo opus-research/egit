@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -32,6 +33,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -72,7 +74,8 @@ public class DiscardChangesOperation implements IEGitOperation {
 		this.files = new IResource[files.length];
 		System.arraycopy(files, 0, this.files, 0, files.length);
 		this.revision = revision;
-		schedulingRule = calcRefreshRule(files);
+		schedulingRule = MultiRule.combine(calcRefreshRule(files),
+				RuleUtil.getRuleForRepositories(files));
 	}
 
 	/*
@@ -162,8 +165,9 @@ public class DiscardChangesOperation implements IEGitOperation {
 	private void discardChanges() throws GitAPIException {
 		Map<Repository, Collection<String>> pathsByRepository = ResourceUtil
 				.splitResourcesByRepository(files);
-		for (Repository repository : pathsByRepository.keySet()) {
-			Collection<String> paths = pathsByRepository.get(repository);
+		for (Entry<Repository, Collection<String>> entry : pathsByRepository.entrySet()) {
+			Repository repository = entry.getKey();
+			Collection<String> paths = entry.getValue();
 			CheckoutCommand checkoutCommand = new Git(repository).checkout();
 			checkoutCommand.setStartPoint(this.revision);
 			for (String path : paths)
