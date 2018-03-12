@@ -221,7 +221,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 		// radio: create local branch
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
-		GridDataFactory.fillDefaults().span(1, 1).applyTo(createBranch);
+		GridDataFactory.fillDefaults().span(3, 1).applyTo(createBranch);
 		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -229,14 +229,6 @@ public class FetchGerritChangePage extends WizardPage {
 				checkPage();
 			}
 		});
-
-		branchCheckoutButton = new Button(checkoutGroup, SWT.CHECK);
-		GridDataFactory.fillDefaults().span(2, 1).align(SWT.END, SWT.CENTER)
-				.applyTo(branchCheckoutButton);
-		branchCheckoutButton.setFont(JFaceResources.getDialogFont());
-		branchCheckoutButton
-				.setText(UIText.FetchGerritChangePage_LocalBranchCheckout);
-		branchCheckoutButton.setSelection(true);
 
 		branchTextlabel = new Label(checkoutGroup, SWT.NONE);
 		GridDataFactory.defaultsFor(branchTextlabel).exclude(false)
@@ -271,6 +263,14 @@ public class FetchGerritChangePage extends WizardPage {
 		});
 		GridDataFactory.defaultsFor(branchEditButton).exclude(false)
 				.applyTo(branchEditButton);
+
+		branchCheckoutButton = new Button(checkoutGroup, SWT.CHECK);
+		GridDataFactory.fillDefaults().span(3, 1).align(SWT.END, SWT.BEGINNING)
+				.applyTo(branchCheckoutButton);
+		branchCheckoutButton.setFont(JFaceResources.getDialogFont());
+		branchCheckoutButton
+				.setText(UIText.FetchGerritChangePage_LocalBranchCheckout);
+		branchCheckoutButton.setSelection(true);
 
 		// radio: create tag
 		createTag = new Button(checkoutGroup, SWT.RADIO);

@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commands.shared;
 
-import java.text.MessageFormat;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -191,13 +190,9 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
-				String repoName = Activator.getDefault().getRepositoryUtil()
-						.getRepositoryName(repository);
 				CleanupUncomittedChangesDialog cleanupUncomittedChangesDialog = new CleanupUncomittedChangesDialog(
 						shell,
-						MessageFormat
-								.format(UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
-										repoName),
+						UIText.AbstractRebaseCommandHandler_cleanupDialog_title,
 						UIText.AbstractRebaseCommandHandler_cleanupDialog_text,
 						repository, files);
 				cleanupUncomittedChangesDialog.open();
