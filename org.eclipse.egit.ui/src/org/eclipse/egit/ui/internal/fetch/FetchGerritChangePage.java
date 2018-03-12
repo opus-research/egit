@@ -35,23 +35,17 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
-import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
-import org.eclipse.egit.ui.internal.dialogs.BranchEditDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
-import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.IContentProposal;
 import org.eclipse.jface.fieldassist.IContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.operation.IRunnableWithProgress;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CheckoutResult;
@@ -136,11 +130,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Button runInBackgroud;
 
-	private IInputValidator branchValidator;
-	private IInputValidator tagValidator;
-
-	private Button branchEditButton;
-
 	/**
 	 * @param repository
 	 * @param refName initial value for the ref field
@@ -156,11 +145,6 @@ public class FetchGerritChangePage extends WizardPage {
 		setMessage(UIText.FetchGerritChangePage_PageMessage);
 		settings = getDialogSettings();
 		lastUriKey = repository + LAST_URI_POSTFIX;
-
-		branchValidator = ValidationUtils.getRefNameInputValidator(repository,
-				Constants.R_HEADS, true);
-		tagValidator = ValidationUtils.getRefNameInputValidator(repository,
-				Constants.R_TAGS, true);
 	}
 
 	protected IDialogSettings getDialogSettings() {
@@ -209,15 +193,15 @@ public class FetchGerritChangePage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(refText);
 		addRefContentProposalToText(refText);
 
-		final Group checkoutGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		checkoutGroup.setLayout(new GridLayout(3, false));
-		GridDataFactory.fillDefaults().span(3, 1).grab(true, false)
+		Group checkoutGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		checkoutGroup.setLayout(new GridLayout(2, false));
+		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
 				.applyTo(checkoutGroup);
 		checkoutGroup.setText(UIText.FetchGerritChangePage_AfterFetchGroup);
 
 		// radio: create local branch
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
-		GridDataFactory.fillDefaults().span(3, 1).applyTo(createBranch);
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(createBranch);
 		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -238,31 +222,9 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
-		branchEditButton = new Button(checkoutGroup, SWT.PUSH);
-		branchEditButton.setFont(JFaceResources.getDialogFont());
-		branchEditButton.setText(UIText.FetchGerritChangePage_BranchEditButton);
-		branchEditButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent selectionEvent) {
-				String txt = branchText.getText();
-				String refToMark = "".equals(txt) ? null : Constants.R_HEADS + txt; //$NON-NLS-1$
-				AbstractBranchSelectionDialog dlg = new BranchEditDialog(
-						checkoutGroup.getShell(), repository, refToMark);
-				if (dlg.open() == Window.OK) {
-					branchText.setText(Repository.shortenRefName(dlg
-							.getRefName()));
-				} else {
-					// force calling branchText's modify listeners
-					branchText.setText(branchText.getText());
-				}
-			}
-		});
-		GridDataFactory.defaultsFor(branchEditButton).exclude(false)
-				.applyTo(branchEditButton);
-
 		// radio: create tag
 		createTag = new Button(checkoutGroup, SWT.RADIO);
-		GridDataFactory.fillDefaults().span(3, 1).applyTo(createTag);
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(createTag);
 		createTag.setText(UIText.FetchGerritChangePage_TagRadio);
 		createTag.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -286,7 +248,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 		// radio: checkout FETCH_HEAD
 		checkout = new Button(checkoutGroup, SWT.RADIO);
-		GridDataFactory.fillDefaults().span(3, 1).applyTo(checkout);
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(checkout);
 		checkout.setText(UIText.FetchGerritChangePage_CheckoutRadio);
 		checkout.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -297,7 +259,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 		// radio: don't checkout
 		dontCheckout = new Button(checkoutGroup, SWT.RADIO);
-		GridDataFactory.fillDefaults().span(3, 1).applyTo(checkout);
+		GridDataFactory.fillDefaults().span(2, 1).applyTo(checkout);
 		dontCheckout.setText(UIText.FetchGerritChangePage_UpdateRadio);
 		dontCheckout.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -411,12 +373,9 @@ public class FetchGerritChangePage extends WizardPage {
 		branchText.setEnabled(createBranchSelected);
 		branchText.setVisible(createBranchSelected);
 		branchTextlabel.setVisible(createBranchSelected);
-		branchEditButton.setVisible(createBranchSelected);
 		GridData gd = (GridData) branchText.getLayoutData();
 		gd.exclude = !createBranchSelected;
 		gd = (GridData) branchTextlabel.getLayoutData();
-		gd.exclude = !createBranchSelected;
-		gd = (GridData) branchEditButton.getLayoutData();
 		gd.exclude = !createBranchSelected;
 
 		boolean createTagSelected = createTag.getSelection();
@@ -456,10 +415,26 @@ public class FetchGerritChangePage extends WizardPage {
 				return;
 			}
 
-			if (createBranchSelected)
-				setErrorMessage(branchValidator.isValid(branchText.getText()));
-			else if (createTagSelected)
-				setErrorMessage(tagValidator.isValid(tagText.getText()));
+			boolean emptyRefName = (createBranchSelected && branchText
+					.getText().length() == 0)
+					|| (createTagSelected && tagText.getText().length() == 0);
+			if (emptyRefName) {
+				setErrorMessage(UIText.FetchGerritChangePage_ProvideRefNameMessage);
+				return;
+			}
+
+			boolean existingRefName = (createBranchSelected && repository
+					.getRef(branchText.getText()) != null)
+					|| (createTagSelected && repository.getRef(tagText
+							.getText()) != null);
+			if (existingRefName) {
+				setErrorMessage(NLS.bind(
+						UIText.FetchGerritChangePage_ExistingRefMessage,
+						branchText.getText()));
+				return;
+			}
+		} catch (IOException e1) {
+			// ignore here
 		} finally {
 			setPageComplete(getErrorMessage() == null);
 		}
