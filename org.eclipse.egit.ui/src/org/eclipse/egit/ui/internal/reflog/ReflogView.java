@@ -1,8 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, Chris Aniszczyk <caniszczyk@gmail.com>
- * Copyright (c) 2011, Matthias Sohn <matthias.sohn@sap.com>
- * and others.
- *
+ * Copyright (c) 2011, Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,8 +12,6 @@
 package org.eclipse.egit.ui.internal.reflog;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
@@ -53,7 +48,6 @@ import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -105,8 +99,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 	private ISelectionListener selectionChangedListener;
 
 	private ListenerHandle addRefsChangedListener;
-
-	private final DateFormat absoluteFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //$NON-NLS-1$
 
 	@Override
 	public void createPartControl(Composite parent) {
@@ -200,32 +192,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 			}
 
 		});
-
-		TreeViewerColumn dateColumn = createColumn(layout,
-				UIText.ReflogView_DateColumnHeader, 15, SWT.LEFT);
-		dateColumn.setLabelProvider(new ColumnLabelProvider() {
-
-			@Override
-			public String getText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				final PersonIdent who = entry.getWho();
-				// TODO add option to use RelativeDateFormatter
-				return absoluteFormatter.format(who.getWhen());
-			}
-
-			@Override
-			public String getToolTipText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				return entry.getNewId().name();
-			}
-
-			@Override
-			public Image getImage(Object element) {
-				return null;
-			}
-
-		});
-
 		TreeViewerColumn messageColumn = createColumn(layout,
 				UIText.ReflogView_MessageColumnHeader, 50, SWT.LEFT);
 		messageColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -267,31 +233,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener {
 				super.dispose();
 			}
 		});
-
-		TreeViewerColumn whoColumn = createColumn(layout,
-				UIText.ReflogView_CommitterColumnHeader, 15, SWT.LEFT);
-		whoColumn.setLabelProvider(new ColumnLabelProvider() {
-
-			@Override
-			public String getText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				final PersonIdent who = entry.getWho();
-				return who.getName() + " <" + who.getEmailAddress() + ">";  //$NON-NLS-1$//$NON-NLS-2$
-			}
-
-			@Override
-			public String getToolTipText(Object element) {
-				final ReflogEntry entry = (ReflogEntry) element;
-				return entry.getNewId().name();
-			}
-
-			@Override
-			public Image getImage(Object element) {
-				return null;
-			}
-
-		});
-
 		refLogTableTreeViewer.addOpenListener(new IOpenListener() {
 
 			public void open(OpenEvent event) {
