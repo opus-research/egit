@@ -15,7 +15,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.egit.ui.JobFamilies;
@@ -26,12 +25,10 @@ import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,24 +65,14 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		Repository repo = lookupRepository(repositoryFile);
 		Git git = new Git(repo);
 
-		Calendar cal = Calendar.getInstance();
-		PersonIdent sideCommitter = new PersonIdent("Side Committer",
-				"side@example.org", cal.getTime().getTime(), 0);
-		// Make sure commit time stamps are different, otherwise the order in
-		// the dialog is not stable
-		cal.roll(Calendar.SECOND, 2);
-		PersonIdent masterCommitter = new PersonIdent("Master Committer",
-				"master@example.org", cal.getTime().getTime(), 0);
-
 		git.checkout().setCreateBranch(true).setName("side").call();
 		touch(PROJ1, "folder/test.txt", "side");
 		RevCommit sideCommit = git.commit().setAll(true)
-				.setMessage("Side commit").setCommitter(sideCommitter).call();
+				.setMessage("Side commit").call();
 
 		git.checkout().setName("master").call();
 		touch(PROJ1, "folder/test2.txt", "master");
-		git.commit().setAll(true).setMessage("Master commit")
-				.setCommitter(masterCommitter).call();
+		git.commit().setAll(true).setMessage("Master commit").call();
 
 		git.merge().include(sideCommit).call();
 
@@ -110,9 +97,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 				.button(IDialogConstants.OK_LABEL).click();
 		selectDialog = bot.shell(UIText.CommitSelectDialog_WindowTitle);
 		// Select first parent, which should be the master commit
-		SWTBotTable table = selectDialog.bot().table();
-		assertEquals("Master commit", table.cell(0, 1));
-		table.select(0);
+		selectDialog.bot().table().select(0);
 		executeReplace(selectDialog);
 
 		String replacedContent = getTestFileContent();
