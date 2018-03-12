@@ -29,8 +29,6 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.internal.CoreText;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
-import org.eclipse.jgit.api.CommitCommand;
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
@@ -175,12 +173,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			}
 			mergeOperation.execute(monitor);
 
-			MergeResult result = mergeOperation.getResult();
-			if (squash && result.getMergeStatus().isSuccessful()) {
-				CommitCommand commitCommand = Git.wrap(repository.getRepository()).commit();
-				commitCommand.call();
-			}
-			return result;
+			return mergeOperation.getResult();
 		} catch (GitAPIException e) {
 			throw new RuntimeException(e);
 		}
