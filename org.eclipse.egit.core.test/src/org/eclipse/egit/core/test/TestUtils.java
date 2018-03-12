@@ -44,30 +44,29 @@ public class TestUtils {
 
 	public final static String COMMITTER = "The Commiter <The.committer@some.com>";
 
+	private final static File rootDir = customTestDirectory();
+
 	/**
-	 * allow to set a custom directory for running tests
+	 * Allow to set a custom directory for running tests
 	 *
 	 * @return custom directory defined by system property
-	 *         {@code egit.test.tmpdir} or {@code null} if this property isn't
-	 *         defined
+	 *         {@code egit.test.tmpdir} or {@code ~/egit.test.tmpdir} if this
+	 *         property isn't defined
 	 */
-	private static File getCustomTestDirectory() {
-		final String testDir = System.getProperty("egit.test.tmpdir"); //$NON-NLS-1$
-		if (testDir == null || testDir.length() == 0)
-			return null;
-		return new File(testDir).getAbsoluteFile();
-	}
-
-	private File rootDir;
-
-	public TestUtils() {
-		File testDir = getCustomTestDirectory();
-		if (testDir == null) {
-			testDir = FS.DETECTED.userHome();
-			testDir = new File(testDir, "egit.test.tmpdir");
+	private static File customTestDirectory() {
+		final String p = System.getProperty("egit.test.tmpdir"); //$NON-NLS-1$
+		File testDir = null;
+		boolean isDefault = true;
+		if (p == null || p.length() == 0)
+			testDir = new File(FS.DETECTED.userHome(), "egit.test.tmpdir"); //$NON-NLS-1$
+		else {
+			isDefault = false;
+			testDir = new File(p).getAbsoluteFile();
 		}
-		rootDir = new File(testDir, "egitTest" + System.currentTimeMillis()
-				+ "-" + Integer.toHexString(System.identityHashCode(this)));
+		System.out.println("egit.test.tmpdir" //$NON-NLS-1$
+				+ (isDefault ? "[default]: " : ": ") //$NON-NLS-1$ $NON-NLS-2$
+				+ testDir.getAbsolutePath());
+		return testDir;
 	}
 
 	/**
@@ -75,9 +74,8 @@ public class TestUtils {
 	 * Current implementation returns a "temporary" folder in the user home.
 	 *
 	 * @return a "temporary" folder in the user home that may not exist.
-	 * @throws IOException
 	 */
-	public File getBaseTempDir() throws IOException {
+	public File getBaseTempDir() {
 		return rootDir;
 	}
 
