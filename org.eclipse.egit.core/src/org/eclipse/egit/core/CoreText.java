@@ -92,9 +92,6 @@ public class CoreText extends NLS {
 	public static String BranchOperation_checkoutProblem;
 
 	/** */
-	public static String BranchOperation_couldNotDelete;
-
-	/** */
 	public static String BranchOperation_mappingCommit;
 
 	/** */
