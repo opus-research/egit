@@ -1591,7 +1591,7 @@ public class UIText extends NLS {
 	public static String HistoryPage_authorColumn;
 
 	/** */
-	public static String HistoryPage_dateColumn;
+	public static String HistoryPage_authorDateColumn;
 
 	/** */
 	public static String HistoryPage_refreshJob;
@@ -2566,12 +2566,6 @@ public class UIText extends NLS {
 	public static String BranchOperationUI_DetachedHeadMessage;
 
 	/** */
-	public static String BranchResultDialog_buttonCommit;
-
-	/** */
-	public static String BranchResultDialog_buttonReset;
-
-	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
 
 	/** */
@@ -3503,6 +3497,9 @@ public class UIText extends NLS {
 	public static String CommitGraphTable_Committer;
 
 	/** */
+	public static String CommitGraphTable_committerDataColumn;
+
+	/** */
 	public static String CommitGraphTable_CompareWithEachOtherInTreeMenuLabel;
 
 	/** */
@@ -3755,7 +3752,7 @@ public class UIText extends NLS {
 	public static String RevertFailureDialog_Title;
 
 	/** */
-	public static String RevertHandler_AlreadyRevertedMessae;
+	public static String RevertHandler_AlreadyRevertedMessage;
 
 	/** */
 	public static String RevertHandler_JobName;
