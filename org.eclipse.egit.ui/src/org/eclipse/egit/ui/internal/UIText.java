@@ -765,9 +765,6 @@ public class UIText extends NLS {
 	public static String RebaseInteractiveStepActionToolBarProvider_UndoText;
 
 	/** */
-	public static String RebaseInteractiveView_HeadingStep;
-
-	/** */
 	public static String RebaseInteractiveView_HeadingAction;
 
 	/** */
@@ -2178,9 +2175,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_SelectAll;
 
 	/** */
-	public static String CommitDialog_SelectForCommit;
-
-	/** */
 	public static String CommitDialog_ShowUntrackedFiles;
 
 	/** */
@@ -2239,15 +2233,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitDialog_MessageNoFilesSelected;
-
-	/** */
-	public static String CommitDialog_OpenStagingViewError;
-
-	/** */
-	public static String CommitDialog_OpenStagingViewLink;
-
-	/** */
-	public static String CommitDialog_OpenStagingViewToolTip;
 
 	/** */
 	public static String CommitDialog_Path;

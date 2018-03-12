@@ -82,7 +82,6 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -143,8 +142,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	private TreeViewerColumn[] dynamicColumns;
 
 	private List<PlanContextMenuAction> contextMenuItems;
-
-	private RebasePlanIndexer planIndexer;
 
 	/**
 	 * View for handling interactive rebase
@@ -211,9 +208,6 @@ public class RebaseInteractiveView extends ViewPart implements
 				selectionChangedListener);
 		if (currentPlan != null)
 			currentPlan.removeRebaseInteractivePlanChangeListener(this);
-
-		if (planIndexer != null)
-			planIndexer.dispose();
 	}
 
 	@Override
@@ -503,7 +497,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	// show empty space)
 	private void createColumns() {
 		String[] headings = { UIText.RebaseInteractiveView_HeadingStatus,
-				UIText.RebaseInteractiveView_HeadingStep,
 				UIText.RebaseInteractiveView_HeadingAction,
 				UIText.RebaseInteractiveView_HeadingCommitId,
 				UIText.RebaseInteractiveView_HeadingMessage,
@@ -561,44 +554,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn stepColumn = createColumn(headings[1], 55);
-		stepColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
-			@Override
-			public String getText(Object element) {
-				if (element instanceof PlanElement) {
-					PlanElement planLine = (PlanElement) element;
-					return (planIndexer.indexOf(planLine) + 1) + "."; //$NON-NLS-1$
-				}
-				return super.getText(element);
-			}
-		});
-		stepColumn.getColumn().addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				Tree tree = planTreeViewer.getTree();
-
-				boolean orderReversed = tree.getSortDirection() == SWT.DOWN;
-
-				RebaseInteractivePreferences.setOrderReversed(!orderReversed);
-
-				int newDirection = (orderReversed ? SWT.UP : SWT.DOWN);
-				tree.setSortDirection(newDirection);
-
-				TreeItem topmostVisibleItem = tree.getTopItem();
-				refreshUI();
-				if (topmostVisibleItem != null)
-					tree.showItem(topmostVisibleItem);
-			}
-		});
-
-		boolean orderReversed = RebaseInteractivePreferences.isOrderReversed();
-		int direction = (orderReversed ? SWT.DOWN : SWT.UP);
-
-		Tree planTree = planTreeViewer.getTree();
-		planTree.setSortColumn(stepColumn.getColumn());
-		planTree.setSortDirection(direction);
-
-		TreeViewerColumn actionColumn = createColumn(headings[2], 90);
+		TreeViewerColumn actionColumn = createColumn(headings[1], 90);
 		actionColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 
 			@Override
@@ -640,7 +596,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitIDColumn = createColumn(headings[3], 70);
+		TreeViewerColumn commitIDColumn = createColumn(headings[2], 70);
 		commitIDColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -652,7 +608,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitMessageColumn = createColumn(headings[4], 200);
+		TreeViewerColumn commitMessageColumn = createColumn(headings[3], 200);
 		commitMessageColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -665,7 +621,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					}
 				});
 
-		TreeViewerColumn authorColumn = createColumn(headings[5], 120);
+		TreeViewerColumn authorColumn = createColumn(headings[4], 120);
 		authorColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -677,7 +633,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn authoredDateColumn = createColumn(headings[6], 80);
+		TreeViewerColumn authoredDateColumn = createColumn(headings[5], 80);
 		authoredDateColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -690,7 +646,7 @@ public class RebaseInteractiveView extends ViewPart implements
 					}
 				});
 
-		TreeViewerColumn committerColumn = createColumn(headings[7], 120);
+		TreeViewerColumn committerColumn = createColumn(headings[6], 120);
 		committerColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -702,7 +658,7 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 
-		TreeViewerColumn commitDateColumn = createColumn(headings[8], 80);
+		TreeViewerColumn commitDateColumn = createColumn(headings[7], 80);
 		commitDateColumn
 				.setLabelProvider(new HighlightingColumnLabelProvider() {
 					@Override
@@ -752,12 +708,7 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		if (currentPlan != null)
 			currentPlan.removeRebaseInteractivePlanChangeListener(this);
-
-		if (planIndexer != null)
-			planIndexer.dispose();
-
 		currentPlan = RebaseInteractivePlan.getPlan(repository);
-		planIndexer = new RebasePlanIndexer(currentPlan);
 		currentPlan.addRebaseInteractivePlanChangeListener(this);
 		form.setText(getRepositoryName(repository));
 		refresh();
@@ -768,13 +719,8 @@ public class RebaseInteractiveView extends ViewPart implements
 			return;
 		asyncExec(new Runnable() {
 			public void run() {
-				planTreeViewer.getTree().setRedraw(false);
-				try {
-					planTreeViewer.setInput(currentPlan);
-					refreshUI();
-				} finally {
-					planTreeViewer.getTree().setRedraw(true);
-				}
+				planTreeViewer.setInput(currentPlan);
+				refreshUI();
 			}
 		});
 
@@ -823,12 +769,6 @@ public class RebaseInteractiveView extends ViewPart implements
 			continueItem.setEnabled(true);
 			skipItem.setEnabled(true);
 			abortItem.setEnabled(true);
-		}
-
-		if (RebaseInteractivePreferences.isOrderReversed()) {
-			Tree tree = planTreeViewer.getTree();
-			TreeItem bottomItem = tree.getItem(tree.getItemCount() - 1);
-			tree.showItem(bottomItem);
 		}
 	}
 

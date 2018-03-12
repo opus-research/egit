@@ -2065,14 +2065,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			amendPreviousCommitAction.setChecked(isAmending);
 			amendPreviousCommitAction.run();
 		}
-	}
 
-	/**
-	 * @param message
-	 *            commit message to set for current repository
-	 */
-	public void setCommitMessage(String message) {
-		commitMessageText.setText(message);
 	}
 
 	/**
