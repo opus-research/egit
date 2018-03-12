@@ -3405,11 +3405,8 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_ExpandAll;
-
 	/** */
-	public static String DecoratableResourceHelper_noHead;
 
-	/** */
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
