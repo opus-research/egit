@@ -3305,9 +3305,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
 
-		getDialogSettings().put(STORE_SORT_STATE, sortAction.isChecked());
 
-		currentRepository = null;
+		getDialogSettings().put(STORE_SORT_STATE, sortAction.isChecked());
 
 		disposed = true;
 	}

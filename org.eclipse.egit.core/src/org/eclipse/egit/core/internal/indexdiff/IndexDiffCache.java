@@ -44,7 +44,7 @@ import org.eclipse.jgit.lib.Repository;
  */
 public class IndexDiffCache {
 
-	private Map<File, IndexDiffCacheEntry> entries = new HashMap<File, IndexDiffCacheEntry>();
+	private Map<Repository, IndexDiffCacheEntry> entries = new HashMap<Repository, IndexDiffCacheEntry>();
 
 	private Set<IndexDiffChangedListener> listeners = new HashSet<IndexDiffChangedListener>();
 
@@ -224,9 +224,7 @@ public class IndexDiffCache {
 	public IndexDiffCacheEntry getIndexDiffCacheEntry(@NonNull Repository repository) {
 		IndexDiffCacheEntry entry;
 		synchronized (entries) {
-			File gitDir = new Path(repository.getDirectory().getAbsolutePath())
-					.toFile();
-			entry = entries.get(gitDir);
+			entry = entries.get(repository);
 			if (entry != null) {
 				return entry;
 			}
@@ -234,7 +232,7 @@ public class IndexDiffCache {
 				return null;
 			}
 			entry = new IndexDiffCacheEntry(repository, globalListener);
-			entries.put(gitDir, entry);
+			entries.put(repository, entry);
 		}
 		return entry;
 	}
@@ -312,14 +310,14 @@ public class IndexDiffCache {
 	}
 
 	/**
-	 * Removes the {@link IndexDiffCacheEntry} for the given repository.
+	 * Removes the {@link IndexDiffCacheEntry} for the given {@link Repository}.
 	 *
-	 * @param gitDir
-	 *            of the {@link Repository} to remove the cache entry of
+	 * @param repository
+	 *            to remove the cache entry of
 	 */
-	public void remove(@NonNull File gitDir) {
+	public void remove(@NonNull Repository repository) {
 		synchronized (entries) {
-			IndexDiffCacheEntry cachedEntry = entries.remove(gitDir);
+			IndexDiffCacheEntry cachedEntry = entries.remove(repository);
 			if (cachedEntry != null) {
 				cachedEntry.dispose();
 			}
@@ -327,15 +325,14 @@ public class IndexDiffCache {
 	}
 
 	/**
-	 * Retrieves the set of git directories of repositories for which there are
-	 * currently entries in the cache; primarily intended for use in tests.
+	 * Retrieves the set of repositories for which there are currently entries
+	 * in the cache; primarily intended for use in tests.
 	 *
-	 * @return the set of git directories of repositories for which the cache
-	 *         currently has entries
+	 * @return the set of repositories for which the cache currently has entries
 	 */
 	@NonNull
-	public Set<File> currentCacheEntries() {
-		Set<File> result = null;
+	public Set<Repository> currentCacheEntries() {
+		Set<Repository> result = null;
 		synchronized (entries) {
 			result = new HashSet<>(entries.keySet());
 		}

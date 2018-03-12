@@ -18,14 +18,19 @@ import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
@@ -36,9 +41,37 @@ public class RepositoryCache {
 	private final Map<File, Reference<Repository>> repositoryCache = new HashMap<File, Reference<Repository>>();
 
 	/**
-	 * Looks in the cache for a {@link Repository} matching the given git
-	 * directory. If there is no such Repository instance in the cache, one is
-	 * created.
+	 * Whenever a repository is added to the cache, we record here other
+	 * repositories' git directories if their git directories (catches
+	 * submodules) or working directories (nested repositories) are a prefix of
+	 * the git directory serving as a key in this map. This is then used to
+	 * determine which repositories may be pruned.
+	 */
+	private final Map<File, Set<File>> nesting = new HashMap<>();
+
+	private final IPreferenceChangeListener configuredRepositoriesListener = new IPreferenceChangeListener() {
+
+		@Override
+		public void preferenceChange(PreferenceChangeEvent event) {
+			if (!RepositoryUtil.PREFS_DIRECTORIES.equals(event.getKey())) {
+				return;
+			}
+			prune(Activator.getDefault().getRepositoryUtil().getRepositories());
+		}
+
+	};
+
+	RepositoryCache() {
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.addPreferenceChangeListener(configuredRepositoriesListener);
+	}
+
+	void dispose() {
+		InstanceScope.INSTANCE.getNode(Activator.getPluginId())
+				.removePreferenceChangeListener(configuredRepositoriesListener);
+	}
+
+	/**
 	 *
 	 * @param gitDir
 	 * @return an existing instance of Repository for <code>gitDir</code> or a
@@ -55,28 +88,11 @@ public class RepositoryCache {
 		Repository d = r != null ? r.get() : null;
 		if (d == null) {
 			d = FileRepositoryBuilder.create(normalizedGitDir);
+			computeNesting(d, normalizedGitDir);
 			repositoryCache.put(normalizedGitDir,
 					new WeakReference<Repository>(d));
 		}
 		return d;
-	}
-
-	/**
-	 * Looks in the cache for a {@link Repository} matching the given git
-	 * directory.
-	 *
-	 * @param gitDir
-	 * @return the cached repository, if any, or {@code null} if node found in
-	 *         the cache.
-	 */
-	public synchronized Repository getRepository(final File gitDir) {
-		prune();
-		if (gitDir == null) {
-			return null;
-		}
-		File normalizedGitDir = new Path(gitDir.getAbsolutePath()).toFile();
-		Reference<Repository> r = repositoryCache.get(normalizedGitDir);
-		return r != null ? r.get() : null;
 	}
 
 	/**
@@ -86,10 +102,7 @@ public class RepositoryCache {
 		prune();
 		List<Repository> repositories = new ArrayList<Repository>();
 		for (Reference<Repository> reference : repositoryCache.values()) {
-			Repository repository = reference.get();
-			if (repository != null) {
-				repositories.add(repository);
-			}
+			repositories.add(reference.get());
 		}
 		return repositories.toArray(new Repository[repositories.size()]);
 	}
@@ -149,9 +162,102 @@ public class RepositoryCache {
 			Map.Entry<File, Reference<Repository>> entry = i.next();
 			Repository repository = entry.getValue().get();
 			if (repository == null || !repository.getDirectory().exists()) {
-				i.remove();
-				Activator.getDefault().getIndexDiffCache()
-						.remove(entry.getKey());
+				removeFromCache(i, repository, entry.getKey());
+			}
+		}
+	}
+
+	private synchronized void prune(Set<String> configuredRepositories) {
+		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = repositoryCache
+				.entrySet().iterator(); i.hasNext();) {
+			Map.Entry<File, Reference<Repository>> entry = i.next();
+			File gitDir = entry.getKey();
+			if (configuredRepositories.contains(gitDir.getPath())) {
+				continue;
+			}
+			// Check nesting to avoid we remove submodules or nested
+			// repositories prematurely.
+			Set<File> outerRepositories = nesting.get(gitDir);
+			boolean found = false;
+			if (outerRepositories != null) {
+				for (File outer : outerRepositories) {
+					if (configuredRepositories.contains(outer.getPath())) {
+						found = true;
+						break;
+					}
+				}
+			}
+			if (!found) {
+				removeFromCache(i, entry.getValue().get(), gitDir);
+			}
+		}
+	}
+
+	private void removeFromCache(
+			Iterator<Map.Entry<File, Reference<Repository>>> iterator,
+			Repository repository, File gitDir) {
+		iterator.remove();
+		nesting.remove(gitDir);
+		for (Set<File> others : nesting.values()) {
+			others.remove(gitDir);
+		}
+		if (repository != null) {
+			Activator.getDefault().getIndexDiffCache().remove(repository);
+		}
+	}
+
+	private void computeNesting(Repository repository, File gitDir) {
+		Set<File> outer = new HashSet<>();
+		java.nio.file.Path gitPath = gitDir.toPath();
+		// Check if any of the existing repositories encompasses the new
+		// repository
+		for (Map.Entry<File, Reference<Repository>> entry : repositoryCache
+				.entrySet()) {
+			File outerGitDir = entry.getKey();
+			if (gitPath.startsWith(outerGitDir.toPath())) {
+				// Submodule
+				outer.add(outerGitDir);
+			} else {
+				// Check working directories: if our gitDir is inside the
+				// working tree we're a nested repository.
+				Repository outerRepo = entry.getValue().get();
+				if (outerRepo != null && !outerRepo.isBare()) {
+					// Ensure the path is normalized.
+					File outerWorkDir = new Path(
+							outerRepo.getWorkTree().getAbsolutePath()).toFile();
+					if (gitPath.startsWith(outerWorkDir.toPath())) {
+						outer.add(outerGitDir);
+					}
+				}
+			}
+		}
+		if (!outer.isEmpty()) {
+			nesting.put(gitDir, outer);
+		}
+		// Now the inverse: is the new repository an outer repository for one of
+		// the already cached repositories?
+		if (repository.isBare()) {
+			return;
+		}
+		java.nio.file.Path myWorkDir = new Path(
+				repository.getWorkTree().getAbsolutePath()).toFile().toPath();
+		for (Map.Entry<File, Reference<Repository>> entry : repositoryCache
+				.entrySet()) {
+			if (entry.getValue().get() == null) {
+				continue; // Will be pruned next time
+			}
+			File innerGitDir = entry.getKey();
+			java.nio.file.Path innerGitPath = innerGitDir.toPath();
+			if (innerGitPath.startsWith(gitPath)
+					|| innerGitPath.startsWith(myWorkDir)) {
+				Set<File> other = nesting.get(innerGitDir);
+				if (other == null) {
+					other = new HashSet<File>();
+					other.add(gitDir);
+					nesting.put(innerGitDir, other);
+				} else {
+					other.add(gitDir);
+				}
 			}
 		}
 	}
@@ -162,11 +268,14 @@ public class RepositoryCache {
 	 */
 	public synchronized void clear() {
 		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
-		for (Map.Entry<File, Reference<Repository>> entry : repositoryCache
-				.entrySet()) {
-			cache.remove(entry.getKey());
+		for (Reference<Repository> repoRef : repositoryCache.values()) {
+			Repository repo = repoRef.get();
+			if (repo != null) {
+				cache.remove(repo);
+			}
 		}
 		repositoryCache.clear();
+		nesting.clear();
 	}
 
 }
