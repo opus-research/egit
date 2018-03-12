@@ -115,7 +115,6 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 									repository);
 					}
 				});
-		return;
 	}
 
 
@@ -130,7 +129,7 @@ public abstract class AbstractRebaseCommandHandler extends AbstractSharedCommand
 	 * Create a {@link RebaseOperation} by calling
 	 * {@link AbstractRebaseCommandHandler#createRebaseOperation(Repository)}
 	 * and execute it.
-	 * 
+	 *
 	 * @param repository
 	 * @throws ExecutionException
 	 */
