@@ -17,12 +17,9 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
-import org.eclipse.core.commands.operations.IUndoContext;
 import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -31,7 +28,6 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
@@ -54,15 +50,13 @@ import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.commit.CommitUI;
-import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
-import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageArea;
+import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponent;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentState;
 import org.eclipse.egit.ui.internal.dialogs.CommitMessageComponentStateManager;
 import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -78,7 +72,6 @@ import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.LocalSelectionTransfer;
 import org.eclipse.jface.viewers.ContentViewer;
-import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
@@ -109,7 +102,6 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
-import org.eclipse.swt.custom.VerifyKeyListener;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.DragSourceAdapter;
 import org.eclipse.swt.dnd.DragSourceEvent;
@@ -119,16 +111,12 @@ import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -148,7 +136,6 @@ import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
-import org.eclipse.ui.operations.UndoRedoActionGroup;
 import org.eclipse.ui.part.ViewPart;
 
 /**
@@ -298,8 +285,6 @@ public class StagingView extends ViewPart {
 
 	private IndexDiffCacheEntry cacheEntry;
 
-	private UndoRedoActionGroup undoRedoActionGroup;
-
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
@@ -350,7 +335,7 @@ public class StagingView extends ViewPart {
 		unstagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
 		unstagedTableViewer.getTable().setLinesVisible(true);
-		unstagedTableViewer.setLabelProvider(createLabelProvider(unstagedTableViewer));
+		unstagedTableViewer.setLabelProvider(createLabelProvider());
 		unstagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				true));
 		unstagedTableViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
@@ -420,10 +405,6 @@ public class StagingView extends ViewPart {
 			protected CommitProposalProcessor getCommitProposalProcessor() {
 				return commitProposalProcessor;
 			}
-			@Override
-			protected IHandlerService getHandlerService() {
-				return (IHandlerService) getSite().getService(IHandlerService.class);
-			}
 		};
 		commitMessageText.setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TEXT_BORDER);
@@ -470,7 +451,7 @@ public class StagingView extends ViewPart {
 		stagedTableViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
 				FormToolkit.TREE_BORDER);
 		stagedTableViewer.getTable().setLinesVisible(true);
-		stagedTableViewer.setLabelProvider(createLabelProvider(stagedTableViewer));
+		stagedTableViewer.setLabelProvider(createLabelProvider());
 		stagedTableViewer.setContentProvider(new StagingViewContentProvider(
 				false));
 		stagedTableViewer.addDragSupport(
@@ -548,29 +529,6 @@ public class StagingView extends ViewPart {
 		commitMessageComponent.attachControls(commitMessageText, authorText,
 				committerText);
 
-		// allow to commit with ctrl-enter
-		commitMessageText.getTextWidget().addVerifyKeyListener(new VerifyKeyListener() {
-			public void verifyKey(VerifyEvent event) {
-				if (UIUtils.isSubmitKeyEvent(event)) {
-					event.doit = false;
-					commit();
-				}
-			}
-		});
-
-		commitMessageText.getTextWidget().addFocusListener(new FocusListener() {
-			public void focusGained(FocusEvent e) {
-				// Ctrl+Enter shortcut only works when the focus is on the commit message text
-				commitAction.setToolTipText(MessageFormat.format(
-						UIText.StagingView_CommitToolTip,
-						UIUtils.SUBMIT_KEY_STROKE.format()));
-			}
-
-			public void focusLost(FocusEvent e) {
-				commitAction.setToolTipText(null);
-			}
-		});
-
 		ModifyListener modifyListener = new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				updateMessage();
@@ -623,8 +581,8 @@ public class StagingView extends ViewPart {
 	}
 
 	private void updateToolbar() {
-		IActionBars actionBars = getViewSite().getActionBars();
-		IToolBarManager toolbar = actionBars.getToolBarManager();
+		IToolBarManager toolbar = getViewSite().getActionBars()
+				.getToolBarManager();
 
 		refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
 			public void run() {
@@ -732,25 +690,18 @@ public class StagingView extends ViewPart {
 		fileNameModeAction.setChecked(getPreferenceStore().getBoolean(
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
 
-		IMenuManager dropdownMenu = actionBars.getMenuManager();
+		IMenuManager dropdownMenu = getViewSite().getActionBars()
+				.getMenuManager();
 		dropdownMenu.add(openNewCommitsAction);
 		dropdownMenu.add(columnLayoutAction);
 		dropdownMenu.add(fileNameModeAction);
-
-		// For the normal resource undo/redo actions to be active, so that files
-		// deleted via the "Delete" action in the staging view can be restored.
-		IUndoContext workspaceContext = (IUndoContext) ResourcesPlugin.getWorkspace().getAdapter(IUndoContext.class);
-		undoRedoActionGroup = new UndoRedoActionGroup(getViewSite(), workspaceContext, true);
-		undoRedoActionGroup.fillActionBars(actionBars);
 	}
 
-	private IBaseLabelProvider createLabelProvider(TableViewer tableViewer) {
+	private IBaseLabelProvider createLabelProvider() {
 		StagingViewLabelProvider baseProvider = new StagingViewLabelProvider();
 		baseProvider.setFileNameMode(getPreferenceStore().getBoolean(
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
-
-		ProblemLabelDecorator decorator = new ProblemLabelDecorator(tableViewer);
-		return new DecoratingStyledCellLabelProvider(baseProvider, decorator, null);
+		return new DelegatingStyledCellLabelProvider(baseProvider);
 	}
 
 	private IPreferenceStore getPreferenceStore() {
@@ -848,18 +799,42 @@ public class StagingView extends ViewPart {
 						openSelectionInEditor(tableViewer.getSelection());
 					}
 				};
+				boolean addReplaceWithFileInGitIndex = false;
+				boolean addReplaceWithHeadRevision = false;
+				boolean addStage = false;
+				boolean addUnstage = false;
+				boolean addLaunchMergeTool = false;
 				openWorkingTreeVersion.setEnabled(!submoduleSelected);
 				menuMgr.add(openWorkingTreeVersion);
 
-				Set<StagingEntry.Action> availableActions = getAvailableActions(selection);
-
-				boolean addReplaceWithFileInGitIndex = availableActions.contains(StagingEntry.Action.REPLACE_WITH_FILE_IN_GIT_INDEX);
-				boolean addReplaceWithHeadRevision = availableActions.contains(StagingEntry.Action.REPLACE_WITH_HEAD_REVISION);
-				boolean addStage = availableActions.contains(StagingEntry.Action.STAGE);
-				boolean addUnstage = availableActions.contains(StagingEntry.Action.UNSTAGE);
-				boolean addDelete = availableActions.contains(StagingEntry.Action.DELETE);
-				boolean addLaunchMergeTool = availableActions.contains(StagingEntry.Action.LAUNCH_MERGE_TOOL);
-
+				StagingEntry stagingEntry = (StagingEntry) selection.getFirstElement();
+				switch (stagingEntry.getState()) {
+				case ADDED:
+					addUnstage = true;
+					break;
+				case CHANGED:
+					addReplaceWithHeadRevision = true;
+					addUnstage = true;
+					break;
+				case REMOVED:
+					addReplaceWithHeadRevision = true;
+					addUnstage = true;
+					break;
+				case CONFLICTING:
+					addReplaceWithFileInGitIndex = true;
+					addReplaceWithHeadRevision = true;
+					addStage = true;
+					addLaunchMergeTool = true;
+					break;
+				case MISSING:
+				case MODIFIED:
+				case PARTIALLY_MODIFIED:
+				case UNTRACKED:
+					addReplaceWithFileInGitIndex = true;
+					addReplaceWithHeadRevision = true;
+					addStage = true;
+					break;
+				}
 				if (addStage)
 					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
 						@Override
@@ -874,20 +849,17 @@ public class StagingView extends ViewPart {
 							unstage((IStructuredSelection) tableViewer.getSelection());
 						}
 					});
-				boolean selectionIncludesNonWorkspaceResources = selectionIncludesNonWorkspaceResources(tableViewer.getSelection());
+				boolean isNonResourceSelection = isNonResourceSelection(tableViewer.getSelection());
 				if (addReplaceWithFileInGitIndex)
-					if (selectionIncludesNonWorkspaceResources)
+					if (isNonResourceSelection)
 						menuMgr.add(new ReplaceAction(UIText.StagingView_replaceWithFileInGitIndex, selection, false));
 					else
 						menuMgr.add(createItem(ActionCommands.DISCARD_CHANGES_ACTION, tableViewer));	// replace with index
 				if (addReplaceWithHeadRevision)
-					if (selectionIncludesNonWorkspaceResources)
+					if (isNonResourceSelection)
 						menuMgr.add(new ReplaceAction(UIText.StagingView_replaceWithHeadRevision, selection, true));
 					else
 						menuMgr.add(createItem(ActionCommands.REPLACE_WITH_HEAD_ACTION, tableViewer));
-				if (addDelete) {
-					menuMgr.add(new DeleteAction(selection));
-				}
 				if (addLaunchMergeTool)
 					menuMgr.add(createItem(ActionCommands.MERGE_TOOL_ACTION, tableViewer));
 			}
@@ -918,32 +890,6 @@ public class StagingView extends ViewPart {
 		}
 	}
 
-	private class DeleteAction extends Action {
-
-		private final IStructuredSelection selection;
-
-		DeleteAction(IStructuredSelection selection) {
-			super(UIText.StagingView_DeleteItemMenuLabel);
-			this.selection = selection;
-		}
-
-		@Override
-		public void run() {
-			DeletePathsOperationUI operation = new DeletePathsOperationUI(getSelectedPaths(), getSite());
-			operation.run();
-		}
-
-		private List<IPath> getSelectedPaths() {
-			List<IPath> paths = new ArrayList<IPath>();
-			Iterator iterator = selection.iterator();
-			while (iterator.hasNext()) {
-				StagingEntry stagingEntry = (StagingEntry) iterator.next();
-				paths.add(stagingEntry.getLocation());
-			}
-			return paths;
-		}
-	}
-
 	private void replaceWith(String[] files, boolean headRevision) {
 		if (files == null || files.length == 0)
 			return;
@@ -969,11 +915,7 @@ public class StagingView extends ViewPart {
 		return result.toArray(new String[result.size()]);
 	}
 
-	/**
-	 * @param selection
-	 * @return true if the selection includes a non-workspace resource, false otherwise
-	 */
-	private boolean selectionIncludesNonWorkspaceResources(ISelection selection) {
+	private boolean isNonResourceSelection(ISelection selection) {
 		if (!(selection instanceof IStructuredSelection))
 			return false;
 		IStructuredSelection structuredSelection = (IStructuredSelection) selection;
@@ -984,10 +926,10 @@ public class StagingView extends ViewPart {
 				return false;
 			StagingEntry stagingEntry = (StagingEntry) selectedObject;
 			String path = currentRepository.getWorkTree() + "/" + stagingEntry.getPath(); //$NON-NLS-1$
-			if (getResource(path) == null)
-				return true;
+			if (getResource(path) != null)
+				return false;
 		}
-		return false;
+		return true;
 	}
 
 	private IFile getResource(String path) {
@@ -1023,18 +965,6 @@ public class StagingView extends ViewPart {
 		}
 		IWorkbenchPage page = window.getActivePage();
 		EgitUiEditorUtils.openEditor(file, page);
-	}
-
-	private static Set<StagingEntry.Action> getAvailableActions(IStructuredSelection selection) {
-		Set<StagingEntry.Action> availableActions = EnumSet.noneOf(StagingEntry.Action.class);
-		for (Iterator it = selection.iterator(); it.hasNext(); ) {
-			StagingEntry stagingEntry = (StagingEntry) it.next();
-			if (availableActions.isEmpty())
-				availableActions.addAll(stagingEntry.getAvailableActions());
-			else
-				availableActions.retainAll(stagingEntry.getAvailableActions());
-		}
-		return availableActions;
 	}
 
 	private CommandContributionItem createItem(String itemAction, final TableViewer tableViewer) {
@@ -1454,7 +1384,8 @@ public class StagingView extends ViewPart {
 	}
 
 	private void commit() {
-		if (!isCommitWithoutFilesAllowed()) {
+		if (stagedTableViewer.getTable().getItemCount() == 0
+				&& !amendPreviousCommitAction.isChecked()) {
 			MessageDialog.openError(getSite().getShell(),
 					UIText.StagingView_committingNotPossible,
 					UIText.StagingView_noStagedFiles);
@@ -1462,14 +1393,11 @@ public class StagingView extends ViewPart {
 		}
 		if (!commitMessageComponent.checkCommitInfo())
 			return;
-
-		if (!UIUtils.saveAllEditors(currentRepository))
-			return;
-
+		final Repository repository = currentRepository;
 		String commitMessage = commitMessageComponent.getCommitMessage();
 		CommitOperation commitOperation = null;
 		try {
-			commitOperation = new CommitOperation(currentRepository,
+			commitOperation = new CommitOperation(repository,
 					commitMessageComponent.getAuthor(),
 					commitMessageComponent.getCommitter(),
 					commitMessage);
@@ -1487,16 +1415,6 @@ public class StagingView extends ViewPart {
 		commitMessageText.setText(EMPTY_STRING);
 	}
 
-	private boolean isCommitWithoutFilesAllowed() {
-		if (stagedTableViewer.getTable().getItemCount() > 0)
-			return true;
-
-		if (amendPreviousCommitAction.isChecked())
-			return true;
-
-		return CommitHelper.isCommitWithoutFilesAllowed(currentRepository);
-	}
-
 	@Override
 	public void setFocus() {
 		unstagedTableViewer.getControl().setFocus();
@@ -1512,9 +1430,6 @@ public class StagingView extends ViewPart {
 
 		if(cacheEntry != null)
 			cacheEntry.removeIndexDiffChangedListener(myIndexDiffListener);
-
-		if (undoRedoActionGroup != null)
-			undoRedoActionGroup.dispose();
 
 		new InstanceScope().getNode(
 				org.eclipse.egit.core.Activator.getPluginId())

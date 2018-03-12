@@ -675,9 +675,6 @@ public class UIText extends NLS {
 	public static String RebaseCurrentRefCommand_RebasingCurrentJobName;
 
 	/** */
-	public static String RebaseCurrentRefCommand_ErrorGettingCurrentBranchMessage;
-
-	/** */
 	public static String RebaseResultDialog_Aborted;
 
 	/** */
@@ -1009,9 +1006,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
-
-	/** */
-	public static String CompareTreeView_ShowIn_label;
 
 	/** */
 	public static String CompareUtils_errorGettingEncoding;
@@ -1968,12 +1962,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_Title;
 
 	/** */
-	public static String CommitDialog_PushSectionTitle;
-
-	/** */
-	public static String CommitDialog_PushUpstream;
-
-	/** */
 	public static String ConfigurationChecker_gitPrefixWarningMessage;
 
 	/** */
@@ -2904,9 +2892,6 @@ public class UIText extends NLS {
 	public static String DecoratorPreferencesPage_labelDecorationsLink;
 
 	/** */
-	public static String DecoratorPreferencesPage_colorsAndFontsLink;
-
-	/** */
 	public static String DecoratorPreferencesPage_iconsShowTracked;
 
 	/** */
@@ -2955,9 +2940,6 @@ public class UIText extends NLS {
 	public static String DeleteRepositoryConfirmDialog_DeleteWorkingDirectoryCheckbox;
 
 	/** */
-	public static String DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox;
-
-	/** */
 	public static String DeleteTagCommand_messageConfirmMultipleTag;
 
 	/** */
@@ -2968,15 +2950,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DeleteTagCommand_titleConfirm;
-
-	/** */
-	public static String DeleteResourcesOperationUI_confirmActionTitle;
-
-	/** */
-	public static String DeleteResourcesOperationUI_confirmActionMessage;
-
-	/** */
-	public static String DeleteResourcesOperationUI_deleteFailed;
 
 	/** */
 	public static String IgnoreActionHandler_addToGitignore;
@@ -3412,15 +3385,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String MergeTargetSelectionDialog_TitleMergeWithBranch;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeGroup;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeCommitButton;
-
-	/** */
-	public static String MergeTargetSelectionDialog_MergeTypeSquashButton;
 
 	/** */
 	public static String MixedResetToRevisionAction_mixedReset;
@@ -3949,27 +3913,6 @@ public class UIText extends NLS {
 	public static String RenameBranchOnCommitHandler_SelectBranchDialogTitle;
 
 	/** */
-	public static String RepositoryStatistics_Description;
-
-	/** */
-	public static String RepositoryStatistics_LooseObjects;
-
-	/** */
-	public static String RepositoryStatistics_NrOfObjects;
-
-	/** */
-	public static String RepositoryStatistics_NrOfPackfiles;
-
-	/** */
-	public static String RepositoryStatistics_NrOfRefs;
-
-	/** */
-	public static String RepositoryStatistics_PackedObjects;
-
-	/** */
-	public static String RepositoryStatistics_SpaceNeededOnFilesystem;
-
-	/** */
 	public static String RevertFailureDialog_Message;
 
 	/** */
@@ -4414,12 +4357,6 @@ public class UIText extends NLS {
 	public static String CommitUI_commitFailed;
 
 	/** */
-	public static String CommitUI_pushFailedTitle;
-
-	/** */
-	public static String CommitUI_pushFailedMessage;
-
-	/** */
 	public static String EgitUiEditorUtils_openFailed;
 
 	/** */
@@ -4474,9 +4411,6 @@ public class UIText extends NLS {
 	public static String StagingView_Commit;
 
 	/** */
-	public static String StagingView_CommitToolTip;
-
-	/** */
 	public static String StagingView_checkoutFailed;
 
 	/** */
@@ -4523,9 +4457,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_StageItemMenuLabel;
-
-	/** */
-	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
@@ -4658,15 +4589,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CloneFailureDialog_checkList;
-
-	/** */
-	public static String GarbageCollectCommand_jobTitle;
-
-	/** */
-	public static String GarbageCollectCommand_failed;
-
-	/** */
-	public static String GitModelSynchronizeParticipant_initialScopeName;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
