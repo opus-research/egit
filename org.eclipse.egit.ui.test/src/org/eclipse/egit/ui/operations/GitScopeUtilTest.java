@@ -1,7 +1,19 @@
+/*******************************************************************************
+ * Copyright (C) 2011, Tasktop Technologies Inc.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Benjamin Muskalla (benjamin.muskalla@tasktop.com) - initial implementation
+ *******************************************************************************/
 package org.eclipse.egit.ui.operations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
@@ -23,9 +35,10 @@ import org.eclipse.egit.ui.internal.operations.GitScopeOperation;
 import org.eclipse.egit.ui.internal.operations.GitScopeOperationFactory;
 import org.eclipse.egit.ui.internal.operations.GitScopeUtil;
 import org.eclipse.egit.ui.test.Eclipse;
+import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
+import org.eclipse.swtbot.swt.finder.results.VoidResult;
 import org.eclipse.team.core.subscribers.SubscriberScopeManager;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PlatformUI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +55,7 @@ public class GitScopeUtilTest extends EGitTestCase {
 
 	@Before
 	public void setup() {
-		part = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-				.getActivePage().getActivePart();
+		part = bot.activeView().getViewReference().getPart(false);
 
 		GitScopeOperationFactory.setFactory(new GitScopeOperationFactory() {
 			@Override
@@ -78,18 +90,56 @@ public class GitScopeUtilTest extends EGitTestCase {
 		IFile modelFile = createProjectAndModelFiles();
 
 		IResource[] selectedResources = new IResource[] { modelFile };
-		IResource[] relatedChanges = GitScopeUtil.getRelatedChanges(part,
-				selectedResources);
+		IResource[] relatedChanges = getRelatedChangesInUIThread(selectedResources);
 		assertEquals(2, relatedChanges.length);
-		assertEquals(MODEL_FILE, relatedChanges[1].getName());
-		assertEquals(MODEL_EXTENSIONS_FILE, relatedChanges[0].getName());
+
+		assertContainsResourceByName(relatedChanges, MODEL_FILE);
+		assertContainsResourceByName(relatedChanges, MODEL_EXTENSIONS_FILE);
+	}
+
+	@Test
+	public void relatedChangesWithNullResources() throws Exception {
+		IResource[] resources = GitScopeUtil.getRelatedChanges(part, null);
+		assertNotNull(resources);
+		assertEquals(0, resources.length);
+	}
+
+	@Test
+	public void relatedChangesWithEmptyResources() throws Exception {
+		IResource[] res = new IResource[0];
+		IResource[] resources = getRelatedChangesInUIThread(res);
+		assertNotNull(resources);
+		assertEquals(0, resources.length);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void relatedChangesWithInvalidParams() throws Exception {
+		IResource[] res = new IResource[0];
+		GitScopeUtil.getRelatedChanges(null, res);
+	}
+
+	private IResource[] getRelatedChangesInUIThread(
+			final IResource[] selectedResources) {
+		final IResource[][] relatedChanges = new IResource[1][];
+		UIThreadRunnable.syncExec(new VoidResult() {
+			public void run() {
+				try {
+					relatedChanges[0] = GitScopeUtil.getRelatedChanges(part,
+							selectedResources);
+				} catch (Exception e) {
+					e.printStackTrace();
+					fail(e.getMessage());
+				}
+			}
+		});
+		return relatedChanges[0];
 	}
 
 	private IFile createProjectAndModelFiles() throws CoreException,
 			UnsupportedEncodingException {
 		IProject modelProject = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject(PROJ1);
-
+	
 		if (modelProject.exists())
 			modelProject.delete(true, null);
 		IProjectDescription desc = ResourcesPlugin.getWorkspace()
@@ -98,7 +148,7 @@ public class GitScopeUtilTest extends EGitTestCase {
 		// .getPath()));
 		modelProject.create(desc, null);
 		modelProject.open(null);
-
+	
 		// IFolder folder = firstProject.getFolder(FOLDER);
 		// folder.create(false, true, null);
 		IFile modelFile = modelProject.getFile(MODEL_FILE);
@@ -114,25 +164,12 @@ public class GitScopeUtilTest extends EGitTestCase {
 		return modelFile;
 	}
 
-	@Test
-	public void relatedChangesWithNullResources() throws Exception {
-		IResource[] resources = GitScopeUtil.getRelatedChanges(part, null);
-		assertNotNull(resources);
-		assertEquals(0, resources.length);
-	}
-
-	@Test
-	public void relatedChangesWithEmptyResources() throws Exception {
-		IResource[] res = new IResource[0];
-		IResource[] resources = GitScopeUtil.getRelatedChanges(part, res);
-		assertNotNull(resources);
-		assertEquals(0, resources.length);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void relatedChangesWithInvalidParams() throws Exception {
-		IResource[] res = new IResource[0];
-		GitScopeUtil.getRelatedChanges(null, res);
+	private void assertContainsResourceByName(IResource[] relatedChanges,
+			String fileName) {
+		for (IResource resource : relatedChanges)
+			if (resource.getName().equals(fileName))
+				return;
+		fail("Resource " + fileName + " not found.");
 	}
 
 	/**
