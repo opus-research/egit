@@ -2440,6 +2440,9 @@ public class UIText extends NLS {
 	public static String CommitMessageComponent_AmendingCommitInRemoteBranch;
 
 	/** */
+	public static String CommitMessageEditorDialog_EditCommitMessageTitle;
+
+	/** */
 	public static String CommitMessageViewer_author;
 
 	/** */
@@ -2498,6 +2501,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
+
+	/** */
+	public static String CompareIndexWithHeadActionHandler_nothingToDoTitle;
+
+	/** */
+	public static String CompareIndexWithHeadActionHandler_fileNotStaged;
+
+	/** */
+	public static String CompareUtils_jobName;
 
 	/** */
 	public static String CompareUtils_errorCommonAncestor;
@@ -4787,6 +4799,9 @@ public class UIText extends NLS {
 	public static String CommitHelper_couldNotFindMergeMsg;
 
 	/** */
+	public static String CommitJob_AbortedByHook;
+
+	/** */
 	public static String CommitResultLabelProvider_SectionAuthor;
 
 	/** */
@@ -4955,6 +4970,9 @@ public class UIText extends NLS {
 	public static String GitVariableResolver_VariableReferencesNonExistentResource;
 
 	/** */
+	public static String GitTemplateVariableResolver_GitConfigDescription;
+
+	/** */
 	public static String StagingView_UnstagedChanges;
 
 	/** */
@@ -5033,6 +5051,9 @@ public class UIText extends NLS {
 	public static String StagingView_Refresh;
 
 	/** */
+	public static String StagingView_GetRepo;
+
+	/** */
 	public static String StagingView_ReplaceWith;
 
 	/** */
@@ -5073,6 +5094,15 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_MergeTool;
+
+	/** */
+	public static String StagingView_AddJob;
+
+	/** */
+	public static String StagingView_RemoveJob;
+
+	/** */
+	public static String StagingView_ResetJob;
 
 	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
