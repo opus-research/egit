@@ -1914,10 +1914,16 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_changeto_committer;
 
 	/** */
+	public static String HistoryPage_findbar_changeto_reference;
+
+	/** */
 	public static String HistoryPage_findbar_exceeded;
 
 	/** */
 	public static String HistoryPage_findbar_notFound;
+
+	/** */
+	public static String HistoryPage_findbar_reference;
 
 	/** */
 	public static String HistoryPreferencePage_MaxBranchLength;
@@ -3222,15 +3228,6 @@ public class UIText extends NLS {
 	public static String DeleteRepositoryConfirmDialog_DeleteProjectsCheckbox;
 
 	/** */
-	public static String DeleteTagOnCommitHandler_SelectTagDialogMessage;
-
-	/** */
-	public static String DeleteTagOnCommitHandler_SelectTagDialogTitle;
-
-	/** */
-	public static String DeleteTagCommand_deletingTagsProgress;
-
-	/** */
 	public static String DeleteTagCommand_messageConfirmMultipleTag;
 
 	/** */
@@ -3319,9 +3316,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_RemotesNodeText;
-
-	/** */
-	public static String RepositoriesView_TagDeletionFailureMessage;
 
 	/** */
 	public static String RepositoriesView_WorkingDir_treenode;
@@ -4106,9 +4100,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_DeleteBranchAction;
-
-	/** */
-	public static String CommitGraphTable_DeleteTagAction;
 
 	/** */
 	public static String CommitGraphTable_HoverAdditionalTags;
