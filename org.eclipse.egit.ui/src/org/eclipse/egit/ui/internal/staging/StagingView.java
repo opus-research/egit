@@ -67,6 +67,7 @@ import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuListener;
@@ -93,6 +94,8 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
@@ -133,9 +136,12 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IActionBars;
@@ -176,6 +182,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private static final String EMPTY_STRING = ""; //$NON-NLS-1$
 
+	private FormToolkit toolkit;
+
 	private Form form;
 
 	private Section stagedSection;
@@ -189,6 +197,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private TableViewer unstagedTableViewer;
 
 	private ToggleableWarningLabel warningLabel;
+
+	private Text filterText;
 
 	private SpellcheckableMessageArea commitMessageText;
 
@@ -266,6 +276,31 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 	}
 
+	static class StagingViewSearchThread extends Thread {
+		private StagingView stagingView;
+
+		private static final Object lock = new Object();
+
+		private volatile static int globalThreadIndex = 0;
+
+		private int currentThreadIx;
+
+		public StagingViewSearchThread(StagingView stagingView) {
+			super("staging_view_filter_thread" + ++globalThreadIndex); //$NON-NLS-1$
+			this.stagingView = stagingView;
+			currentThreadIx = globalThreadIndex;
+		}
+
+		public void run() {
+			synchronized (lock) {
+				if (currentThreadIx < globalThreadIndex)
+					return;
+				stagingView.refreshViewers();
+			}
+		}
+
+	}
+
 	private final IPreferenceChangeListener prefListener = new IPreferenceChangeListener() {
 
 		public void preferenceChange(PreferenceChangeEvent event) {
@@ -319,7 +354,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	public void createPartControl(Composite parent) {
 		GridLayoutFactory.fillDefaults().applyTo(parent);
 
-		final FormToolkit toolkit = new FormToolkit(parent.getDisplay());
+		toolkit = new FormToolkit(parent.getDisplay());
 		parent.addDisposeListener(new DisposeListener() {
 
 			public void widgetDisposed(DisposeEvent e) {
@@ -377,6 +412,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new DropTargetAdapter() {
 					public void drop(DropTargetEvent event) {
+						// Bug 411466: It is very important that detail is set
+						// to DND.DROP_COPY. If it was left as DND.DROP_MOVE and
+						// the drag comes from the Navigator view, the code in
+						// NavigatorDragAdapter would delete the resources.
+						event.detail = DND.DROP_COPY;
 						if (event.data instanceof IStructuredSelection) {
 							final IStructuredSelection selection = (IStructuredSelection) event.data;
 							if (selection.getFirstElement() instanceof StagingEntry)
@@ -582,6 +622,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 				new Transfer[] { LocalSelectionTransfer.getTransfer() },
 				new DropTargetAdapter() {
 					public void drop(DropTargetEvent event) {
+						// Bug 411466: It is very important that detail is set
+						// to DND.DROP_COPY. If it was left as DND.DROP_MOVE and
+						// the drag comes from the Navigator view, the code in
+						// NavigatorDragAdapter would delete the resources.
+						event.detail = DND.DROP_COPY;
 						if (event.data instanceof IStructuredSelection) {
 							final IStructuredSelection selection = (IStructuredSelection) event.data;
 							Object firstElement = selection.getFirstElement();
@@ -701,6 +746,27 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 
 		site.setSelectionProvider(unstagedTableViewer);
+
+		ViewerFilter filter = new ViewerFilter() {
+			@Override
+			public boolean select(Viewer viewer, Object parentElement,
+					Object element) {
+				if (element instanceof StagingEntry) {
+					if (filterText != null && filterText.getText() != null
+							&& filterText.getText().trim().length() > 0) {
+						return ((StagingEntry) element)
+								.getPath()
+								.toUpperCase()
+								.contains(
+										filterText.getText().trim()
+												.toUpperCase());
+					}
+				}
+				return true;
+			}
+		};
+		unstagedTableViewer.addFilter(filter);
+		stagedTableViewer.addFilter(filter);
 	}
 
 	public ShowInContext getShowInContext() {
@@ -756,8 +822,50 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void updateToolbar() {
+
+		ControlContribution controlContribution = new ControlContribution(
+				"StagingView.searchText") { //$NON-NLS-1$
+			@Override
+			protected Control createControl(Composite parent) {
+				Composite toolbarComposite = toolkit.createComposite(parent,
+						SWT.NONE);
+				toolbarComposite.setBackground(null);
+				GridLayout headLayout = new GridLayout();
+				headLayout.numColumns = 2;
+				headLayout.marginHeight = 0;
+				headLayout.marginWidth = 0;
+				headLayout.marginTop = 0;
+				headLayout.marginBottom = 0;
+				headLayout.marginLeft = 0;
+				headLayout.marginRight = 0;
+				toolbarComposite.setLayout(headLayout);
+
+				filterText = new Text(toolbarComposite, SWT.SEARCH
+						| SWT.ICON_CANCEL | SWT.ICON_SEARCH);
+				filterText.setMessage(UIText.StagingView_Find);
+				GridData data = new GridData(GridData.FILL_HORIZONTAL);
+				data.widthHint = 150;
+				filterText.setLayoutData(data);
+				final Display display = Display.getCurrent();
+				filterText.addModifyListener(new ModifyListener() {
+					public void modifyText(ModifyEvent e) {
+						final StagingViewSearchThread searchThread = new StagingViewSearchThread(
+								StagingView.this);
+						display.timerExec(200, new Runnable() {
+							public void run() {
+								searchThread.start();
+							}
+						});
+					}
+				});
+				return toolbarComposite;
+			}
+		};
+
 		IActionBars actionBars = getViewSite().getActionBars();
 		IToolBarManager toolbar = actionBars.getToolBarManager();
+
+		toolbar.add(controlContribution);
 
 		refreshAction = new Action(UIText.StagingView_Refresh, IAction.AS_PUSH_BUTTON) {
 			public void run() {
@@ -864,14 +972,22 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void updateSectionText() {
-		Integer stagedCount = Integer.valueOf(stagedTableViewer.getTable()
-				.getItemCount());
 		stagedSection.setText(MessageFormat.format(
-				UIText.StagingView_StagedChanges, stagedCount));
-		Integer unstagedCount = Integer.valueOf(unstagedTableViewer.getTable()
-				.getItemCount());
+				UIText.StagingView_StagedChanges,
+				getSectionCount(stagedTableViewer)));
 		unstagedSection.setText(MessageFormat.format(
-				UIText.StagingView_UnstagedChanges, unstagedCount));
+				UIText.StagingView_UnstagedChanges,
+				getSectionCount(unstagedTableViewer)));
+	}
+
+	private String getSectionCount(TableViewer viewer) {
+		int stagingEntryCount = ((StagingViewContentProvider) viewer
+				.getContentProvider()).getStagingEntryCount();
+		int itemCount = viewer.getTable().getItemCount();
+		if (itemCount == stagingEntryCount)
+			return Integer.toString(itemCount);
+		else
+			return itemCount + "/" + stagingEntryCount; //$NON-NLS-1$
 	}
 
 	private void updateMessage() {
@@ -994,6 +1110,19 @@ public class StagingView extends ViewPart implements IShowInSource {
 			}
 		});
 
+	}
+
+	/**
+	 * Refresh the unstaged and staged viewers
+	 */
+	public void refreshViewers() {
+		Display.getDefault().asyncExec(new Runnable() {
+			public void run() {
+				unstagedTableViewer.refresh();
+				stagedTableViewer.refresh();
+				updateSectionText();
+			}
+		});
 	}
 
 	private IContributionItem createShowInMenu() {
@@ -1504,7 +1633,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			CommitMessageComponentState oldState) {
 		boolean headCommitChanged = !oldState.getHeadCommit().equals(
 				getCommitId(helper.getPreviousCommit()));
-		commitMessageComponent.enableListers(false);
+		commitMessageComponent.enableListeners(false);
 		commitMessageComponent.setAuthor(oldState.getAuthor());
 		if (headCommitChanged)
 			addHeadChangedWarning(oldState.getCommitMessage());
@@ -1526,7 +1655,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			commitMessageComponent.setAmending(false);
 		commitMessageComponent.updateUIFromState();
 		commitMessageComponent.updateSignedOffAndChangeIdButton();
-		commitMessageComponent.enableListers(true);
+		commitMessageComponent.enableListeners(true);
 	}
 
 	private void addHeadChangedWarning(String commitMessage) {
@@ -1536,7 +1665,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void loadInitialState(CommitHelper helper) {
-		commitMessageComponent.enableListers(false);
+		commitMessageComponent.enableListeners(false);
 		commitMessageComponent.resetState();
 		commitMessageComponent.setAuthor(helper.getAuthor());
 		commitMessageComponent.setCommitMessage(helper.getCommitMessage());
@@ -1550,7 +1679,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		// set the defaults for change id and signed off buttons.
 		commitMessageComponent.setDefaults();
 		commitMessageComponent.updateUI();
-		commitMessageComponent.enableListers(true);
+		commitMessageComponent.enableListeners(true);
 	}
 
 	private boolean userEnteredCommmitMessage() {
