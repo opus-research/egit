@@ -135,17 +135,14 @@ public class BlameInformationControl extends AbstractInformationControl
 		create();
 	}
 
-	@Override
 	public IInformationControlCreator getInformationPresenterControlCreator() {
 		return this.creator;
 	}
 
-	@Override
 	public boolean hasContents() {
 		return true;
 	}
 
-	@Override
 	protected void createContent(Composite parent) {
 		scrolls = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.H_SCROLL);
 		scrolls.setExpandHorizontal(true);
@@ -209,7 +206,6 @@ public class BlameInformationControl extends AbstractInformationControl
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(messageText);
 	}
 
-	@Override
 	public Point computeSizeHint() {
 		Point computed = getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT, true);
 
@@ -229,7 +225,6 @@ public class BlameInformationControl extends AbstractInformationControl
 		((GridData) control.getLayoutData()).exclude = !visible;
 	}
 
-	@Override
 	public void setInput(Object input) {
 		if (input == null) {
 			// Make sure we don't hold a reference to this when nothing is
@@ -469,7 +464,6 @@ public class BlameInformationControl extends AbstractInformationControl
 		}
 	}
 
-	@Override
 	public void setVisible(boolean visible) {
 		super.setVisible(visible);
 		if (!visible)

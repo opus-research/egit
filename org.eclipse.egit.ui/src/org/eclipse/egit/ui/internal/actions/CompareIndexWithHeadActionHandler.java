@@ -47,7 +47,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
  */
 public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 
-	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 
 		final Repository repository = getRepository(true, event);
@@ -94,7 +93,6 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 				UIText.CompareIndexWithHeadActionHandler_fileNotStaged,
 				location.toOSString());
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
-			@Override
 			public void run() {
 				MessageDialog.openInformation(null, title, message);
 
@@ -106,7 +104,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 			throws Exception {
 		IWorkbenchPage workBenchPage = HandlerUtil
 				.getActiveWorkbenchWindowChecked(event).getActivePage();
-		IResource[] resources = getSelectedResources(event);
+		IResource[] resources = getSelectedResources();
 
 		if (resources.length > 0) {
 			CompareUtils.compare(resources, repository, GitFileRevision.INDEX,
@@ -122,7 +120,7 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 
 	private Object getSingleSelectedObject(ExecutionEvent event)
 			throws ExecutionException {
-		IResource[] resources = getSelectedResources(event);
+		IResource[] resources = getSelectedResources();
 		if (resources.length == 1) {
 			return resources[0];
 		} else {

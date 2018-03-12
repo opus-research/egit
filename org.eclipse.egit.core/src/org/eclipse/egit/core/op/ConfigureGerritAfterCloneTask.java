@@ -19,7 +19,6 @@ import java.net.URL;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.Activator;
-import org.eclipse.egit.core.NetUtil;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.op.CloneOperation.PostCloneTask;
 import org.eclipse.jgit.lib.Constants;
@@ -81,7 +80,7 @@ public class ConfigureGerritAfterCloneTask implements PostCloneTask {
 	public void execute(Repository repository, IProgressMonitor monitor)
 			throws CoreException {
 		try {
-			if (isGerrit(repository)) {
+			if (isGerrit()) {
 				Activator.logInfo(uri
 						+ " was detected to be hosted by a Gerrit server"); //$NON-NLS-1$
 				configureGerrit(repository);
@@ -100,16 +99,12 @@ public class ConfigureGerritAfterCloneTask implements PostCloneTask {
 	 * /rest-api-config.html#get-version">Gerrit 2.11 Get Version REST
 	 * endpoint</a>
 	 *
-	 * @param repo
-	 *            the repository to be configured
-	 *
 	 * @return {@code true} if the repository is hosted on a Gerrit server
 	 * @throws IOException
 	 * @throws MalformedURLException
 	 * @throws URISyntaxException
 	 */
-	private boolean isGerrit(Repository repo) throws MalformedURLException,
-			IOException,
+	private boolean isGerrit() throws MalformedURLException, IOException,
 			URISyntaxException {
 		URIish u = new URIish(uri);
 		final String s = u.getScheme();
@@ -127,8 +122,7 @@ public class ConfigureGerritAfterCloneTask implements PostCloneTask {
 		}
 
 		if (path != null && (HTTP.equals(s) || HTTPS.equals(s))) {
-			String baseURL = u.setPath("/").toString(); //$NON-NLS-1$
-			baseURL = baseURL.substring(0, baseURL.length() - 1);
+			String baseURL = uri.substring(0, uri.lastIndexOf(path));
 			String tmpPath = ""; //$NON-NLS-1$
 			HttpURLConnection httpConnection = null;
 			try {
@@ -139,7 +133,6 @@ public class ConfigureGerritAfterCloneTask implements PostCloneTask {
 						httpConnection = (HttpURLConnection) new URL(baseURL
 								+ tmpPath + GERRIT_CONFIG_SERVER_VERSION_API)
 								.openConnection();
-						NetUtil.setSslVerification(repo, httpConnection);
 						httpConnection.setRequestMethod("GET"); //$NON-NLS-1$
 						httpConnection.setReadTimeout(1000 * timeout);
 						int responseCode = httpConnection.getResponseCode();

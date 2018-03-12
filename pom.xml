@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>4.0.0-SNAPSHOT</version>
+  <version>3.7.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,7 +62,7 @@
   </licenses>
 
   <properties>
-    <egit-version>4.0.0-SNAPSHOT</egit-version>
+    <egit-version>3.7.1-SNAPSHOT</egit-version>
     <tycho-version>0.22.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     <mockito-version>1.8.4</mockito-version>
@@ -284,8 +284,6 @@
     <module>org.eclipse.egit.core</module>
     <module>org.eclipse.egit.ui</module>
 
-    <module>org.eclipse.egit.ui.importer</module>
-
     <module>org.eclipse.egit.mylyn.ui</module>
     <module>org.eclipse.egit.mylyn-feature</module>
 
@@ -305,10 +303,6 @@
     <pluginRepository>
       <id>repo.eclipse.org.cbi-releases</id>
       <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
-    </pluginRepository>
-    <pluginRepository>
-      <id>repo.eclipse.org.cbi-snapshots</id>
-      <url>https://repo.eclipse.org/content/repositories/cbi-snapshots/</url>
     </pluginRepository>
   </pluginRepositories>
 
@@ -335,7 +329,7 @@
             <artifact>
               <groupId>org.eclipse.egit</groupId>
               <artifactId>org.eclipse.egit.target</artifactId>
-              <version>${egit-version}</version>
+              <version>${project.version}</version>
               <classifier>${target-platform}</classifier>
             </artifact>
           </target>
@@ -380,8 +374,6 @@
           <version>${tycho-version}</version>
           <configuration>
             <encoding>UTF-8</encoding>
-            <source>1.7</source>
-            <target>1.7</target>
           </configuration>
         </plugin>
         <plugin>
@@ -477,7 +469,7 @@
           <configuration>
             <sourceEncoding>utf-8</sourceEncoding>
             <minimumTokens>100</minimumTokens>
-            <targetJdk>1.7</targetJdk>
+            <targetJdk>1.5</targetJdk>
             <format>xml</format>
             <failOnViolation>false</failOnViolation>
           </configuration>
@@ -495,6 +487,11 @@
           <version>2.3</version>
         </plugin>
         <plugin>
+          <groupId>org.eclipse.dash.maven</groupId>
+          <artifactId>eclipse-signing-maven-plugin</artifactId>
+          <version>1.0.5</version>
+        </plugin>
+        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>1.7</version>
@@ -502,7 +499,7 @@
         <plugin>
           <groupId>org.eclipse.cbi.maven.plugins</groupId>
           <artifactId>eclipse-jarsigner-plugin</artifactId>
-          <version>1.1.2-SNAPSHOT</version>
+          <version>1.0.4</version>
         </plugin>
       </plugins>
     </pluginManagement>

@@ -11,6 +11,7 @@
 package org.eclipse.egit.ui.internal.repository;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -107,35 +108,29 @@ public class RepositorySearchDialog extends WizardPage {
 
 		private final Object[] children = new Object[0];
 
-		@Override
 		@SuppressWarnings("unchecked")
 		public Object[] getElements(Object inputElement) {
 			return ((Set<String>) inputElement).toArray();
 		}
 
-		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 			// nothing
 		}
 
-		@Override
 		public void dispose() {
 			// nothing
 		}
 
-		@Override
 		public Object[] getChildren(Object parentElement) {
 			// do not return null due to a bug in FilteredTree
 			return children;
 		}
 
-		@Override
 		public Object getParent(Object element) {
 			// nothing
 			return null;
 		}
 
-		@Override
 		public boolean hasChildren(Object element) {
 			// nothing
 			return false;
@@ -156,12 +151,10 @@ public class RepositorySearchDialog extends WizardPage {
 			return element.toString();
 		}
 
-		@Override
 		public Color getBackground(Object element) {
 			return null;
 		}
 
-		@Override
 		public Color getForeground(Object element) {
 			if (fExistingDirectories.contains(element))
 				return getShell().getDisplay().getSystemColor(SWT.COLOR_GRAY);
@@ -169,7 +162,6 @@ public class RepositorySearchDialog extends WizardPage {
 			return null;
 		}
 
-		@Override
 		public void dispose() {
 			fImageCache.dispose();
 		}
@@ -209,7 +201,6 @@ public class RepositorySearchDialog extends WizardPage {
 		super.dispose();
 	}
 
-	@Override
 	public void createControl(Composite parent) {
 		setMessage(UIText.RepositorySearchDialog_searchRepositoriesMessage);
 
@@ -326,7 +317,6 @@ public class RepositorySearchDialog extends WizardPage {
 		fTreeViewer = fTree.getCheckboxTreeViewer();
 		fTreeViewer.addCheckStateListener(new ICheckStateListener() {
 
-			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				isUserModifiedTreeSelection = true;
 				enableOk();
@@ -350,7 +340,6 @@ public class RepositorySearchDialog extends WizardPage {
 		checkAllItem.setImage(checkImage);
 		checkAllItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				fTreeViewer.setAllChecked(true);
 				enableOk();
@@ -367,7 +356,6 @@ public class RepositorySearchDialog extends WizardPage {
 		uncheckAllItem.setImage(uncheckImage);
 		uncheckAllItem.addSelectionListener(new SelectionAdapter() {
 
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				fTreeViewer.setAllChecked(false);
 				enableOk();
@@ -381,7 +369,6 @@ public class RepositorySearchDialog extends WizardPage {
 		// here
 		dir.addModifyListener(new ModifyListener() {
 
-			@Override
 			public void modifyText(ModifyEvent e) {
 				setNeedsSearch();
 			}
@@ -396,7 +383,6 @@ public class RepositorySearchDialog extends WizardPage {
 		if (fillSearch)
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
 
-				@Override
 				public void run() {
 					if (!getControl().isDisposed())
 						doSearch();
@@ -422,14 +408,22 @@ public class RepositorySearchDialog extends WizardPage {
 				continue;
 
 			if (FileKey.isGitRepository(child, FS.DETECTED)) {
-				strings.add(child.getAbsolutePath());
+				try {
+					strings.add(child.getCanonicalPath());
+				} catch (IOException e) {
+					// ignore here
+				}
 				monitor.setTaskName(NLS
 						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
 								Integer.valueOf(strings.size())));
 			} else if (FileKey.isGitRepository(new File(child,
 					Constants.DOT_GIT), FS.DETECTED)) {
-				strings.add(new File(child, Constants.DOT_GIT)
-						.getAbsolutePath());
+				try {
+					strings.add(new File(child, Constants.DOT_GIT)
+							.getCanonicalPath());
+				} catch (IOException e) {
+					// ignore here
+				}
 				monitor.setTaskName(NLS
 						.bind(UIText.RepositorySearchDialog_RepositoriesFound_message,
 								Integer.valueOf(strings.size())));
@@ -458,18 +452,21 @@ public class RepositorySearchDialog extends WizardPage {
 		if(!file.exists())
 			return;
 
-		prefs.put(PREF_PATH, file.getAbsolutePath());
 		try {
-			prefs.flush();
-		} catch (BackingStoreException e1) {
-			// ignore here
+			prefs.put(PREF_PATH, file.getCanonicalPath());
+			try {
+				prefs.flush();
+			} catch (BackingStoreException e1) {
+				// ignore here
+			}
+		} catch (IOException e2) {
+			// ignore
 		}
 
 		final TreeSet<String> validDirs = new TreeSet<String>(getCheckedItems());
 
 		IRunnableWithProgress action = new IRunnableWithProgress() {
 
-			@Override
 			public void run(IProgressMonitor monitor)
 					throws InvocationTargetException, InterruptedException {
 				monitor.beginTask(

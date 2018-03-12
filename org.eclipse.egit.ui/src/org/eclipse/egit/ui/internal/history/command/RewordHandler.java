@@ -29,7 +29,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 /** Prompts to enter a new commit message for a commit. */
 public class RewordHandler extends AbstractHistoryCommandHandler {
-	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		Repository repository = getRepository(event);
 		RevCommit commit = getSelectedCommit(event);

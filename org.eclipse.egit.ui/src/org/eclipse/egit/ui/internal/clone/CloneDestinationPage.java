@@ -94,7 +94,6 @@ public class CloneDestinationPage extends WizardPage {
 		setTitle(UIText.CloneDestinationPage_title);
 	}
 
-	@Override
 	public void createControl(final Composite parent) {
 		final Composite panel = new Composite(parent, SWT.NULL);
 		final GridLayout layout = new GridLayout();
@@ -165,7 +164,6 @@ public class CloneDestinationPage extends WizardPage {
 		directoryText = new Text(p, SWT.BORDER);
 		directoryText.setLayoutData(createFieldGridData());
 		directoryText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(final ModifyEvent e) {
 				checkPage();
 			}
@@ -173,7 +171,6 @@ public class CloneDestinationPage extends WizardPage {
 		final Button b = new Button(p, SWT.PUSH);
 		b.setText(UIText.CloneDestinationPage_browseButton);
 		b.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(final SelectionEvent e) {
 				final FileDialog d;
 
@@ -223,7 +220,6 @@ public class CloneDestinationPage extends WizardPage {
 		remoteText.setText(Constants.DEFAULT_REMOTE_NAME);
 		remoteText.setLayoutData(createFieldGridData());
 		remoteText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				checkPage();
 			}
@@ -241,7 +237,6 @@ public class CloneDestinationPage extends WizardPage {
 				.getPreferenceStore()
 				.getBoolean(UIPreferences.CLONE_WIZARD_IMPORT_PROJECTS));
 		importProjectsButton.addSelectionListener(new SelectionAdapter() {
-			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Activator
 						.getDefault()
@@ -403,11 +398,7 @@ public class CloneDestinationPage extends WizardPage {
 		clonedRemote = getRemote();
 	}
 
-	/**
-	 * @return whether user updated clone settings
-	 * @since 4.0.0
-	 */
-	public boolean cloneSettingsChanged() {
+	boolean cloneSettingsChanged() {
 		boolean cloneSettingsChanged = false;
 		if (clonedDestination == null || !clonedDestination.equals(getDestinationFile()) ||
 				clonedInitialBranch == null || !clonedInitialBranch.equals(getInitialBranch()) ||

@@ -141,7 +141,6 @@ public class RefSpecDialog extends TitleAreaDialog {
 		if (spec != null && spec.getSource() != null)
 			sourceText.setText(spec.getSource());
 		sourceText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				if (sourceText.isFocusControl())
 					if (autoSuggestDestination) {
@@ -162,7 +161,6 @@ public class RefSpecDialog extends TitleAreaDialog {
 		// content assist for source
 		UIUtils.addRefContentProposalToText(sourceText, repo,
 				new IRefListProvider() {
-					@Override
 					public List<Ref> getRefList() {
 						return assistProvider.getRefsForContentAssist(true, pushMode);
 					}
@@ -195,7 +193,6 @@ public class RefSpecDialog extends TitleAreaDialog {
 		if (spec != null && spec.getDestination() != null)
 			destinationText.setText(spec.getDestination());
 		destinationText.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				if (destinationText.isFocusControl())
 					setSpec(getSpec().setDestination(destinationText.getText()));
@@ -204,7 +201,6 @@ public class RefSpecDialog extends TitleAreaDialog {
 		// content assist for destination
 		UIUtils.addRefContentProposalToText(destinationText, repo,
 				new IRefListProvider() {
-					@Override
 					public List<Ref> getRefList() {
 						return assistProvider.getRefsForContentAssist(false, pushMode);
 					}
@@ -235,7 +231,6 @@ public class RefSpecDialog extends TitleAreaDialog {
 		if (spec != null)
 			specString.setText(spec.toString());
 		specString.addModifyListener(new ModifyListener() {
-			@Override
 			public void modifyText(ModifyEvent e) {
 				if (!specString.isFocusControl()
 						|| getSpec().toString().equals(specString.getText()))
