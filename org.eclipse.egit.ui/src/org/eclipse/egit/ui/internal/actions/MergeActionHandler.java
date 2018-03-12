@@ -96,7 +96,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								MergeResultDialog.getDialog(shell, repository, op
+								new MergeResultDialog(shell, repository, op
 										.getResult()).open();
 							}
 						});
@@ -112,6 +112,6 @@ public class MergeActionHandler extends RepositoryActionHandler {
 		Repository repo = getRepository();
 		return repo != null
 				&& repo.getRepositoryState() == RepositoryState.SAFE
-				&& containsHead();
+				&& isLocalBranchCheckedout(repo);
 	}
 }
