@@ -22,6 +22,15 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_filterText;
 
 	/** */
+	public static String AbortRebaseCommand_CancelDialogMessage;
+
+	/** */
+	public static String AbortRebaseCommand_CancelDialogTitle;
+
+	/** */
+	public static String AbortRebaseCommand_JobName;
+
+	/** */
 	public static String AbstractHistoryCommanndHandler_NoInputMessage;
 
 	/** */
@@ -277,6 +286,9 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_CompareModeMenuLabel;
 
 	/** */
+	public static String GitHistoryPage_ReuseCompareEditorMenuLabel;
+
+	/** */
 	public static String GitHistoryPage_CompareWithCurrentHeadMenu;
 
 	/** */
@@ -440,6 +452,57 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitProjectsImportPage_NoProjectsMessage;
+
+	/** */
+	public static String RebaseCurrentRefCommand_AbortedDialogMessage;
+
+	/** */
+	public static String RebaseCurrentRefCommand_AbortedDialogTitle;
+
+	/** */
+	public static String RebaseCurrentRefCommand_RebaseCanceledMessage;
+
+	/** */
+	public static String RebaseCurrentRefCommand_RebaseCanceledTitle;
+
+	/** */
+	public static String RebaseCurrentRefCommand_RebasingCurrentJobName;
+
+	/** */
+	public static String RebaseResultDialog_CommitIdLabel;
+
+	/** */
+	public static String RebaseResultDialog_CommitMessageLabel;
+
+	/** */
+	public static String RebaseResultDialog_DetailsGroup;
+
+	/** */
+	public static String RebaseResultDialog_DialogTitle;
+
+	/** */
+	public static String RebaseResultDialog_DiffCalculationErrorDisplay;
+
+	/** */
+	public static String RebaseResultDialog_DiffCalculationErrorMessage;
+
+	/** */
+	public static String RebaseResultDialog_DiffDetailsLabel;
+
+	/** */
+	public static String RebaseResultDialog_StatusLabel;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_DialogMessage;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_DialogTitle;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_RebaseButton;
+
+	/** */
+	public static String RebaseTargetSelectionDialog_RebaseTitle;
 
 	/** */
 	public static String RepositoryPropertySource_EditConfigButton;
@@ -1423,16 +1486,16 @@ public class UIText extends NLS {
 	public static String ConfigureUriPage_UriTooltip;
 
 	/** */
-	public static String SpellCheckingMessageArea_copy;
+	public static String CommitMessageArea_copy;
 
 	/** */
-	public static String SpellCheckingMessageArea_cut;
+	public static String CommitMessageArea_cut;
 
 	/** */
-	public static String SpellCheckingMessageArea_paste;
+	public static String CommitMessageArea_paste;
 
 	/** */
-	public static String SpellCheckingMessageArea_selectAll;
+	public static String CommitMessageArea_selectAll;
 
 	/** */
 	public static String CommitMessageViewer_author;
