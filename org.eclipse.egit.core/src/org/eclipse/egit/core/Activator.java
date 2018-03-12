@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -500,12 +499,12 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			}
 			RepositoryFinder f = new RepositoryFinder(project);
 			f.setFindInChildren(false);
-			List<RepositoryMapping> mappings = f
-					.find(new NullProgressMonitor());
-			if (mappings.isEmpty()) {
+			Collection<RepositoryMapping> mappings = f.find(new NullProgressMonitor());
+			if (mappings.size() != 1) {
 				return;
 			}
-			RepositoryMapping m = mappings.get(0);
+
+			RepositoryMapping m = mappings.iterator().next();
 			IPath gitDirPath = m.getGitDirAbsolutePath();
 			if (gitDirPath == null || gitDirPath.segmentCount() == 0) {
 				return;
@@ -527,21 +526,9 @@ public class Activator extends Plugin implements DebugOptionsListener {
 			}
 
 			// connect
-			File repositoryDir = gitDirPath.toFile();
+			final File repositoryDir = gitDirPath.toFile();
 			projects.put(project, repositoryDir);
 
-			// If we had more than one mapping: add the last one as
-			// 'configured' repository. We don't want to add submodules,
-			// that would only lead to problems when a configured repository
-			// is deleted.
-			int nofMappings = mappings.size();
-			if (nofMappings > 1) {
-				IPath lastPath = mappings.get(nofMappings - 1)
-						.getGitDirAbsolutePath();
-				if (lastPath != null) {
-					repositoryDir = lastPath.toFile();
-				}
-			}
 			try {
 				Activator.getDefault().getRepositoryUtil()
 						.addConfiguredRepository(repositoryDir);
