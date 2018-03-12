@@ -83,11 +83,11 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#LOCAL}</td>
+	 * <td>{@link RepositoryTreeNodeType#LOCALBRANCHES}</td>
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link RepositoryTreeNodeType#REMOTETRACKING}</td>
+	 * <td>{@link RepositoryTreeNodeType#REMOTEBRANCHES}</td>
 	 * <td>{@link String}</td>
 	 * </tr>
 	 * <tr>
@@ -123,9 +123,9 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case REMOTES:
 			// fall through
-		case LOCAL:
+		case LOCALBRANCHES:
 			// fall through
-		case REMOTETRACKING:
+		case REMOTEBRANCHES:
 			// fall through
 		case BRANCHES:
 			// fall through
@@ -230,9 +230,9 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 
 		case BRANCHES:
 			// fall through
-		case LOCAL:
+		case LOCALBRANCHES:
 			// fall through
-		case REMOTETRACKING:
+		case REMOTEBRANCHES:
 			// fall through
 		case BRANCHHIERARCHY:
 			return myObject.toString().compareTo(
@@ -293,9 +293,9 @@ public abstract class RepositoryTreeNode<T> implements Comparable<RepositoryTree
 			// fall through
 		case BRANCHES:
 			// fall through
-		case LOCAL:
+		case LOCALBRANCHES:
 			// fall through
-		case REMOTETRACKING:
+		case REMOTEBRANCHES:
 			// fall through
 		case SYMBOLICREFS:
 			// fall through
