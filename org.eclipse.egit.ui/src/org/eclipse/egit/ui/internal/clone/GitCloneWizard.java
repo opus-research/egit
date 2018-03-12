@@ -24,10 +24,12 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CloneOperation;
+import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.components.RepositorySelectionPage;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -36,6 +38,7 @@ import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -72,11 +75,12 @@ public class GitCloneWizard extends Wizard {
 
 			@Override
 			public void setVisible(boolean visible) {
-				if (visible)
+				if (visible) {
 					setSelection(cloneSource.getSelection());
+					setCredentials(cloneSource.getCredentials());
+				}
 				super.setVisible(visible);
 			}
-
 		};
 		cloneDestination = new CloneDestinationPage() {
 			@Override
@@ -145,6 +149,11 @@ public class GitCloneWizard extends Wizard {
 	@Override
 	public boolean performFinish() {
 		try {
+			if (cloneSource.getStoreInSecureStore()) {
+				if (!SecureStoreUtils.storeCredentials(cloneSource
+						.getCredentials(), cloneSource.getSelection().getURI()))
+					return false;
+			}
 			return performClone();
 		} finally {
 			setWindowTitle(UIText.GitCloneWizard_title);
@@ -184,6 +193,11 @@ public class GitCloneWizard extends Wizard {
 				UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 		final CloneOperation op = new CloneOperation(uri, allSelected,
 				selectedBranches, workdir, branch, remoteName, timeout);
+		UserPasswordCredentials credentials = cloneSource.getCredentials();
+		if (credentials != null)
+			op.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
+					credentials.getUser(), credentials.getPassword()));
+
 		alreadyClonedInto = workdir.getPath();
 
 		cloneSource.saveUriInPrefs();
