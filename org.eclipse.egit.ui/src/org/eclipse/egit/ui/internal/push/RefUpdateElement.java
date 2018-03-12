@@ -15,9 +15,9 @@ import java.util.List;
 
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.internal.DecorationOverlayDescriptor;
+import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.IDecoration;
@@ -216,6 +216,7 @@ class RefUpdateElement extends WorkbenchAdapter {
 	 * @param object
 	 * @return styled string
 	 */
+	@Override
 	public StyledString getStyledText(Object object) {
 		StyledString styled = new StyledString();
 		final String remote = getDstRefName();

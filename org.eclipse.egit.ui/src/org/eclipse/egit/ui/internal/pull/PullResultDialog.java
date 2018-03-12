@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,13 +7,16 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Markus Keller <markus_keller@ch.ibm.com> - Show the repository name in the title of the Pull Result dialog
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.pull;
 
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.fetch.FetchResultDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
+import org.eclipse.egit.ui.internal.rebase.RebaseResultDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -28,15 +31,13 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * Display the result of a pull.
@@ -48,7 +49,7 @@ public class PullResultDialog extends Dialog {
 
 	private final PullResult result;
 
-	private final boolean hasUpdates;
+	private boolean persistSize;
 
 	/**
 	 * @param shell
@@ -61,8 +62,7 @@ public class PullResultDialog extends Dialog {
 		setBlockOnOpen(false);
 		this.repo = repo;
 		this.result = result;
-		hasUpdates = hasFetchResults() || hasMergeResults()
-				|| hasRebaseResults();
+		persistSize = hasFetchResults() || hasMergeResults();
 	}
 
 	private boolean hasFetchResults() {
@@ -121,40 +121,21 @@ public class PullResultDialog extends Dialog {
 		Group mergeResultGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		mergeResultGroup
 				.setText(UIText.PullResultDialog_MergeResultGroupHeader);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(
-				mergeResultGroup);
 		if (hasMergeResults()) {
+			GridDataFactory.fillDefaults().grab(true, true).applyTo(
+					mergeResultGroup);
 			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
 			MergeResultDialog dlg = new MergeResultDialog(getParentShell(),
 					repo, result.getMergeResult());
 			dlg.createDialogArea(mergeResultGroup);
 		} else if (hasRebaseResults()) {
-			Status status = result.getRebaseResult().getStatus();
-			GridLayoutFactory.fillDefaults().applyTo(mergeResultGroup);
-			switch (status) {
-			case OK:
-				// fall through
-			case FAST_FORWARD:
-				// fall through
-			case UP_TO_DATE:
-				// fall through
-			case FAILED:
-				// fall through
-			case ABORTED:
-				break;
-			case STOPPED:
-				Label errorLabel = new Label(mergeResultGroup, SWT.NONE);
-				errorLabel.setImage(PlatformUI.getWorkbench().getSharedImages()
-						.getImage(ISharedImages.IMG_OBJS_ERROR_TSK));
-				Text errorText = new Text(mergeResultGroup, SWT.READ_ONLY);
-				errorText.setText(UIText.PullResultDialog_RebaseStoppedMessage);
-				break;
-			}
-			Label statusLabel = new Label(mergeResultGroup, SWT.NONE);
-			statusLabel.setText(UIText.PullResultDialog_RebaseStatusLabel);
-			Text statusText = new Text(mergeResultGroup, SWT.READ_ONLY);
-			statusText.setText(status.name());
+			RebaseResultDialog.createFailedOrConflictsParts(mergeResultGroup,
+					result.getRebaseResult());
+			GridDataFactory.fillDefaults().grab(true, false).applyTo(
+					mergeResultGroup);
 		} else {
+			GridDataFactory.fillDefaults().grab(true, false).applyTo(
+					mergeResultGroup);
 			GridLayoutFactory.swtDefaults().applyTo(mergeResultGroup);
 			Label noResult = new Label(mergeResultGroup, SWT.NONE);
 			noResult
@@ -172,11 +153,46 @@ public class PullResultDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText(UIText.PullResultDialog_DialogTitle);
+		newShell.setText(NLS.bind(
+				UIText.PullResultDialog_DialogTitle,
+				Activator.getDefault().getRepositoryUtil()
+						.getRepositoryName(repo)));
 	}
 
 	@Override
 	protected IDialogSettings getDialogBoundsSettings() {
-		return hasUpdates ? UIUtils.getDialogBoundSettings(getClass()) : null;
+		return UIUtils.getDialogBoundSettings(getClass());
+	}
+
+	@Override
+	protected int getDialogBoundsStrategy() {
+		int strategy = DIALOG_PERSISTLOCATION;
+		if (persistSize)
+			strategy |= DIALOG_PERSISTSIZE;
+		return strategy;
+	}
+
+	@Override
+	protected Point getInitialSize() {
+		if (!persistSize) {
+			// For "small" dialogs with label-only results, use the default
+			// height and the persisted width
+			Point size = super.getInitialSize();
+			size.x = getPersistedSize().x;
+			return size;
+		}
+		return super.getInitialSize();
+	}
+
+	private Point getPersistedSize() {
+		boolean oldPersistSize = persistSize;
+		// This affects getDialogBoundsStrategy
+		persistSize = true;
+		try {
+			Point persistedSize = super.getInitialSize();
+			return persistedSize;
+		} finally {
+			persistSize = oldPersistSize;
+		}
 	}
 }

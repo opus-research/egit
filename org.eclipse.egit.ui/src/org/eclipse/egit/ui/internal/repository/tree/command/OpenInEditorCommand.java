@@ -15,11 +15,11 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
@@ -33,8 +33,7 @@ public class OpenInEditorCommand extends
 		FileNode node = getSelectedNodes(event).get(0);
 		IPath path = new Path(node.getObject().getAbsolutePath());
 
-		IFile file = ResourcesPlugin.getWorkspace().getRoot()
-				.getFileForLocation(path);
+		IFile file = ResourceUtil.getFileForLocation(path);
 		if (file == null) {
 			IFileStore store = EFS.getLocalFileSystem().getStore(path);
 			try {

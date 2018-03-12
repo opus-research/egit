@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2010, Dariusz Luksza <dariusz@luksza.org>
+ * Copyright (C) 2010, 2013 Dariusz Luksza <dariusz@luksza.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,11 +10,15 @@
 package org.eclipse.egit.ui.internal;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.dialogs.IInputValidator;
+import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -41,21 +45,31 @@ public class ValidationUtils {
 						return null;
 				}
 				String testFor = refPrefix + newText;
+				if (!Repository.isValidRefName(testFor))
+					return NLS.bind(
+							UIText.ValidationUtils_InvalidRefNameMessage,
+							testFor);
 				try {
 					if (repo.resolve(testFor) != null)
 						return NLS.bind(
 								UIText.ValidationUtils_RefAlreadyExistsMessage,
 								testFor);
+					RefDatabase refDatabase = repo.getRefDatabase();
+					Collection<String> conflictingNames = refDatabase.getConflictingNames(testFor);
+					if (!conflictingNames.isEmpty()) {
+						ArrayList<String> names = new ArrayList<String>(conflictingNames);
+						Collections.sort(names);
+						String joined = StringUtils.join(names, ", "); //$NON-NLS-1$
+						return NLS.bind(
+								UIText.ValidationUtils_RefNameConflictsWithExistingMessage,
+								joined);
+					}
 				} catch (IOException e1) {
 					Activator.logError(NLS.bind(
 							UIText.ValidationUtils_CanNotResolveRefMessage,
 							testFor), e1);
 					return e1.getMessage();
 				}
-				if (!Repository.isValidRefName(testFor))
-					return NLS.bind(
-							UIText.ValidationUtils_InvalidRefNameMessage,
-							testFor);
 				return null;
 			}
 		};

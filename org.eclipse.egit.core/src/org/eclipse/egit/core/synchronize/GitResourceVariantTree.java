@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 IBM Corporation and others.
+ * Copyright (c) 2010, 2013 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *     Dariusz Luksza <dariusz@luksza.org>
+ *     Laurent Goubet <laurent.goubet@obeo.fr> - 403363
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
@@ -15,16 +16,16 @@ import static org.eclipse.egit.core.internal.util.ResourceUtil.isNonWorkspace;
 import static org.eclipse.jgit.lib.ObjectId.zeroId;
 import static org.eclipse.jgit.lib.Repository.stripWorkDir;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.egit.core.CoreText;
+import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeData;
 import org.eclipse.egit.core.synchronize.dto.GitSynchronizeDataSet;
 import org.eclipse.jgit.lib.ObjectId;
@@ -40,10 +41,10 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 
 	private final GitSyncCache gitCache;
 
-	private final GitSynchronizeDataSet gsds;
+	private final Map<IResource, IResourceVariant> cache = Collections
+			.synchronizedMap(new WeakHashMap<IResource, IResourceVariant>());
 
-	private final Map<IResource, IResourceVariant> cache = new WeakHashMap<IResource, IResourceVariant>();
-
+	protected final GitSynchronizeDataSet gsds;
 
 	GitResourceVariantTree(ResourceVariantByteStore store,
 			GitSyncCache gitCache, GitSynchronizeDataSet gsds) {
@@ -58,8 +59,8 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 			if (gsd.getPathFilter() == null)
 				roots.addAll(gsd.getProjects());
 			else
-				for (IContainer container : gsd.getIncludedPaths())
-					roots.add(container.getProject());
+				for (IResource resource : gsd.getIncludedResources())
+					roots.add(resource.getProject());
 
 		return roots.toArray(new IResource[roots.size()]);
 	}
@@ -97,8 +98,9 @@ abstract class GitResourceVariantTree extends ResourceVariantTree {
 		if (gitCache == null)
 			return null;
 
-		if (cache.containsKey(resource))
-			return cache.get(resource);
+		IResourceVariant cachedVariant = cache.get(resource);
+		if (cachedVariant != null)
+			return cachedVariant;
 
 		GitSynchronizeData gsd = gsds.getData(resource.getProject());
 		if (gsd == null)

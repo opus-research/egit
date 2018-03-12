@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
@@ -20,7 +21,7 @@ import java.io.File;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -29,12 +30,11 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.util.FS;
-import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.TableCollection;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
@@ -42,12 +42,12 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * SWTBot Tests for the Git Repositories View (repsitory handling)
+ * SWTBot Tests for the Git Repositories View (repository handling)
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class GitRepositoriesViewRepoHandlingTest extends
@@ -55,10 +55,10 @@ public class GitRepositoriesViewRepoHandlingTest extends
 
 	private static final String REMOVE_REPOSITORY_CONTEXT_MENU_LABEL = "RepoViewRemove.label";
 
-	private static File repositoryFile;
+	private File repositoryFile;
 
-	@BeforeClass
-	public static void beforeClass() throws Exception {
+	@Before
+	public void before() throws Exception {
 		repositoryFile = createProjectAndCommitToRepository();
 	}
 
@@ -82,7 +82,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						.getInstance());
 				assertEquals("Clipboard content should be x", "x", value);
 
-				ContextMenuHelper.clickContextMenu(tree, myUtil
+				ContextMenuHelper.clickContextMenuSync(tree, myUtil
 						.getPluginLocalizedValue("CopyPathCommand"));
 				value = (String) clp.getContents(TextTransfer.getInstance());
 				assertTrue("Clipboard content (" + value
@@ -111,7 +111,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 					clip.setContents(new Object[] { repositoryFile.getPath() },
 							new Transfer[] { TextTransfer.getInstance() });
 
-					ContextMenuHelper.clickContextMenu(label,
+					ContextMenuHelper.clickContextMenuSync(label,
 							myUtil.getPluginLocalizedValue("PastePathCommand"));
 				} catch (Exception e) {
 					exceptions[0] = e;
@@ -138,7 +138,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		assertHasRepo(repositoryFile);
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
+		ContextMenuHelper.clickContextMenuSync(tree, myUtil
 				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
 		refreshAndWait();
 		assertEmpty();
@@ -161,9 +161,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
-		shell.activate();
 		shell.bot().button(IDialogConstants.YES_LABEL).click();
-		waitInUI();
 		refreshAndWait();
 		assertEmpty();
 		assertProjectExistence(PROJ1, false);
@@ -186,7 +184,6 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
-		shell.activate();
 		shell.bot().button(IDialogConstants.NO_LABEL).click();
 		refreshAndWait();
 		assertEmpty();
@@ -210,7 +207,6 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_ConfirmProjectDeletion_WindowTitle);
-		shell.activate();
 		shell.bot().button(IDialogConstants.CANCEL_LABEL).click();
 		refreshAndWait();
 		assertHasRepo(repositoryFile);
@@ -219,52 +215,43 @@ public class GitRepositoriesViewRepoHandlingTest extends
 
 	@Test
 	public void testShowIn() throws Exception {
-		SWTBotPerspective perspective = null;
-		try {
-			perspective = bot.activePerspective();
+		clearView();
+		deleteAllProjects();
+		shareProjects(repositoryFile);
+		refreshAndWait();
+		assertProjectExistence(PROJ1, true);
+		assertEmpty();
 
-			// the show in context menu does not appear in the project explorer
-			// for general projects
-			bot.perspectiveById("org.eclipse.pde.ui.PDEPerspective").activate();
-			clearView();
-			deleteAllProjects();
-			shareProjects(repositoryFile);
-			refreshAndWait();
-			assertProjectExistence(PROJ1, true);
-			assertEmpty();
+		getOrOpenView().show();
 
-			SWTBotTree explorerTree = bot.viewById(
-					"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
-			SWTBotTreeItem projectItem = getProjectItem(explorerTree, PROJ1)
-					.select();
-			ContextMenuHelper.clickContextMenu(explorerTree, "Show In",
-					viewName);
-			refreshAndWait();
-			assertHasRepo(repositoryFile);
-			SWTBotTree viewerTree = getOrOpenView().bot().tree();
+		SWTBotView view = TestUtil.showExplorerView();
+		SWTBotTree explorerTree = view.bot().tree();
+		SWTBotTreeItem projectItem = getProjectItem(explorerTree, PROJ1)
+				.select();
+		ContextMenuHelper.clickContextMenuSync(explorerTree, "Show In",
+				viewName);
+		refreshAndWait();
+		assertHasRepo(repositoryFile);
+		SWTBotTree viewerTree = getOrOpenView().bot().tree();
 
-			TableCollection selection = viewerTree.selection();
-			assertTrue("Selection should contain one element", selection
-					.rowCount() == 1);
-			String nodeText = selection.get(0).get(0);
-			assertTrue("Node text should contain project name", projectItem
-					.getText().startsWith(nodeText));
+		TableCollection selection = viewerTree.selection();
+		assertTrue("Selection should contain one element",
+				selection.rowCount() == 1);
+		String nodeText = selection.get(0).get(0);
+		assertTrue("Node text should contain project name", projectItem
+				.getText().startsWith(nodeText));
 
-			projectItem.expand().getNode(FOLDER).expand().getNode(FILE1)
-					.select();
+		view.show();
+		projectItem.expand().getNode(FOLDER).expand().getNode(FILE1).select();
 
-			ContextMenuHelper.clickContextMenu(explorerTree, "Show In",
-					viewName);
+		ContextMenuHelper.clickContextMenuSync(explorerTree, "Show In",
+				viewName);
 
-			selection = viewerTree.selection();
-			assertTrue("Selection should contain one eelement", selection
-					.rowCount() == 1);
-			nodeText = selection.get(0).get(0);
+		selection = viewerTree.selection();
+		assertTrue("Selection should contain one eelement",
+				selection.rowCount() == 1);
+		nodeText = selection.get(0).get(0);
 			assertEquals("Node text should contain file name", FILE1, nodeText);
-		} finally {
-			if (perspective != null)
-				perspective.activate();
-		}
 	}
 
 	@Test
@@ -278,8 +265,8 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						myUtil
 								.getPluginLocalizedValue("RepoViewAddRepository.tooltip"))
 				.click();
-		SWTBotShell shell = bot.shell(
-				UIText.RepositorySearchDialog_AddGitRepositories).activate();
+		SWTBotShell shell = bot
+				.shell(UIText.RepositorySearchDialog_AddGitRepositories);
 		shell.bot().textWithLabel(UIText.RepositorySearchDialog_directory)
 				.setText(getTestDirectory().getPath());
 		shell.bot().button(UIText.RepositorySearchDialog_Search).click();
@@ -298,8 +285,8 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						myUtil
 								.getPluginLocalizedValue("RepoViewCloneRepository.tooltip"))
 				.click();
-		SWTBotShell shell = bot.shell(UIText.GitCloneWizard_title).activate();
-		shell.bot().tree().select("URI");
+		SWTBotShell shell = bot.shell(UIText.GitCloneWizard_title);
+		shell.bot().tree().select("Clone URI");
 
 		shell.bot().button("Next >").click();		// for some reason, textWithLabel doesn't seem to work
 		shell.bot()
@@ -327,8 +314,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.toolbarButton(
 						myUtil.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
 				.click();
-		SWTBotShell shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle)
-				.activate();
+		SWTBotShell shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle);
 		IPath newPath = new Path(getTestDirectory().getPath());
 		shell.bot().textWithLabel(UIText.CreateRepositoryPage_DirectoryLabel)
 				.setText(newPath.toOSString());
@@ -347,7 +333,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.toolbarButton(
 						myUtil.getPluginLocalizedValue("RepoViewCreateRepository.tooltip"))
 				.click();
-		shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle).activate();
+		shell = bot.shell(UIText.NewRepositoryWizard_WizardTitle);
 		newPath = new Path(getTestDirectory().getPath()).append("bare");
 		shell.bot()
 				.textWithLabel(UIText.CreateRepositoryPage_RepositoryNameLabel)
@@ -365,16 +351,10 @@ public class GitRepositoriesViewRepoHandlingTest extends
 	@Test
 	public void testSearchDirectoryWithBareRepos() throws Exception {
 		deleteAllProjects();
+		shutDownRepositories();
 		clearView();
 		refreshAndWait();
 		assertEmpty();
-		getOrOpenView()
-				.toolbarButton(
-						myUtil.getPluginLocalizedValue("RepoViewAddRepository.tooltip"))
-				.click();
-
-		FileUtils.delete(getTestDirectory(), FileUtils.RECURSIVE
-				| FileUtils.RETRY | FileUtils.SKIP_MISSING);
 
 		Git.init().setBare(true)
 				.setDirectory(new File(getTestDirectory(), "BareRepository1"))
@@ -384,8 +364,13 @@ public class GitRepositoriesViewRepoHandlingTest extends
 				.setDirectory(new File(getTestDirectory(), "BareRepository2"))
 				.call();
 
-		SWTBotShell shell = bot.shell(
-				UIText.RepositorySearchDialog_AddGitRepositories).activate();
+		getOrOpenView()
+				.toolbarButton(
+						myUtil.getPluginLocalizedValue("RepoViewAddRepository.tooltip"))
+				.click();
+
+		SWTBotShell shell = bot
+				.shell(UIText.RepositorySearchDialog_AddGitRepositories);
 
 		shell.bot().checkBox(UIText.RepositorySearchDialog_DeepSearch_button)
 				.deselect();
@@ -402,7 +387,10 @@ public class GitRepositoriesViewRepoHandlingTest extends
 			slept += 100;
 		}
 
-		assertEquals(2, shell.bot().tree().rowCount());
+		TestUtil.waitUntilTreeHasNodeContainsText(shell.bot(), shell.bot()
+				.tree(), "BareRepository1", 10000);
+		TestUtil.waitUntilTreeHasNodeContainsText(shell.bot(), shell.bot()
+				.tree(), "BareRepository2", 10000);
 	}
 
 	private void assertHasClonedRepo() throws Exception {

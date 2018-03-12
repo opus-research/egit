@@ -22,7 +22,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.MergeTargetSelectionDialog;
 import org.eclipse.egit.ui.internal.merge.MergeResultDialog;
@@ -56,6 +56,9 @@ public class MergeActionHandler extends RepositoryActionHandler {
 
 			String jobname = NLS.bind(UIText.MergeAction_JobNameMerge, refName);
 			final MergeOperation op = new MergeOperation(repository, refName);
+			op.setSquash(mergeTargetSelectionDialog.isMergeSquash());
+			op.setFastForwardMode(mergeTargetSelectionDialog.getFastForwardMode());
+			op.setCommit(mergeTargetSelectionDialog.isCommit());
 			Job job = new Job(jobname) {
 				@Override
 				protected IStatus run(IProgressMonitor monitor) {
@@ -96,7 +99,7 @@ public class MergeActionHandler extends RepositoryActionHandler {
 							public void run() {
 								Shell shell = PlatformUI.getWorkbench()
 										.getActiveWorkbenchWindow().getShell();
-								new MergeResultDialog(shell, repository, op
+								MergeResultDialog.getDialog(shell, repository, op
 										.getResult()).open();
 							}
 						});

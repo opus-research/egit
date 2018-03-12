@@ -16,25 +16,13 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>3.3.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.mylyn.ui.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
   <name>EGit Mylyn UI Test Plug-in</name>
-
-  <properties>
-    <local-egit-site>file:/${basedir}/../org.eclipse.egit-updatesite/target/site</local-egit-site>
-  </properties>
-
-  <repositories>
-    <repository>
-      <id>local-egit</id>
-      <layout>p2</layout>
-      <url>${local-egit-site}</url>
-    </repository>
-  </repositories>
 
   <profiles>
     <profile>
@@ -81,8 +69,9 @@
         <artifactId>tycho-surefire-plugin</artifactId>
         <version>${tycho-version}</version>
         <configuration>
-          <testSuite>org.eclipse.egit.mylyn.ui.test</testSuite>
-          <testClass>org.eclipse.egit.internal.mylyn.AllMylynTests</testClass>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
           <useUIHarness>true</useUIHarness>
           <useUIThread>true</useUIThread>
           <product>org.eclipse.sdk.ide</product>
@@ -92,17 +81,17 @@
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.egit.feature.group</artifactId>
-              <version>2.0.0</version>
+              <version>3.3.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.egit.mylyn.feature.group</artifactId>
-              <version>2.0.0</version>
+              <version>3.3.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.jgit.feature.group</artifactId>
-              <version>2.0.0</version>
+              <version>3.3.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
