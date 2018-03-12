@@ -213,15 +213,6 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
-	public static String PullOperation_DetachedHeadMessage;
-
-	/** */
-	public static String PullOperation_PullNotConfiguredMessage;
-
-	/** */
-	public static String PullOperation_TaskName;
-
-	/** */
 	public static String PushOperation_InternalExceptionOccurredMessage;
 
 	/** */
