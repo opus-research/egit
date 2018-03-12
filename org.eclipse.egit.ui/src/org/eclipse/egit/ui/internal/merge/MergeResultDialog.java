@@ -11,12 +11,16 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
+import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
@@ -32,9 +36,11 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.swt.SWT;
@@ -70,6 +76,19 @@ public class MergeResultDialog extends Dialog {
 	 * @param parentShell
 	 * @param repository
 	 * @param mergeResult
+	 * @return the created dialog
+	 */
+	public static Dialog getDialog(Shell parentShell, Repository repository, MergeResult mergeResult) {
+		if(mergeResult.getMergeStatus() == MergeStatus.CHECKOUT_CONFLICT)
+			return new CheckoutConflictDialog(parentShell, repository, mergeResult.getCheckoutConflicts());
+		else
+			return new MergeResultDialog(parentShell, repository, mergeResult);
+	}
+
+	/**
+	 * @param parentShell
+	 * @param repository
+	 * @param mergeResult
 	 */
 	public MergeResultDialog(Shell parentShell, Repository repository,
 			MergeResult mergeResult) {
@@ -99,19 +118,51 @@ public class MergeResultDialog extends Dialog {
 				false));
 		Text resultText = new Text(composite, SWT.READ_ONLY);
 		resultText.setText(mergeResult.getMergeStatus().toString());
+		resultText.setSelection(resultText.getCaretPosition());
 		resultText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		// new head
-		Label newHeadLabel = new Label(composite, SWT.NONE);
-		newHeadLabel.setText(UIText.MergeResultDialog_newHead);
-		newHeadLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
-				false));
-		Text newHeadText = new Text(composite, SWT.READ_ONLY);
-		ObjectId newHead = mergeResult.getNewHead();
-		if (newHead != null)
-			newHeadText.setText(getCommitMessage(newHead) + SPACE
-					+ abbreviate(mergeResult.getNewHead(), true));
-		newHeadText
-				.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		if (mergeResult.getMergeStatus() == MergeStatus.FAILED) {
+			resultText.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_RED));
+
+			StringBuilder paths = new StringBuilder();
+			Label pathsLabel = new Label(composite, SWT.NONE);
+			pathsLabel.setText(UIText.MergeResultDialog_failed);
+			pathsLabel.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false));
+			Text pathsText = new Text(composite, SWT.READ_ONLY);
+			pathsText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+			Set<Entry<String, MergeFailureReason>> failedPaths = mergeResult.getFailingPaths().entrySet();
+			int n = 0;
+			for (Map.Entry<String, MergeFailureReason> e : failedPaths) {
+				if (n > 0)
+					paths.append(Text.DELIMITER);
+				paths.append(e.getValue());
+				paths.append("\t"); //$NON-NLS-1$
+				paths.append(e.getKey());
+				n++;
+				if (n > 10 && failedPaths.size() > 15)
+					break;
+			}
+			if (n < failedPaths.size()) {
+				paths.append(Text.DELIMITER);
+				paths.append(MessageFormat.format(UIText.MergeResultDialog_nMore, Integer.valueOf(n - failedPaths.size())));
+			}
+			pathsText.setText(paths.toString());
+		}
+
+		if (mergeResult.getMergeStatus() != MergeStatus.FAILED) {
+			// new head
+			Label newHeadLabel = new Label(composite, SWT.NONE);
+			newHeadLabel.setText(UIText.MergeResultDialog_newHead);
+			newHeadLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false,
+					false));
+			Text newHeadText = new Text(composite, SWT.READ_ONLY);
+			ObjectId newHead = mergeResult.getNewHead();
+			if (newHead != null)
+				newHeadText.setText(getCommitMessage(newHead) + SPACE
+						+ abbreviate(mergeResult.getNewHead(), true));
+			newHeadText
+					.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		}
+
 		// Merge Input
 		Label mergeInputLabel = new Label(composite, SWT.NONE);
 		mergeInputLabel.setText(UIText.MergeResultDialog_mergeInput);

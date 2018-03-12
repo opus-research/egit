@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
+ * Copyright (C) 2011, 2013 Bernard Leach <leachbj@bouncycastle.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,6 +12,7 @@ import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.ADDED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CHANGED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.CONFLICTING;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING;
+import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MISSING_AND_CHANGED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.MODIFIED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.PARTIALLY_MODIFIED;
 import static org.eclipse.egit.ui.internal.staging.StagingEntry.State.REMOVED;
@@ -25,7 +26,7 @@ import java.util.TreeSet;
 
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.staging.StagingView.StagingViewUpdate;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
@@ -84,7 +85,11 @@ public class StagingViewContentProvider implements
 		final Repository repository = update.repository;
 		if (isWorkspace) {
 			for (String file : indexDiff.getMissing())
-				nodes.add(new StagingEntry(repository, MISSING, file));
+				if (indexDiff.getChanged().contains(file))
+					nodes.add(new StagingEntry(repository, MISSING_AND_CHANGED,
+							file));
+				else
+					nodes.add(new StagingEntry(repository, MISSING, file));
 			for (String file : indexDiff.getModified())
 				if (indexDiff.getChanged().contains(file))
 					nodes.add(new StagingEntry(repository, PARTIALLY_MODIFIED,

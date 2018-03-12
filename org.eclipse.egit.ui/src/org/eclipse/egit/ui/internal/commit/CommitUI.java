@@ -39,8 +39,8 @@ import org.eclipse.egit.core.IteratorService;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.BasicConfigurationDialog;
 import org.eclipse.egit.ui.internal.dialogs.CommitDialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -49,6 +49,7 @@ import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.IndexDiff;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
@@ -275,8 +276,10 @@ public class CommitUI  {
 				// ignore
 			}
 		}
-		indexDiff = new IndexDiff(repo, Constants.HEAD,
-				IteratorService.createInitialIterator(repo));
+		WorkingTreeIterator it = IteratorService.createInitialIterator(repo);
+		if (it == null)
+			throw new OperationCanceledException(); // workspace is closed
+		indexDiff = new IndexDiff(repo, Constants.HEAD, it);
 		indexDiff.diff(jgitMonitor, counter.count, 0, NLS.bind(
 				UIText.CommitActionHandler_repository, repo.getDirectory()
 						.getPath()));

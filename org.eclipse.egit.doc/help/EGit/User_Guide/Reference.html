@@ -226,8 +226,8 @@
 			<li>
 				<a href="#Pulling_New_Changes_from_Upstream_Repositories">Pull</a> - Pull changes from remote branch tracked by currently checked out local branch.
 			</li>
-			<li>'
-				<i>Remote &gt; '</i>
+			<li>
+				<b>Remote &gt; </b>
 				<a href="Tasks.html#Fetching_from_other_Repositories">Fetch From</a> - Fetch changes from a remote repository
 			</li>
 			<li>
@@ -341,7 +341,7 @@
 			</dd>
 		</dl>
 		<p>The content of the lower panes depends on the selection in the upper pane and is updated automatically when this selection changes.</p>
-		<p>Both lower panes can be switched on and and off separately by right-clicking anywhere in the upper pane and selecting 
+		<p>Both lower panes can be switched on and off separately by right-clicking anywhere in the upper pane and selecting 
 			<b>Show Revision Comment</b> and 
 			<b>Show Revision Details</b>, respectively.
 		</p>
@@ -387,7 +387,7 @@
 			<b>Open</b> to see all versions of the file corresponding to the selected commits (one editor will be opened per version).
 		</p>
 		<p>If the current input is not a file, then there won't be menu actions for 
-			<b>Open</b>. However, it is possible to double-click on an entry the Revision Detail area. If compare mode is active, a compare editor will be openend showing the changes for the file being double-clicked in the currently selected commit (i.e. a diff of the file content in the currently selected commit against the file content of this commit's ancestor). If compare mode is not active, an editor with the file content corresponding to the currently selected commit is shown.
+			<b>Open</b>. However, it is possible to double-click on an entry the Revision Detail area. If compare mode is active, a compare editor will be opened showing the changes for the file being double-clicked in the currently selected commit (i.e. a diff of the file content in the currently selected commit against the file content of this commit's ancestor). If compare mode is not active, an editor with the file content corresponding to the currently selected commit is shown.
 		</p>
 		<p>
 			<img border="0" src="images/Egit-0.9-history-view-openAndCompareFromDetails.png"/>
@@ -409,7 +409,7 @@
 			<img border="0" src="images/Egit-0.9-history-view-search.png"/>
 		</p>
 		<h5 id="Filter_settings">Filter settings</h5>
-		<p>The next four toggle buttons in the the view toolbar control how the displayed commits are filtered with respect to the current input:
+		<p>The next four toggle buttons in the view toolbar control how the displayed commits are filtered with respect to the current input:
 			<br/>
 
 			<img border="0" src="images/Egit-0.9-history-view-config.png"/>
@@ -427,7 +427,7 @@
 		</ul>
 		<ul>
 			<li>If the "Resource" button is down, the commit log is filtered to show only commits which affected the current input; the view menu item 
-				<b>Show &gt; Follow Renames</b> allows to toggle whether renames of the selected ressource should be followed by this filter
+				<b>Show &gt; Follow Renames</b> allows to toggle whether renames of the selected resource should be followed by this filter
 			</li>
 		</ul>
 		<p>Note that not all combinations of filter setting and current input are meaningful; for example, if the current input is a project, the "Project" option is in fact the same as the "Resource" option.</p>
@@ -670,7 +670,7 @@
 			<b>Show File Names First</b> option to show the file names first, followed by the directory that the files are located in.
 		</p>
 		<p>Double-click modified files to open a compare view. If fired from the "unstaged" pane the compare view will show the not-yet staged changes. When fired from the "staged" pane it will display the already staged changes. To open a file in the editor, use the 
-			<b>Open Working Tree Version</b> action on the file's context menu.
+			<b>Open Workspace Version</b> action on the file's context menu.
 		</p>
 		<p>To stage a file, drag it from the 
 			<b>Unstaged Changes</b> pane to the 
@@ -684,10 +684,22 @@
 			<b>Unstaged Changes</b> pane. Alternatively, use the 
 			<b>Remove from Git Index</b> action on the file's context menu.
 		</p>
-		<p>The commit action will commit the staged changes only -- similar to what <code>git commit</code> does in native git. An intergrated commit message editor allows to edit the commit message for the commit. In contrast to the commit dialog, the staging view can be kept open while doing changes. This allows for incrementally writing the commit message along with the changes. The commit message being edited is associated with the repository, the staging view is linked with. It is not stored persistently and will get lost if the staging view or Eclipse are closed.</p>
+		<p>The commit action will commit the staged changes only -- similar to what <code>git commit</code> does in native git. An integrated commit message editor allows to edit the commit message for the commit. In contrast to the commit dialog, the staging view can be kept open while doing changes. This allows for incrementally writing the commit message along with the changes. The commit message being edited is associated with the repository, the staging view is linked with. It is not stored persistently and will get lost if the staging view or Eclipse are closed.</p>
 		<p>To commit, press 
 			<b>Ctrl+Enter</b> (
-			<b>Command+Enter</b> on Mac OS X) in the commit message text field, or click on the toolbar icon with the red arrow.
+			<b>Command+Enter</b> on Mac OS X) in the commit message text field, or click on the 
+			<b>Commit'' or '''Commit and Push</b> button.
+		</p>
+		<h4 id="Partial_Staging">Partial Staging</h4>
+		<p>Sometimes it's useful to commit only some changes of a file. An example is when working on a feature and noticing a typo or small bug, which is unrelated to the feature.</p>
+		<p>To commit only certain changes, these changes have to be staged first. To do this, double-click on the file in the 
+			<b>Unstaged Changes</b> pane. This will open the compare editor. On the left side is the workspace version, on the right is the index (staged) version.
+		</p>
+		<p>Both sides of the compare editor are editable. When changing something in the right side (index) and saving, the file will turn up in the 
+			<b>Staged Changes</b> pane and when committing, exactly that content will be committed.
+		</p>
+		<p>To stage a group of changed lines, the 
+			<b>Copy Current Change from Left to Right</b> toolbar button (arrow icon) can be used.
 		</p>
 		<h3 id="Git_Reflog_View">Git Reflog View</h3>
 		<p>
@@ -866,7 +878,7 @@
 		<p>As part of EGit's PDE Tools, there's a PDE Build fetch factory for Git included in the 
 			<b>org.eclipse.egit.fetchfactory</b> plug-in.
 		</p>
-		<p>The map file file format: 
+		<p>The map file's file format: 
 			<b>type@id,
 				<a href="version">version</a>=GIT,args
 			</b>

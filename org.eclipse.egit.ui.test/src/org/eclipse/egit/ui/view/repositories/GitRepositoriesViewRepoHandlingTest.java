@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
+ *    Laurent Goubet <laurent.goubet@obeo.fr - 404121
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
@@ -20,7 +21,7 @@ import java.io.File;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -82,7 +83,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 						.getInstance());
 				assertEquals("Clipboard content should be x", "x", value);
 
-				ContextMenuHelper.clickContextMenu(tree, myUtil
+				ContextMenuHelper.clickContextMenuSync(tree, myUtil
 						.getPluginLocalizedValue("CopyPathCommand"));
 				value = (String) clp.getContents(TextTransfer.getInstance());
 				assertTrue("Clipboard content (" + value
@@ -111,7 +112,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 					clip.setContents(new Object[] { repositoryFile.getPath() },
 							new Transfer[] { TextTransfer.getInstance() });
 
-					ContextMenuHelper.clickContextMenu(label,
+					ContextMenuHelper.clickContextMenuSync(label,
 							myUtil.getPluginLocalizedValue("PastePathCommand"));
 				} catch (Exception e) {
 					exceptions[0] = e;
@@ -138,7 +139,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 		assertHasRepo(repositoryFile);
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		tree.getAllItems()[0].select();
-		ContextMenuHelper.clickContextMenu(tree, myUtil
+		ContextMenuHelper.clickContextMenuSync(tree, myUtil
 				.getPluginLocalizedValue(REMOVE_REPOSITORY_CONTEXT_MENU_LABEL));
 		refreshAndWait();
 		assertEmpty();
@@ -237,7 +238,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 					"org.eclipse.jdt.ui.PackageExplorer").bot().tree();
 			SWTBotTreeItem projectItem = getProjectItem(explorerTree, PROJ1)
 					.select();
-			ContextMenuHelper.clickContextMenu(explorerTree, "Show In",
+			ContextMenuHelper.clickContextMenuSync(explorerTree, "Show In",
 					viewName);
 			refreshAndWait();
 			assertHasRepo(repositoryFile);
@@ -365,6 +366,7 @@ public class GitRepositoriesViewRepoHandlingTest extends
 	@Test
 	public void testSearchDirectoryWithBareRepos() throws Exception {
 		deleteAllProjects();
+		shutDownRepositories();
 		clearView();
 		refreshAndWait();
 		assertEmpty();

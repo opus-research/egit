@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -24,8 +24,8 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -256,7 +256,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 			explorerItem = testUtil.getChildNode(childItem.expand(), path[2]);
 		}
 		explorerItem.select();
-		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Show In",
+		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Show In",
 				"History");
 		// join GenerateHistoryJob
 		Job.getJobManager().join(JobFamilies.GENERATE_HISTORY, null);
@@ -399,7 +399,7 @@ public class HistoryViewTest extends LocalRepositoryTestCase {
 			}
 		});
 
-		ContextMenuHelper.clickContextMenu(table,
+		ContextMenuHelper.clickContextMenuSync(table,
 				UIText.GitHistoryPage_CheckoutMenuLabel);
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		return commit;

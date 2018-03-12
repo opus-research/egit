@@ -1,5 +1,5 @@
 /******************************************************************************
- *  Copyright (c) 2011 GitHub Inc.
+ *  Copyright (c) 2011, 2012 GitHub Inc and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
@@ -114,7 +114,7 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		SWTBotTable table = commitEditor.bot().table(0);
 		assertTrue(table.rowCount() > 0);
 		table.select(0);
-		ContextMenuHelper.clickContextMenu(table,
+		ContextMenuHelper.clickContextMenuSync(table,
 				UIText.CommitFileDiffViewer_ShowAnnotationsMenuLabel);
 		TestUtil.joinJobs(JobFamilies.BLAME);
 		assertFalse(commitEditor.getReference().equals(

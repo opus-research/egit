@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010 SAP AG.
+ * Copyright (c) 2010, 2012 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -24,7 +24,7 @@ import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIText;
+import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
@@ -38,7 +38,7 @@ import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotPerspective;
@@ -124,19 +124,19 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		localItem.getNode(0).select();
 		assertCheckoutNotAvailable(view);
 		localItem.getNode(1).select();
-		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
+		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 
 		assertCheckoutNotAvailable(view);
 
 		localItem.getNode(0).select();
-		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
+		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		localItem.getNode(1).select();
 		refreshAndWait();
-		ContextMenuHelper.clickContextMenu(bot.tree(), myUtil
+		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		refreshAndWait();
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
@@ -196,7 +196,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		localItem.getNode(1).select();
 		refreshAndWait();
-		ContextMenuHelper.clickContextMenu(bot.tree(), myUtil
+		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		SWTBotShell confirmPopup = bot
 				.shell(UIText.UnmergedBranchDialog_Title);
@@ -275,7 +275,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 			assertEquals("Wrong number of remote children", 2, children.size());
 
 			item.getNode("origin/stable").select();
-			ContextMenuHelper.clickContextMenu(tree, myUtil
+			ContextMenuHelper.clickContextMenuSync(tree, myUtil
 					.getPluginLocalizedValue("CheckoutCommand"));
 			TestUtil.joinJobs(JobFamilies.CHECKOUT);
 			refreshAndWait();
@@ -378,7 +378,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		String title = NLS.bind(
 				UIText.MergeTargetSelectionDialog_TitleMergeWithBranch,
-				new FileRepository(clonedRepositoryFile).getBranch());
+				FileRepositoryBuilder.create(clonedRepositoryFile).getBranch());
 
 		SWTBotShell mergeDialog = bot.shell(title);
 		// TODO do some merge here
@@ -407,9 +407,9 @@ public class GitRepositoriesViewBranchHandlingTest extends
 				.bot().tree(), clonedRepositoryFile);
 		localItem.expand().getNode("configTest").select();
 
-		ContextMenuHelper.clickContextMenu(view.bot().tree(),
+		ContextMenuHelper.clickContextMenuSync(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+				"Properties");
 
 		SWTBotView propsView = bot.viewByTitle("Properties");
 		SWTBotTreeItem rootItem = propsView
@@ -493,7 +493,7 @@ public class GitRepositoriesViewBranchHandlingTest extends
 
 		ContextMenuHelper.clickContextMenu(view.bot().tree(),
 				myUtil.getPluginLocalizedValue("ShowIn"),
-				myUtil.getPluginLocalizedValue("RepoViewOpenProperties.label"));
+				"Properties");
 
 		propsView = bot.viewByTitle("Properties");
 		rootItem = propsView
