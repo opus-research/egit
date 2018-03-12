@@ -88,9 +88,6 @@ public class UIText extends NLS {
 	public static String AddToIndexAction_addingFiles;
 
 	/** */
-	public static String AddToIndexCommand_addingFilesFailed;
-
-	/** */
 	public static String AssumeUnchanged_assumeUnchanged;
 
 	/** */
@@ -754,12 +751,6 @@ public class UIText extends NLS {
 	public static String CompareTreeView_WorkspaceVersionText;
 
 	/** */
-	public static String CompareUtils_errorGettingEncoding;
-
-	/** */
-	public static String CompareUtils_errorGettingHeadCommit;
-
-	/** */
 	public static String MergeHandler_SelectBranchMessage;
 
 	/** */
@@ -1315,9 +1306,6 @@ public class UIText extends NLS {
 	public static String ResourceHistory_ShowTagSequence;
 
 	/** */
-	public static String ResourceHistory_toggleRelativeDate;
-
-	/** */
 	public static String ResourceHistory_toggleCommentWrap;
 
 	/** */
@@ -1546,6 +1534,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_ErrorNoMessage;
 
 	/** */
+	public static String CommitDialog_File;
+
+	/** */
 	public static String CommitDialog_SelectAll;
 
 	/** */
@@ -1591,22 +1582,13 @@ public class UIText extends NLS {
 	public static String CommitDialog_AddChangeIdLabel;
 
 	/** */
+	public static String CommitDialog_AddChangeIdTooltip;
+
+	/** */
 	public static String CommitDialog_WrongTypeOfCommitMessageProvider;
 
 	/** */
 	public static String CommitDialog_ConfigureLink;
-
-	/** */
-	public static String CommitDialog_Files;
-
-	/** */
-	public static String CommitDialog_Message;
-
-	/** */
-	public static String CommitDialog_Path;
-
-	/** */
-	public static String CommitDialog_Title;
 
 	/** */
 	public static String ConfigurationChecker_checkHomeDirectory;
@@ -2960,12 +2942,6 @@ public class UIText extends NLS {
 	public static String CommitEditorPage_LabelParent;
 
 	/** */
-	public static String CommitEditorPage_LabelTags;
-
-	/** */
-	public static String CommitEditorPage_SectionBranches;
-
-	/** */
 	public static String CommitEditorPage_SectionFiles;
 
 	/** */
@@ -2973,18 +2949,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditorPage_Title;
-
-	/** */
-	public static String CommitEditorPage_TooltipAuthor;
-
-	/** */
-	public static String CommitEditorPage_TooltipCommitter;
-
-	/** */
-	public static String CommitEditorPage_TooltipSignedOffByAuthor;
-
-	/** */
-	public static String CommitEditorPage_TooltipSignedOffByCommitter;
 
 	/** */
 	public static String CommitFileDiffViewer_CanNotOpenCompareEditorTitle;
@@ -3524,51 +3488,6 @@ public class UIText extends NLS {
 	public static String CommitResultLabelProvider_SectionRepository;
 
 	/** */
-	public static String CommitSearchPage_Author;
-
-	/** */
-	public static String CommitSearchPage_CaseSensitive;
-
-	/** */
-	public static String CommitSearchPage_CheckAll;
-
-	/** */
-	public static String CommitSearchPage_CommitId;
-
-	/** */
-	public static String CommitSearchPage_Committer;
-
-	/** */
-	public static String CommitSearchPage_ContainingText;
-
-	/** */
-	public static String CommitSearchPage_ContainingTextHint;
-
-	/** */
-	public static String CommitSearchPage_Message;
-
-	/** */
-	public static String CommitSearchPage_ParentIds;
-
-	/** */
-	public static String CommitSearchPage_RegularExpression;
-
-	/** */
-	public static String CommitSearchPage_Repositories;
-
-	/** */
-	public static String CommitSearchPage_Scope;
-
-	/** */
-	public static String CommitSearchPage_SearchAllBranches;
-
-	/** */
-	public static String CommitSearchPage_TreeId;
-
-	/** */
-	public static String CommitSearchPage_UncheckAll;
-
-	/** */
 	public static String CommitSearchQuery_Label;
 
 	/** */
@@ -3596,24 +3515,6 @@ public class UIText extends NLS {
 	public static String CommitSelectionDialog_IncompleteListMessage;
 
 	/** */
-	public static String CommitSelectionDialog_LinkSearch;
-
-	/** */
-	public static String CommitSelectionDialog_Message;
-
-	/** */
-	public static String CommitSelectionDialog_SectionMessage;
-
-	/** */
-	public static String CommitSelectionDialog_SectionRepo;
-
-	/** */
-	public static String CommitSelectionDialog_TaskSearching;
-
-	/** */
-	public static String CommitSelectionDialog_Title;
-
-	/** */
 	public static String CommitSelectionDialog_WindowTitle;
 
 	/** */
@@ -3627,9 +3528,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitActionContributor_Push;
-
-	/** */
-	public static String GitActionContributor_Pull;
 
 	/** */
 	public static String DecoratableResourceHelper_noHead;
@@ -3660,9 +3558,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_Commit;
-
-	/** */
-	public static String SynchronizeWithMenu_custom;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
