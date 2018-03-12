@@ -5078,15 +5078,6 @@ public class UIText extends NLS {
 	public static String StagingView_MergeTool;
 
 	/** */
-	public static String StagingView_AddJob;
-
-	/** */
-	public static String StagingView_RemoveJob;
-
-	/** */
-	public static String StagingView_ResetJob;
-
-	/** */
 	public static String StagingViewContentProvider_SubmoduleError;
 
 	/** */
