@@ -561,7 +561,7 @@
                      value="org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode">
                </instanceof>
                <instanceof
-                     value="org.eclipse.core.resources.IWorkspaceRoot">
+                     value="org.eclipse.core.internal.resources.WorkspaceRoot">
                </instanceof>
             </or>
          </triggerPoints>
@@ -1516,6 +1516,11 @@
             defaultHandler="org.eclipse.egit.ui.internal.actions.TagActionHandler"
             id="org.eclipse.egit.ui.team.Tag"
             name="%TagAction_label">
+      </command>
+            <command
+                  defaultHandler="org.eclipse.egit.ui.internal.actions.TrackHandler"
+                  id="org.eclipse.egit.ui.team.Track"
+                  name="%TrackAction_label">
       </command>
    </extension>
 </plugin>
