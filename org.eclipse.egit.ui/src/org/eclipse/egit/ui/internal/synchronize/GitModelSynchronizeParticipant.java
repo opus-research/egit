@@ -386,8 +386,6 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		IContainer mappedContainer = ResourcesPlugin.getWorkspace().getRoot()
 				.getContainerForLocation(path);
 		GitProjectData projectData = GitProjectData.get((IProject) mappedContainer);
-		if (projectData == null)
-			return null;
 		RepositoryMapping mapping = projectData.getRepositoryMapping(mappedContainer);
 		if (mapping != null)
 			return mapping.getRepository();
