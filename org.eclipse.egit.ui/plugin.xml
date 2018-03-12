@@ -382,12 +382,8 @@
             category="org.eclipse.team.ui.TeamPreferences"
             class="org.eclipse.egit.ui.internal.preferences.GitPreferenceRoot"
             id="org.eclipse.egit.ui.GitPreferences">
-         <keywordReference
-               id="org.eclipse.egit.ui.keyword.git">
-         </keywordReference>
-	     <keywordReference
-	           id="org.eclipse.egit.ui.keyword.refresh">
-         </keywordReference>
+	      <keywordReference
+	            id="org.eclipse.egit.ui.keyword.refresh"/>
       </page>
       <page name="%GitPreferences_ProjectPreferencePage_name"
 	    category="org.eclipse.egit.ui.GitPreferences"
