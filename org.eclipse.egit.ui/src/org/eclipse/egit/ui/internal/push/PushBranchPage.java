@@ -9,6 +9,7 @@ package org.eclipse.egit.ui.internal.push;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -219,12 +220,11 @@ public class PushBranchPage extends WizardPage {
 				commitIcon.getBounds().height));
 
 		Label commit = new Label(sourceComposite, SWT.NONE);
-		RevWalk revWalk = new RevWalk(repository);
 		StringBuilder commitBuilder = new StringBuilder(this.commitToPush
 				.abbreviate(7).name());
 		StringBuilder commitTooltipBuilder = new StringBuilder(
 				this.commitToPush.getName());
-		try {
+		try (RevWalk revWalk = new RevWalk(repository)) {
 			RevCommit revCommit = revWalk.parseCommit(this.commitToPush);
 			commitBuilder.append("  "); //$NON-NLS-1$
 			commitBuilder.append(Utils.shortenText(revCommit.getShortMessage(),
@@ -426,7 +426,9 @@ public class PushBranchPage extends WizardPage {
 			}
 			String branchName = remoteBranchNameText.getText();
 			if (branchName.length() == 0) {
-				setErrorMessage(UIText.PushBranchPage_ChooseBranchNameError);
+				setErrorMessage(MessageFormat.format(
+						UIText.PushBranchPage_ChooseBranchNameError,
+						remoteConfig.getName()));
 				return;
 			}
 			if (!Repository.isValidRefName(Constants.R_HEADS + branchName)) {
@@ -463,7 +465,7 @@ public class PushBranchPage extends WizardPage {
 	}
 
 	private String getSuggestedBranchName() {
-		if (ref != null) {
+		if (ref != null && !ref.getName().startsWith(Constants.R_REMOTES)) {
 			StoredConfig config = repository.getConfig();
 			String branchName = Repository.shortenRefName(ref.getName());
 

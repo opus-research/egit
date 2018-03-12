@@ -19,6 +19,7 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -445,10 +446,14 @@ public class TestRepository {
 			return true;
 
 		Ref ref = repository.getRef(Constants.HEAD);
-		RevCommit c = new RevWalk(repository).parseCommit(ref.getObjectId());
-		TreeWalk tw = TreeWalk.forPath(repository, getRepoRelativePath(absolutePath), c.getTree());
+		try (RevWalk rw = new RevWalk(repository)) {
+			RevCommit c = rw.parseCommit(ref.getObjectId());
 
-		return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
+			try (TreeWalk tw = TreeWalk.forPath(repository,
+					getRepoRelativePath(absolutePath), c.getTree())) {
+				return tw == null || dc.getObjectId().equals(tw.getObjectId(0));
+			}
+		}
 	}
 
 	public long lastModifiedInIndex(String path) throws IOException {
@@ -478,13 +483,9 @@ public class TestRepository {
 	public IFile getIFile(IProject project, File file) throws CoreException {
 		String relativePath = getRepoRelativePath(file.getAbsolutePath());
 
-		// In case the project is not at the root of the repository
-		// we need to remove the whole path before the project name.
-		int index = relativePath.indexOf(project.getName());
-		if (index >= 0) {
-			relativePath = relativePath.substring(index
-					+ project.getName().length());
-		}
+		String quotedProjectName = Pattern.quote(project.getName());
+		relativePath = relativePath.replaceFirst(quotedProjectName, "");
+
 		IFile iFile = project.getFile(relativePath);
 		iFile.refreshLocal(0, null);
 
