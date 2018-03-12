@@ -7,7 +7,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969, 473544
+ *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -213,8 +213,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private IMemento memento;
 
-	private ISelection initialSelection;
-
 	private FormToolkit toolkit;
 
 	private Form form;
@@ -268,6 +266,8 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private Action stagedExpandAllAction;
 
 	private Action stagedCollapseAllAction;
+
+	private Action compareModeAction;
 
 	private Repository currentRepository;
 
@@ -583,8 +583,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			throws PartInitException {
 		super.init(site, viewMemento);
 		this.memento = viewMemento;
-		initialSelection = site.getWorkbenchWindow().getSelectionService()
-				.getSelection();
 	}
 
 	@Override
@@ -1061,7 +1059,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		stagedViewer.addFilter(filter);
 
 		restoreSashFormWeights();
-		reactOnInitialSelection();
 
 		IWorkbenchSiteProgressService service = CommonUtils.getService(
 				getSite(), IWorkbenchSiteProgressService.class);
@@ -1078,12 +1075,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 					MEMENTO_HORIZONTAL_SASH_FORM_WEIGHT);
 			restoreSashFormWeights(stagingSashForm,
 					MEMENTO_STAGING_SASH_FORM_WEIGHT);
-		}
-	}
-
-	private void reactOnInitialSelection() {
-		if (initialSelection instanceof StructuredSelection) {
-			reactOnSelection((StructuredSelection) initialSelection);
 		}
 	}
 
@@ -1401,6 +1392,21 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 		toolbar.add(new Separator());
 
+		compareModeAction = new Action(UIText.StagingView_CompareMode,
+				IAction.AS_CHECK_BOX) {
+			@Override
+			public void run() {
+				getPreferenceStore().setValue(
+						UIPreferences.STAGING_VIEW_COMPARE_MODE, isChecked());
+			}
+		};
+		compareModeAction.setImageDescriptor(UIIcons.ELCL16_COMPARE_VIEW);
+		compareModeAction.setChecked(getPreferenceStore()
+				.getBoolean(UIPreferences.STAGING_VIEW_COMPARE_MODE));
+
+		toolbar.add(compareModeAction);
+		toolbar.add(new Separator());
+
 		openNewCommitsAction = new Action(UIText.StagingView_OpenNewCommits,
 				IAction.AS_CHECK_BOX) {
 
@@ -1533,6 +1539,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		dropdownMenu.add(openNewCommitsAction);
 		dropdownMenu.add(columnLayoutAction);
 		dropdownMenu.add(fileNameModeAction);
+		dropdownMenu.add(compareModeAction);
 
 		actionBars.setGlobalActionHandler(ActionFactory.DELETE.getId(), new GlobalDeleteActionHandler());
 
@@ -1662,8 +1669,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 		case MODIFIED_AND_ADDED:
 		case UNTRACKED:
 		default:
-			// compare with index
-			runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION, selection);
+			if (Activator.getDefault().getPreferenceStore().getBoolean(
+					UIPreferences.STAGING_VIEW_COMPARE_MODE)) {
+				// compare with index
+				runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION, selection);
+			} else {
+				openSelectionInEditor(selection);
+			}
+
 		}
 	}
 
@@ -1719,6 +1732,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 					openWorkingTreeVersion.setEnabled(!submoduleSelected
 							&& anyElementExistsInWorkspace(fileSelection));
 					menuMgr.add(openWorkingTreeVersion);
+
+					Action openCompareWithIndex = new Action(
+							UIText.StagingView_CompareWithIndexMenuLabel) {
+						public void run() {
+							runCommand(ActionCommands.COMPARE_WITH_INDEX_ACTION,
+									fileSelection);
+						};
+					};
+					menuMgr.add(openCompareWithIndex);
 				}
 
 				Set<StagingEntry.Action> availableActions = getAvailableActions(fileSelection);
