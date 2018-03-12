@@ -16,7 +16,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.DirectoryFieldEditor;
@@ -51,7 +50,7 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	 * The default constructor
 	 */
 	public GitPreferenceRoot() {
-		super(FLAT);
+		super(GRID);
 	}
 
 	protected IPreferenceStore doGetPreferenceStore() {
@@ -65,7 +64,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 	@Override
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
-		GridLayoutFactory.swtDefaults().margins(0, 0).applyTo(main);
 
 		Group cloningGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		cloningGroup.setText(UIText.GitPreferenceRoot_CloningRepoGroupHeader);
@@ -99,6 +97,31 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		editor.getLabelControl(cloningGroup).setToolTipText(
 				UIText.GitPreferenceRoot_DefaultRepoFolderTooltip);
 		addField(editor);
+
+		Group historyGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		historyGroup.setText(UIText.GitPreferenceRoot_HistoryGroupHeader);
+		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
+				.applyTo(historyGroup);
+
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_RELATIVE_DATE,
+				UIText.ResourceHistory_toggleRelativeDate, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
+				UIText.ResourceHistory_toggleCommentWrap, historyGroup));
+
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_REV_COMMENT,
+				UIText.ResourceHistory_toggleRevComment, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.RESOURCEHISTORY_SHOW_REV_DETAIL,
+				UIText.ResourceHistory_toggleRevDetail, historyGroup));
+		addField(new IntegerFieldEditor(UIPreferences.HISTORY_MAX_NUM_COMMITS,
+				UIText.ResourceHistory_MaxNumCommitsInList, historyGroup));
+		addField(new BooleanFieldEditor(
+				UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
+				UIText.ResourceHistory_ShowTagSequence, historyGroup));
+		updateMargins(historyGroup);
 
 		Group remoteConnectionsGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
@@ -141,21 +164,17 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		addField(mergeMode);
 		updateMargins(mergeGroup);
 
-		Group blameGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
+		Group synchronizeGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(blameGroup);
-		blameGroup.setText(UIText.GitPreferenceRoot_BlameGroupHeader);
-		addField(new BooleanFieldEditor(UIPreferences.BLAME_IGNORE_WHITESPACE,
-				UIText.GitPreferenceRoot_BlameIgnoreWhitespaceLabel, blameGroup));
-		updateMargins(blameGroup);
-
-		Group secureGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		GridDataFactory.fillDefaults().grab(true, false).span(GROUP_SPAN, 1)
-				.applyTo(secureGroup);
-		secureGroup.setText(UIText.GitPreferenceRoot_SecureStoreGroupLabel);
-		addField(new BooleanFieldEditor(UIPreferences.CLONE_WIZARD_STORE_SECURESTORE,
-				UIText.GitPreferenceRoot_SecureStoreUseByDefault, secureGroup));
-		updateMargins(secureGroup);
+				.applyTo(synchronizeGroup);
+		synchronizeGroup.setText(UIText.GitPreferenceRoot_SynchronizeView);
+		addField(new BooleanFieldEditor(UIPreferences.SYNC_VIEW_FETCH_BEFORE_LAUNCH,
+				UIText.GitPreferenceRoot_fetchBeforeSynchronization,
+				synchronizeGroup));
+		addField(new BooleanFieldEditor(UIPreferences.SYNC_VIEW_ALWAYS_SHOW_CHANGESET_MODEL,
+				UIText.GitPreferenceRoot_automaticallyEnableChangesetModel,
+				synchronizeGroup));
+		updateMargins(synchronizeGroup);
 	}
 
 	private void updateMargins(Group group) {

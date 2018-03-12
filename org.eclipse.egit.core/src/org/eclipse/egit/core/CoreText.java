@@ -24,12 +24,6 @@ public class CoreText extends NLS {
 	private static final String BUNDLE_NAME = "org.eclipse.egit.core.coretext"; //$NON-NLS-1$
 
 	/** */
-	public static String Activator_AutoShareJobName;
-
-	/** */
-	public static String Activator_AutoSharingFailed;
-
-	/** */
 	public static String Activator_ReconfigureWindowCacheError;
 
 	/** */
@@ -37,9 +31,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String AssumeUnchangedOperation_writingIndex;
-
-	/** */
-	public static String CherryPickOperation_cherryPicking;
 
 	/** */
 	public static String CommitFileRevision_errorLookingUpPath;
@@ -73,9 +64,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String DeleteBranchOperation_TaskName;
-
-	/** */
-	public static String DeleteTagOperation_exceptionMessage;
 
 	/** */
 	public static String DiscardChangesOperation_discardFailed;
@@ -210,15 +198,6 @@ public class CoreText extends NLS {
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
 
 	/** */
-	public static String CreatePatchOperation_commitRequired;
-
-	/** */
-	public static String CreatePatchOperation_repoRequired;
-
-	/** */
-	public static String IndexDiffCacheEntry_reindexing;
-
-	/** */
 	public static String IndexFileRevision_errorLookingUpPath;
 
 	/** */
@@ -234,9 +213,6 @@ public class CoreText extends NLS {
 	public static String ProjectUtil_refreshing;
 
 	/** */
-	public static String ProjectUtil_taskCheckingDirectory;
-
-	/** */
 	public static String PullOperation_DetachedHeadMessage;
 
 	/** */
@@ -249,9 +225,6 @@ public class CoreText extends NLS {
 	public static String PushOperation_InternalExceptionOccurredMessage;
 
 	/** */
-	public static String PushOperation_ExceptionOccurredDuringPushOnUriMessage;
-
-	/** */
 	public static String PushOperation_resultCancelled;
 
 	/** */
@@ -262,12 +235,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String AddToIndexOperation_failed;
-
-	/** */
-	public static String RemoveFromIndexOperation_failed;
-
-	/** */
-	public static String RevertCommitOperation_reverting;
 
 	/** */
 	public static String BranchOperation_performingBranch;
@@ -303,18 +270,6 @@ public class CoreText extends NLS {
 	public static String OperationNotYetExecuted;
 
 	/** */
-	public static String ProjectReference_InvalidTokensCount;
-
-	/** */
-	public static String GitProjectSetCapability_CloneToExistingDirectory;
-
-	/** */
-	public static String GitProjectSetCapability_ExportCouldNotGetBranch;
-
-	/** */
-	public static String GitProjectSetCapability_ExportNoRemote;
-
-	/** */
 	public static String IgnoreOperation_error;
 
 	/** */
@@ -334,21 +289,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitSubscriberMergeContext_FailedRefreshSyncView;
-
-	/** */
-	public static String GitProjectData_repositoryChangedJobName;
-
-	/** */
-	public static String GitProjectData_repositoryChangedTaskName;
-
-	/** */
-	public static String GitResourceVariantTreeSubscriber_fetchTaskName;
-
-	/** */
-	public static String GitSyncObjectCache_noData;
-
-	/** */
-	public static String GitRemoteFolder_fetchingMembers;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);

@@ -37,7 +37,6 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -65,32 +64,6 @@ import org.eclipse.ui.PlatformUI;
  * suggested initially.
  */
 class CreateBranchPage extends WizardPage {
-
-	/**
-	 * Get proposed target branch name for given source branch name
-	 *
-	 * @param sourceName
-	 * @return target name
-	 */
-	public static String getProposedTargetName(String sourceName) {
-		if (sourceName == null)
-			return null;
-
-		if (sourceName.startsWith(Constants.R_REMOTES)) {
-			String target = sourceName.substring(Constants.R_REMOTES.length());
-			int postSlash = target.indexOf('/') + 1;
-			if (postSlash > 0 && postSlash < target.length())
-				return target.substring(postSlash);
-			else
-				return target;
-		}
-
-		if (sourceName.startsWith(Constants.R_TAGS))
-			return sourceName.substring(Constants.R_TAGS.length());
-
-		return null;
-	}
-
 	private final Repository myRepository;
 
 	private final IInputValidator myValidator;
@@ -258,12 +231,13 @@ class CreateBranchPage extends WizardPage {
 		warningComposite.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(
 				warningComposite);
-
-		CLabel warningLabel = new CLabel(warningComposite, SWT.NONE);
-		warningLabel.setText(UIText.CreateBranchPage_LocalBranchWarningText);
-		warningLabel.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
+		Label warningLabel = new Label(warningComposite, SWT.NONE);
 		warningLabel.setImage(PlatformUI.getWorkbench().getSharedImages()
 				.getImage(ISharedImages.IMG_OBJS_INFO_TSK));
+		Text warningText = new Text(warningComposite, SWT.READ_ONLY);
+		warningText.setText(UIText.CreateBranchPage_LocalBranchWarningText);
+		warningText
+				.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 
 		buttonConfigRebase = new Button(upstreamConfigGroup, SWT.RADIO);
 		buttonConfigRebase.setText(UIText.CreateBranchPage_RebaseRadioButton);
@@ -322,9 +296,13 @@ class CreateBranchPage extends WizardPage {
 		Dialog.applyDialogFont(main);
 		setControl(main);
 		nameText.setFocus();
-		String targetName = getProposedTargetName(myBaseRef);
-		if (targetName != null) {
-			nameText.setText(targetName);
+		if (myBaseRef != null
+				&& (myBaseRef.startsWith(Constants.R_REMOTES) || myBaseRef
+						.startsWith(Constants.R_TAGS))) {
+			// additional convenience: the last part of the name is suggested
+			// as name for the local branch
+			nameText.setText(myBaseRef
+					.substring(myBaseRef.lastIndexOf('/') + 1));
 			nameText.selectAll();
 		} else
 			// in any case, we will have to enter the name

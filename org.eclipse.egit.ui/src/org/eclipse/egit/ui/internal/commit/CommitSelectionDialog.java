@@ -19,13 +19,14 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.ui.Activator;
+import org.eclipse.egit.ui.UIIcons;
 import org.eclipse.egit.ui.UIText;
-import org.eclipse.egit.ui.internal.GitLabelProvider;
 import org.eclipse.egit.ui.internal.search.CommitSearchPage;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -49,7 +50,19 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 
 	private static final String COMMIT_SELECTION_DIALOG_SECTION = "CommitSelectionDialogSection"; //$NON-NLS-1$
 
-	private static class CommitLabelProvider extends GitLabelProvider {
+	private static class CommitLabelProvider extends LabelProvider implements
+			IStyledLabelProvider {
+
+		private Image commitImage = UIIcons.CHANGESET.createImage();
+
+		public void dispose() {
+			this.commitImage.dispose();
+			super.dispose();
+		}
+
+		public Image getImage(Object element) {
+			return this.commitImage;
+		}
 
 		public String getText(Object element) {
 			return getStyledText(element).getString();
@@ -74,6 +87,30 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		}
 	}
 
+	private static class RepositoryLabelProvider extends LabelProvider {
+
+		private Image repositoryImage = UIIcons.REPOSITORY.createImage();
+
+		public void dispose() {
+			this.repositoryImage.dispose();
+			super.dispose();
+		}
+
+		public Image getImage(Object element) {
+			return this.repositoryImage;
+		}
+
+		public String getText(Object element) {
+			if (element instanceof RepositoryCommit)
+				return ((RepositoryCommit) element).getRepositoryName();
+			else if (element != null)
+				return element.toString();
+			else
+				return ""; //$NON-NLS-1$
+		}
+
+	}
+
 	private CommitLabelProvider labelProvider;
 
 	/**
@@ -88,26 +125,7 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		setMessage(UIText.CommitSelectionDialog_Message);
 		labelProvider = new CommitLabelProvider();
 		setListLabelProvider(labelProvider);
-		setDetailsLabelProvider(new GitLabelProvider() {
-			@Override
-			public Image getImage(Object element) {
-				if (element instanceof RepositoryCommit) {
-					RepositoryCommit commit = (RepositoryCommit) element;
-					return super.getImage(commit.getRepository());
-				}
-				return super.getImage(element);
-			}
-
-			@Override
-			public String getText(Object element) {
-				if (element instanceof RepositoryCommit) {
-					RepositoryCommit commit = (RepositoryCommit) element;
-					return super.getText(commit.getRepository());
-				}
-				return super.getText(element);
-			}
-		});
-		setInitialPattern(Constants.HEAD, FULL_SELECTION);
+		setDetailsLabelProvider(new RepositoryLabelProvider());
 	}
 
 	protected Control createExtendedContentArea(Composite parent) {
@@ -161,11 +179,8 @@ public class CommitSelectionDialog extends FilteredItemsSelectionDialog {
 		return new Comparator<RepositoryCommit>() {
 
 			public int compare(RepositoryCommit o1, RepositoryCommit o2) {
-				int compare = o1.getRepositoryName().compareToIgnoreCase(
-						o2.getRepositoryName());
-				if (compare == 0)
-					compare = o1.getRevCommit().compareTo(o2.getRevCommit());
-				return compare;
+				return o1.getRevCommit().name()
+						.compareTo(o2.getRevCommit().name());
 			}
 		};
 	}

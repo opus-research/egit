@@ -5,7 +5,6 @@
  * Copyright (C) 2010, Chris Aniszczyk <caniszczyk@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
- * Copyright (C) 2011, Daniel Megert <daniel_megert@ch.ibm.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,13 +30,13 @@ import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNodeType;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagsNode;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -47,7 +46,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.FilteredTree;
@@ -200,22 +198,14 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 	@Override
 	protected final Composite createDialogArea(Composite base) {
 		Composite parent = (Composite) super.createDialogArea(base);
-		Composite composite = new Composite(parent, SWT.NONE);
-
-		GridLayout layout = new GridLayout();
-		layout.marginHeight = convertVerticalDLUsToPixels(IDialogConstants.VERTICAL_MARGIN);
-		layout.marginWidth = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_MARGIN);
-		layout.verticalSpacing = convertVerticalDLUsToPixels(IDialogConstants.VERTICAL_SPACING);
-		layout.horizontalSpacing = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_SPACING);
-		composite.setLayout(layout);
-		composite.setLayoutData(GridDataFactory.fillDefaults().create());
+		parent.setLayout(GridLayoutFactory.fillDefaults().create());
 
 		int selectionModel = -1;
 		if ((settings & ALLOW_MULTISELECTION) != 0)
 			selectionModel = SWT.MULTI;
 		else
 			selectionModel = SWT.SINGLE;
-		FilteredTree tree = new FilteredTree(composite, selectionModel | SWT.BORDER,
+		FilteredTree tree = new FilteredTree(parent, selectionModel | SWT.BORDER,
 				new PatternFilter(), true);
 		branchTree = tree.getViewer();
 		branchTree.setLabelProvider(new RepositoriesViewLabelProvider());
@@ -232,35 +222,35 @@ public abstract class AbstractBranchSelectionDialog extends TitleAreaDialog {
 		});
 
 		// double-click support
-		branchTree.addDoubleClickListener(new IDoubleClickListener() {
-			public void doubleClick(DoubleClickEvent event) {
+		branchTree.addOpenListener(new IOpenListener() {
+
+			public void open(OpenEvent event) {
 				RepositoryTreeNode node = (RepositoryTreeNode) ((IStructuredSelection) branchTree
 						.getSelection()).getFirstElement();
 				if (node == null)
 					return;
-				final RepositoryTreeNodeType type = node.getType();
-				if (type != RepositoryTreeNodeType.REF
-						&& type != RepositoryTreeNodeType.TAG
-						&& type != RepositoryTreeNodeType.ADDITIONALREF)
-					branchTree.setExpandedState(node,
-							!branchTree.getExpandedState(node));
+				if (node.getType() != RepositoryTreeNodeType.REF
+						&& node.getType() != RepositoryTreeNodeType.TAG)
+					branchTree.setExpandedState(node, !branchTree
+							.getExpandedState(node));
 				else if (getButton(Window.OK).isEnabled())
 					buttonPressed(OK);
+
 			}
 		});
 
 		branchTree.setComparator(new ViewerComparator(
 				STRING_ASCENDING_COMPARATOR));
 
-		createCustomArea(composite);
+		createCustomArea(parent);
 
 		setTitle(getTitle());
 		setMessage(getMessageText());
 		getShell().setText(getWindowTitle());
 
-		applyDialogFont(composite);
+		applyDialogFont(parent);
 
-		return composite;
+		return parent;
 	}
 
 	/**

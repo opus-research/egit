@@ -11,9 +11,9 @@
  *******************************************************************************/
 package org.eclipse.egit.internal.mylyn.ui.commit;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -24,12 +24,9 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.internal.mylyn.ui.EGitMylynUI;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
-import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.transport.URIish;
 import org.eclipse.mylyn.internal.tasks.ui.TasksUiPlugin;
 import org.eclipse.mylyn.internal.team.ui.LinkedTaskInfo;
 import org.eclipse.mylyn.tasks.core.TaskRepository;
@@ -79,7 +76,6 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 			String repoUrl = null;
 			String message = null;
-			long timestamp = 0;
 
 			// try to get repository url and commit message
 			try {
@@ -87,11 +83,8 @@ public class TaskReferenceFactory implements IAdapterFactory {
 				if (revCommit != null) {
 					repoUrl = getRepoUrl(r);
 					message = revCommit.getFullMessage();
-					timestamp = (long)revCommit.getCommitTime() * 1000;
 				}
-			} catch (IOException e) {
-				continue;
-			} catch (RuntimeException e) {
+			} catch (Exception e) {
 				continue;
 			}
 
@@ -105,7 +98,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 					taskRepositoryUrl = repository.getRepositoryUrl();
 			}
 
-			return new LinkedTaskInfo(taskRepositoryUrl, null, null, message, timestamp);
+			return new LinkedTaskInfo(taskRepositoryUrl, null, null, message);
 		}
 
 		return null;
@@ -128,11 +121,13 @@ public class TaskReferenceFactory implements IAdapterFactory {
 	 * @return {@link TaskRepository} associated with this Git repo or <code>null</code> if nothing found
 	 */
 	private TaskRepository getTaskRepositoryByGitRepoURL(final String repoUrl) {
-		if (repoUrl == null)
-			return null;
-
 		try {
-			return getTaskRepositoryByHost(new URIish(repoUrl).getHost());
+			// replacing protocol name to avoid MalformedURIException
+			URI uri = repoUrl == null ? null : new URI(repoUrl.replaceFirst("\\w+://", "http://")); //$NON-NLS-1$ //$NON-NLS-2$
+			if (uri != null) {
+				String gitHost = uri.toURL().getHost();
+				return getTaskRepositoryByHost(gitHost);
+			}
 		} catch (Exception ex) {
 			EGitMylynUI.getDefault().getLog().log(
 					new Status(IStatus.ERROR, EGitMylynUI.PLUGIN_ID, "failed to get repo url", ex)); //$NON-NLS-1$
@@ -142,8 +137,7 @@ public class TaskReferenceFactory implements IAdapterFactory {
 
 	private static String getRepoUrl(Repository repo) {
 		String configuredUrl = repo.getConfig().getString(BUGTRACK_SECTION, null, BUGTRACK_URL);
-		String originUrl = repo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION,
-				Constants.DEFAULT_REMOTE_NAME, ConfigConstants.CONFIG_KEY_URL);
+		String originUrl = repo.getConfig().getString("remote", "origin", "url");  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		return configuredUrl != null ? configuredUrl : originUrl;
 	}
 

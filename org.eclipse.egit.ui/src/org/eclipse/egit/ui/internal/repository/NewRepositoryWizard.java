@@ -32,13 +32,6 @@ public class NewRepositoryWizard extends Wizard implements INewWizard {
 	private Repository newRepo;
 
 	/**
-	 * Default constructor. Needed for File->New->Other->Git->Git Repository
-	 */
-	public NewRepositoryWizard(){
-		this(false);
-	}
-
-	/**
 	 * @param hideBareOption
 	 *            if <code>true</code>, no "bare" repository can be created
 	 */
