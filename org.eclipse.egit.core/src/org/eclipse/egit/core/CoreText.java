@@ -75,9 +75,6 @@ public class CoreText extends NLS {
 	public static String DeleteBranchOperation_TaskName;
 
 	/** */
-	public static String DeleteTagOperation_exceptionMessage;
-
-	/** */
 	public static String DiscardChangesOperation_discardFailed;
 
 	/** */
