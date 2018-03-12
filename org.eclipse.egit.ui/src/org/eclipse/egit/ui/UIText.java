@@ -2080,9 +2080,6 @@ public class UIText extends NLS {
 	public static String CommitMessageViewer_parent;
 
 	/** */
-	public static String CommitMessageViewer_SelectOneCommitMessage;
-
-	/** */
 	public static String CompareWithIndexAction_errorOnAddToIndex;
 
 	/** */
@@ -2588,6 +2585,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchResultDialog_buttonReset;
+
+	/** */
+	public static String BranchResultDialog_buttonStash;
 
 	/** */
 	public static String BranchResultDialog_CheckoutConflictsMessage;
@@ -3513,9 +3513,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitFileDiffViewer_notContainedInCommit;
-
-	/** */
-	public static String CommitFileDiffViewer_SelectOneCommitMessage;
 
 	/** */
 	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
