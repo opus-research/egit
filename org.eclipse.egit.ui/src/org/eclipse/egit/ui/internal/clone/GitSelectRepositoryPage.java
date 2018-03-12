@@ -15,8 +15,6 @@ package org.eclipse.egit.ui.internal.clone;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -34,7 +32,6 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -46,14 +43,13 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
@@ -66,36 +62,20 @@ public class GitSelectRepositoryPage extends WizardPage {
 
 	private final RepositoryUtil util;
 
-	private final boolean allowBare;
-
 	private TreeViewer tv;
 
 	private Button addRepo;
 
-	private Composite bareMsg;
-
 	private IPreferenceChangeListener configChangeListener;
 
 	/**
-	 * Creates a new {@link GitSelectRepositoryPage} that allows also bare
-	 * repositories to be selected.
+	 *
 	 */
 	public GitSelectRepositoryPage() {
-		this(true);
-	}
-
-	/**
-	 * Creates a new {@link GitSelectRepositoryPage}.
-	 *
-	 * @param allowBare
-	 *            whether bare repositories shall be shown
-	 */
-	public GitSelectRepositoryPage(boolean allowBare) {
 		super(GitSelectRepositoryPage.class.getName());
 		setTitle(UIText.GitSelectRepositoryPage_PageTitle);
-		setDescription(UIText.GitSelectRepositoryPage_PageMessage);
+		setMessage(UIText.GitSelectRepositoryPage_PageMessage);
 		util = Activator.getDefault().getRepositoryUtil();
-		this.allowBare = allowBare;
 	}
 
 	/**
@@ -125,27 +105,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 		tv = tree.getViewer();
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(tree);
 		tv.setContentProvider(new RepositoriesViewContentProvider() {
-
-			@Override
-			public Object[] getElements(Object inputElement) {
-				Object[] elements = super.getElements(inputElement);
-				if (allowBare) {
-					return elements;
-				}
-				List<Object> result = new ArrayList<>();
-				for (Object element : elements) {
-					if (element instanceof RepositoryTreeNode) {
-						RepositoryTreeNode node = (RepositoryTreeNode) element;
-						if (node.getRepository() != null
-								&& !node.getRepository().isBare()) {
-							result.add(element);
-						}
-					}
-				}
-				bareMsg.setVisible(result.size() != elements.length);
-				return result.toArray();
-			}
-
 			// we never show children, only the Repository nodes
 			@Override
 			public Object[] getChildren(Object parentElement) {
@@ -187,19 +146,6 @@ public class GitSelectRepositoryPage extends WizardPage {
 
 		});
 
-		if (!allowBare) {
-			bareMsg = new Composite(main, SWT.NONE);
-			bareMsg.setLayout(new RowLayout());
-			bareMsg.setLayoutData(
-					GridDataFactory.fillDefaults().grab(true, false).create());
-			Label imageLabel = new Label(bareMsg, SWT.NONE);
-			imageLabel.setImage(
-					JFaceResources.getImage(Dialog.DLG_IMG_MESSAGE_INFO));
-			Label textLabel = new Label(bareMsg, SWT.WRAP);
-			textLabel.setText(
-					UIText.GitSelectRepositoryPage_BareRepositoriesHidden);
-			bareMsg.setVisible(false);
-		}
 		tv.addSelectionChangedListener(new ISelectionChangedListener() {
 
 			@Override
@@ -227,10 +173,8 @@ public class GitSelectRepositoryPage extends WizardPage {
 				display.asyncExec(new Runnable() {
 					@Override
 					public void run() {
-						if (!tv.getControl().isDisposed()) {
-							refreshRepositoryList();
-							checkPage();
-						}
+						refreshRepositoryList();
+						checkPage();
 					}
 				});
 			}
@@ -271,46 +215,28 @@ public class GitSelectRepositoryPage extends WizardPage {
 	}
 
 	private void refreshRepositoryList() {
-		List<?> dirsBefore = (List<?>) tv.getInput();
+		List<String> dirsBefore = (List<String>) tv.getInput();
 		List<String> dirsAfter = util.getConfiguredRepositories();
-		if (dirsBefore == null) {
-			dirsBefore = Collections.emptyList();
-		}
-		if (!dirsBefore.containsAll(dirsAfter)) {
-			IStructuredSelection previousSelection = (IStructuredSelection) tv
-					.getSelection();
+		if (dirsBefore != null && !dirsBefore.containsAll(dirsAfter)) {
 			tv.setInput(dirsAfter);
-			for (String dir : dirsAfter) {
-				if (!dirsBefore.contains(dir)) {
+			for (String dir : dirsAfter)
+				if (!dirsBefore.contains(dir))
 					try {
-						Repository newRepository = org.eclipse.egit.core.Activator
-								.getDefault().getRepositoryCache()
-								.lookupRepository(new File(dir));
-						if (!allowBare && newRepository.isBare()) {
-							// Re-set to previous selection, if any
-							if (!previousSelection.isEmpty()) {
-								tv.setSelection(previousSelection);
-							}
-						} else {
-							RepositoryNode node = new RepositoryNode(null,
-									newRepository);
-							tv.setSelection(new StructuredSelection(node));
-						}
+						RepositoryNode node = new RepositoryNode(null,
+								FileRepositoryBuilder.create(new File(dir)));
+						tv.setSelection(new StructuredSelection(
+								node));
 					} catch (IOException e1) {
 						Activator.handleError(e1.getMessage(), e1,
 								false);
 					}
-					break;
-				}
-			}
 		}
 	}
 
 	private void checkPage() {
 		setErrorMessage(null);
 		try {
-			List<?> currentInput = (List<?>) tv.getInput();
-			if (currentInput == null || currentInput.isEmpty()) {
+			if (((List) tv.getInput()).isEmpty()) {
 				setErrorMessage(UIText.GitSelectRepositoryPage_NoRepoFoundMessage);
 				return;
 			}
