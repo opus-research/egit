@@ -18,7 +18,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.repository</artifactId>
@@ -27,7 +27,7 @@
   <name>EGit P2 Repository</name>
 
   <properties>
-    <p2repo-zip-path>${project.build.directory}/org.eclipse.egit.repository.zip</p2repo-zip-path>
+    <p2repo-zip-path>${project.build.directory}/org.eclipse.egit.repository-${project.version}.zip</p2repo-zip-path>
   </properties>
 
   <profiles>
