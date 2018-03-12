@@ -19,10 +19,11 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.CoreText;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
 import org.eclipse.team.core.variants.IResourceVariant;
@@ -32,11 +33,13 @@ import org.eclipse.team.core.variants.IResourceVariant;
  */
 public class GitFolderResourceVariant extends GitResourceVariant {
 
+	private TreeWalk tw;
+
 	private IResourceVariant members[];
 
-	GitFolderResourceVariant(Repository repo, RevCommit revCommit, ObjectId objectId, String path)
+	GitFolderResourceVariant(Repository repo, RevCommit revCommit, String path)
 			throws IOException {
-		super(repo, revCommit, objectId, path);
+		super(repo, revCommit, path);
 	}
 
 	public boolean isContainer() {
@@ -65,10 +68,6 @@ public class GitFolderResourceVariant extends GitResourceVariant {
 				progress.done();
 			}
 
-		TreeWalk tw = new TreeWalk(getRepository());
-		tw.reset();
-		int nth = tw.addTree(getObjectId());
-
 		IProgressMonitor monitor = SubMonitor.convert(progress);
 		monitor.beginTask(
 				NLS.bind(CoreText.GitFolderResourceVariant_fetchingMembers, this),
@@ -79,14 +78,13 @@ public class GitFolderResourceVariant extends GitResourceVariant {
 
 		try {
 			while (tw.next()) {
-				ObjectId newObjectId = tw.getObjectId(nth);
 				String path = getPath() + "/" + new String(tw.getRawPath()); //$NON-NLS-1$
 				if (tw.isSubtree())
-					result.add(new GitFolderResourceVariant(repo,
-							getRevCommit(), newObjectId, path));
+					result.add(new GitFolderResourceVariant(repo, getRevCommit(),
+							path));
 				else
 					result.add(new GitBlobResourceVariant(repo, getRevCommit(),
-							newObjectId, path));
+							path));
 				monitor.worked(1);
 			}
 
@@ -95,6 +93,21 @@ public class GitFolderResourceVariant extends GitResourceVariant {
 		} finally {
 			monitor.done();
 		}
+	}
+
+	@Override
+	protected TreeWalk getTreeWalk(Repository repo, RevTree revTree, String path)
+			throws IOException {
+		tw = new TreeWalk(repo);
+		tw.reset();
+		tw.addTree(revTree);
+		tw.setFilter(PathFilter.create(path));
+
+		while (tw.next() && !path.equals(tw.getPathString()))
+			if (tw.isSubtree())
+				tw.enterSubtree();
+
+		return tw;
 	}
 
 }

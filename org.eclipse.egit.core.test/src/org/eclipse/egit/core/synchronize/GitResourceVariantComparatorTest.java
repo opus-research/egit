@@ -38,7 +38,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.team.core.variants.IResourceVariant;
 import org.junit.After;
 import org.junit.Before;
@@ -153,7 +152,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
 		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo,
-				commit, commit.getTree(), path);
+				commit, path);
 
 		// then
 		assertFalse(grvc.compare(local, remote));
@@ -188,7 +187,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		replay(local);
 
 		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo,
-				commit, commit.getTree(), path);
+				commit, path);
 
 		// then
 		assertTrue(grvc.compare(local, remote));
@@ -483,9 +482,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
 		GitBlobResourceVariant base = new GitBlobResourceVariant(repo,
-				baseCommit, baseCommit.getTree(), path);
+				baseCommit, path);
 		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo,
-				remoteCommit, remoteCommit.getTree(), path);
+				remoteCommit, path);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -515,9 +514,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
 		GitBlobResourceVariant base = new GitBlobResourceVariant(repo,
-				baseCommit, baseCommit.getTree(), path);
+				baseCommit, path);
 		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo,
-				remoteCommit, remoteCommit.getTree(), path);
+				remoteCommit, path);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -546,9 +545,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String folderPath = Repository.stripWorkDir(repo.getWorkTree(),
 				new File(file.getParent()));
 		GitBlobResourceVariant base = new GitBlobResourceVariant(repo,
-				commit, commit.getTree(), filePath);
+				commit, filePath);
 		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo,
-				commit, commit.getTree(), folderPath);
+				commit, folderPath);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -578,9 +577,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				new File(file.getParent()));
 
 		GitFolderResourceVariant base = new GitFolderResourceVariant(repo,
-				commit, commit.getTree(), folderPath);
+				commit, folderPath);
 		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo,
-				commit, commit.getTree(), filePath);
+				commit, filePath);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -611,18 +610,15 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		testRepo.addToIndex(testRepo.getIFile(iProject, file2));
 		RevCommit commit = testRepo.commit("initial commit");
 
-		TreeWalk tw = new TreeWalk(repo);
-		int nth = tw.addTree(commit.getTree());
+		String path1 = Repository.stripWorkDir(repo.getWorkTree(), new File(
+				file1.getParent()));
+		String path2 = Repository.stripWorkDir(repo.getWorkTree(), new File(
+				file2.getParent()));
 
-		tw.next();
-		tw.enterSubtree(); // enter project node
-		tw.next();
 		GitFolderResourceVariant base = new GitFolderResourceVariant(repo,
-				commit, tw.getObjectId(nth), tw.getNameString());
-
-		tw.next();
+				commit, path1);
 		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo,
-				commit, tw.getObjectId(nth), tw.getNameString());
+				commit, path2);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -652,9 +648,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				file1.getParent()));
 
 		GitFolderResourceVariant base = new GitFolderResourceVariant(repo,
-				commit, commit.getTree(), path1);
+				commit, path1);
 		GitFolderResourceVariant remote = new GitFolderResourceVariant(repo,
-				commit, commit.getTree(), path1);
+				commit, path1);
 
 		// then
 		assertTrue(grvc.compare(base, remote));
@@ -682,10 +678,10 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 		GitBlobResourceVariant base = new GitBlobResourceVariant(repo,
-				baseCommit, baseCommit.getTree(), path);
+				baseCommit, path);
 
 		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo,
-				remoteCommit, remoteCommit.getTree(), path);
+				remoteCommit, path);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -709,11 +705,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 				"a", "initial commit");
 
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
-		GitBlobResourceVariant base = new GitBlobResourceVariant(repo, commit,
-				commit.getTree(), path);
+		GitBlobResourceVariant base = new GitBlobResourceVariant(repo, commit, path);
 
-		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo,
-				commit, commit.getTree(), path);
+		GitBlobResourceVariant remote = new GitBlobResourceVariant(repo, commit, path);
 
 		// then
 		assertTrue(grvc.compare(base, remote));
