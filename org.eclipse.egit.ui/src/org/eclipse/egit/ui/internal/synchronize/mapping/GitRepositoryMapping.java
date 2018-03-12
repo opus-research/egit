@@ -15,7 +15,6 @@ import org.eclipse.core.resources.mapping.ResourceMappingContext;
 import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
@@ -38,13 +37,8 @@ class GitRepositoryMapping extends GitObjectMapping {
 		List<ResourceTraversal> result = new ArrayList<ResourceTraversal>();
 
 		for (GitModelObject obj : gitRepo.getChildren())
-			if (obj instanceof GitModelCommit || obj instanceof GitModelCache) {
-				RevCommit revCommit;
-				if (obj instanceof GitModelCommit)
-					revCommit = ((GitModelCommit) obj).getRemoteCommit();
-				else
-					revCommit = ((GitModelCache) obj).getRemoteCommit();
-
+			if (obj instanceof GitModelCommit) {
+				RevCommit revCommit = ((GitModelCommit) obj).getRemoteCommit();
 				result.add(new GitTreeTraversal(repo, revCommit));
 			}
 
