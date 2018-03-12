@@ -9,6 +9,7 @@
  * Copyright (C) 2012, Laurent Goubet <laurent.goubet@obeo.fr>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * Copyright (C) 2013, Ben Hammen <hammenb@gmail.com>
+ * Copyright (C) 2014, Marc Khouzam <marc.khouzam@ericsson.com>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -385,6 +386,12 @@ public class UIText extends NLS {
 	public static String GitDocument_errorResolveQuickdiff;
 
 	/** */
+	public static String GitDocument_ReloadJobError;
+
+	/** */
+	public static String GitDocument_ReloadJobName;
+
+	/** */
 	public static String GitHistoryPage_AllChangesInRepoHint;
 
 	/** */
@@ -560,6 +567,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitHistoryPage_rebaseInteractiveMenuItem;
+
+	/** */
+	public static String GitHistoryPage_rewordMenuItem;
+
+	/** */
+	public static String GitHistoryPage_editMenuItem;
 
 	/** */
 	public static String GitHistoryPage_SetAsBaselineMenuLabel;
@@ -1039,6 +1052,9 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
+	public static String CancelAfterSaveDialog_Title;
+
+	/** */
 	public static String CleanRepositoryPage_cleanDirs;
 
 	/** */
@@ -1187,6 +1203,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareTreeView_WorkspaceVersionText;
+
+	/** */
+	public static String CompareTreeView_CompareModeTooltip;
 
 	/** */
 	public static String CompareUtils_errorGettingEncoding;
@@ -2468,6 +2487,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_ChooseNameMessage;
+
+	/** */
+	public static String CreateBranchPage_CreateBranchNameProviderFailed;
 
 	/** */
 	public static String CreateBranchPage_CreatingBranchMessage;
@@ -4829,6 +4851,9 @@ public class UIText extends NLS {
 	public static String StagingView_CommitToolTip;
 
 	/** */
+	public static String StagingView_cancelCommitAfterSaving;
+
+	/** */
 	public static String StagingView_checkoutFailed;
 
 	/** */
@@ -5025,6 +5050,39 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RebasePulldownAction_Abort;
+
+	/** */
+	public static String RewordHandler_CommitNotOnCurrentBranch;
+
+	/** */
+	public static String RewordHandler_Error_Title;
+
+	/** */
+	public static String RewordHandler_ErrorCheckingIfCommitIsOnCurrentBranch;
+
+	/** */
+	public static String RewordHandler_InternalError;
+
+	/** */
+	public static String RewordHandler_JobName;
+
+	/** */
+	public static String EditHandler_JobName;
+
+	/** */
+	public static String EditHandler_CommitNotOnCurrentBranch;
+
+	/** */
+	public static String EditHandler_Error_Title;
+
+	/** */
+	public static String EditHandler_ErrorCheckingIfCommitIsOnCurrentBranch;
+
+	/** */
+	public static String EditHandler_InternalError;
+
+	/** */
+	public static String EditHandler_OpenStagingAndRebaseInteractiveViews;
 
 	/** */
 	public static String SynchronizeCommand_jobName;
