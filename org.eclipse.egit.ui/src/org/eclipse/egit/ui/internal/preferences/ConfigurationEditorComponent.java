@@ -314,7 +314,7 @@ public class ConfigurationEditorComponent {
 					}
 
 					protected boolean canEdit(Object element) {
-						return editable && element instanceof Entry;
+						return editable;
 					}
 				});
 
