@@ -13,7 +13,6 @@ import static org.eclipse.swtbot.eclipse.finder.waits.Conditions.waitForEditor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -25,12 +24,10 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.QualifiedName;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
-import org.eclipse.egit.core.project.GitProjectData;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.test.TestRepository;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
@@ -263,23 +260,6 @@ public class SubmoduleFolderTest extends LocalRepositoryTestCase {
 				description.appendText("Wait for editor containing " + headId);
 			}
 		}), 5000);
-	}
-
-	@Test
-	public void testDisconnect() throws Exception {
-		SWTBotTree projectExplorerTree = TestUtil.getExplorerTree();
-		getProjectItem(projectExplorerTree, PROJ1).select();
-		String menuString = util
-				.getPluginLocalizedValue("DisconnectAction_label");
-		ContextMenuHelper.clickContextMenuSync(projectExplorerTree, "Team",
-				menuString);
-		ResourcesPlugin.getWorkspace().getRoot()
-				.refreshLocal(IResource.DEPTH_INFINITE, null);
-		// Access the session property directly: RepositoryMapping.getMapping()
-		// checks whether the project is shared with git.
-		Object mapping = childFolder.getSessionProperty(new QualifiedName(
-				GitProjectData.class.getName(), "RepositoryMapping"));
-		assertNull("Should have no RepositoryMapping", mapping);
 	}
 
 	@Test
