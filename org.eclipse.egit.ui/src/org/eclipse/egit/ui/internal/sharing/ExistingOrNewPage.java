@@ -247,17 +247,10 @@ class ExistingOrNewPage extends WizardPage {
 		else {
 			IPath container = m.getContainerPath();
 			if (!container.isEmpty())
-				container = Path.fromOSString("."); //$NON-NLS-1$
+				container = container.addTrailingSeparator();
 			IPath relativePath = container.append(m.getGitDir());
-			if (isAlternative) {
-				IPath withoutLastSegment = relativePath.removeLastSegments(1);
-				IPath path;
-				if (withoutLastSegment.isEmpty())
-					path = Path.fromPortableString("."); //$NON-NLS-1$
-				else
-					path = withoutLastSegment;
-				treeItem2.setText(0, path.toString());
-			}
+			if (isAlternative)
+				treeItem2.setText(0, relativePath.removeLastSegments(1).addTrailingSeparator().toString());
 			treeItem2.setText(2, relativePath.toString());
 		}
 	}
