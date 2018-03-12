@@ -28,9 +28,8 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefContentProposal;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.bindings.Trigger;
-import org.eclipse.jface.bindings.TriggerSequence;
 import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.bindings.keys.ParseException;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.ControlDecoration;
@@ -217,7 +216,8 @@ public class UIUtils {
 	/**
 	 * Adds a "previously used values" content proposal handler to a text field.
 	 * <p>
-	 * The list will be limited to 10 values.
+	 * The keyboard shortcut will be "M1+SPACE" and the list will be limited to
+	 * 10 values.
 	 *
 	 * @param textField
 	 *            the text field
@@ -228,16 +228,17 @@ public class UIUtils {
 	 */
 	public static IPreviousValueProposalHandler addPreviousValuesContentProposalToText(
 			final Text textField, final String preferenceKey) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null)
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+			addBulbDecorator(textField, NLS.bind(
+					UIText.UIUtils_PressShortcutMessage, stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
 			addBulbDecorator(textField,
 					UIText.UIUtils_StartTypingForPreviousValuesMessage);
-		else
-			addBulbDecorator(
-					textField,
-					NLS.bind(UIText.UIUtils_PressShortcutMessage,
-							stroke.format()));
+		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 
@@ -374,16 +375,17 @@ public class UIUtils {
 	 */
 	public static final void addRefContentProposalToText(final Text textField,
 			final Repository repository, final IRefListProvider refListProvider) {
-		KeyStroke stroke = UIUtils
-				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null)
-			addBulbDecorator(textField,
+		KeyStroke stroke;
+		try {
+			stroke = KeyStroke.getInstance("M1+SPACE"); //$NON-NLS-1$
+			UIUtils.addBulbDecorator(textField, NLS.bind(
+					UIText.UIUtils_PressShortcutMessage, stroke.format()));
+		} catch (ParseException e1) {
+			Activator.handleError(e1.getMessage(), e1, false);
+			stroke = null;
+			UIUtils.addBulbDecorator(textField,
 					UIText.UIUtils_StartTypingForPreviousValuesMessage);
-		else
-			addBulbDecorator(
-					textField,
-					NLS.bind(UIText.UIUtils_PressShortcutMessage,
-							stroke.format()));
+		}
 
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			public IContentProposal[] getProposals(String contents, int position) {
@@ -706,30 +708,5 @@ public class UIUtils {
 		}
 
 		return UIText.UIUtils_ShowInMenuLabel;
-	}
-
-	/**
-	 * Look up best active binding's keystroke for the given command
-	 *
-	 * @param commandId
-	 *            The identifier of the command for which the best active
-	 *            binding's keystroke should be retrieved; must not be null.
-	 * @return {@code KeyStroke} for the best active binding for the specified
-	 *         commandId or {@code null} if no binding is defined or if the
-	 *         binding service returns a {@code TriggerSequence} containing more
-	 *         than one {@code Trigger}.
-	 */
-	public static KeyStroke getKeystrokeOfBestActiveBindingFor(String commandId) {
-		IBindingService bindingService = (IBindingService) PlatformUI
-				.getWorkbench().getAdapter(IBindingService.class);
-		TriggerSequence ts = bindingService.getBestActiveBindingFor(commandId);
-		if (ts == null)
-			return null;
-
-		Trigger[] triggers = ts.getTriggers();
-		if (triggers.length == 1 && triggers[0] instanceof KeyStroke)
-			return (KeyStroke) triggers[0];
-		else
-			return null;
 	}
 }
