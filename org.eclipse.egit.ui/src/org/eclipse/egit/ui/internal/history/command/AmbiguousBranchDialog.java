@@ -32,7 +32,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 
-abstract class AmbigousBranchDialog extends MessageDialog {
+abstract class AmbiguousBranchDialog extends MessageDialog {
 	static final class BranchLabelProvider extends LabelProvider {
 		@Override
 		public String getText(Object element) {
@@ -52,7 +52,7 @@ abstract class AmbigousBranchDialog extends MessageDialog {
 
 	private RefNode selected;
 
-	AmbigousBranchDialog(Shell parentShell, List<RefNode> nodes, String title, String message) {
+	AmbiguousBranchDialog(Shell parentShell, List<RefNode> nodes, String title, String message) {
 		super(parentShell, title, null,
 				message,
 				MessageDialog.QUESTION, new String[] {
