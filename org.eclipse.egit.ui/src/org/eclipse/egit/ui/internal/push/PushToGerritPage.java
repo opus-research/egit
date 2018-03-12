@@ -67,6 +67,7 @@ import org.eclipse.ui.fieldassist.ContentAssistCommandAdapter;
  * Push the current HEAD to Gerrit
  */
 class PushToGerritPage extends WizardPage {
+
 	private static final String PUSH_TO_GERRIT_PAGE_SECTION = "PushToGerritPage"; //$NON-NLS-1$
 
 	private static final String LAST_URI_POSTFIX = ".lastUri"; //$NON-NLS-1$
@@ -259,8 +260,8 @@ class PushToGerritPage extends WizardPage {
 					false);
 			op.setCredentialsProvider(new EGitCredentialsProvider());
 
-			// Construct git receive-pack message with reviewers
-			StringBuilder receivePack = new StringBuilder();
+			// Construct git recive-pack message with reviewers
+			StringBuilder recivePack = new StringBuilder("git receive-pack"); //$NON-NLS-1$
 			String[] reviewers = reviewersText.getText().split(
 					new Character(REVIEWERS_SEPARATOR).toString());
 
@@ -277,13 +278,11 @@ class PushToGerritPage extends WizardPage {
 				}
 
 				if (reviewer.length() > 0) {
-					receivePack.append(String.format(
+					recivePack.append(String.format(
 							" --reviewer='%s'", reviewer)); //$NON-NLS-1$
 				}
 			}
-			if (receivePack.length() > 0) {
-				op.setReceivePack("git receive-pack" + receivePack.toString()); //$NON-NLS-1$
-			}
+			op.setReceivePack(recivePack.toString());
 
 			PushOperationResult result = op.execute(monitor);
 			PushResultDialog dlg = new PushResultDialog(getShell(), repository,
@@ -459,4 +458,5 @@ class PushToGerritPage extends WizardPage {
 			return getContent();
 		}
 	}
+
 }

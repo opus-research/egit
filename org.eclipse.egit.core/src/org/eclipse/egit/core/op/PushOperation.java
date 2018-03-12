@@ -56,7 +56,7 @@ public class PushOperation {
 	 * Content of git's recive-pack option. See
 	 * http://www.kernel.org/pub/software/scm/git/docs/git-receive-pack.html.
 	 */
-	private String receivePack;
+	private String receivePack = RemoteConfig.DEFAULT_RECEIVE_PACK;
 
 	/**
 	 * Create push operation for provided specification.
@@ -112,7 +112,7 @@ public class PushOperation {
 	 *
 	 * @param receivePack
 	 *            content of git's receive-pack option.
-	 * @since 2.3
+	 * @since 2.2
 	 */
 	public void setReceivePack(String receivePack) {
 		this.receivePack = receivePack;
