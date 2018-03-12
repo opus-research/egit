@@ -513,20 +513,11 @@ public class StagingView extends ViewPart {
 				committerText);
 
 		// react on selection changes
-		IWorkbenchPartSite site = getSite();
-		ISelectionService srv = (ISelectionService) site
-				.getService(ISelectionService.class);
+		ISelectionService srv = (ISelectionService) getSite().getService(
+				ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
 
-		// Use current selection to populate staging view
-		ISelection selection = srv.getSelection();
-		if (selection != null && !selection.isEmpty()) {
-			IWorkbenchPart part = site.getPage().getActivePart();
-			if (part != null)
-				selectionChangedListener.selectionChanged(part, selection);
-		}
-
-		site.setSelectionProvider(unstagedTableViewer);
+		getSite().setSelectionProvider(unstagedTableViewer);
 	}
 
 	private void enableCommitWidgets(boolean enabled) {
