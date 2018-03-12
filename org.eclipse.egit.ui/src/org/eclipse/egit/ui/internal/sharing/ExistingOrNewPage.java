@@ -96,21 +96,19 @@ class ExistingOrNewPage extends WizardPage {
 				// special case for a git repository in the project's root
 				final File gitDirInProjectRoot = project.getLocation().append(
 						".git").toFile(); //$NON-NLS-1$
-				RepositoryMapping m = mi.next();
-				if (!gitDirInProjectRoot.isDirectory() && m == null) {
-					// '.git/' isn't there and no mapping found,
-					// enable repository creation
-						treeItem.setText(2, ""); //$NON-NLS-1$
+				if (!gitDirInProjectRoot.isDirectory()) {
+					// '.git/' isn't there, enable repository creation
+					treeItem.setText(2, ""); //$NON-NLS-1$
 				} else {
-					// at least one git dir found
-					fillTreeItemWithGitDirectory(m, treeItem, false);
+					// '.git/' is there
+					fillTreeItemWithGitDirectory(mi.next(), treeItem);
 				}
 
-				while (mi.hasNext()) {	// fill in additional mappings
-					m = mi.next();
+				while (mi.hasNext()) {
+					RepositoryMapping m = mi.next();
 					TreeItem treeItem2 = new TreeItem(treeItem, SWT.NONE);
 					treeItem2.setData(m.getContainer().getProject());
-					fillTreeItemWithGitDirectory(m, treeItem2, true);
+					fillTreeItemWithGitDirectory(m, treeItem2);
 				}
 			} catch (CoreException e) {
 				TreeItem treeItem2 = new TreeItem(treeItem, SWT.BOLD|SWT.ITALIC);
@@ -185,17 +183,14 @@ class ExistingOrNewPage extends WizardPage {
 		setControl(g);
 	}
 
-	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2, boolean isAlternative) {
+	private void fillTreeItemWithGitDirectory(RepositoryMapping m, TreeItem treeItem2) {
 		if (m.getGitDir() == null)
 			treeItem2.setText(2, UIText.ExistingOrNewPage_SymbolicValueEmptyMapping);
 		else {
-			IPath container = m.getContainerPath();
-			if (!container.isEmpty())
-				container = container.addTrailingSeparator();
-			IPath relativePath = container.append(m.getGitDir());
-			if (isAlternative)
-				treeItem2.setText(0, relativePath.removeLastSegments(1).addTrailingSeparator().toString());
-			treeItem2.setText(2, relativePath.toString());
+			String container = m.getContainerPath().toString();
+			if (container.length() > 0)
+				container += File.separator;
+			treeItem2.setText(2, container + m.getGitDir());
 		}
 	}
 
