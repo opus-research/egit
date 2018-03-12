@@ -37,8 +37,8 @@ import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.Tag;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTag;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -86,9 +86,9 @@ public class CreateTagDialog extends Dialog {
 
 	private RevWalk revCommits;
 
-	private List<Tag> existingTags;
+	private List<RevTag> existingTags;
 
-	private Tag tag;
+	private RevTag tag;
 
 	private Text tagNameText;
 
@@ -112,9 +112,9 @@ public class CreateTagDialog extends Dialog {
 
 	static class TagInputList extends LabelProvider implements IWorkbenchAdapter {
 
-		private final List<Tag> tagList;
+		private final List<RevTag> tagList;
 
-		public TagInputList(List<Tag> tagList) {
+		public TagInputList(List<RevTag> tagList) {
 			this.tagList = tagList;
 		}
 
@@ -127,8 +127,8 @@ public class CreateTagDialog extends Dialog {
 		}
 
 		public String getLabel(Object o) {
-			if (o instanceof Tag)
-				return ((Tag) o).getTag();
+			if (o instanceof RevTag)
+				return ((RevTag) o).getTagName();
 
 			return null;
 		}
@@ -156,7 +156,7 @@ public class CreateTagDialog extends Dialog {
 		}
 
 		public String getColumnText(Object element, int columnIndex) {
-			return ((Tag) element).getTag();
+			return ((RevTag) element).getTagName();
 		}
 
 		public void dispose() {
@@ -234,7 +234,7 @@ public class CreateTagDialog extends Dialog {
 	 *
 	 * @param existingTags
 	 */
-	public void setExistingTags(List<Tag> existingTags) {
+	public void setExistingTags(List<RevTag> existingTags) {
 		this.existingTags = existingTags;
 	}
 
@@ -254,7 +254,7 @@ public class CreateTagDialog extends Dialog {
 	 *
 	 * @param tag
 	 */
-	public void setTag(Tag tag) {
+	public void setTag(RevTag tag) {
 		this.tag = tag;
 	}
 
@@ -505,10 +505,10 @@ public class CreateTagDialog extends Dialog {
 			@Override
 			public boolean select(Viewer viewer, Object parentElement,
 					Object element) {
-				Tag actTag = (Tag) element;
+				RevTag actTag = (RevTag) element;
 
 				if (tagNamePattern != null)
-					return tagNamePattern.matcher(actTag.getTag()).find();
+					return tagNamePattern.matcher(actTag.getTagName()).find();
 				else
 					return true;
 			}
@@ -546,11 +546,11 @@ public class CreateTagDialog extends Dialog {
 				.getSelection();
 		Object firstSelected = selection.getFirstElement();
 
-		if (firstSelected instanceof Tag) {
-			tag = (Tag) firstSelected;
+		if (firstSelected instanceof RevTag) {
+			tag = (RevTag) firstSelected;
 
 			if (!overwriteButton.isEnabled()) {
-				String tagMessageValue = tag.getMessage();
+				String tagMessageValue = tag.getFullMessage();
 				// don't enable OK button if we are dealing with un-annotated
 				// tag because JGit doesn't support them
 				if (tagMessageValue != null
@@ -568,12 +568,12 @@ public class CreateTagDialog extends Dialog {
 	}
 
 	private void setTagImpl() {
-		tagNameText.setText(tag.getTag());
+		tagNameText.setText(tag.getTagName());
 		if (commitCombo != null)
-			commitCombo.setSelectedElement(tag.getObjId());
+			commitCombo.setSelectedElement(tag.getObject());
 
 		// handle un-annotated tags
-		String message = tag.getMessage();
+		String message = tag.getFullMessage();
 		tagMessageText.setText(null != message ? message : ""); //$NON-NLS-1$
 	}
 

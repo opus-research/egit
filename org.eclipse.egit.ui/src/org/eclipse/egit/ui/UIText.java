@@ -217,6 +217,9 @@ public class UIText extends NLS {
 	public static String GitDecoratorPreferencePage_bindingRepositoryNameFlag;
 
 	/** */
+	public static String GitDecoratorPreferencePage_iconsShowDirty;
+
+	/** */
 	public static String GitDocument_errorLoadCommit;
 
 	/** */
@@ -1426,6 +1429,33 @@ public class UIText extends NLS {
 	public static String CreateBranchWizard_NewBranchTitle;
 
 	/** */
+	public static String CreateRepositoryPage_BareCheckbox;
+
+	/** */
+	public static String CreateRepositoryPage_BrowseButton;
+
+	/** */
+	public static String CreateRepositoryPage_DirectoryLabel;
+
+	/** */
+	public static String CreateRepositoryPage_NotADirectoryMessage;
+
+	/** */
+	public static String CreateRepositoryPage_NotEmptyMessage;
+
+	/** */
+	public static String CreateRepositoryPage_PageMessage;
+
+	/** */
+	public static String CreateRepositoryPage_PageTitle;
+
+	/** */
+	public static String CreateRepositoryPage_PleaseSelectDirectoryMessage;
+
+	/** */
+	public static String CreateRepositoryPage_PleaseUseAbsoluePathMessage;
+
+	/** */
 	public static String PushResultTable_columnStatusRepo;
 
 	/** */
@@ -2336,10 +2366,25 @@ public class UIText extends NLS {
 	public static String LocalFileRevision_currentVersionTag;
 
 	/** */
+	public static String NewRepositoryWizard_WizardTitle;
+
+	/** */
 	public static String RemoteSelectionCombo_remoteName;
 
 	/** */
 	public static String RemoteSelectionCombo_remoteRef;
+
+	/** */
+	public static String RemoveCommand_DeleteConfirmMultiMessage;
+
+	/** */
+	public static String RemoveCommand_DeleteConfirmSingleMessage;
+
+	/** */
+	public static String RemoveCommand_DeleteConfirmTitle;
+
+	/** */
+	public static String RemoveCommand_DeleteFailureMessage;
 
 	/** */
 	public static String SelectSynchronizeResourceDialog_header;
