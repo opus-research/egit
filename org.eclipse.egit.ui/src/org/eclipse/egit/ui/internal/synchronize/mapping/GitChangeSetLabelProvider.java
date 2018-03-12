@@ -9,15 +9,10 @@
 package org.eclipse.egit.ui.internal.synchronize.mapping;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.ui.UIIcons;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCommit;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelCache;
@@ -25,7 +20,6 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelObject;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelRepository;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelTree;
 import org.eclipse.egit.ui.internal.synchronize.model.GitModelWorkingTree;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.ResourceManager;
@@ -46,32 +40,6 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
  */
 public class GitChangeSetLabelProvider extends SynchronizationLabelProvider
 		implements IStyledLabelProvider {
-
-	/** */
-	public static final String BINDING_CHANGESET_SHORT_MESSAGE = "{short_message}"; //$NON-NLS-1$
-
-	/** */
-	public static final String BINDING_CHANGESET_COMMITTER = "{committer}"; //$NON-NLS-1$
-
-	/** */
-	public static final String BINDING_CHANGESET_AUTHOR = "{author}"; //$NON-NLS-1$
-
-	/** */
-	public static final String BINDING_CHANGESET_DATE = "{date}"; //$NON-NLS-1$
-
-	/** */
-	public static final String DEFAULT_CHANGESET_FORMAT = String.format("[%s] (%s) %s", //$NON-NLS-1$
-			BINDING_CHANGESET_AUTHOR,
-			BINDING_CHANGESET_DATE,
-			BINDING_CHANGESET_SHORT_MESSAGE);
-
-	/** */
-	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";  //$NON-NLS-1$
-
-	private IPreferenceStore store = org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
-
-	private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
-			store.getString(UIPreferences.DATE_FORMAT));
 
 	private static final ILabelProvider workbenchLabelProvider = WorkbenchLabelProvider
 			.getDecoratingWorkbenchLabelProvider();
@@ -134,8 +102,7 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider
 		String rawText = getText(element);
 		// need to compare classes as everything is 'instanceof GitModelCommit'
 		if (element.getClass().equals(GitModelCommit.class)) {
-			String formattedName = createChangeSetLabel((GitModelCommit) element);
-			StyledString string = new StyledString(formattedName);
+			StyledString string = new StyledString(rawText);
 			GitModelCommit commit = (GitModelCommit) element;
 			String format = " [" + getAbbreviatedId(commit) + "]"; //$NON-NLS-1$//$NON-NLS-2$
 			string.append(format, StyledString.DECORATIONS_STYLER);
@@ -143,32 +110,6 @@ public class GitChangeSetLabelProvider extends SynchronizationLabelProvider
 		}
 
 		return new StyledString(rawText);
-	}
-
-	private String createChangeSetLabel(GitModelCommit commit) {
-		String format = store.getString(UIPreferences.SYNC_VIEW_CHANGESET_LABEL_FORMAT);
-
-		RevCommit baseCommit = commit.getBaseCommit();
-		Map<String, String> bindings = new HashMap<String, String>();
-		bindings.put(BINDING_CHANGESET_DATE, DATE_FORMAT.format(baseCommit.getAuthorIdent().getWhen()));
-		bindings.put(BINDING_CHANGESET_AUTHOR, baseCommit.getAuthorIdent().getName());
-		bindings.put(BINDING_CHANGESET_COMMITTER, baseCommit.getCommitterIdent().getName());
-		bindings.put(BINDING_CHANGESET_SHORT_MESSAGE, baseCommit.getShortMessage());
-
-		return formatName(format, bindings);
-	}
-
-	/**
-	 * @param format
-	 * @param bindings
-	 * @return formatted commit name
-	 */
-	public static String formatName(final String format, Map<String, String> bindings) {
-		String result = format;
-		for (Entry<String, String> e : bindings.entrySet()) {
-			result = result.replace(e.getKey(), e.getValue());
-		}
-		return result;
 	}
 
 	private String getAbbreviatedId(GitModelCommit commit) {
