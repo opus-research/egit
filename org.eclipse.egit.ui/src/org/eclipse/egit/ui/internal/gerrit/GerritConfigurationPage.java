@@ -272,7 +272,7 @@ class GerritConfigurationPage extends WizardPage {
 
 	private void setDefaults(URIish uri, String targetBranch) {
 		URIish newPushURI = uri;
-		if (Protocol.SSH.handles(uri) && uri.getPort() < 0) {
+		if (Protocol.SSH.handles(uri)) {
 			newPushURI = newPushURI.setPort(GERRIT_DEFAULT_SSH_PORT);
 		} else if (Protocol.GIT.handles(uri)) {
 			newPushURI = newPushURI.setScheme(Protocol.SSH.getDefaultScheme());

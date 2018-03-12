@@ -40,7 +40,6 @@ import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -201,20 +200,12 @@ public class BranchSelectionDialog<T> extends MessageDialog {
 	}
 
 	private void checkPage() {
-		Button ok = getButton(OK);
-		if (ok.isDisposed()) {
-			return;
-		}
-
-		if (multiMode) {
-			if (fTree == null || fTree.isDisposed()) {
-				return;
-			}
-			ok.setEnabled(
+		if (multiMode)
+			getButton(OK).setEnabled(
 					fTree.getCheckboxTreeViewer().getCheckedLeafCount() > 0);
-		} else {
-			ok.setEnabled(!branchesList.getSelection().isEmpty());
-		}
+		else
+			getButton(OK).setEnabled(!branchesList.getSelection().isEmpty());
+
 	}
 
 	@SuppressWarnings("unchecked")

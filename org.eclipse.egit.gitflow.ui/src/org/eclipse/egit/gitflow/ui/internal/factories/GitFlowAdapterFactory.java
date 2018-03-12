@@ -10,7 +10,7 @@ package org.eclipse.egit.gitflow.ui.internal.factories;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdapterFactory;
-import org.eclipse.egit.core.project.RepositoryMapping;
+import static org.eclipse.egit.core.project.RepositoryMapping.getMapping;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.team.ui.history.IHistoryPage;
@@ -20,7 +20,6 @@ import org.eclipse.team.ui.history.IHistoryView;
  * Get JGit repository for element selected in Git Flow UI.
  */
 public class GitFlowAdapterFactory implements IAdapterFactory {
-	@SuppressWarnings("unchecked")
 	@Override
 	public Repository getAdapter(Object adaptableObject, Class adapterType) {
 		Repository repository = null;
@@ -45,11 +44,9 @@ public class GitFlowAdapterFactory implements IAdapterFactory {
 	}
 
 	private Repository getRepository(IResource resource) {
-		RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
-		return mapping != null ? mapping.getRepository() : null;
+		return getMapping(resource.getProject()).getRepository();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Class[] getAdapterList() {
 		return new Class[] { IResource.class, IHistoryView.class };
