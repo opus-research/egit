@@ -12,10 +12,12 @@ import static org.eclipse.egit.gitflow.ui.internal.UIPreferences.FEATURE_FINISH_
 import static org.eclipse.egit.gitflow.ui.internal.UIPreferences.FEATURE_FINISH_SQUASH;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.ui.Activator;
+import org.eclipse.egit.gitflow.ui.internal.UIText;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
@@ -26,10 +28,11 @@ import org.junit.runner.RunWith;
  * Tests for the Team->Gitflow->Feature Start/Finish actions
  */
 @RunWith(SWTBotJunit4ClassRunner.class)
-public class FeatureStartFinishHandlerTest extends AbstractFeatureFinishHandlerTest {
+public class FeatureFinishKeepBranchHandlerTest extends
+		AbstractFeatureFinishHandlerTest {
 
 	@Test
-	public void testFeatureStart() throws Exception {
+	public void testFeatureFinishKeepBranch() throws Exception {
 		init();
 
 		setContentAddAndCommit("bar");
@@ -47,16 +50,16 @@ public class FeatureStartFinishHandlerTest extends AbstractFeatureFinishHandlerT
 		RevCommit developHead = gfRepo.findHead();
 		assertEquals(developHead, featureBranchCommit);
 
-		assertNull(findBranch(gfRepo.getConfig().getFeatureBranchName(FEATURE_NAME)));
+		assertNotNull(findBranch(gfRepo.getConfig().getFeatureBranchName(FEATURE_NAME)));
 
 		IPreferenceStore prefStore = Activator.getDefault()
 				.getPreferenceStore();
 		assertFalse(prefStore.getBoolean(FEATURE_FINISH_SQUASH));
-		assertFalse(prefStore.getBoolean(FEATURE_FINISH_KEEP_BRANCH));
+		assertTrue(prefStore.getBoolean(FEATURE_FINISH_KEEP_BRANCH));
 	}
 
 	@Override
 	protected void selectOptions() {
-		// do nothing
+		bot.checkBox(UIText.FinishFeatureDialog_keepBranch).click();
 	}
 }

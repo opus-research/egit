@@ -31,7 +31,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.MultiRule;
@@ -120,7 +119,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 		String taskName = NLS.bind(
 				CoreText.ConnectProviderOperation_ConnectingProject,
 				project.getName());
-		SubMonitor subMon = SubMonitor.convert(monitor, taskName, 100);
+		monitor.setTaskName(taskName);
 
 		if (GitTraceLocation.CORE.isActive()) {
 			GitTraceLocation.getTrace()
@@ -129,11 +128,13 @@ public class ConnectProviderOperation implements IEGitOperation {
 
 		RepositoryFinder finder = new RepositoryFinder(project);
 		finder.setFindInChildren(false);
-		Collection<RepositoryMapping> repos = finder.find(subMon.newChild(99));
+		Collection<RepositoryMapping> repos = finder
+				.find(new SubProgressMonitor(monitor, 40));
 		if (repos.isEmpty()) {
 			ms.add(Activator.error(NLS.bind(
 					CoreText.ConnectProviderOperation_NoRepositoriesError,
 					project.getName()), null));
+			monitor.worked(60);
 			return;
 		}
 		RepositoryMapping actualMapping = findActualRepository(repos,
@@ -144,6 +145,8 @@ public class ConnectProviderOperation implements IEGitOperation {
 					new Object[] { project.getName(),
 							entry.getValue().toString(), repos.toString() }),
 					null));
+
+			monitor.worked(60);
 			return;
 		}
 		GitProjectData projectData = new GitProjectData(project);
@@ -161,7 +164,10 @@ public class ConnectProviderOperation implements IEGitOperation {
 			return;
 		}
 		RepositoryProvider.map(project, GitProvider.ID);
-		autoIgnoreDerivedResources(project, subMon);
+		autoIgnoreDerivedResources(project, monitor);
+		project.refreshLocal(IResource.DEPTH_INFINITE,
+				new SubProgressMonitor(monitor, 50));
+		monitor.worked(10);
 	}
 
 	private void deleteGitProvider(MultiStatus ms, IProject project) {
