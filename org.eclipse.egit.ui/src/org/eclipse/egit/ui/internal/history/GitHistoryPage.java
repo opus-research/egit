@@ -52,6 +52,9 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.PreferenceDialog;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.resource.LocalResourceManager;
+import org.eclipse.jface.resource.ResourceManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.viewers.ISelection;
@@ -216,6 +219,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		BooleanPrefAction showNotesAction;
 
+		BooleanPrefAction showTagSequenceAction;
+
 		BooleanPrefAction wrapCommentAction;
 
 		BooleanPrefAction fillCommentAction;
@@ -267,6 +272,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			createShowRelativeDateAction();
 			createShowEmailAddressesAction();
 			createShowNotesAction();
+			createShowTagSequenceAction();
 			createWrapCommentAction();
 			createFillCommentAction();
 			createFollowRenamesAction();
@@ -459,6 +465,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			actionsToDispose.add(showNotesAction);
 		}
 
+		private void createShowTagSequenceAction() {
+			showTagSequenceAction = new BooleanPrefAction(
+					UIPreferences.HISTORY_SHOW_TAG_SEQUENCE,
+					UIText.ResourceHistory_ShowTagSequence) {
+				void apply(boolean value) {
+					// nothing, just set the Preference
+				}
+			};
+			showTagSequenceAction.apply(showTagSequenceAction.isChecked());
+			actionsToDispose.add(showTagSequenceAction);
+		}
+
 		private void createWrapCommentAction() {
 			wrapCommentAction = new BooleanPrefAction(
 					UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP,
@@ -609,6 +627,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	/** Job that is updating our history view, if we are refreshing. */
 	private GenerateHistoryJob job;
 
+	private final ResourceManager resources = new LocalResourceManager(
+			JFaceResources.getResources());
+
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
 
@@ -739,7 +760,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		graphDetailSplit = new SashForm(historyControl, SWT.VERTICAL);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(
 				graphDetailSplit);
-		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr, this);
+		graph = new CommitGraphTable(graphDetailSplit, getSite(), popupMgr,
+				this, resources);
 
 		graph.setRelativeDate(isShowingRelativeDates());
 		graph.setShowEmailAddresses(isShowingEmailAddresses());
@@ -929,11 +951,18 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		showSubMenuMgr.add(actions.followRenamesAction);
 		showSubMenuMgr.add(new Separator());
 		showSubMenuMgr.add(actions.findAction);
-		showSubMenuMgr.add(actions.showFilesAction);
 		showSubMenuMgr.add(actions.showCommentAction);
+		showSubMenuMgr.add(actions.showFilesAction);
 		showSubMenuMgr.add(new Separator());
 		showSubMenuMgr.add(actions.showRelativeDateAction);
 		showSubMenuMgr.add(actions.showEmailAddressesAction);
+
+		IMenuManager showInMessageManager = new MenuManager(
+				UIText.GitHistoryPage_InRevisionCommentSubMenuLabel);
+		showSubMenuMgr.add(showInMessageManager);
+		showInMessageManager.add(actions.showTagSequenceAction);
+		showInMessageManager.add(actions.wrapCommentAction);
+		showInMessageManager.add(actions.fillCommentAction);
 
 		IMenuManager filterSubMenuMgr = new MenuManager(
 				UIText.GitHistoryPage_FilterSubMenuLabel);
@@ -946,10 +975,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(actions.compareModeAction);
 		viewMenuMgr.add(actions.reuseCompareEditorAction);
-
-		viewMenuMgr.add(new Separator());
-		viewMenuMgr.add(actions.wrapCommentAction);
-		viewMenuMgr.add(actions.fillCommentAction);
 	}
 
 	public void dispose() {
@@ -965,6 +990,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			myRefsChangedHandle.remove();
 			myRefsChangedHandle = null;
 		}
+
+		resources.dispose();
 
 		// dispose of the actions (the history framework doesn't do this for us)
 		for (IWorkbenchAction action : actions.actionsToDispose)
@@ -1806,7 +1833,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	 */
 	private void loadHistory(final int itemToLoad, RevWalk walk) {
 		if (itemToLoad == INITIAL_ITEM) {
-			job = new GenerateHistoryJob(this, graph.getControl(), walk);
+			job = new GenerateHistoryJob(this, graph.getControl(), walk,
+					resources);
 			job.setRule(this);
 		}
 		job.setLoadHint(itemToLoad);

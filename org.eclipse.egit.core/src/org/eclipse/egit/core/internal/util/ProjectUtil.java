@@ -273,12 +273,9 @@ public class ProjectUtil {
 		for (String member : fileList) {
 			File file = new File(repository.getWorkTree(), member);
 
-			if (!file.exists())
-				continue;
-
 			// check the directory that the file resides in. findContainer
 			// can only handle directories.
-			if (file.isFile())
+			if (!file.exists() || file.isFile())
 				file = file.getParentFile();
 
 			// check whether we had this path to possibly (likely) skip the
