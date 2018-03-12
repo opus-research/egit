@@ -42,8 +42,8 @@ public class UIIcons {
 	/** Decoration for tracked resources that are dirty. */
 	public final static ImageDescriptor OVR_DIRTY;
 
-	/** Decoration for lightweight tags **/
-	public final static ImageDescriptor OVR_LIGHTTAG;
+	/** Decoration for warning **/
+	public final static ImageDescriptor OVR_ERROR;
 
 	/** Find icon */
 	public final static ImageDescriptor ELCL16_FIND;
@@ -122,6 +122,9 @@ public class UIIcons {
 	/** New Repository button */
 	public final static ImageDescriptor NEW_REPOSITORY;
 
+	/** Create Repository button */
+	public final static ImageDescriptor CREATE_REPOSITORY;
+
 	/** Remote Repository tree node */
 	public final static ImageDescriptor REMOTE_REPOSITORY;
 
@@ -185,6 +188,24 @@ public class UIIcons {
 	/** Commit note icon */
 	public final static ImageDescriptor NOTE;
 
+	/** Show Annotation icon */
+	public final static ImageDescriptor ANNOTATE;
+
+	/** Commit icon */
+	public final static ImageDescriptor COMMIT;
+
+	/** Rebase icon */
+	public final static ImageDescriptor REBASE;
+
+	/** Merge icon */
+	public final static ImageDescriptor MERGE;
+
+	/** Annotated tag icon */
+	public final static ImageDescriptor TAG_ANNOTATED;
+
+	/** Submodules icon */
+	public final static ImageDescriptor SUBMODULES;
+
 	/** base URL */
 	public final static URL base;
 
@@ -197,7 +218,6 @@ public class UIIcons {
 		OVR_CONFLICT = map("ovr/conflict.gif"); //$NON-NLS-1$
 		OVR_ASSUMEVALID = map("ovr/assume_valid.gif"); //$NON-NLS-1$
 		OVR_DIRTY = map("ovr/dirty.gif"); //$NON-NLS-1$
-		OVR_LIGHTTAG = map("ovr/lighttag.gif"); //$NON-NLS-1$
 		ELCL16_FIND = map("elcl16/find.gif"); //$NON-NLS-1$
 		ELCL16_COMPARE_VIEW = map("elcl16/compare_view.gif"); //$NON-NLS-1$
 		ELCL16_NEXT = map("elcl16/next.gif"); //$NON-NLS-1$
@@ -251,6 +271,14 @@ public class UIIcons {
 		AMEND_COMMIT = map("obj16/commit_amend.gif"); //$NON-NLS-1$
 		UNTRACKED_FILE = map("obj16/untracked_file.gif"); //$NON-NLS-1$
 		NOTE = map("obj16/note.png"); //$NON-NLS-1$
+		ANNOTATE = map("etool16/annotate.gif"); //$NON-NLS-1$
+		COMMIT = map("obj16/commit.gif"); //$NON-NLS-1$
+		REBASE = map("obj16/rebase.gif"); //$NON-NLS-1$
+		OVR_ERROR = map("ovr/error.png"); //$NON-NLS-1$
+		MERGE = map("obj16/merge.gif"); //$NON-NLS-1$
+		TAG_ANNOTATED = map("obj16/annotated-tag.gif"); //$NON-NLS-1$
+		CREATE_REPOSITORY = map("etool16/createRepository.gif"); //$NON-NLS-1$
+		SUBMODULES = map("obj16/submodules.gif"); //$NON-NLS-1$
 	}
 
 	private static ImageDescriptor map(final String icon) {

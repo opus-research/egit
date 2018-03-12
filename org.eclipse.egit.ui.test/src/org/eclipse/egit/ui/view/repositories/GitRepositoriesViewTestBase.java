@@ -32,10 +32,10 @@ import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.ui.JobFamilies;
+import org.eclipse.egit.ui.UIText;
 import org.eclipse.egit.ui.common.LocalRepositoryTestCase;
 import org.eclipse.egit.ui.internal.push.PushOperationUI;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.egit.ui.internal.repository.RepositoriesViewLabelProvider;
 import org.eclipse.egit.ui.test.Eclipse;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -44,7 +44,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -55,8 +54,6 @@ import org.junit.After;
  */
 public abstract class GitRepositoriesViewTestBase extends
 		LocalRepositoryTestCase {
-
-	protected static final RepositoriesViewLabelProvider labelProvider = new RepositoriesViewLabelProvider();
 
 	// test utilities
 	protected static final TestUtil myUtil = new TestUtil();
@@ -144,9 +141,9 @@ public abstract class GitRepositoriesViewTestBase extends
 		untracked.addAll(Arrays.asList(commitables));
 		// commit to stable
 		CommitOperation op = new CommitOperation(commitables,
-				new ArrayList<IFile>(), untracked,
-				"Test Author <test.author@test.com>",
-				"Test Committer <test.commiter@test.com>", "Initial commit");
+				untracked, "Test Author <test.author@test.com>",
+				"Test Committer <test.commiter@test.com>",
+				"Initial commit");
 		op.execute(null);
 
 		// now create a stable branch (from master)
@@ -177,8 +174,7 @@ public abstract class GitRepositoriesViewTestBase extends
 
 		myRepository.getConfig().save();
 		// and push
-		RemoteConfig config = new RemoteConfig(myRepository.getConfig(), "push");
-		PushOperationUI pa = new PushOperationUI(myRepository, config, 0, false);
+		PushOperationUI pa = new PushOperationUI(myRepository, "push", 0, false);
 		pa.execute(null);
 		TestUtil.joinJobs(JobFamilies.PUSH);
 		try {
@@ -241,8 +237,7 @@ public abstract class GitRepositoriesViewTestBase extends
 
 	protected void assertEmpty() throws Exception {
 		final SWTBotView view = getOrOpenView();
-		final SWTBotTreeItem[] items = view.bot().tree().getAllItems();
-		assertTrue("Tree should have no items", items.length == 0);
+		view.bot().label(UIText.RepositoriesView_messsageEmpty);
 	}
 
 	protected void refreshAndWait() throws Exception {

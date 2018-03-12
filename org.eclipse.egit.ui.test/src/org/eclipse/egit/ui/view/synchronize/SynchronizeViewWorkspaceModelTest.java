@@ -12,6 +12,9 @@ import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.MASTER;
 import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_TAGS;
+import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.allOf;
+import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.widgetOfType;
+import static org.eclipse.swtbot.swt.finder.matchers.WidgetMatcherFactory.withRegex;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -28,11 +31,14 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotEditor;
 import org.eclipse.swtbot.swt.finder.SWTBot;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotLabel;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -48,8 +54,14 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		launchSynchronization(HEAD, R_HEADS + MASTER, false);
 
 		// then
-		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		assertEquals(0, syncViewTree.getAllItems().length);
+		SWTBot viewBot = bot.viewByTitle("Synchronize").bot();
+		@SuppressWarnings("unchecked")
+		Matcher matcher = allOf(widgetOfType(Label.class),
+				withRegex("No changes in .*"));
+
+		@SuppressWarnings("unchecked")
+		SWTBotLabel l = new SWTBotLabel((Label) viewBot.widget(matcher));
+		assertNotNull(l);
 	}
 
 	@Test
@@ -78,7 +90,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();
-		assertEquals(2, syncViewTree.getAllItems().length);
+		assertEquals(1, syncViewTree.getAllItems().length);
 	}
 
 	@Test
@@ -100,6 +112,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 			throws Exception {
 		// given
 		resetRepositoryToCreateInitialTag();
+		makeChangesAndCommit(PROJ1);
 		changeFilesInProject();
 
 		// when
@@ -117,7 +130,7 @@ public class SynchronizeViewWorkspaceModelTest extends AbstractSynchronizeViewTe
 		deleteFileAndCommit(PROJ1);
 
 		// when
-		launchSynchronization(HEAD, INITIAL_TAG, true);
+		launchSynchronization(HEAD, HEAD + "~1", true);
 
 		// then
 		SWTBotTree syncViewTree = bot.viewByTitle("Synchronize").bot().tree();

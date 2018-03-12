@@ -37,6 +37,7 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CLabel;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -64,6 +65,32 @@ import org.eclipse.ui.PlatformUI;
  * suggested initially.
  */
 class CreateBranchPage extends WizardPage {
+
+	/**
+	 * Get proposed target branch name for given source branch name
+	 *
+	 * @param sourceName
+	 * @return target name
+	 */
+	public static String getProposedTargetName(String sourceName) {
+		if (sourceName == null)
+			return null;
+
+		if (sourceName.startsWith(Constants.R_REMOTES)) {
+			String target = sourceName.substring(Constants.R_REMOTES.length());
+			int postSlash = target.indexOf('/') + 1;
+			if (postSlash > 0 && postSlash < target.length())
+				return target.substring(postSlash);
+			else
+				return target;
+		}
+
+		if (sourceName.startsWith(Constants.R_TAGS))
+			return sourceName.substring(Constants.R_TAGS.length());
+
+		return null;
+	}
+
 	private final Repository myRepository;
 
 	private final IInputValidator myValidator;
@@ -73,6 +100,11 @@ class CreateBranchPage extends WizardPage {
 	private final RevCommit myBaseCommit;
 
 	private Text nameText;
+
+	/**
+	 * Whether the contents of {@code nameText} is a suggestion or was entered by the user.
+	 */
+	private boolean nameIsSuggestion;
 
 	private Button checkout;
 
@@ -186,8 +218,9 @@ class CreateBranchPage extends WizardPage {
 			this.branchCombo.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					upstreamConfig = getDefaultUpstreamConfig(myRepository,
-							branchCombo.getText());
+					String ref = branchCombo.getText();
+					suggestBranchName(ref);
+					upstreamConfig = getDefaultUpstreamConfig(myRepository, ref);
 					checkPage();
 				}
 			});
@@ -211,6 +244,11 @@ class CreateBranchPage extends WizardPage {
 				nameText.setFocus();
 			}
 		});
+		nameText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				nameIsSuggestion = false;
+			}
+		});
 		// enable testing with SWTBot
 		nameText.setData("org.eclipse.swtbot.widget.key", "BranchName"); //$NON-NLS-1$ //$NON-NLS-2$
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(nameText);
@@ -231,13 +269,12 @@ class CreateBranchPage extends WizardPage {
 		warningComposite.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, false).applyTo(
 				warningComposite);
-		Label warningLabel = new Label(warningComposite, SWT.NONE);
+
+		CLabel warningLabel = new CLabel(warningComposite, SWT.NONE);
+		warningLabel.setText(UIText.CreateBranchPage_LocalBranchWarningText);
+		warningLabel.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 		warningLabel.setImage(PlatformUI.getWorkbench().getSharedImages()
 				.getImage(ISharedImages.IMG_OBJS_INFO_TSK));
-		Text warningText = new Text(warningComposite, SWT.READ_ONLY);
-		warningText.setText(UIText.CreateBranchPage_LocalBranchWarningText);
-		warningText
-				.setToolTipText(UIText.CreateBranchPage_LocalBranchWarningTooltip);
 
 		buttonConfigRebase = new Button(upstreamConfigGroup, SWT.RADIO);
 		buttonConfigRebase.setText(UIText.CreateBranchPage_RebaseRadioButton);
@@ -296,17 +333,7 @@ class CreateBranchPage extends WizardPage {
 		Dialog.applyDialogFont(main);
 		setControl(main);
 		nameText.setFocus();
-		if (myBaseRef != null
-				&& (myBaseRef.startsWith(Constants.R_REMOTES) || myBaseRef
-						.startsWith(Constants.R_TAGS))) {
-			// additional convenience: the last part of the name is suggested
-			// as name for the local branch
-			nameText.setText(myBaseRef
-					.substring(myBaseRef.lastIndexOf('/') + 1));
-			nameText.selectAll();
-		} else
-			// in any case, we will have to enter the name
-			setPageComplete(false);
+		suggestBranchName(myBaseRef);
 		checkPage();
 		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(new ModifyListener() {
@@ -430,5 +457,16 @@ class CreateBranchPage extends WizardPage {
 		if (setupRebase)
 			return UpstreamConfig.REBASE;
 		return UpstreamConfig.MERGE;
+	}
+
+	private void suggestBranchName(String ref) {
+		if (nameText.getText().length() == 0 || nameIsSuggestion) {
+			String branchNameSuggestion = getProposedTargetName(ref);
+			if (branchNameSuggestion != null) {
+				nameText.setText(branchNameSuggestion);
+				nameText.selectAll();
+				nameIsSuggestion = true;
+			}
+		}
 	}
 }

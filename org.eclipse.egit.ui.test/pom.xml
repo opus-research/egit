@@ -16,13 +16,13 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui.test</artifactId>
   <packaging>eclipse-test-plugin</packaging>
 
-  <name>EGit UI Test Plug-in (Incubation)</name>
+  <name>EGit UI Test Plug-in</name>
 
   <properties>
     <local-egit-site>file:/${basedir}/../org.eclipse.egit-updatesite/target/site</local-egit-site>
@@ -57,7 +57,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m -XstartOnFirstThread</ui.test.vmargs>
+        <ui.test.vmargs>-Xmx1024m -XX:MaxPermSize=384m -XstartOnFirstThread</ui.test.vmargs>
       </properties>
     </profile>
     <profile>
@@ -69,7 +69,7 @@
         </os>
       </activation>
       <properties>
-        <ui.test.vmargs>-Xmx512m -XX:MaxPermSize=256m</ui.test.vmargs>
+        <ui.test.vmargs>-Xmx1024m -XX:MaxPermSize=384m</ui.test.vmargs>
       </properties>
     </profile>
   </profiles>
@@ -82,7 +82,7 @@
         <version>${tycho-version}</version>
         <configuration>
           <testSuite>org.eclipse.egit.ui.test</testSuite>
-          <testClass>org.eclipse.egit.ui.test.AllTests</testClass>
+          <testClass>org.eclipse.egit.ui.test.AllSWTAndNonSWTTests</testClass>
           <useUIHarness>true</useUIHarness>
           <useUIThread>false</useUIThread>
           <product>org.eclipse.sdk.ide</product>
@@ -92,12 +92,12 @@
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.egit.feature.group</artifactId>
-              <version>1.0.0</version>
+              <version>1.3.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
               <artifactId>org.eclipse.jgit.feature.group</artifactId>
-              <version>1.0.0</version>
+              <version>1.3.0</version>
             </dependency>
             <dependency>
               <type>p2-installable-unit</type>
