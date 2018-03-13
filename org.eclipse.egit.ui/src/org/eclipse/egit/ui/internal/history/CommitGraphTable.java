@@ -7,7 +7,6 @@
  * Copyright (C) 2011-2012, Matthias Sohn <matthias.sohn@sap.com>
  * Copyright (C) 2012-2013, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Daniel Megert <daniel_megert@ch.ibm.com>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -22,12 +21,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.IParameter;
@@ -41,14 +37,13 @@ import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
-import org.eclipse.egit.ui.internal.handler.IGlobalActionProvider;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
@@ -67,7 +62,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -90,6 +84,8 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.MenuDetectEvent;
 import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.graphics.Font;
@@ -105,6 +101,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IWorkbenchActionConstants;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
@@ -112,7 +109,7 @@ import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.part.IPageSite;
 
-class CommitGraphTable implements IGlobalActionProvider {
+class CommitGraphTable {
 	static Font highlightFont() {
 		final Font n, h;
 
@@ -164,8 +161,6 @@ class CommitGraphTable implements IGlobalActionProvider {
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
 	private boolean enableAntialias = true;
-
-	private final Set<IAction> globalActions = new HashSet<>();
 
 	CommitGraphTable(Composite parent, final TableLoader loader,
 			final ResourceManager resources) {
@@ -239,8 +234,8 @@ class CommitGraphTable implements IGlobalActionProvider {
 			}
 		});
 
-		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
-				() -> doCopy());
+		copy = createStandardAction(ActionFactory.COPY);
+
 		table.setUseHashlookup(true);
 
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
@@ -280,11 +275,26 @@ class CommitGraphTable implements IGlobalActionProvider {
 			final ResourceManager resources) {
 		this(parent, loader, resources);
 
-		final IAction selectAll = ActionUtils.createGlobalAction(
-				ActionFactory.SELECT_ALL,
-				() -> getTableView().getTable().selectAll());
-		globalActions.add(selectAll);
-		globalActions.add(copy);
+		final IAction selectAll = createStandardAction(ActionFactory.SELECT_ALL);
+		getControl().addFocusListener(new FocusListener() {
+			@Override
+			public void focusLost(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), null);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), null);
+				site.getActionBars().getMenuManager().update(false);
+			}
+
+			@Override
+			public void focusGained(FocusEvent e) {
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.SELECT_ALL.getId(), selectAll);
+				site.getActionBars().setGlobalActionHandler(
+						ActionFactory.COPY.getId(), copy);
+				site.getActionBars().getMenuManager().update(false);
+			}
+		});
 
 		getTableView().addOpenListener(new IOpenListener() {
 			@Override
@@ -530,6 +540,37 @@ class CommitGraphTable implements IGlobalActionProvider {
 	 */
 	public TableViewer getTableView() {
 		return table;
+	}
+
+	private IAction createStandardAction(final ActionFactory af) {
+		final String text = af.create(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow()).getText();
+		IAction action = new Action() {
+
+			@Override
+			public String getActionDefinitionId() {
+				return af.getCommandId();
+			}
+
+			@Override
+			public String getId() {
+				return af.getId();
+			}
+
+			@Override
+			public String getText() {
+				return text;
+			}
+
+			@Override
+			public void run() {
+				if (af == ActionFactory.SELECT_ALL)
+					table.getTable().selectAll();
+				if (af == ActionFactory.COPY)
+					doCopy();
+			}
+		};
+		return action;
 	}
 
 	private final class CommitDragSourceListener extends DragSourceAdapter {
@@ -863,15 +904,5 @@ class CommitGraphTable implements IGlobalActionProvider {
 			parameter.parameters = parameters;
 			return new CommandContributionItem(parameter);
 		}
-	}
-
-	@Override
-	public Viewer getViewer() {
-		return getTableView();
-	}
-
-	@Override
-	public Collection<IAction> getActions() {
-		return globalActions;
 	}
 }
