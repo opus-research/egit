@@ -29,7 +29,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter.FileDiffRegion;
+import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter.FileDiffRange;
 import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.action.IMenuManager;
@@ -269,17 +269,17 @@ public class DiffEditorPage extends TextEditor
 		ProjectionViewer viewer = (ProjectionViewer) getSourceViewer();
 		IDocument document = viewer.getDocument();
 		if (document instanceof DiffDocument) {
-			FileDiffRegion[] regions = ((DiffDocument) document)
-					.getFileRegions();
-			if (regions == null || regions.length <= 1) {
+			FileDiffRange[] ranges = ((DiffDocument) document).getFileRanges();
+			if (ranges == null || ranges.length <= 1) {
 				viewer.disableProjection();
 				return;
 			}
 			viewer.enableProjection();
 			Map<Annotation, Position> newAnnotations = new HashMap<>();
-			for (FileDiffRegion region : regions) {
+			for (FileDiffRange range : ranges) {
 				newAnnotations.put(new ProjectionAnnotation(),
-						new Position(region.getOffset(), region.getLength()));
+						new Position(range.getStartOffset(),
+								range.getEndOffset() - range.getStartOffset()));
 			}
 			viewer.getProjectionAnnotationModel().modifyAnnotations(
 					currentFoldingAnnotations, newAnnotations, null);
@@ -321,7 +321,7 @@ public class DiffEditorPage extends TextEditor
 	 */
 	private void formatDiff() {
 		final DiffDocument document = new DiffDocument();
-		final DiffRegionFormatter formatter = new DiffRegionFormatter(
+		final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
 				document);
 
 		Job job = new Job(UIText.DiffEditorPage_TaskGeneratingDiff) {
