@@ -3247,9 +3247,6 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_AlwaysUseStagingView;
 
 	/** */
-	public static String CommittingPreferencePage_autoStageDeletion;
-
-	/** */
 	public static String CommittingPreferencePage_AutoStageOnCommit;
 
 	/** */
@@ -4344,9 +4341,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_FileDoesNotExist;
-
-	/** */
 	public static String CommitFileDiffViewer_MergeCommitMultiAncestorMessage;
 
 	/** */
@@ -4356,13 +4350,28 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenPreviousInEditorMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_notContainedInCommit;
-
-	/** */
 	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_ShowInHistoryLabel;
+
+	/** */
+	public static String DiffViewer_FileDoesNotExist;
+
+	/** */
+	public static String DiffViewer_OpenComparisonLinkLabel;
+
+	/** */
+	public static String DiffViewer_OpenWorkingTreeLinkLabel;
+
+	/** */
+	public static String DiffViewer_OpenInEditorLinkLabel;
+
+	/** */
+	public static String DiffViewer_OpenPreviousLinkLabel;
+
+	/** */
+	public static String DiffViewer_notContainedInCommit;
 
 	/** */
 	public static String CommitGraphTable_CommitId;
