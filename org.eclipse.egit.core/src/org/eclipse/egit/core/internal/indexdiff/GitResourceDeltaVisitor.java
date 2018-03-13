@@ -174,7 +174,11 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 			return false;
 		}
 
-		if (!isInteresting(delta)) {
+		// If the file has changed but not in a way that we
+		// care about (e.g. marker changes to files) then
+		// ignore
+		if (delta.getKind() == IResourceDelta.CHANGED
+				&& (delta.getFlags() & INTERESTING_CHANGES) == 0) {
 			return false;
 		}
 
@@ -199,17 +203,6 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 
 		filesToUpdate.add(path);
 		resourcesToUpdate.add(resource);
-		return true;
-	}
-
-	// If the file has changed but not in a way that we
-	// care about (e.g. marker changes to files) then
-	// ignore
-	static boolean isInteresting(IResourceDelta delta) {
-		if (delta.getKind() == IResourceDelta.CHANGED
-				&& (delta.getFlags() & INTERESTING_CHANGES) == 0) {
-			return false;
-		}
 		return true;
 	}
 
