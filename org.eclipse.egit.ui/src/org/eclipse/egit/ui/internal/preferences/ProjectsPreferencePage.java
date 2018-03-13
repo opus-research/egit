@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2017 Matthias Sohn <matthias.sohn@sap.com> and others
+ * Copyright (C) 2011, 2016 Matthias Sohn <matthias.sohn@sap.com> and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,42 +11,66 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
+import java.io.IOException;
+
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.preference.BooleanFieldEditor;
+import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.util.Policy;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /** Preference page for project preferences */
-public class ProjectsPreferencePage extends DoublePreferencesPreferencePage
-		implements IWorkbenchPreferencePage {
+public class ProjectsPreferencePage extends FieldEditorPreferencePage implements
+		IWorkbenchPreferencePage {
 
 	/**
 	 * The default constructor
 	 */
 	public ProjectsPreferencePage() {
 		super(GRID);
-	}
-
-	@Override
-	protected IPreferenceStore doGetPreferenceStore() {
-		return new ScopedPreferenceStore(InstanceScope.INSTANCE,
-				Activator.getPluginId());
-	}
-
-	@Override
-	protected IPreferenceStore doGetSecondaryPreferenceStore() {
-		return org.eclipse.egit.ui.Activator.getDefault().getPreferenceStore();
+		ScopedPreferenceStore store = new ScopedPreferenceStore(
+				InstanceScope.INSTANCE, Activator.getPluginId());
+		setPreferenceStore(store);
 	}
 
 	@Override
 	public void init(final IWorkbench workbench) {
 		// Do nothing.
+	}
+
+	@Override
+	public boolean performOk() {
+		boolean isOk = super.performOk();
+		if (isOk) {
+			IPreferenceStore uiPreferences = org.eclipse.egit.ui.Activator
+					.getDefault().getPreferenceStore();
+			if (uiPreferences.needsSaving()
+					&& (uiPreferences instanceof IPersistentPreferenceStore)) {
+				try {
+					((IPersistentPreferenceStore) uiPreferences).save();
+				} catch (IOException e) {
+					String message = JFaceResources.format(
+							"PreferenceDialog.saveErrorMessage", getTitle(), //$NON-NLS-1$
+							e.getMessage());
+					Policy.getStatusHandler().show(
+							new Status(IStatus.ERROR, Policy.JFACE, message, e),
+							JFaceResources.getString(
+									"PreferenceDialog.saveErrorTitle")); //$NON-NLS-1$
+				}
+			}
+		}
+		return isOk;
 	}
 
 	@Override
@@ -59,7 +83,8 @@ public class ProjectsPreferencePage extends DoublePreferencesPreferencePage
 				getFieldEditorParent()) {
 			@Override
 			public IPreferenceStore getPreferenceStore() {
-				return getSecondaryPreferenceStore();
+				return org.eclipse.egit.ui.Activator.getDefault()
+						.getPreferenceStore();
 			}
 		});
 		addField(new BooleanFieldEditor(

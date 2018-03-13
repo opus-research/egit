@@ -98,7 +98,7 @@ public class CleanRepositoryPage extends WizardPage {
 				.getImage(ISharedImages.IMG_OBJ_FOLDER);
 
 		cleanTable = CheckboxTableViewer.newCheckList(main, SWT.BORDER);
-		cleanTable.setContentProvider(ArrayContentProvider.getInstance());
+		cleanTable.setContentProvider(new ArrayContentProvider());
 		cleanTable.setLabelProvider(new LabelProvider() {
 			@Override
 			public Image getImage(Object element) {

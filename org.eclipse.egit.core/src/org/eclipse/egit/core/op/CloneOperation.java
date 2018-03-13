@@ -4,7 +4,6 @@
  * Copyright (C) 2008, Roger C. Soares <rogersoares@intelinet.com.br>
  * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
- * Copyright (C) 2017, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,16 +18,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -61,7 +58,7 @@ public class CloneOperation {
 
 	private CredentialsProvider credentialsProvider;
 
-	private final List<PostCloneTask> postCloneTasks = new CopyOnWriteArrayList<>();
+	private List<PostCloneTask> postCloneTasks;
 
 	/**
 	 * Create a new clone operation.
@@ -117,47 +114,32 @@ public class CloneOperation {
 	}
 
 	/**
-	 * @param monitor
+	 * @param pm
 	 *            the monitor to be used for reporting progress and responding
 	 *            to cancellation. The monitor is never <code>null</code>
 	 * @throws InvocationTargetException
 	 * @throws InterruptedException
 	 */
-	public void run(final IProgressMonitor monitor)
+	public void run(final IProgressMonitor pm)
 			throws InvocationTargetException, InterruptedException {
-		String title = NLS.bind(CoreText.CloneOperation_title, uri);
-		SubMonitor progress = SubMonitor.convert(monitor, title,
-				postCloneTasks.isEmpty() ? 10 : 11);
+		final IProgressMonitor monitor;
+		if (pm == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = pm;
 
 		EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
-				progress.newChild(10));
-		CloneCommand.Callback callback = new CloneCommand.Callback() {
-
-			@Override
-			public void initializedSubmodules(Collection<String> submodules) {
-				// Nothing to do
-			}
-
-			@Override
-			public void cloningSubmodule(String path) {
-				progress.setTaskName(NLS.bind(
-						CoreText.CloneOperation_submodule_title, uri, path));
-			}
-
-			@Override
-			public void checkingOut(AnyObjectId commit, String path) {
-				// Nothing to do
-			}
-		};
+				monitor);
 		Repository repository = null;
 		try {
+			monitor.beginTask(NLS.bind(CoreText.CloneOperation_title, uri),
+					5000);
 			CloneCommand cloneRepository = Git.cloneRepository();
 			cloneRepository.setCredentialsProvider(credentialsProvider);
-			if (refName != null) {
+			if (refName != null)
 				cloneRepository.setBranch(refName);
-			} else {
+			else
 				cloneRepository.setNoCheckout(true);
-			}
 			cloneRepository.setDirectory(workdir);
 			cloneRepository.setProgressMonitor(gitMonitor);
 			cloneRepository.setRemote(remoteName);
@@ -165,47 +147,37 @@ public class CloneOperation {
 			cloneRepository.setTimeout(timeout);
 			cloneRepository.setCloneAllBranches(allSelected);
 			cloneRepository.setCloneSubmodules(cloneSubmodules);
-			if (cloneSubmodules) {
-				cloneRepository.setCallback(callback);
-			}
 			if (selectedBranches != null) {
 				List<String> branches = new ArrayList<String>();
-				for (Ref branch : selectedBranches) {
+				for (Ref branch : selectedBranches)
 					branches.add(branch.getName());
-				}
 				cloneRepository.setBranchesToClone(branches);
 			}
 			Git git = cloneRepository.call();
 			repository = git.getRepository();
-			if (!postCloneTasks.isEmpty()) {
-				progress.setTaskName(title);
-				progress.setWorkRemaining(postCloneTasks.size());
-				progress.subTask(CoreText.CloneOperation_configuring);
-				for (PostCloneTask task : postCloneTasks) {
-					task.execute(repository, progress.newChild(1));
-				}
+			synchronized (this) {
+				if (postCloneTasks != null)
+					for (PostCloneTask task : postCloneTasks)
+						task.execute(git.getRepository(), monitor);
 			}
 		} catch (final Exception e) {
 			try {
-				if (repository != null) {
+				if (repository != null)
 					repository.close();
-					repository = null;
-				}
 				FileUtils.delete(workdir, FileUtils.RECURSIVE);
 			} catch (IOException ioe) {
 				throw new InvocationTargetException(e, NLS.bind(
 						CoreText.CloneOperation_failed_cleanup,
 						ioe.getLocalizedMessage()));
 			}
-			if (monitor.isCanceled()) {
+			if (monitor.isCanceled())
 				throw new InterruptedException();
-			} else {
+			else
 				throw new InvocationTargetException(e);
-			}
 		} finally {
-			if (repository != null) {
+			monitor.done();
+			if (repository != null)
 				repository.close();
-			}
 		}
 	}
 
@@ -219,7 +191,9 @@ public class CloneOperation {
 	/**
 	 * @param task to be performed after clone
 	 */
-	public void addPostCloneTask(PostCloneTask task) {
+	public synchronized void addPostCloneTask(PostCloneTask task) {
+		if (postCloneTasks == null)
+			postCloneTasks = new ArrayList<PostCloneTask>();
 		postCloneTasks.add(task);
 	}
 

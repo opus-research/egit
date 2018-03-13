@@ -51,7 +51,6 @@ import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.ReportingTypedConfigGetter;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCache;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
@@ -63,7 +62,6 @@ import org.eclipse.egit.core.project.RepositoryFinder;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.securestorage.EGitSecureStore;
 import org.eclipse.equinox.security.storage.SecurePreferencesFactory;
-import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.transport.SshSessionFactory;
@@ -179,7 +177,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 
 		pluginId = context.getBundle().getSymbolicName();
 
-		Config.setTypedConfigGetter(new ReportingTypedConfigGetter());
 		// we want to be notified about debug options changes
 		Dictionary<String, String> props = new Hashtable<String, String>(4);
 		props.put(DebugOptions.LISTENER_SYMBOLICNAME, pluginId);
@@ -393,7 +390,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 		repositoryUtil.dispose();
 		repositoryUtil = null;
 		secureStore = null;
-		Config.setTypedConfigGetter(null);
 		super.stop(context);
 		plugin = null;
 	}
@@ -639,37 +635,6 @@ public class Activator extends Plugin implements DebugOptionsListener {
 						true));
 	}
 
-	/**
-	 * @return {@code true} if files that get deleted should be automatically
-	 *         staged
-	 * @since 4.6
-	 */
-	public static boolean autoStageDeletion() {
-		IEclipsePreferences d = DefaultScope.INSTANCE
-				.getNode(Activator.getPluginId());
-		IEclipsePreferences p = InstanceScope.INSTANCE
-				.getNode(Activator.getPluginId());
-		boolean autoStageDeletion = p.getBoolean(
-				GitCorePreferences.core_autoStageDeletion,
-				d.getBoolean(GitCorePreferences.core_autoStageDeletion, false));
-		return autoStageDeletion;
-	}
-
-	/**
-	 * @return {@code true} if files that are moved should be automatically
-	 *         staged
-	 * @since 4.6
-	 */
-	public static boolean autoStageMoves() {
-		IEclipsePreferences d = DefaultScope.INSTANCE
-				.getNode(Activator.getPluginId());
-		IEclipsePreferences p = InstanceScope.INSTANCE
-				.getNode(Activator.getPluginId());
-		boolean autoStageMoves = p.getBoolean(
-				GitCorePreferences.core_autoStageMoves,
-				d.getBoolean(GitCorePreferences.core_autoStageMoves, false));
-		return autoStageMoves;
-	}
 	private static class IgnoreDerivedResources implements
 			IResourceChangeListener {
 

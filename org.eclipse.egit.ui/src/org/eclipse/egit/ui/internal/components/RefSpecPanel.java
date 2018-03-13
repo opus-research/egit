@@ -921,7 +921,7 @@ public class RefSpecPanel {
 		createTableColumns(tablePanel);
 		createCellEditors(table);
 
-		tableViewer.setContentProvider(ArrayContentProvider.getInstance());
+		tableViewer.setContentProvider(new ArrayContentProvider());
 		tableViewer.setInput(specs);
 
 		tableViewer.setComparer(new IElementComparer() {

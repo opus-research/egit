@@ -24,7 +24,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.SubmoduleUpdateOperation;
 import org.eclipse.egit.ui.Activator;
@@ -59,9 +59,7 @@ public class SubmoduleUpdateCommand extends
 								.forIndex(node.getRepository());
 						while (walk.next()) {
 							Repository subRepo = walk.getRepository();
-							if (subRepo != null) {
-								subRepos.add(subRepo);
-							}
+							subRepos.add(subRepo);
 						}
 						break;
 					}
@@ -76,9 +74,7 @@ public class SubmoduleUpdateCommand extends
 								Repository subRepo;
 								subRepo = SubmoduleWalk.getSubmoduleRepository(
 										entry.getKey(), path);
-								if (subRepo != null) {
-									subRepos.add(subRepo);
-								}
+								subRepos.add(subRepo);
 							}
 						}
 					}
@@ -105,22 +101,16 @@ public class SubmoduleUpdateCommand extends
 
 				@Override
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
-					SubMonitor progress = SubMonitor.convert(monitor,
-							repoPaths.size());
+					monitor.beginTask("", repoPaths.size()); //$NON-NLS-1$
 					try {
 						for (Entry<Repository, List<String>> entry : repoPaths
 								.entrySet()) {
-							if (progress.isCanceled()) {
-								return Status.CANCEL_STATUS;
-							}
 							SubmoduleUpdateOperation op = new SubmoduleUpdateOperation(
 									entry.getKey());
-							if (entry.getValue() != null) {
-								for (String path : entry.getValue()) {
+							if (entry.getValue() != null)
+								for (String path : entry.getValue())
 									op.addPath(path);
-								}
-							}
-							op.execute(progress.newChild(1));
+							op.execute(new SubProgressMonitor(monitor, 1));
 						}
 					} catch (CoreException e) {
 						Activator.logError(

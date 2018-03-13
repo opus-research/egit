@@ -22,9 +22,9 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.UIUtils.IRefListProvider;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.components.BranchNameNormalizer;
 import org.eclipse.egit.ui.internal.components.RefContentAssistProvider;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
@@ -289,12 +289,16 @@ public class PushBranchPage extends WizardPage {
 				.applyTo(remoteBranchNameText);
 		remoteBranchNameText.setText(getSuggestedBranchName());
 		UIUtils.addRefContentProposalToText(remoteBranchNameText,
-				this.repository, () -> {
-					if (PushBranchPage.this.assist != null) {
-						return PushBranchPage.this.assist
-								.getRefsForContentAssist(false, true);
+				this.repository, new IRefListProvider() {
+
+					@Override
+					public List<Ref> getRefList() {
+						if (PushBranchPage.this.assist != null) {
+							return PushBranchPage.this.assist
+									.getRefsForContentAssist(false, true);
+						}
+						return Collections.emptyList();
 					}
-					return Collections.emptyList();
 				});
 
 		if (this.ref != null) {
@@ -360,11 +364,6 @@ public class PushBranchPage extends WizardPage {
 				checkPage();
 			}
 		});
-		// Do not use a tooltip since there is already a content proposal
-		// adapter on this field
-		BranchNameNormalizer normalizer = new BranchNameNormalizer(
-				remoteBranchNameText, null);
-		normalizer.setVisible(false);
 	}
 
 	private void setRemoteConfigs() {

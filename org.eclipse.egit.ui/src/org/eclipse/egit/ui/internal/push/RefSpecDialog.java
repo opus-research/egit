@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2017 Mathias Kinzler <mathias.kinzler@sap.com> and others
+ * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,18 +8,23 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.push;
 
+import java.util.List;
+
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
+import org.eclipse.egit.ui.UIUtils.IRefListProvider;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.components.RefContentAssistProvider;
-import org.eclipse.egit.ui.internal.components.TitleAndImageDialog;
+import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridLayout;
@@ -33,7 +38,7 @@ import org.eclipse.swt.widgets.Text;
 /**
  * Add or edit a RefSpec
  */
-public class RefSpecDialog extends TitleAndImageDialog {
+public class RefSpecDialog extends TitleAreaDialog {
 	private final boolean pushMode;
 
 	private final Repository repo;
@@ -62,7 +67,7 @@ public class RefSpecDialog extends TitleAndImageDialog {
 	 */
 	public RefSpecDialog(Shell parentShell, Repository repository,
 			RemoteConfig config, boolean push) {
-		super(parentShell, push ? UIIcons.WIZBAN_PUSH : UIIcons.WIZBAN_FETCH);
+		super(parentShell);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repository;
 		this.config = config;
@@ -135,9 +140,10 @@ public class RefSpecDialog extends TitleAndImageDialog {
 				false).applyTo(sourceText);
 		if (spec != null && spec.getSource() != null)
 			sourceText.setText(spec.getSource());
-		sourceText.addModifyListener(event -> {
-			if (sourceText.isFocusControl()) {
-				try {
+		sourceText.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent e) {
+				if (sourceText.isFocusControl())
 					if (autoSuggestDestination) {
 						String name = sourceText.getText();
 						if (name.startsWith(Constants.R_HEADS))
@@ -149,17 +155,18 @@ public class RefSpecDialog extends TitleAndImageDialog {
 						setSpec(sourceChanged
 								.setDestination(Constants.R_REMOTES
 										+ config.getName() + '/' + name));
-					} else {
+					} else
 						setSpec(getSpec().setSource(sourceText.getText()));
-					}
-				} catch (IllegalArgumentException | IllegalStateException e) {
-					// Text is not a valid source
-				}
 			}
 		});
 		// content assist for source
 		UIUtils.addRefContentProposalToText(sourceText, repo,
-				() -> assistProvider.getRefsForContentAssist(true, pushMode));
+				new IRefListProvider() {
+					@Override
+					public List<Ref> getRefList() {
+						return assistProvider.getRefsForContentAssist(true, pushMode);
+					}
+				});
 
 		// suggest remote tracking branch
 		if (!pushMode) {
@@ -187,18 +194,21 @@ public class RefSpecDialog extends TitleAndImageDialog {
 				false).applyTo(destinationText);
 		if (spec != null && spec.getDestination() != null)
 			destinationText.setText(spec.getDestination());
-		destinationText.addModifyListener(event -> {
-			if (destinationText.isFocusControl()) {
-				try {
+		destinationText.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent e) {
+				if (destinationText.isFocusControl())
 					setSpec(getSpec().setDestination(destinationText.getText()));
-				} catch (IllegalArgumentException | IllegalStateException e) {
-					// Text is not a valid spec
-				}
 			}
 		});
 		// content assist for destination
 		UIUtils.addRefContentProposalToText(destinationText, repo,
-				() -> assistProvider.getRefsForContentAssist(false, pushMode));
+				new IRefListProvider() {
+					@Override
+					public List<Ref> getRefList() {
+						return assistProvider.getRefsForContentAssist(false, pushMode);
+					}
+				});
 
 		// force update
 		forceButton = new Button(main, SWT.CHECK);
@@ -224,15 +234,13 @@ public class RefSpecDialog extends TitleAndImageDialog {
 				specString);
 		if (spec != null)
 			specString.setText(spec.toString());
-		specString.addModifyListener(event -> {
-			if (!specString.isFocusControl()
-					|| getSpec().toString().equals(specString.getText())) {
-				return;
-			}
-			try {
+		specString.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent e) {
+				if (!specString.isFocusControl()
+						|| getSpec().toString().equals(specString.getText()))
+					return;
 				setSpec(new RefSpec(specString.getText()));
-			} catch (IllegalArgumentException | IllegalStateException e) {
-				// Invalid spec text
 			}
 		});
 
