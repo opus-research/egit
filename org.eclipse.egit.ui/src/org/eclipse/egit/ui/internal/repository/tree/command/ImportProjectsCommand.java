@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2016 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,11 +7,9 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Tobias Baumann <tobbaumann@gmail.com> - Bug #494269
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
-import java.io.File;
 import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -25,20 +23,18 @@ import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.internal.wizards.datatransfer.SmartImportWizard;
-import org.eclipse.ui.wizards.IWizardDescriptor;
 
 /**
  * Implements "Add Projects" for Repository, Working Directory, and Folder
  */
-public class ImportProjectsCommand
-		extends RepositoriesViewCommandHandler<RepositoryTreeNode> {
+public class ImportProjectsCommand extends
+		RepositoriesViewCommandHandler<RepositoryTreeNode> {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		List<RepositoryTreeNode> selectedNodes = getSelectedNodes(event);
 		if (selectedNodes == null || selectedNodes.isEmpty()) {
-			MessageDialog.openError(Display.getDefault().getActiveShell(),
+			MessageDialog
+					.openError(Display.getDefault().getActiveShell(),
 					UIText.ImportProjectsWrongSelection,
 					UIText.ImportProjectsSelectionInRepositoryRequired);
 			return null;
@@ -68,36 +64,9 @@ public class ImportProjectsCommand
 			return null;
 		}
 
-		if (isSmartImportWizardAvailable()) {
-			openSmartImportWizard(event, path);
-		} else {
-			openGitCreateProjectViaWizardWizard(event, node, path);
-		}
-
-		return null;
-	}
-
-	private boolean isSmartImportWizardAvailable() {
-		final String smartImportWizardId = "org.eclipse.e4.ui.importer.wizard"; //$NON-NLS-1$
-		IWizardDescriptor descriptor = PlatformUI.getWorkbench()
-				.getImportWizardRegistry().findWizard(smartImportWizardId);
-		return descriptor != null;
-	}
-
-	private void openSmartImportWizard(ExecutionEvent event, String path) {
-		SmartImportWizard wizard = new SmartImportWizard();
-		wizard.setInitialImportSource(new File(path));
-		WizardDialog dlg = new WizardDialog(getShell(event), wizard);
-		dlg.setTitle(wizard.getWindowTitle());
-		dlg.setHelpAvailable(false);
-		dlg.open();
-	}
-
-	private void openGitCreateProjectViaWizardWizard(ExecutionEvent event,
-			RepositoryTreeNode node, String path) {
-		WizardDialog dlg = new WizardDialog(getShell(event),
-				new GitCreateProjectViaWizardWizard(node.getRepository(),
-						path)) {
+		WizardDialog dlg = new WizardDialog(
+				getShell(event),
+				new GitCreateProjectViaWizardWizard(node.getRepository(), path)) {
 			@Override
 			protected IDialogSettings getDialogBoundsSettings() {
 				// preserve dialog bounds
@@ -106,5 +75,7 @@ public class ImportProjectsCommand
 		};
 		dlg.setHelpAvailable(false);
 		dlg.open();
+
+		return null;
 	}
 }
