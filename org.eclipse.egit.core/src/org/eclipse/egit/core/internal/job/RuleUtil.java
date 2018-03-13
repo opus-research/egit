@@ -120,16 +120,7 @@ public class RuleUtil {
 			return new MultiRule(rules.toArray(new ISchedulingRule[rules.size()]));
 	}
 
-	/**
-	 * Determines the set of projects that are affected by a change in a
-	 * repository.
-	 *
-	 * @param repository
-	 *            to find the projects for
-	 * @return an array of all {@link IProject}s that are affected by a change
-	 *         in the given repository
-	 */
-	public static IProject[] getProjects(Repository repository) {
+	private static IProject[] getProjects(Repository repository) {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
