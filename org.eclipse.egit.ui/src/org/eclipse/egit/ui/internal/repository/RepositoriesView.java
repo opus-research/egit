@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2015 SAP AG and others.
+ * Copyright (c) 2010, 2017 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,6 +11,7 @@
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Don't reveal selection on refresh
  *    Robin Stocker <robin@nibor.org> - Show In support
+ *    Daniel Megert <daniel_megert@ch.ibm.com> - Show Git Staging view in Show In menu
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -65,10 +66,13 @@ import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
+import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
@@ -460,23 +464,37 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 
 	private void executeOpenCommandWithConfirmation(String refName) {
 		if (!BranchOperationUI.checkoutWillShowQuestionDialog(refName)) {
-			String shortName = Repository.shortenRefName(refName);
-
 			IPreferenceStore store = Activator.getDefault()
 					.getPreferenceStore();
 
 			if (store.getBoolean(UIPreferences.SHOW_CHECKOUT_CONFIRMATION)) {
-				String toggleMessage = UIText.RepositoriesView_CheckoutConfirmationToggleMessage;
-				MessageDialogWithToggle dlg = MessageDialogWithToggle
-						.openOkCancelConfirm(
-								getViewSite().getShell(),
-				UIText.RepositoriesView_CheckoutConfirmationTitle,
-				MessageFormat.format(UIText.RepositoriesView_CheckoutConfirmationMessage,
-										shortName),
-										toggleMessage, false, store,
-										UIPreferences.SHOW_CHECKOUT_CONFIRMATION);
-				if (dlg.getReturnCode() != Window.OK)
+				MessageDialogWithToggle dialog = new MessageDialogWithToggle(
+						getViewSite().getShell(),
+						UIText.RepositoriesView_CheckoutConfirmationTitle, null,
+						MessageFormat.format(
+								UIText.RepositoriesView_CheckoutConfirmationMessage,
+								Repository.shortenRefName(refName)),
+						MessageDialog.QUESTION,
+						new String[] {
+								UIText.RepositoriesView_CheckoutConfirmationDefaultButtonLabel,
+								IDialogConstants.CANCEL_LABEL },
+						0,
+						UIText.RepositoriesView_CheckoutConfirmationToggleMessage,
+						false);
+				// Since we use a custom button here, we may get back the first
+				// internal ID instead of Window.OK.
+				int result = dialog.open();
+				if (result != Window.OK
+						&& result != IDialogConstants.INTERNAL_ID) {
 					return;
+				}
+				// And with custom buttons and internal IDs, the framework
+				// doesn't save the preference (even if we set the preference
+				// store and key).
+				if (dialog.getToggleState()) {
+					store.setValue(UIPreferences.SHOW_CHECKOUT_CONFIRMATION,
+							false);
+				}
 			}
 		}
 		executeOpenCommand();
@@ -503,17 +521,14 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		synchronized (repositories) {
 			repositories.clear();
 			unregisterRepositoryListener();
+			Set<File> dirs = new HashSet<>();
 			// listen for repository changes
 			for (String dir : repositoryUtil.getConfiguredRepositories()) {
 				File repoDir = new File(dir);
 				try {
 					Repository repo = repositoryCache.lookupRepository(repoDir);
-					myListeners.add(repo.getListenerList()
-							.addIndexChangedListener(myIndexChangedListener));
-					myListeners.add(repo.getListenerList()
-							.addRefsChangedListener(myRefsChangedListener));
-					myListeners.add(repo.getListenerList()
-							.addConfigChangedListener(myConfigChangeListener));
+					listenToRepository(repo);
+					dirs.add(repo.getDirectory());
 					repositories.add(repo);
 				} catch (IOException e) {
 					String message = NLS
@@ -523,7 +538,24 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 					repositoryUtil.removeDir(repoDir);
 				}
 			}
+			// Also listen to submodules and nested git repositories.
+			for (Repository repo : org.eclipse.egit.core.Activator.getDefault()
+					.getRepositoryCache().getAllRepositories()) {
+				if (!dirs.contains(repo.getDirectory())) {
+					listenToRepository(repo);
+					dirs.add(repo.getDirectory());
+				}
+			}
 		}
+	}
+
+	private void listenToRepository(Repository repo) {
+		myListeners.add(repo.getListenerList()
+				.addIndexChangedListener(myIndexChangedListener));
+		myListeners.add(repo.getListenerList()
+				.addRefsChangedListener(myRefsChangedListener));
+		myListeners.add(repo.getListenerList()
+				.addConfigChangedListener(myConfigChangeListener));
 	}
 
 	@Override
@@ -796,7 +828,8 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	@Override
 	public boolean show(ShowInContext context) {
 		ISelection selection = context.getSelection();
-		if (selection instanceof IStructuredSelection) {
+		if ((selection instanceof IStructuredSelection)
+				&& !selection.isEmpty()) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
 			List<IPath> paths = new ArrayList<>();
 			for (Iterator it = ss.iterator(); it.hasNext();) {
@@ -823,6 +856,13 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		if(context.getInput() instanceof IFileEditorInput) {
 			IFileEditorInput input = (IFileEditorInput) context.getInput();
 			showResource(input.getFile());
+			return true;
+		}
+		Repository repository = AdapterUtils.adapt(context.getInput(),
+				Repository.class);
+		if (repository != null) {
+			showRepository(repository);
+			return true;
 		}
 		return false;
 	}
@@ -847,7 +887,8 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				.getSelection();
 		for (Object element : selection.toList())
 			if (element instanceof RepositoryNode)
-				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID };
+				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID,
+						StagingView.VIEW_ID };
 
 		// Make sure History view is always listed, regardless of perspective
 		return new String[] { IHistoryView.VIEW_ID };
@@ -929,6 +970,12 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			if (file != null) {
 				IPath path = new Path(file.getAbsolutePath());
 				showPaths(Arrays.asList(path));
+				return;
+			}
+			Repository repository = AdapterUtils.adapt(ssel.getFirstElement(),
+					Repository.class);
+			if (repository != null) {
+				showRepository(repository);
 				return;
 			}
 		}

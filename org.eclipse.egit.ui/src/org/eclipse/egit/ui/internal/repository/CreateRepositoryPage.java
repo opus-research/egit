@@ -15,6 +15,7 @@ import java.io.File;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.RepositoryUtil;
+import org.eclipse.egit.core.internal.util.RepositoryPathChecker;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -76,6 +77,7 @@ public class CreateRepositoryPage extends WizardPage {
 				File previousFile = new File(previous);
 				String result;
 				DirectoryDialog dialog = new DirectoryDialog(getShell());
+				dialog.setMessage(UIText.CreateRepositoryPage_PageMessage);
 				if (previousFile.exists() && previousFile.isDirectory()) {
 					dialog.setFilterPath(previousFile.getPath());
 				}
@@ -140,30 +142,24 @@ public class CreateRepositoryPage extends WizardPage {
 				return;
 			}
 
-			File testFile = new File(dir);
-			IPath path = Path.fromOSString(dir);
-			if (!path.isAbsolute()) {
-				setErrorMessage(UIText.CreateRepositoryPage_PleaseUseAbsolutePathMessage);
+			RepositoryPathChecker checker = new RepositoryPathChecker();
+			if (!checker.check(dir)) {
+				setErrorMessage(checker.getErrorMessage());
 				return;
 			}
-			if (testFile.exists() && !testFile.isDirectory()) {
-				setErrorMessage(NLS.bind(
-						UIText.CreateRepositoryPage_NotADirectoryMessage, dir));
-				return;
-			}
-			boolean hasFiles = testFile.exists() && testFile.list().length > 0;
-			if (hasFiles && getBare()) {
-				setErrorMessage(NLS.bind(
-						UIText.CreateRepositoryPage_NotEmptyMessage, dir));
-				return;
-			}
-
-			if (hasFiles && !getBare())
-				setMessage(NLS.bind(
-						UIText.CreateRepositoryPage_NotEmptyMessage, dir),
-						IMessageProvider.INFORMATION);
-			else
+			if (checker.hasContent()) {
+				if (getBare()) {
+					setErrorMessage(NLS.bind(
+							UIText.CreateRepositoryPage_NotEmptyMessage, dir));
+					return;
+				} else {
+					setMessage(NLS.bind(
+							UIText.CreateRepositoryPage_NotEmptyMessage, dir),
+							IMessageProvider.INFORMATION);
+				}
+			} else {
 				setMessage(UIText.CreateRepositoryPage_PageMessage);
+			}
 		} finally {
 			setPageComplete(getErrorMessage() == null);
 		}

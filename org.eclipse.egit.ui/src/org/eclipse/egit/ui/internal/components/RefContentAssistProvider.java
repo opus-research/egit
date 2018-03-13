@@ -11,12 +11,14 @@ package org.eclipse.egit.ui.internal.components;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.egit.core.op.ListRemoteOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
+import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
@@ -83,8 +85,7 @@ public class RefContentAssistProvider {
 		try {
 			boolean local = pushMode == source;
 			if (!local) {
-				final ListRemoteOperation lop = new ListRemoteOperation(repo,
-						uri,
+				final ListRemoteOperation lop = new ListRemoteOperation(uri,
 						Activator.getDefault().getPreferenceStore().getInt(
 								UIPreferences.REMOTE_CONNECTION_TIMEOUT));
 				IRunnableWithProgress runnable = new IRunnableWithProgress() {
@@ -131,6 +132,7 @@ public class RefContentAssistProvider {
 			Activator.handleError(e.getMessage(), e, true);
 			return result;
 		}
+		Collections.sort(result, CommonUtils.REF_ASCENDING_COMPARATOR);
 		if (source)
 			sourceRefs = result;
 		else

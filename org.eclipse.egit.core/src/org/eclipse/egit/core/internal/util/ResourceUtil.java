@@ -20,9 +20,11 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,6 +39,7 @@ import org.eclipse.core.resources.mapping.IModelProviderDescriptor;
 import org.eclipse.core.resources.mapping.ModelProvider;
 import org.eclipse.core.resources.mapping.ResourceMapping;
 import org.eclipse.core.resources.mapping.ResourceMappingContext;
+import org.eclipse.core.resources.mapping.ResourceTraversal;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -53,6 +56,7 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.project.RepositoryMapping;
+import org.eclipse.egit.core.synchronize.IgnoreInGitSynchronizations;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Repository;
@@ -635,6 +639,11 @@ public class ResourceUtil {
 				if (resources.length > 0) {
 					// get mappings from model provider if there are matching resources
 					final ModelProvider model = candidate.getModelProvider();
+					IgnoreInGitSynchronizations adapter = model
+							.getAdapter(IgnoreInGitSynchronizations.class);
+					if (adapter != null) {
+						continue;
+					}
 					final ResourceMapping[] modelMappings = model.getMappings(
 							resource, context, new NullProgressMonitor());
 					for (ResourceMapping mapping : modelMappings)
@@ -749,5 +758,38 @@ public class ResourceUtil {
 			return Path.fromOSString(toRelativize.subpath(n, m).toString());
 		}
 		return null;
+	}
+
+	/**
+	 * Returns the {@link IResource}s contained in the {@link ResourceMapping}.
+	 *
+	 * @param mapping
+	 *            the resource mapping from which we extract the resources
+	 *
+	 * @return the possibly empty list of all contained {@link IResource}s.
+	 */
+	public static List<IResource> extractResourcesFromMapping(
+			@Nullable ResourceMapping mapping) {
+		if (mapping == null) {
+			return Collections.emptyList();
+		}
+
+		ResourceTraversal[] traversals;
+		try {
+			traversals = mapping.getTraversals(null, null);
+		} catch (CoreException e) {
+			Activator.logError(e.getMessage(), e);
+			return Collections.emptyList();
+		}
+		if (traversals.length == 0) {
+			return Collections.emptyList();
+		}
+
+		List<IResource> result = new ArrayList<>();
+		for (ResourceTraversal traversal : traversals) {
+			IResource[] resources = traversal.getResources();
+			result.addAll(Arrays.asList(resources));
+		}
+		return result;
 	}
 }
