@@ -481,6 +481,7 @@ public class RepositoryUtil {
 						repositoryDir));
 
 			String dirString = repositoryDir.getAbsolutePath();
+
 			List<String> dirStrings = getConfiguredRepositories();
 			if (dirStrings.contains(dirString)) {
 				return false;
