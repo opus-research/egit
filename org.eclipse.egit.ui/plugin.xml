@@ -2204,7 +2204,7 @@
                class="org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler">
          </class>
          <activeWhen>
-            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
+            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
          </activeWhen>
       </handler>
       <handler
@@ -2213,7 +2213,7 @@
                class="org.eclipse.egit.ui.internal.actions.CompareWithRefActionHandler">
          </class>
          <activeWhen>
-            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
+            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
          </activeWhen>
       </handler>
    </extension>
@@ -4725,7 +4725,7 @@
                label="%CompareWithBranchOrTagAction.label"
                style="push">
             <visibleWhen checkEnabled="false">
-               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
+               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
             </visibleWhen>
          </command>
          <command
@@ -4733,7 +4733,7 @@
                label="%CompareWithCommitAction.label"
                style="push">
             <visibleWhen checkEnabled="false">
-               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
+               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
             </visibleWhen>
          </command>
       </menuContribution>
