@@ -18,14 +18,29 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
+import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.CommitMessageWithCaretPosition;
+import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
@@ -104,6 +119,11 @@ public class CommitMessageComponent {
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
+	/**
+	 * Constant for the extension point for the commit message provider
+	 */
+	private static final String COMMIT_MESSAGE_PROVIDER_ID = "org.eclipse.egit.ui.commitMessageProvider"; //$NON-NLS-1$
+
 	private static final String COMMITTER_VALUES_PREF = "CommitDialog.committerValues"; //$NON-NLS-1$
 
 	private static final String AUTHOR_VALUES_PREF = "CommitDialog.authorValues"; //$NON-NLS-1$
@@ -120,15 +140,9 @@ public class CommitMessageComponent {
 
 	private String commitMessage = null;
 
-	private int caretPosition = CommitMessageComponentState.CARET_DEFAULT_POSITION;
-
 	private String commitMessageBeforeAmending = EMPTY_STRING;
 
-	private int carePositionBeforeAmending = CommitMessageComponentState.CARET_DEFAULT_POSITION;
-
 	private String previousCommitMessage = EMPTY_STRING;
-
-	private int previousCaretPosition = CommitMessageComponentState.CARET_DEFAULT_POSITION;
 
 	private String author = null;
 
@@ -185,11 +199,8 @@ public class CommitMessageComponent {
 	public void resetState() {
 		originalChangeId = null;
 		commitMessage = null;
-		caretPosition = CommitMessageComponentState.CARET_DEFAULT_POSITION;
 		commitMessageBeforeAmending = EMPTY_STRING;
-		carePositionBeforeAmending = CommitMessageComponentState.CARET_DEFAULT_POSITION;
 		previousCommitMessage = EMPTY_STRING;
-		previousCaretPosition = CommitMessageComponentState.CARET_DEFAULT_POSITION;
 		author = null;
 		previousAuthor = null;
 		committer = null;
@@ -221,15 +232,6 @@ public class CommitMessageComponent {
 	 */
 	public void setCommitMessage(String s) {
 		this.commitMessage = s;
-	}
-
-	/**
-	 * Preset a caret position within the commit message.
-	 *
-	 * @param p
-	 */
-	public void setCaretPosition(int p) {
-		this.caretPosition = p;
 	}
 
 	/**
@@ -337,7 +339,6 @@ public class CommitMessageComponent {
 	public void setAmendAllowed(boolean amendAllowed) {
 		this.amendAllowed = amendAllowed;
 		commitMessageBeforeAmending = EMPTY_STRING;
-		carePositionBeforeAmending = CommitMessageComponentState.CARET_DEFAULT_POSITION;
 	}
 
 	/**
@@ -349,18 +350,12 @@ public class CommitMessageComponent {
 			originalChangeId = null;
 			authorText.setText(author);
 			commitText.setText(commitMessageBeforeAmending);
-			commitText.getTextWidget()
-					.setCaretOffset(carePositionBeforeAmending);
 			commitMessageBeforeAmending = EMPTY_STRING;
-			carePositionBeforeAmending = CommitMessageComponentState.CARET_DEFAULT_POSITION;
 		} else {
 			getHeadCommitInfo();
 			saveOriginalChangeId();
 			commitMessageBeforeAmending = commitText.getText();
-			carePositionBeforeAmending = commitText.getTextWidget()
-					.getCaretOffset();
 			commitText.setText(previousCommitMessage);
-			commitText.getTextWidget().setCaretOffset(previousCaretPosition);
 			if (previousAuthor != null)
 				authorText.setText(previousAuthor);
 		}
@@ -379,7 +374,6 @@ public class CommitMessageComponent {
 	 */
 	public void updateStateFromUI() {
 		commitMessage = commitText.getText();
-		caretPosition = commitText.getTextWidget().getCaretOffset();
 		author = authorText.getText().trim();
 		committer = committerText.getText().trim();
 	}
@@ -389,7 +383,6 @@ public class CommitMessageComponent {
 	 */
 	public void updateUIFromState() {
 		commitText.setText(commitMessage);
-		commitText.getTextWidget().setCaretOffset(caretPosition);
 		authorText.setText(author);
 		committerText.setText(committer);
 	}
@@ -606,13 +599,7 @@ public class CommitMessageComponent {
 		if (amending)
 			getHeadCommitInfo();
 
-		CommitMessageWithCaretPosition commitMessageWithCaretPosition = new CommitMessageBuilder(
-				repository, filesToCommit).build();
-
-		String calculatedCommitMessage = calculateCommitMessage(
-				commitMessageWithCaretPosition);
-		int calculatedCaretPosition = calculateCaretPosition(
-				commitMessageWithCaretPosition);
+		String calculatedCommitMessage = calculateCommitMessage(filesToCommit);
 		boolean calculatedMessageHasChangeId = findOffsetOfChangeIdLine(calculatedCommitMessage) > 0;
 		commitText.setText(calculatedCommitMessage);
 		authorText.setText(getSafeString(author));
@@ -630,9 +617,6 @@ public class CommitMessageComponent {
 		}
 		updateSignedOffButton();
 		updateChangeIdButton();
-
-		commitText.getTextWidget()
-				.setCaretOffset(calculatedCaretPosition);
 	}
 
 	/**
@@ -679,33 +663,83 @@ public class CommitMessageComponent {
 	}
 
 	/**
-	 * @param messageWithCaretPosition
+	 * @param paths
 	 * @return the calculated commit message
 	 */
-	String calculateCommitMessage(
-			CommitMessageWithCaretPosition messageWithCaretPosition) {
+	String calculateCommitMessage(Collection<String> paths) {
 		if (commitMessage != null) {
-			// special case for merge / cherry-pick
+			// special case for merge
 			return commitMessage;
 		}
 
 		if (amending)
 			return previousCommitMessage;
+		StringBuilder calculatedCommitMessage = new StringBuilder();
 
-		return messageWithCaretPosition.getMessage();
-	}
+		Set<IResource> resources = new HashSet<>();
+		for (String path : paths) {
+			IFile file = findFile(path);
+			if (file != null)
+				resources.add(file.getProject());
+		}
+		if (resources.size() == 0 && repository != null) {
+			resources
+					.addAll(Arrays.asList(ProjectUtil.getProjects(repository)));
+		}
+		List<ICommitMessageProvider> messageProviders = getCommitMessageProviders();
+		IResource[] resourcesArray = resources.toArray(new IResource[0]);
+		String providedMessageSeparator = "\n\n"; //$NON-NLS-1$
 
-	private int calculateCaretPosition(
-			CommitMessageWithCaretPosition messageWithCaretPosition) {
-		if (commitMessage != null) {
-			// special case for merge / cherry-pick
-			return caretPosition;
+		for (ICommitMessageProvider messageProvider : messageProviders) {
+			String message = null;
+			try {
+				message = messageProvider.getMessage(resourcesArray);
+			} catch (RuntimeException e) {
+				Activator.logError(e.getMessage(), e);
+			}
+
+			if (message != null && !message.trim().isEmpty()) {
+				if (calculatedCommitMessage.length() > 0) {
+					calculatedCommitMessage.append(providedMessageSeparator);
+				}
+				calculatedCommitMessage.append((message.trim()));
+			}
 		}
 
-		if (amending)
-			return previousCaretPosition;
+		return calculatedCommitMessage.toString();
+	}
 
-		return messageWithCaretPosition.getDesiredCaretPosition();
+	List<ICommitMessageProvider> getCommitMessageProviders() {
+		List<ICommitMessageProvider> providers = new ArrayList<>();
+
+		IExtensionRegistry registry = Platform.getExtensionRegistry();
+		IConfigurationElement[] configs = registry
+				.getConfigurationElementsFor(COMMIT_MESSAGE_PROVIDER_ID);
+		for (IConfigurationElement config : configs) {
+			Object provider;
+			String contributorName = "<unknown>"; //$NON-NLS-1$
+			String extensionId = "<unknown>"; //$NON-NLS-1$
+			try {
+				extensionId = config.getDeclaringExtension()
+						.getUniqueIdentifier();
+				contributorName = config.getContributor().getName();
+				provider = config.createExecutableExtension("class");//$NON-NLS-1$
+				if (provider instanceof ICommitMessageProvider) {
+					providers.add((ICommitMessageProvider) provider);
+				} else {
+					Activator.logError(MessageFormat.format(
+							UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
+							extensionId, contributorName), null);
+				}
+			} catch (CoreException | RuntimeException e) {
+				Activator.logError(
+						MessageFormat.format(
+								UIText.CommitDialog_ErrorCreatingCommitMessageProvider,
+								extensionId, contributorName),
+						e);
+			}
+		}
+		return providers;
 	}
 
 	private void saveOriginalChangeId() {
@@ -851,6 +885,17 @@ public class CommitMessageComponent {
 				+ newSignOff
 				+ input.substring(indexOfSignOff + oldSignOff.length(),
 						input.length());
+	}
+
+	// TODO: move to utils
+	private IFile findFile(String path) {
+		URI uri = new File(repository.getWorkTree(), path).toURI();
+		IFile[] workspaceFiles = ResourcesPlugin.getWorkspace().getRoot()
+				.findFilesForLocationURI(uri);
+		if (workspaceFiles.length > 0)
+			return workspaceFiles[0];
+		else
+			return null;
 	}
 
 	/**

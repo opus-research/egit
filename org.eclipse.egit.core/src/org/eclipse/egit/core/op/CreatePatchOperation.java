@@ -290,9 +290,11 @@ public class CreatePatchOperation implements IEGitOperation {
 			} else if (!evaluated.isEmpty())
 				evaluated.add(trailingCharacters);
 		}
-		for (String string : evaluated) {
-			sb.append(string);
-		}
+		StringBuffer buffer = new StringBuffer();
+		for (String string : evaluated)
+			buffer.append(string);
+
+		sb.append(buffer);
 	}
 
 	private static String processKeyword(RevCommit commit, DiffHeaderKeyword keyword) {
