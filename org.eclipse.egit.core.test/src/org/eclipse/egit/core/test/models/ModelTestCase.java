@@ -98,9 +98,7 @@ public abstract class ModelTestCase extends GitTestCase {
 	}
 
 	protected Status status(Repository repository) throws Exception {
-		try (Git git = new Git(repository)) {
-			return git.status().call();
-		}
+		return new Git(repository).status().call();
 	}
 
 	protected IResourceMappingMerger createMerger() throws CoreException {
