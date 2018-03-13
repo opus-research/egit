@@ -13,6 +13,7 @@
  *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969, 473544
  *    Thomas Wolf <thomas.wolf@paranor.ch>
  *    Tobias Hein <th.mailinglists@googlemail.com> - Bug 499697
+ *    Ralf M Petter <ralf.petter@gmail.com> - Bug 509945
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -81,7 +82,6 @@ import org.eclipse.egit.ui.internal.commands.shared.ContinueRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand;
 import org.eclipse.egit.ui.internal.commit.CommitHelper;
 import org.eclipse.egit.ui.internal.commit.CommitJob;
-import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
@@ -96,6 +96,7 @@ import org.eclipse.egit.ui.internal.dialogs.ICommitMessageComponentNotifications
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
 import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
+import org.eclipse.egit.ui.internal.push.PushMode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
@@ -281,6 +282,9 @@ public class StagingView extends ViewPart
 	private boolean reactOnSelection = true;
 
 	private boolean isViewHidden;
+
+	/** Tracks the last selection while the view is not active. */
+	private StructuredSelection lastSelection;
 
 	private ISelectionListener selectionChangedListener;
 
@@ -474,7 +478,6 @@ public class StagingView extends ViewPart
 	}
 
 	private final class PartListener implements IPartListener2 {
-		StructuredSelection lastSelection;
 
 		@Override
 		public void partVisible(IWorkbenchPartReference partRef) {
@@ -947,7 +950,7 @@ public class StagingView extends ViewPart
 			}
 		};
 		commitMessageText = new CommitMessageArea(commitMessageTextComposite,
-				EMPTY_STRING, toolkit.getBorderStyle()) {
+				EMPTY_STRING, SWT.NONE) {
 			@Override
 			protected CommitProposalProcessor getCommitProposalProcessor() {
 				return commitProposalProcessor;
@@ -2998,9 +3001,16 @@ public class StagingView extends ViewPart
 	}
 
 	private void reactOnSelection(StructuredSelection selection) {
-		if (selection.size() != 1 || !shouldUpdateSelection()) {
+		if (selection.size() != 1 || isDisposed()) {
 			return;
 		}
+		if (!shouldUpdateSelection()) {
+			// Remember it all the same to be able to update the view when it
+			// becomes active again
+			lastSelection = reactOnSelection ? selection : null;
+			return;
+		}
+		lastSelection = null;
 		Object firstElement = selection.getFirstElement();
 		if (firstElement instanceof RepositoryTreeNode) {
 			RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
@@ -3953,7 +3963,7 @@ public class StagingView extends ViewPart
 		getDialogSettings().put(STORE_SORT_STATE, sortAction.isChecked());
 
 		currentRepository = null;
-
+		lastSelection = null;
 		disposed = true;
 	}
 
