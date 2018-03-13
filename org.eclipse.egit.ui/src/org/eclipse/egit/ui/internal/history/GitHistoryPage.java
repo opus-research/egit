@@ -388,7 +388,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			findAction.setChecked(isChecked);
 			historyPage.getSite().getActionBars().setGlobalActionHandler(
 					ActionFactory.FIND.getId(), findAction);
-			historyPage.getSite().getActionBars().updateActionBars();
+			historyPage.getSite().getActionBars().getMenuManager()
+					.update(false);
 		}
 
 		private void createRefreshAction() {
@@ -879,8 +880,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		private ICommitsProvider provider;
 
-		private boolean wasVisible = false;
-
 		private final CommitGraphTable graph;
 
 		private final IAction openCloseToggle;
@@ -901,15 +900,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		};
 
 		/**
-		 * Listener to close the search bar on ESC. (Ctrl/Cmd-F is already
-		 * handled via global retarget action.)
+		 * Listener to close the search bar on Ctrl/Cmd-F or on ESC.
 		 */
 		private final KeyListener keyListener = new KeyAdapter() {
 
 			@Override
 			public void keyPressed(KeyEvent e) {
 				int key = SWTKeySupport.convertEventToUnmodifiedAccelerator(e);
-				if (key == SWT.ESC) {
+				if (key == openCloseToggle.getAccelerator() || key == SWT.ESC) {
 					setVisible(false);
 					e.doit = false;
 				}
@@ -990,7 +988,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			// It will be disposed by the IToolBarManager
 			toolbar = null;
 			openCloseToggle.setChecked(false);
-			wasVisible = false;
 		}
 
 		@Override
@@ -1010,8 +1007,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					openCloseToggle.setChecked(true);
 					// If the toolbar was moved below the tabs, we now have
 					// the wrong background. It disappears when one clicks
-					// elsewhere. Looks like an inactive selection... No
-					// way found to fix this but this ugly focus juggling:
+					// elsewhere. Looks like an inactive selection... Let's
+					// fix that: parent is the ToolBar, grand-parent is a
+					// Composite with the freak background.
+					// toolbar.getParent().getParent().setBackground(null);
+					// Doesn't help?! Let's try changing the focus:
 					graph.getControl().setFocus();
 					toolbar.setFocus();
 				} else if (!visible && !graph.getControl().isDisposed()) {
@@ -1035,8 +1035,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			toolbar.addListener(SWT.FocusOut, mouseListener);
 			toolbar.addListener(SWT.MouseDown, mouseListener);
 			toolbar.addListener(SWT.MouseUp, mouseListener);
-			toolbar.addListener(SWT.Modify,
-					(e) -> lastText = toolbar.getText());
 			toolbar.addStatusListener(statusListener);
 			toolbar.addSelectionListener(selectionListener);
 			boolean hasInput = provider != null;
@@ -1052,10 +1050,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 			lastSearchContext = null;
 			lastObjectId = null;
-			if (wasVisible) {
-				return toolbar;
-			}
-			wasVisible = true;
 			// This fixes the wrong background when Eclipse starts up with the
 			// search bar visible.
 			toolbar.getDisplay().asyncExec(new Runnable() {

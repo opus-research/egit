@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.ui.internal.actions;
 
-import static org.eclipse.egit.gitflow.ui.Activator.error;
 import static org.eclipse.egit.ui.Activator.handleError;
 import static org.eclipse.egit.ui.internal.UIText.CompareWithRefAction_errorOnSynchronize;
 import static org.eclipse.jgit.lib.Constants.HEAD;
@@ -22,7 +21,6 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.egit.gitflow.GitFlowRepository;
-import org.eclipse.egit.gitflow.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.ui.IWorkbenchPage;
 
@@ -34,9 +32,6 @@ public class DevelopCompareHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		final GitFlowRepository gfRepo = GitFlowHandlerUtil.getRepository(event);
-		if (gfRepo == null) {
-			return error(UIText.Handlers_noGitflowRepositoryFound);
-		}
 
 		IResource[] selectedResources = GitFlowHandlerUtil.gatherResourceToOperateOn(event);
 		String revision;
