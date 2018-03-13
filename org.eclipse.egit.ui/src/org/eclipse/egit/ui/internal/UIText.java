@@ -5287,9 +5287,6 @@ public class UIText extends NLS {
 	public static String StagingView_LinkSelection;
 
 	/** */
-	public static String StagingView_rebaseContinueHint;
-
-	/** */
 	public static String StagingView_replaceWithFileInGitIndex;
 
 	/** */
