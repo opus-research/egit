@@ -111,7 +111,8 @@ public class BranchRenameDialog extends TitleAreaDialog {
 			}
 		});
 
-		BranchNameNormalizer normalizer = new BranchNameNormalizer(name);
+		BranchNameNormalizer normalizer = new BranchNameNormalizer(name,
+				UIText.BranchRenameDialog_NormalizeNameTooltip);
 		normalizer.setVisible(false);
 		getButton(OK).setEnabled(false);
 	}
