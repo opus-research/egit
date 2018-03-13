@@ -215,9 +215,6 @@ public class CoreText extends NLS {
 	public static String RepositoryPathChecker_errNoURL;
 
 	/** */
-	public static String RepositoryUtil_autoIgnoreMetaData;
-
-	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
