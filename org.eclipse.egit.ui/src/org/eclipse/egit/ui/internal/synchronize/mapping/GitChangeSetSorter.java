@@ -29,7 +29,6 @@ import org.eclipse.jface.viewers.ViewerSorter;
  * alphabetical order.
  *
  */
-@SuppressWarnings("deprecation")
 public class GitChangeSetSorter extends ViewerSorter {
 
 	@Override
