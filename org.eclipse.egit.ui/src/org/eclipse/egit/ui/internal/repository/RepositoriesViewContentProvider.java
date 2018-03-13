@@ -327,7 +327,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			if (node.getRepository().isBare())
 				return children.toArray();
 			File workingDir = repo.getWorkTree();
-			if (!workingDir.exists())
+			if (workingDir == null || !workingDir.exists())
 				return children.toArray();
 
 			File[] childFiles = workingDir.listFiles();
@@ -568,7 +568,7 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 			if (node.getRepository().isBare())
 				return false;
 			File workingDir = repo.getWorkTree();
-			if (!workingDir.exists())
+			if (workingDir == null || !workingDir.exists())
 				return false;
 			return workingDir.listFiles().length > 0;
 		default:
@@ -649,16 +649,5 @@ public class RepositoriesViewContentProvider implements ITreeContentProvider,
 		} catch (IOException e) {
 			return false;
 		}
-	}
-
-	/**
-	 * Tells whether this content provider is using a hierarchical branch
-	 * layout.
-	 *
-	 * @return {@code true} if this content provider uses a hierarchical branch
-	 *         layout; {@code false} otherwise
-	 */
-	public boolean isHierarchical() {
-		return branchHierarchyMode;
 	}
 }

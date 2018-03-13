@@ -48,6 +48,8 @@ public class UntrackOperation implements IEGitOperation {
 
 	private final IdentityHashMap<Repository, DirCacheEditor> edits;
 
+	private final IdentityHashMap<RepositoryMapping, Object> mappings;
+
 	/**
 	 * Create a new operation to stop tracking existing files/folders.
 	 *
@@ -58,6 +60,7 @@ public class UntrackOperation implements IEGitOperation {
 	public UntrackOperation(final Collection<? extends IResource> rsrcs) {
 		rsrcList = rsrcs;
 		edits = new IdentityHashMap<Repository, DirCacheEditor>();
+		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 	}
 
 	@Override
@@ -66,6 +69,7 @@ public class UntrackOperation implements IEGitOperation {
 		progress.setTaskName(CoreText.UntrackOperation_adding);
 
 		edits.clear();
+		mappings.clear();
 
 		try {
 			for (IResource obj : rsrcList) {
@@ -94,6 +98,7 @@ public class UntrackOperation implements IEGitOperation {
 				}
 			}
 			edits.clear();
+			mappings.clear();
 		}
 	}
 
@@ -108,13 +113,11 @@ public class UntrackOperation implements IEGitOperation {
 			return;
 		}
 		final GitProjectData pd = GitProjectData.get(proj);
-		if (pd == null) {
+		if (pd == null)
 			return;
-		}
 		final RepositoryMapping rm = pd.getRepositoryMapping(path);
-		if (rm == null) {
+		if (rm == null)
 			return;
-		}
 		final Repository db = rm.getRepository();
 
 		DirCacheEditor e = edits.get(db);
@@ -125,12 +128,12 @@ public class UntrackOperation implements IEGitOperation {
 				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}
 			edits.put(db, e);
+			mappings.put(rm, rm);
 		}
 
-		if (path instanceof IContainer) {
+		if (path instanceof IContainer)
 			e.add(new DirCacheEditor.DeleteTree(rm.getRepoRelativePath(path)));
-		} else {
+		else
 			e.add(new DirCacheEditor.DeletePath(rm.getRepoRelativePath(path)));
-		}
 	}
 }

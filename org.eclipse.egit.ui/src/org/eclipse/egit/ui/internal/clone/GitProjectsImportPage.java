@@ -44,7 +44,6 @@ import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
-import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -442,11 +441,7 @@ public class GitProjectsImportPage extends WizardPage {
 				}
 
 				private boolean isSelected(File pFile) {
-					IWizard wiz = getWizard();
-					if (!(wiz instanceof GitCreateProjectViaWizardWizard)) {
-						return true;
-					}
-					GitCreateProjectViaWizardWizard wizard = (GitCreateProjectViaWizardWizard) wiz;
+					GitCreateProjectViaWizardWizard wizard = (GitCreateProjectViaWizardWizard) getWizard();
 					return wizard.getFilter().isEmpty() || wizard.getFilter().contains(pFile.getParent());
 				}
 
