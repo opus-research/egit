@@ -111,15 +111,6 @@ import org.eclipse.ui.progress.WorkbenchJob;
  */
 public class FetchGerritChangePage extends WizardPage {
 
-	private static final Pattern GERRIT_FETCH_PATTERN = Pattern.compile(
-			"git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"); //$NON-NLS-1$
-
-	private static final Pattern GERRIT_URL_PATTERN = Pattern.compile(
-			"(?:https?://\\S+?/|/)?([1-9][0-9]*)(?:/([1-9][0-9]*)(?:/([1-9][0-9]*)(?:\\.\\.\\d+)?)?)?(?:/\\S*)?"); //$NON-NLS-1$
-
-	private static final Pattern GERRIT_CHANGE_REF_PATTERN = Pattern
-			.compile("refs/changes/\\d+/(\\d+)(?:/\\d*)"); //$NON-NLS-1$
-
 	private enum CheckoutMode {
 		CREATE_BRANCH, CREATE_TAG, CHECKOUT_FETCH_HEAD, NOCHECKOUT
 	}
@@ -217,7 +208,8 @@ public class FetchGerritChangePage extends WizardPage {
 		String defaultChange = null;
 		String candidateChange = null;
 		if (clipText != null) {
-			Matcher matcher = GERRIT_FETCH_PATTERN.matcher(clipText);
+			String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
+			Matcher matcher = Pattern.compile(pattern).matcher(clipText);
 			if (matcher.matches()) {
 				defaultUri = matcher.group(1);
 				defaultChange = matcher.group(2);
@@ -534,7 +526,9 @@ public class FetchGerritChangePage extends WizardPage {
 		if (input == null) {
 			return null;
 		}
-		Matcher matcher = GERRIT_URL_PATTERN.matcher(input);
+		Pattern pattern = Pattern.compile(
+				"(?:https?://\\S+?/|/)?([1-9][0-9]*)(?:/([1-9][0-9]*)(?:/([1-9][0-9]*)(?:\\.\\.\\d+)?)?)?(?:/\\S*)?"); //$NON-NLS-1$
+		Matcher matcher = pattern.matcher(input);
 		if (matcher.matches()) {
 			String first = matcher.group(1);
 			String second = matcher.group(2);
@@ -952,12 +946,7 @@ public class FetchGerritChangePage extends WizardPage {
 					return null;
 				}
 				List<IContentProposal> resultList = new ArrayList<>();
-				String input = contents;
-				Matcher matcher = GERRIT_CHANGE_REF_PATTERN.matcher(contents);
-				if (matcher.find()) {
-					input = matcher.group(1);
-				}
-				Pattern pattern = UIUtils.createProposalPattern(input);
+				Pattern pattern = UIUtils.createProposalPattern(contents);
 				for (final Change ref : proposals) {
 					if (pattern != null && !pattern
 							.matcher(ref.getChangeNumber().toString())
