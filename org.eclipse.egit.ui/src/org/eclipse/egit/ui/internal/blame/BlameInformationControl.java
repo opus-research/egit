@@ -30,7 +30,7 @@ import org.eclipse.egit.ui.internal.blame.BlameOperation.BlameHistoryPageInput;
 import org.eclipse.egit.ui.internal.blame.BlameRevision.Diff;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.DiffDocument;
-import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
+import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.history.FileDiff;
@@ -68,6 +68,7 @@ import org.eclipse.team.ui.history.IHistoryView;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.editors.text.EditorsUI;
 
 /**
  * Annotation information control
@@ -367,14 +368,14 @@ public class BlameInformationControl extends AbstractInformationControl
 		showAnnotationsLink
 				.addSelectionListener(showAnnotationsLinkSelectionAdapter);
 
-		DiffViewer diffText = new DiffViewer(diffComposite, null, SWT.NONE,
-				false);
-		diffText.setEditable(false);
+		DiffViewer diffText = new DiffViewer(diffComposite, null, SWT.NONE);
+		diffText.configure(
+				new DiffViewer.Configuration(EditorsUI.getPreferenceStore()));
 		diffText.getControl().setLayoutData(
 				GridDataFactory.fillDefaults().grab(true, true).create());
 
 		DiffDocument document = new DiffDocument();
-		DiffStyleRangeFormatter diffFormatter = new DiffStyleRangeFormatter(
+		DiffRegionFormatter diffFormatter = new DiffRegionFormatter(
 				document);
 		diffFormatter.setContext(1);
 		diffFormatter.setRepository(revision.getRepository());

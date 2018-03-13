@@ -56,4 +56,15 @@ public class GitCorePreferences {
 	 * to let JGit use its default behavior.
 	 */
 	public static final String core_preferredMergeStrategy_Default = "jgit-default-mergeStrategy"; //$NON-NLS-1$
+
+	/**
+	 * if {@code true} file deletions are automatically staged by
+	 * GitMoveDeleteHook
+	 */
+	public static final String core_autoStageDeletion = "core_auto_stage_deletion"; //$NON-NLS-1$
+
+	/**
+	 * if {@code true} file moves are automatically staged by GitMoveDeleteHook
+	 */
+	public static final String core_autoStageMoves = "core_auto_stage_moves"; //$NON-NLS-1$
 }
