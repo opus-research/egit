@@ -287,6 +287,9 @@ public class CoreText extends NLS {
 	public static String CloneOperation_failed_cleanup;
 
 	/** */
+	public static String CloneOperation_submodule_title;
+
+	/** */
 	public static String CloneOperation_title;
 
 	/** */
@@ -474,6 +477,15 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String SquashCommitsOperation_squashing;
+
+	/** */
+	public static String SubmoduleUpdateOperation_updating;
+
+	/** */
+	public static String SubmoduleUpdateOperation_cloning;
+
+	/** */
+	public static String Utils_InvalidAdapterError;
 
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
