@@ -82,12 +82,9 @@ public class NetUtil {
 					httpsConn.setSSLSocketFactory(ctx.getSocketFactory());
 					httpsConn.setHostnameVerifier(trustAllHostNames);
 				}
-			} catch (KeyManagementException e) {
-				throw new IOException(e.getMessage());
-			} catch (NoSuchAlgorithmException e) {
-				throw new IOException(e.getMessage());
-			} catch (URISyntaxException e) {
-				// Cannot happen.
+			} catch (KeyManagementException | NoSuchAlgorithmException
+					| URISyntaxException e) {
+				throw new IOException(e.getMessage(), e);
 			}
 		}
 	}
