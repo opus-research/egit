@@ -24,8 +24,8 @@ import org.eclipse.jface.text.hyperlink.IHyperlinkDetectorExtension2;
 import org.eclipse.jface.text.source.IOverviewRuler;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.IVerticalRuler;
+import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.jface.text.source.SourceViewerConfiguration;
-import org.eclipse.jface.text.source.projection.ProjectionViewer;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jgit.annotations.Nullable;
@@ -38,16 +38,13 @@ import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.HyperlinkDetectorDescriptor;
 
 /**
- * A {@link ProjectionViewer} that automatically reacts to changes in the
+ * A {@link SourceViewer} that automatically reacts to changes in the
  * hyperlinking preferences.
  */
-public class HyperlinkSourceViewer extends ProjectionViewer {
+public class HyperlinkSourceViewer extends SourceViewer {
 	// The default SourceViewer doesn't do this and instead AbstractTextEditor
 	// has code that does all that. For our uses it is much more convenient if
 	// the viewer itself handles this.
-	//
-	// Note: although ProjectionViewer is marked as noextend, there are already
-	// a number of subclasses.
 
 	private Configuration configuration;
 
@@ -71,7 +68,7 @@ public class HyperlinkSourceViewer extends ProjectionViewer {
 	 */
 	public HyperlinkSourceViewer(Composite parent, IVerticalRuler ruler,
 			int styles) {
-		this(parent, ruler, null, false, styles);
+		super(parent, ruler, styles);
 	}
 
 	/**
