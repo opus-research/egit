@@ -8,24 +8,16 @@
  *******************************************************************************/
 package org.eclipse.egit.gitflow.op;
 
-import static org.eclipse.egit.gitflow.GitFlowConfig.BRANCH_SECTION;
-import static org.eclipse.egit.gitflow.GitFlowConfig.DEVELOP_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.FEATURE_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.GITFLOW_SECTION;
-import static org.eclipse.egit.gitflow.GitFlowConfig.HOTFIX_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.MASTER_KEY;
-import static org.eclipse.egit.gitflow.GitFlowConfig.PREFIX_SECTION;
-import static org.eclipse.egit.gitflow.GitFlowConfig.RELEASE_KEY;
-import static org.eclipse.egit.gitflow.GitFlowDefaults.DEVELOP;
-import static org.eclipse.egit.gitflow.GitFlowDefaults.FEATURE_PREFIX;
-import static org.eclipse.egit.gitflow.GitFlowDefaults.HOTFIX_PREFIX;
-import static org.eclipse.egit.gitflow.GitFlowDefaults.MASTER;
-import static org.eclipse.egit.gitflow.GitFlowDefaults.RELEASE_PREFIX;
 import static org.junit.Assert.assertEquals;
+import static org.eclipse.egit.gitflow.GitFlowDefaults.*;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.egit.core.op.RenameBranchOperation;
+import org.eclipse.egit.core.test.TestUtils;
 import org.eclipse.egit.gitflow.GitFlowRepository;
+
+import static org.eclipse.egit.gitflow.GitFlowConfig.*;
+
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.junit.Test;
@@ -41,16 +33,15 @@ public class InitOperationTest extends AbstractGitFlowOperationTest {
 		InitOperation initOperation = new InitOperation(repository);
 		initOperation.execute(null);
 
+		TestUtils.waitForJobs(500, 30000, null);
+
 		GitFlowRepository gfRepo = new GitFlowRepository(repository);
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
 
 		assertPrefixEquals(FEATURE_PREFIX, FEATURE_KEY, repository);
 		assertPrefixEquals(RELEASE_PREFIX, RELEASE_KEY, repository);
 		assertPrefixEquals(HOTFIX_PREFIX, HOTFIX_KEY, repository);
-
-		// TODO this below is unstable and I have no idea why.
-		// Sometimes it receives null instead of the empty string
-		// assertPrefixEquals(VERSION_TAG, VERSION_TAG_KEY, repository);
+		assertPrefixEquals(VERSION_TAG, VERSION_TAG_KEY, repository);
 
 		assertBranchEquals(DEVELOP, DEVELOP_KEY, repository);
 		assertBranchEquals(MASTER, MASTER_KEY, repository);
@@ -58,9 +49,7 @@ public class InitOperationTest extends AbstractGitFlowOperationTest {
 
 	private void assertPrefixEquals(String expected, String key,
 			Repository repo) {
-		assertEquals(
-				"Unexpected value for key " + key + ", config: "
-						+ repo.getConfig().toText(),
+		assertEquals("Unexpected prefix in: " + repo.getConfig().toText(),
 				expected, getPrefix(repo, key));
 	}
 
@@ -85,6 +74,8 @@ public class InitOperationTest extends AbstractGitFlowOperationTest {
 		Repository repository = testRepository.getRepository();
 		InitOperation initOperation = new InitOperation(repository);
 		initOperation.execute(null);
+
+		TestUtils.waitForJobs(500, 30000, null);
 
 		GitFlowRepository gfRepo = new GitFlowRepository(repository);
 		assertEquals(gfRepo.getConfig().getDevelopFull(), repository.getFullBranch());
