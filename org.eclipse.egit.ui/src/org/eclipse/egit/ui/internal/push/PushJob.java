@@ -17,7 +17,6 @@ import org.eclipse.egit.core.op.PushOperation;
 import org.eclipse.egit.core.op.PushOperationResult;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.jobs.RepositoryJob;
 import org.eclipse.jface.action.IAction;
@@ -69,7 +68,7 @@ public class PushJob extends RepositoryJob {
 	public PushJob(String name, Repository repository, PushOperation operation,
 			PushOperationResult expectedResult, String destinationString,
 			boolean showConfigureButton, @NonNull PushMode pushMode) {
-		super(name, UIPreferences.SHOW_PUSH_POPUP_SUCCESS);
+		super(name);
 		this.operation = operation;
 		this.resultToCompare = expectedResult;
 		this.destinationString = destinationString;
