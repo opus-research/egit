@@ -59,9 +59,7 @@ public class SubmoduleUpdateCommand extends
 								.forIndex(node.getRepository());
 						while (walk.next()) {
 							Repository subRepo = walk.getRepository();
-							if (subRepo != null) {
-								subRepos.add(subRepo);
-							}
+							subRepos.add(subRepo);
 						}
 						break;
 					}
@@ -76,9 +74,7 @@ public class SubmoduleUpdateCommand extends
 								Repository subRepo;
 								subRepo = SubmoduleWalk.getSubmoduleRepository(
 										entry.getKey(), path);
-								if (subRepo != null) {
-									subRepos.add(subRepo);
-								}
+								subRepos.add(subRepo);
 							}
 						}
 					}
@@ -110,9 +106,6 @@ public class SubmoduleUpdateCommand extends
 					try {
 						for (Entry<Repository, List<String>> entry : repoPaths
 								.entrySet()) {
-							if (progress.isCanceled()) {
-								return Status.CANCEL_STATUS;
-							}
 							SubmoduleUpdateOperation op = new SubmoduleUpdateOperation(
 									entry.getKey());
 							if (entry.getValue() != null) {
