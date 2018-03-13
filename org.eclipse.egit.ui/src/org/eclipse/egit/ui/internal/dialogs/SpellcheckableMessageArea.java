@@ -78,8 +78,6 @@ import org.eclipse.swt.custom.BidiSegmentListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.VerifyEvent;
-import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
@@ -393,19 +391,6 @@ public class SpellcheckableMessageArea extends Composite {
 		sourceViewer.setDocument(document, annotationModel);
 
 		configureContextMenu();
-
-		// avoid pasting commit messages with trailing line break directly from
-		// a gerrit webpage etc.
-		getTextWidget().addVerifyListener(new VerifyListener() {
-			@Override
-			public void verifyText(VerifyEvent event) {
-				int lines = event.text.split("\r\n|\n|\r").length; //$NON-NLS-1$
-				if (lines > 1) { // we are pasting, since one cannot type
-									// multiple lines at once
-					event.text = event.text.trim();
-				}
-			}
-		});
 
 		getTextWidget().addDisposeListener(new DisposeListener() {
 			@Override
