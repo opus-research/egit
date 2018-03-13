@@ -931,6 +931,9 @@ public class UIText extends NLS {
 	public static String RebaseResultDialog_StatusFastForward;
 
 	/** */
+	public static String RebaseResultDialog_StatusLabel;
+
+	/** */
 	public static String RebaseResultDialog_StatusNothingToCommit;
 
 	/** */
@@ -2537,12 +2540,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CompareWithPreviousActionHandler_TitleRevisionNotFound;
-
-	/** */
-	public static String CompareIndexWithHeadActionHandler_nothingToDoTitle;
-
-	/** */
-	public static String CompareIndexWithHeadActionHandler_fileNotStaged;
 
 	/** */
 	public static String CompareUtils_jobName;
@@ -4259,7 +4256,13 @@ public class UIText extends NLS {
 	public static String CommitEditorPage_LabelAuthor;
 
 	/** */
+	public static String CommitEditorPage_LabelAuthorRelative;
+
+	/** */
 	public static String CommitEditorPage_LabelCommitter;
+
+	/** */
+	public static String CommitEditorPage_LabelCommitterRelative;
 
 	/** */
 	public static String CommitEditorPage_LabelParent;
