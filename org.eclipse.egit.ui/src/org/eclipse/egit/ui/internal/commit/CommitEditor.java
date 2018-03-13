@@ -32,7 +32,6 @@ import org.eclipse.egit.ui.internal.commit.command.StashDropHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
-import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.resource.JFaceResources;
@@ -55,9 +54,6 @@ import org.eclipse.ui.IEditorActionBarContributor;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
-import org.eclipse.ui.IPartListener;
-import org.eclipse.ui.IPartService;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.IFormColors;
@@ -160,48 +156,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 
 	private FocusTracker headerFocusTracker = new FocusTracker();
 
-	private IToolBarManager toolbar;
-
-	/** Ensures that the toolbar buttons in the header are properly updated. */
-	private IPartListener activationListener = new IPartListener() {
-
-		private boolean isActive;
-
-		@Override
-		public void partActivated(IWorkbenchPart part) {
-			if (part == CommitEditor.this) {
-				if (!isActive) {
-					isActive = true;
-					updateToolbar();
-				}
-			} else if (isActive) {
-				isActive = false;
-				updateToolbar();
-			}
-		}
-
-		@Override
-		public void partBroughtToTop(IWorkbenchPart part) {
-			// Nothing to do
-		}
-
-		@Override
-		public void partClosed(IWorkbenchPart part) {
-			// Nothing to do
-		}
-
-		@Override
-		public void partDeactivated(IWorkbenchPart part) {
-			// Nothing to do
-		}
-
-		@Override
-		public void partOpened(IWorkbenchPart part) {
-			// Nothing to do
-		}
-
-	};
-
 	private static class CommitEditorNestedSite extends MultiPageEditorSite {
 
 		public CommitEditorNestedSite(CommitEditor topLevelEditor,
@@ -284,7 +238,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		form.setToolTipText(commitName);
 		getToolkit().decorateFormHeading(form.getForm());
 
-		toolbar = form.getToolBarManager();
+		IToolBarManager toolbar = form.getToolBarManager();
 
 		ControlContribution repositoryLabelControl = new ControlContribution(
 				"repositoryLabel") { //$NON-NLS-1$
@@ -333,8 +287,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			}
 		};
 		toolbar.add(repositoryLabelControl);
-		CommonUtils.getService(getSite(), IPartService.class)
-				.addPartListener(activationListener);
 		if (commit.isStash()) {
 			toolbar.add(createCommandContributionItem(StashApplyHandler.ID));
 			toolbar.add(createCommandContributionItem(StashDropHandler.ID));
@@ -377,17 +329,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			if (control != null) {
 				headerFocusTracker.addToFocusTracking(control);
 			}
-		}
-	}
-
-	private void updateToolbar() {
-		if (toolbar != null) {
-			// isEnabled() on a CommandContributionItem actually re-evaluates
-			// the enablement.
-			for (IContributionItem item : toolbar.getItems()) {
-				item.isEnabled();
-			}
-			toolbar.update(true);
 		}
 	}
 
@@ -470,8 +411,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 
 	@Override
 	public void dispose() {
-		CommonUtils.getService(getSite(), IPartService.class)
-				.removePartListener(activationListener);
 		refListenerHandle.remove();
 		headerFocusTracker.dispose();
 		super.dispose();

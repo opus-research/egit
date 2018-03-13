@@ -2410,17 +2410,6 @@
             </and>
          </activeWhen>
       </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.commit.Checkout">
-         <class
-               class="org.eclipse.egit.ui.internal.commit.command.CheckoutHandler">
-         </class>
-         <activeWhen>
-            <with variable="activePart">
-               <instanceof value="org.eclipse.egit.ui.internal.commit.CommitEditor" />
-            </with>
-         </activeWhen>
-      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.views">
@@ -5977,6 +5966,7 @@
             name="%CreateBranchCommand">
       </command>
       <command
+            defaultHandler="org.eclipse.egit.ui.internal.commit.command.CheckoutHandler"
             id="org.eclipse.egit.ui.commit.Checkout"
             name="%CheckoutCommand">
       </command>
