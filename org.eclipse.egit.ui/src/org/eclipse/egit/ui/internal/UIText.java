@@ -1232,9 +1232,6 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_WorktreeDirty;
 
 	/** */
-	public static String CherryPickHandler_cherryPickButtonLabel;
-
-	/** */
 	public static String CherryPickOperation_InternalError;
 
 	/** */
