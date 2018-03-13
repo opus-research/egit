@@ -95,9 +95,6 @@ public class CoreText extends NLS {
 	public static String ContainerTreeIterator_DeletedFile;
 
 	/** */
-	public static String DeleteBranchOperation_Canceled;
-
-	/** */
 	public static String DeleteBranchOperation_TaskName;
 
 	/** */
@@ -153,9 +150,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String UntrackOperation_writingIndex;
-
-	/** */
-	public static String GerritUtil_ConfigSaveError;
 
 	/** */
 	public static String GitFileHistory_errorParsingHistory;
@@ -378,9 +372,6 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
-
-	/** */
-	public static String GitLazyResourceVariantTreeSubscriber_name;
 
 	/** */
 	public static String OperationAlreadyExecuted;
