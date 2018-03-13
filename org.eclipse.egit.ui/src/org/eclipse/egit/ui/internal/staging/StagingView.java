@@ -283,9 +283,6 @@ public class StagingView extends ViewPart
 
 	private boolean isViewHidden;
 
-	/** Tracks the last selection while the view is not active. */
-	private StructuredSelection lastSelection;
-
 	private ISelectionListener selectionChangedListener;
 
 	private IPartListener2 partListener;
@@ -478,6 +475,7 @@ public class StagingView extends ViewPart
 	}
 
 	private final class PartListener implements IPartListener2 {
+		StructuredSelection lastSelection;
 
 		@Override
 		public void partVisible(IWorkbenchPartReference partRef) {
@@ -501,10 +499,28 @@ public class StagingView extends ViewPart
 
 		@Override
 		public void partActivated(IWorkbenchPartReference partRef) {
-			if (lastSelection != null && isMe(partRef)) {
-				reactOnSelection(lastSelection);
-				lastSelection = null;
+			if (isMe(partRef)) {
+				if (lastSelection != null) {
+					// view activated: synchronize with last active part
+					// selection
+					reactOnSelection(lastSelection);
+					lastSelection = null;
+				}
+				return;
 			}
+			IWorkbenchPart part = partRef.getPart(false);
+			StructuredSelection sel = getSelectionOfPart(part);
+			if (isViewHidden) {
+				// remember last selection in the part so that we can
+				// synchronize on it as soon as we will be visible
+				lastSelection = sel;
+			} else {
+				lastSelection = null;
+				if (sel != null) {
+					reactOnSelection(sel);
+				}
+			}
+
 		}
 
 		private void updateHiddenState(IWorkbenchPartReference partRef,
@@ -2983,16 +2999,9 @@ public class StagingView extends ViewPart
 	}
 
 	private void reactOnSelection(StructuredSelection selection) {
-		if (selection.size() != 1 || isDisposed()) {
+		if (selection.size() != 1 || !shouldUpdateSelection()) {
 			return;
 		}
-		if (!shouldUpdateSelection()) {
-			// Remember it all the same to be able to update the view when it
-			// becomes active again
-			lastSelection = reactOnSelection ? selection : null;
-			return;
-		}
-		lastSelection = null;
 		Object firstElement = selection.getFirstElement();
 		if (firstElement instanceof RepositoryTreeNode) {
 			RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
