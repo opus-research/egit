@@ -3868,15 +3868,13 @@ public class StagingView extends ViewPart
 		// don't allow to do anything as long as commit is in progress
 		enableAllWidgets(false);
 		commitJob.addJobChangeListener(new JobChangeAdapter() {
-
 			@Override
 			public void done(IJobChangeEvent event) {
 				asyncExec(new Runnable() {
 					@Override
 					public void run() {
 						enableAllWidgets(true);
-						IStatus result = commitJob.getResult();
-						if (result != null && result.isOK()) {
+						if (commitJob.getResult().isOK()) {
 							commitMessageText.setText(EMPTY_STRING);
 						}
 					}
