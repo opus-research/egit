@@ -69,8 +69,6 @@ public class OldNewLogicalLineNumberRulerColumn extends LineNumberRulerColumn {
 
 		private Color lineColor;
 
-		private int zoom = 100;
-
 		@Override
 		public Control createControl(CompositeRuler parentRuler,
 				Composite parentControl) {
@@ -83,16 +81,6 @@ public class OldNewLogicalLineNumberRulerColumn extends LineNumberRulerColumn {
 			// Add space for the line plus one empty pixel on each side of the
 			// line.
 			return super.getWidth() + 3;
-		}
-
-		@Override
-		protected void internalSetZoom(int zoomLevel) {
-			this.zoom = zoomLevel;
-		}
-
-		@Override
-		protected boolean internalSupportsZoomedPaint() {
-			return true;
 		}
 
 		@Override
@@ -117,8 +105,7 @@ public class OldNewLogicalLineNumberRulerColumn extends LineNumberRulerColumn {
 			// drawn.
 			Rectangle bounds = super.getControl().getBounds();
 			gc.setForeground(lineColor);
-			gc.drawLine(x * zoom / 100, 0, x * zoom / 100,
-					bounds.height * zoom / 100);
+			gc.drawLine(x, 0, x, bounds.height);
 			gc.setForeground(foreground);
 		}
 
@@ -154,11 +141,6 @@ public class OldNewLogicalLineNumberRulerColumn extends LineNumberRulerColumn {
 				Composite parentControl) {
 			return addMenuListener(
 					super.createControl(parentRuler, parentControl));
-		}
-
-		@Override
-		protected boolean internalSupportsZoomedPaint() {
-			return true;
 		}
 	};
 
