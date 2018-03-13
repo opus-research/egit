@@ -17,14 +17,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -671,13 +667,6 @@ public class FetchGerritChangePage extends WizardPage {
 					setErrorMessage(UIText.FetchGerritChangePage_MissingChangeMessage);
 					return;
 				}
-				ChangeList list = changeRefs.get(uriCombo.getText());
-				if (list != null && list.isDone()
-						&& !list.getResult().contains(change)) {
-					setErrorMessage(
-							UIText.FetchGerritChangePage_UnknownChangeRefMessage);
-					return;
-				}
 			} else {
 				setErrorMessage(UIText.FetchGerritChangePage_MissingChangeMessage);
 				return;
@@ -692,20 +681,20 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 	}
 
-	private Collection<Change> getRefsForContentAssist()
+	private List<Change> getRefsForContentAssist()
 			throws InvocationTargetException, InterruptedException {
 		String uriText = uriCombo.getText();
 		if (!changeRefs.containsKey(uriText)) {
 			changeRefs.put(uriText, new ChangeList(repository, uriText));
 		}
 		ChangeList list = changeRefs.get(uriText);
-		if (!list.isFinished()) {
+		if (!list.isDone()) {
 			IWizardContainer container = getContainer();
 			IRunnableWithProgress operation = monitor -> {
 				monitor.beginTask(MessageFormat.format(
 						UIText.FetchGerritChangePage_FetchingRemoteRefsMessage,
 						uriText), IProgressMonitor.UNKNOWN);
-				Collection<Change> result = list.get();
+				List<Change> result = list.get();
 				if (monitor.isCanceled()) {
 					return;
 				}
@@ -949,7 +938,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				Collection<Change> proposals;
+				List<Change> proposals;
 				try {
 					proposals = getRefsForContentAssist();
 				} catch (InvocationTargetException e) {
@@ -1057,19 +1046,6 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 
 		@Override
-		public boolean equals(Object obj) {
-			if (!(obj instanceof Change)) {
-				return false;
-			}
-			return compareTo((Change) obj) == 0;
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(changeNumber, patchSetNumber);
-		}
-
-		@Override
 		public int compareTo(Change o) {
 			int changeDiff = this.changeNumber.compareTo(o.changeNumber);
 			if (changeDiff == 0) {
@@ -1166,7 +1142,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 		private State state = State.PRISTINE;
 
-		private Set<Change> result;
+		private List<Change> result;
 
 		private InterruptibleJob job;
 
@@ -1224,12 +1200,8 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		}
 
-		public synchronized boolean isFinished() {
-			return state == State.CANCELED || state == State.DONE;
-		}
-
 		public synchronized boolean isDone() {
-			return state == State.DONE;
+			return state == State.CANCELED || state == State.DONE;
 		}
 
 		/**
@@ -1244,7 +1216,7 @@ public class FetchGerritChangePage extends WizardPage {
 		 * @throws InvocationTargetException
 		 *             if the future's job cannot be created
 		 */
-		public synchronized Collection<Change> get()
+		public synchronized List<Change> get()
 				throws InterruptedException, InvocationTargetException {
 			switch (state) {
 			case DONE:
@@ -1261,14 +1233,6 @@ public class FetchGerritChangePage extends WizardPage {
 				}
 				return get();
 			}
-		}
-
-		public synchronized Collection<Change> getResult() {
-			if (isFinished()) {
-				return result;
-			}
-			throw new IllegalStateException(
-					"Fetching change list is not finished"); //$NON-NLS-1$
 		}
 
 		private synchronized void finish(boolean done) {
@@ -1337,7 +1301,7 @@ public class FetchGerritChangePage extends WizardPage {
 						}
 					}
 					Collections.sort(changes, Collections.reverseOrder());
-					result = new LinkedHashSet<>(changes);
+					result = changes;
 					return Status.OK_STATUS;
 				}
 

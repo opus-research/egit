@@ -2360,6 +2360,12 @@ public class UIText extends NLS {
 	public static String CommitDialog_ErrorCreatingCommitMessageProvider;
 
 	/** */
+	public static String CommitDialog_CaretPositionOutOfBounds;
+
+	/** */
+	public static String CommitDialog_IgnoreCaretPosition;
+
+	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
@@ -2877,9 +2883,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchGerritChangePage_TagRadio;
-
-	/** */
-	public static String FetchGerritChangePage_UnknownChangeRefMessage;
 
 	/** */
 	public static String FetchGerritChangePage_UpdateRadio;
