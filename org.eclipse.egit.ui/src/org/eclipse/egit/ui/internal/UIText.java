@@ -3655,9 +3655,6 @@ public class UIText extends NLS {
 	public static String DiffEditorPage_Title;
 
 	/** */
-	public static String DiffEditorPage_ToggleLineNumbers;
-
-	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
 
 	/** */
