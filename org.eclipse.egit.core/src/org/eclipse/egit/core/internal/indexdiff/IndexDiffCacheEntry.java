@@ -30,7 +30,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.WorkspaceJob;
@@ -79,15 +78,6 @@ import org.eclipse.osgi.util.NLS;
 public class IndexDiffCacheEntry {
 
 	private static final int RESOURCE_LIST_UPDATE_LIMIT = 1000;
-
-	/**
-	 * Bit-mask describing interesting changes for IResourceChangeListener
-	 * events
-	 */
-	private static int INTERESTING_CHANGES = IResourceDelta.CONTENT
-			| IResourceDelta.MOVED_FROM | IResourceDelta.MOVED_TO
-			| IResourceDelta.OPEN | IResourceDelta.REPLACED
-			| IResourceDelta.TYPE;
 
 	private final File repositoryGitDir;
 
@@ -694,23 +684,6 @@ public class IndexDiffCacheEntry {
 
 			@Override
 			public void resourceChanged(IResourceChangeEvent event) {
-				IResourceDelta delta = event.getDelta();
-
-				boolean projectPreDelete = false;
-				if (event.getType() == IResourceChangeEvent.PRE_DELETE
-						&& event.getResource().getType() == IResource.PROJECT) {
-					// Deletion of a project.
-					projectPreDelete = true;
-				}
-				// If the file has changed but not in a way that we
-				// care about (e.g. marker changes to files) then
-				// ignore
-				if ((delta.getKind() == IResourceDelta.CHANGED
-						&& (delta.getFlags() & INTERESTING_CHANGES) == 0)
-						|| !projectPreDelete) {
-					return;
-				}
-
 				Repository repository = getRepository();
 				if (repository == null) {
 					ResourcesPlugin.getWorkspace()
@@ -718,16 +691,19 @@ public class IndexDiffCacheEntry {
 					resourceChangeListener = null;
 					return;
 				}
-				if (projectPreDelete) {
+				if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
 					// Deletion of a project.
 					IResource resource = event.getResource();
-					IPath projectPath = resource.getLocation();
-					if (projectPath != null) {
-						IPath repoPath = ResourceUtil.getRepositoryRelativePath(
-								projectPath, repository);
-						if (repoPath != null) {
-							deletedProjects.put((IProject) resource,
-									projectPath);
+					if (resource.getType() == IResource.PROJECT) {
+						IPath projectPath = resource.getLocation();
+						if (projectPath != null) {
+							IPath repoPath = ResourceUtil
+									.getRepositoryRelativePath(projectPath,
+											repository);
+							if (repoPath != null) {
+								deletedProjects.put((IProject) resource,
+										projectPath);
+							}
 						}
 					}
 					// Recomputing the index diff on PRE_DELETE might still find
@@ -738,7 +714,7 @@ public class IndexDiffCacheEntry {
 				GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(
 						repository, deletedProjects);
 				try {
-					delta.accept(visitor);
+					event.getDelta().accept(visitor);
 				} catch (CoreException e) {
 					Activator.logError(e.getMessage(), e);
 					return;
