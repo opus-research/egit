@@ -204,22 +204,6 @@ public class RebaseResultDialog extends MessageDialog {
 		return status.toString();
 	}
 
-	private static String[] getButtonLabel(Status status) {
-		String[] buttonLabel = new String[1];
-		switch (status) {
-		case EDIT:
-		case CONFLICTS:
-		case STOPPED:
-		case INTERACTIVE_PREPARED:
-		case STASH_APPLY_CONFLICTS:
-			buttonLabel[0] = IDialogConstants.PROCEED_LABEL;
-			break;
-		default:
-			buttonLabel[0] = IDialogConstants.CLOSE_LABEL;
-		}
-		return buttonLabel;
-	}
-
 	/**
 	 * @param shell
 	 * @param repository
@@ -231,7 +215,7 @@ public class RebaseResultDialog extends MessageDialog {
 				getTitle(result.getStatus()),
 				result.getStatus() == Status.FAILED ? MessageDialog.ERROR
 						: MessageDialog.INFORMATION,
-				getButtonLabel(result.getStatus()), 0);
+				new String[] { IDialogConstants.OK_LABEL }, 0);
 		setShellStyle(getShellStyle() | SWT.SHELL_TRIM);
 		this.repo = repository;
 		this.result = result;
