@@ -4163,6 +4163,9 @@ public class UIText extends NLS {
 	public static String UnmergedBranchDialog_Title;
 
 	/** */
+	public static String UnmergedBranchDialog_deleteButtonLabel;
+
+	/** */
 	public static String Untrack_untrack;
 
 	/** */
@@ -5212,6 +5215,9 @@ public class UIText extends NLS {
 	public static String StagingView_Add_Change_ID;
 
 	/** */
+	public static String StagingView_Assume_Unchanged;
+
+	/** */
 	public static String StagingView_Commit;
 
 	/** */
@@ -5294,6 +5300,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_UnstagedSort;
+
+	/** */
+	public static String StagingView_Untrack;
 
 	/** */
 	public static String StagingView_StageAllItemMenuLabel;

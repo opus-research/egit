@@ -85,8 +85,8 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>com.github.hazendaz.spotbugs</groupId>
-            <artifactId>spotbugs-maven-plugin</artifactId>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>findbugs-maven-plugin</artifactId>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -450,9 +450,9 @@
           <version>1.8</version>
         </plugin>
         <plugin>
-          <groupId>com.github.hazendaz.spotbugs</groupId>
-          <artifactId>spotbugs-maven-plugin</artifactId>
-          <version>3.0.6</version>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>3.0.4</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <failOnError>false</failOnError>
