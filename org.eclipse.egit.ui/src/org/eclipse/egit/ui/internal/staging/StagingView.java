@@ -2549,6 +2549,7 @@ public class StagingView extends ViewPart
 
 			@Override
 			public void menuAboutToShow(IMenuManager manager) {
+				control.setFocus();
 				final IStructuredSelection selection = (IStructuredSelection) treeViewer
 						.getSelection();
 				if (selection.isEmpty())
@@ -3726,12 +3727,9 @@ public class StagingView extends ViewPart
 		commitMessageComponent.setAuthor(oldState.getAuthor());
 		if (headCommitChanged)
 			addHeadChangedWarning(oldState.getCommitMessage());
-		else {
+		else
 			commitMessageComponent
 					.setCommitMessage(oldState.getCommitMessage());
-			commitMessageComponent
-					.setCaretPosition(oldState.getCaretPosition());
-		}
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));

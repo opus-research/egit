@@ -36,7 +36,6 @@ public class CommitMessageComponentStateManager {
 		IDialogSettings dialogSettings = getDialogSettings();
 		String[] values = new String[] { Boolean.toString(state.getAmend()),
 				state.getAuthor(), state.getCommitMessage(),
-				String.valueOf(state.getCaretPosition()),
 				state.getCommitter(), state.getHeadCommit().getName().toString() };
 		dialogSettings.put(repository.getDirectory().getAbsolutePath(), values);
 	}
@@ -55,9 +54,8 @@ public class CommitMessageComponentStateManager {
 		state.setAmend(Boolean.parseBoolean(values[0]));
 		state.setAuthor(values[1]);
 		state.setCommitMessage(values[2]);
-		state.setCaretPosition(Integer.parseInt(values[3]));
-		state.setCommitter(values[4]);
-		state.setHeadCommit(ObjectId.fromString(values[5]));
+		state.setCommitter(values[3]);
+		state.setHeadCommit(ObjectId.fromString(values[4]));
 		return state;
 	}
 

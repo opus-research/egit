@@ -2360,9 +2360,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_ErrorCreatingCommitMessageProvider;
 
 	/** */
-	public static String CommitDialog_MultipleCommitMessageProvider2Implementations;
-
-	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
@@ -5537,6 +5534,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingViewPreferencePage_maxLimitListMode;
+
+	/** */
+	public static String CommandConfirmationHardResetDialog_resetButtonLabel;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

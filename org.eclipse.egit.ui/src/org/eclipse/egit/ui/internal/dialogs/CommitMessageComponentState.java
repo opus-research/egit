@@ -17,9 +17,6 @@ import org.eclipse.jgit.lib.ObjectId;
 public class CommitMessageComponentState {
 
 	private String commitMessage;
-
-	private int caretPosition;
-
 	private String committer;
 	private String author;
 	private boolean amend;
@@ -37,20 +34,6 @@ public class CommitMessageComponentState {
 	 */
 	public void setCommitMessage(String commitMessage) {
 		this.commitMessage = commitMessage;
-	}
-
-	/**
-	 * @return caretPosition
-	 */
-	public int getCaretPosition() {
-		return caretPosition;
-	}
-
-	/**
-	 * @param caretPosition
-	 */
-	public void setCaretPosition(int caretPosition) {
-		this.caretPosition = caretPosition;
 	}
 
 	/**
