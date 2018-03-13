@@ -193,12 +193,6 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_CreateProjectsTask;
 
 	/** */
-	public static String SecureStoreUtils_errorClearingCredentials;
-
-	/** */
-	public static String SecureStoreUtils_errorReadingCredentials;
-
-	/** */
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
@@ -272,6 +266,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GerritConfigurationPage_UserLabel;
+
+	/** */
+	public static String EGitCredentialsProvider_errorReadingCredentials;
+
+	/** */
+	public static String EGitCredentialsProvider_FailedToClearCredentials;
 
 	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
