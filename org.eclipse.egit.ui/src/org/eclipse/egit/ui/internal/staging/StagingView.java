@@ -11,7 +11,6 @@
  * Contributors:
  *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969, 473544
  *    Thomas Wolf <thomas.wolf@paranor.ch>
- *    Tobias Hein <th.mailinglists@googlemail.com> - Bug 499697
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -3627,8 +3626,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadExistingState(helper, oldState);
 		} else { // repository did not change
 			if (!commitMessageComponent.getHeadCommit().equals(
-					helper.getPreviousCommit())
-					|| !commitMessageComponent.isAmending()) {
+					helper.getPreviousCommit())) {
 				if (!commitMessageComponent.isAmending()
 						&& userEnteredCommitMessage())
 					addHeadChangedWarning(commitMessageComponent
