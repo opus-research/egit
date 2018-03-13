@@ -20,6 +20,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
@@ -30,10 +31,15 @@ import org.eclipse.egit.ui.internal.commit.command.ShowInHistoryHandler;
 import org.eclipse.egit.ui.internal.commit.command.StashApplyHandler;
 import org.eclipse.egit.ui.internal.commit.command.StashDropHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.ToolBarManager;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -54,6 +60,10 @@ import org.eclipse.ui.IEditorActionBarContributor;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.IPartListener;
+import org.eclipse.ui.IPartService;
+import org.eclipse.ui.ISharedImages;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.IFormColors;
@@ -66,8 +76,6 @@ import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ImageHyperlink;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.menus.CommandContributionItem;
-import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.menus.IMenuService;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
@@ -156,6 +164,48 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 
 	private FocusTracker headerFocusTracker = new FocusTracker();
 
+	private IToolBarManager toolbar;
+
+	/** Ensures that the toolbar buttons in the header are properly updated. */
+	private final IPartListener activationListener = new IPartListener() {
+
+		private boolean isActive;
+
+		@Override
+		public void partActivated(IWorkbenchPart part) {
+			if (part == CommitEditor.this) {
+				if (!isActive) {
+					isActive = true;
+					updateToolbar();
+				}
+			} else if (isActive) {
+				isActive = false;
+				updateToolbar();
+			}
+		}
+
+		@Override
+		public void partBroughtToTop(IWorkbenchPart part) {
+			// Nothing to do
+		}
+
+		@Override
+		public void partClosed(IWorkbenchPart part) {
+			// Nothing to do
+		}
+
+		@Override
+		public void partDeactivated(IWorkbenchPart part) {
+			// Nothing to do
+		}
+
+		@Override
+		public void partOpened(IWorkbenchPart part) {
+			// Nothing to do
+		}
+
+	};
+
 	private static class CommitEditorNestedSite extends MultiPageEditorSite {
 
 		public CommitEditorNestedSite(CommitEditor topLevelEditor,
@@ -206,12 +256,17 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 				.addRefsChangedListener(this);
 	}
 
-	private CommandContributionItem createCommandContributionItem(
-			String commandId) {
-		CommandContributionItemParameter parameter = new CommandContributionItemParameter(
-				getSite(), commandId, commandId,
-				CommandContributionItem.STYLE_PUSH);
-		return new CommandContributionItem(parameter);
+	private IContributionItem createActionContributionItem(String commandId,
+			String title, ImageDescriptor icon) {
+		IAction action = new Action(title, icon) {
+
+			@Override
+			public void run() {
+				CommonUtils.runCommand(commandId,
+						new StructuredSelection(getCommit()));
+			}
+		};
+		return new ActionContributionItem(action);
 	}
 
 	/**
@@ -238,7 +293,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		form.setToolTipText(commitName);
 		getToolkit().decorateFormHeading(form.getForm());
 
-		IToolBarManager toolbar = form.getToolBarManager();
+		toolbar = form.getToolBarManager();
 
 		ControlContribution repositoryLabelControl = new ControlContribution(
 				"repositoryLabel") { //$NON-NLS-1$
@@ -287,16 +342,31 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			}
 		};
 		toolbar.add(repositoryLabelControl);
+		CommonUtils.getService(getSite(), IPartService.class)
+				.addPartListener(activationListener);
 		if (commit.isStash()) {
-			toolbar.add(createCommandContributionItem(StashApplyHandler.ID));
-			toolbar.add(createCommandContributionItem(StashDropHandler.ID));
+			toolbar.add(createActionContributionItem(StashApplyHandler.ID,
+					UIText.CommitEditor_toolbarApplyStash,
+					UIIcons.STASH_APPLY));
+			toolbar.add(createActionContributionItem(StashDropHandler.ID,
+					UIText.CommitEditor_toolbarDeleteStash,
+					PlatformUI.getWorkbench().getSharedImages()
+							.getImageDescriptor(
+									ISharedImages.IMG_TOOL_DELETE)));
 		} else {
-			toolbar.add(createCommandContributionItem(CreateTagHandler.ID));
-			toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
-			toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
-			toolbar.add(createCommandContributionItem(CherryPickHandler.ID));
-			toolbar.add(createCommandContributionItem(RevertHandler.ID));
-			toolbar.add(createCommandContributionItem(ShowInHistoryHandler.ID));
+			toolbar.add(createActionContributionItem(CreateTagHandler.ID,
+					UIText.CommitEditor_toolbarCreateTag, UIIcons.TAG));
+			toolbar.add(createActionContributionItem(CreateBranchHandler.ID,
+					UIText.CommitEditor_toolbarCreateBranch, UIIcons.BRANCH));
+			toolbar.add(createActionContributionItem(CheckoutHandler.ID,
+					UIText.CommitEditor_toolbarCheckOut, UIIcons.CHECKOUT));
+			toolbar.add(createActionContributionItem(CherryPickHandler.ID,
+					UIText.CommitEditor_toolbarCherryPick,
+					UIIcons.CHERRY_PICK));
+			toolbar.add(createActionContributionItem(RevertHandler.ID,
+					UIText.CommitEditor_toolbarRevert, UIIcons.REVERT));
+			toolbar.add(createActionContributionItem(ShowInHistoryHandler.ID,
+					UIText.CommitEditor_toolbarShowInHistory, UIIcons.HISTORY));
 		}
 		addContributions(toolbar);
 		toolbar.update(true);
@@ -329,6 +399,17 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			if (control != null) {
 				headerFocusTracker.addToFocusTracking(control);
 			}
+		}
+	}
+
+	private void updateToolbar() {
+		if (toolbar != null) {
+			// isEnabled() on a CommandContributionItem actually re-evaluates
+			// the enablement.
+			for (IContributionItem item : toolbar.getItems()) {
+				item.isEnabled();
+			}
+			toolbar.update(true);
 		}
 	}
 
@@ -411,6 +492,8 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 
 	@Override
 	public void dispose() {
+		CommonUtils.getService(getSite(), IPartService.class)
+				.removePartListener(activationListener);
 		refListenerHandle.remove();
 		headerFocusTracker.dispose();
 		super.dispose();

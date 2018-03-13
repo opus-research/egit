@@ -8,9 +8,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.function.BooleanSupplier;
 
 import org.eclipse.jface.action.Action;
@@ -24,6 +24,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.handlers.IHandlerActivation;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.texteditor.IUpdate;
 
 /**
  * Action-related utilities.
@@ -119,11 +120,13 @@ public final class ActionUtils {
 	 *            to register the actions with
 	 */
 	public static void setGlobalActions(Control control,
-			Collection<IAction> actions, IHandlerService service) {
-		Collection<IHandlerActivation> handlerActivations = new HashSet<>();
-		control.addDisposeListener((event) -> {
-			service.deactivateHandlers(handlerActivations);
-			handlerActivations.clear();
+			Collection<? extends IAction> actions, IHandlerService service) {
+		Collection<IHandlerActivation> handlerActivations = new ArrayList<>();
+		control.addDisposeListener(event -> {
+			if (!handlerActivations.isEmpty()) {
+				service.deactivateHandlers(handlerActivations);
+				handlerActivations.clear();
+			}
 		});
 		final ActiveShellExpression expression = new ActiveShellExpression(
 				control.getShell());
@@ -131,16 +134,25 @@ public final class ActionUtils {
 
 			@Override
 			public void focusLost(FocusEvent e) {
-				service.deactivateHandlers(handlerActivations);
-				handlerActivations.clear();
+				if (!handlerActivations.isEmpty()) {
+					service.deactivateHandlers(handlerActivations);
+					handlerActivations.clear();
+				}
 			}
 
 			@Override
 			public void focusGained(FocusEvent e) {
+				if (!handlerActivations.isEmpty()) {
+					// Looks like sometimes we get two focusGained events.
+					return;
+				}
 				for (final IAction action : actions) {
 					handlerActivations.add(service.activateHandler(
 							action.getActionDefinitionId(),
-							new ActionHandler(action), expression, true));
+							new ActionHandler(action), expression, false));
+					if (action instanceof IUpdate) {
+						((IUpdate) action).update();
+					}
 				}
 			}
 		});
@@ -176,7 +188,7 @@ public final class ActionUtils {
 	 *            to be registered while the control has the focus
 	 */
 	public static void setGlobalActions(Control control,
-			Collection<IAction> actions) {
+			Collection<? extends IAction> actions) {
 		setGlobalActions(control, actions, CommonUtils
 				.getService(PlatformUI.getWorkbench(), IHandlerService.class));
 	}

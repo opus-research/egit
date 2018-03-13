@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.IBranchNameProvider;
@@ -31,6 +32,7 @@ import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
+import org.eclipse.egit.ui.internal.components.BranchNameNormalizer;
 import org.eclipse.egit.ui.internal.components.UpstreamConfigComponent;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.jface.dialogs.Dialog;
@@ -125,10 +127,6 @@ class CreateBranchPage extends WizardPage {
 
 	private final LocalResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
-
-	private Button normalizeName;
-
-	private BranchNormalizer branchNormalizer = new BranchNormalizer();
 
 	/**
 	 * Constructs this page.
@@ -240,23 +238,6 @@ class CreateBranchPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
 				.applyTo(nameText);
 
-		normalizeName = new Button(main, SWT.CHECK);
-		normalizeName.setText(UIText.CreateBranchPage_NormalizeBranchName);
-		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
-				.applyTo(normalizeName);
-		normalizeName.setSelection(true);
-		normalizeName.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				branchNormalizer.modifyText(null);
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-
 		upstreamConfigComponent = new UpstreamConfigComponent(main, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, false).span(4, 1)
 				.applyTo(upstreamConfigComponent.getContainer());
@@ -295,8 +276,9 @@ class CreateBranchPage extends WizardPage {
 
 		nameText.setFocus();
 		// add the listeners just now to avoid unneeded checkPage()
-		nameText.addModifyListener(branchNormalizer);
 		nameText.addModifyListener(e -> checkPage());
+		BranchNameNormalizer normalizer = new BranchNameNormalizer(nameText);
+		normalizer.setVisible(false);
 	}
 
 	@Override
@@ -409,10 +391,10 @@ class CreateBranchPage extends WizardPage {
 	 */
 	public void createBranch(String newRefName, boolean checkoutNewBranch,
 			IProgressMonitor monitor)
-			throws CoreException,
-			IOException {
-		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
-				IProgressMonitor.UNKNOWN);
+			throws CoreException, IOException {
+		SubMonitor progress = SubMonitor.convert(monitor,
+				checkoutNewBranch ? 2 : 1);
+		progress.setTaskName(UIText.CreateBranchPage_CreatingBranchMessage);
 
 		final CreateLocalBranchOperation cbop;
 
@@ -425,15 +407,12 @@ class CreateBranchPage extends WizardPage {
 					myRepository.findRef(this.sourceRefName),
 					upstreamConfig);
 
-		cbop.execute(monitor);
+		cbop.execute(progress.newChild(1));
 
-		if (checkoutNewBranch) {
-			if (monitor.isCanceled())
-				return;
-			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
-					IProgressMonitor.UNKNOWN);
+		if (checkoutNewBranch && !progress.isCanceled()) {
+			progress.setTaskName(UIText.CreateBranchPage_CheckingOutMessage);
 			BranchOperationUI.checkout(myRepository, Constants.R_HEADS + newRefName)
-					.run(monitor);
+					.run(progress.newChild(1));
 		}
 	}
 
@@ -514,45 +493,6 @@ class CreateBranchPage extends WizardPage {
 		@Override
 		protected String getMessageText() {
 			return UIText.CreateBranchPage_SourceSelectionDialogMessage;
-		}
-	}
-
-	private final class BranchNormalizer implements ModifyListener {
-		private static final String UNDERSCORE = "_"; //$NON-NLS-1$
-
-		private String oldName = ""; //$NON-NLS-1$
-
-		private boolean listenerActive;
-
-		@Override
-		public void modifyText(ModifyEvent e) {
-			nameText.setFocus();
-			if (listenerActive || normalizeName.getSelection() == false)
-				return;
-			try {
-				listenerActive = true;
-				normalize();
-			} finally {
-				listenerActive = false;
-			}
-		}
-
-		private void normalize() {
-			String name = nameText.getText();
-			// if not pasting then allow the user to type a space
-			if (!isPaste()) {
-				name = name.replaceAll("\\s$", UNDERSCORE);//$NON-NLS-1$
-			}
-			name = Repository.normalizeBranchName(name);
-			nameText.setText(name);
-			nameText.setSelection(nameText.getText().length() + 1);
-		}
-
-		private boolean isPaste() {
-			boolean result = Math
-					.abs(oldName.length() - nameText.getText().length()) > 1;
-			oldName = nameText.getText();
-			return result;
 		}
 	}
 }

@@ -17,6 +17,7 @@
  * Copyright (C) 2015, Laurent Delaigue <laurent.delaigue@obeo.fr>
  * Copyright (C) 2015, Denis Zygann <d.zygann@web.de>
  * Copyright (C) 2016, Lars Vogel <Lars.Vogel@vogella.com>
+ * Copyright (C) 2017, Wim Jongman <wim.jongman@remainsoftware.com> bug 358152
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -98,6 +99,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AddConfigEntryDialog_EnterValueMessage;
+
+	/** */
+	public static String AddConfigEntryDialog_InvalidKeyMessage;
 
 	/** */
 	public static String AddConfigEntryDialog_KeyComponentsMessage;
@@ -1228,6 +1232,9 @@ public class UIText extends NLS {
 	public static String CherryPickHandler_WorktreeDirty;
 
 	/** */
+	public static String CherryPickHandler_cherryPickButtonLabel;
+
+	/** */
 	public static String CherryPickOperation_InternalError;
 
 	/** */
@@ -1559,6 +1566,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ReflogView_DateColumnHeader;
+
+	/** */
+	public static String ReflogView_ErrorOnLoad;
 
 	/** */
 	public static String ReflogView_ErrorOnOpenCommit;
@@ -2347,6 +2357,9 @@ public class UIText extends NLS {
 	public static String CommitDialog_WrongTypeOfCommitMessageProvider;
 
 	/** */
+	public static String CommitDialog_ErrorCreatingCommitMessageProvider;
+
+	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
@@ -2458,25 +2471,7 @@ public class UIText extends NLS {
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
 
 	/** */
-	public static String SpellcheckableMessageArea_redo;
-
-	/** */
 	public static String SpellcheckableMessageArea_showWhitespace;
-
-	/** */
-	public static String SpellcheckableMessageArea_undo;
-
-	/** */
-	public static String SpellCheckingMessageArea_copy;
-
-	/** */
-	public static String SpellCheckingMessageArea_cut;
-
-	/** */
-	public static String SpellCheckingMessageArea_paste;
-
-	/** */
-	public static String SpellCheckingMessageArea_selectAll;
 
 	/** */
 	public static String CommitMessageComponent_MessageInvalidAuthor;
@@ -2615,9 +2610,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_MissingSourceMessage;
-
-	/** */
-	public static String CreateBranchPage_NormalizeBranchName;
 
 	/** */
 	public static String CreateBranchPage_SourceLabel;
@@ -2848,6 +2840,9 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_CreatingTagTaskName;
 
 	/** */
+	public static String FetchGerritChangePage_FetchingRemoteRefsMessage;
+
+	/** */
 	public static String FetchGerritChangePage_FetchingTaskName;
 
 	/** */
@@ -2872,7 +2867,7 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_PageTitle;
 
 	/** */
-	public static String FetchGerritChangePage_RunInBackground;
+	public static String FetchGerritChangePage_ShowingProposalsJobName;
 
 	/** */
 	public static String FetchGerritChangePage_SuggestedRefNamePattern;
@@ -3101,6 +3096,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LaunchFinder_ContinueQuestion;
+
+	/** */
+	public static String BranchNameNormalizer_Tooltip;
+
+	/** */
+	public static String BranchNameNormalizer_TooltipForTag;
 
 	/** */
 	public static String BranchRebaseMode_Rebase;
@@ -3691,6 +3692,9 @@ public class UIText extends NLS {
 	public static String DiscardChangesAction_discardChanges;
 
 	/** */
+	public static String DiscardChangesAction_discardChangesButtonText;
+
+	/** */
 	public static String Disconnect_disconnect;
 
 	/** */
@@ -3923,6 +3927,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitSelectWizardPage_ProjectCreationHeader;
+
+	/** */
+	public static String GitSelectWizardPage_Selected;
 
 	/** */
 	public static String GitSelectWizardPage_UseNewProjectsWizardButton;
@@ -4271,6 +4278,30 @@ public class UIText extends NLS {
 	public static String CommitEditor_showGitRepo;
 
 	/** */
+	public static String CommitEditor_toolbarApplyStash;
+
+	/** */
+	public static String CommitEditor_toolbarDeleteStash;
+
+	/** */
+	public static String CommitEditor_toolbarCreateTag;
+
+	/** */
+	public static String CommitEditor_toolbarCreateBranch;
+
+	/** */
+	public static String CommitEditor_toolbarCheckOut;
+
+	/** */
+	public static String CommitEditor_toolbarCherryPick;
+
+	/** */
+	public static String CommitEditor_toolbarRevert;
+
+	/** */
+	public static String CommitEditor_toolbarShowInHistory;
+
+	/** */
 	public static String CommitEditor_TitleHeaderCommit;
 
 	/** */
@@ -4581,6 +4612,9 @@ public class UIText extends NLS {
 	public static String NewRepositoryWizard_WizardTitle;
 
 	/** */
+	public static String NonBlockingWizardDialog_BackgroundJobName;
+
+	/** */
 	public static String NonDeletedFilesDialog_NonDeletedFilesMessage;
 
 	/** */
@@ -4746,31 +4780,70 @@ public class UIText extends NLS {
 	public static String RevertOperation_InternalError;
 
 	/** */
-	public static String SelectUriWiazrd_Title;
+	public static String SelectUriWizard_Title;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_AddRefSpecButton;
+	public static String AbstractConfigureRemoteDialog_AddRefSpecLabel;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_BranchLabel;
+	public static String AbstractConfigureRemoteDialog_BranchLabel;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_ChangeRefSpecButton;
+	public static String AbstractConfigureRemoteDialog_ChangeRefSpecLabel;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_ChangeUriButton;
+	public static String AbstractConfigureRemoteDialog_ChangeUriLabel;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_CopyRefSpecButton;
+	public static String AbstractConfigureRemoteDialog_DeleteUriLabel;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_DeleteRefSpecButton;
+	public static String AbstractConfigureRemoteDialog_DetachedHeadMessage;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_DeleteUriButton;
+	public static String AbstractConfigureRemoteDialog_DryRunButton;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_DetachedHeadMessage;
+	public static String AbstractConfigureRemoteDialog_EditAdvancedLabel;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_EmptyClipboardDialogMessage;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_EmptyClipboardDialogTitle;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_InvalidRefDialogMessage;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_InvalidRefDialogTitle;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_MissingUriMessage;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_NoRefSpecDialogMessage;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_NoRefSpecDialogTitle;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_PasteRefSpecButton;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_RefMappingGroup;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_ReusedRemoteWarning;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_RevertButton;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_SaveButton;
+
+	/** */
+	public static String AbstractConfigureRemoteDialog_UriLabel;
 
 	/** */
 	public static String SimpleConfigureFetchDialog_DialogMessage;
@@ -4779,55 +4852,10 @@ public class UIText extends NLS {
 	public static String SimpleConfigureFetchDialog_DialogTitle;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_DryRunButton;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_EditAdvancedButton;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_EmptyClipboardMessage;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_InvalidRefDialogMessage;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_InvalidRefDialogTitle;
-
-	/** */
 	public static String SimpleConfigureFetchDialog_MissingMappingMessage;
 
 	/** */
-	public static String SimpleConfigureFetchDialog_MissingUriMessage;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_NothingToPasteMessage;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_NotRefSpecDialogMessage;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_NotRefSpecDialogTitle;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_PateRefSpecButton;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_RefMappingGroup;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_ReusedRemoteWarning;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_RevertButton;
-
-	/** */
 	public static String SimpleConfigureFetchDialog_SaveAndFetchButton;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_SaveButton;
-
-	/** */
-	public static String SimpleConfigureFetchDialog_UriLabel;
 
 	/** */
 	public static String SimpleConfigureFetchDialog_WindowTitle;
@@ -4836,22 +4864,7 @@ public class UIText extends NLS {
 	public static String SimpleConfigurePushDialog_AddPushUriButton;
 
 	/** */
-	public static String SimpleConfigurePushDialog_AddRefSpecButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_BranchLabel;
-
-	/** */
 	public static String SimpleConfigurePushDialog_ChangePushUriButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_ChangeRefSpecButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_ChangeUriButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_CopyRefSpecButton;
 
 	/** */
 	public static String SimpleConfigurePushDialog_DefaultPushNoRefspec;
@@ -4860,70 +4873,16 @@ public class UIText extends NLS {
 	public static String SimpleConfigurePushDialog_DeletePushUriButton;
 
 	/** */
-	public static String SimpleConfigurePushDialog_DeleteRefSpecButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_DeleteUriButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_DetachedHeadMessage;
-
-	/** */
 	public static String SimpleConfigurePushDialog_DialogMessage;
 
 	/** */
 	public static String SimpleConfigurePushDialog_DialogTitle;
 
 	/** */
-	public static String SimpleConfigurePushDialog_DryRunButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_EditAdvancedButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_EmptyClipboardDialogMessage;
-
-	/** */
-	public static String SimpleConfigurePushDialog_EmptyClipboardDialogTitle;
-
-	/** */
-	public static String SimpleConfigurePushDialog_InvalidRefDialogMessage;
-
-	/** */
-	public static String SimpleConfigurePushDialog_InvalidRefDialogTitle;
-
-	/** */
-	public static String SimpleConfigurePushDialog_MissingUriMessage;
-
-	/** */
-	public static String SimpleConfigurePushDialog_NoRefSpecDialogMessage;
-
-	/** */
-	public static String SimpleConfigurePushDialog_NoRefSpecDialogTitle;
-
-	/** */
-	public static String SimpleConfigurePushDialog_PasteRefSpecButton;
-
-	/** */
 	public static String SimpleConfigurePushDialog_PushUrisLabel;
 
 	/** */
-	public static String SimpleConfigurePushDialog_RefMappingGroup;
-
-	/** */
-	public static String SimpleConfigurePushDialog_ReusedOriginWarning;
-
-	/** */
-	public static String SimpleConfigurePushDialog_RevertButton;
-
-	/** */
 	public static String SimpleConfigurePushDialog_SaveAndPushButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_SaveButton;
-
-	/** */
-	public static String SimpleConfigurePushDialog_URILabel;
 
 	/** */
 	public static String SimpleConfigurePushDialog_UseUriForPushUriMessage;
@@ -4978,6 +4937,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_InvalidRefNameMessage;
+
+	/** */
+	public static String ValidationUtils_InvalidRevision;
 
 	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;
