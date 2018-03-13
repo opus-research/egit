@@ -36,8 +36,6 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
@@ -394,14 +392,6 @@ public abstract class AbstractConfigureRemoteDialog
 				selectAllRefSpecsAction.setEnabled(specViewer.getTable()
 						.getItemCount() > 0
 						&& sel.size() != specViewer.getTable().getItemCount());
-			}
-		});
-
-		specViewer.addDoubleClickListener(new IDoubleClickListener() {
-
-			@Override
-			public void doubleClick(DoubleClickEvent event) {
-				doChangeRefSpec();
 			}
 		});
 
