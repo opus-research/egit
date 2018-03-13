@@ -21,12 +21,9 @@ package org.eclipse.egit.ui.internal.dialogs;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -38,7 +35,6 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
-import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.UIPreferences;
@@ -666,7 +662,7 @@ public class CommitMessageComponent {
 	 * @param paths
 	 * @return the calculated commit message
 	 */
-	String calculateCommitMessage(Collection<String> paths) {
+	private String calculateCommitMessage(Collection<String> paths) {
 		if (commitMessage != null) {
 			// special case for merge
 			return commitMessage;
@@ -674,7 +670,7 @@ public class CommitMessageComponent {
 
 		if (amending)
 			return previousCommitMessage;
-		StringBuilder calculatedCommitMessage = new StringBuilder();
+		String calculatedCommitMessage = null;
 
 		Set<IResource> resources = new HashSet<>();
 		for (String path : paths) {
@@ -682,64 +678,41 @@ public class CommitMessageComponent {
 			if (file != null)
 				resources.add(file.getProject());
 		}
-		if (resources.size() == 0 && repository != null) {
-			resources
-					.addAll(Arrays.asList(ProjectUtil.getProjects(repository)));
-		}
-		List<ICommitMessageProvider> messageProviders = getCommitMessageProviders();
-		IResource[] resourcesArray = resources.toArray(new IResource[0]);
-		String providedMessageSeparator = "\n\n"; //$NON-NLS-1$
-
-		for (ICommitMessageProvider messageProvider : messageProviders) {
-			String message = null;
-			try {
-				message = messageProvider.getMessage(resourcesArray);
-			} catch (RuntimeException e) {
-				Activator.logError(e.getMessage(), e);
+		try {
+			ICommitMessageProvider messageProvider = getCommitMessageProvider();
+			if (messageProvider != null) {
+				IResource[] resourcesArray = resources
+						.toArray(new IResource[0]);
+				calculatedCommitMessage = messageProvider
+						.getMessage(resourcesArray);
 			}
-
-			if (message != null && !message.trim().isEmpty()) {
-				if (calculatedCommitMessage.length() > 0) {
-					calculatedCommitMessage.append(providedMessageSeparator);
-				}
-				calculatedCommitMessage.append((message.trim()));
-			}
+		} catch (CoreException coreException) {
+			Activator.logError(coreException.getLocalizedMessage(),
+					coreException);
 		}
-
-		return calculatedCommitMessage.toString();
+		if (calculatedCommitMessage != null)
+			return calculatedCommitMessage;
+		else
+			return EMPTY_STRING;
 	}
 
-	List<ICommitMessageProvider> getCommitMessageProviders() {
-		List<ICommitMessageProvider> providers = new ArrayList<>();
-
+	private ICommitMessageProvider getCommitMessageProvider()
+			throws CoreException {
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
-		IConfigurationElement[] configs = registry
+		IConfigurationElement[] config = registry
 				.getConfigurationElementsFor(COMMIT_MESSAGE_PROVIDER_ID);
-		for (IConfigurationElement config : configs) {
+		if (config.length > 0) {
 			Object provider;
-			String contributorName = "<unknown>"; //$NON-NLS-1$
-			String extensionId = "<unknown>"; //$NON-NLS-1$
-			try {
-				extensionId = config.getDeclaringExtension()
-						.getUniqueIdentifier();
-				contributorName = config.getContributor().getName();
-				provider = config.createExecutableExtension("class");//$NON-NLS-1$
-				if (provider instanceof ICommitMessageProvider) {
-					providers.add((ICommitMessageProvider) provider);
-				} else {
-					Activator.logError(MessageFormat.format(
-							UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
-							extensionId, contributorName), null);
-				}
-			} catch (CoreException | RuntimeException e) {
+			provider = config[0].createExecutableExtension("class");//$NON-NLS-1$
+			if (provider instanceof ICommitMessageProvider) {
+				return (ICommitMessageProvider) provider;
+			} else {
 				Activator.logError(
-						MessageFormat.format(
-								UIText.CommitDialog_ErrorCreatingCommitMessageProvider,
-								extensionId, contributorName),
-						e);
+						UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
+						null);
 			}
 		}
-		return providers;
+		return null;
 	}
 
 	private void saveOriginalChangeId() {

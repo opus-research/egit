@@ -14,7 +14,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jgit.revwalk.RevFlag;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -39,28 +38,16 @@ public class FindResults {
 
 	private boolean overflow;
 
-	private final CopyOnWriteArrayList<IFindListener> listeners = new CopyOnWriteArrayList<>();
+	private final IFindListener listener;
 
 	/**
-	 * Adds the given listener to be notified when search results are added or
-	 * the results are cleared. Has no effect if the listener is already
-	 * registered.
+	 * Creates a new results object notifying the given listener upon changes.
 	 *
 	 * @param listener
-	 *            to add
+	 *            to notify
 	 */
-	public void addFindListener(IFindListener listener) {
-		listeners.addIfAbsent(listener);
-	}
-
-	/**
-	 * Removes the given listener if it was registered.
-	 *
-	 * @param listener
-	 *            to remove
-	 */
-	public void removeFindListener(IFindListener listener) {
-		listeners.remove(listener);
+	public FindResults(IFindListener listener) {
+		this.listener = listener;
 	}
 
 	/**
@@ -191,13 +178,8 @@ public class FindResults {
 		matchesMap.clear();
 		revObjList.clear();
 		keysArray = null;
-		boolean hadItems = matchesCount > 0;
 		matchesCount = 0;
-		if (hadItems) {
-			for (IFindListener listener : listeners) {
-				listener.cleared();
-			}
-		}
+		listener.cleared();
 	}
 
 	/**
@@ -215,9 +197,7 @@ public class FindResults {
 		revObjList.add(revObj);
 		revObj.add(highlight);
 		keysArray = null;
-		for (IFindListener listener : listeners) {
-			listener.itemAdded(matchIx, revObj);
-		}
+		listener.itemAdded(matchIx, revObj);
 	}
 
 	private Integer[] getkeysArray() {

@@ -93,9 +93,7 @@ public class IndexDiffCacheTest extends GitTestCase {
 		if (!indexDiffData.getUntracked().contains(path))
 			fail("IndexDiffData did not contain aFile as untracked");
 		// This call should trigger an indexDiffChanged event
-		try (Git git = new Git(repository)) {
-			git.add().addFilepattern(path).call();
-		}
+		new Git(repository).add().addFilepattern(path).call();
 		IndexDiffData indexDiffData2 = waitForListenerCalled();
 		if (indexDiffData2.getUntracked().contains(path))
 			fail("IndexDiffData contains aFile as untracked");

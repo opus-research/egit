@@ -27,11 +27,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.IWorkspaceRunnable;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.BranchOperation;
@@ -226,13 +222,12 @@ public class TestRepository {
 			NoMessageException, UnmergedPathException,
 			ConcurrentRefUpdateException, JGitInternalException,
 			WrongRepositoryStateException, GitAPIException {
-		try (Git git = new Git(repository)) {
-			CommitCommand commitCommand = git.commit();
-			commitCommand.setAuthor("J. Git", "j.git@egit.org");
-			commitCommand.setCommitter(commitCommand.getAuthor());
-			commitCommand.setMessage(message);
-			return commitCommand.call();
-		}
+		Git git = new Git(repository);
+		CommitCommand commitCommand = git.commit();
+		commitCommand.setAuthor("J. Git", "j.git@egit.org");
+		commitCommand.setCommitter(commitCommand.getAuthor());
+		commitCommand.setMessage(message);
+		return commitCommand.call();
 	}
 
 	/**
@@ -246,9 +241,7 @@ public class TestRepository {
 	public void track(File file) throws IOException, NoFilepatternException, GitAPIException {
 		String repoPath = getRepoRelativePath(new Path(file.getPath())
 				.toString());
-		try (Git git = new Git(repository)) {
-			git.add().addFilepattern(repoPath).call();
-		}
+		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 
 	/**
@@ -285,8 +278,8 @@ public class TestRepository {
 	public void untrack(File file) throws IOException {
 		String repoPath = getRepoRelativePath(new Path(file.getPath())
 				.toString());
-		try (Git git = new Git(repository)) {
-			git.rm().addFilepattern(repoPath).call();
+		try {
+			new Git(repository).rm().addFilepattern(repoPath).call();
 		} catch (GitAPIException e) {
 			throw new IOException(e.getMessage());
 		}
@@ -366,9 +359,7 @@ public class TestRepository {
 	 */
 	public void addToIndex(IResource resource) throws CoreException, IOException, NoFilepatternException, GitAPIException {
 		String repoPath = getRepoRelativePath(resource.getLocation().toString());
-		try (Git git = new Git(repository)) {
-			git.add().addFilepattern(repoPath).call();
-		}
+		new Git(repository).add().addFilepattern(repoPath).call();
 	}
 
 	/**
@@ -542,20 +533,14 @@ public class TestRepository {
 	 * Disconnects provider from project
 	 *
 	 * @param project
-	 * @throws Exception
+	 * @throws CoreException
 	 */
-	public void disconnect(IProject project) throws Exception {
+	public void disconnect(IProject project) throws CoreException {
 		Collection<IProject> projects = Collections.singleton(project
 				.getProject());
 		DisconnectProviderOperation disconnect = new DisconnectProviderOperation(
 				projects);
-		ResourcesPlugin.getWorkspace().run(new IWorkspaceRunnable() {
-			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-				disconnect.execute(null);
-			}
-		}, project, IWorkspace.AVOID_UPDATE, null);
-		TestUtils.waitForJobs(5000, null);
+		disconnect.execute(null);
 	}
 
 	public URIish getUri() throws URISyntaxException {
