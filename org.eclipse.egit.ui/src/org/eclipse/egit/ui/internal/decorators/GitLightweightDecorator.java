@@ -113,9 +113,6 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 	private static RGB defaultBackgroundRgb;
 
-	private final DecorationHelper helper = new DecorationHelper(
-			Activator.getDefault().getPreferenceStore());
-
 	private RepositoryMappingChangeListener mappingChangeListener = new RepositoryMappingChangeListener() {
 
 		@Override
@@ -235,6 +232,8 @@ public class GitLightweightDecorator extends LabelProvider implements
 			return;
 		}
 		IDecoratableResource decoratableResource = null;
+		final DecorationHelper helper = new DecorationHelper(
+				Activator.getDefault().getPreferenceStore());
 		try {
 			decoratableResource = new DecoratableResourceAdapter(indexDiffData, resource);
 		} catch (IOException e) {
@@ -281,6 +280,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 		if (!decoRes.isTracked() && isWorkingSet) {
 			return;
 		}
+
+		final DecorationHelper helper = new DecorationHelper(
+				Activator.getDefault().getPreferenceStore());
 
 		helper.decorate(decoration, decoRes);
 	}
