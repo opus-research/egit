@@ -276,9 +276,8 @@ public class UIUtils {
 	 *            instance of {@link Control} object with should be decorated
 	 * @param tooltip
 	 *            text value which should appear after clicking on bulb image.
-	 * @return the {@link ControlDecoration} created
 	 */
-	public static ControlDecoration addBulbDecorator(final Control control,
+	public static void addBulbDecorator(final Control control,
 			final String tooltip) {
 		ControlDecoration dec = new ControlDecoration(control, SWT.TOP
 				| SWT.LEFT);
@@ -290,7 +289,6 @@ public class UIUtils {
 		dec.setShowHover(true);
 
 		dec.setDescriptionText(tooltip);
-		return dec;
 	}
 
 	/**
