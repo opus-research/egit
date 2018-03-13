@@ -3247,6 +3247,12 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_AlwaysUseStagingView;
 
 	/** */
+	public static String CommittingPreferencePage_autoStageDeletion;
+
+	/** */
+	public static String CommittingPreferencePage_autoStageMoves;
+
+	/** */
 	public static String CommittingPreferencePage_AutoStageOnCommit;
 
 	/** */
@@ -4317,9 +4323,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StashEditorPage_LabelParent2;
-
-	/** */
-	public static String MultiPageEditorContentOutlinePage_NoOutline;
 
 	/** */
 	public static String Header_contextMenu_copy;
