@@ -147,15 +147,15 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		// configure fetch dialog
 		shell = bot.shell(UIText.SimpleConfigureFetchDialog_WindowTitle);
 		// change uri
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_ChangeUriLabel)
+		shell.bot().button(UIText.SimpleConfigureFetchDialog_ChangeUriButton)
 				.click();
-		shell = bot.shell(UIText.SelectUriWizard_Title);
+		shell = bot.shell(UIText.SelectUriWiazrd_Title);
 		shell.bot().text().setText("file:///" + remoteRepositoryFile.getPath());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		// now we have the fetch URI
 		// back to dialog
 		shell = bot.shell(UIText.SimpleConfigureFetchDialog_WindowTitle);
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_AddRefSpecLabel)
+		shell.bot().button(UIText.SimpleConfigureFetchDialog_AddRefSpecButton)
 				.click();
 		shell = bot.shell(UIText.SimpleFetchRefSpecWizard_WizardTitle);
 		shell.bot().textWithLabel(UIText.FetchSourcePage_SourceLabel).setText(
@@ -167,7 +167,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		// back to dialog
 		shell = bot.shell(UIText.SimpleConfigureFetchDialog_WindowTitle);
 		// save
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_SaveButton)
+		shell.bot().button(UIText.SimpleConfigureFetchDialog_SaveButton)
 				.click();
 
 		refreshAndWait();
@@ -184,8 +184,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 		shell = bot.shell(UIText.SimpleConfigurePushDialog_WindowTitle);
 		shell.bot()
-				.button(UIText.AbstractConfigureRemoteDialog_AddRefSpecLabel,
-						1)
+				.button(UIText.SimpleConfigurePushDialog_AddRefSpecButton, 1)
 				.click();
 
 		// add push spec
@@ -207,7 +206,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		});
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
 		shell = bot.shell(UIText.SimpleConfigurePushDialog_WindowTitle);
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_SaveButton).click();
+		shell.bot().button(UIText.SimpleConfigurePushDialog_SaveButton).click();
 
 		refreshAndWait();
 		// assert 2 children
@@ -247,15 +246,15 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		String shellText = UIText.SimpleConfigureFetchDialog_WindowTitle;
 		shell = bot.shell(shellText);
 		// change uri
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_ChangeUriLabel)
+		shell.bot().button(UIText.SimpleConfigureFetchDialog_ChangeUriButton)
 				.click();
-		shell = bot.shell(UIText.SelectUriWizard_Title);
+		shell = bot.shell(UIText.SelectUriWiazrd_Title);
 		shell.bot().text().setText("file:///" + remoteRepositoryFile.getPath());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		// back to dialog
 		shell = bot.shell(shellText);
 		// add refSpec
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_AddRefSpecLabel)
+		shell.bot().button(UIText.SimpleConfigureFetchDialog_AddRefSpecButton)
 				.click();
 		shell = bot.shell(UIText.SimpleFetchRefSpecWizard_WizardTitle);
 		shell.bot().textWithLabel(UIText.FetchSourcePage_SourceLabel).setText(
@@ -267,7 +266,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 		// back to dialog
 		shell = bot.shell(shellText);
 		// save
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_SaveButton)
+		shell.bot().button(UIText.SimpleConfigureFetchDialog_SaveButton)
 				.click();
 		refreshAndWait();
 		// assert 1 children
@@ -302,14 +301,13 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 		// back to dialog
 		shell = bot.shell(shellText);
-		shell = bot.shell(UIText.SelectUriWizard_Title);
+		shell = bot.shell(UIText.SelectUriWiazrd_Title);
 		shell.bot().text().setText("file:///" + remoteRepositoryFile.getPath());
 		shell.bot().button(IDialogConstants.FINISH_LABEL).click();
 		shell = bot.shell(shellText);
 		// Add is on two buttons
 		shell.bot()
-				.button(UIText.AbstractConfigureRemoteDialog_AddRefSpecLabel,
-						1)
+				.button(UIText.SimpleConfigurePushDialog_AddRefSpecButton, 1)
 				.click();
 		// add push spec
 		shell = bot.shell(UIText.RefSpecDialog_WindowTitle);
@@ -334,7 +332,7 @@ public class GitRepositoriesViewRemoteHandlingTest extends
 
 		// back to dialog
 		shell = bot.shell(shellText);
-		shell.bot().button(UIText.AbstractConfigureRemoteDialog_SaveButton).click();
+		shell.bot().button(UIText.SimpleConfigurePushDialog_SaveButton).click();
 		refreshAndWait();
 		// assert 2 children
 		item = TestUtil.expandAndWait(
