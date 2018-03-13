@@ -34,7 +34,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtensionRegistry;
-import org.eclipse.core.runtime.InvalidRegistryObjectException;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.egit.core.RevUtils;
 import org.eclipse.egit.core.internal.gerrit.GerritUtil;
@@ -62,7 +61,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.ChangeIdUtil;
 import org.eclipse.jgit.util.RawParseUtils;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.widgets.Shell;
@@ -675,7 +673,7 @@ public class CommitMessageComponent {
 
 		if (amending)
 			return previousCommitMessage;
-		StringBuilder calculatedCommitMessage = new StringBuilder();
+		String calculatedCommitMessage = EMPTY_STRING;
 
 		Set<IResource> resources = new HashSet<>();
 		for (String path : paths) {
@@ -687,58 +685,41 @@ public class CommitMessageComponent {
 			resources
 					.addAll(Arrays.asList(ProjectUtil.getProjects(repository)));
 		}
-		String providedMessageSeparator = "\n\n"; //$NON-NLS-1$
 		try {
-			List<ICommitMessageProvider> messageProviders = getCommitMessageProviders();
-			IResource[] resourcesArray = resources
-					.toArray(new IResource[0]);
+			List<ICommitMessageProvider> messageProviders = getCommitMessageProvider();
 			for (ICommitMessageProvider messageProvider : messageProviders) {
-				String message = messageProvider.getMessage(resourcesArray);
-				if ((message != null) && (!"".equals(message.trim()))) { //$NON-NLS-1$
-					calculatedCommitMessage.append(providedMessageSeparator)
-							.append((message.trim()));
+				if (messageProvider != null) {
+					IResource[] resourcesArray = resources
+							.toArray(new IResource[0]);
+					calculatedCommitMessage = calculatedCommitMessage
+							+ System.getProperty("line.separator") //$NON-NLS-1$
+							+ (messageProvider.getMessage(resourcesArray)
+									.trim());
 				}
 			}
 		} catch (CoreException coreException) {
 			Activator.logError(coreException.getLocalizedMessage(),
 					coreException);
 		}
-		// remove preceding line breaks before returning
-		return calculatedCommitMessage.toString()
-				.substring(providedMessageSeparator.length());
+		return calculatedCommitMessage;
 	}
 
-	private List<ICommitMessageProvider> getCommitMessageProviders()
+	private List<ICommitMessageProvider> getCommitMessageProvider()
 			throws CoreException {
 		List<ICommitMessageProvider> providers = new ArrayList<>();
 
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
-		IConfigurationElement[] configs = registry
+		IConfigurationElement[] config = registry
 				.getConfigurationElementsFor(COMMIT_MESSAGE_PROVIDER_ID);
-		for (IConfigurationElement config : configs) {
+		for (int i = 0; i < config.length; i++) {
 			Object provider;
-			try {
-				provider = config.createExecutableExtension("class");//$NON-NLS-1$
-				if (provider instanceof ICommitMessageProvider) {
-					providers.add((ICommitMessageProvider) provider);
-				} else {
-					Activator.logError(
-							UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
-							null);
-				}
-			} catch (CoreException | InvalidRegistryObjectException e) {
-				String contributorName;
-				try {
-					contributorName = config.getDeclaringExtension()
-							.getContributor().getName();
-				} catch (InvalidRegistryObjectException e1) {
-					contributorName = ""; //$NON-NLS-1$
-				}
+			provider = config[i].createExecutableExtension("class");//$NON-NLS-1$
+			if (provider instanceof ICommitMessageProvider) {
+				providers.add((ICommitMessageProvider) provider);
+			} else {
 				Activator.logError(
-						NLS.bind(
-								UIText.CommitDialog_ErrorCreatingCommitMessageProvider,
-								contributorName),
-						e);
+						UIText.CommitDialog_WrongTypeOfCommitMessageProvider,
+						null);
 			}
 		}
 		return providers;
