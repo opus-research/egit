@@ -43,8 +43,6 @@ public class ResetOperation implements IEGitOperation {
 
 	private final ResetType type;
 
-	private boolean isReflogDisabled;
-
 	/**
 	 * Construct a {@link ResetOperation}
 	 *
@@ -56,14 +54,6 @@ public class ResetOperation implements IEGitOperation {
 		this.repository = repository;
 		this.refName = refName;
 		this.type = type;
-	}
-
-	/**
-	 * @param disable
-	 *            if {@code true} reflog will not be updated by this operation
-	 */
-	public void disableReflog(boolean disable) {
-		this.isReflogDisabled = disable;
 	}
 
 	@Override
@@ -106,7 +96,6 @@ public class ResetOperation implements IEGitOperation {
 		ResetCommand reset = Git.wrap(repository).reset();
 		reset.setMode(type);
 		reset.setRef(refName);
-		reset.disableRefLog(isReflogDisabled);
 		try {
 			reset.call();
 		} catch (GitAPIException e) {

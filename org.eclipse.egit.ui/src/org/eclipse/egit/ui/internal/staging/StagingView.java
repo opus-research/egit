@@ -52,10 +52,8 @@ import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
-import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.op.CommitOperation;
-import org.eclipse.egit.core.op.ResetOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
@@ -137,7 +135,6 @@ import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
-import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -235,8 +232,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 	private static final String HORIZONTAL_SASH_FORM_WEIGHT = "HORIZONTAL_SASH_FORM_WEIGHT"; //$NON-NLS-1$
 
 	private static final String STAGING_SASH_FORM_WEIGHT = "STAGING_SASH_FORM_WEIGHT"; //$NON-NLS-1$
-
-	private static final String HEADS_FIRST_PARENT = Constants.HEAD + "~"; //$NON-NLS-1$
 
 	private ISelection initialSelection;
 
@@ -604,8 +599,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 	private boolean disposed;
 
-	private RevCommit amendedCommit;
-
 	private Image getImage(ImageDescriptor descriptor) {
 		return (Image) this.resources.get(descriptor);
 	}
@@ -813,9 +806,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 
 			@Override
 			public void run() {
-				boolean isAmending = isChecked();
-				prepareAmend(isAmending);
-				commitMessageComponent.setAmendingButtonSelection(isAmending);
+				commitMessageComponent.setAmendingButtonSelection(isChecked());
 				updateMessage();
 			}
 		};
@@ -1181,26 +1172,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 			service.showBusyForFamily(org.eclipse.egit.core.JobFamilies.INDEX_DIFF_CACHE_UPDATE);
 	}
 
-	private void prepareAmend(boolean amend) {
-		String jobname = NLS.bind(UIText.ResetAction_reset, HEADS_FIRST_PARENT);
-		final ResetOperation operation;
-		if (amend) {
-			amendedCommit = Activator.getDefault().getRepositoryUtil()
-					.parseHeadCommit(currentRepository);
-			operation = new ResetOperation(currentRepository, HEADS_FIRST_PARENT,
-					ResetType.SOFT);
-		} else {
-			if (amendedCommit == null) {
-				throw new IllegalStateException(
-						"amendedCommit should have been set on previous amend"); //$NON-NLS-1$
-			}
-			operation = new ResetOperation(currentRepository,
-					amendedCommit.name(), ResetType.SOFT);
-		}
-		operation.disableReflog(true);
-		JobUtil.scheduleUserJob(operation, jobname, JobFamilies.RESET);
-	}
-
 	private boolean commitAndPushEnabled(boolean commitEnabled) {
 		Repository repo = currentRepository;
 		if (repo == null) {
@@ -1365,7 +1336,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (input instanceof IFileEditorInput) {
 			return ((IFileEditorInput) input).getFile();
 		} else {
-			return AdapterUtils.adaptToAnyResource(input);
+			return AdapterUtils.adapt(input, IResource.class);
 		}
 	}
 
@@ -2478,17 +2449,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 				reload(repo);
 			}
 		} else {
-			Repository repo = AdapterUtils.adapt(firstElement,
-					Repository.class);
-			if (repo != null) {
-				if (currentRepository != repo) {
-					reload(repo);
-				}
+			IResource resource = AdapterUtils.adapt(firstElement,
+					IResource.class);
+			if (resource != null) {
+				showResource(resource);
 			} else {
-				IResource resource = AdapterUtils
-						.adaptToAnyResource(firstElement);
-				if (resource != null) {
-					showResource(resource);
+				Repository repo = AdapterUtils.adapt(firstElement,
+						Repository.class);
+				if (repo != null && currentRepository != repo) {
+					reload(repo);
 				}
 			}
 		}
@@ -2555,7 +2524,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				addExpandedPathsBelowFolder(folder, unstagedViewer,
 						pathsToExpandInStaged);
 			} else {
-				IResource resource = AdapterUtils.adaptToAnyResource(element);
+				IResource resource = AdapterUtils.adapt(element, IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 					// doesn't do anything if the current repository is a
@@ -3107,12 +3076,14 @@ public class StagingView extends ViewPart implements IShowInSource {
 			else
 				loadExistingState(helper, oldState);
 		} else { // repository did not change
-			if (!commitMessageComponent.getHeadCommit()
-					.equals(helper.getPreviousCommit())
-					&& !commitMessageComponent.isAmending()
-					&& userEnteredCommitMessage()) {
-				addHeadChangedWarning(
-						commitMessageComponent.getCommitMessage());
+			if (!commitMessageComponent.getHeadCommit().equals(
+					helper.getPreviousCommit())) {
+				if (!commitMessageComponent.isAmending()
+						&& userEnteredCommitMessage())
+					addHeadChangedWarning(commitMessageComponent
+							.getCommitMessage());
+				else
+					loadInitialState(helper);
 			}
 		}
 		amendPreviousCommitAction.setChecked(commitMessageComponent

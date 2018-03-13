@@ -745,7 +745,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			List<IPath> paths = new ArrayList<>();
 			for (Iterator it = ss.iterator(); it.hasNext();) {
 				Object element = it.next();
-				IResource resource = AdapterUtils.adaptToAnyResource(element);
+				IResource resource = AdapterUtils.adapt(element, IResource.class);
 				if (resource != null) {
 					IPath location = resource.getLocation();
 					if (location != null)
@@ -863,8 +863,12 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 			if (ssel.size() != 1) {
 				return;
 			}
-			IResource adapted = AdapterUtils
-					.adaptToAnyResource(ssel.getFirstElement());
+			if (ssel.getFirstElement() instanceof IResource) {
+				showResource((IResource) ssel.getFirstElement());
+				return;
+			}
+			IResource adapted = AdapterUtils.adapt(ssel.getFirstElement(),
+					IResource.class);
 			if (adapted != null) {
 				showResource(adapted);
 				return;
