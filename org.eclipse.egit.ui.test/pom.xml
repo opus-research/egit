@@ -54,6 +54,11 @@
               </requirement>
               <requirement>
                 <type>eclipse-feature</type>
+                <id>org.eclipse.jgit.junit</id>
+                <versionRange>0.0.0</versionRange>
+              </requirement>
+              <requirement>
+                <type>eclipse-feature</type>
                 <id>org.eclipse.egit</id>
                 <versionRange>0.0.0</versionRange>
               </requirement>
@@ -92,6 +97,15 @@
           <useUIThread>false</useUIThread>
           <argLine>${ui.test.vmargs}</argLine>
           <application>org.eclipse.ui.ide.workbench</application>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/*Test.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
