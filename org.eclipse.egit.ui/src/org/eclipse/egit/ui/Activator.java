@@ -386,10 +386,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			@Override
 			public void windowActivated(IWorkbenchWindow window) {
 				updateUiState();
-				if (rcs.doReschedule) {
-					// 500: give the UI task a chance to update the active state
-					rcs.schedule(500);
-				}
+				if (rcs.doReschedule)
+					rcs.schedule();
 				refreshJob.triggerRefresh();
 			}
 		};
@@ -591,22 +589,16 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * A Job that looks at the repository meta data and triggers a refresh of
 	 * the resources in the affected projects.
 	 */
-	static class RepositoryChangeScanner extends Job
-			implements IPropertyChangeListener {
-
-		// volatile in order to ensure thread synchronization
-		volatile boolean doReschedule;
-
-		private int interval;
-
+	static class RepositoryChangeScanner extends Job {
 		RepositoryChangeScanner() {
 			super(UIText.Activator_repoScanJobName);
 			setRule(new RepositoryCacheRule());
-			setSystem(true);
-			setUser(false);
-			updateRefreshInterval();
 		}
 
+		// FIXME, need to be more intelligent about this to avoid too much work
+		private static final long REPO_SCAN_INTERVAL = 10000L;
+		// volatile in order to ensure thread synchronization
+		private volatile boolean doReschedule = true;
 
 		void setReschedule(boolean reschedule){
 			doReschedule = reschedule;
@@ -614,22 +606,20 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
-			if (!doReschedule) {
+			if (!doReschedule)
 				return Status.OK_STATUS;
-			}
 
 			// The core plugin might have been stopped before we could cancel
 			// this job.
 			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
 					.getDefault().getRepositoryCache();
-			if (repositoryCache == null) {
+			if (repositoryCache == null)
 				return Status.OK_STATUS;
-			}
 
 			// When people use Git from the command line a lot of changes
 			// may happen. Don't scan when inactive depending on the user's
 			// choice.
-			if (getDefault().getPreferenceStore()
+			if (Activator.getDefault().getPreferenceStore()
 					.getBoolean(UIPreferences.REFESH_ONLY_WHEN_ACTIVE)) {
 				if (!isActive()) {
 					monitor.done();
@@ -638,80 +628,48 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			}
 
 			Repository[] repos = repositoryCache.getAllRepositories();
-			if (repos.length == 0) {
+			if (repos.length == 0)
 				return Status.OK_STATUS;
-			}
 
 			monitor.beginTask(UIText.Activator_scanningRepositories,
 					repos.length);
 			try {
 				for (Repository repo : repos) {
-					if (monitor.isCanceled()) {
+					if (monitor.isCanceled())
 						break;
-					}
-					if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+					if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.REPOSITORYCHANGESCANNER
 										.getLocation(),
 								"Scanning " + repo + " for changes"); //$NON-NLS-1$ //$NON-NLS-2$
-					}
 
 					repo.scanForRepoChanges();
 					monitor.worked(1);
 				}
 			} catch (IOException e) {
-				if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+				if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.REPOSITORYCHANGESCANNER
 									.getLocation(),
 							"Stopped rescheduling " + getName() + "job"); //$NON-NLS-1$ //$NON-NLS-2$
-				}
 				return createErrorStatus(UIText.Activator_scanError, e);
 			} finally {
 				monitor.done();
 			}
-			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 				GitTraceLocation.getTrace().trace(
 						GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
 						"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-			}
-			if (doReschedule) {
-				schedule(interval);
-			}
+			if (doReschedule)
+				schedule(REPO_SCAN_INTERVAL);
 			return Status.OK_STATUS;
-		}
-
-		@Override
-		public void propertyChange(PropertyChangeEvent event) {
-			if (!UIPreferences.REFESH_INDEX_INTERVAL
-					.equals(event.getProperty())) {
-				return;
-			}
-			updateRefreshInterval();
-		}
-
-		void updateRefreshInterval() {
-			interval = getRefreshIndexInterval();
-			setReschedule(interval > 0);
-			if (doReschedule) {
-				cancel();
-				schedule(interval);
-			}
-		}
-
-		/**
-		 * @return interval in milliseconds for automatic index check, 0 is if
-		 *         check should be disabled
-		 */
-		static int getRefreshIndexInterval() {
-			return 1000 * getDefault().getPreferenceStore()
-					.getInt(UIPreferences.REFESH_INDEX_INTERVAL);
 		}
 	}
 
 	private void setupRepoChangeScanner() {
 		rcs = new RepositoryChangeScanner();
-		getPreferenceStore().addPropertyChangeListener(rcs);
+		rcs.setSystem(true);
+		rcs.schedule(RepositoryChangeScanner.REPO_SCAN_INTERVAL);
 	}
 
 	@Override
