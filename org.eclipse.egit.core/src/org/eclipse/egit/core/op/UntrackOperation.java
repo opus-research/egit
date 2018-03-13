@@ -20,7 +20,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.CoreText;
@@ -48,6 +48,8 @@ public class UntrackOperation implements IEGitOperation {
 
 	private final IdentityHashMap<Repository, DirCacheEditor> edits;
 
+	private final IdentityHashMap<RepositoryMapping, Object> mappings;
+
 	/**
 	 * Create a new operation to stop tracking existing files/folders.
 	 *
@@ -58,45 +60,53 @@ public class UntrackOperation implements IEGitOperation {
 	public UntrackOperation(final Collection<? extends IResource> rsrcs) {
 		rsrcList = rsrcs;
 		edits = new IdentityHashMap<Repository, DirCacheEditor>();
+		mappings = new IdentityHashMap<RepositoryMapping, Object>();
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	 */
 	@Override
-	public void execute(IProgressMonitor monitor) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor, rsrcList.size() * 2);
-		progress.setTaskName(CoreText.UntrackOperation_adding);
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 
 		edits.clear();
+		mappings.clear();
 
+		monitor.beginTask(CoreText.UntrackOperation_adding, rsrcList.size() * 200);
 		try {
 			for (IResource obj : rsrcList) {
 				remove(obj);
-				progress.worked(1);
+				monitor.worked(200);
 			}
 
-			progress.setWorkRemaining(edits.size());
 			for (Map.Entry<Repository, DirCacheEditor> e : edits.entrySet()) {
 				final Repository db = e.getKey();
 				final DirCacheEditor editor = e.getValue();
-				progress.setTaskName(
-						NLS.bind(CoreText.UntrackOperation_writingIndex,
-								db.getDirectory()));
+				monitor.setTaskName(NLS.bind(CoreText.UntrackOperation_writingIndex, db.getDirectory()));
 				editor.commit();
-				progress.worked(1);
 			}
 		} catch (RuntimeException e) {
 			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
 		} catch (IOException e) {
 			throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, e));
 		} finally {
-			for (DirCacheEditor editor : edits.values()) {
-				if (editor.getDirCache() != null) {
+			for (DirCacheEditor editor:edits.values())
+				if (editor.getDirCache() != null)
 					editor.getDirCache().unlock();
-				}
-			}
 			edits.clear();
+			mappings.clear();
+			monitor.done();
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
 	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return RuleUtil.getRuleForRepositories(rsrcList.toArray(new IResource[rsrcList.size()]));
@@ -108,13 +118,11 @@ public class UntrackOperation implements IEGitOperation {
 			return;
 		}
 		final GitProjectData pd = GitProjectData.get(proj);
-		if (pd == null) {
+		if (pd == null)
 			return;
-		}
 		final RepositoryMapping rm = pd.getRepositoryMapping(path);
-		if (rm == null) {
+		if (rm == null)
 			return;
-		}
 		final Repository db = rm.getRepository();
 
 		DirCacheEditor e = edits.get(db);
@@ -125,12 +133,12 @@ public class UntrackOperation implements IEGitOperation {
 				throw new CoreException(Activator.error(CoreText.UntrackOperation_failed, err));
 			}
 			edits.put(db, e);
+			mappings.put(rm, rm);
 		}
 
-		if (path instanceof IContainer) {
+		if (path instanceof IContainer)
 			e.add(new DirCacheEditor.DeleteTree(rm.getRepoRelativePath(path)));
-		} else {
+		else
 			e.add(new DirCacheEditor.DeletePath(rm.getRepoRelativePath(path)));
-		}
 	}
 }

@@ -283,6 +283,9 @@ public class StagingView extends ViewPart
 
 	private boolean isViewHidden;
 
+	/** Tracks the last selection while the view is not active. */
+	private StructuredSelection lastSelection;
+
 	private ISelectionListener selectionChangedListener;
 
 	private IPartListener2 partListener;
@@ -475,7 +478,6 @@ public class StagingView extends ViewPart
 	}
 
 	private final class PartListener implements IPartListener2 {
-		StructuredSelection lastSelection;
 
 		@Override
 		public void partVisible(IWorkbenchPartReference partRef) {
@@ -2999,9 +3001,16 @@ public class StagingView extends ViewPart
 	}
 
 	private void reactOnSelection(StructuredSelection selection) {
-		if (selection.size() != 1 || !shouldUpdateSelection()) {
+		if (selection.size() != 1 || isDisposed()) {
 			return;
 		}
+		if (!shouldUpdateSelection()) {
+			// Remember it all the same to be able to update the view when it
+			// becomes active again
+			lastSelection = reactOnSelection ? selection : null;
+			return;
+		}
+		lastSelection = null;
 		Object firstElement = selection.getFirstElement();
 		if (firstElement instanceof RepositoryTreeNode) {
 			RepositoryTreeNode repoNode = (RepositoryTreeNode) firstElement;
@@ -3954,7 +3963,7 @@ public class StagingView extends ViewPart
 		getDialogSettings().put(STORE_SORT_STATE, sortAction.isChecked());
 
 		currentRepository = null;
-
+		lastSelection = null;
 		disposed = true;
 	}
 
