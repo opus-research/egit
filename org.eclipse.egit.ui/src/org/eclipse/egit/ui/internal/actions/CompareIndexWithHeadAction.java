@@ -1,19 +1,23 @@
 /*******************************************************************************
- * Copyright (C) 2016 Obeo.
+ * Copyright (C) 2011, Bernard Leach <leachbj@bouncycastle.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package org.eclipse.egit.core.synchronize;
-
-import org.eclipse.core.resources.mapping.ModelProvider;
+package org.eclipse.egit.ui.internal.actions;
 
 /**
- * Interface that third party {@link ModelProvider}s can adapt to to indicate
- * that they don't want to participate in EGit synchronizations.
+ * Compares the index content of a file with the version of the file in
+ * the HEAD commit.
  */
-public interface IgnoreInGitSynchronizations {
-	// Empty on purpose
+public class CompareIndexWithHeadAction extends RepositoryAction {
+
+	/**
+	 *
+	 */
+	public CompareIndexWithHeadAction() {
+		super(ActionCommands.COMPARE_INDEX_WITH_HEAD_ACTION, new CompareIndexWithHeadActionHandler());
+	}
 }

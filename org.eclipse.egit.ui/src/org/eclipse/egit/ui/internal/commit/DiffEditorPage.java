@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2016 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2015 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -30,6 +30,8 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.source.CompositeRuler;
@@ -128,8 +130,9 @@ public class DiffEditorPage extends FormPage {
 	}
 
 	private void formatDiff() {
-		final DiffDocument document = new DiffDocument();
+		final IDocument document = new Document();
 		formatter = new DiffStyleRangeFormatter(document);
+		viewer.setFormatter(formatter);
 
 		Job job = new Job(UIText.DiffEditorPage_TaskGeneratingDiff) {
 
@@ -160,8 +163,8 @@ public class DiffEditorPage extends FormPage {
 					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
 						if (UIUtils.isUsable(viewer)) {
-							document.connect(formatter);
 							viewer.setDocument(document);
+							viewer.refreshStyleRanges();
 						}
 						return Status.OK_STATUS;
 					}

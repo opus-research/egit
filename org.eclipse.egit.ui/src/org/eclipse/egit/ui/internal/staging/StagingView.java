@@ -31,7 +31,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.operations.IUndoContext;
@@ -67,6 +66,7 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.GitLabels;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
@@ -83,7 +83,6 @@ import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitJob.PushMode;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
-import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
@@ -127,10 +126,12 @@ import org.eclipse.jface.viewers.IBaseLabelProvider;
 import org.eclipse.jface.viewers.ILabelDecorator;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
+import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeViewerListener;
+import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeExpansionEvent;
@@ -156,6 +157,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.VerifyKeyListener;
@@ -201,6 +203,7 @@ import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.IViewSite;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.IWorkbenchPartSite;
@@ -340,66 +343,12 @@ public class StagingView extends ViewPart implements IShowInSource {
 		}
 	}
 
-	private static class StagingDragSelection implements IStructuredSelection {
+	static class StagingDragListener extends DragSourceAdapter {
 
-		private final IStructuredSelection delegate;
+		private ISelectionProvider provider;
 
-		private final boolean fromUnstaged;
-
-		public StagingDragSelection(IStructuredSelection original,
-				boolean fromUnstaged) {
-			this.delegate = original;
-			this.fromUnstaged = fromUnstaged;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return delegate.isEmpty();
-		}
-
-		@Override
-		public Object getFirstElement() {
-			return delegate.getFirstElement();
-		}
-
-		@Override
-		public Iterator iterator() {
-			return delegate.iterator();
-		}
-
-		@Override
-		public int size() {
-			return delegate.size();
-		}
-
-		@Override
-		public Object[] toArray() {
-			return delegate.toArray();
-		}
-
-		@Override
-		public List toList() {
-			return delegate.toList();
-		}
-
-		public boolean isFromUnstaged() {
-			return fromUnstaged;
-		}
-	}
-
-	private static class StagingDragListener extends DragSourceAdapter {
-
-		private final ISelectionProvider provider;
-
-		private final StagingViewContentProvider contentProvider;
-
-		private final boolean unstaged;
-
-		public StagingDragListener(ISelectionProvider provider,
-				StagingViewContentProvider contentProvider, boolean unstaged) {
+		public StagingDragListener(ISelectionProvider provider) {
 			this.provider = provider;
-			this.contentProvider = contentProvider;
-			this.unstaged = unstaged;
 		}
 
 		@Override
@@ -410,62 +359,38 @@ public class StagingView extends ViewPart implements IShowInSource {
 		@Override
 		public void dragFinished(DragSourceEvent event) {
 			if (LocalSelectionTransfer.getTransfer().isSupportedType(
-					event.dataType)) {
+					event.dataType))
 				LocalSelectionTransfer.getTransfer().setSelection(null);
-			}
 		}
 
 		@Override
 		public void dragSetData(DragSourceEvent event) {
 			IStructuredSelection selection = (IStructuredSelection) provider
 					.getSelection();
-			if (selection.isEmpty()) {
-				// Should never happen as per dragStart()
+			if (selection.isEmpty())
 				return;
-			}
+
 			if (LocalSelectionTransfer.getTransfer().isSupportedType(
 					event.dataType)) {
-				LocalSelectionTransfer.getTransfer().setSelection(
-						new StagingDragSelection(selection, unstaged));
+				LocalSelectionTransfer.getTransfer().setSelection(selection);
 				return;
 			}
 
 			if (FileTransfer.getInstance().isSupportedType(event.dataType)) {
-				Set<String> files = new HashSet<>();
+				List<String> files = new ArrayList<>();
 				for (Object selected : selection.toList())
 					if (selected instanceof StagingEntry) {
-						add((StagingEntry) selected, files);
-					} else if (selected instanceof StagingFolderEntry) {
-						// Only add the files, otherwise much more than intended
-						// might be copied or moved. The user selected a staged
-						// or unstaged folder, so only the staged or unstaged
-						// files inside that folder should be included, not
-						// everything.
-						StagingFolderEntry folder = (StagingFolderEntry) selected;
-						for (StagingEntry entry : contentProvider
-								.getStagingEntriesFiltered(folder)) {
-							add(entry, files);
-						}
+						StagingEntry entry = (StagingEntry) selected;
+						File file = new File(
+								entry.getRepository().getWorkTree(),
+								entry.getPath());
+						if (file.exists())
+							files.add(file.getAbsolutePath());
 					}
 				if (!files.isEmpty()) {
 					event.data = files.toArray(new String[files.size()]);
 					return;
 				}
-				// We may still end up with an empty list here if the selection
-				// contained only deleted files. In that case, the drag&drop
-				// will log an SWTException: Data does not have correct format
-				// for type. Note that GTK sometimes creates the FileTransfer
-				// up front even though a drag between our own viewers would
-				// need only the LocalSelectionTransfer. Drag&drop between our
-				// viewers still works (also on GTK) even if the creation of
-				// the FileTransfer fails.
-			}
-		}
-
-		private void add(StagingEntry entry, Collection<String> files) {
-			File file = entry.getLocation().toFile();
-			if (file.exists()) {
-				files.add(file.getAbsolutePath());
 			}
 		}
 	}
@@ -807,8 +732,51 @@ public class StagingView extends ViewPart implements IShowInSource {
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(unstagedComposite);
 
-		unstagedViewer = createViewer(unstagedComposite, true,
-				selection -> unstage(selection));
+		unstagedViewer = createTree(unstagedComposite);
+		GridDataFactory.fillDefaults().grab(true, true)
+				.applyTo(unstagedViewer.getControl());
+		unstagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+		unstagedViewer.setLabelProvider(createLabelProvider(unstagedViewer));
+		unstagedViewer.setContentProvider(createStagingContentProvider(true));
+		unstagedViewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY
+				| DND.DROP_LINK,
+				new Transfer[] { LocalSelectionTransfer.getTransfer(),
+						FileTransfer.getInstance() }, new StagingDragListener(
+						unstagedViewer));
+		unstagedViewer.addDropSupport(DND.DROP_MOVE,
+				new Transfer[] { LocalSelectionTransfer.getTransfer() },
+				new DropTargetAdapter() {
+					@Override
+					public void drop(DropTargetEvent event) {
+						// Bug 411466: It is very important that detail is set
+						// to DND.DROP_COPY. If it was left as DND.DROP_MOVE and
+						// the drag comes from the Navigator view, the code in
+						// NavigatorDragAdapter would delete the resources.
+						event.detail = DND.DROP_COPY;
+						if (event.data instanceof IStructuredSelection) {
+							final IStructuredSelection selection = (IStructuredSelection) event.data;
+							unstage(selection);
+						}
+					}
+
+					@Override
+					public void dragOver(DropTargetEvent event) {
+						event.detail = DND.DROP_MOVE;
+					}
+				});
+		unstagedViewer.addOpenListener(new IOpenListener() {
+			@Override
+			public void open(OpenEvent event) {
+				compareWith(event);
+			}
+		});
+		unstagedViewer.setComparator(
+				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
+						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
+		enableAutoExpand(unstagedViewer);
+		addListenerToDisableAutoExpandOnCollapse(unstagedViewer);
+
 		Composite rebaseAndCommitComposite = toolkit.createComposite(mainSashForm);
 		rebaseAndCommitComposite.setLayout(GridLayoutFactory.fillDefaults().create());
 
@@ -1072,12 +1040,59 @@ public class StagingView extends ViewPart implements IShowInSource {
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(stagedComposite);
 
-		stagedViewer = createViewer(stagedComposite, false,
-				selection -> stage(selection));
-		stagedViewer.getLabelProvider().addListener(event -> {
-			updateMessage();
-			updateCommitButtons();
+		stagedViewer = createTree(stagedComposite);
+		GridDataFactory.fillDefaults().grab(true, true)
+				.applyTo(stagedViewer.getControl());
+		stagedViewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+		IBaseLabelProvider labelProvider = createLabelProvider(stagedViewer);
+		labelProvider.addListener(new ILabelProviderListener() {
+
+			@Override
+			public void labelProviderChanged(LabelProviderChangedEvent event) {
+				updateCommitButtons();
+			}
 		});
+		stagedViewer.setLabelProvider(labelProvider);
+
+		stagedViewer.setContentProvider(createStagingContentProvider(false));
+		stagedViewer.addDragSupport(
+				DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
+				new Transfer[] { LocalSelectionTransfer.getTransfer(),
+						FileTransfer.getInstance() }, new StagingDragListener(
+						stagedViewer));
+		stagedViewer.addDropSupport(DND.DROP_MOVE,
+				new Transfer[] { LocalSelectionTransfer.getTransfer() },
+				new DropTargetAdapter() {
+					@Override
+					public void drop(DropTargetEvent event) {
+						// Bug 411466: It is very important that detail is set
+						// to DND.DROP_COPY. If it was left as DND.DROP_MOVE and
+						// the drag comes from the Navigator view, the code in
+						// NavigatorDragAdapter would delete the resources.
+						event.detail = DND.DROP_COPY;
+						if (event.data instanceof IStructuredSelection) {
+							final IStructuredSelection selection = (IStructuredSelection) event.data;
+							stage(selection);
+						}
+					}
+
+					@Override
+					public void dragOver(DropTargetEvent event) {
+						event.detail = DND.DROP_MOVE;
+					}
+				});
+		stagedViewer.addOpenListener(new IOpenListener() {
+			@Override
+			public void open(OpenEvent event) {
+				compareWith(event);
+			}
+		});
+		stagedViewer.setComparator(
+				new StagingEntryComparator(getSortCheckState(), getPreferenceStore()
+						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
+		enableAutoExpand(stagedViewer);
+		addListenerToDisableAutoExpandOnCollapse(stagedViewer);
 
 		selectionChangedListener = new ISelectionListener() {
 			@Override
@@ -1931,57 +1946,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		provider.setFileNameMode(getPreferenceStore().getBoolean(
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
 		return provider;
-	}
-
-	private TreeViewer createViewer(Composite parent, boolean unstaged,
-			final Consumer<IStructuredSelection> dropAction) {
-		final TreeViewer viewer = createTree(parent);
-		GridDataFactory.fillDefaults().grab(true, true)
-				.applyTo(viewer.getControl());
-		viewer.getTree().setData(FormToolkit.KEY_DRAW_BORDER,
-				FormToolkit.TREE_BORDER);
-		viewer.setLabelProvider(createLabelProvider(viewer));
-		StagingViewContentProvider contentProvider = createStagingContentProvider(
-				unstaged);
-		viewer.setContentProvider(contentProvider);
-		viewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
-				new Transfer[] { LocalSelectionTransfer.getTransfer(),
-						FileTransfer.getInstance() },
-				new StagingDragListener(viewer, contentProvider, unstaged));
-		viewer.addDropSupport(DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
-				new Transfer[] { LocalSelectionTransfer.getTransfer() },
-				new DropTargetAdapter() {
-
-					@Override
-					public void drop(DropTargetEvent event) {
-						// Bug 411466: It is very important that detail is set
-						// to DND.DROP_COPY. If it was left as DND.DROP_MOVE and
-						// the drag comes from the Navigator view, the code in
-						// NavigatorDragAdapter would delete the resources.
-						event.detail = DND.DROP_COPY;
-						if (event.data instanceof IStructuredSelection) {
-							final IStructuredSelection selection = (IStructuredSelection) event.data;
-							if ((selection instanceof StagingDragSelection)
-									&& ((StagingDragSelection) selection)
-											.isFromUnstaged() == unstaged) {
-								// Dropped a selection made in this viewer
-								// back on this viewer: don't do anything,
-								// otherwise if there are folders in the
-								// selection, we might unstage or stage files
-								// not selected!
-								return;
-							}
-							dropAction.accept(selection);
-						}
-					}
-				});
-		viewer.addOpenListener(event -> compareWith(event));
-		viewer.setComparator(new StagingEntryComparator(getSortCheckState(),
-				getPreferenceStore()
-						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
-		enableAutoExpand(viewer);
-		addListenerToDisableAutoExpandOnCollapse(viewer);
-		return viewer;
 	}
 
 	private void setStagingViewerInput(TreeViewer stagingViewer,
@@ -2945,11 +2909,24 @@ public class StagingView extends ViewPart implements IShowInSource {
 			if (element instanceof StagingEntry) {
 				StagingEntry entry = (StagingEntry) element;
 				String relativePath = entry.getPath();
-				File file = new Path(repo.getWorkTree().getAbsolutePath())
-						.append(relativePath).toFile();
-				DiffViewer.openFileInEditor(file, -1);
+				String path = new Path(repo.getWorkTree()
+						.getAbsolutePath()).append(relativePath)
+						.toOSString();
+				openFileInEditor(path);
 			}
 		}
+	}
+
+	private void openFileInEditor(String filePath) {
+		IWorkbenchWindow window = PlatformUI.getWorkbench()
+				.getActiveWorkbenchWindow();
+		File file = new File(filePath);
+		if (!file.exists()) {
+			String message = NLS.bind(UIText.CommitFileDiffViewer_FileDoesNotExist, filePath);
+			Activator.showError(message, null);
+		}
+		IWorkbenchPage page = window.getActivePage();
+		EgitUiEditorUtils.openEditor(file, page);
 	}
 
 	private static Set<StagingEntry.Action> getAvailableActions(IStructuredSelection selection) {
@@ -3892,17 +3869,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 	@Override
 	public void setFocus() {
 		Tree tree = unstagedViewer.getTree();
-		if (tree.getItemCount() > 0 && !isAutoStageOnCommitEnabled()) {
+		if (tree.getItemCount() > 0) {
 			unstagedViewer.getControl().setFocus();
 			return;
 		}
 		commitMessageText.setFocus();
-	}
-
-	private boolean isAutoStageOnCommitEnabled() {
-		IPreferenceStore uiPreferences = Activator.getDefault()
-				.getPreferenceStore();
-		return uiPreferences.getBoolean(UIPreferences.AUTO_STAGE_ON_COMMIT);
 	}
 
 	@Override
