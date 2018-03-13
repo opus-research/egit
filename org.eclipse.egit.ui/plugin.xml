@@ -377,11 +377,11 @@
             </with>
          </or>
       </definition>
-      <definition id="org.eclipse.egit.ui.fileOrFolderPushToGerrit">
+      <definition id="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
          <or>
             <test
                   property="GitSelection.fileOrFolderInRepository"
-                  args="canPushToGerrit">
+                  args="hasGerritConfiguration">
             </test>
             <with variable="activePart">
                <instanceof
@@ -395,32 +395,7 @@
                            property="GitResource.isShared">
                      </test>
                      <test
-                           property="GitResource.canPushToGerrit">
-                     </test>
-                  </adapt>
-               </with>
-            </with>
-         </or>
-      </definition>
-      <definition id="org.eclipse.egit.ui.fileOrFolderFetchFromGerrit">
-         <or>
-            <test
-                  property="GitSelection.fileOrFolderInRepository"
-                  args="canFetchFromGerrit">
-            </test>
-            <with variable="activePart">
-               <instanceof
-                     value="org.eclipse.ui.IEditorPart">
-               </instanceof>
-               <with
-                     variable="activeEditorInput">
-                  <adapt
-                        type="org.eclipse.core.resources.IResource">
-                     <test
-                           property="GitResource.isShared">
-                     </test>
-                     <test
-                           property="GitResource.canFetchFromGerrit">
+                           property="GitResource.hasGerritConfiguration">
                      </test>
                   </adapt>
                </with>
@@ -4168,7 +4143,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <reference
-                           definitionId="org.eclipse.egit.ui.fileOrFolderPushToGerrit">
+                           definitionId="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
                      </reference>
                   </visibleWhen>
                </command>
@@ -4179,7 +4154,7 @@
                   <visibleWhen
                         checkEnabled="false">
                      <reference
-                           definitionId="org.eclipse.egit.ui.fileOrFolderFetchFromGerrit">
+                           definitionId="org.eclipse.egit.ui.fileOrFolderInRepositoryWithGerritConfiguration">
                      </reference>
                   </visibleWhen>
                </command>

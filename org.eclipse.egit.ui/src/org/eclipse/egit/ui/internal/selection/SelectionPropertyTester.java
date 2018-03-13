@@ -5,9 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    Andre Bossert <anb0s@anbos.de> - Bug 496356
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.selection;
 
@@ -15,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.core.expressions.PropertyTester;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -70,19 +66,13 @@ public class SelectionPropertyTester extends PropertyTester {
 				return false;
 
 			Object firstElement = selection.getFirstElement();
-
-			IResource resource = AdapterUtils.adaptToAnyResource(firstElement);
+			IResource resource = AdapterUtils.adapt(firstElement,
+					IResource.class);
 			if ((resource != null) && (resource instanceof IFile
 					|| resource instanceof IFolder)) {
 				RepositoryMapping m = RepositoryMapping.getMapping(resource);
 				if (m != null) {
-					if ((resource instanceof IFolder)
-							&& resource.equals(m.getContainer())) {
-						return false;
-					} else {
-						return testRepositoryProperties(m.getRepository(),
-								args);
-					}
+					return testRepositoryProperties(m.getRepository(), args);
 				}
 			}
 		} else if ("resourcesAllInRepository".equals(property)) { //$NON-NLS-1$
@@ -129,36 +119,23 @@ public class SelectionPropertyTester extends PropertyTester {
 			boolean single) {
 		Repository repo = null;
 		for (Object element : collection) {
-			IContainer container = AdapterUtils.adapt(element,
-					IProject.class);
-			RepositoryMapping mapping = null;
-			if (container != null) {
-				mapping = RepositoryMapping.getMapping(container);
-			} else {
-				container = AdapterUtils.adapt(element, IContainer.class);
-				if (container != null) {
-					mapping = RepositoryMapping.getMapping(container);
-				}
-			}
-			if (container != null && mapping != null
-					&& container.equals(mapping.getContainer())) {
-				Repository r = mapping.getRepository();
-				if (single && r != null && repo != null && r != repo) {
+			IProject project = AdapterUtils.adapt(element, IProject.class);
+			if (project != null) {
+				Repository r = getRepositoryOfMapping(project);
+				if (single && r != null && repo != null && r != repo)
 					return null;
-				} else if (r != null) {
+				else if (r != null)
 					repo = r;
-				}
 			} else {
 				IWorkingSet workingSet = AdapterUtils.adapt(element,
 						IWorkingSet.class);
 				if (workingSet != null) {
 					for (IAdaptable adaptable : workingSet.getElements()) {
 						Repository r = getRepositoryOfProject(adaptable);
-						if (single && r != null && repo != null && r != repo) {
+						if (single && r != null && repo != null && r != repo)
 							return null;
-						} else if (r != null) {
+						else if (r != null)
 							repo = r;
-						}
 					}
 				}
 			}

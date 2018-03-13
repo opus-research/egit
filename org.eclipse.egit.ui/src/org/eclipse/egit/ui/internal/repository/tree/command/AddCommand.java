@@ -31,7 +31,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryFinder;
@@ -51,7 +50,7 @@ public class AddCommand extends
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		RepositorySearchWizard wizard = new RepositorySearchWizard(
-				util.getConfiguredRepositories(), true);
+				util.getConfiguredRepositories());
 		WizardDialog dialog = new WizardDialog(getShell(event), wizard);
 		if (dialog.open() == Window.OK) {
 			for (String dir : wizard.getDirectories()) {
@@ -63,11 +62,9 @@ public class AddCommand extends
 	}
 
 	private void addRepository(File repositoryDir) {
-		GerritUtil.tryToAutoConfigureForGerrit(repositoryDir);
 		util.addConfiguredRepository(repositoryDir);
-		if (doAutoShare()) {
+		if (doAutoShare())
 			autoShareProjects(repositoryDir);
-		}
 	}
 
 	private void autoShareProjects(File repositoryDir) {
