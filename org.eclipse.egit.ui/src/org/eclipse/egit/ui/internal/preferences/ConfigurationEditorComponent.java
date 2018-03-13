@@ -503,7 +503,7 @@ public class ConfigurationEditorComponent {
 	}
 
 	private void updateEnablement() {
-		remove.setEnabled(editable && !tv.getSelection().isEmpty());
+		remove.setEnabled(editable);
 		newValue.setEnabled(editable);
 	}
 
