@@ -2360,12 +2360,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_ErrorCreatingCommitMessageProvider;
 
 	/** */
-	public static String CommitDialog_CaretPositionOutOfBounds;
-
-	/** */
-	public static String CommitDialog_IgnoreCaretPosition;
-
-	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
@@ -2883,9 +2877,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchGerritChangePage_TagRadio;
-
-	/** */
-	public static String FetchGerritChangePage_UnknownChangeRefMessage;
 
 	/** */
 	public static String FetchGerritChangePage_UpdateRadio;
@@ -4414,9 +4405,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_CopyFilePathMenuLabel;
-
-	/** */
 	public static String CommitFileDiffViewer_MergeCommitMultiAncestorMessage;
 
 	/** */
@@ -4451,9 +4439,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_CommitId;
-
-	/** */
-	public static String CommitGraphTable_CopyCommitIdLabel;
 
 	/** */
 	public static String CommitGraphTable_Committer;
