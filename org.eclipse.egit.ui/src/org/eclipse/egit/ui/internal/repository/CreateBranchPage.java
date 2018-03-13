@@ -277,7 +277,8 @@ class CreateBranchPage extends WizardPage {
 		nameText.setFocus();
 		// add the listeners just now to avoid unneeded checkPage()
 		nameText.addModifyListener(e -> checkPage());
-		BranchNameNormalizer normalizer = new BranchNameNormalizer(nameText);
+		BranchNameNormalizer normalizer = new BranchNameNormalizer(nameText,
+				UIText.CreateBranchPage_NormalizeNameTooltip);
 		normalizer.setVisible(false);
 	}
 
