@@ -85,10 +85,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	@Test
 	public void shouldReturnOneRoot() throws Exception {
 		// when
-		try (Git git = new Git(repo)) {
-			git.commit().setAuthor("JUnit", "junit@egit.org")
-					.setMessage("Initial commit").call();
-		}
+		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
+				.setMessage("Initial commit").call();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD,
 				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
@@ -119,10 +117,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 			IProject secondIProject = secondProject.project;
 			// add connect project with repository
 			new ConnectProviderOperation(secondIProject, gitDir).execute(null);
-			try (Git git = new Git(repo)) {
-				git.commit().setAuthor("JUnit", "junit@egit.org")
-						.setMessage("Initial commit").call();
-			}
+			new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
+					.setMessage("Initial commit").call();
 			GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, HEAD,
 					false);
 			GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
@@ -162,10 +158,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 	@Test
 	public void shouldReturnNullResourceVariant() throws Exception {
 		// when
-		try (Git git = new Git(repo)) {
-			git.commit().setAuthor("JUnit", "junit@egit.org")
-					.setMessage("Initial commit").call();
-		}
+		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
+				.setMessage("Initial commit").call();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
 				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
@@ -190,10 +184,8 @@ public class GitResourceVariantTreeTest extends GitTestCase {
 		IPackageFragment iPackage = project.createPackage("org.egit.test");
 		IType mainJava = project.createType(iPackage, "Main.java",
 				"class Main {}");
-		try (Git git = new Git(repo)) {
-			git.commit().setAuthor("JUnit", "junit@egit.org")
-					.setMessage("Initial commit").call();
-		}
+		new Git(repo).commit().setAuthor("JUnit", "junit@egit.org")
+				.setMessage("Initial commit").call();
 		GitSynchronizeData data = new GitSynchronizeData(repo, HEAD, MASTER,
 				false);
 		GitSynchronizeDataSet dataSet = new GitSynchronizeDataSet(data);
