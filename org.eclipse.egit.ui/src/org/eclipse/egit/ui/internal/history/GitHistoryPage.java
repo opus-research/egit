@@ -207,16 +207,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			@Override
 			public void propertyChange(final PropertyChangeEvent event) {
 				if (prefName.equals(event.getProperty())) {
-					Control control = historyPage.getControl();
-					if (control != null && !control.isDisposed()) {
-						control.getDisplay().asyncExec(() -> {
-							if (!control.isDisposed()) {
-								setChecked(
-										historyPage.store.getBoolean(prefName));
-								apply(isChecked());
-							}
-						});
-					}
+					setChecked(historyPage.store.getBoolean(prefName));
+					apply(isChecked());
 				}
 			}
 
