@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2017 Chris Aniszczyk <caniszczyk@gmail.com> and others.
+ * Copyright (c) 2011, 2015 Chris Aniszczyk <caniszczyk@gmail.com> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,7 +10,7 @@
  *   EclipseSource - Filtered Viewer
  *   Robin Stocker <robin@nibor.org> - Show In support
  *   Tobias Baumann <tobbaumann@gmail.com> - Bug 475836
- *   Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248, 518607
+ *   Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.reflog;
 
@@ -29,10 +29,8 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.components.RepositoryMenuUtil.RepositoryToolbarAction;
 import org.eclipse.egit.ui.internal.reflog.ReflogViewContentProvider.ReflogInput;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.selection.RepositorySelectionProvider;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
@@ -50,6 +48,7 @@ import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -86,7 +85,6 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.OpenAndLinkWithEditorHelper;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
@@ -131,8 +129,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 	private PreferenceBasedDateFormatter dateFormatter;
 
-	private IWorkbenchAction switchRepositoriesAction;
-
 	@Override
 	public void createPartControl(Composite parent) {
 		dateFormatter = PreferenceBasedDateFormatter.create();
@@ -150,8 +146,8 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 		Image repoImage = UIIcons.REPOSITORY.createImage();
 		UIUtils.hookDisposal(form, repoImage);
-		Image commitImage = UIIcons.CHANGESET.createImage();
-		UIUtils.hookDisposal(form, commitImage);
+		final Image branchImage = UIIcons.CHANGESET.createImage();
+		UIUtils.hookDisposal(form, branchImage);
 		form.setImage(repoImage);
 		form.setText(UIText.StagingView_NoSelectionTitle);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(form);
@@ -208,7 +204,7 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 			@Override
 			public Image getImage(Object element) {
 				if (element instanceof ReflogEntry) {
-					return commitImage;
+					return branchImage;
 				}
 				return null;
 			}
@@ -385,20 +381,11 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		UIUtils.notifySelectionChangedWithCurrentSelection(
 				selectionChangedListener, site);
 
-		site.setSelectionProvider(new RepositorySelectionProvider(
-				refLogTableTreeViewer, () -> getRepository()));
+		site.setSelectionProvider(refLogTableTreeViewer);
 
 		addRefsChangedListener = Repository.getGlobalListenerList()
 				.addRefsChangedListener(this);
 
-		// Toolbar
-		IToolBarManager toolbar = getViewSite().getActionBars()
-				.getToolBarManager();
-		switchRepositoriesAction = new RepositoryToolbarAction(false,
-				() -> getRepository(),
-				repo -> reactOnSelection(new StructuredSelection(repo)));
-		toolbar.add(switchRepositoriesAction);
-		getViewSite().getActionBars().updateActionBars();
 		// register context menu
 		MenuManager menuManager = new MenuManager();
 		menuManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
@@ -434,10 +421,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		}
 		Activator.getDefault().getPreferenceStore()
 				.removePropertyChangeListener(uiPrefsListener);
-		if (switchRepositoriesAction != null) {
-			switchRepositoriesAction.dispose();
-			switchRepositoriesAction = null;
-		}
 	}
 
 	private void reactOnSelection(ISelection selection) {
@@ -586,13 +569,18 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 	@Override
 	public void onRefsChanged(RefsChangedEvent event) {
-		PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
-			Object currentInput = refLogTableTreeViewer.getInput();
-			if (currentInput instanceof ReflogInput) {
-				ReflogInput oldInput = (ReflogInput) currentInput;
-				refLogTableTreeViewer.setInput(new ReflogInput(
-						oldInput.getRepository(), oldInput.getRef()));
+		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
+			@Override
+			public void run() {
+				refLogTableTreeViewer.refresh();
 			}
 		});
+	}
+
+	/**
+	 * @return selection provider
+	 */
+	public ISelectionProvider getSelectionProvider() {
+		return refLogTableTreeViewer;
 	}
 }
