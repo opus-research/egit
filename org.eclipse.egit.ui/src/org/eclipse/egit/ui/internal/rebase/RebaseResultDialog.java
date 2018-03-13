@@ -28,6 +28,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.FileChecker;
 import org.eclipse.egit.core.internal.FileChecker.CheckResult;
@@ -108,34 +109,43 @@ public class RebaseResultDialog extends MessageDialog {
 	 */
 	public static void show(final RebaseResult result,
 			final Repository repository) {
-		switch (result.getStatus()) {
-		case ABORTED:
-		case INTERACTIVE_PREPARED:
-			// Don't show the dialog
+		if (result.getStatus() == Status.ABORTED) {
 			return;
-		case CONFLICTS:
-			PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
+		}
+
+		boolean shouldShow = result.getStatus() == Status.STOPPED
+				|| result.getStatus() == Status.STASH_APPLY_CONFLICTS
+				|| Activator.getDefault().getPreferenceStore().getBoolean(
+						UIPreferences.SHOW_REBASE_CONFIRM);
+
+		if(result.getStatus() == Status.CONFLICTS) {
+			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					Shell shell = PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getShell();
+					new CheckoutConflictDialog(shell, repository, result.getConflicts()).open();
+				}
+			});
+
+			return;
+		}
+
+		if (!shouldShow) {
+			Activator.getDefault().getLog().log(
+					new org.eclipse.core.runtime.Status(IStatus.INFO, Activator
+							.getPluginId(), NLS.bind(
+							UIText.RebaseResultDialog_StatusLabel, result
+									.getStatus().name())));
+			return;
+		}
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
 				Shell shell = PlatformUI.getWorkbench()
 						.getActiveWorkbenchWindow().getShell();
-				new CheckoutConflictDialog(shell, repository,
-						result.getConflicts()).open();
-			});
-			return;
-		case STOPPED:
-		case STASH_APPLY_CONFLICTS:
-			// Show the dialog
-			break;
-		default:
-			if (!Activator.getDefault().getPreferenceStore()
-					.getBoolean(UIPreferences.SHOW_REBASE_CONFIRM)) {
-				return;
+				new RebaseResultDialog(shell, repository, result).open();
 			}
-			break;
-		}
-		PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
-			Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-					.getShell();
-			new RebaseResultDialog(shell, repository, result).open();
 		});
 	}
 

@@ -4,7 +4,6 @@
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, Gunnar Wagenknecht <gunnar@wagenknecht.org>
  * Copyright (C) 2013, Laurent Goubet <laurent.goubet@obeo.fr>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,13 +27,11 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.egit.core.internal.job.JobUtil;
-import org.eclipse.egit.core.internal.storage.CommitFileRevision;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
@@ -58,7 +55,6 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -73,6 +69,8 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
@@ -86,6 +84,7 @@ import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
@@ -332,15 +331,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		mgr.add(showInSubMenu);
 
 		mgr.add(new Separator());
-		selectAll = ActionUtils.createGlobalAction(ActionFactory.SELECT_ALL,
-				() -> doSelectAll());
-		selectAll.setEnabled(true);
-		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
-				() -> doCopy());
-		copy.setEnabled(true);
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
-		mgr.add(selectAll);
-		mgr.add(copy);
+		mgr.add(selectAll = createStandardAction(ActionFactory.SELECT_ALL));
+		mgr.add(copy = createStandardAction(ActionFactory.COPY));
 
 		// See https://bugs.eclipse.org/bugs/show_bug.cgi?id=477510
 		mgr.addMenuListener(new IMenuListener() {
@@ -349,6 +341,29 @@ public class CommitFileDiffViewer extends TableViewer {
 				getControl().setFocus();
 			}
 		});
+		if (site instanceof IPageSite) {
+			final IPageSite pageSite = (IPageSite) site;
+			getControl().addFocusListener(new FocusListener() {
+				@Override
+				public void focusLost(FocusEvent e) {
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.SELECT_ALL.getId(), null);
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.COPY.getId(), null);
+					pageSite.getActionBars().updateActionBars();
+				}
+
+				@Override
+				public void focusGained(FocusEvent e) {
+					updateActionEnablement(getSelection());
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.SELECT_ALL.getId(), selectAll);
+					pageSite.getActionBars().setGlobalActionHandler(
+							ActionFactory.COPY.getId(), copy);
+					pageSite.getActionBars().updateActionBars();
+				}
+			});
+		}
 	}
 
 	private void updateActionEnablement(ISelection selection) {
@@ -401,6 +416,38 @@ public class CommitFileDiffViewer extends TableViewer {
 			blame.setEnabled(false);
 			compareWorkingTreeVersion.setEnabled(false);
 		}
+	}
+
+	private IAction createStandardAction(final ActionFactory af) {
+		final String text = af.create(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow()).getText();
+		IAction action = new Action() {
+
+			@Override
+			public String getActionDefinitionId() {
+				return af.getCommandId();
+			}
+
+			@Override
+			public String getId() {
+				return af.getId();
+			}
+
+			@Override
+			public String getText() {
+				return text;
+			}
+
+			@Override
+			public void run() {
+				if (af == ActionFactory.SELECT_ALL)
+					doSelectAll();
+				if (af == ActionFactory.COPY)
+					doCopy();
+			}
+		};
+		action.setEnabled(true);
+		return action;
 	}
 
 	@Override
@@ -502,9 +549,10 @@ public class CommitFileDiffViewer extends TableViewer {
 					getRepository(),
 					d.getChange().equals(ChangeType.DELETE) ? d.getBlobs()[0]
 							: d.getBlobs()[d.getBlobs().length - 1]);
-			if (rev instanceof CommitFileRevision) {
-				BlameOperation op = new BlameOperation((CommitFileRevision) rev,
-						window.getShell(), page);
+			if (rev != null) {
+				BlameOperation op = new BlameOperation(getRepository(),
+						rev.getStorage(new NullProgressMonitor()), path,
+						commit, window.getShell(), page);
 				JobUtil.scheduleUserJob(op, UIText.ShowBlameHandler_JobName,
 						JobFamilies.BLAME);
 			} else {
@@ -514,6 +562,9 @@ public class CommitFileDiffViewer extends TableViewer {
 				Activator.showError(message, null);
 			}
 		} catch (IOException e) {
+			Activator.logError(UIText.GitHistoryPage_openFailed, e);
+			Activator.showError(UIText.GitHistoryPage_openFailed, null);
+		} catch (CoreException e) {
 			Activator.logError(UIText.GitHistoryPage_openFailed, e);
 			Activator.showError(UIText.GitHistoryPage_openFailed, null);
 		}
@@ -623,13 +674,10 @@ public class CommitFileDiffViewer extends TableViewer {
 		return walker;
 	}
 
-	@NonNull
 	Repository getRepository() {
-		Repository repo = db;
-		if (repo == null) {
+		if (db == null)
 			throw new IllegalStateException("Repository has not been set"); //$NON-NLS-1$
-		}
-		return repo;
+		return db;
 	}
 
 	/**
@@ -667,7 +715,7 @@ public class CommitFileDiffViewer extends TableViewer {
 			final FileDiff d = itr.next();
 			if (r.length() > 0)
 				r.append(LINESEP);
-			r.append(d.getPath());
+			r.append(d.getNewPath());
 		}
 
 		clipboard.setContents(new Object[] { r.toString() },

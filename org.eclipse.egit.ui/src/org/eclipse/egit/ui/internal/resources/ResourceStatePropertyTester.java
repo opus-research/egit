@@ -12,8 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.core.expressions.PropertyTester;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -43,16 +42,10 @@ public class ResourceStatePropertyTester extends PropertyTester {
 		HAS_UNSTAGED_CHANGES,
 
 		/**
-		 * {@code true} if the collection contains at least one item that is not
+		 * {@code true} if the collection contain at least one item that is not
 		 * ignored.
 		 */
 		HAS_NOT_IGNORED_RESOURCES,
-
-		/**
-		 * {@code true} if the collection contains at least one item that is
-		 * tracked (i.e., that is neither ignored nor untracked).
-		 */
-		HAS_TRACKED_RESOURCES
 	}
 
 	@Override
@@ -84,12 +77,13 @@ public class ResourceStatePropertyTester extends PropertyTester {
 		} else {
 			selection = new StructuredSelection(new ArrayList<>(collection));
 		}
-		for (IPath path : SelectionUtils.getSelectedLocations(selection)) {
-			if (path == null || ResourceUtil.getRepository(path) == null) {
+		for (IResource resource : SelectionUtils
+				.getSelectedResources(selection)) {
+			if (resource == null || !resource.isAccessible()) {
 				continue;
 			}
 			IResourceState state = ResourceStateFactory.getInstance()
-					.get(path.toFile());
+					.get(resource);
 			switch (property) {
 			case HAS_STAGED_CHANGES:
 				if (state.isStaged()) {
@@ -106,11 +100,6 @@ public class ResourceStatePropertyTester extends PropertyTester {
 					return true;
 				}
 				break;
-			case HAS_TRACKED_RESOURCES:
-				if (state.isTracked()) {
-					return true;
-				}
-				break;
 			}
 		}
 		return false;
@@ -124,8 +113,6 @@ public class ResourceStatePropertyTester extends PropertyTester {
 			return Property.HAS_UNSTAGED_CHANGES;
 		} else if ("hasNotIgnoredResources".equals(value)) { //$NON-NLS-1$
 			return Property.HAS_NOT_IGNORED_RESOURCES;
-		} else if ("hasTrackedResources".equals(value)) { //$NON-NLS-1$
-			return Property.HAS_TRACKED_RESOURCES;
 		}
 		return null;
 	}
