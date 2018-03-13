@@ -14,7 +14,6 @@ package org.eclipse.egit.ui.internal.commit;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -39,8 +38,6 @@ import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
-import org.eclipse.egit.ui.internal.handler.GlobalActionHandler;
-import org.eclipse.egit.ui.internal.handler.IGlobalActionProvider;
 import org.eclipse.egit.ui.internal.history.CommitFileDiffViewer;
 import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -115,8 +112,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	private CommitFileDiffViewer diffViewer;
 
-	private GlobalActionHandler globalActionHandler;
-
 	/**
 	 * Create commit editor page
 	 *
@@ -135,13 +130,6 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 	 */
 	public CommitEditorPage(FormEditor editor, String id, String title) {
 		super(editor, id, title);
-	}
-
-	@Override
-	public void dispose() {
-		if (globalActionHandler != null) {
-			globalActionHandler.dispose();
-		}
 	}
 
 	private void hookExpansionGrabbing(final Section section) {
@@ -540,19 +528,7 @@ public class CommitEditorPage extends FormPage implements ISchedulingRule {
 		createMessageArea(displayArea, toolkit, 2);
 		createChangesArea(displayArea, toolkit);
 
-		globalActionHandler = new GlobalActionHandler(
-				getEditorSite().getActionBars(), getGlobalActionProviders());
 		loadSections();
-	}
-
-	/**
-	 * Obtains the collection of internal components that shall participate in
-	 * global action handling.
-	 * 
-	 * @return the collection of {IGlobalActionProvider}s, possibly empty
-	 */
-	protected Collection<IGlobalActionProvider> getGlobalActionProviders() {
-		return Collections.singleton(diffViewer);
 	}
 
 	void createChangesArea(Composite displayArea, FormToolkit toolkit) {
