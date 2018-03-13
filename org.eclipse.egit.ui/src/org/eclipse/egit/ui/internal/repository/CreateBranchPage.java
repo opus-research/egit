@@ -125,8 +125,6 @@ class CreateBranchPage extends WizardPage {
 	private final LocalResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
 
-	private String branchName;
-
 	/**
 	 * Constructs this page.
 	 * <p>
@@ -218,10 +216,6 @@ class CreateBranchPage extends WizardPage {
 		nameLabel.setToolTipText(UIText.CreateBranchPage_BranchNameToolTip);
 
 		nameText = new Text(main, SWT.BORDER);
-		if (branchName != null) {
-			nameText.setText(branchName);
-			nameIsSuggestion = false;
-		}
 		// give focus to the nameText if label is activated using the mnemonic
 		nameLabel.addTraverseListener(new TraverseListener() {
 			@Override
@@ -377,13 +371,6 @@ class CreateBranchPage extends WizardPage {
 
 	public String getBranchName() {
 		return nameText.getText();
-	}
-
-	public void setBranchName(String branchName) {
-		this.branchName = branchName;
-		if (nameText != null) {
-			nameText.setText(branchName);
-		}
 	}
 
 	public boolean checkoutNewBranch() {
