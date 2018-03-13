@@ -62,7 +62,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		// make initial commit
 		new Git(repo).commit().setAuthor("JUnit", "junit@jgit.org")
-				.setMessage("Initial commit").call();
+				.setMessage("Initall commit").call();
 	}
 
 	@After
