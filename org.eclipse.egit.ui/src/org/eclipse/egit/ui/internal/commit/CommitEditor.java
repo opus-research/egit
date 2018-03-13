@@ -337,12 +337,13 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		return index;
 	}
 
+	/**
+	 * @see org.eclipse.ui.forms.editor.SharedHeaderFormEditor#setFocus()
+	 * @since 2.0
+	 */
 	@Override
 	public void setFocus() {
-		IFormPage currentPage = getActivePageInstance();
-		if (currentPage != null) {
-			currentPage.setFocus();
-		}
+		commitPage.getPartControl().setFocus();
 	}
 
 	private void addContributions(IToolBarManager toolBarManager) {

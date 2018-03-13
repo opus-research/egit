@@ -89,8 +89,13 @@ public class MultiPageEditorContentOutlinePage extends ContentOutlinePage {
 		emptyPage.createControl(book);
 		emptyPage
 				.setMessage(UIText.MultiPageEditorContentOutlinePage_NoOutline);
-		currentPage = emptyPage;
-		book.showPage(emptyPage.getControl());
+		Object activePage = editorPart.getSelectedPage();
+		if (activePage instanceof IEditorPart) {
+			showPage(createOutlinePage((IEditorPart) activePage));
+		} else {
+			currentPage = emptyPage;
+			book.showPage(emptyPage.getControl());
+		}
 		pageListener = (event) -> {
 			Object newPage = event.getSelectedPage();
 			if (!(newPage instanceof IEditorPart)) {
@@ -194,7 +199,7 @@ public class MultiPageEditorContentOutlinePage extends ContentOutlinePage {
 		}
 		localBars = bars.get(currentPage);
 		Control control = page.getControl();
-		if (control == null) {
+		if (control == null || control.isDisposed()) {
 			page.createControl(book);
 			page.setActionBars(localBars);
 			control = page.getControl();
