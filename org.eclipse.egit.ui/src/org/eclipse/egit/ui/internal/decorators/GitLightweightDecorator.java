@@ -9,7 +9,6 @@
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2016, Stefan Dirix <sdirix@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -73,7 +72,6 @@ import org.eclipse.team.ui.ISharedImages;
 import org.eclipse.team.ui.TeamImages;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.ui.IContributorResourceAdapter;
-import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.themes.ITheme;
 
@@ -254,15 +252,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 		@SuppressWarnings("restriction")
 		ResourceMapping mapping = Utils.getResourceMapping(element);
 
-		boolean isWorkingSet = mapping.getModelObject() instanceof IWorkingSet;
-
 		IDecoratableResource decoRes;
 		try {
-			if (isWorkingSet) {
-				decoRes = new DecoratableWorkingSet(mapping);
-			} else {
-				decoRes = new DecoratableResourceMapping(mapping);
-			}
+			decoRes = new DecoratableResourceMapping(mapping);
 		} catch (IOException e) {
 			throw new CoreException(Activator.createErrorStatus(
 					NLS.bind(UIText.Decorator_exceptionMessage, element), e));
@@ -274,7 +266,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 		 *   2) no indexDiff for the contained projects ready yet.
 		 *  in both cases, don't do anything to not pollute the display of the sets.
 		 */
-		if (!decoRes.isTracked() && isWorkingSet)
+		if(!decoRes.isTracked())
 			return;
 
 		final DecorationHelper helper = new DecorationHelper(
@@ -282,6 +274,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 		helper.decorate(decoration, decoRes);
 	}
+
 
 	/**
 	 * Helper class for doing resource decoration, based on the given
@@ -329,31 +322,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 		/**
 		 * Define a cached image descriptor which only creates the image data
-		 * once. This class is public for testing.
+		 * once
 		 */
-		public static class CachedImageDescriptor extends ImageDescriptor {
+		private static class CachedImageDescriptor extends ImageDescriptor {
 			ImageDescriptor descriptor;
 
 			ImageData data;
 
-			/**
-			 * Creates a cached image descriptor which only creates the image
-			 * data from the given image descriptor once.
-			 *
-			 * @param descriptor
-			 *            wrapped image descriptor
-			 */
 			public CachedImageDescriptor(ImageDescriptor descriptor) {
 				this.descriptor = descriptor;
-			}
-
-			/**
-			 * Returns the wrapped image descriptor.
-			 *
-			 * @return wrapped image descriptor
-			 */
-			public ImageDescriptor getImageDescriptor() {
-				return descriptor;
 			}
 
 			@Override
@@ -489,7 +466,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 							UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 				}
 				break;
-			case DecoratableWorkingSet.WORKING_SET:
+			case DecoratableResourceMapping.WORKING_SET:
 				// working sets will use the project formatting but only if the
 				// repo and branch is available
 				if (resource.getRepositoryName() != null
