@@ -3517,12 +3517,6 @@ public class UIText extends NLS {
 	public static String IgnoreActionHandler_addToGitignore;
 
 	/** */
-	public static String IgnoreActionHandler_manyFilesToBeIgnoredTitle;
-
-	/** */
-	public static String IgnoreActionHandler_manyFilesToBeIgnoredQuestion;
-
-	/** */
 	public static String RepositoriesView_BranchDeletionFailureMessage;
 
 	/** */
@@ -5244,9 +5238,6 @@ public class UIText extends NLS {
 	public static String StagingView_IgnoreItemMenuLabel;
 
 	/** */
-	public static String StagingView_IgnoreFolderMenuLabel;
-
-	/** */
 	public static String StagingView_DeleteItemMenuLabel;
 
 	/** */
@@ -5368,6 +5359,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SubmoduleUpdateCommand_UpdateError;
+
+	/** */
+	public static String SubmoduleUpdateCommand_UncommittedChanges;
 
 	/** */
 	public static String SynchronizeWithMenu_custom;
