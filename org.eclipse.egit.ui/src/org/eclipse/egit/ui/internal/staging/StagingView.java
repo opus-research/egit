@@ -1336,7 +1336,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 		if (input instanceof IFileEditorInput) {
 			return ((IFileEditorInput) input).getFile();
 		} else {
-			return AdapterUtils.adaptToAnyResource(input);
+			return AdapterUtils.adapt(input, IResource.class);
 		}
 	}
 
@@ -1737,7 +1737,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 				if (!isChecked()) {
 					return;
 				}
-				switchToListMode();
+				presentation = Presentation.LIST;
+				setPresentation(presentation, false);
+				treePresentationAction.setChecked(false);
+				compactTreePresentationAction.setChecked(false);
+				setExpandCollapseActionsVisible(false);
 				refreshViewers();
 			}
 		};
@@ -2445,17 +2449,15 @@ public class StagingView extends ViewPart implements IShowInSource {
 				reload(repo);
 			}
 		} else {
-			Repository repo = AdapterUtils.adapt(firstElement,
-					Repository.class);
-			if (repo != null) {
-				if (currentRepository != repo) {
-					reload(repo);
-				}
+			IResource resource = AdapterUtils.adapt(firstElement,
+					IResource.class);
+			if (resource != null) {
+				showResource(resource);
 			} else {
-				IResource resource = AdapterUtils
-						.adaptToAnyResource(firstElement);
-				if (resource != null) {
-					showResource(resource);
+				Repository repo = AdapterUtils.adapt(firstElement,
+						Repository.class);
+				if (repo != null && currentRepository != repo) {
+					reload(repo);
 				}
 			}
 		}
@@ -2522,7 +2524,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				addExpandedPathsBelowFolder(folder, unstagedViewer,
 						pathsToExpandInStaged);
 			} else {
-				IResource resource = AdapterUtils.adaptToAnyResource(element);
+				IResource resource = AdapterUtils.adapt(element, IResource.class);
 				if (resource != null) {
 					RepositoryMapping mapping = RepositoryMapping.getMapping(resource);
 					// doesn't do anything if the current repository is a
@@ -2870,7 +2872,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 							UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED);
 					if (changed) {
 						listPresentationAction.setChecked(true);
-						switchToListMode();
+						listPresentationAction.run();
 					} else if (presentation != Presentation.LIST) {
 						setExpandCollapseActionsVisible(true);
 					}
@@ -2954,13 +2956,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 		} else {
 			setExpandCollapseActionsVisible(isExpandAllowed());
 		}
-	}
-
-	private void switchToListMode() {
-		setPresentation(Presentation.LIST, false);
-		treePresentationAction.setChecked(false);
-		compactTreePresentationAction.setChecked(false);
-		setExpandCollapseActionsVisible(false);
 	}
 
 	private static boolean noConflicts(IndexDiffData indexDiff) {
