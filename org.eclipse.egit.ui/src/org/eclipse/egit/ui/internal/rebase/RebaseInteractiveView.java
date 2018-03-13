@@ -218,7 +218,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		} else if (o instanceof Repository) {
 			repo = (Repository) o;
 		} else {
-			IResource resource = AdapterUtils.adaptToAnyResource(o);
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
