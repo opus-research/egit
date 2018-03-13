@@ -375,18 +375,13 @@ public class BranchOperationUI {
 
 				if (store.getBoolean(UIPreferences.SHOW_DETACHED_HEAD_WARNING)) {
 					String toggleMessage = UIText.BranchResultDialog_DetachedHeadWarningDontShowAgain;
-
-					MessageDialogWithToggle md = new MessageDialogWithToggle(
-							PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-									.getShell(),
-							UIText.BranchOperationUI_DetachedHeadTitle, null,
+					MessageDialogWithToggle.openInformation(PlatformUI
+							.getWorkbench().getActiveWorkbenchWindow()
+							.getShell(),
+							UIText.BranchOperationUI_DetachedHeadTitle,
 							UIText.BranchOperationUI_DetachedHeadMessage,
-							MessageDialog.INFORMATION,
-							new String[] { IDialogConstants.CLOSE_LABEL },
-							0, toggleMessage, false);
-					md.setPrefStore(store);
-					md.setPrefKey(UIPreferences.SHOW_DETACHED_HEAD_WARNING);
-					md.open();
+							toggleMessage, false, store,
+							UIPreferences.SHOW_DETACHED_HEAD_WARNING);
 				}
 			}
 		});
