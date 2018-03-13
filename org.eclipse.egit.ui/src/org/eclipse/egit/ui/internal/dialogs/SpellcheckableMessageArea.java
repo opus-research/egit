@@ -38,8 +38,8 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.action.SubMenuManager;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IPainter;
@@ -78,6 +78,7 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -99,6 +100,7 @@ import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
 import org.eclipse.ui.texteditor.IUpdate;
 import org.eclipse.ui.texteditor.MarkerAnnotationPreferences;
 import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
+import org.eclipse.ui.themes.IThemeManager;
 
 /**
  * Text field with support for spellchecking.
@@ -216,7 +218,7 @@ public class SpellcheckableMessageArea extends Composite {
 		}
 	}
 
-	private final SourceViewer sourceViewer;
+	private final HyperlinkSourceViewer sourceViewer;
 
 	private TextSourceViewerConfiguration configuration;
 
@@ -252,14 +254,28 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param styles
 	 */
 	public SpellcheckableMessageArea(Composite parent, String initialText,
-			boolean readOnly,
-			int styles) {
+			boolean readOnly, int styles) {
 		super(parent, styles);
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
 		sourceViewer = new HyperlinkSourceViewer(this, null,
-				SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
+				SWT.MULTI | SWT.V_SCROLL | SWT.WRAP) {
+			@Override
+			protected void handleJFacePreferencesChange(
+					PropertyChangeEvent event) {
+				if (JFaceResources.TEXT_FONT.equals(event.getProperty())) {
+					Font themeFont = UIUtils.getFont(
+							UIPreferences.THEME_CommitMessageEditorFont);
+					Font jFaceFont = JFaceResources.getTextFont();
+					if (themeFont.equals(jFaceFont)) {
+						setFont(jFaceFont);
+					}
+				} else {
+					super.handleJFacePreferencesChange(event);
+				}
+			}
+		};
 		getTextWidget().setAlwaysShowScrollBars(false);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
@@ -278,41 +294,37 @@ public class SpellcheckableMessageArea extends Composite {
 
 		configureHardWrap();
 
-		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							configureHardWrap();
-							if (brokenBidiPlatformTextWidth != -1) {
-								layout();
-							}
+		final IPropertyChangeListener propertyChangeListener = event -> {
+			if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE
+					.equals(event.getProperty())) {
+				getDisplay().asyncExec(() -> {
+					if (!isDisposed()) {
+						configureHardWrap();
+						if (brokenBidiPlatformTextWidth != -1) {
+							layout();
 						}
-					});
-				}
+					}
+				});
 			}
 		};
 		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
-		final IPropertyChangeListener syntaxColoringChangeListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				if (JFacePreferences.HYPERLINK_COLOR
-						.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							if (!isDisposed()) {
-								sourceViewer.refresh();
-							}
-						}
-					});
-				}
+		final IPropertyChangeListener themeListener = event -> {
+			String property = event.getProperty();
+			if (IThemeManager.CHANGE_CURRENT_THEME.equals(property)
+					|| UIPreferences.THEME_CommitMessageEditorFont
+							.equals(property)) {
+				Font themeFont = UIUtils
+						.getFont(UIPreferences.THEME_CommitMessageEditorFont);
+				getDisplay().asyncExec(() -> {
+					if (!isDisposed()) {
+						sourceViewer.setFont(themeFont);
+					}
+				});
 			}
 		};
-		JFacePreferences.getPreferenceStore()
-				.addPropertyChangeListener(syntaxColoringChangeListener);
+		PlatformUI.getWorkbench().getThemeManager()
+				.addPropertyChangeListener(themeListener);
+
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
 
 		Document document = new Document(initialText);
@@ -379,9 +391,8 @@ public class SpellcheckableMessageArea extends Composite {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
 				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
-				JFacePreferences.getPreferenceStore()
-						.removePropertyChangeListener(
-								syntaxColoringChangeListener);
+				PlatformUI.getWorkbench().getThemeManager()
+						.removePropertyChangeListener(themeListener);
 			}
 		});
 	}
@@ -985,31 +996,41 @@ public class SpellcheckableMessageArea extends Composite {
 		IntList wrapOffsets = new IntList();
 		int wordStart = 0;
 		int lineStart = 0;
-		boolean lastWasSpace = true;
-		boolean onlySpaces = true;
-		for (int i = 0; i < line.length(); i++) {
+		int length = line.length();
+		int nofPreviousWordChars = 0;
+		int nofCurrentWordChars = 0;
+		for (int i = 0; i < length; i++) {
 			char ch = line.charAt(i);
 			if (ch == ' ') {
-				lastWasSpace = true;
+				nofPreviousWordChars += nofCurrentWordChars;
+				nofCurrentWordChars = 0;
 			} else if (ch == '\n') {
 				lineStart = i + 1;
 				wordStart = i + 1;
-				lastWasSpace = true;
-				onlySpaces = true;
+				nofPreviousWordChars = 0;
+				nofCurrentWordChars = 0;
 			} else { // a word character
-				if (lastWasSpace) {
-					lastWasSpace = false;
-					if (!onlySpaces) { // don't break line with <spaces><veryLongWord>
+				if (nofCurrentWordChars == 0) {
+					// Break only if we had a certain number of previous
+					// non-space characters. If we had less, break only if we
+					// had at least one non-space character and the current line
+					// offset is at least half the maximum width. This prevents
+					// breaking if we have <blanks><very_long_word>, and also
+					// for things like "[1] <very_long_word>" or mark-up lists
+					// such as " * <very_long_word>".
+					if (nofPreviousWordChars > maxLineLength / 10
+							|| nofPreviousWordChars > 0
+									&& (i - lineStart) > maxLineLength / 2) {
 						wordStart = i;
 					}
-				} else {
-					onlySpaces = false;
 				}
+				nofCurrentWordChars++;
 				if (i >= lineStart + maxLineLength) {
 					if (wordStart != lineStart) { // don't break before a single long word
 						wrapOffsets.add(wordStart);
 						lineStart = wordStart;
-						onlySpaces = true;
+						nofPreviousWordChars = 0;
+						nofCurrentWordChars = 0;
 					}
 				}
 			}

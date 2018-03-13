@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2016 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2017 Bernard Leach <leachbj@bouncycastle.org> and others.
  * Copyright (C) 2015 SAP SE (Christian Georgi <christian.georgi@sap.com>)
  * Copyright (C) 2015 Denis Zygann <d.zygann@web.de>
  * Copyright (C) 2016 IBM (Daniel Megert <daniel_megert@ch.ibm.com>)
@@ -85,6 +85,7 @@ import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
+import org.eclipse.egit.ui.internal.components.RepositoryMenuUtil.RepositoryToolbarAction;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
@@ -98,6 +99,8 @@ import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.push.PushMode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.egit.ui.internal.selection.MultiViewerSelectionProvider;
+import org.eclipse.egit.ui.internal.selection.RepositorySelectionProvider;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -151,8 +154,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -181,6 +182,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -210,6 +212,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
@@ -222,6 +225,7 @@ import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
+import org.eclipse.ui.progress.WorkbenchJob;
 
 /**
  * A GitX style staging view with embedded commit dialog.
@@ -294,22 +298,36 @@ public class StagingView extends ViewPart
 
 	private ToolBarManager stagedToolBarManager;
 
-	private Action listPresentationAction;
+	private IAction listPresentationAction;
 
-	private Action treePresentationAction;
+	private IAction treePresentationAction;
 
-	private Action compactTreePresentationAction;
+	private IAction compactTreePresentationAction;
 
-	private Action unstagedExpandAllAction;
+	private IAction unstagedExpandAllAction;
 
-	private Action unstagedCollapseAllAction;
+	private IAction unstagedCollapseAllAction;
 
-	private Action stagedExpandAllAction;
+	private IAction stagedExpandAllAction;
 
-	private Action stagedCollapseAllAction;
+	private IAction stagedCollapseAllAction;
 
-	private Action compareModeAction;
+	private IAction unstageAction;
 
+	private IAction stageAction;
+
+	private IAction unstageAllAction;
+
+	private IAction stageAllAction;
+
+	private IAction compareModeAction;
+
+	private IWorkbenchAction switchRepositoriesAction;
+
+	/** The currently set repository, even if it is bare. */
+	private Repository realRepository;
+
+	/** The currently set repository, if it's not a bare repository. */
 	@Nullable
 	private Repository currentRepository;
 
@@ -641,14 +659,11 @@ public class StagingView extends ViewPart
 			if (!RepositoryUtil.PREFS_DIRECTORIES_REL.equals(event.getKey())) {
 				return;
 			}
-
 			final Repository repo = currentRepository;
-			if (repo == null)
+			if (repo == null || Activator.getDefault().getRepositoryUtil()
+					.contains(repo)) {
 				return;
-
-			if (Activator.getDefault().getRepositoryUtil().contains(repo))
-				return;
-
+			}
 			reload(null);
 		}
 
@@ -799,6 +814,50 @@ public class StagingView extends ViewPart
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(stagingSashForm);
 
+		unstageAction = new Action(UIText.StagingView_UnstageItemMenuLabel,
+				UIIcons.UNSTAGE) {
+			@Override
+			public void run() {
+				unstage((IStructuredSelection) stagedViewer.getSelection());
+			}
+		};
+		unstageAction.setToolTipText(UIText.StagingView_UnstageItemTooltip);
+		stageAction = new Action(UIText.StagingView_StageItemMenuLabel,
+				UIIcons.ELCL16_ADD) {
+			@Override
+			public void run() {
+				stage((IStructuredSelection) unstagedViewer.getSelection());
+			}
+		};
+		stageAction.setToolTipText(UIText.StagingView_StageItemTooltip);
+
+		unstageAction.setEnabled(false);
+		stageAction.setEnabled(false);
+
+		unstageAllAction = new Action(
+				UIText.StagingView_UnstageAllItemMenuLabel,
+				UIIcons.UNSTAGE_ALL) {
+			@Override
+			public void run() {
+				stagedViewer.getTree().selectAll();
+				unstage((IStructuredSelection) stagedViewer.getSelection());
+			}
+		};
+		unstageAllAction
+				.setToolTipText(UIText.StagingView_UnstageAllItemTooltip);
+		stageAllAction = new Action(UIText.StagingView_StageAllItemMenuLabel,
+				UIIcons.ELCL16_ADD_ALL) {
+			@Override
+			public void run() {
+				unstagedViewer.getTree().selectAll();
+				stage((IStructuredSelection) unstagedViewer.getSelection());
+			}
+		};
+		stageAllAction.setToolTipText(UIText.StagingView_StageAllItemTooltip);
+
+		unstageAllAction.setEnabled(false);
+		stageAllAction.setEnabled(false);
+
 		unstagedSection = toolkit.createSection(stagingSashForm,
 				ExpandableComposite.TITLE_BAR);
 
@@ -814,7 +873,15 @@ public class StagingView extends ViewPart
 				.applyTo(unstagedComposite);
 
 		unstagedViewer = createViewer(unstagedComposite, true,
-				selection -> unstage(selection));
+				selection -> unstage(selection), stageAction);
+
+		unstagedViewer.addSelectionChangedListener(event -> {
+			boolean hasSelection = !event.getSelection().isEmpty();
+			if (hasSelection != stageAction.isEnabled()) {
+				stageAction.setEnabled(hasSelection);
+				unstagedToolBarManager.update(true);
+			}
+		});
 		Composite rebaseAndCommitComposite = toolkit.createComposite(mainSashForm);
 		rebaseAndCommitComposite.setLayout(GridLayoutFactory.fillDefaults().create());
 
@@ -1079,10 +1146,17 @@ public class StagingView extends ViewPart
 				.applyTo(stagedComposite);
 
 		stagedViewer = createViewer(stagedComposite, false,
-				selection -> stage(selection));
+				selection -> stage(selection), unstageAction);
 		stagedViewer.getLabelProvider().addListener(event -> {
 			updateMessage();
 			updateCommitButtons();
+		});
+		stagedViewer.addSelectionChangedListener(event -> {
+			boolean hasSelection = !event.getSelection().isEmpty();
+			if (hasSelection != unstageAction.isEnabled()) {
+				unstageAction.setEnabled(hasSelection);
+				stagedToolBarManager.update(true);
+			}
 		});
 
 		selectionChangedListener = new ISelectionListener() {
@@ -1115,6 +1189,9 @@ public class StagingView extends ViewPart
 				.addPreferenceChangeListener(prefListener);
 
 		updateSectionText();
+		stagedSection.setToolTipText(UIText.StagingView_StagedChangesTooltip);
+		unstagedSection
+				.setToolTipText(UIText.StagingView_UnstagedChangesTooltip);
 		updateToolbar();
 		enableCommitWidgets(false);
 		refreshAction.setEnabled(false);
@@ -1184,7 +1261,9 @@ public class StagingView extends ViewPart
 		UIUtils.notifySelectionChangedWithCurrentSelection(
 				selectionChangedListener, site);
 
-		site.setSelectionProvider(unstagedViewer);
+		site.setSelectionProvider(new RepositorySelectionProvider(
+				new MultiViewerSelectionProvider(unstagedViewer, stagedViewer),
+				() -> realRepository));
 
 		ViewerFilter filter = new ViewerFilter() {
 			@Override
@@ -1467,6 +1546,8 @@ public class StagingView extends ViewPart
 
 		unstagedToolBarManager = new ToolBarManager(SWT.FLAT | SWT.HORIZONTAL);
 
+		unstagedToolBarManager.add(stageAction);
+		unstagedToolBarManager.add(stageAllAction);
 		unstagedToolBarManager.add(sortAction);
 		unstagedToolBarManager.add(unstagedExpandAllAction);
 		unstagedToolBarManager.add(unstagedCollapseAllAction);
@@ -1505,6 +1586,8 @@ public class StagingView extends ViewPart
 
 		stagedToolBarManager = new ToolBarManager(SWT.FLAT | SWT.HORIZONTAL);
 
+		stagedToolBarManager.add(unstageAction);
+		stagedToolBarManager.add(unstageAllAction);
 		stagedToolBarManager.add(stagedExpandAllAction);
 		stagedToolBarManager.add(stagedCollapseAllAction);
 		stagedToolBarManager.update(true);
@@ -1724,6 +1807,15 @@ public class StagingView extends ViewPart
 		toolbar.add(linkSelectionAction);
 
 		toolbar.add(new Separator());
+
+		switchRepositoriesAction = new RepositoryToolbarAction(false,
+				() -> realRepository,
+				repo -> {
+					if (realRepository != repo) {
+						reload(repo);
+					}
+				});
+		toolbar.add(switchRepositoriesAction);
 
 		compareModeAction = new Action(UIText.StagingView_CompareMode,
 				IAction.AS_CHECK_BOX) {
@@ -1949,14 +2041,29 @@ public class StagingView extends ViewPart
 	private StagingViewContentProvider createStagingContentProvider(
 			boolean unstaged) {
 		StagingViewContentProvider provider = new StagingViewContentProvider(
-				this, unstaged);
+				this, unstaged) {
+
+			@Override
+			public void inputChanged(Viewer viewer, Object oldInput,
+					Object newInput) {
+				super.inputChanged(viewer, oldInput, newInput);
+				if (unstaged) {
+					stageAllAction.setEnabled(getCount() > 0);
+					unstagedToolBarManager.update(true);
+				} else {
+					unstageAllAction.setEnabled(getCount() > 0);
+					stagedToolBarManager.update(true);
+				}
+			}
+		};
 		provider.setFileNameMode(getPreferenceStore().getBoolean(
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
 		return provider;
 	}
 
 	private TreeViewer createViewer(Composite parent, boolean unstaged,
-			final Consumer<IStructuredSelection> dropAction) {
+			final Consumer<IStructuredSelection> dropAction,
+			IAction... tooltipActions) {
 		final TreeViewer viewer = createTree(parent);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(viewer.getControl());
@@ -1966,6 +2073,11 @@ public class StagingView extends ViewPart
 		StagingViewContentProvider contentProvider = createStagingContentProvider(
 				unstaged);
 		viewer.setContentProvider(contentProvider);
+		if (tooltipActions != null && tooltipActions.length > 0) {
+			StagingViewTooltips tooltips = new StagingViewTooltips(viewer,
+					tooltipActions);
+			tooltips.setShift(new Point(1, 1));
+		}
 		viewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
 						FileTransfer.getInstance() },
@@ -2627,14 +2739,18 @@ public class StagingView extends ViewPart
 						.contains(StagingEntry.Action.REPLACE_WITH_OURS_THEIRS_MENU);
 
 				if (addStage)
-					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
+					menuMgr.add(
+							new Action(UIText.StagingView_StageItemMenuLabel,
+									UIIcons.ELCL16_ADD) {
 						@Override
 						public void run() {
 							stage(selection);
 						}
 					});
 				if (addUnstage)
-					menuMgr.add(new Action(UIText.StagingView_UnstageItemMenuLabel) {
+					menuMgr.add(
+							new Action(UIText.StagingView_UnstageItemMenuLabel,
+									UIIcons.UNSTAGE) {
 						@Override
 						public void run() {
 							unstage(selection);
@@ -2889,7 +3005,8 @@ public class StagingView extends ViewPart
 		private final IStructuredSelection selection;
 
 		DeleteAction(IStructuredSelection selection) {
-			super(UIText.StagingView_DeleteItemMenuLabel);
+			super(UIText.StagingView_DeleteItemMenuLabel,
+					UIIcons.ELCL16_DELETE);
 			this.selection = selection;
 		}
 
@@ -3313,6 +3430,7 @@ public class StagingView extends ViewPart
 	 */
 	private void clearRepository(@Nullable Repository repository) {
 		saveCommitMessageComponentState();
+		realRepository = repository;
 		currentRepository = null;
 		StagingViewUpdate update = new StagingViewUpdate(null, null, null);
 		setStagingViewerInput(unstagedViewer, update, null, null);
@@ -3326,6 +3444,9 @@ public class StagingView extends ViewPart
 			form.setText(UIText.StagingView_NoSelectionTitle);
 		}
 		updateIgnoreErrorsButtonVisibility();
+		updateRebaseButtonVisibility(false);
+		// Force a selection changed event
+		unstagedViewer.setSelection(unstagedViewer.getSelection());
 	}
 
 	/**
@@ -3383,117 +3504,101 @@ public class StagingView extends ViewPart
 			return;
 		}
 		if (repository == null) {
-			asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					clearRepository(null);
-				}
-			});
+			asyncUpdate(() -> clearRepository(null));
 			return;
 		}
 
 		if (!isValidRepo(repository)) {
-			asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					clearRepository(repository);
-				}
-			});
+			asyncUpdate(() -> clearRepository(repository));
 			return;
 		}
 
 		final boolean repositoryChanged = currentRepository != repository;
+		realRepository = repository;
 		currentRepository = repository;
 
-		asyncExec(new Runnable() {
-
-			@Override
-			public void run() {
-				if (isDisposed()) {
-					return;
-				}
-
-				final IndexDiffData indexDiff = doReload(repository);
-				boolean indexDiffAvailable = indexDiffAvailable(indexDiff);
-				boolean noConflicts = noConflicts(indexDiff);
-
-				if (repositoryChanged) {
-					// Reset paths, they're from the old repository
-					resetPathsToExpand();
-					if (refsChangedListener != null)
-						refsChangedListener.remove();
-					refsChangedListener = repository.getListenerList()
-							.addRefsChangedListener(new RefsChangedListener() {
-
-								@Override
-								public void onRefsChanged(RefsChangedEvent event) {
-									updateRebaseButtonVisibility(repository
-											.getRepositoryState().isRebasing());
-								}
-
-							});
-				}
-				final StagingViewUpdate update = new StagingViewUpdate(repository, indexDiff, null);
-				Object[] unstagedExpanded = unstagedViewer.getVisibleExpandedElements();
-				Object[] stagedExpanded = stagedViewer.getVisibleExpandedElements();
-
-				int unstagedElementsCount = updateAutoExpand(unstagedViewer,
-						getUnstaged(indexDiff));
-				int stagedElementsCount = updateAutoExpand(stagedViewer,
-						getStaged(indexDiff));
-				int elementsCount = unstagedElementsCount + stagedElementsCount;
-
-				if (elementsCount > getMaxLimitForListMode()) {
-					listPresentationAction.setEnabled(false);
-					if (presentation == Presentation.LIST) {
-						compactTreePresentationAction.setChecked(true);
-						switchToCompactModeInternal(true);
-					} else {
-						setExpandCollapseActionsVisible(false,
-								unstagedElementsCount <= getMaxLimitForListMode(),
-								true);
-						setExpandCollapseActionsVisible(true,
-								stagedElementsCount <= getMaxLimitForListMode(),
-								true);
-					}
-				} else {
-					listPresentationAction.setEnabled(true);
-					boolean changed = getPreferenceStore().getBoolean(
-							UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED);
-					if (changed) {
-						listPresentationAction.setChecked(true);
-						switchToListMode();
-					} else if (presentation != Presentation.LIST) {
-						setExpandCollapseActionsVisible(false, true, true);
-						setExpandCollapseActionsVisible(true, true, true);
-					}
-				}
-
-				setStagingViewerInput(unstagedViewer, update, unstagedExpanded,
-						pathsToExpandInUnstaged);
-				setStagingViewerInput(stagedViewer, update, stagedExpanded,
-						pathsToExpandInStaged);
-				resetPathsToExpand();
-				refreshAction.setEnabled(true);
-
-				updateRebaseButtonVisibility(repository.getRepositoryState()
-						.isRebasing());
-
-				updateIgnoreErrorsButtonVisibility();
-
-				boolean rebaseContinueEnabled = indexDiffAvailable
-						&& repository.getRepositoryState().isRebasing()
-						&& noConflicts;
-				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
-
-				form.setText(GitLabels.getStyledLabelSafe(repository).toString());
-				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable && noConflicts);
-
-				updateCommitButtons();
-				updateSectionText();
+		asyncUpdate(() -> {
+			if (isDisposed()) {
+				return;
 			}
 
+			final IndexDiffData indexDiff = doReload(repository);
+			boolean indexDiffAvailable = indexDiffAvailable(indexDiff);
+			boolean noConflicts = noConflicts(indexDiff);
+
+			if (repositoryChanged) {
+				// Reset paths, they're from the old repository
+				resetPathsToExpand();
+				if (refsChangedListener != null)
+					refsChangedListener.remove();
+				refsChangedListener = repository.getListenerList()
+						.addRefsChangedListener(
+								event -> updateRebaseButtonVisibility(repository
+										.getRepositoryState().isRebasing()));
+			}
+			final StagingViewUpdate update = new StagingViewUpdate(repository,
+					indexDiff, null);
+			Object[] unstagedExpanded = unstagedViewer
+					.getVisibleExpandedElements();
+			Object[] stagedExpanded = stagedViewer.getVisibleExpandedElements();
+
+			int unstagedElementsCount = updateAutoExpand(unstagedViewer,
+					getUnstaged(indexDiff));
+			int stagedElementsCount = updateAutoExpand(stagedViewer,
+					getStaged(indexDiff));
+			int elementsCount = unstagedElementsCount + stagedElementsCount;
+
+			if (elementsCount > getMaxLimitForListMode()) {
+				listPresentationAction.setEnabled(false);
+				if (presentation == Presentation.LIST) {
+					compactTreePresentationAction.setChecked(true);
+					switchToCompactModeInternal(true);
+				} else {
+					setExpandCollapseActionsVisible(false,
+							unstagedElementsCount <= getMaxLimitForListMode(),
+							true);
+					setExpandCollapseActionsVisible(true,
+							stagedElementsCount <= getMaxLimitForListMode(),
+							true);
+				}
+			} else {
+				listPresentationAction.setEnabled(true);
+				boolean changed = getPreferenceStore().getBoolean(
+						UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED);
+				if (changed) {
+					listPresentationAction.setChecked(true);
+					switchToListMode();
+				} else if (presentation != Presentation.LIST) {
+					setExpandCollapseActionsVisible(false, true, true);
+					setExpandCollapseActionsVisible(true, true, true);
+				}
+			}
+
+			setStagingViewerInput(unstagedViewer, update, unstagedExpanded,
+					pathsToExpandInUnstaged);
+			setStagingViewerInput(stagedViewer, update, stagedExpanded,
+					pathsToExpandInStaged);
+			resetPathsToExpand();
+			// Force a selection changed event
+			unstagedViewer.setSelection(unstagedViewer.getSelection());
+			refreshAction.setEnabled(true);
+
+			updateRebaseButtonVisibility(
+					repository.getRepositoryState().isRebasing());
+
+			updateIgnoreErrorsButtonVisibility();
+
+			boolean rebaseContinueEnabled = indexDiffAvailable
+					&& repository.getRepositoryState().isRebasing()
+					&& noConflicts;
+			rebaseContinueButton.setEnabled(rebaseContinueEnabled);
+
+			form.setText(GitLabels.getStyledLabelSafe(repository).toString());
+			updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
+			enableCommitWidgets(indexDiffAvailable && noConflicts);
+
+			updateCommitButtons();
+			updateSectionText();
 		});
 	}
 
@@ -3725,11 +3830,14 @@ public class StagingView extends ViewPart
 				getCommitId(helper.getPreviousCommit()));
 		commitMessageComponent.enableListeners(false);
 		commitMessageComponent.setAuthor(oldState.getAuthor());
-		if (headCommitChanged)
+		if (headCommitChanged) {
 			addHeadChangedWarning(oldState.getCommitMessage());
-		else
+		} else {
 			commitMessageComponent
 					.setCommitMessage(oldState.getCommitMessage());
+			commitMessageComponent
+					.setCaretPosition(oldState.getCaretPosition());
+		}
 		commitMessageComponent.setCommitter(oldState.getCommitter());
 		commitMessageComponent.setHeadCommit(getCommitId(helper
 				.getPreviousCommit()));
@@ -3969,6 +4077,11 @@ public class StagingView extends ViewPart
 			refsChangedListener.remove();
 		}
 
+		if (switchRepositoriesAction != null) {
+			switchRepositoriesAction.dispose();
+			switchRepositoriesAction = null;
+		}
+
 		getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
 
 		getDialogSettings().put(STORE_SORT_STATE, sortAction.isChecked());
@@ -3988,6 +4101,30 @@ public class StagingView extends ViewPart
 
 	private void asyncExec(Runnable runnable) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
+	}
+
+	private void asyncUpdate(Runnable runnable) {
+		Job update = new WorkbenchJob(UIText.StagingView_LoadJob) {
+
+			@Override
+			public IStatus runInUIThread(IProgressMonitor monitor) {
+				try {
+					runnable.run();
+					return Status.OK_STATUS;
+				} catch (Exception e) {
+					return Activator.createErrorStatus(e.getLocalizedMessage(),
+							e);
+				}
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				return family == JobFamilies.STAGING_VIEW_RELOAD
+						|| super.belongsTo(family);
+			}
+		};
+		update.setSystem(true);
+		update.schedule();
 	}
 
 	/**
