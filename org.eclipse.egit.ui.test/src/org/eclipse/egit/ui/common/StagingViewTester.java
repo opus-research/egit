@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.common;
 
-import static org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable.syncExec;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -23,7 +22,6 @@ import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotStyledText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotToolbarToggleButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 
@@ -153,12 +151,5 @@ public class StagingViewTester {
 		return stagingView.bot()
 				.styledTextWithLabel(UIText.StagingView_CommitMessage)
 				.getText();
-	}
-
-	public int getCaretPosition() {
-		SWTBotStyledText commitMessageArea = stagingView.bot().styledTextWithLabel(UIText.StagingView_CommitMessage);
-		Integer pos = syncExec(() -> Integer
-				.valueOf(commitMessageArea.widget.getCaretOffset()));
-		return pos == null ? -1 : pos.intValue();
 	}
 }
