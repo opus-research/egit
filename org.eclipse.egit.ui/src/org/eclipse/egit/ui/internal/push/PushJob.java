@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2016, 2017 Thomas Wolf <thomas.wolf@paranor.ch>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.jobs.RepositoryJob;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
@@ -42,8 +41,6 @@ public class PushJob extends RepositoryJob {
 
 	private final boolean showConfigureButton;
 
-	private final @NonNull PushMode pushMode;
-
 	private PushOperationResult operationResult;
 
 	/**
@@ -62,19 +59,16 @@ public class PushJob extends RepositoryJob {
 	 *            describing where to push to
 	 * @param showConfigureButton
 	 *            whether the result dialog should have a configuration button
-	 * @param pushMode
-	 *            this push is for
 	 */
 	public PushJob(String name, Repository repository, PushOperation operation,
 			PushOperationResult expectedResult, String destinationString,
-			boolean showConfigureButton, @NonNull PushMode pushMode) {
+			boolean showConfigureButton) {
 		super(name);
 		this.operation = operation;
 		this.resultToCompare = expectedResult;
 		this.destinationString = destinationString;
 		this.localDb = repository;
 		this.showConfigureButton = showConfigureButton;
-		this.pushMode = pushMode;
 	}
 
 	@Override
@@ -102,7 +96,7 @@ public class PushJob extends RepositoryJob {
 		if (repo != null && (resultToCompare == null
 				|| !resultToCompare.equals(operationResult))) {
 			return new ShowPushResultAction(repo, operationResult,
-					destinationString, showConfigureButton, pushMode);
+					destinationString, showConfigureButton);
 		}
 		return null;
 	}
