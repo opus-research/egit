@@ -247,6 +247,9 @@ public class UIText extends NLS {
 	public static String GerritConfigurationPage_BranchTooltipHover;
 
 	/** */
+	public static String GerritConfigurationPage_BranchTooltipStartTyping;
+
+	/** */
 	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
 
 	/** */
@@ -2614,9 +2617,6 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
-	public static String CreateBranchPage_NormalizeBranchName;
-
-	/** */
 	public static String CreateBranchPage_SourceLabel;
 
 	/** */
@@ -2729,6 +2729,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushToGerritPage_ContentProposalHoverText;
+
+	/** */
+	public static String PushToGerritPage_ContentProposalStartTypingText;
 
 	/** */
 	public static String PushToGerritPage_Message;
