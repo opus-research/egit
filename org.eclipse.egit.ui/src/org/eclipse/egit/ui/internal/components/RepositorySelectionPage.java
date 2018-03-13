@@ -26,9 +26,9 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.UIUtils.IPreviousValueProposalHandler;
+import org.eclipse.egit.ui.internal.KnownHosts;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.clone.GitUrlChecker;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.IRemoteSelectionListener;
 import org.eclipse.egit.ui.internal.components.RemoteSelectionCombo.SelectionType;
 import org.eclipse.egit.ui.internal.provisional.wizards.GitRepositoryInfo;
@@ -39,6 +39,8 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.TransportProtocol;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.osgi.util.NLS;
@@ -70,6 +72,8 @@ import org.eclipse.ui.PlatformUI;
  * by specifying URL manually or selecting a preconfigured remote repository.
  */
 public class RepositorySelectionPage extends WizardPage implements IRepositorySearchResult {
+
+	private static final String GIT_CLONE_COMMAND_PREFIX = "git clone "; //$NON-NLS-1$
 
 	private static final String EMPTY_STRING = "";  //$NON-NLS-1$
 
@@ -325,9 +329,26 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			Clipboard clipboard = new Clipboard(Display.getCurrent());
 			String text = (String) clipboard
 					.getContents(TextTransfer.getInstance());
-			if (GitUrlChecker.isValidGitUrl(text)) {
-				preset = text.split("[\\h|\\v]", //$NON-NLS-1$
-						2)[0];
+			try {
+				if (text != null) {
+					text = stripGitCloneCommand(text);
+					// Split on any whitespace character
+					text = text.split(
+							"[ \\f\\n\\r\\x0B\\t\\xA0\\u1680\\u180e\\u2000-\\u200a\\u202f\\u205f\\u3000]", //$NON-NLS-1$
+							2)[0];
+					URIish u = new URIish(text);
+					if (canHandleProtocol(u)) {
+						if (Protocol.GIT.handles(u) || Protocol.SSH.handles(u)
+								|| (Protocol.HTTP.handles(u)
+										|| Protocol.HTTPS.handles(u))
+										&& KnownHosts.isKnownHost(u.getHost())
+								|| text.endsWith(Constants.DOT_GIT_EXT)) {
+							preset = text;
+						}
+					}
+				}
+			} catch (URISyntaxException e) {
+				// ignore, preset is null
 			}
 			clipboard.dispose();
 		}
@@ -412,6 +433,14 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 		setControl(panel);
 
 		checkPage();
+	}
+
+	private boolean canHandleProtocol(URIish u) {
+		for (TransportProtocol proto : Transport.getTransportProtocols())
+			if (proto.canHandle(u))
+				return true;
+
+		return false;
 	}
 
 	private void createRemotePanel(final Composite parent) {
@@ -753,7 +782,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 
 			try {
 				final URIish finalURI = new URIish(
-						GitUrlChecker.sanitizeAsGitURL(uriText.getText()));
+						stripGitCloneCommand(uriText.getText()));
 				String proto = finalURI.getScheme();
 				if (proto == null && scheme.getSelectionIndex() >= 0)
 					proto = scheme.getItem(scheme.getSelectionIndex());
@@ -853,6 +882,14 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			selectionComplete(null, remoteConfig);
 			return;
 		}
+	}
+
+	private String stripGitCloneCommand(String input) {
+		input = input.trim();
+		if (input.startsWith(GIT_CLONE_COMMAND_PREFIX)) {
+			return input.substring(GIT_CLONE_COMMAND_PREFIX.length()).trim();
+		}
+		return input;
 	}
 
 	private boolean setSafePassword(String p) {
@@ -990,7 +1027,7 @@ public class RepositorySelectionPage extends WizardPage implements IRepositorySe
 			if (eventDepth != 1)
 				return;
 
-			String strippedText = GitUrlChecker.sanitizeAsGitURL(text);
+			String strippedText = stripGitCloneCommand(text);
 			final URIish u = new URIish(strippedText);
 			if (!text.equals(strippedText)) {
 				uriText.setText(strippedText);
