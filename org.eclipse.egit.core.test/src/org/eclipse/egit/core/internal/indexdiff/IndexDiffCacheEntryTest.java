@@ -237,9 +237,7 @@ public class IndexDiffCacheEntryTest extends GitTestCase {
 	@Override
 	@After
 	public void tearDown() throws Exception {
-		if (entry != null) {
-			entry.dispose();
-		}
+		entry.dispose();
 		testRepository.dispose();
 		repository = null;
 		super.tearDown();
