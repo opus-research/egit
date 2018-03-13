@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2017 SAP AG and others.
+ * Copyright (c) 2011, 2016 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,7 +22,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.op.FetchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
 import org.eclipse.egit.ui.internal.jobs.RepositoryJob;
@@ -124,7 +123,7 @@ public class FetchOperationUI {
 		}
 		Job job = new RepositoryJob(NLS.bind(
 				UIText.FetchOperationUI_FetchJobName,
-				sourceString), UIPreferences.SHOW_FETCH_POPUP_SUCCESS) {
+				sourceString)) {
 
 			private FetchResult result;
 

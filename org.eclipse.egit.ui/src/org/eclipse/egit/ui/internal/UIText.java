@@ -17,8 +17,6 @@
  * Copyright (C) 2015, Laurent Delaigue <laurent.delaigue@obeo.fr>
  * Copyright (C) 2015, Denis Zygann <d.zygann@web.de>
  * Copyright (C) 2016, Lars Vogel <Lars.Vogel@vogella.com>
- * Copyright (C) 2017, Wim Jongman <wim.jongman@remainsoftware.com> bug 358152
- * Copyright (C) 2016, Jaxsun McCathy Huggan <jaxsun.mccarthy@tasktop.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -100,9 +98,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String AddConfigEntryDialog_EnterValueMessage;
-
-	/** */
-	public static String AddConfigEntryDialog_InvalidKeyMessage;
 
 	/** */
 	public static String AddConfigEntryDialog_KeyComponentsMessage;
@@ -250,9 +245,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GerritConfigurationPage_BranchTooltipHover;
-
-	/** */
-	public static String GerritConfigurationPage_BranchTooltipStartTyping;
 
 	/** */
 	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
@@ -1521,6 +1513,9 @@ public class UIText extends NLS {
 	public static String CloneDestinationPage_DefaultRepoFolderTooltip;
 
 	/** */
+	public static String CloneDestinationPage_errorDirectoryRequired;
+
+	/** */
 	public static String CloneDestinationPage_errorInitialBranchRequired;
 
 	/** */
@@ -2622,9 +2617,6 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
-	public static String CreateBranchPage_NormalizeNameTooltip;
-
-	/** */
 	public static String CreateBranchPage_SourceLabel;
 
 	/** */
@@ -2658,6 +2650,9 @@ public class UIText extends NLS {
 	public static String CreateRepositoryPage_DirectoryLabel;
 
 	/** */
+	public static String CreateRepositoryPage_NotADirectoryMessage;
+
+	/** */
 	public static String CreateRepositoryPage_NotEmptyMessage;
 
 	/** */
@@ -2668,6 +2663,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateRepositoryPage_PleaseSelectDirectoryMessage;
+
+	/** */
+	public static String CreateRepositoryPage_PleaseUseAbsolutePathMessage;
 
 	/** */
 	public static String PushResultDialog_ConfigureButton;
@@ -2737,9 +2735,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushToGerritPage_ContentProposalHoverText;
-
-	/** */
-	public static String PushToGerritPage_ContentProposalStartTypingText;
 
 	/** */
 	public static String PushToGerritPage_Message;
@@ -2835,9 +2830,6 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_ChangeLabel;
 
 	/** */
-	public static String FetchGerritChangePage_ChangeToLocalBranchRadio;
-
-	/** */
 	public static String FetchGerritChangePage_CheckingOutTaskName;
 
 	/** */
@@ -2865,7 +2857,7 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_GetChangeTaskName;
 
 	/** */
-	public static String FetchGerritChangePage_CreateLocalBranchRadio;
+	public static String FetchGerritChangePage_LocalBranchRadio;
 
 	/** */
 	public static String FetchGerritChangePage_LocalBranchCheckout;
@@ -2883,10 +2875,7 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_RunInBackground;
 
 	/** */
-	public static String Change_FullRefNamePattern;
-
-	/** */
-	public static String Change_SuggestedBranchNamePattern;
+	public static String FetchGerritChangePage_SuggestedRefNamePattern;
 
 	/** */
 	public static String FetchGerritChangePage_TagNameText;
@@ -3130,9 +3119,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchRenameDialog_NewNameLabel;
-
-	/** */
-	public static String BranchRenameDialog_NormalizeNameTooltip;
 
 	/** */
 	public static String BranchRenameDialog_RenameExceptionMessage;
@@ -3648,18 +3634,6 @@ public class UIText extends NLS {
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
 
 	/** */
-	public static String DialogsPreferencePage_ShowInfoGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_ShowFetchInfoDialog;
-
-	/** */
-	public static String DialogsPreferencePage_ShowPushInfoDialog;
-
-	/** */
-	public static String DialogsPreferencePage_ShowTooltip;
-
-	/** */
 	public static String DialogsPreferencePage_HideWarningGroupHeader;
 
 	/** */
@@ -3688,12 +3662,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DiffEditorPage_Title;
-
-	/** */
-	public static String DiffEditorPage_ToggleLineNumbers;
-
-	/** */
-	public static String DiffEditorPage_WarningNoDiffForMerge;
 
 	/** */
 	public static String DiscardChangesAction_confirmActionTitle;
@@ -3937,9 +3905,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitSelectWizardPage_ProjectCreationHeader;
-
-	/** */
-	public static String GitSelectWizardPage_Selected;
 
 	/** */
 	public static String GitSelectWizardPage_UseNewProjectsWizardButton;
@@ -4640,12 +4605,6 @@ public class UIText extends NLS {
 	public static String RemoteConnectionPreferencePage_ZeroValueTooltip;
 
 	/** */
-	public static String RefreshPreferencesPage_RefreshIndexInterval;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshIndexIntervalTooltip;
-
-	/** */
 	public static String RefreshPreferencesPage_RefreshOnlyWhenActive;
 
 	/** */
@@ -4995,9 +4954,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ValidationUtils_InvalidRefNameMessage;
-
-	/** */
-	public static String ValidationUtils_InvalidRevision;
 
 	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;

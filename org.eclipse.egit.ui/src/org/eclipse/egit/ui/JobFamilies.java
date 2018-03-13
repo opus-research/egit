@@ -66,11 +66,6 @@ public class JobFamilies {
 	public final static Object CHECKOUT = new JobFamily(UIIcons.CHECKOUT);
 
 	/**
-	 * Merge job
-	 */
-	public final static Object MERGE = new JobFamily(UIIcons.MERGE);
-
-	/**
 	 * Push job
 	 */
 	public final static Object PUSH = new JobFamily(UIIcons.PUSH);

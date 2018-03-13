@@ -17,31 +17,24 @@ import static org.eclipse.egit.ui.UIPreferences.THEME_DiffRemoveBackgroundColor;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter.DiffRegion;
 import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter.FileDiffRegion;
 import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.ActionContributionItem;
-import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.operation.IRunnableContext;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -58,7 +51,6 @@ import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.IAnnotationModelExtension;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.source.IVerticalRuler;
-import org.eclipse.jface.text.source.IVerticalRulerColumn;
 import org.eclipse.jface.text.source.projection.ProjectionAnnotation;
 import org.eclipse.jface.text.source.projection.ProjectionSupport;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
@@ -83,7 +75,6 @@ import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.IShowInTargetList;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.progress.UIJob;
-import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 import org.eclipse.ui.texteditor.AbstractDocumentProvider;
 import org.eclipse.ui.texteditor.ChainedPreferenceStore;
 import org.eclipse.ui.texteditor.IDocumentProvider;
@@ -123,10 +114,6 @@ public class DiffEditorPage extends TextEditor
 	private ThemePreferenceStore overviewStore;
 
 	private FileDiffRegion currentFileDiffRange;
-
-	private OldNewLogicalLineNumberRulerColumn lineNumberColumn;
-
-	private boolean plainLineNumbers = false;
 
 	/**
 	 * Creates a new {@link DiffEditorPage} with the given id and title, which
@@ -215,7 +202,7 @@ public class DiffEditorPage extends TextEditor
 		ProjectionSupport projector = new ProjectionSupport(viewer,
 				getAnnotationAccess(), getSharedColors());
 		projector.install();
-		viewer.getTextWidget().addCaretListener(event -> {
+		viewer.getTextWidget().addCaretListener((event) -> {
 			if (outlinePage != null) {
 				FileDiffRegion region = getFileDiffRange(event.caretOffset);
 				if (region != null && !region.equals(currentFileDiffRange)) {
@@ -227,14 +214,6 @@ public class DiffEditorPage extends TextEditor
 			}
 		});
 		return viewer;
-	}
-
-	@Override
-	protected IVerticalRulerColumn createLineNumberRulerColumn() {
-		lineNumberColumn = new OldNewLogicalLineNumberRulerColumn(
-				plainLineNumbers);
-		initializeLineNumberRulerColumn(lineNumberColumn);
-		return lineNumberColumn;
 	}
 
 	@Override
@@ -301,39 +280,6 @@ public class DiffEditorPage extends TextEditor
 		// TextEditor always adds these, even if the document is not editable.
 		menu.remove(ITextEditorActionConstants.SHIFT_RIGHT);
 		menu.remove(ITextEditorActionConstants.SHIFT_LEFT);
-	}
-
-	@Override
-	protected void rulerContextMenuAboutToShow(IMenuManager menu) {
-		super.rulerContextMenuAboutToShow(menu);
-		// AbstractDecoratedTextEditor's menu presumes a
-		// LineNumberChangeRulerColumn, which we don't have.
-		IContributionItem showLineNumbers = menu
-				.find(ITextEditorActionConstants.LINENUMBERS_TOGGLE);
-		boolean isShowingLineNumbers = EditorsUI.getPreferenceStore()
-				.getBoolean(
-						AbstractDecoratedTextEditorPreferenceConstants.EDITOR_LINE_NUMBER_RULER);
-		if (showLineNumbers instanceof ActionContributionItem) {
-			((ActionContributionItem) showLineNumbers).getAction()
-					.setChecked(isShowingLineNumbers);
-		}
-		if (isShowingLineNumbers) {
-			// Add an action to toggle between physical and logical line numbers
-			boolean plain = lineNumberColumn.isPlain();
-			IAction togglePlain = new Action(
-					UIText.DiffEditorPage_ToggleLineNumbers,
-					IAction.AS_CHECK_BOX) {
-
-				@Override
-				public void run() {
-					plainLineNumbers = !plain;
-					lineNumberColumn.setPlain(!plain);
-				}
-			};
-			togglePlain.setChecked(!plain);
-			menu.appendToGroup(ITextEditorActionConstants.GROUP_RULERS,
-					togglePlain);
-		}
 	}
 
 	// FormPage specifics:
@@ -443,9 +389,6 @@ public class DiffEditorPage extends TextEditor
 
 	private void setFolding() {
 		ProjectionViewer viewer = (ProjectionViewer) getSourceViewer();
-		if (viewer == null) {
-			return;
-		}
 		IDocument document = viewer.getDocument();
 		if (document instanceof DiffDocument) {
 			FileDiffRegion[] regions = ((DiffDocument) document)
@@ -487,11 +430,11 @@ public class DiffEditorPage extends TextEditor
 		}
 		Map<Annotation, Position> newAnnotations = new HashMap<>();
 		for (DiffRegion region : diffs) {
-			if (DiffRegion.Type.ADD.equals(region.getType())) {
+			if (DiffRegion.Type.ADD.equals(region.diffType)) {
 				newAnnotations.put(
 						new Annotation(ADD_ANNOTATION_TYPE, true, null),
 						new Position(region.getOffset(), region.getLength()));
-			} else if (DiffRegion.Type.REMOVE.equals(region.getType())) {
+			} else if (DiffRegion.Type.REMOVE.equals(region.diffType)) {
 				newAnnotations.put(
 						new Annotation(REMOVE_ANNOTATION_TYPE, true, null),
 						new Position(region.getOffset(), region.getLength()));
@@ -517,13 +460,11 @@ public class DiffEditorPage extends TextEditor
 
 	private FileDiffRegion getFileDiffRange(int widgetOffset) {
 		DiffViewer viewer = (DiffViewer) getSourceViewer();
-		if (viewer != null) {
-			int offset = viewer.widgetOffset2ModelOffset(widgetOffset);
-			IDocument document = getDocumentProvider()
-					.getDocument(getEditorInput());
-			if (document instanceof DiffDocument) {
-				return ((DiffDocument) document).findFileRegion(offset);
-			}
+		int offset = viewer.widgetOffset2ModelOffset(widgetOffset);
+		IDocument document = getDocumentProvider()
+				.getDocument(getEditorInput());
+		if (document instanceof DiffDocument) {
+			return ((DiffDocument) document).findFileRegion(offset);
 		}
 		return null;
 	}
@@ -547,9 +488,8 @@ public class DiffEditorPage extends TextEditor
 					.addAll(asList(new RepositoryCommit(commit.getRepository(),
 							untrackedCommit).getDiffs()));
 		}
-		FileDiff[] result = diffResult.toArray(new FileDiff[diffResult.size()]);
-		Arrays.sort(result, FileDiff.PATH_COMPARATOR);
-		return result;
+		Collections.sort(diffResult, FileDiff.PATH_COMPARATOR);
+		return diffResult.toArray(new FileDiff[diffResult.size()]);
 	}
 
 	/**
@@ -559,46 +499,40 @@ public class DiffEditorPage extends TextEditor
 	 * cause this document to be shown.
 	 */
 	private void formatDiff() {
-		RepositoryCommit commit = AdapterUtils.adapt(getEditor(),
-				RepositoryCommit.class);
-		if (commit == null) {
-			return;
-		}
-		if (!commit.isStash() && commit.getRevCommit().getParentCount() > 1) {
-			setInput(new DiffEditorInput(commit, null));
-			return;
-		}
+		final DiffDocument document = new DiffDocument();
+		final DiffRegionFormatter formatter = new DiffRegionFormatter(
+				document);
 
 		Job job = new Job(UIText.DiffEditorPage_TaskGeneratingDiff) {
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				FileDiff diffs[] = getDiffs(commit);
-				DiffDocument document = new DiffDocument();
-				try (DiffRegionFormatter formatter = new DiffRegionFormatter(
-						document)) {
-					SubMonitor progress = SubMonitor.convert(monitor,
-							diffs.length);
-					Repository repository = commit.getRepository();
-					for (FileDiff diff : diffs) {
-						if (progress.isCanceled()) {
-							break;
-						}
-						progress.subTask(diff.getPath());
-						try {
-							formatter.write(repository, diff);
-						} catch (IOException ignore) {
-							// Ignored
-						}
-						progress.worked(1);
-					}
-					document.connect(formatter);
+				RepositoryCommit commit = AdapterUtils.adapt(getEditor(),
+						RepositoryCommit.class);
+				if (commit == null) {
+					return Status.CANCEL_STATUS;
 				}
+				FileDiff diffs[] = getDiffs(commit);
+				monitor.beginTask("", diffs.length); //$NON-NLS-1$
+				Repository repository = commit.getRepository();
+				for (FileDiff diff : diffs) {
+					if (monitor.isCanceled())
+						break;
+					monitor.setTaskName(diff.getPath());
+					try {
+						formatter.write(repository, diff);
+					} catch (IOException ignore) {
+						// Ignored
+					}
+					monitor.worked(1);
+				}
+				monitor.done();
 				new UIJob(UIText.DiffEditorPage_TaskUpdatingViewer) {
 
 					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
 						if (UIUtils.isUsable(getPartControl())) {
+							document.connect(formatter);
 							setInput(new DiffEditorInput(commit, document));
 						}
 						return Status.OK_STATUS;
@@ -618,7 +552,7 @@ public class DiffEditorPage extends TextEditor
 
 		private IDocument document;
 
-		public DiffEditorInput(RepositoryCommit commit, IDocument diff) {
+		public DiffEditorInput(RepositoryCommit commit, DiffDocument diff) {
 			super(commit);
 			document = diff;
 		}
@@ -635,13 +569,12 @@ public class DiffEditorPage extends TextEditor
 		@Override
 		public boolean equals(Object obj) {
 			return super.equals(obj) && (obj instanceof DiffEditorInput)
-					&& Objects.equals(document,
-							((DiffEditorInput) obj).document);
+					&& document.equals(((DiffEditorInput) obj).document);
 		}
 
 		@Override
 		public int hashCode() {
-			return super.hashCode() ^ Objects.hashCode(document);
+			return super.hashCode() ^ document.hashCode();
 		}
 	}
 
@@ -651,28 +584,10 @@ public class DiffEditorPage extends TextEditor
 	private static class DiffDocumentProvider extends AbstractDocumentProvider {
 
 		@Override
-		public IStatus getStatus(Object element) {
-			if (element instanceof CommitEditorInput) {
-				RepositoryCommit commit = ((CommitEditorInput) element)
-						.getCommit();
-				if (commit != null && !commit.isStash()
-						&& commit.getRevCommit() != null
-						&& commit.getRevCommit().getParentCount() > 1) {
-					return Activator.createErrorStatus(
-							UIText.DiffEditorPage_WarningNoDiffForMerge);
-				}
-			}
-			return Status.OK_STATUS;
-		}
-
-		@Override
 		protected IDocument createDocument(Object element)
 				throws CoreException {
 			if (element instanceof DiffEditorInput) {
-				IDocument document = ((DiffEditorInput) element).getDocument();
-				if (document != null) {
-					return document;
-				}
+				return ((DiffEditorInput) element).getDocument();
 			}
 			return new Document();
 		}
