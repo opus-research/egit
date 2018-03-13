@@ -9,8 +9,11 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.credentials;
 
+import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.securestorage.UserPasswordCredentials;
 import org.eclipse.egit.ui.internal.SecureStoreUtils;
 import org.eclipse.egit.ui.internal.UIText;
@@ -99,7 +102,7 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 			if ((user != null) && (password != null))
 				credentials = new UserPasswordCredentials(user, password);
 			else
-				credentials = SecureStoreUtils.getCredentials(uri);
+				credentials = SecureStoreUtils.getCredentialsQuietly(uri);
 
 			if (credentials == null) {
 				credentials = getCredentialsFromUser(uri);
@@ -136,9 +139,15 @@ public class EGitCredentialsProvider extends CredentialsProvider {
 
 	@Override
 	public void reset(URIish uri) {
-		SecureStoreUtils.clearCredentials(uri);
-		user = null;
-		password = null;
+		try {
+			Activator.getDefault().getSecureStore().clearCredentials(uri);
+			user = null;
+			password = null;
+		} catch (IOException e) {
+			Activator.logError(MessageFormat.format(
+					UIText.EGitCredentialsProvider_FailedToClearCredentials,
+					uri), e);
+		}
 	}
 
 	/**
