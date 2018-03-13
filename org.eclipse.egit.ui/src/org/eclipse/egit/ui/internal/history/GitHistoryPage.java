@@ -49,8 +49,6 @@ import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
-import org.eclipse.egit.ui.internal.handler.GlobalActionHandler;
-import org.eclipse.egit.ui.internal.handler.IGlobalActionProvider;
 import org.eclipse.egit.ui.internal.history.FindToolbar.StatusListener;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
@@ -809,8 +807,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	/** Toolbar to find commits in the history view. */
 	private SearchBar searchBar;
 
-	private GlobalActionHandler globalActionHandler;
-
 	/**
 	 * Determine if the input can be shown in this viewer.
 	 *
@@ -904,15 +900,14 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		};
 
 		/**
-		 * Listener to close the search bar on ESC. (Ctrl/Cmd-F is already
-		 * handled via global retarget action.)
+		 * Listener to close the search bar on Ctrl/Cmd-F or on ESC.
 		 */
 		private final KeyListener keyListener = new KeyAdapter() {
 
 			@Override
 			public void keyPressed(KeyEvent e) {
 				int key = SWTKeySupport.convertEventToUnmodifiedAccelerator(e);
-				if (key == SWT.ESC) {
+				if (key == openCloseToggle.getAccelerator() || key == SWT.ESC) {
 					setVisible(false);
 					e.doit = false;
 				}
@@ -1266,12 +1261,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		myRefsChangedHandle = Repository.getGlobalListenerList()
 				.addRefsChangedListener(this);
 
-		Set<IGlobalActionProvider> actionProviders = new HashSet<>();
-		actionProviders.add(graph);
-		actionProviders.add(commentViewer);
-		actionProviders.add(fileViewer);
-		globalActionHandler = new GlobalActionHandler(getSite().getActionBars(),
-				actionProviders);
 		IToolBarManager manager = getSite().getActionBars().getToolBarManager();
 		searchBar = new SearchBar(GitHistoryPage.class.getName() + ".searchBar", //$NON-NLS-1$
 				graph, actions.findAction, getSite().getActionBars());
@@ -1483,9 +1472,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			action.dispose();
 		actions.actionsToDispose.clear();
 		releaseGenerateHistoryJob();
-		if (globalActionHandler != null) {
-			globalActionHandler.dispose();
-		}
 		if (popupMgr != null) {
 			for (final IContributionItem i : popupMgr.getItems())
 				if (i instanceof IWorkbenchAction)
