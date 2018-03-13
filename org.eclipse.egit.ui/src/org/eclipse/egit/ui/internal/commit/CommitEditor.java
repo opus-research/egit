@@ -53,6 +53,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorActionBarContributor;
@@ -299,9 +300,13 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 			@Override
 			protected Control createControl(Composite parent) {
 				FormToolkit toolkit = getHeaderForm().getToolkit();
+				Composite composite = toolkit.createComposite(parent);
+				RowLayout layout = new RowLayout();
+				composite.setLayout(layout);
+				composite.setBackground(null);
 				String label = getCommit().getRepositoryName();
 
-				ImageHyperlink link = new ImageHyperlink(parent, SWT.NONE);
+				ImageHyperlink link = new ImageHyperlink(composite, SWT.NONE);
 				// Focus tracking on this link doesn't really work. It's a
 				// focusable control inside another focusable control (the
 				// toolbar). When focus leaves this control through tabbing
@@ -333,7 +338,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 					}
 				});
 
-				return link;
+				return composite;
 			}
 		};
 		toolbar.add(repositoryLabelControl);
