@@ -37,15 +37,11 @@ import org.junit.runner.RunWith;
 @RunWith(SWTBotJunit4ClassRunner.class)
 public class FeatureRebaseHandlerTest extends AbstractGitflowHandlerTest {
 
-	private static void disableAutomatedMode() {
+	@Test
+	public void testRebaseFailOnConflict() throws Exception {
 		// if AUTOMATED_MODE is true, we wouldn't get the error
 		// dialog which is part of what we want to test here
 		ErrorDialog.AUTOMATED_MODE = false;
-	}
-
-	@Test
-	public void testRebaseFailOnConflict() throws Exception {
-		disableAutomatedMode();
 
 		Git git = Git.wrap(repository);
 
@@ -79,7 +75,9 @@ public class FeatureRebaseHandlerTest extends AbstractGitflowHandlerTest {
 
 	@Test
 	public void testRebaseFailOnDirtyWorkingDirectory() throws Exception {
-		disableAutomatedMode();
+		// if AUTOMATED_MODE is true, we wouldn't get the error
+		// dialog which is part of what we want to test here
+		ErrorDialog.AUTOMATED_MODE = false;
 
 		Git git = Git.wrap(repository);
 

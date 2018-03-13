@@ -12,8 +12,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.op;
 
-import java.util.Locale;
-
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -86,7 +84,7 @@ public class ResetOperation implements IEGitOperation {
 	private void reset(IProgressMonitor monitor) throws CoreException {
 		SubMonitor progress = SubMonitor.convert(monitor,
 				NLS.bind(CoreText.ResetOperation_performingReset,
-						type.toString().toLowerCase(Locale.ROOT), refName),
+						type.toString().toLowerCase(), refName),
 				type == ResetType.HARD ? 2 : 1);
 
 		IProject[] validProjects = null;
