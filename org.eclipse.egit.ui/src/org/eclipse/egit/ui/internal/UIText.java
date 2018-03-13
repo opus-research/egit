@@ -1117,12 +1117,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SearchTooltip;
 
 	/** */
-	public static String RepositorySearchDialog_SkipHidden;
-
-	/** */
-	public static String RepositorySearchDialog_SkipHiddenTooltip;
-
-	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
 
 	/** */
