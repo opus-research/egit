@@ -84,15 +84,13 @@ import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Hyperlink;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
-import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
 
 /**
  * Commit editor page class displaying author, committer, parent commits,
  * message, and file information in form sections.
  */
-public class CommitEditorPage extends FormPage
-		implements ISchedulingRule, IShowInSource {
+public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	private static final String SIGNED_OFF_BY = "Signed-off-by: {0} <{1}>"; //$NON-NLS-1$
 
@@ -623,12 +621,11 @@ public class CommitEditorPage extends FormPage
 		return rule == this;
 	}
 
-	@Override
-	public ShowInContext getShowInContext() {
-		if (diffViewer != null && diffViewer.getControl().isFocusControl()) {
+	ShowInContext getShowInContext() {
+		if (diffViewer != null && diffViewer.getControl().isFocusControl())
 			return diffViewer.getShowInContext();
-		}
-		return null;
+		else
+			return null;
 	}
 
 }
