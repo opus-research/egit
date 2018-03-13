@@ -52,20 +52,6 @@ public class ListRemoteOperation {
 	}
 
 	/**
-	 * Create listing operation without local repository for a given remote
-	 * repository URI.
-	 *
-	 * @param uri
-	 *            URI of remote repository to list.
-	 * @param timeout
-	 *            timeout is seconds; 0 means no timeout
-	 */
-	public ListRemoteOperation(final URIish uri, int timeout) {
-		rc = Git.lsRemoteRepository();
-		rc.setRemote(uri.toString()).setTimeout(timeout);
-	}
-
-	/**
 	 * @return collection of refs advertised by remote side.
 	 * @throws IllegalStateException
 	 *             if error occurred during earlier remote refs listing.

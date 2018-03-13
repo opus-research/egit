@@ -8,9 +8,9 @@
  *******************************************************************************/
 package org.eclipse.egit.core.synchronize;
 
-import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -465,9 +465,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
 		GitRemoteFile base = new GitRemoteFile(repo, baseCommit,
-				baseCommit.getTree(), path, null);
+				baseCommit.getTree(), path);
 		GitRemoteFile remote = new GitRemoteFile(repo, baseCommit,
-				remoteCommit.getTree(), path, null);
+				remoteCommit.getTree(), path);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -496,9 +496,9 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 
 		GitRemoteFile base = new GitRemoteFile(repo, baseCommit,
-				baseCommit.getTree(), path, null);
+				baseCommit.getTree(), path);
 		GitRemoteFile remote = new GitRemoteFile(repo, remoteCommit,
-				remoteCommit.getTree(), path, null);
+				remoteCommit.getTree(), path);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -526,7 +526,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		String folderPath = Repository.stripWorkDir(repo.getWorkTree(),
 				new File(file.getParent()));
 		GitRemoteFile base = new GitRemoteFile(repo, commit, commit.getTree(),
-				filePath, null);
+				filePath);
 		GitRemoteFolder remote = new GitRemoteFolder(repo, null, commit,
 				commit.getTree(), folderPath);
 
@@ -559,7 +559,7 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		GitRemoteFolder base = new GitRemoteFolder(repo, null, commit,
 				commit.getTree(), folderPath);
 		GitRemoteFile remote = new GitRemoteFile(repo, commit,
-				commit.getTree(), filePath, null);
+				commit.getTree(), filePath);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -659,10 +659,10 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 		GitRemoteFile base = new GitRemoteFile(repo, baseCommit,
-				baseCommit.getTree(), path, null);
+				baseCommit.getTree(), path);
 
 		GitRemoteFile remote = new GitRemoteFile(repo, remoteCommit,
-				remoteCommit.getTree(), path, null);
+				remoteCommit.getTree(), path);
 
 		// then
 		assertFalse(grvc.compare(base, remote));
@@ -687,10 +687,10 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 
 		String path = Repository.stripWorkDir(repo.getWorkTree(), file);
 		GitRemoteFile base = new GitRemoteFile(repo, commit, commit.getTree(),
-				path, null);
+				path);
 
 		GitRemoteFile remote = new GitRemoteFile(repo, commit,
-				commit.getTree(), path, null);
+				commit.getTree(), path);
 
 		// then
 		assertTrue(grvc.compare(base, remote));
