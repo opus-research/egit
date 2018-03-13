@@ -4981,9 +4981,6 @@ public class UIText extends NLS {
 	public static String ValidationUtils_InvalidRefNameMessage;
 
 	/** */
-	public static String ValidationUtils_InvalidRevision;
-
-	/** */
 	public static String ValidationUtils_RefAlreadyExistsMessage;
 
 	/** */
