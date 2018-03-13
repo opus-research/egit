@@ -9,6 +9,7 @@
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Marc Khouzam (Ericsson)  - Add an option not to checkout the new branch
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935, 495777
+ *    Jaxsun McCarthy Huggan <jaxsun.mccarthy@tasktop.com> - Bug 509181
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
@@ -60,6 +61,7 @@ import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.IWizardContainer;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
@@ -112,6 +114,8 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Text refText;
 
+	private Button changeBranch;
+
 	private Button createBranch;
 
 	private Button createTag;
@@ -137,11 +141,14 @@ public class FetchGerritChangePage extends WizardPage {
 	private Button runInBackgroud;
 
 	private IInputValidator branchValidator;
+
 	private IInputValidator tagValidator;
 
 	private Button branchEditButton;
 
 	private Button branchCheckoutButton;
+
+	private Composite main;
 
 	/**
 	 * @param repository
@@ -192,7 +199,7 @@ public class FetchGerritChangePage extends WizardPage {
 				candidateChange = determineChangeFromString(clipText.trim());
 			}
 		}
-		Composite main = new Composite(parent, SWT.NONE);
+		main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
 		new Label(main, SWT.NONE)
@@ -224,10 +231,23 @@ public class FetchGerritChangePage extends WizardPage {
 				.applyTo(checkoutGroup);
 		checkoutGroup.setText(UIText.FetchGerritChangePage_AfterFetchGroup);
 
+		// radio: checkout local branch
+		changeBranch = new Button(checkoutGroup, SWT.RADIO);
+		GridDataFactory.fillDefaults().span(3, 1).applyTo(changeBranch);
+		changeBranch
+				.setText(UIText.FetchGerritChangePage_ChangeToLocalBranchRadio);
+		changeBranch.addSelectionListener(new SelectionAdapter() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				checkPage();
+			}
+		});
+
 		// radio: create local branch
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(createBranch);
-		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
+		createBranch.setText(UIText.FetchGerritChangePage_CreateLocalBranchRadio);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -325,10 +345,13 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
-		if ("checkout".equals(defaultCommand)) //$NON-NLS-1$
+		if ("checkout".equals(defaultCommand)) { //$NON-NLS-1$
 			checkout.setSelection(true);
-		else
+		} else if (getLocalRef(refName) != null) {
+			changeBranch.setSelection(true);
+		} else {
 			createBranch.setSelection(true);
+		}
 
 		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
@@ -348,14 +371,17 @@ public class FetchGerritChangePage extends WizardPage {
 			public void modifyText(ModifyEvent e) {
 				Change change = Change.fromRef(refText.getText());
 				if (change != null) {
-					branchText.setText(NLS
-							.bind(UIText.FetchGerritChangePage_SuggestedRefNamePattern,
-									change.getChangeNumber(),
-									change.getPatchSetNumber()));
+					branchText.setText(change.suggestBranchName());
 					tagText.setText(branchText.getText());
 				} else {
 					branchText.setText(""); //$NON-NLS-1$
 					tagText.setText(""); //$NON-NLS-1$
+				}
+				if (getLocalRef(refText.getText()) == null
+						&& changeBranch.getSelection()) {
+					createBranch.setSelection(true);
+				} else {
+					changeBranch.setSelection(true);
 				}
 				checkPage();
 			}
@@ -518,13 +544,19 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	private void checkPage() {
+		boolean hasLocalBranch = getLocalRef(refText.getText()) != null;
+		changeBranch.setEnabled(hasLocalBranch);
+		changeBranch.setVisible(hasLocalBranch);
+		GridData gd = (GridData) changeBranch.getLayoutData();
+		gd.exclude = !hasLocalBranch;
+
 		boolean createBranchSelected = createBranch.getSelection();
 		branchText.setEnabled(createBranchSelected);
 		branchText.setVisible(createBranchSelected);
 		branchTextlabel.setVisible(createBranchSelected);
 		branchEditButton.setVisible(createBranchSelected);
 		branchCheckoutButton.setVisible(createBranchSelected);
-		GridData gd = (GridData) branchText.getLayoutData();
+		gd = (GridData) branchText.getLayoutData();
 		gd.exclude = !createBranchSelected;
 		gd = (GridData) branchTextlabel.getLayoutData();
 		gd.exclude = !createBranchSelected;
@@ -541,7 +573,6 @@ public class FetchGerritChangePage extends WizardPage {
 		gd.exclude = !createTagSelected;
 		gd = (GridData) tagTextlabel.getLayoutData();
 		gd.exclude = !createTagSelected;
-		branchText.getParent().layout(true);
 
 		boolean showActivateAdditionalRefs = false;
 		showActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
@@ -555,7 +586,8 @@ public class FetchGerritChangePage extends WizardPage {
 		gd = (GridData) warningAdditionalRefNotActive.getLayoutData();
 		gd.exclude = !showActivateAdditionalRefs;
 		warningAdditionalRefNotActive.setVisible(showActivateAdditionalRefs);
-		warningAdditionalRefNotActive.getParent().layout(true);
+
+		main.getParent().layout(true);
 
 		setErrorMessage(null);
 		try {
@@ -577,6 +609,18 @@ public class FetchGerritChangePage extends WizardPage {
 		} finally {
 			setPageComplete(getErrorMessage() == null);
 		}
+	}
+
+	private @Nullable Ref getLocalRef(String ref) {
+		Change change = Change.fromRef(ref);
+		if (change != null) {
+			try {
+				return repository.findRef(change.computeFullRefName());
+			} catch (IOException e) {
+				// ignore
+			}
+		}
+		return null;
 	}
 
 	private List<Change> getRefsForContentAssist()
@@ -623,6 +667,7 @@ public class FetchGerritChangePage extends WizardPage {
 		final String uri = uriCombo.getText();
 		final boolean doCheckout = checkout.getSelection();
 		final boolean doCreateTag = createTag.getSelection();
+		final boolean doChangeBranch = changeBranch.getSelection();
 		final boolean doCreateBranch = createBranch.getSelection();
 		final boolean doCheckoutNewBranch = branchCheckoutButton.getSelection();
 		final boolean doActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
@@ -640,9 +685,9 @@ public class FetchGerritChangePage extends WizardPage {
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
 					try {
 						internalDoFetch(spec, uri, doCheckout, doCreateTag,
-								doCreateBranch, doCheckoutNewBranch,
-								doActivateAdditionalRefs, textForTag,
-								textForBranch, monitor);
+								doChangeBranch, doCreateBranch,
+								doCheckoutNewBranch, doActivateAdditionalRefs,
+								textForTag, textForBranch, monitor);
 					} catch (CoreException ce) {
 						return ce.getStatus();
 					} catch (Exception e) {
@@ -671,10 +716,10 @@ public class FetchGerritChangePage extends WizardPage {
 								InterruptedException {
 							try {
 								internalDoFetch(spec, uri, doCheckout,
-											doCreateTag, doCreateBranch,
-											doCheckoutNewBranch,
-										doActivateAdditionalRefs, textForTag,
-										textForBranch, monitor);
+											doCreateTag, doChangeBranch,
+											doCreateBranch,
+										doCheckoutNewBranch, doActivateAdditionalRefs,
+										textForTag, textForBranch, monitor);
 							} catch (RuntimeException e) {
 								throw e;
 							} catch (Exception e) {
@@ -696,9 +741,9 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	private void internalDoFetch(RefSpec spec, String uri, boolean doCheckout,
-			boolean doCreateTag, boolean doCreateBranch,
-			boolean doCheckoutNewBranch, boolean doActivateAdditionalRefs,
-			String textForTag, String textForBranch, IProgressMonitor monitor)
+			boolean doCreateTag, boolean doChangeBranch,
+			boolean doCreateBranch, boolean doCheckoutNewBranch,
+			boolean doActivateAdditionalRefs, String textForTag, String textForBranch, IProgressMonitor monitor)
 			throws IOException, CoreException, URISyntaxException {
 
 		int totalWork = 1;
@@ -710,26 +755,33 @@ public class FetchGerritChangePage extends WizardPage {
 				UIText.FetchGerritChangePage_GetChangeTaskName,
 				totalWork);
 
-		try {
-			RevCommit commit = fetchChange(uri, spec, monitor);
+		if (doChangeBranch) {
+			Ref localRef = getLocalRef(spec.getSource());
+			if (localRef != null) {
+				checkout(localRef.getName(), monitor);
+			}
+		} else {
+			try {
+				RevCommit commit = fetchChange(uri, spec, monitor);
 
-			if (doCreateTag)
-				createTag(spec, textForTag, commit, monitor);
+				if (doCreateTag)
+					createTag(spec, textForTag, commit, monitor);
 
-			if (doCreateBranch)
-				createBranch(textForBranch, doCheckoutNewBranch, commit,
-						monitor);
+				if (doCreateBranch)
+					createBranch(textForBranch, doCheckoutNewBranch, commit,
+							monitor);
 
-			if (doCheckout || doCreateTag)
-				checkout(commit.name(), monitor);
+				if (doCheckout || doCreateTag)
+					checkout(commit.name(), monitor);
 
-			if (doActivateAdditionalRefs)
-				activateAdditionalRefs();
+				if (doActivateAdditionalRefs)
+					activateAdditionalRefs();
 
-			storeLastUsedUri(uri);
+				storeLastUsedUri(uri);
 
-		} finally {
-			monitor.done();
+			} finally {
+				monitor.done();
+			}
 		}
 	}
 
@@ -881,9 +933,9 @@ public class FetchGerritChangePage extends WizardPage {
 
 		private final Integer patchSetNumber;
 
-		static Change fromRef(String refName) {
+		static @Nullable Change fromRef(@Nullable String refName) {
 			try {
-				if (!refName.startsWith("refs/changes/")) //$NON-NLS-1$
+				if (refName == null || !refName.startsWith("refs/changes/")) //$NON-NLS-1$
 					return null;
 				String[] tokens = refName.substring(13).split("/"); //$NON-NLS-1$
 				if (tokens.length != 3)
@@ -919,9 +971,16 @@ public class FetchGerritChangePage extends WizardPage {
 			return patchSetNumber;
 		}
 
-		/* (non-Javadoc)
-		 * @see java.lang.Object#toString()
-		 */
+		public String suggestBranchName() {
+			return NLS.bind(UIText.Change_SuggestedBranchNamePattern,
+					changeNumber, patchSetNumber);
+		}
+
+		public String computeFullRefName() {
+			return NLS.bind(UIText.Change_FullRefNamePattern, changeNumber,
+					patchSetNumber);
+		}
+
 		@Override
 		public String toString() {
 			return refName;
