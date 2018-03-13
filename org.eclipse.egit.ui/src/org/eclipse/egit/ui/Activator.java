@@ -296,6 +296,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	@Override
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
+		resourceManager = new LocalResourceManager(
+				JFaceResources.getResources());
 		// we want to be notified about debug options changes
 		Dictionary<String, String> props = new Hashtable<>(4);
 		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
@@ -732,16 +734,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 *
 	 * @return the {@link ResourceManager} of this plugin
 	 */
-	public synchronized ResourceManager getResourceManager() {
-		if (resourceManager == null) {
-			Display display = PlatformUI.getWorkbench().getDisplay();
-			if (display == null) {
-				// Workbench already closed?
-				throw new IllegalStateException();
-			}
-			resourceManager = new LocalResourceManager(JFaceResources
-					.getResources(display));
-		}
+	public ResourceManager getResourceManager() {
 		return resourceManager;
 	}
 
