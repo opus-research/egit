@@ -2624,6 +2624,9 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
+	public static String CreateBranchPage_NormalizeNameTooltip;
+
+	/** */
 	public static String CreateBranchPage_SourceLabel;
 
 	/** */
@@ -3107,12 +3110,6 @@ public class UIText extends NLS {
 	public static String LaunchFinder_ContinueQuestion;
 
 	/** */
-	public static String BranchNameNormalizer_Tooltip;
-
-	/** */
-	public static String BranchNameNormalizer_TooltipForTag;
-
-	/** */
 	public static String BranchRebaseMode_Rebase;
 
 	/** */
@@ -3129,6 +3126,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchRenameDialog_NewNameLabel;
+
+	/** */
+	public static String BranchRenameDialog_NormalizeNameTooltip;
 
 	/** */
 	public static String BranchRenameDialog_RenameExceptionMessage;
@@ -3558,9 +3558,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_CheckoutConfirmationToggleMessage;
-
-	/** */
-	public static String RepositoriesView_CheckoutConfirmationOkButtonLabel;
 
 	/** */
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
