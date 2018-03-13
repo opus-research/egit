@@ -28,7 +28,6 @@ import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -125,30 +124,12 @@ public class CloneOperation {
 	 */
 	public void run(final IProgressMonitor monitor)
 			throws InvocationTargetException, InterruptedException {
-		String title = NLS.bind(CoreText.CloneOperation_title, uri);
-		SubMonitor progress = SubMonitor.convert(monitor, title,
+		SubMonitor progress = SubMonitor.convert(monitor,
+				NLS.bind(CoreText.CloneOperation_title, uri),
 				postCloneTasks.isEmpty() ? 10 : 11);
 
 		EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
 				progress.newChild(10));
-		CloneCommand.Callback callback = new CloneCommand.Callback() {
-
-			@Override
-			public void initializedSubmodules(Collection<String> submodules) {
-				// Nothing to do
-			}
-
-			@Override
-			public void cloningSubmodule(String path) {
-				progress.setTaskName(NLS.bind(
-						CoreText.CloneOperation_submodule_title, uri, path));
-			}
-
-			@Override
-			public void checkingOut(AnyObjectId commit, String path) {
-				// Nothing to do
-			}
-		};
 		Repository repository = null;
 		try {
 			CloneCommand cloneRepository = Git.cloneRepository();
@@ -165,9 +146,6 @@ public class CloneOperation {
 			cloneRepository.setTimeout(timeout);
 			cloneRepository.setCloneAllBranches(allSelected);
 			cloneRepository.setCloneSubmodules(cloneSubmodules);
-			if (cloneSubmodules) {
-				cloneRepository.setCallback(callback);
-			}
 			if (selectedBranches != null) {
 				List<String> branches = new ArrayList<String>();
 				for (Ref branch : selectedBranches) {
@@ -178,7 +156,6 @@ public class CloneOperation {
 			Git git = cloneRepository.call();
 			repository = git.getRepository();
 			if (!postCloneTasks.isEmpty()) {
-				progress.setTaskName(title);
 				progress.setWorkRemaining(postCloneTasks.size());
 				progress.subTask(CoreText.CloneOperation_configuring);
 				for (PostCloneTask task : postCloneTasks) {
@@ -189,7 +166,6 @@ public class CloneOperation {
 			try {
 				if (repository != null) {
 					repository.close();
-					repository = null;
 				}
 				FileUtils.delete(workdir, FileUtils.RECURSIVE);
 			} catch (IOException ioe) {
