@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2017 SAP AG and others.
+ * Copyright (c) 2011, 2016 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -27,7 +27,6 @@ import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.credentials.EGitCredentialsProvider;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -61,8 +60,6 @@ public class PushOperationUI {
 	private PushOperationResult expectedResult;
 
 	private boolean showConfigureButton = true;
-
-	private @NonNull PushMode pushMode = PushMode.UPSTREAM;
 
 	/**
 	 * @param repository
@@ -237,7 +234,7 @@ public class PushOperationUI {
 		Job job = new PushJob(
 				NLS.bind(UIText.PushOperationUI_PushJobName, destinationString),
 				repo, op, expectedResult, destinationString,
-				showConfigureButton, pushMode);
+				showConfigureButton);
 		job.setUser(true);
 		job.schedule();
 	}
@@ -254,14 +251,4 @@ public class PushOperationUI {
 				.getInt(UIPreferences.REMOTE_CONNECTION_TIMEOUT);
 	}
 
-	/**
-	 * Defines the {@link PushMode}.If not set explicitly,
-	 * {@link PushMode#UPSTREAM} is assumed.
-	 *
-	 * @param mode
-	 *            to use
-	 */
-	public void setPushMode(@NonNull PushMode mode) {
-		pushMode = mode;
-	}
 }

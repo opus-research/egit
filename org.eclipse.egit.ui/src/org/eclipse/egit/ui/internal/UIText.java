@@ -247,9 +247,6 @@ public class UIText extends NLS {
 	public static String GerritConfigurationPage_BranchTooltipHover;
 
 	/** */
-	public static String GerritConfigurationPage_BranchTooltipStartTyping;
-
-	/** */
 	public static String GerritConfigurationPage_ConfigureFetchReviewNotes;
 
 	/** */
@@ -2617,9 +2614,6 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
-	public static String CreateBranchPage_NormalizeBranchName;
-
-	/** */
 	public static String CreateBranchPage_SourceLabel;
 
 	/** */
@@ -2732,9 +2726,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushToGerritPage_ContentProposalHoverText;
-
-	/** */
-	public static String PushToGerritPage_ContentProposalStartTypingText;
 
 	/** */
 	public static String PushToGerritPage_Message;
@@ -3632,18 +3623,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_ShowInfoGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_ShowFetchInfoDialog;
-
-	/** */
-	public static String DialogsPreferencePage_ShowPushInfoDialog;
-
-	/** */
-	public static String DialogsPreferencePage_ShowTooltip;
 
 	/** */
 	public static String DialogsPreferencePage_HideWarningGroupHeader;
@@ -4621,12 +4600,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RemoteConnectionPreferencePage_ZeroValueTooltip;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshIndexInterval;
-
-	/** */
-	public static String RefreshPreferencesPage_RefreshIndexIntervalTooltip;
 
 	/** */
 	public static String RefreshPreferencesPage_RefreshOnlyWhenActive;
