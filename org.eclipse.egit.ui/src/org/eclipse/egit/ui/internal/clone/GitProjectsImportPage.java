@@ -27,7 +27,6 @@ import java.util.Set;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
@@ -405,25 +404,35 @@ public class GitProjectsImportPage extends WizardPage {
 
 				@Override
 				public void run(IProgressMonitor monitor) {
+
+					monitor.beginTask(
+							UIText.WizardProjectsImportPage_SearchingMessage,
+							100);
 					selectedProjects = new ProjectRecord[0];
 					Collection<File> files = new ArrayList<>();
+					monitor.worked(10);
 					if (directory.isDirectory()) {
-						SubMonitor progress = SubMonitor.convert(monitor,
-								UIText.WizardProjectsImportPage_SearchingMessage,
-								2);
 						boolean searchNested = nestedProjects;
 
 						boolean found = ProjectUtil.findProjectFiles(files,
-								directory, searchNested, progress.newChild(1));
+								directory, searchNested, monitor);
 
-						if (!found) {
+						if (!found)
 							return;
-						}
+
 						Iterator<File> filesIterator = files.iterator();
 						selectedProjects = new ProjectRecord[files.size()];
 						int index = 0;
-						progress.setWorkRemaining(files.size());
-						if (files.isEmpty()) {
+						monitor.worked(50);
+						monitor
+								.subTask(UIText.WizardProjectsImportPage_ProcessingMessage);
+						while (filesIterator.hasNext()) {
+							File file = filesIterator.next();
+							selectedProjects[index] = new ProjectRecord(file);
+							index++;
+						}
+
+						if (files.isEmpty())
 							// run in UI thread
 							Display.getDefault().syncExec(new Runnable() {
 								@Override
@@ -431,19 +440,11 @@ public class GitProjectsImportPage extends WizardPage {
 									setErrorMessage(UIText.GitProjectsImportPage_NoProjectsMessage);
 								}
 							});
-						} else {
-							progress.subTask(
-									UIText.WizardProjectsImportPage_ProcessingMessage);
-							while (filesIterator.hasNext()) {
-								File file = filesIterator.next();
-								selectedProjects[index] = new ProjectRecord(
-										file);
-								index++;
-								progress.worked(1);
-							}
-						}
 
+					} else {
+						monitor.worked(60);
 					}
+					monitor.done();
 				}
 
 			});

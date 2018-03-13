@@ -38,6 +38,7 @@ import org.eclipse.osgi.util.NLS;
  * Push operation: pushing from local repository to one or many remote ones.
  */
 public class PushOperation {
+	private static final int WORK_UNITS_PER_TRANSPORT = 10;
 
 	private final Repository localDb;
 
@@ -153,7 +154,8 @@ public class PushOperation {
 
 		final int totalWork;
 		if (specification != null)
-			totalWork = specification.getURIsNumber();
+			totalWork = specification.getURIsNumber()
+					* WORK_UNITS_PER_TRANSPORT;
 		else
 			totalWork = 1;
 
@@ -169,14 +171,13 @@ public class PushOperation {
 					if (progress.isCanceled()) {
 						operationResult.addOperationResult(uri,
 								CoreText.PushOperation_resultCancelled);
-						progress.worked(1);
 						continue;
 					}
 
 					Collection<RemoteRefUpdate> refUpdates = specification
 							.getRefUpdates(uri);
 					final EclipseGitProgressTransformer gitSubMonitor = new EclipseGitProgressTransformer(
-							progress.newChild(1));
+							progress.newChild(WORK_UNITS_PER_TRANSPORT / 2));
 
 					try (Transport transport = Transport.open(localDb, uri)) {
 						transport.setDryRun(dryRun);
@@ -202,6 +203,8 @@ public class PushOperation {
 					} catch (Exception e) {
 						handleException(uri, e, e.getMessage());
 					}
+
+					progress.worked(WORK_UNITS_PER_TRANSPORT / 2);
 				}
 			else {
 				final EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(

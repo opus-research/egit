@@ -26,7 +26,7 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.RepositoryUtil;
@@ -176,7 +176,12 @@ public class CommitOperation implements IEGitOperation {
 	}
 
 	@Override
-	public void execute(IProgressMonitor monitor) throws CoreException {
+	public void execute(IProgressMonitor m) throws CoreException {
+		IProgressMonitor monitor;
+		if (m == null)
+			monitor = new NullProgressMonitor();
+		else
+			monitor = m;
 		IWorkspaceRunnable action = new IWorkspaceRunnable() {
 
 			@Override
@@ -185,11 +190,13 @@ public class CommitOperation implements IEGitOperation {
 					commitAll();
 				else if (amending || commitFileList != null
 						&& commitFileList.size() > 0 || commitIndex) {
-					SubMonitor progress = SubMonitor.convert(actMonitor,
-							CoreText.CommitOperation_PerformingCommit, 1);
+					actMonitor.beginTask(
+							CoreText.CommitOperation_PerformingCommit,
+							20);
+					actMonitor.setTaskName(CoreText.CommitOperation_PerformingCommit);
 					addUntracked();
 					commit();
-					progress.worked(1);
+					actMonitor.worked(10);
 				} else if (commitWorkingDirChanges) {
 					// TODO commit -a
 				} else {
