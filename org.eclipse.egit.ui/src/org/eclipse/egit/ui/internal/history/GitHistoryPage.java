@@ -207,16 +207,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			@Override
 			public void propertyChange(final PropertyChangeEvent event) {
 				if (prefName.equals(event.getProperty())) {
-					Control control = historyPage.getControl();
-					if (control != null && !control.isDisposed()) {
-						control.getDisplay().asyncExec(() -> {
-							if (!control.isDisposed()) {
-								setChecked(
-										historyPage.store.getBoolean(prefName));
-								apply(isChecked());
-							}
-						});
-					}
+					setChecked(historyPage.store.getBoolean(prefName));
+					apply(isChecked());
 				}
 			}
 
@@ -2413,7 +2405,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (UIUtils.isUsable(diffViewer)) {
 				IDocument document = new Document();
 				diffViewer.setDocument(document);
-				resizeCommentAndDiffScrolledComposite();
 			}
 			return;
 		}
@@ -2507,7 +2498,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		Point size = commentAndDiffComposite
 				.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-		commentAndDiffComposite.layout();
 		commentAndDiffScrolledComposite.setMinSize(size);
 		resizing = false;
 

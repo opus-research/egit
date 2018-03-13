@@ -2867,9 +2867,6 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_MissingChangeMessage;
 
 	/** */
-	public static String FetchGerritChangePage_NoSuchChangeMessage;
-
-	/** */
 	public static String FetchGerritChangePage_PageMessage;
 
 	/** */
@@ -3552,9 +3549,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_Branches_Nodetext;
-
-	/** */
-	public static String RepositoriesView_CheckoutConfirmationDefaultButtonLabel;
 
 	/** */
 	public static String RepositoriesView_CheckoutConfirmationMessage;
@@ -4420,9 +4414,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_CopyFilePathMenuLabel;
-
-	/** */
 	public static String CommitFileDiffViewer_MergeCommitMultiAncestorMessage;
 
 	/** */
@@ -4457,9 +4448,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_CommitId;
-
-	/** */
-	public static String CommitGraphTable_CopyCommitIdLabel;
 
 	/** */
 	public static String CommitGraphTable_Committer;
