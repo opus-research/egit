@@ -128,6 +128,24 @@
                menubarPath="team.main/group4">
          </action>
       </objectContribution>
+      <objectContribution
+            adaptable="true"
+            id="org.eclipse.egit.ui.gitFileContributions"
+            objectClass="org.eclipse.core.resources.IFile">
+         <filter
+               name="projectPersistentProperty"
+               value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
+         </filter>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.ShowBlameAction"
+               enablesFor="1"
+               id="org.eclipse.egit.ui.internal.actions.ShowBlameAction"
+               definitionId="org.eclipse.egit.ui.team.ShowBlame"
+               label="%ShowBlameAction_label"
+               icon="icons/etool16/annotate.gif"
+               menubarPath="team.main/showAnnotationsGroup">
+         </action>
+      </objectContribution>
    </extension>
 
    <extension
@@ -1095,7 +1113,8 @@
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
             id="org.eclipse.egit.ui.team.ShowBlame"
-            name="%ShowBlameCommand.name">
+            name="%ShowBlameCommand.name"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ShowBlameActionHandler">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
@@ -2153,36 +2172,6 @@
             <test
                   property="GitSelection.projectsWithRepositories">
             </test>
-         </activeWhen>
-      </handler>
-      <handler
-            class="org.eclipse.egit.ui.internal.actions.ShowBlameActionHandler"
-            commandId="org.eclipse.egit.ui.team.ShowBlame">
-         <activeWhen>
-            <or>
-               <and>
-                  <count value="1" />
-                  <iterate>
-                     <adapt type="org.eclipse.core.resources.IResource">
-                        <instanceof value="org.eclipse.core.resources.IFile" />
-                        <test property="GitResource.isShared" />
-                     </adapt>
-                  </iterate>
-               </and>
-               <with variable="activePart">
-                  <instanceof value="org.eclipse.ui.IEditorPart" />
-                  <with variable="activeEditorInput">
-                     <or>
-                        <adapt type="org.eclipse.core.resources.IFile">
-                           <test property="GitResource.isShared" />
-                        </adapt>
-                        <adapt type="org.eclipse.team.core.history.IFileRevision">
-                           <instanceof value="org.eclipse.egit.core.internal.storage.CommitFileRevision" />
-                        </adapt>
-                     </or>
-                  </with>
-               </with>
-            </or>
          </activeWhen>
       </handler>
    </extension>
@@ -4497,13 +4486,6 @@
                   name="showAnnotationsGroup"
                   visible="false">
             </separator>
-            <command
-                  commandId="org.eclipse.egit.ui.team.ShowBlame"
-                  label="%ShowBlameAction_label"
-                  icon="icons/etool16/annotate.gif"
-                  style="push">
-               <visibleWhen checkEnabled="true" />
-            </command>
             <separator
                   name="group10"
                   visible="true">
@@ -6159,13 +6141,7 @@
   </extension>
   <extension
         point="org.eclipse.mylyn.tasks.bugs.support">
-        <product
-              description="%support.egit.description"
-              id="org.eclipse.egit"
-              name="%support.egit.name"
-              icon="icons/egit.png"
-              providerId="org.eclipse"
-              url="https://www.eclipse.org/egit"/>
+        <product featureId="org.eclipse.egit" id="org.eclipse.egit" providerId="org.eclipse"/>
 		<mapping namespace="org.eclipse.egit.ui" productId="org.eclipse.egit">
 			<property name="product" value="EGit"/>
 			<property name="component" value="UI"/>
@@ -6177,18 +6153,6 @@
 		<mapping namespace="org.eclipse.egit.mylyn" productId="org.eclipse.egit">
 			<property name="product" value="EGit"/>
 			<property name="component" value="Mylyn"/>
-		</mapping>
-		<mapping namespace="org.eclipse.egit.github" productId="org.eclipse.egit">
-			<property name="product" value="EGit"/>
-			<property name="component" value="GitHub"/>
-		</mapping>
-		<mapping namespace="org.eclipse.egit.mylyn.internal.github" productId="org.eclipse.egit">
-			<property name="product" value="EGit"/>
-			<property name="component" value="GitHub"/>
-		</mapping>
-		<mapping namespace="org.eclipse.egit.gitflow" productId="org.eclipse.egit">
-			<property name="product" value="EGit"/>
-			<property name="component" value="Gitflow"/>
 		</mapping>
   </extension>
   <extension
