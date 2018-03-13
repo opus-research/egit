@@ -388,8 +388,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			findAction.setChecked(isChecked);
 			historyPage.getSite().getActionBars().setGlobalActionHandler(
 					ActionFactory.FIND.getId(), findAction);
-			historyPage.getSite().getActionBars().getMenuManager()
-					.update(false);
+			historyPage.getSite().getActionBars().updateActionBars();
 		}
 
 		private void createRefreshAction() {
@@ -900,14 +899,15 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		};
 
 		/**
-		 * Listener to close the search bar on Ctrl/Cmd-F or on ESC.
+		 * Listener to close the search bar on ESC. (Ctrl/Cmd-F is already
+		 * handled via global retarget action.)
 		 */
 		private final KeyListener keyListener = new KeyAdapter() {
 
 			@Override
 			public void keyPressed(KeyEvent e) {
 				int key = SWTKeySupport.convertEventToUnmodifiedAccelerator(e);
-				if (key == openCloseToggle.getAccelerator() || key == SWT.ESC) {
+				if (key == SWT.ESC) {
 					setVisible(false);
 					e.doit = false;
 				}
@@ -1018,6 +1018,12 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					graph.getControl().setFocus();
 				}
 			}
+		}
+
+		@Override
+		public boolean isDynamic() {
+			// We toggle our own visibility
+			return true;
 		}
 
 		@Override
