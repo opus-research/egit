@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -99,7 +100,6 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
@@ -668,7 +668,21 @@ public class FetchGerritChangePage extends WizardPage {
 									changeRefs.add(change);
 							}
 							Collections.sort(changeRefs,
-									Collections.reverseOrder());
+									new Comparator<Change>() {
+										@Override
+										public int compare(Change o1, Change o2) {
+											// change number descending
+											int changeDiff = o2.changeNumber
+													.compareTo(o1.changeNumber);
+											if (changeDiff == 0)
+												// patch set number descending
+												changeDiff = o2
+														.getPatchSetNumber()
+														.compareTo(
+																o1.getPatchSetNumber());
+											return changeDiff;
+										}
+									});
 						}
 					});
 		}
@@ -858,12 +872,11 @@ public class FetchGerritChangePage extends WizardPage {
 				final CheckoutResult result = co.getResult();
 
 				if (result.getStatus() == Status.CONFLICTS) {
-					final Shell shell = getWizard().getContainer().getShell();
-
-					shell.getDisplay().asyncExec(new Runnable() {
+					PlatformUI.getWorkbench().getDisplay()
+							.asyncExec(new Runnable() {
 						@Override
 						public void run() {
-							new CheckoutConflictDialog(shell, repository,
+							new CheckoutConflictDialog(null, repository,
 									result.getConflictList()).open();
 						}
 					});

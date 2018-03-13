@@ -10,6 +10,7 @@
  *    Dariusz Luksza <dariusz@luksza.org>
  *    Steffen Pingel (Tasktop Technologies) - fixes for bug 352253
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 499482
+ *    Wim Jongman <wim.jongman@remainsoftware.com> - Bug 509878
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -22,6 +23,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SafeRunner;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
 import org.eclipse.egit.ui.IBranchNameProvider;
@@ -124,6 +126,8 @@ class CreateBranchPage extends WizardPage {
 
 	private final LocalResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
+
+	private BranchNormalizer branchNormalizer = new BranchNormalizer();
 
 	/**
 	 * Constructs this page.
@@ -272,7 +276,8 @@ class CreateBranchPage extends WizardPage {
 			setSourceRef(myBaseRef);
 
 		nameText.setFocus();
-		// add the listener just now to avoid unneeded checkPage()
+		// add the listeners just now to avoid unneeded checkPage()
+		nameText.addModifyListener(branchNormalizer);
 		nameText.addModifyListener(e -> checkPage());
 	}
 
@@ -386,10 +391,10 @@ class CreateBranchPage extends WizardPage {
 	 */
 	public void createBranch(String newRefName, boolean checkoutNewBranch,
 			IProgressMonitor monitor)
-			throws CoreException,
-			IOException {
-		monitor.beginTask(UIText.CreateBranchPage_CreatingBranchMessage,
-				IProgressMonitor.UNKNOWN);
+			throws CoreException, IOException {
+		SubMonitor progress = SubMonitor.convert(monitor,
+				checkoutNewBranch ? 2 : 1);
+		progress.setTaskName(UIText.CreateBranchPage_CreatingBranchMessage);
 
 		final CreateLocalBranchOperation cbop;
 
@@ -402,15 +407,12 @@ class CreateBranchPage extends WizardPage {
 					myRepository.findRef(this.sourceRefName),
 					upstreamConfig);
 
-		cbop.execute(monitor);
+		cbop.execute(progress.newChild(1));
 
-		if (checkoutNewBranch) {
-			if (monitor.isCanceled())
-				return;
-			monitor.beginTask(UIText.CreateBranchPage_CheckingOutMessage,
-					IProgressMonitor.UNKNOWN);
+		if (checkoutNewBranch && !progress.isCanceled()) {
+			progress.setTaskName(UIText.CreateBranchPage_CheckingOutMessage);
 			BranchOperationUI.checkout(myRepository, Constants.R_HEADS + newRefName)
-					.run(monitor);
+					.run(progress.newChild(1));
 		}
 	}
 
@@ -494,4 +496,42 @@ class CreateBranchPage extends WizardPage {
 		}
 	}
 
+	private final class BranchNormalizer implements ModifyListener {
+		private static final String UNDERSCORE = "_"; //$NON-NLS-1$
+
+		private String oldName = ""; //$NON-NLS-1$
+
+		private boolean listenerActive;
+
+		@Override
+		public void modifyText(ModifyEvent e) {
+			nameText.setFocus();
+			if (listenerActive)
+				return;
+			try {
+				listenerActive = true;
+				normalize();
+			} finally {
+				listenerActive = false;
+			}
+		}
+
+		private void normalize() {
+			String name = nameText.getText();
+			// if not pasting then allow the user to type a space
+			if (!isPaste()) {
+				name = name.replaceAll("\\s$", UNDERSCORE);//$NON-NLS-1$
+			}
+			name = Repository.normalizeBranchName(name);
+			nameText.setText(name);
+			nameText.setSelection(nameText.getText().length() + 1);
+		}
+
+		private boolean isPaste() {
+			boolean result = Math
+					.abs(oldName.length() - nameText.getText().length()) > 1;
+			oldName = nameText.getText();
+			return result;
+		}
+	}
 }
