@@ -8,7 +8,7 @@
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2015-2016 Thomas Wolf <thomas.wolf@paranor.ch>
+ * Copyright (C) 2015, 2016 Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -45,8 +45,7 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.CompareUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.commit.DiffDocument;
-import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter;
+import org.eclipse.egit.ui.internal.commit.DiffStyleRangeFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
@@ -880,8 +879,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		private ICommitsProvider provider;
 
-		private boolean wasVisible = false;
-
 		private final CommitGraphTable graph;
 
 		private final IAction openCloseToggle;
@@ -991,7 +988,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			// It will be disposed by the IToolBarManager
 			toolbar = null;
 			openCloseToggle.setChecked(false);
-			wasVisible = false;
 		}
 
 		@Override
@@ -1011,8 +1007,11 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 					openCloseToggle.setChecked(true);
 					// If the toolbar was moved below the tabs, we now have
 					// the wrong background. It disappears when one clicks
-					// elsewhere. Looks like an inactive selection... No
-					// way found to fix this but this ugly focus juggling:
+					// elsewhere. Looks like an inactive selection... Let's
+					// fix that: parent is the ToolBar, grand-parent is a
+					// Composite with the freak background.
+					// toolbar.getParent().getParent().setBackground(null);
+					// Doesn't help?! Let's try changing the focus:
 					graph.getControl().setFocus();
 					toolbar.setFocus();
 				} else if (!visible && !graph.getControl().isDisposed()) {
@@ -1036,8 +1035,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			toolbar.addListener(SWT.FocusOut, mouseListener);
 			toolbar.addListener(SWT.MouseDown, mouseListener);
 			toolbar.addListener(SWT.MouseUp, mouseListener);
-			toolbar.addListener(SWT.Modify,
-					(e) -> lastText = toolbar.getText());
 			toolbar.addStatusListener(statusListener);
 			toolbar.addSelectionListener(selectionListener);
 			boolean hasInput = provider != null;
@@ -1053,10 +1050,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			}
 			lastSearchContext = null;
 			lastObjectId = null;
-			if (wasVisible) {
-				return toolbar;
-			}
-			wasVisible = true;
 			// This fixes the wrong background when Eclipse starts up with the
 			// search bar visible.
 			toolbar.getDisplay().asyncExec(new Runnable() {
@@ -1139,7 +1132,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				.create());
 
 		commentViewer = new CommitMessageViewer(commentAndDiffComposite,
-				getPartSite());
+				getSite(), getPartSite());
 		commentViewer.getControl().setLayoutData(
 				GridDataFactory.fillDefaults().grab(true, false).create());
 
@@ -1224,11 +1217,10 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		commentViewer.configure(configuration);
 
-		diffViewer = new DiffViewer(commentAndDiffComposite, null, SWT.NONE);
-		diffViewer.configure(
-				new DiffViewer.Configuration(EditorsUI.getPreferenceStore()));
+		diffViewer = new DiffViewer(commentAndDiffComposite, null, SWT.NONE, false);
 		diffViewer.getControl().setLayoutData(
 				GridDataFactory.fillDefaults().grab(true, false).create());
+		diffViewer.setEditable(false);
 
 		setWrap(store
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_COMMENT_WRAP));
@@ -2299,6 +2291,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (UIUtils.isUsable(diffViewer)) {
 				IDocument document = new Document();
 				diffViewer.setDocument(document);
+				diffViewer.setFormatter(null);
 			}
 			return;
 		}
@@ -2312,8 +2305,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				}
 				int maxLines = Activator.getDefault().getPreferenceStore()
 						.getInt(UIPreferences.HISTORY_MAX_DIFF_LINES);
-				final DiffDocument document = new DiffDocument();
-				final DiffRegionFormatter formatter = new DiffRegionFormatter(
+				final IDocument document = new Document();
+				final DiffStyleRangeFormatter formatter = new DiffStyleRangeFormatter(
 						document, document.getLength(), maxLines);
 
 				monitor.beginTask("", diffs.size()); //$NON-NLS-1$
@@ -2346,8 +2339,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 							return Status.CANCEL_STATUS;
 						}
 						if (UIUtils.isUsable(diffViewer)) {
-							document.connect(formatter);
 							diffViewer.setDocument(document);
+							diffViewer.setFormatter(formatter);
 							resizeCommentAndDiffScrolledComposite();
 						}
 						return Status.OK_STATUS;
