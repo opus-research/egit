@@ -17,9 +17,7 @@ package org.eclipse.egit.ui.internal.reflog;
 import java.io.IOException;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.egit.core.AdapterUtils;
-import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
@@ -31,12 +29,9 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.components.RepositoryMenuUtil;
 import org.eclipse.egit.ui.internal.reflog.ReflogViewContentProvider.ReflogInput;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
-import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
@@ -78,8 +73,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.IEditorInput;
@@ -101,7 +94,6 @@ import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ImageHyperlink;
-import org.eclipse.ui.internal.forms.widgets.FormHeading;
 import org.eclipse.ui.model.IWorkbenchAdapter;
 import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
@@ -127,10 +119,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 	private Form form;
 
-	private IMenuManager headMenuManager;
-
-	private Composite formHead;
-
 	private TreeViewer refLogTableTreeViewer;
 
 	private ISelectionListener selectionChangedListener;
@@ -140,8 +128,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 	private IPropertyChangeListener uiPrefsListener;
 
 	private PreferenceBasedDateFormatter dateFormatter;
-
-	private IPreferenceChangeListener prefListener;
 
 	@Override
 	public void createPartControl(Composite parent) {
@@ -167,33 +153,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(form);
 		toolkit.decorateFormHeading(form);
 		GridLayoutFactory.fillDefaults().applyTo(form.getBody());
-
-		formHead = form.getHead();
-		if (formHead instanceof FormHeading) {
-			headMenuManager = ((FormHeading) formHead).getMenuManager();
-			RepositoryUtil util = org.eclipse.egit.core.Activator.getDefault()
-					.getRepositoryUtil();
-			if (!util.getRepositories().isEmpty()) {
-				// This menu manager must be non-empty to have the triangle
-				// shown initially
-				headMenuManager.add(new Action() {
-					// Nothing
-				});
-			}
-			headMenuManager.setRemoveAllWhenShown(true);
-			headMenuManager.addMenuListener(
-					manager -> RepositoryMenuUtil.fillRepositories(manager,
-							false, repo -> reactOnSelection(
-									new StructuredSelection(repo))));
-			prefListener = event -> {
-				if (!RepositoryUtil.PREFS_DIRECTORIES_REL
-						.equals(event.getKey())) {
-					return;
-				}
-				updateHeadMenu(event.getNewValue());
-			};
-			util.getPreferences().addPreferenceChangeListener(prefListener);
-		}
 
 		Composite tableComposite = toolkit.createComposite(form.getBody());
 		tableComposite.setLayout(new GridLayout());
@@ -439,43 +398,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		getSite().registerContextMenu(POPUP_MENU_ID, menuManager, refLogTableTreeViewer);
 	}
 
-	/**
-	 * Updates the visibility of the head menu indicator depending on whether we
-	 * have any configured repositories or not.
-	 *
-	 * @param newValue
-	 *            of the preference storing the configured repository names
-	 */
-	private void updateHeadMenu(Object newValue) {
-		if (headMenuManager == null) {
-			return;
-		}
-		boolean isEmpty = !(newValue instanceof String)
-				|| ((String) newValue).trim().isEmpty();
-		boolean managerEmpty = headMenuManager.isEmpty();
-		if (managerEmpty != isEmpty) {
-			IWorkbenchPartSite site = getSite();
-			Shell shell = site != null ? site.getShell() : null;
-			Display display = shell != null ? shell.getDisplay() : null;
-			if (display != null && !display.isDisposed()) {
-				display.asyncExec(() -> {
-					if (display.isDisposed() || headMenuManager == null) {
-						return;
-					}
-					if (managerEmpty) {
-						// Add a dummy entry to the manager
-						headMenuManager.add(new Action() {
-							// Nothing
-						});
-					} else {
-						headMenuManager.removeAll();
-					}
-					formHead.layout();
-				});
-			}
-		}
-	}
-
 	@Override
 	public void setFocus() {
 		refLogTableTreeViewer.getControl().setFocus();
@@ -499,12 +421,6 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		}
 		Activator.getDefault().getPreferenceStore()
 				.removePropertyChangeListener(uiPrefsListener);
-		if (prefListener != null) {
-			org.eclipse.egit.core.Activator.getDefault().getRepositoryUtil()
-					.getPreferences()
-					.removePreferenceChangeListener(prefListener);
-			prefListener = null;
-		}
 	}
 
 	private void reactOnSelection(ISelection selection) {
@@ -656,7 +572,12 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 			@Override
 			public void run() {
-				refLogTableTreeViewer.refresh();
+				Object currentInput = refLogTableTreeViewer.getInput();
+				if (currentInput instanceof ReflogInput) {
+					ReflogInput oldInput = (ReflogInput) currentInput;
+					refLogTableTreeViewer.setInput(new ReflogInput(
+							oldInput.getRepository(), oldInput.getRef()));
+				}
 			}
 		});
 	}

@@ -50,7 +50,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.DiffDocument;
 import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
-import org.eclipse.egit.ui.internal.components.RepositoryMenuUtil;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
 import org.eclipse.egit.ui.internal.fetch.FetchHeadChangedEvent;
@@ -59,7 +58,6 @@ import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
@@ -209,8 +207,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			@Override
 			public void propertyChange(final PropertyChangeEvent event) {
 				if (prefName.equals(event.getProperty())) {
-					setChecked(historyPage.store.getBoolean(prefName));
-					apply(isChecked());
+					Control control = historyPage.getControl();
+					if (control != null && !control.isDisposed()) {
+						control.getDisplay().asyncExec(() -> {
+							if (!control.isDisposed()) {
+								setChecked(
+										historyPage.store.getBoolean(prefName));
+								apply(isChecked());
+							}
+						});
+					}
 				}
 			}
 
@@ -1491,39 +1497,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		filterSubMenuMgr.add(actions.showAllFolderVersionsAction);
 		filterSubMenuMgr.add(actions.showAllResourceVersionsAction);
 
-		IMenuManager repositoriesMenuManager = new MenuManager("Repositories"); //$NON-NLS-1$
-		viewMenuMgr.add(repositoriesMenuManager);
-		repositoriesMenuManager.setRemoveAllWhenShown(true);
-		repositoriesMenuManager.addMenuListener(manager -> RepositoryMenuUtil
-				.fillRepositories(manager, true, repo -> {
-					// Don't do anything if we're already showing this
-					// repository (not filtered to any items)
-					if (currentRepo != null && repo.getDirectory()
-							.equals(currentRepo.getDirectory())) {
-						HistoryPageInput currentInput = getInputInternal();
-						if (currentInput.getItems() == null
-								&& currentInput.getFileList() == null) {
-							return;
-						}
-					}
-					if (selectionTracker != null) {
-						selectionTracker.clearSelection();
-					}
-					// Use a RepositoryNode instead of the Repository directly
-					// in order to avoid multiple entries for the same
-					// repository in the history of the GenericHistoryView.
-					GitHistoryPage.this.getHistoryView()
-							.showHistoryFor(new RepositoryNode(null, repo));
-				}));
 		viewMenuMgr.add(new Separator());
 		viewMenuMgr.add(actions.compareModeAction);
 		viewMenuMgr.add(actions.reuseCompareEditorAction);
-		viewMenuMgr.addMenuListener(manager -> {
-			repositoriesMenuManager
-					.setVisible(!org.eclipse.egit.core.Activator.getDefault()
-							.getRepositoryUtil().getRepositories().isEmpty());
-			viewMenuMgr.update(true);
-		});
 	}
 
 	@Override
@@ -2437,6 +2413,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (UIUtils.isUsable(diffViewer)) {
 				IDocument document = new Document();
 				diffViewer.setDocument(document);
+				resizeCommentAndDiffScrolledComposite();
 			}
 			return;
 		}
@@ -2530,6 +2507,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		Point size = commentAndDiffComposite
 				.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+		commentAndDiffComposite.layout();
 		commentAndDiffScrolledComposite.setMinSize(size);
 		resizing = false;
 
