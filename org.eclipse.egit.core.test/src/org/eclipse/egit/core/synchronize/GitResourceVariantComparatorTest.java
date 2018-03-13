@@ -61,10 +61,8 @@ public class GitResourceVariantComparatorTest extends GitTestCase {
 		repo = RepositoryMapping.getMapping(iProject).getRepository();
 
 		// make initial commit
-		try (Git git = new Git(repo)) {
-			git.commit().setAuthor("JUnit", "junit@jgit.org")
-					.setMessage("Initial commit").call();
-		}
+		new Git(repo).commit().setAuthor("JUnit", "junit@jgit.org")
+				.setMessage("Initial commit").call();
 	}
 
 	@After
