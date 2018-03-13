@@ -17,14 +17,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -115,17 +111,6 @@ import org.eclipse.ui.progress.WorkbenchJob;
  */
 public class FetchGerritChangePage extends WizardPage {
 
-	private static final String GERRIT_CHANGE_REF_PREFIX = "refs/changes/"; //$NON-NLS-1$
-
-	private static final Pattern GERRIT_FETCH_PATTERN = Pattern.compile(
-			"git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"); //$NON-NLS-1$
-
-	private static final Pattern GERRIT_URL_PATTERN = Pattern.compile(
-			"(?:https?://\\S+?/|/)?([1-9][0-9]*)(?:/([1-9][0-9]*)(?:/([1-9][0-9]*)(?:\\.\\.\\d+)?)?)?(?:/\\S*)?"); //$NON-NLS-1$
-
-	private static final Pattern GERRIT_CHANGE_REF_PATTERN = Pattern
-			.compile("refs/changes/(\\d\\d)/([1-9][0-9]*)(?:/([1-9][0-9]*)?)?"); //$NON-NLS-1$
-
 	private enum CheckoutMode {
 		CREATE_BRANCH, CREATE_TAG, CHECKOUT_FETCH_HEAD, NOCHECKOUT
 	}
@@ -178,10 +163,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private boolean tagTextEdited;
 
-	private boolean fetching;
-
-	private boolean doAutoFill;
-
 	/**
 	 * @param repository
 	 * @param refName initial value for the ref field
@@ -225,9 +206,10 @@ public class FetchGerritChangePage extends WizardPage {
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;
-		Change candidateChange = null;
+		String candidateChange = null;
 		if (clipText != null) {
-			Matcher matcher = GERRIT_FETCH_PATTERN.matcher(clipText);
+			String pattern = "git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"; //$NON-NLS-1$
+			Matcher matcher = Pattern.compile(pattern).matcher(clipText);
 			if (matcher.matches()) {
 				defaultUri = matcher.group(1);
 				defaultChange = matcher.group(2);
@@ -450,12 +432,7 @@ public class FetchGerritChangePage extends WizardPage {
 		if (defaultChange != null) {
 			refText.setText(defaultChange);
 		} else if (candidateChange != null) {
-			String ref = candidateChange.getRefName();
-			if (ref != null) {
-				refText.setText(ref);
-			} else {
-				refText.setText(candidateChange.getChangeNumber().toString());
-			}
+			refText.setText(candidateChange);
 		}
 
 		// get all available Gerrit URIs from the repository
@@ -542,59 +519,48 @@ public class FetchGerritChangePage extends WizardPage {
 	 *
 	 * @param input
 	 *            string to derive a change number from
-	 * @return the change number and possibly also the patch set number, or
-	 *         {@code null} if none could be determined.
+	 * @return the change number as a string, or {@code null} if none could be
+	 *         determined.
 	 */
-	protected static Change determineChangeFromString(String input) {
+	protected static String determineChangeFromString(String input) {
 		if (input == null) {
 			return null;
 		}
-		try {
-			Matcher matcher = GERRIT_URL_PATTERN.matcher(input);
-			if (matcher.matches()) {
-				String first = matcher.group(1);
-				String second = matcher.group(2);
-				String third = matcher.group(3);
-				if (second != null && !second.isEmpty()) {
-					if (third != null && !third.isEmpty()) {
-						return Change.create(Integer.parseInt(second),
-								Integer.parseInt(third));
-					} else if (input.startsWith("http")) { //$NON-NLS-1$
-						// A URL ending with two digits: take the first as
-						// change number
-						return Change.create(Integer.parseInt(first),
-								Integer.parseInt(second));
-					} else {
-						// Take the numerically larger. Might be a fragment like
-						// /10/65510 as in refs/changes/10/65510/6, or /65510/6
-						// as in https://git.eclipse.org/r/#/c/65510/6. This is
-						// a heuristic, it might go wrong on a Gerrit where
-						// there are not many changes (yet), and one of them has
-						// many patch sets.
-						int firstNum = Integer.parseInt(first);
-						int secondNum = Integer.parseInt(second);
-						if (firstNum > secondNum) {
-							return Change.create(firstNum, secondNum);
+		Pattern pattern = Pattern.compile(
+				"(?:https?://\\S+?/|/)?([1-9][0-9]*)(?:/([1-9][0-9]*)(?:/([1-9][0-9]*)(?:\\.\\.\\d+)?)?)?(?:/\\S*)?"); //$NON-NLS-1$
+		Matcher matcher = pattern.matcher(input);
+		if (matcher.matches()) {
+			String first = matcher.group(1);
+			String second = matcher.group(2);
+			String third = matcher.group(3);
+			if (second != null && !second.isEmpty()) {
+				if (third != null && !third.isEmpty()) {
+					return second;
+				} else if (input.startsWith("http")) { //$NON-NLS-1$
+					// A URL ending with two digits: take the first.
+					return first;
+				} else {
+					// Take the numerically larger. Might be a fragment like
+					// /10/65510 as in refs/changes/10/65510/6, or /65510/6 as
+					// in https://git.eclipse.org/r/#/c/65510/6. This is a
+					// heuristic, it might go wrong on a Gerrit where there are
+					// not many changes (yet), and one of them has many patch
+					// sets.
+					try {
+						if (Integer.parseInt(first) > Integer
+								.parseInt(second)) {
+							return first;
 						} else {
-							return Change.create(secondNum);
+							return second;
 						}
+					} catch (NumberFormatException e) {
+						// Numerical overflow?
+						return null;
 					}
-				} else {
-					return Change.create(Integer.parseInt(first));
 				}
+			} else {
+				return first;
 			}
-			matcher = GERRIT_CHANGE_REF_PATTERN.matcher(input);
-			if (matcher.matches()) {
-				int firstNum = Integer.parseInt(matcher.group(2));
-				String second = matcher.group(3);
-				if (second != null) {
-					return Change.create(firstNum, Integer.parseInt(second));
-				} else {
-					return Change.create(firstNum);
-				}
-			}
-		} catch (NumberFormatException e) {
-			// Numerical overflow?
 		}
 		return null;
 	}
@@ -605,20 +571,8 @@ public class FetchGerritChangePage extends WizardPage {
 			String clipText = (String) clipboard
 					.getContents(TextTransfer.getInstance());
 			if (clipText != null) {
-				Change input = determineChangeFromString(
-						clipText.trim());
-				if (input != null) {
-					String toInsert = input.getChangeNumber().toString();
-					if (input.getPatchSetNumber() != null) {
-						if (text.getText().trim().isEmpty() || text
-								.getSelectionText().equals(text.getText())) {
-							// Paste will replace everything
-							toInsert = input.getRefName();
-						} else {
-							toInsert = toInsert + '/'
-									+ input.getPatchSetNumber();
-						}
-					}
+				String toInsert = determineChangeFromString(clipText.trim());
+				if (toInsert != null) {
 					clipboard.setContents(new Object[] { toInsert },
 							new Transfer[] { TextTransfer.getInstance() });
 					try {
@@ -707,42 +661,34 @@ public class FetchGerritChangePage extends WizardPage {
 					setErrorMessage(UIText.FetchGerritChangePage_MissingChangeMessage);
 					return;
 				}
-				ChangeList list = changeRefs.get(uriCombo.getText());
-				if (list != null && list.isDone()
-						&& !list.getResult().contains(change)) {
-					setErrorMessage(
-							UIText.FetchGerritChangePage_UnknownChangeRefMessage);
-					return;
-				}
 			} else {
 				setErrorMessage(UIText.FetchGerritChangePage_MissingChangeMessage);
 				return;
 			}
 
-			if (createBranchSelected) {
+			if (createBranchSelected)
 				setErrorMessage(branchValidator.isValid(branchText.getText()));
-			} else if (createTagSelected) {
+			else if (createTagSelected)
 				setErrorMessage(tagValidator.isValid(tagText.getText()));
-			}
 		} finally {
 			setPageComplete(getErrorMessage() == null);
 		}
 	}
 
-	private Collection<Change> getRefsForContentAssist(String originalRefText)
+	private List<Change> getRefsForContentAssist()
 			throws InvocationTargetException, InterruptedException {
 		String uriText = uriCombo.getText();
 		if (!changeRefs.containsKey(uriText)) {
 			changeRefs.put(uriText, new ChangeList(repository, uriText));
 		}
 		ChangeList list = changeRefs.get(uriText);
-		if (!list.isFinished()) {
+		if (!list.isDone()) {
 			IWizardContainer container = getContainer();
 			IRunnableWithProgress operation = monitor -> {
 				monitor.beginTask(MessageFormat.format(
 						UIText.FetchGerritChangePage_FetchingRemoteRefsMessage,
 						uriText), IProgressMonitor.UNKNOWN);
-				Collection<Change> result = list.get();
+				List<Change> result = list.get();
 				if (monitor.isCanceled()) {
 					return;
 				}
@@ -756,11 +702,6 @@ public class FetchGerritChangePage extends WizardPage {
 						UIText.FetchGerritChangePage_ShowingProposalsJobName) {
 
 					@Override
-					public boolean shouldRun() {
-						return super.shouldRun() && !fetching;
-					}
-
-					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
 						// But only if we're not disposed, the focus is still
 						// (or again) in the Change field, and the uri is still
@@ -769,33 +710,20 @@ public class FetchGerritChangePage extends WizardPage {
 							if (container instanceof NonBlockingWizardDialog) {
 								// Otherwise the dialog was blocked anyway, and
 								// focus will be restored
-								if (fetching) {
+								if (refText != refText.getDisplay()
+										.getFocusControl()) {
 									return Status.CANCEL_STATUS;
 								}
 								String uriNow = uriCombo.getText();
 								if (!uriNow.equals(uriText)) {
 									return Status.CANCEL_STATUS;
 								}
-								if (refText != refText.getDisplay()
-										.getFocusControl()) {
-									fillInPatchSet(result, null);
-									return Status.CANCEL_STATUS;
-								}
-								// Try not to interfere with the user's typing.
-								// Only fill in the patch set number if the text
-								// is still the same.
-								fillInPatchSet(result, originalRefText);
-								doAutoFill = false;
-							} else {
-								// Dialog was blocked
-								fillInPatchSet(result, null);
 							}
 							contentProposer.openProposalPopup();
 						} catch (SWTException e) {
 							// Disposed already
 							return Status.CANCEL_STATUS;
 						} finally {
-							doAutoFill = true;
 							uiMonitor.done();
 						}
 						return Status.OK_STATUS;
@@ -813,45 +741,10 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 			return null;
 		}
-		// ChangeList is already here, so get() won't block
-		Collection<Change> changes = list.get();
-		if (doAutoFill) {
-			fillInPatchSet(changes, originalRefText);
-		}
-		return changes;
-	}
-
-	private void fillInPatchSet(Collection<Change> changes,
-			String originalText) {
-		String currentText = refText.getText();
-		if (contentProposer.isProposalPopupOpen()
-				|| originalText != null && !originalText.equals(currentText)) {
-			// User has modified the text: don't interfere
-			return;
-		}
-		Change change = determineChangeFromString(currentText);
-		if (change != null && change.getPatchSetNumber() == null) {
-			int changeNumber = change.getChangeNumber().intValue();
-			// We know that the result is sorted by change and
-			// patch set number descending
-			for (Change fromGerrit : changes) {
-				int num = fromGerrit.getChangeNumber().intValue();
-				if (num < changeNumber) {
-					return; // Doesn't exist
-				} else if (changeNumber == num) {
-					// Must be the one with the highest patch
-					// set number.
-					String fullRef = fromGerrit.getRefName();
-					refText.setText(fullRef);
-					refText.setSelection(fullRef.length());
-					return;
-				}
-			}
-		}
+		return list.get();
 	}
 
 	boolean doFetch() {
-		fetching = true;
 		final RefSpec spec = new RefSpec().setSource(refText.getText())
 				.setDestination(Constants.FETCH_HEAD);
 		final String uri = uriCombo.getText();
@@ -1039,9 +932,9 @@ public class FetchGerritChangePage extends WizardPage {
 
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
-				Collection<Change> proposals;
+				List<Change> proposals;
 				try {
-					proposals = getRefsForContentAssist(contents);
+					proposals = getRefsForContentAssist();
 				} catch (InvocationTargetException e) {
 					Activator.handleError(e.getMessage(), e, true);
 					return null;
@@ -1053,12 +946,7 @@ public class FetchGerritChangePage extends WizardPage {
 					return null;
 				}
 				List<IContentProposal> resultList = new ArrayList<>();
-				String input = contents;
-				Matcher matcher = GERRIT_CHANGE_REF_PATTERN.matcher(contents);
-				if (matcher.find()) {
-					input = matcher.group(2);
-				}
-				Pattern pattern = UIUtils.createProposalPattern(input);
+				Pattern pattern = UIUtils.createProposalPattern(contents);
 				for (final Change ref : proposals) {
 					if (pattern != null && !pattern
 							.matcher(ref.getChangeNumber().toString())
@@ -1096,7 +984,7 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 	}
 
-	final static class Change implements Comparable<Change> {
+	private final static class Change implements Comparable<Change> {
 		private final String refName;
 
 		private final Integer changeNumber;
@@ -1105,19 +993,13 @@ public class FetchGerritChangePage extends WizardPage {
 
 		static Change fromRef(String refName) {
 			try {
-				if (refName == null) {
+				if (refName == null || !refName.startsWith("refs/changes/")) //$NON-NLS-1$
 					return null;
-				}
-				Matcher m = GERRIT_CHANGE_REF_PATTERN.matcher(refName);
-				if (!m.matches() || m.group(3) == null) {
+				String[] tokens = refName.substring(13).split("/"); //$NON-NLS-1$
+				if (tokens.length != 3)
 					return null;
-				}
-				Integer subdir = Integer.valueOf(m.group(1));
-				Integer changeNumber = Integer.valueOf(m.group(2));
-				if (subdir.intValue() != changeNumber.intValue() % 100) {
-					return null;
-				}
-				Integer patchSetNumber = Integer.valueOf(m.group(3));
+				Integer changeNumber = Integer.valueOf(tokens[1]);
+				Integer patchSetNumber = Integer.valueOf(tokens[2]);
 				return new Change(refName, changeNumber, patchSetNumber);
 			} catch (NumberFormatException e) {
 				// if we can't parse this, just return null
@@ -1126,20 +1008,6 @@ public class FetchGerritChangePage extends WizardPage {
 				// if we can't parse this, just return null
 				return null;
 			}
-		}
-
-		static Change create(int changeNumber) {
-			return new Change(null, Integer.valueOf(changeNumber), null);
-		}
-
-		static Change create(int changeNumber, int patchSetNumber) {
-			int subDir = changeNumber % 100;
-			return new Change(
-					GERRIT_CHANGE_REF_PREFIX
-							+ String.format("%02d", Integer.valueOf(subDir)) //$NON-NLS-1$
-							+ '/' + changeNumber + '/' + patchSetNumber,
-					Integer.valueOf(changeNumber),
-					Integer.valueOf(patchSetNumber));
 		}
 
 		private Change(String refName, Integer changeNumber,
@@ -1167,28 +1035,10 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 
 		@Override
-		public boolean equals(Object obj) {
-			if (!(obj instanceof Change)) {
-				return false;
-			}
-			return compareTo((Change) obj) == 0;
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(changeNumber, patchSetNumber);
-		}
-
-		@Override
 		public int compareTo(Change o) {
-			int changeDiff = this.changeNumber.compareTo(o.getChangeNumber());
+			int changeDiff = this.changeNumber.compareTo(o.changeNumber);
 			if (changeDiff == 0) {
-				if (patchSetNumber == null) {
-					return o.getPatchSetNumber() != null ? -1 : 0;
-				} else if (o.getPatchSetNumber() == null) {
-					return 1;
-				}
-				changeDiff = this.patchSetNumber
+				changeDiff = this.getPatchSetNumber()
 						.compareTo(o.getPatchSetNumber());
 			}
 			return changeDiff;
@@ -1281,7 +1131,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 		private State state = State.PRISTINE;
 
-		private Set<Change> result;
+		private List<Change> result;
 
 		private InterruptibleJob job;
 
@@ -1339,12 +1189,8 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		}
 
-		public synchronized boolean isFinished() {
-			return state == State.CANCELED || state == State.DONE;
-		}
-
 		public synchronized boolean isDone() {
-			return state == State.DONE;
+			return state == State.CANCELED || state == State.DONE;
 		}
 
 		/**
@@ -1359,7 +1205,7 @@ public class FetchGerritChangePage extends WizardPage {
 		 * @throws InvocationTargetException
 		 *             if the future's job cannot be created
 		 */
-		public synchronized Collection<Change> get()
+		public synchronized List<Change> get()
 				throws InterruptedException, InvocationTargetException {
 			switch (state) {
 			case DONE:
@@ -1376,14 +1222,6 @@ public class FetchGerritChangePage extends WizardPage {
 				}
 				return get();
 			}
-		}
-
-		public synchronized Collection<Change> getResult() {
-			if (isFinished()) {
-				return result;
-			}
-			throw new IllegalStateException(
-					"Fetching change list is not finished"); //$NON-NLS-1$
 		}
 
 		private synchronized void finish(boolean done) {
@@ -1452,7 +1290,7 @@ public class FetchGerritChangePage extends WizardPage {
 						}
 					}
 					Collections.sort(changes, Collections.reverseOrder());
-					result = new LinkedHashSet<>(changes);
+					result = changes;
 					return Status.OK_STATUS;
 				}
 

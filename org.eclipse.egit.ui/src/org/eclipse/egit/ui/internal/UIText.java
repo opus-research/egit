@@ -2360,12 +2360,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_ErrorCreatingCommitMessageProvider;
 
 	/** */
-	public static String CommitDialog_CaretPositionOutOfBounds;
-
-	/** */
-	public static String CommitDialog_IgnoreCaretPosition;
-
-	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
@@ -2883,9 +2877,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String FetchGerritChangePage_TagRadio;
-
-	/** */
-	public static String FetchGerritChangePage_UnknownChangeRefMessage;
 
 	/** */
 	public static String FetchGerritChangePage_UpdateRadio;
@@ -3549,9 +3540,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositoriesView_Branches_Nodetext;
-
-	/** */
-	public static String RepositoriesView_CheckoutConfirmationDefaultButtonLabel;
 
 	/** */
 	public static String RepositoriesView_CheckoutConfirmationMessage;
@@ -4417,9 +4405,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_CopyFilePathMenuLabel;
-
-	/** */
 	public static String CommitFileDiffViewer_MergeCommitMultiAncestorMessage;
 
 	/** */
@@ -4454,9 +4439,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitGraphTable_CommitId;
-
-	/** */
-	public static String CommitGraphTable_CopyCommitIdLabel;
 
 	/** */
 	public static String CommitGraphTable_Committer;
@@ -5173,16 +5155,10 @@ public class UIText extends NLS {
 	public static String StagingView_UnstagedChanges;
 
 	/** */
-	public static String StagingView_UnstagedChangesTooltip;
-
-	/** */
 	public static String StagingView_ShowFileNamesFirst;
 
 	/** */
 	public static String StagingView_StagedChanges;
-
-	/** */
-	public static String StagingView_StagedChangesTooltip;
 
 	/** */
 	public static String StagingView_CommitMessage;
@@ -5275,31 +5251,13 @@ public class UIText extends NLS {
 	public static String StagingView_replaceWithHeadRevision;
 
 	/** */
-	public static String StagingView_UnstageAllItemMenuLabel;
-
-	/** */
-	public static String StagingView_UnstageAllItemTooltip;
-
-	/** */
 	public static String StagingView_UnstageItemMenuLabel;
-
-	/** */
-	public static String StagingView_UnstageItemTooltip;
 
 	/** */
 	public static String StagingView_UnstagedSort;
 
 	/** */
-	public static String StagingView_StageAllItemMenuLabel;
-
-	/** */
-	public static String StagingView_StageAllItemTooltip;
-
-	/** */
 	public static String StagingView_StageItemMenuLabel;
-
-	/** */
-	public static String StagingView_StageItemTooltip;
 
 	/** */
 	public static String StagingView_IgnoreItemMenuLabel;
