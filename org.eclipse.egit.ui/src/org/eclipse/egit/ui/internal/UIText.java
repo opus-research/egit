@@ -2867,9 +2867,6 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_MissingChangeMessage;
 
 	/** */
-	public static String FetchGerritChangePage_NoSuchChangeMessage;
-
-	/** */
 	public static String FetchGerritChangePage_PageMessage;
 
 	/** */
