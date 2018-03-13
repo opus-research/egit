@@ -17,6 +17,10 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.storage.GitFileRevision;
 import org.eclipse.egit.ui.Activator;
@@ -48,12 +52,25 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 		if (fileOrPath == null) {
 			return null;
 		}
-		try {
-			runCompare(event, repository);
-		} catch (Exception e) {
-			Activator.handleError(
-					UIText.CompareWithRefAction_errorOnSynchronize, e, true);
-		}
+		Job job = new Job(UIText.CompareUtils_jobName) {
+
+			@Override
+			public IStatus run(IProgressMonitor monitor) {
+				if (monitor.isCanceled()) {
+					return Status.CANCEL_STATUS;
+				}
+				try {
+					runCompare(event, repository);
+				} catch (Exception e) {
+					return Activator.createErrorStatus(
+							UIText.CompareWithRefAction_errorOnSynchronize, e);
+				}
+				return Status.OK_STATUS;
+			}
+
+		};
+		job.setUser(true);
+		job.schedule();
 
 		return null;
 	}

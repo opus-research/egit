@@ -551,7 +551,8 @@ public class CommitFileDiffViewer extends TableViewer {
 			IFile file = ResourceUtil.getFileForLocation(getRepository(), np, false);
 			try {
 				if (file != null) {
-					CompareUtils.compare(file, getRepository(), np, op,
+					IResource[] resources = new IResource[] { file, };
+					CompareUtils.compare(resources, getRepository(), np, op,
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {
