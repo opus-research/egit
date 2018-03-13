@@ -475,9 +475,6 @@ public class CoreText extends NLS {
 	/** */
 	public static String SquashCommitsOperation_squashing;
 
-	/** */
-	public static String Utils_InvalidAdapterError;
-
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
 	}
