@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.TimeZone;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspace;
@@ -54,18 +53,15 @@ import org.eclipse.team.core.TeamException;
  */
 public class CommitOperation implements IEGitOperation {
 
-	private static final Pattern LEADING_WHITESPACE = Pattern
-			.compile("^[\\h\\v]+"); //$NON-NLS-1$
-
 	Collection<String> commitFileList;
 
 	private boolean commitWorkingDirChanges = false;
 
-	private final String author;
+	private String author;
 
-	private final String committer;
+	private String committer;
 
-	private final String message;
+	private String message;
 
 	private boolean amending = false;
 
@@ -98,7 +94,7 @@ public class CommitOperation implements IEGitOperation {
 			String author, String committer, String message) throws CoreException {
 		this.author = author;
 		this.committer = committer;
-		this.message = stripLeadingWhitespace(message);
+		this.message = message;
 		if (filesToCommit != null && filesToCommit.length > 0)
 			setRepository(filesToCommit[0]);
 		if (filesToCommit != null)
@@ -126,7 +122,7 @@ public class CommitOperation implements IEGitOperation {
 		this.repo = repository;
 		this.author = author;
 		this.committer = committer;
-		this.message = stripLeadingWhitespace(message);
+		this.message = message;
 		if (filesToCommit != null)
 			commitFileList = new HashSet<String>(filesToCommit);
 		if (notTracked != null)
@@ -146,14 +142,10 @@ public class CommitOperation implements IEGitOperation {
 		this.repo = repository;
 		this.author = author;
 		this.committer = committer;
-		this.message = stripLeadingWhitespace(message);
+		this.message = message;
 		this.commitIndex = true;
 	}
 
-	private String stripLeadingWhitespace(String text) {
-		return text == null ? "" //$NON-NLS-1$
-				: LEADING_WHITESPACE.matcher(text).replaceFirst(""); //$NON-NLS-1$
-	}
 
 	private void setRepository(IFile file) throws CoreException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(file);

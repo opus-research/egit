@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.eclipse.egit</groupId>
     <artifactId>egit-parent</artifactId>
-    <version>4.10.0-SNAPSHOT</version>
+    <version>4.9.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>org.eclipse.egit.ui</artifactId>
@@ -34,8 +34,8 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>com.github.hazendaz.spotbugs</groupId>
-          <artifactId>spotbugs-maven-plugin</artifactId>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
           <configuration>
             <excludeFilterFile>findBugs/FindBugsExcludeFilter.xml</excludeFilterFile>
           </configuration>

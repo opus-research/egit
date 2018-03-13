@@ -426,12 +426,7 @@ public class GitProjectsImportPage extends WizardPage {
 								UIText.WizardProjectsImportPage_ProcessingMessage);
 						for (File file : files) {
 							if (isSelected(file)) {
-								ProjectRecord record = new ProjectRecord(file);
-								if (record.getProjectDescription() == null) {
-									// Ignore invalid .project files
-									continue;
-								}
-								result.add(record);
+								result.add(new ProjectRecord(file));
 							}
 							progress.worked(1);
 						}

@@ -59,8 +59,7 @@ public class StagingEntry extends PlatformObject
 				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** modified in working tree compared to index */
-		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE,
-				Action.ASSUME_UNCHANGED, Action.UNTRACK)),
+		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** modified in working tree compared to index, changed in index compared to HEAD */
 		MODIFIED_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
@@ -101,9 +100,7 @@ public class StagingEntry extends PlatformObject
 		DELETE,
 		IGNORE,
 		LAUNCH_MERGE_TOOL,
-		REPLACE_WITH_OURS_THEIRS_MENU,
-		ASSUME_UNCHANGED,
-		UNTRACK
+		REPLACE_WITH_OURS_THEIRS_MENU
 	}
 
 	private final Repository repository;
