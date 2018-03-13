@@ -5583,9 +5583,6 @@ public class UIText extends NLS {
 	/** */
 	public static String CommandConfirmationHardResetDialog_resetButtonLabel;
 
-	/** */
-	public static String RepositorySearchDialog_BrowseDialogMessage;
-
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
 	}
