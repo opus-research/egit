@@ -22,7 +22,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.ActiveShellExpression;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
-import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.handlers.IHandlerActivation;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.texteditor.IUpdate;
@@ -48,9 +47,15 @@ public final class ActionUtils {
 	 */
 	public static IAction createGlobalAction(ActionFactory factory,
 			final Runnable action) {
-		IWorkbenchAction template = factory
-				.create(PlatformUI.getWorkbench().getActiveWorkbenchWindow());
-		IAction result = new Action(template.getText()) {
+		final String text = factory
+				.create(PlatformUI.getWorkbench().getActiveWorkbenchWindow())
+				.getText();
+		Action result = new Action() {
+
+			@Override
+			public String getText() {
+				return text;
+			}
 
 			@Override
 			public void run() {
@@ -59,7 +64,6 @@ public final class ActionUtils {
 		};
 		result.setActionDefinitionId(factory.getCommandId());
 		result.setId(factory.getId());
-		template.dispose();
 		return result;
 	}
 
@@ -77,9 +81,15 @@ public final class ActionUtils {
 	 */
 	public static IAction createGlobalAction(ActionFactory factory,
 			final Runnable action, final BooleanSupplier enabled) {
-		IWorkbenchAction template = factory
-				.create(PlatformUI.getWorkbench().getActiveWorkbenchWindow());
-		IAction result = new Action(template.getText()) {
+		final String text = factory
+				.create(PlatformUI.getWorkbench().getActiveWorkbenchWindow())
+				.getText();
+		Action result = new Action() {
+
+			@Override
+			public String getText() {
+				return text;
+			}
 
 			@Override
 			public void run() {
@@ -93,7 +103,6 @@ public final class ActionUtils {
 		};
 		result.setActionDefinitionId(factory.getCommandId());
 		result.setId(factory.getId());
-		template.dispose();
 		return result;
 	}
 
