@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010-2017, SAP AG and others.
+ * Copyright (c) 2010-2012, SAP AG and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspace;
@@ -53,15 +54,18 @@ import org.eclipse.team.core.TeamException;
  */
 public class CommitOperation implements IEGitOperation {
 
+	private static final Pattern LEADING_WHITESPACE = Pattern
+			.compile("^[\\h\\v]+"); //$NON-NLS-1$
+
 	Collection<String> commitFileList;
 
 	private boolean commitWorkingDirChanges = false;
 
-	private String author;
+	private final String author;
 
-	private String committer;
+	private final String committer;
 
-	private String message;
+	private final String message;
 
 	private boolean amending = false;
 
@@ -94,7 +98,7 @@ public class CommitOperation implements IEGitOperation {
 			String author, String committer, String message) throws CoreException {
 		this.author = author;
 		this.committer = committer;
-		this.message = message;
+		this.message = stripLeadingWhitespace(message);
 		if (filesToCommit != null && filesToCommit.length > 0)
 			setRepository(filesToCommit[0]);
 		if (filesToCommit != null)
@@ -122,7 +126,7 @@ public class CommitOperation implements IEGitOperation {
 		this.repo = repository;
 		this.author = author;
 		this.committer = committer;
-		this.message = message;
+		this.message = stripLeadingWhitespace(message);
 		if (filesToCommit != null)
 			commitFileList = new HashSet<String>(filesToCommit);
 		if (notTracked != null)
@@ -142,10 +146,14 @@ public class CommitOperation implements IEGitOperation {
 		this.repo = repository;
 		this.author = author;
 		this.committer = committer;
-		this.message = message;
+		this.message = stripLeadingWhitespace(message);
 		this.commitIndex = true;
 	}
 
+	private String stripLeadingWhitespace(String text) {
+		return text == null ? "" //$NON-NLS-1$
+				: LEADING_WHITESPACE.matcher(text).replaceFirst(""); //$NON-NLS-1$
+	}
 
 	private void setRepository(IFile file) throws CoreException {
 		RepositoryMapping mapping = RepositoryMapping.getMapping(file);
@@ -228,10 +236,6 @@ public class CommitOperation implements IEGitOperation {
 	}
 
 	private void commit() throws TeamException {
-		OperationLogger opLogger = new OperationLogger(CoreText.Start_Commit,
-				CoreText.End_Commit, CoreText.Error_Commit,
-				new String[] { OperationLogger.getCurrentBranch(repo) });
-		opLogger.logStart();
 		try (Git git = new Git(repo)) {
 			CommitCommand commitCommand = git.commit();
 			setAuthorAndCommitter(commitCommand);
@@ -242,9 +246,7 @@ public class CommitOperation implements IEGitOperation {
 				for(String path:commitFileList)
 					commitCommand.setOnly(path);
 			commit = commitCommand.call();
-			opLogger.logEnd();
 		} catch (Exception e) {
-			opLogger.logError(e);
 			throw new TeamException(
 					CoreText.MergeOperation_InternalError, e);
 		}
@@ -283,21 +285,14 @@ public class CommitOperation implements IEGitOperation {
 
 	// TODO: can the commit message be change by the user in case of a merge commit?
 	private void commitAll() throws TeamException {
-		OperationLogger opLogger = new OperationLogger(CoreText.Start_Commit,
-				CoreText.End_Commit, CoreText.Error_Commit,
-				new String[] { OperationLogger.getCurrentBranch(repo) });
-		opLogger.logStart();
 		try (Git git = new Git(repo)) {
 			CommitCommand commitCommand = git.commit();
 			setAuthorAndCommitter(commitCommand);
 			commit = commitCommand.setAll(true).setMessage(message)
 					.setInsertChangeId(createChangeId).call();
-			opLogger.logEnd();
 		} catch (JGitInternalException e) {
-			opLogger.logError(e);
 			throw new TeamException(CoreText.MergeOperation_InternalError, e);
 		} catch (GitAPIException e) {
-			opLogger.logError(e);
 			throw new TeamException(e.getLocalizedMessage(), e);
 		}
 	}
