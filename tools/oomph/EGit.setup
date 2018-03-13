@@ -55,7 +55,7 @@
   <setupTask
       xsi:type="setup:VariableTask"
       name="eclipse.target.platform"
-      defaultValue="Neon"
+      defaultValue="Luna"
       storageURI="scope://Workspace"/>
   <setupTask
       xsi:type="pde:APIBaselineTask"
@@ -114,28 +114,6 @@
       <description>EGit</description>
     </setupTask>
     <setupTask
-        xsi:type="git:GitCloneTask"
-        id="git.clone.egit-github"
-        remoteURI="egit/egit-github"
-        checkoutBranch="master">
-      <annotation
-          source="http://www.eclipse.org/oomph/setup/InducedChoices">
-        <detail
-            key="inherit">
-          <value>eclipse.git.gerrit.remoteURIs</value>
-        </detail>
-        <detail
-            key="label">
-          <value>EGit Github Connector Gerrit Repository</value>
-        </detail>
-        <detail
-            key="target">
-          <value>remoteURI</value>
-        </detail>
-      </annotation>
-      <description>EGit Github Connector</description>
-    </setupTask>
-    <setupTask
         xsi:type="setup.targlets:TargletTask">
       <targlet
           name="EGit"
@@ -158,11 +136,7 @@
             rootFolder="${git.clone.jgit.location}"
             locateNestedProjects="true"/>
         <sourceLocator
-            rootFolder="${git.clone.egit.location}"
-            locateNestedProjects="true"/>
-        <sourceLocator
-            rootFolder="${git.clone.egit-github.location}"
-            locateNestedProjects="true"/>
+            rootFolder="${git.clone.egit.location}"/>
         <repositoryList
             name="Neon">
           <repository
@@ -181,62 +155,35 @@
           <repository
               url="http://download.eclipse.org/modeling/emf/cdo/orbit/latest-R"/>
           <repository
-              url="http://download.eclipse.org/jetty/updates/jetty-bundles-9.x/9.2.13.v20150730"/>
+              url="http://download.eclipse.org/jetty/updates/jetty-bundles-7.x/7.6.14.v20131031"/>
           <repository
-              url="http://download.eclipse.org/technology/swtbot/snapshots"/>
+              url="http://download.eclipse.org/technology/swtbot/releases/2.1.1"/>
+        </repositoryList>
+        <repositoryList
+            name="Luna">
+          <repository
+              url="http://download.eclipse.org/releases/luna"/>
+          <repository
+              url="http://download.eclipse.org/modeling/emf/cdo/orbit/latest-R"/>
+          <repository
+              url="http://download.eclipse.org/jetty/updates/jetty-bundles-7.x/7.6.14.v20131031"/>
+          <repository
+              url="http://download.eclipse.org/technology/swtbot/releases/2.1.1"/>
         </repositoryList>
       </targlet>
     </setupTask>
     <setupTask
         xsi:type="setup.workingsets:WorkingSetTask">
       <workingSet
-          name="EGit Github Connector">
-        <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.mylyn.github.core"/>
-          <operand
-              xsi:type="workingsets:ExclusionPredicate"
-              excludedWorkingSet="//@streams[name='master']/@setupTasks.5/@workingSets.6 //@streams[name='master']/@setupTasks.5/@workingSets.1"/>
-        </predicate>
-      </workingSet>
-      <workingSet
-          name="EGit Github Connector Tests">
-        <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.mylyn.github.core"/>
-          <operand
-              xsi:type="predicates:FilePredicate"
-              filePattern="META-INF/MANIFEST.MF"
-              contentPattern="org\.junit"/>
-        </predicate>
-      </workingSet>
-      <workingSet
           name="EGit">
         <predicate
             xsi:type="predicates:AndPredicate">
           <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.egit.core"/>
+              xsi:type="predicates:NamePredicate"
+              pattern="org\.eclipse\.egit.*"/>
           <operand
               xsi:type="workingsets:ExclusionPredicate"
-              excludedWorkingSet="//@streams[name='master']/@setupTasks.5/@workingSets.6 //@streams[name='master']/@setupTasks.5/@workingSets.3"/>
-        </predicate>
-      </workingSet>
-      <workingSet
-          name="EGit Tests">
-        <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.egit.core"/>
-          <operand
-              xsi:type="predicates:FilePredicate"
-              filePattern="META-INF/MANIFEST.MF"
-              contentPattern="org\.junit"/>
+              excludedWorkingSet="//@streams[name='master']/@setupTasks.4/@workingSets.2 //@streams[name='master']/@setupTasks.4/@workingSets.3"/>
         </predicate>
       </workingSet>
       <workingSet
@@ -244,46 +191,25 @@
         <predicate
             xsi:type="predicates:AndPredicate">
           <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.jgit"/>
+              xsi:type="predicates:NamePredicate"
+              pattern="org\.eclipse\.jgit.*"/>
           <operand
               xsi:type="workingsets:ExclusionPredicate"
-              excludedWorkingSet="//@streams[name='master']/@setupTasks.5/@workingSets.6 //@streams[name='master']/@setupTasks.5/@workingSets.5"/>
+              excludedWorkingSet="//@streams[name='master']/@setupTasks.4/@workingSets.2 //@streams[name='master']/@setupTasks.4/@workingSets.3"/>
         </predicate>
       </workingSet>
       <workingSet
-          name="JGit Tests">
+          name="EGit/JGit Tests">
         <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.jgit"/>
-          <operand
-              xsi:type="predicates:FilePredicate"
-              filePattern="META-INF/MANIFEST.MF"
-              contentPattern="org\.junit"/>
-        </predicate>
+            xsi:type="predicates:FilePredicate"
+            filePattern="META-INF/MANIFEST.MF"
+            contentPattern="org\.junit"/>
       </workingSet>
       <workingSet
-          name="Releng">
+          name="EGit/JGit Features">
         <predicate
-            xsi:type="predicates:OrPredicate">
-          <operand
-              xsi:type="predicates:NaturePredicate"
-              nature="org.eclipse.pde.FeatureNature"/>
-          <operand
-              xsi:type="predicates:NaturePredicate"
-              nature="org.eclipse.pde.UpdateSiteNature"/>
-          <operand
-              xsi:type="predicates:NamePredicate"
-              pattern="org\.eclipse\.jgit\.target"/>
-          <operand
-              xsi:type="predicates:NamePredicate"
-              pattern="org\.eclipse\.egit\.target"/>
-          <operand
-              xsi:type="predicates:NamePredicate"
-              pattern="org\.eclipse\.jgit\.packaging"/>
-        </predicate>
+            xsi:type="predicates:NaturePredicate"
+            nature="org.eclipse.pde.FeatureNature"/>
       </workingSet>
     </setupTask>
   </stream>

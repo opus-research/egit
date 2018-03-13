@@ -508,10 +508,7 @@ public class UIText extends NLS {
 	public static String GitHistoryPage_FindMenuLabel;
 
 	/** */
-	public static String GitHistoryPage_FindShowTooltip;
-
-	/** */
-	public static String GitHistoryPage_FindHideTooltip;
+	public static String GitHistoryPage_FindTooltip;
 
 	/** */
 	public static String GitHistoryPage_FolderType;
@@ -1966,9 +1963,6 @@ public class UIText extends NLS {
 	public static String HistoryPage_findbar_find;
 
 	/** */
-	public static String HistoryPage_findbar_find_msg;
-
-	/** */
 	public static String HistoryPage_findbar_next;
 
 	/** */
@@ -2176,10 +2170,7 @@ public class UIText extends NLS {
 	public static String ShowPushResultAction_name;
 
 	/** */
-	public static String PushJob_cantConnectToAny;
-
-	/** */
-	public static String PushJob_unexpectedError;
+	public static String PushWizard_cantConnectToAny;
 
 	/** */
 	public static String PushWizard_cantPrepareUpdatesMessage;
@@ -2201,6 +2192,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String PushWizard_missingRefsTitle;
+
+	/** */
+	public static String PushWizard_unexpectedError;
 
 	/** */
 	public static String PushWizard_windowTitleDefault;
