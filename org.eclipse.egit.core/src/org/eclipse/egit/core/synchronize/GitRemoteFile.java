@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2017 Dariusz Luksza <dariusz@luksza.org> and others.
+ * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,10 +11,8 @@ package org.eclipse.egit.core.synchronize;
 import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.internal.storage.CommitBlobStorage;
-import org.eclipse.jgit.dircache.DirCacheCheckout.CheckoutMetadata;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -24,13 +22,10 @@ class GitRemoteFile extends GitRemoteResource {
 
 	private final Repository repo;
 
-	private final CheckoutMetadata metadata;
-
 	GitRemoteFile(Repository repo, RevCommit commitId, ObjectId objectId,
-			String path, CheckoutMetadata metadata) {
+			String path) {
 		super(commitId, objectId, path);
 		this.repo = repo;
-		this.metadata = metadata;
 	}
 
 	@Override
@@ -40,10 +35,10 @@ class GitRemoteFile extends GitRemoteResource {
 
 	@Override
 	protected void fetchContents(IProgressMonitor monitor) throws TeamException {
-		SubMonitor progress = SubMonitor.convert(monitor, 2);
-		IStorage content = getStorage(progress.newChild(1));
+		CommitBlobStorage content = new CommitBlobStorage(repo, getPath(),
+				getObjectId(), getCommitId());
 		try {
-			setContents(content.getContents(), progress.newChild(1));
+			setContents(content.getContents(), monitor);
 		} catch (CoreException e) {
 			Activator.logError("", e); //$NON-NLS-1$
 		}
@@ -67,7 +62,7 @@ class GitRemoteFile extends GitRemoteResource {
 	@Override
 	public IStorage getStorage(IProgressMonitor monitor) throws TeamException {
 		return new CommitBlobStorage(repo, getCachePath(), getObjectId(),
-				getCommitId(), metadata);
+				getCommitId());
 	}
 
 	@Override
