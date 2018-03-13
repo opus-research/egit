@@ -351,7 +351,7 @@ public class CommitFileDiffViewer extends TableViewer {
 							ActionFactory.SELECT_ALL.getId(), null);
 					pageSite.getActionBars().setGlobalActionHandler(
 							ActionFactory.COPY.getId(), null);
-					pageSite.getActionBars().getMenuManager().update(false);
+					pageSite.getActionBars().updateActionBars();
 				}
 
 				@Override
@@ -361,7 +361,7 @@ public class CommitFileDiffViewer extends TableViewer {
 							ActionFactory.SELECT_ALL.getId(), selectAll);
 					pageSite.getActionBars().setGlobalActionHandler(
 							ActionFactory.COPY.getId(), copy);
-					pageSite.getActionBars().getMenuManager().update(false);
+					pageSite.getActionBars().updateActionBars();
 				}
 			});
 		}
