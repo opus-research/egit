@@ -5353,9 +5353,6 @@ public class UIText extends NLS {
 	public static String StagingView_LoadJob;
 
 	/** */
-	public static String StagingView_CloseDiaglog;
-
-	/** */
 	public static String StashApplyCommand_applyFailed;
 
 	/** */
