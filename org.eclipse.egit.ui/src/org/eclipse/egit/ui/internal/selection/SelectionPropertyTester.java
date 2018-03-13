@@ -13,9 +13,6 @@ package org.eclipse.egit.ui.internal.selection;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IContainer;
@@ -98,18 +95,7 @@ public class SelectionPropertyTester extends PropertyTester {
 
 			IResource[] resources = SelectionUtils
 					.getSelectedResources(selection);
-			Collection<Repository> repositories = getRepositories(resources);
-			if (repositories.isEmpty()) {
-				return false;
-			}
-			if (args != null && args.length > 0) {
-				for (Repository repository : repositories) {
-					if (!testRepositoryProperties(repository, args)) {
-						return false;
-					}
-				}
-			}
-			return true;
+			return haveRepositories(resources);
 		}
 		return false;
 	}
@@ -206,21 +192,17 @@ public class SelectionPropertyTester extends PropertyTester {
 	/**
 	 * @param resources
 	 *            the resources
-	 * @return a collection containing all the repositories the given resources
-	 *         belong to, or an empty collection if a resource is not in a git
-	 *         repository
+	 * @return {@code true} when all {@code resources} map to a repository,
+	 *         {@code false} otherwise.
 	 */
-	private static Collection<Repository> getRepositories(
-			IResource[] resources) {
-		Set<Repository> result = new HashSet<>();
+	private static boolean haveRepositories(IResource[] resources) {
 		for (IResource resource : resources) {
 			Repository r = getRepositoryOfMapping(resource);
 			if (r == null) {
-				return Collections.emptySet();
+				return false;
 			}
-			result.add(r);
 		}
-		return result;
+		return true;
 	}
 
 	private static Repository getRepositoryOfProject(Object object) {
