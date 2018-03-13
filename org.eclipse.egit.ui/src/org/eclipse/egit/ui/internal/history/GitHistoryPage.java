@@ -34,7 +34,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
@@ -2306,7 +2305,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		final Repository repository = fileViewer.getRepository();
 		Job formatJob = new Job(UIText.GitHistoryPage_FormatDiffJobName) {
-
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				if (monitor.isCanceled()) {
@@ -2315,29 +2313,32 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				int maxLines = Activator.getDefault().getPreferenceStore()
 						.getInt(UIPreferences.HISTORY_MAX_DIFF_LINES);
 				final DiffDocument document = new DiffDocument();
-				try (DiffRegionFormatter formatter = new DiffRegionFormatter(
-						document, document.getLength(), maxLines)) {
-					SubMonitor progress = SubMonitor.convert(monitor,
-							diffs.size());
-					for (FileDiff diff : diffs) {
-						if (progress.isCanceled()
-								|| diff.getCommit().getParentCount() > 1
-								|| document.getNumberOfLines() > maxLines) {
-							break;
-						}
-						progress.subTask(diff.getPath());
-						try {
-							formatter.write(repository, diff);
-						} catch (IOException ignore) {
-							// Ignored
-						}
-						progress.worked(1);
+				final DiffRegionFormatter formatter = new DiffRegionFormatter(
+						document, document.getLength(), maxLines);
+
+				monitor.beginTask("", diffs.size()); //$NON-NLS-1$
+				for (FileDiff diff : diffs) {
+					if (monitor.isCanceled()) {
+						break;
 					}
-					if (progress.isCanceled()) {
-						return Status.CANCEL_STATUS;
+					if (diff.getCommit().getParentCount() > 1) {
+						break;
 					}
-					document.connect(formatter);
+					if (document.getNumberOfLines() > maxLines) {
+						break;
+					}
+					monitor.setTaskName(diff.getPath());
+					try {
+						formatter.write(repository, diff);
+					} catch (IOException ignore) {
+						// Ignored
+					}
+					monitor.worked(1);
 				}
+				if (monitor.isCanceled()) {
+					return Status.CANCEL_STATUS;
+				}
+				monitor.done();
 				UIJob uiJob = new UIJob(UIText.GitHistoryPage_FormatDiffJobName) {
 					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
@@ -2345,6 +2346,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 							return Status.CANCEL_STATUS;
 						}
 						if (UIUtils.isUsable(diffViewer)) {
+							document.connect(formatter);
 							diffViewer.setDocument(document);
 							resizeCommentAndDiffScrolledComposite();
 						}

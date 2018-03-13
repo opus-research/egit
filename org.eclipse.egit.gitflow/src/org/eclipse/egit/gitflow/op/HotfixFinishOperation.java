@@ -12,7 +12,6 @@ import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
@@ -49,17 +48,16 @@ public final class HotfixFinishOperation extends AbstractHotfixOperation {
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		String hotfixBranchName = repository.getConfig().getHotfixBranchName(versionName);
 		String master = repository.getConfig().getMaster();
-		SubMonitor progress = SubMonitor.convert(monitor, 3);
-		mergeResult = mergeTo(progress.newChild(1), hotfixBranchName, master);
+		mergeResult = mergeTo(monitor, hotfixBranchName, master);
 		if (!mergeResult.getMergeStatus().isSuccessful()) {
 			// problems during merge to master => this repository is not in a healthy state
 			return;
 		}
 
 		// this may result in conflicts, but that's ok
-		safeCreateTag(progress.newChild(1), versionName,
+		safeCreateTag(monitor, versionName,
 				NLS.bind(CoreText.HotfixFinishOperation_hotfix, versionName));
 
-		finish(progress.newChild(1), hotfixBranchName);
+		finish(monitor, hotfixBranchName);
 	}
 }
