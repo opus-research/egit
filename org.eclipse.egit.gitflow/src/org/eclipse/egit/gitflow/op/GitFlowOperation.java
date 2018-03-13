@@ -18,7 +18,6 @@ import java.net.URISyntaxException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.op.BranchOperation;
@@ -29,7 +28,6 @@ import org.eclipse.egit.core.op.IEGitOperation;
 import org.eclipse.egit.core.op.MergeOperation;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.internal.CoreText;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.MergeResult;
@@ -96,13 +94,12 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 */
 	protected void start(IProgressMonitor monitor, String branchName,
 			RevCommit sourceCommit) throws CoreException {
-		SubMonitor progress = SubMonitor.convert(monitor, 2);
 		CreateLocalBranchOperation branchOperation = createBranchFromHead(
 				branchName, sourceCommit);
-		branchOperation.execute(progress.newChild(1));
+		branchOperation.execute(monitor);
 		BranchOperation checkoutOperation = new BranchOperation(
 				repository.getRepository(), branchName);
-		checkoutOperation.execute(progress.newChild(1));
+		checkoutOperation.execute(monitor);
 	}
 
 	/**
@@ -120,9 +117,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			boolean squash, boolean keepBranch, boolean fastForwardSingleCommit)
 			throws CoreException {
 		try {
-			SubMonitor progress = SubMonitor.convert(monitor, 2);
-			mergeResult = mergeTo(progress.newChild(1), branchName,
-					repository.getConfig()
+			mergeResult = mergeTo(monitor, branchName, repository.getConfig()
 					.getDevelop(), squash, fastForwardSingleCommit);
 			if (!mergeResult.getMergeStatus().isSuccessful()) {
 				return;
@@ -137,7 +132,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 
 			if (!keepBranch) {
 				new DeleteBranchOperation(repository.getRepository(), branch,
-						forceDelete).execute(progress.newChild(1));
+						forceDelete).execute(monitor);
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -167,7 +162,7 @@ abstract public class GitFlowOperation implements IEGitOperation {
 	 * @throws CoreException
 	 * @since 4.1
 	 */
-	protected @NonNull MergeResult mergeTo(IProgressMonitor monitor, String branchName,
+	protected MergeResult mergeTo(IProgressMonitor monitor, String branchName,
 			String targetBranchName, boolean squash, boolean fastForwardSingleCommit) throws CoreException {
 		try {
 			if (!repository.hasBranch(targetBranchName)) {
@@ -175,12 +170,11 @@ abstract public class GitFlowOperation implements IEGitOperation {
 						CoreText.GitFlowOperation_branchNotFound,
 						targetBranchName));
 			}
-			SubMonitor progress = SubMonitor.convert(monitor, 2);
 			boolean dontCloseProjects = false;
 			BranchOperation branchOperation = new BranchOperation(
 					repository.getRepository(), targetBranchName,
 					dontCloseProjects);
-			branchOperation.execute(progress.newChild(1));
+			branchOperation.execute(monitor);
 			Status status = branchOperation.getResult().getStatus();
 			if (!CheckoutResult.Status.OK.equals(status)) {
 				throw new CoreException(error(format(
@@ -196,16 +190,9 @@ abstract public class GitFlowOperation implements IEGitOperation {
 			if (!squash && (!fastForwardSingleCommit || hasMultipleCommits(branchName))) {
 				mergeOperation.setFastForwardMode(NO_FF);
 			}
-			mergeOperation.execute(progress.newChild(1));
+			mergeOperation.execute(monitor);
 
-			MergeResult result = mergeOperation.getResult();
-			if (result == null) {
-				throw new CoreException(error(format(
-						CoreText.GitFlowOperation_unableToMerge, branchName,
-						targetBranchName)));
-			}
-
-			return result;
+			return mergeOperation.getResult();
 		} catch (GitAPIException | IOException e) {
 			throw new RuntimeException(e);
 		}

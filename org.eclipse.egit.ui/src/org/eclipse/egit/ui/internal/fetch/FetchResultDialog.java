@@ -1,8 +1,6 @@
 /*******************************************************************************
  * Copyright (C) 2008, Marek Zawirski <marek.zawirski@gmail.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
- * Copyright (C) 2016, Lars Vogel <Lars.Vogel@vogella.com>
- * Copyright (C) 2017, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,12 +11,11 @@ package org.eclipse.egit.ui.internal.fetch;
 
 import org.eclipse.egit.core.op.FetchOperationResult;
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.components.TitleAndImageDialog;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
+import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.FetchResult;
@@ -32,7 +29,7 @@ import org.eclipse.ui.PlatformUI;
 /**
  * Dialog displaying result of fetch operation.
  */
-public class FetchResultDialog extends TitleAndImageDialog {
+public class FetchResultDialog extends TitleAreaDialog {
 	private static final int CONFIGURE = 99;
 
 	private final Repository localDb;
@@ -51,12 +48,32 @@ public class FetchResultDialog extends TitleAndImageDialog {
 	 */
 	public FetchResultDialog(final Shell parentShell, final Repository localDb,
 			final FetchOperationResult result, final String sourceString) {
-		super(parentShell, UIIcons.WIZBAN_FETCH);
+		super(parentShell);
 		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.RESIZE);
 		setBlockOnOpen(false);
 		this.localDb = localDb;
 		this.result = result;
 		this.sourceString = sourceString;
+	}
+
+	/**
+	 * Shows this dialog asynchronously
+	 *
+	 * @param repository
+	 * @param result
+	 * @param sourceString
+	 */
+	public static void show(final Repository repository,
+			final FetchResult result, final String sourceString) {
+		PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				Shell shell = PlatformUI.getWorkbench()
+						.getModalDialogShellProvider().getShell();
+				new FetchResultDialog(shell, repository, result, sourceString)
+						.open();
+			}
+		});
 	}
 
 	/**
@@ -67,9 +84,12 @@ public class FetchResultDialog extends TitleAndImageDialog {
 	 */
 	public FetchResultDialog(final Shell parentShell, final Repository localDb,
 			final FetchResult result, final String sourceString) {
-		this(parentShell, localDb,
-				new FetchOperationResult(result.getURI(), result),
-				sourceString);
+		super(parentShell);
+		setShellStyle(getShellStyle() & ~SWT.APPLICATION_MODAL | SWT.RESIZE);
+		setBlockOnOpen(false);
+		this.localDb = localDb;
+		this.result = new FetchOperationResult(result.getURI(), result);
+		this.sourceString = sourceString;
 	}
 
 	@Override

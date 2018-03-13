@@ -35,6 +35,7 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
@@ -162,8 +163,12 @@ public class CreatePatchOperation implements IEGitOperation {
 
 	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
-		EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
-				monitor);
+		EclipseGitProgressTransformer gitMonitor;
+		if (monitor == null)
+			gitMonitor = new EclipseGitProgressTransformer(
+					new NullProgressMonitor());
+		else
+			gitMonitor = new EclipseGitProgressTransformer(monitor);
 
 		final StringBuilder sb = new StringBuilder();
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -279,7 +284,7 @@ public class CreatePatchOperation implements IEGitOperation {
 			int brace = segment.indexOf('}');
 			if (brace > 0) {
 				String keyword = segment.substring(0, brace);
-				keyword = keyword.toUpperCase(Locale.ROOT).replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
+				keyword = keyword.toUpperCase().replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
 				value = processKeyword(commit, DiffHeaderKeyword.valueOf(keyword));
 			}
 
