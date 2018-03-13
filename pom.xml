@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>4.9.1-SNAPSHOT</version>
+  <version>4.10.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,7 +62,7 @@
   </licenses>
 
   <properties>
-    <egit-version>4.9.1-SNAPSHOT</egit-version>
+    <egit-version>4.10.0-SNAPSHOT</egit-version>
     <tycho-version>1.0.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     <jboss-tycho-plugins-version>1.0.0</jboss-tycho-plugins-version>
@@ -84,7 +84,7 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>com.github.hazendaz.spotbugs</groupId>
+            <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs-maven-plugin</artifactId>
           </plugin>
           <plugin>
@@ -449,9 +449,9 @@
           <version>1.8</version>
         </plugin>
         <plugin>
-          <groupId>com.github.hazendaz.spotbugs</groupId>
+          <groupId>com.github.spotbugs</groupId>
           <artifactId>spotbugs-maven-plugin</artifactId>
-          <version>3.0.6</version>
+          <version>3.1.0-RC7</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <failOnError>false</failOnError>
