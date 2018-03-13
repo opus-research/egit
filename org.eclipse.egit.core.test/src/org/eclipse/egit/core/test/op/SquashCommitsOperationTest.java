@@ -88,20 +88,14 @@ public class SquashCommitsOperationTest extends GitTestCase {
 
 		assertEquals(2, countCommitsInHead());
 
-		LogCommand log;
-		try (Git git = new Git(testRepository.getRepository())) {
-			log = git.log();
-		}
+		LogCommand log = new Git(testRepository.getRepository()).log();
 		Iterable<RevCommit> logCommits = log.call();
 		RevCommit latestCommit = logCommits.iterator().next();
 		assertEquals("squashed", latestCommit.getFullMessage());
 	}
 
 	private int countCommitsInHead() throws GitAPIException {
-		LogCommand log;
-		try (Git git = new Git(testRepository.getRepository())) {
-			log = git.log();
-		}
+		LogCommand log = new Git(testRepository.getRepository()).log();
 		Iterable<RevCommit> commits = log.call();
 		int result = 0;
 		for (Iterator i = commits.iterator(); i.hasNext();) {

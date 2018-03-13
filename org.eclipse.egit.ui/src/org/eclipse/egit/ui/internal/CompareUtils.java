@@ -194,8 +194,7 @@ public class CompareUtils {
 	/**
 	 * Creates a {@link ITypedElement} for the commit which is the common
 	 * ancestor of the provided commits. Returns null if no such commit exists
-	 * or if {@code gitPath} is not contained in the common ancestor or if the
-	 * common ancestor is equal to one of the given commits
+	 * or if {@code gitPath} is not contained in the common ancestor
 	 *
 	 * @param gitPath
 	 *            path within the ancestor commit's tree of the file.
@@ -218,13 +217,6 @@ public class CompareUtils {
 					commit1.getName(), commit2.getName()), e);
 		}
 		if (commonAncestor != null) {
-			if (commit1.equals(commonAncestor.getId())
-					|| commit2.equals(commonAncestor.getId())) {
-				// Don't use 3 way compare if the common ancestor is same as one
-				// of given commits, see bug 512395
-				return null;
-			}
-
 			ITypedElement ancestorCandidate = CompareUtils
 					.getFileRevisionTypedElement(gitPath, commonAncestor, db);
 			if (!(ancestorCandidate instanceof EmptyTypedElement))
