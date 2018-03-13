@@ -54,11 +54,13 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		touchAndSubmit(null);
 		String initialContent = getTestFileContent();
 		String menuLabel = util
-				.getPluginLocalizedValue("replaceWithPreviousVersionAction.label");
+				.getPluginLocalizedValue(
+						"ReplaceWithPreviousVersionAction.label");
 		clickReplaceWith(menuLabel);
 		SWTBotShell confirm = bot
 				.shell(UIText.DiscardChangesAction_confirmActionTitle);
-		executeReplace(confirm);
+		executeReplace(confirm,
+				UIText.DiscardChangesAction_discardChangesButtonText);
 		String replacedContent = getTestFileContent();
 		assertThat(replacedContent, not(initialContent));
 	}
@@ -66,40 +68,43 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 	@Test
 	public void testReplaceWithPreviousWithMerge() throws Exception {
 		Repository repo = lookupRepository(repositoryFile);
-		Git git = new Git(repo);
+		try (Git git = new Git(repo)) {
 
-		Calendar cal = Calendar.getInstance();
-		long time = cal.getTime().getTime();
-		PersonIdent sideCommitter = new PersonIdent("Side Committer",
-				"side@example.org", time, 0);
-		// Make sure commit time stamps are different, otherwise the order in
-		// the dialog is not stable
-		time += 5000;
-		PersonIdent masterCommitter = new PersonIdent("Master Committer",
-				"master@example.org", time, 0);
+			Calendar cal = Calendar.getInstance();
+			long time = cal.getTime().getTime();
+			PersonIdent sideCommitter = new PersonIdent("Side Committer",
+					"side@example.org", time, 0);
+			// Make sure commit time stamps are different, otherwise the order
+			// in the dialog is not stable
+			time += 5000;
+			PersonIdent masterCommitter = new PersonIdent("Master Committer",
+					"master@example.org", time, 0);
 
-		git.checkout().setCreateBranch(true).setName("side").call();
-		touch(PROJ1, "folder/test.txt", "side");
-		RevCommit sideCommit = git.commit().setAll(true)
-				.setMessage("Side commit").setCommitter(sideCommitter).call();
+			git.checkout().setCreateBranch(true).setName("side").call();
+			touch(PROJ1, "folder/test.txt", "side");
+			RevCommit sideCommit = git.commit().setAll(true)
+					.setMessage("Side commit").setCommitter(sideCommitter)
+					.call();
 
-		git.checkout().setName("master").call();
-		touch(PROJ1, "folder/test2.txt", "master");
-		git.commit().setAll(true).setMessage("Master commit")
-				.setCommitter(masterCommitter).call();
+			git.checkout().setName("master").call();
+			touch(PROJ1, "folder/test2.txt", "master");
+			git.commit().setAll(true).setMessage("Master commit")
+					.setCommitter(masterCommitter).call();
 
-		git.merge().include(sideCommit).call();
-
+			git.merge().include(sideCommit).call();
+		}
 		TestUtil.waitForJobs(100, 5000);
 
 		String contentAfterMerge = getTestFileContent();
 		assertEquals("side", contentAfterMerge);
 
 		String menuLabel = util
-				.getPluginLocalizedValue("replaceWithPreviousVersionAction.label");
+				.getPluginLocalizedValue(
+						"ReplaceWithPreviousVersionAction.label");
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
-				.button(IDialogConstants.OK_LABEL).click();
+				.button(UIText.DiscardChangesAction_discardChangesButtonText)
+				.click();
 		SWTBotShell selectDialog = bot
 				.shell(UIText.CommitSelectDialog_WindowTitle);
 		assertEquals(2, selectDialog.bot().table().rowCount());
@@ -112,7 +117,8 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
-				.button(IDialogConstants.OK_LABEL).click();
+				.button(UIText.DiscardChangesAction_discardChangesButtonText)
+				.click();
 		TestUtil.waitForJobs(100, 5000);
 
 		selectDialog = bot.shell(UIText.CommitSelectDialog_WindowTitle);
@@ -120,7 +126,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		SWTBotTable table = selectDialog.bot().table();
 		assertEquals("Master commit", table.cell(0, 1));
 		table.select(0);
-		executeReplace(selectDialog);
+		executeReplace(selectDialog, IDialogConstants.OK_LABEL);
 		TestUtil.waitForJobs(100, 5000);
 
 		String replacedContent = getTestFileContent();
@@ -134,10 +140,12 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 				menuLabel);
 	}
 
-	private void executeReplace(SWTBotShell dialog) {
+	private void executeReplace(SWTBotShell dialog, String buttonLabel) {
 		JobJoiner jobJoiner = JobJoiner.startListening(
 				JobFamilies.DISCARD_CHANGES, 30, TimeUnit.SECONDS);
-		dialog.bot().button(IDialogConstants.OK_LABEL).click();
+		dialog.bot()
+				.button(buttonLabel)
+				.click();
 		jobJoiner.join();
 	}
 }

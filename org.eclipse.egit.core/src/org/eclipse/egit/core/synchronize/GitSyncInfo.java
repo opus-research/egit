@@ -51,6 +51,11 @@ class GitSyncInfo extends SyncInfo {
 		if (obj == null)
 			return IN_SYNC;
 
+		if (obj.getDiffEntry().isTree()) {
+			// Folder state is not important for synchronization, and the state
+			// recorded in GitSyncObjCache is bogus anyway.
+			return IN_SYNC;
+		}
 		int direction;
 		Direction gitDirection = obj.getDiffEntry().getDirection();
 		if (gitDirection == Direction.INCOMING)

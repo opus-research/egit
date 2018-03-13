@@ -92,9 +92,9 @@
         <repository location='http://download.eclipse.org/tools/orbit/downloads/drops/R20150519210750/repository/'/>
       </repositories>
     </iu>
-    <iu id='org.eclipse.jetty.bundles.f.feature.group' name='Jetty - Bundles: all the jetty bundles' version='7.6.14.v20131031'>
+    <iu id='org.eclipse.jetty.bundles.f.feature.group' name='Jetty - Bundles: all the jetty bundles' version='9.4.5.v20170502'>
       <repositories size='1'>
-        <repository location='http://download.eclipse.org/jetty/updates/jetty-bundles-7.x/7.6.14.v20131031/'/>
+        <repository location='http://download.eclipse.org/jetty/updates/jetty-bundles-9.x/9.4.5.v20170502/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.egit.feature.group' name='Eclipse EGit' version='0.0.0'>
@@ -127,9 +127,9 @@
         <repository location='http://update.eclemma.org/'/>
       </repositories>
     </iu>
-    <iu id='edu.umd.cs.findbugs.plugin.eclipse.feature.group' name='FindBugs Feature' version='0.0.0'>
+    <iu id='com.github.spotbugs.plugin.eclipse.feature.group' name='SpotBugs Feature' version='0.0.0'>
       <repositories size='1'>
-        <repository location='http://findbugs.cs.umd.edu/eclipse'/>
+        <repository location='https://spotbugs.github.io/eclipse/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.mylyn_feature.feature.group' name='Mylyn' version='0.0.0'>

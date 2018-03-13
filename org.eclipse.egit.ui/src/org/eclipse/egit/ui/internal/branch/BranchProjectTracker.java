@@ -25,7 +25,6 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.egit.ui.Activator;
@@ -247,28 +246,30 @@ class BranchProjectTracker {
 		File parent = repository.getWorkTree();
 		for (String path : paths) {
 			File root;
-			if (!REPO_ROOT.equals(path))
+			if (!REPO_ROOT.equals(path)) {
 				root = new File(parent, path);
-			else
+			} else {
 				root = parent;
-
-			if (!root.isDirectory())
+			}
+			if (!root.isDirectory()) {
 				continue;
+			}
 			File projectDescription = new File(root,
 					IProjectDescription.DESCRIPTION_FILE_NAME);
-			if (!projectDescription.isFile())
+			if (!projectDescription.isFile()) {
 				continue;
-			records.add(new ProjectRecord(projectDescription));
+			}
+			ProjectRecord record = new ProjectRecord(projectDescription);
+			if (record.getProjectDescription() == null) {
+				continue;
+			}
+			records.add(record);
 		}
-		if (records.isEmpty())
+		if (records.isEmpty()) {
 			return;
-		IProgressMonitor importMonitor;
-		if (monitor != null)
-			importMonitor = monitor;
-		else
-			importMonitor = new NullProgressMonitor();
+		}
 		try {
-			ProjectUtils.createProjects(records, true, null, importMonitor);
+			ProjectUtils.createProjects(records, true, null, monitor);
 		} catch (InvocationTargetException e) {
 			Activator
 					.logError("Error restoring branch-project associations", e); //$NON-NLS-1$

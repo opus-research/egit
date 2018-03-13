@@ -1,6 +1,6 @@
 target "staging" with source configurePhase
 
-location "http://download.eclipse.org/staging/neon/" {
+location "http://download.eclipse.org/staging/oxygen/" {
 	org.eclipse.sdk.ide lazy
 	org.eclipse.emf.sdk.feature.group lazy
 	org.eclipse.mylyn.commons.sdk.feature.group lazy
@@ -10,5 +10,4 @@ location "http://download.eclipse.org/staging/neon/" {
 	org.eclipse.mylyn_feature.feature.group lazy
 	org.eclipse.mylyn.context_feature.feature.group lazy
 	org.eclipse.mylyn.sdk_feature.feature.group lazy
-	org.eclipse.mylyn.wikitext_feature.feature.group lazy
 }
