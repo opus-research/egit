@@ -4541,9 +4541,7 @@
                      commandId="org.eclipse.egit.ui.team.clean"
                      label="%CleanCommand.label"
                      style="push">
-                  <visibleWhen checkEnabled="false">
-                     <test property="GitSelection.projectsSingleRepository" />
-                  </visibleWhen>
+                  <visibleWhen checkEnabled="true" />
                </command>
                <separator
                      name="org.eclipse.egit.ui.TeamAdvancedFileSeparator"

@@ -9,7 +9,6 @@
  * Copyright (C) 2011, Christian Halstrick <christian.halstrick@sap.com>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2016, Stefan Dirix <sdirix@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -42,14 +41,14 @@ import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
 import org.eclipse.egit.core.internal.util.ExceptionCollector;
 import org.eclipse.egit.core.project.GitProjectData;
-import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.core.project.RepositoryMappingChangeListener;
+import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
 import org.eclipse.egit.ui.internal.resources.ResourceStateFactory;
+import org.eclipse.egit.ui.internal.resources.IResourceState.StagingState;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -73,7 +72,6 @@ import org.eclipse.team.ui.ISharedImages;
 import org.eclipse.team.ui.TeamImages;
 import org.eclipse.team.ui.TeamUI;
 import org.eclipse.ui.IContributorResourceAdapter;
-import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.themes.ITheme;
 
@@ -253,19 +251,10 @@ public class GitLightweightDecorator extends LabelProvider implements
 	private void decorateResourceMapping(Object element, IDecoration decoration) throws CoreException {
 		@SuppressWarnings("restriction")
 		ResourceMapping mapping = Utils.getResourceMapping(element);
-		if (mapping == null) {
-			return;
-		}
-
-		boolean isWorkingSet = mapping.getModelObject() instanceof IWorkingSet;
 
 		IDecoratableResource decoRes;
 		try {
-			if (isWorkingSet) {
-				decoRes = new DecoratableWorkingSet(mapping);
-			} else {
-				decoRes = new DecoratableResourceMapping(mapping);
-			}
+			decoRes = new DecoratableResourceMapping(mapping);
 		} catch (IOException e) {
 			throw new CoreException(Activator.createErrorStatus(
 					NLS.bind(UIText.Decorator_exceptionMessage, element), e));
@@ -277,15 +266,15 @@ public class GitLightweightDecorator extends LabelProvider implements
 		 *   2) no indexDiff for the contained projects ready yet.
 		 *  in both cases, don't do anything to not pollute the display of the sets.
 		 */
-		if (!decoRes.isTracked() && isWorkingSet) {
+		if(!decoRes.isTracked())
 			return;
-		}
 
 		final DecorationHelper helper = new DecorationHelper(
 				Activator.getDefault().getPreferenceStore());
 
 		helper.decorate(decoration, decoRes);
 	}
+
 
 	/**
 	 * Helper class for doing resource decoration, based on the given
@@ -336,9 +325,9 @@ public class GitLightweightDecorator extends LabelProvider implements
 		 * once
 		 */
 		private static class CachedImageDescriptor extends ImageDescriptor {
-			private final ImageDescriptor descriptor;
+			ImageDescriptor descriptor;
 
-			private ImageData data;
+			ImageData data;
 
 			public CachedImageDescriptor(ImageDescriptor descriptor) {
 				this.descriptor = descriptor;
@@ -353,41 +342,33 @@ public class GitLightweightDecorator extends LabelProvider implements
 			}
 		}
 
-		/** Image for a resource being tracked by Git. */
-		protected static final ImageDescriptor TRACKED_IMAGE;
+		private static ImageDescriptor trackedImage;
 
-		/** Image for a resource not being tracked by Git. */
-		protected static final ImageDescriptor UNTRACKED_IMAGE;
+		private static ImageDescriptor untrackedImage;
 
-		/** Image for a resource in the index but not yet committed. */
-		protected static final ImageDescriptor STAGED_IMAGE;
+		private static ImageDescriptor stagedImage;
 
-		/** Image for a resource added to index but not yet committed. */
-		protected static final ImageDescriptor STAGED_ADDED_IMAGE;
+		private static ImageDescriptor stagedAddedImage;
 
-		/** Image for a resource removed from the index but not yet committed. */
-		protected static final ImageDescriptor STAGED_REMOVED_IMAGE;
+		private static ImageDescriptor stagedRemovedImage;
 
-		/** Image for a tracked resource with a merge conflict. */
-		protected static final ImageDescriptor CONFLICT_IMAGE;
+		private static ImageDescriptor conflictImage;
 
-		/** Image for a tracked resource in which we want to ignore changes. */
-		protected static final ImageDescriptor ASSUME_UNCHANGED_IMAGE;
+		private static ImageDescriptor assumeUnchangedImage;
 
-		/** Image for a tracked resource that is dirty. */
-		protected static final ImageDescriptor DIRTY_IMAGE;
+		private static ImageDescriptor dirtyImage;
 
 		static {
-			TRACKED_IMAGE = new CachedImageDescriptor(TeamImages
+			trackedImage = new CachedImageDescriptor(TeamImages
 					.getImageDescriptor(ISharedImages.IMG_CHECKEDIN_OVR));
-			UNTRACKED_IMAGE = new CachedImageDescriptor(UIIcons.OVR_UNTRACKED);
-			STAGED_IMAGE = new CachedImageDescriptor(UIIcons.OVR_STAGED);
-			STAGED_ADDED_IMAGE = new CachedImageDescriptor(UIIcons.OVR_STAGED_ADD);
-			STAGED_REMOVED_IMAGE = new CachedImageDescriptor(
+			untrackedImage = new CachedImageDescriptor(UIIcons.OVR_UNTRACKED);
+			stagedImage = new CachedImageDescriptor(UIIcons.OVR_STAGED);
+			stagedAddedImage = new CachedImageDescriptor(UIIcons.OVR_STAGED_ADD);
+			stagedRemovedImage = new CachedImageDescriptor(
 					UIIcons.OVR_STAGED_REMOVE);
-			CONFLICT_IMAGE = new CachedImageDescriptor(UIIcons.OVR_CONFLICT);
-			ASSUME_UNCHANGED_IMAGE = new CachedImageDescriptor(UIIcons.OVR_ASSUMEUNCHANGED);
-			DIRTY_IMAGE = new CachedImageDescriptor(UIIcons.OVR_DIRTY);
+			conflictImage = new CachedImageDescriptor(UIIcons.OVR_CONFLICT);
+			assumeUnchangedImage = new CachedImageDescriptor(UIIcons.OVR_ASSUMEUNCHANGED);
+			dirtyImage = new CachedImageDescriptor(UIIcons.OVR_DIRTY);
 		}
 
 		/**
@@ -485,7 +466,7 @@ public class GitLightweightDecorator extends LabelProvider implements
 							UIPreferences.DECORATOR_FOLDERTEXT_DECORATION);
 				}
 				break;
-			case DecoratableWorkingSet.WORKING_SET:
+			case DecoratableResourceMapping.WORKING_SET:
 				// working sets will use the project formatting but only if the
 				// repo and branch is available
 				if (resource.getRepositoryName() != null
@@ -519,40 +500,40 @@ public class GitLightweightDecorator extends LabelProvider implements
 
 			if (resource.isTracked()) {
 				if (store.getBoolean(UIPreferences.DECORATOR_SHOW_TRACKED_ICON))
-					overlay = TRACKED_IMAGE;
+					overlay = trackedImage;
 
 				if (store
 						.getBoolean(UIPreferences.DECORATOR_SHOW_ASSUME_UNCHANGED_ICON)
 						&& resource.isAssumeUnchanged())
-					overlay = ASSUME_UNCHANGED_IMAGE;
+					overlay = assumeUnchangedImage;
 
 				// Staged overrides tracked
 				StagingState staged = resource.getStagingState();
 				if (store.getBoolean(UIPreferences.DECORATOR_SHOW_STAGED_ICON)
 						&& staged != StagingState.NOT_STAGED) {
 					if (staged == StagingState.ADDED)
-						overlay = STAGED_ADDED_IMAGE;
+						overlay = stagedAddedImage;
 					else if (staged == StagingState.REMOVED)
-						overlay = STAGED_REMOVED_IMAGE;
+						overlay = stagedRemovedImage;
 					else
-						overlay = STAGED_IMAGE;
+						overlay = stagedImage;
 				}
 
 				// Dirty overrides staged
 				if(store
 						.getBoolean(UIPreferences.DECORATOR_SHOW_DIRTY_ICON) && resource.isDirty()) {
-					overlay = DIRTY_IMAGE;
+					overlay = dirtyImage;
 				}
 
 				// Conflicts override everything
 				if (store
 						.getBoolean(UIPreferences.DECORATOR_SHOW_CONFLICTS_ICON)
 						&& resource.hasConflicts())
-					overlay = CONFLICT_IMAGE;
+					overlay = conflictImage;
 
 			} else if (store
 					.getBoolean(UIPreferences.DECORATOR_SHOW_UNTRACKED_ICON)) {
-				overlay = UNTRACKED_IMAGE;
+				overlay = untrackedImage;
 			}
 
 			// Overlays can only be added once, so do it at the end
