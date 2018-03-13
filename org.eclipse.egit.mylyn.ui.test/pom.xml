@@ -25,7 +25,7 @@
   <name>EGit Mylyn UI Test Plug-in</name>
 
   <properties>
-    <uitest.vmparams>-Xmx512m</uitest.vmparams>
+    <uitest.vmparams>-Xmx512m -XX:MaxPermSize=256m</uitest.vmparams>
   </properties>
 
   <profiles>
@@ -96,15 +96,6 @@
           <useUIThread>true</useUIThread>
           <argLine>${ui.test.vmargs}</argLine>
           <application>org.eclipse.ui.ide.workbench</application>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>**/*Test.java</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>

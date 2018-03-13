@@ -121,11 +121,9 @@ public final class ActionUtils {
 	public static void setGlobalActions(Control control,
 			Collection<IAction> actions, IHandlerService service) {
 		Collection<IHandlerActivation> handlerActivations = new HashSet<>();
-		control.addDisposeListener(event -> {
-			if (!handlerActivations.isEmpty()) {
-				service.deactivateHandlers(handlerActivations);
-				handlerActivations.clear();
-			}
+		control.addDisposeListener((event) -> {
+			service.deactivateHandlers(handlerActivations);
+			handlerActivations.clear();
 		});
 		final ActiveShellExpression expression = new ActiveShellExpression(
 				control.getShell());
@@ -133,18 +131,12 @@ public final class ActionUtils {
 
 			@Override
 			public void focusLost(FocusEvent e) {
-				if (!handlerActivations.isEmpty()) {
-					service.deactivateHandlers(handlerActivations);
-					handlerActivations.clear();
-				}
+				service.deactivateHandlers(handlerActivations);
+				handlerActivations.clear();
 			}
 
 			@Override
 			public void focusGained(FocusEvent e) {
-				if (!handlerActivations.isEmpty()) {
-					// Looks like sometimes we get two focusGained events.
-					return;
-				}
 				for (final IAction action : actions) {
 					handlerActivations.add(service.activateHandler(
 							action.getActionDefinitionId(),
