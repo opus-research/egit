@@ -228,19 +228,16 @@ public class GitSelectRepositoryPage extends WizardPage {
 		configChangeListener = new IPreferenceChangeListener() {
 			@Override
 			public void preferenceChange(PreferenceChangeEvent event) {
-				if (RepositoryUtil.PREFS_DIRECTORIES_REL
-						.equals(event.getKey())) {
-					Display display = tv.getControl().getDisplay();
-					display.asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							if (!tv.getControl().isDisposed()) {
-								refreshRepositoryList();
-								checkPage();
-							}
+				Display display = tv.getControl().getDisplay();
+				display.asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						if (!tv.getControl().isDisposed()) {
+							refreshRepositoryList();
+							checkPage();
 						}
-					});
-				}
+					}
+				});
 			}
 		};
 		util.getPreferences().addPreferenceChangeListener(configChangeListener);
