@@ -28,10 +28,8 @@ import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.treewalk.WorkingTreeOptions;
-import org.eclipse.jgit.util.LfsHelper;
 import org.eclipse.jgit.util.io.AutoCRLFInputStream;
 import org.eclipse.osgi.util.NLS;
 
@@ -88,11 +86,8 @@ public class GitBlobStorage implements IEncodedStorage {
 
 		try {
 			WorkingTreeOptions workingTreeOptions = db.getConfig().get(WorkingTreeOptions.KEY);
-			ObjectLoader loader = db.open(blobId, Constants.OBJ_BLOB);
-			final InputStream objectInputStream = LfsHelper
-					.getSmudgeFiltered(db, loader,
-							null /* TODO: only if attribute diff=lfs? */)
-					.openStream();
+			final InputStream objectInputStream = db.open(blobId,
+					Constants.OBJ_BLOB).openStream();
 			switch (workingTreeOptions.getAutoCRLF()) {
 			case INPUT:
 				// When autocrlf == input the working tree could be either CRLF or LF, i.e. the comparison
