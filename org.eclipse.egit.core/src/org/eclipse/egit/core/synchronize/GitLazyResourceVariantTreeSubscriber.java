@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2017 Obeo and others.
+ * Copyright (C) 2016 Obeo.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,10 +37,6 @@ import org.eclipse.team.core.variants.IResourceVariant;
  */
 public class GitLazyResourceVariantTreeSubscriber
 		extends GitResourceVariantTreeSubscriber {
-
-	private boolean isLoaded;
-
-	private boolean isValid;
 
 	/**
 	 * @param gsds
@@ -105,11 +101,7 @@ public class GitLazyResourceVariantTreeSubscriber
 		if (repoCache == null) {
 			return null;
 		}
-		if (!isLoaded) {
-			isLoaded = true;
-			isValid = GitSyncCache.loadDataFromGit(gsd, null, repoCache);
-		}
-		if (isValid) {
+		if (GitSyncCache.loadDataFromGit(gsd, null, repoCache)) {
 			try {
 				return getSyncInfo(local, base, remote, gsd.getRepository());
 			} catch (TeamException e) {

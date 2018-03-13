@@ -1568,9 +1568,6 @@ public class UIText extends NLS {
 	public static String ReflogView_DateColumnHeader;
 
 	/** */
-	public static String ReflogView_ErrorOnLoad;
-
-	/** */
 	public static String ReflogView_ErrorOnOpenCommit;
 
 	/** */
@@ -2357,9 +2354,6 @@ public class UIText extends NLS {
 	public static String CommitDialog_WrongTypeOfCommitMessageProvider;
 
 	/** */
-	public static String CommitDialog_ErrorCreatingCommitMessageProvider;
-
-	/** */
 	public static String CommitDialog_ConfigureLink;
 
 	/** */
@@ -2471,7 +2465,25 @@ public class UIText extends NLS {
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
 
 	/** */
+	public static String SpellcheckableMessageArea_redo;
+
+	/** */
 	public static String SpellcheckableMessageArea_showWhitespace;
+
+	/** */
+	public static String SpellcheckableMessageArea_undo;
+
+	/** */
+	public static String SpellCheckingMessageArea_copy;
+
+	/** */
+	public static String SpellCheckingMessageArea_cut;
+
+	/** */
+	public static String SpellCheckingMessageArea_paste;
+
+	/** */
+	public static String SpellCheckingMessageArea_selectAll;
 
 	/** */
 	public static String CommitMessageComponent_MessageInvalidAuthor;
@@ -2610,6 +2622,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CreateBranchPage_MissingSourceMessage;
+
+	/** */
+	public static String CreateBranchPage_NormalizeNameTooltip;
 
 	/** */
 	public static String CreateBranchPage_SourceLabel;
@@ -2840,9 +2855,6 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_CreatingTagTaskName;
 
 	/** */
-	public static String FetchGerritChangePage_FetchingRemoteRefsMessage;
-
-	/** */
 	public static String FetchGerritChangePage_FetchingTaskName;
 
 	/** */
@@ -2867,7 +2879,7 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_PageTitle;
 
 	/** */
-	public static String FetchGerritChangePage_ShowingProposalsJobName;
+	public static String FetchGerritChangePage_RunInBackground;
 
 	/** */
 	public static String FetchGerritChangePage_SuggestedRefNamePattern;
@@ -3098,12 +3110,6 @@ public class UIText extends NLS {
 	public static String LaunchFinder_ContinueQuestion;
 
 	/** */
-	public static String BranchNameNormalizer_Tooltip;
-
-	/** */
-	public static String BranchNameNormalizer_TooltipForTag;
-
-	/** */
 	public static String BranchRebaseMode_Rebase;
 
 	/** */
@@ -3120,6 +3126,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchRenameDialog_NewNameLabel;
+
+	/** */
+	public static String BranchRenameDialog_NormalizeNameTooltip;
 
 	/** */
 	public static String BranchRenameDialog_RenameExceptionMessage;
@@ -3690,9 +3699,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String DiscardChangesAction_discardChanges;
-
-	/** */
-	public static String DiscardChangesAction_discardChangesButtonText;
 
 	/** */
 	public static String Disconnect_disconnect;
@@ -4278,30 +4284,6 @@ public class UIText extends NLS {
 	public static String CommitEditor_showGitRepo;
 
 	/** */
-	public static String CommitEditor_toolbarApplyStash;
-
-	/** */
-	public static String CommitEditor_toolbarDeleteStash;
-
-	/** */
-	public static String CommitEditor_toolbarCreateTag;
-
-	/** */
-	public static String CommitEditor_toolbarCreateBranch;
-
-	/** */
-	public static String CommitEditor_toolbarCheckOut;
-
-	/** */
-	public static String CommitEditor_toolbarCherryPick;
-
-	/** */
-	public static String CommitEditor_toolbarRevert;
-
-	/** */
-	public static String CommitEditor_toolbarShowInHistory;
-
-	/** */
 	public static String CommitEditor_TitleHeaderCommit;
 
 	/** */
@@ -4610,9 +4592,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NewRepositoryWizard_WizardTitle;
-
-	/** */
-	public static String NonBlockingWizardDialog_BackgroundJobName;
 
 	/** */
 	public static String NonDeletedFilesDialog_NonDeletedFilesMessage;
@@ -5534,9 +5513,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingViewPreferencePage_maxLimitListMode;
-
-	/** */
-	public static String CommandConfirmationHardResetDialog_resetButtonLabel;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

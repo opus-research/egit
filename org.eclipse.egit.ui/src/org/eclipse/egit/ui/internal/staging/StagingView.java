@@ -2001,15 +2001,6 @@ public class StagingView extends ViewPart
 		viewer.setComparator(new StagingEntryComparator(getSortCheckState(),
 				getPreferenceStore()
 						.getBoolean(UIPreferences.STAGING_VIEW_FILENAME_MODE)));
-		viewer.addDoubleClickListener(event -> {
-			IStructuredSelection selection = (IStructuredSelection) event
-					.getSelection();
-			Object selectedNode = selection.getFirstElement();
-			if (selectedNode instanceof StagingFolderEntry) {
-				viewer.setExpandedState(selectedNode,
-						!viewer.getExpandedState(selectedNode));
-			}
-		});
 		enableAutoExpand(viewer);
 		addListenerToDisableAutoExpandOnCollapse(viewer);
 		return viewer;
@@ -2549,7 +2540,6 @@ public class StagingView extends ViewPart
 
 			@Override
 			public void menuAboutToShow(IMenuManager manager) {
-				control.setFocus();
 				final IStructuredSelection selection = (IStructuredSelection) treeViewer
 						.getSelection();
 				if (selection.isEmpty())
