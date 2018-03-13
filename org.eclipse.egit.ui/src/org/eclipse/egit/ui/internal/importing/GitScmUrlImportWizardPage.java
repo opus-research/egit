@@ -151,7 +151,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 
 		bundlesViewer = new TableViewer(table);
 		bundlesViewer.setLabelProvider(new GitLabelProvider());
-		bundlesViewer.setContentProvider(ArrayContentProvider.getInstance());
+		bundlesViewer.setContentProvider(new ArrayContentProvider());
 		bundlesViewer.setComparator(new ViewerComparator());
 		counterLabel = new Label(comp, SWT.NONE);
 		counterLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
