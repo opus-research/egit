@@ -387,9 +387,9 @@ public class GitSubscriberResourceMappingContextTest extends GitTestCase {
 		assertTrue(hasFile1);
 		assertFalse(context.hasRemoteChange(iFile1, new NullProgressMonitor()));
 		assertTrue(context.hasLocalChange(iFile1, new NullProgressMonitor()));
-		assertFalse(
+		assertTrue(
 				context.hasLocalChange(subfolder, new NullProgressMonitor()));
-		assertFalse(context.hasLocalChange(sub, new NullProgressMonitor()));
+		assertTrue(context.hasLocalChange(sub, new NullProgressMonitor()));
 	}
 
 	private RevCommit setContentsAndCommit(IFile targetFile,
