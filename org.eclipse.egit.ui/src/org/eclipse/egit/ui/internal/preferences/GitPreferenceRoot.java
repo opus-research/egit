@@ -3,7 +3,6 @@
  * Copyright (C) 2010, Robin Rosenberg <robin.rosenberg@dewire.com>
  * Copyright (C) 2010, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2013, Dariusz Luksza <dariusz.luksza@gmail.com>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,11 +12,8 @@
 package org.eclipse.egit.ui.internal.preferences;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.VariablesPlugin;
@@ -34,8 +30,6 @@ import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
-import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.util.Policy;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -66,8 +60,6 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 		MERGE_MODE_NAMES_AND_VALUES[2][1] = "2"; //$NON-NLS-1$
 	}
 
-	private ScopedPreferenceStore corePreferences;
-
 	/**
 	 * The default constructor
 	 */
@@ -82,33 +74,7 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 
 	@Override
 	public void init(final IWorkbench workbench) {
-		corePreferences = new ScopedPreferenceStore(InstanceScope.INSTANCE,
-				org.eclipse.egit.core.Activator.getPluginId());
-	}
-
-	@Override
-	public void dispose() {
-		super.dispose();
-		corePreferences = null;
-	}
-
-	@Override
-	public boolean performOk() {
-		boolean isOk = super.performOk();
-		if (isOk && corePreferences.needsSaving()) {
-			try {
-				corePreferences.save();
-			} catch (IOException e) {
-				String message = JFaceResources.format(
-						"PreferenceDialog.saveErrorMessage", getTitle(), //$NON-NLS-1$
-						e.getMessage());
-				Policy.getStatusHandler().show(
-						new Status(IStatus.ERROR, Policy.JFACE, message, e),
-						JFaceResources
-								.getString("PreferenceDialog.saveErrorTitle")); //$NON-NLS-1$
-			}
-		}
-		return isOk;
+		// Do nothing.
 	}
 
 	@Override
@@ -128,20 +94,17 @@ public class GitPreferenceRoot extends FieldEditorPreferencePage implements
 			private static final int NUMBER_OF_OWN_CONTROLS = 1;
 
 			@Override
-			public IPreferenceStore getPreferenceStore() {
-				return corePreferences;
+			public void setPreferenceStore(IPreferenceStore store) {
+				if (store == null) {
+					// allow reset store on dispose
+					super.setPreferenceStore(store);
+				} else if (getPreferenceStore() == null) {
+					// only allow set store once, to the egit core version
+					super.setPreferenceStore(new ScopedPreferenceStore(
+							InstanceScope.INSTANCE,
+							org.eclipse.egit.core.Activator.getPluginId()));
+				}
 			}
-
-			// @Override
-			// public void setPreferenceStore(IPreferenceStore store) {
-			// if (store == null) {
-			// // allow reset store on dispose
-			// super.setPreferenceStore(store);
-			// } else if (getPreferenceStore() == null) {
-			// // only allow set store once, to the egit core version
-			// super.setPreferenceStore(corePreferences);
-			// }
-			// }
 
 			@Override
 			protected boolean doCheckState() {
