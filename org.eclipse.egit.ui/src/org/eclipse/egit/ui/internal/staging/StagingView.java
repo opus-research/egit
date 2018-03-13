@@ -2,7 +2,6 @@
  * Copyright (C) 2011, 2016 Bernard Leach <leachbj@bouncycastle.org> and others.
  * Copyright (C) 2015 SAP SE (Christian Georgi <christian.georgi@sap.com>)
  * Copyright (C) 2015 Denis Zygann <d.zygann@web.de>
- * Copyright (C) 2016 IBM (Daniel Megert <daniel_megert@ch.ibm.com>)
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -217,7 +216,6 @@ import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.operations.UndoRedoActionGroup;
 import org.eclipse.ui.part.IShowInSource;
-import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
@@ -225,8 +223,7 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 /**
  * A GitX style staging view with embedded commit dialog.
  */
-public class StagingView extends ViewPart
-		implements IShowInSource, IShowInTarget {
+public class StagingView extends ViewPart implements IShowInSource {
 
 	/**
 	 * Staging view id
@@ -1558,22 +1555,6 @@ public class StagingView extends ViewPart
 			return getShowInContext(unstagedViewer);
 		else
 			return null;
-	}
-
-	@Override
-	public boolean show(ShowInContext context) {
-		ISelection selection = context.getSelection();
-		if (selection instanceof IStructuredSelection) {
-			IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-			for (Object element : structuredSelection.toList()) {
-				if (element instanceof RepositoryTreeNode) {
-					RepositoryTreeNode node = (RepositoryTreeNode) element;
-					reload(node.getRepository());
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	private ShowInContext getShowInContext(TreeViewer treeViewer) {

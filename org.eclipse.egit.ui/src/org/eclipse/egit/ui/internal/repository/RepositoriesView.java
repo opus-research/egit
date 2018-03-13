@@ -11,7 +11,6 @@
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Don't reveal selection on refresh
  *    Robin Stocker <robin@nibor.org> - Show In support
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Show Git Stagging view in Show In
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -66,7 +65,6 @@ import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
-import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -857,8 +855,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				.getSelection();
 		for (Object element : selection.toList())
 			if (element instanceof RepositoryNode)
-				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID,
-						StagingView.VIEW_ID };
+				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID };
 
 		// Make sure History view is always listed, regardless of perspective
 		return new String[] { IHistoryView.VIEW_ID };
