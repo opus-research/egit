@@ -4093,12 +4093,6 @@ public class UIText extends NLS {
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
-	public static String UIUtils_PressShortcutForRemoteRefMessage;
-
-	/** */
-	public static String UIUtils_StartTypingForRemoteRefMessage;
-
-	/** */
 	public static String UIUtils_ShowInMenuLabel;
 
 	/** */
