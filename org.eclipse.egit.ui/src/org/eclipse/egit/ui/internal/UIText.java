@@ -3052,6 +3052,9 @@ public class UIText extends NLS {
 	public static String BranchConfigurationDialog_ExceptionGettingRefs;
 
 	/** */
+	public static String BranchConfigurationDialog_RebaseLabel;
+
+	/** */
 	public static String BranchConfigurationDialog_RemoteLabel;
 
 	/** */
@@ -3095,18 +3098,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String LaunchFinder_ContinueQuestion;
-
-	/** */
-	public static String BranchRebaseMode_Rebase;
-
-	/** */
-	public static String BranchRebaseMode_Preserve;
-
-	/** */
-	public static String BranchRebaseMode_Interactive;
-
-	/** */
-	public static String BranchRebaseMode_None;
 
 	/** */
 	public static String BranchRenameDialog_Message;
@@ -4111,7 +4102,13 @@ public class UIText extends NLS {
 	public static String UpstreamConfigComponent_ConfigureUpstreamToolTip;
 
 	/** */
-	public static String BranchRebaseModeCombo_RebaseModeLabel;
+	public static String UpstreamConfigComponent_MergeRadio;
+
+	/** */
+	public static String UpstreamConfigComponent_PullGroup;
+
+	/** */
+	public static String UpstreamConfigComponent_RebaseRadio;
 
 	/** */
 	public static String TagAction_cannotCheckout;
