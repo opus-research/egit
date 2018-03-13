@@ -52,8 +52,6 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 
 	private ComboFieldEditor blockCombo;
 
-	private Group generalGroup;
-
 	/** */
 	public CommittingPreferencePage() {
 		super(GRID);
@@ -74,46 +72,22 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 	protected void createFieldEditors() {
 		Composite main = getFieldEditorParent();
 
-		generalGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
-		generalGroup.setText(UIText.CommittingPreferencePage_general);
-		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
-				.applyTo(generalGroup);
-
 		useStagingView = new BooleanFieldEditor(
 				UIPreferences.ALWAYS_USE_STAGING_VIEW,
-				UIText.CommittingPreferencePage_AlwaysUseStagingView,
-				generalGroup);
+				UIText.CommittingPreferencePage_AlwaysUseStagingView, main);
 		addField(useStagingView);
 
 		autoStage = new BooleanFieldEditor(UIPreferences.AUTO_STAGE_ON_COMMIT,
-				UIText.CommittingPreferencePage_AutoStageOnCommit,
-				generalGroup);
+				UIText.CommittingPreferencePage_AutoStageOnCommit, main);
 		// LayoutConstants.getIndent() is not available on Eclipse 3.8.
 		// IDialogConstants.INDENT is deprecated. C.f.
 		// https://bugs.eclipse.org/341604 and https://bugs.eclipse.org/400320
 		// So we hard-code it.
 		GridDataFactory.fillDefaults().indent(20, 0)
-				.applyTo(autoStage.getDescriptionControl(generalGroup));
+				.applyTo(autoStage.getDescriptionControl(main));
 		addField(autoStage);
 		autoStage.setEnabled(getPreferenceStore()
-				.getBoolean(UIPreferences.ALWAYS_USE_STAGING_VIEW),
-				generalGroup);
-
-		BooleanFieldEditor includeUntracked = new BooleanFieldEditor(
-				UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED,
-				UIText.CommittingPreferencePage_includeUntrackedFiles,
-				generalGroup);
-		includeUntracked.getDescriptionControl(generalGroup).setToolTipText(
-				UIText.CommittingPreferencePage_includeUntrackedFilesTooltip);
-		addField(includeUntracked);
-
-		IntegerFieldEditor historySize = new IntegerFieldEditor(
-				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE,
-				UIText.CommittingPreferencePage_commitMessageHistory,
-				generalGroup);
-		addField(historySize);
-
-		updateMargins(generalGroup);
+				.getBoolean(UIPreferences.ALWAYS_USE_STAGING_VIEW), main);
 
 		Group formattingGroup = new Group(main, SWT.SHADOW_ETCHED_IN);
 		formattingGroup.setText(UIText.CommittingPreferencePage_formatting);
@@ -204,6 +178,18 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 		handleWarnCheckboxSelection(warnCheckbox.getSelection());
 		handleBlockCheckboxSelection(blockCheckbox.getSelection());
 		updateMargins(buildProblemsGroup);
+
+		BooleanFieldEditor includeUntracked = new BooleanFieldEditor(
+				UIPreferences.COMMIT_DIALOG_INCLUDE_UNTRACKED,
+				UIText.CommittingPreferencePage_includeUntrackedFiles, main);
+		includeUntracked.getDescriptionControl(main).setToolTipText(
+				UIText.CommittingPreferencePage_includeUntrackedFilesTooltip);
+		addField(includeUntracked);
+
+		IntegerFieldEditor historySize = new IntegerFieldEditor(
+				UIPreferences.COMMIT_DIALOG_HISTORY_SIZE,
+				UIText.CommittingPreferencePage_commitMessageHistory, main);
+		addField(historySize);
 	}
 
 	@Override
@@ -215,7 +201,7 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 				if (FieldEditor.VALUE.equals(event.getProperty())) {
 					autoStage.setEnabled(
 							((Boolean) event.getNewValue()).booleanValue(),
-							generalGroup);
+							getFieldEditorParent());
 				}
 			}
 		});
@@ -229,7 +215,7 @@ public class CommittingPreferencePage extends FieldEditorPreferencePage
 		autoStage.setEnabled(
 				getPreferenceStore().getDefaultBoolean(
 						UIPreferences.ALWAYS_USE_STAGING_VIEW),
-				generalGroup);
+				getFieldEditorParent());
 	}
 
 	private void updateMargins(Group group) {
