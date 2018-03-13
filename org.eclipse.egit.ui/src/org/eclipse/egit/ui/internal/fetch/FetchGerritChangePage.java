@@ -18,6 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -90,6 +91,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -156,6 +158,8 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Button branchCheckoutButton;
 
+	private Composite main;
+
 	/**
 	 * @param repository
 	 * @param refName initial value for the ref field
@@ -205,7 +209,7 @@ public class FetchGerritChangePage extends WizardPage {
 				candidateChange = determineChangeFromString(clipText.trim());
 			}
 		}
-		Composite main = new Composite(parent, SWT.NONE);
+		main = new Composite(parent, SWT.NONE);
 		main.setLayout(new GridLayout(2, false));
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(main);
 		new Label(main, SWT.NONE)
@@ -464,6 +468,11 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		}
 		checkPage();
+		// Shell shell = getShell();
+		// Point size = shell.computeSize(-1, -1);
+		// Rectangle parentSize = shell.getParent().getBounds();
+		// shell.setBounds((parentSize.width - size.x) / 2,
+		// (parentSize.height - size.y) / 2, size.x, size.y);
 	}
 
 	/**
@@ -594,6 +603,12 @@ public class FetchGerritChangePage extends WizardPage {
 		warningAdditionalRefNotActive.setVisible(showActivateAdditionalRefs);
 		warningAdditionalRefNotActive.getParent().layout(true);
 
+		// recompute size since height of visible controls may change depending
+		// on selected option
+		Point oldSize = main.getSize();
+		Point size = main.computeSize(oldSize.x, oldSize.y, true);
+		main.setSize(size);
+
 		setErrorMessage(null);
 		try {
 			if (refText.getText().length() > 0) {
@@ -659,7 +674,21 @@ public class FetchGerritChangePage extends WizardPage {
 									changeRefs.add(change);
 							}
 							Collections.sort(changeRefs,
-									Collections.reverseOrder());
+									new Comparator<Change>() {
+										@Override
+										public int compare(Change o1, Change o2) {
+											// change number descending
+											int changeDiff = o2.changeNumber
+													.compareTo(o1.changeNumber);
+											if (changeDiff == 0)
+												// patch set number descending
+												changeDiff = o2
+														.getPatchSetNumber()
+														.compareTo(
+																o1.getPatchSetNumber());
+											return changeDiff;
+										}
+									});
 						}
 					});
 		}
