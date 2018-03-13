@@ -10,7 +10,6 @@
  *    Dariusz Luksza <dariusz@luksza.org>
  *    Steffen Pingel (Tasktop Technologies) - fixes for bug 352253
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 499482
- *    Wim Jongman <wim.jongman@remainsoftware.com> - Bug 509878
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -126,10 +125,6 @@ class CreateBranchPage extends WizardPage {
 	private final LocalResourceManager resourceManager = new LocalResourceManager(
 			JFaceResources.getResources());
 
-	private Button normalizeName;
-
-	private BranchNormalizer branchNormalizer = new BranchNormalizer();
-
 	/**
 	 * Constructs this page.
 	 * <p>
@@ -240,23 +235,6 @@ class CreateBranchPage extends WizardPage {
 		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
 				.applyTo(nameText);
 
-		normalizeName = new Button(main, SWT.CHECK);
-		normalizeName.setText(UIText.CreateBranchPage_NormalizeBranchName);
-		GridDataFactory.fillDefaults().grab(true, false).span(3, 1)
-				.applyTo(normalizeName);
-		normalizeName.setSelection(true);
-		normalizeName.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				branchNormalizer.modifyText(null);
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-
 		upstreamConfigComponent = new UpstreamConfigComponent(main, SWT.NONE);
 		GridDataFactory.fillDefaults().grab(true, false).span(4, 1)
 				.applyTo(upstreamConfigComponent.getContainer());
@@ -294,8 +272,7 @@ class CreateBranchPage extends WizardPage {
 			setSourceRef(myBaseRef);
 
 		nameText.setFocus();
-		// add the listeners just now to avoid unneeded checkPage()
-		nameText.addModifyListener(branchNormalizer);
+		// add the listener just now to avoid unneeded checkPage()
 		nameText.addModifyListener(e -> checkPage());
 	}
 
@@ -517,39 +494,4 @@ class CreateBranchPage extends WizardPage {
 		}
 	}
 
-	private final class BranchNormalizer implements ModifyListener {
-		private String oldName = ""; //$NON-NLS-1$
-
-		private boolean listenerActive;
-
-		@Override
-		public void modifyText(ModifyEvent e) {
-			nameText.setFocus();
-			if (listenerActive || normalizeName.getSelection() == false)
-				return;
-			try {
-				listenerActive = true;
-				normalize();
-			} finally {
-				listenerActive = false;
-			}
-		}
-
-		private void normalize() {
-			String name = Repository.normalizeBranchName(nameText.getText(),
-					isPaste());
-			nameText.setText(name);
-			nameText.setSelection(nameText.getText().length() + 1);
-		}
-
-		/**
-		 * @return true if the new content was pasted.
-		 */
-		private boolean isPaste() {
-			boolean result = Math
-					.abs(oldName.length() - nameText.getText().length()) > 1;
-			oldName = nameText.getText();
-			return result;
-		}
-	}
 }
