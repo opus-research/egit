@@ -3244,7 +3244,7 @@
               label="%HistoryShowVersions.label"
               style="push">
             <visibleWhen checkEnabled="true" />
-         </command>
+         </command>org.eclipse.egit.ui.history.ShowBlame
          <command
               commandId="org.eclipse.egit.ui.history.OpenInTextEditorCommand"
               label="%HistoryOpenInTextEditorCommand.label"
@@ -6575,7 +6575,7 @@
       </command>
       <command
             id="org.eclipse.egit.ui.history.DeleteBranch"
-            name="%DeleteBranchCommand.name">
+            name="%DeleteBranchCommand">
       </command>
       <command
             id="org.eclipse.egit.ui.history.CreateTag"
@@ -6676,7 +6676,7 @@
       </command>
       <command
             id="org.eclipse.egit.ui.RebaseInteractiveCurrent"
-            name="%RebaseInteractiveCurrentCommand.name">
+            name="%RebaseInteractiveCurrentHandler.name">
       </command>
       <command
             id="org.eclipse.egit.ui.history.OpenInCommitViewerCommand"
