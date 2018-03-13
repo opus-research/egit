@@ -46,20 +46,19 @@ public class RepositoryCache {
 	 *         in the cache.
 	 * @throws IOException
 	 */
-	public Repository lookupRepository(final File gitDir) throws IOException {
+	public synchronized Repository lookupRepository(final File gitDir)
+			throws IOException {
 		prune();
 		// Make sure we have a normalized path without .. segments here.
 		File normalizedGitDir = new Path(gitDir.getAbsolutePath()).toFile();
-		synchronized (repositoryCache) {
-			Reference<Repository> r = repositoryCache.get(normalizedGitDir);
-			Repository d = r != null ? r.get() : null;
-			if (d == null) {
-				d = FileRepositoryBuilder.create(normalizedGitDir);
-				repositoryCache.put(normalizedGitDir,
-						new WeakReference<Repository>(d));
-			}
-			return d;
+		Reference<Repository> r = repositoryCache.get(normalizedGitDir);
+		Repository d = r != null ? r.get() : null;
+		if (d == null) {
+			d = FileRepositoryBuilder.create(normalizedGitDir);
+			repositoryCache.put(normalizedGitDir,
+					new WeakReference<Repository>(d));
 		}
+		return d;
 	}
 
 	/**
@@ -70,30 +69,26 @@ public class RepositoryCache {
 	 * @return the cached repository, if any, or {@code null} if node found in
 	 *         the cache.
 	 */
-	public Repository getRepository(final File gitDir) {
+	public synchronized Repository getRepository(final File gitDir) {
+		prune();
 		if (gitDir == null) {
 			return null;
 		}
-		prune();
 		File normalizedGitDir = new Path(gitDir.getAbsolutePath()).toFile();
-		synchronized (repositoryCache) {
-			Reference<Repository> r = repositoryCache.get(normalizedGitDir);
-			return r != null ? r.get() : null;
-		}
+		Reference<Repository> r = repositoryCache.get(normalizedGitDir);
+		return r != null ? r.get() : null;
 	}
 
 	/**
 	 * @return all Repository instances contained in the cache
 	 */
-	public Repository[] getAllRepositories() {
+	public synchronized Repository[] getAllRepositories() {
 		prune();
 		List<Repository> repositories = new ArrayList<Repository>();
-		synchronized (repositoryCache) {
-			for (Reference<Repository> reference : repositoryCache.values()) {
-				Repository repository = reference.get();
-				if (repository != null) {
-					repositories.add(repository);
-				}
+		for (Reference<Repository> reference : repositoryCache.values()) {
+			Repository repository = reference.get();
+			if (repository != null) {
+				repositories.add(repository);
 			}
 		}
 		return repositories.toArray(new Repository[repositories.size()]);
@@ -148,37 +143,30 @@ public class RepositoryCache {
 	}
 
 	private void prune() {
-		List<File> toRemove = new ArrayList<>();
-		synchronized (repositoryCache) {
-			for (Iterator<Map.Entry<File, Reference<Repository>>> i = repositoryCache
-					.entrySet().iterator(); i.hasNext();) {
-				Map.Entry<File, Reference<Repository>> entry = i.next();
-				Repository repository = entry.getValue().get();
-				if (repository == null || !repository.getDirectory().exists()) {
-					i.remove();
-					toRemove.add(entry.getKey());
-				}
+		for (final Iterator<Map.Entry<File, Reference<Repository>>> i = repositoryCache
+				.entrySet()
+				.iterator(); i.hasNext();) {
+			Map.Entry<File, Reference<Repository>> entry = i.next();
+			Repository repository = entry.getValue().get();
+			if (repository == null || !repository.getDirectory().exists()) {
+				i.remove();
+				Activator.getDefault().getIndexDiffCache()
+						.remove(entry.getKey());
 			}
-		}
-		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
-		for (File f : toRemove) {
-			cache.remove(f);
 		}
 	}
 
 	/**
-	 * Removes all cached repositories and their IndexDiffCache entries.
+	 * TESTING ONLY!
+	 * Unit tests can use this method to get a clean beginning state
 	 */
-	public void clear() {
-		List<File> gitDirs;
-		synchronized (repositoryCache) {
-			gitDirs = new ArrayList<>(repositoryCache.keySet());
-			repositoryCache.clear();
-		}
+	public synchronized void clear() {
 		IndexDiffCache cache = Activator.getDefault().getIndexDiffCache();
-		for (File f : gitDirs) {
-			cache.remove(f);
+		for (Map.Entry<File, Reference<Repository>> entry : repositoryCache
+				.entrySet()) {
+			cache.remove(entry.getKey());
 		}
+		repositoryCache.clear();
 	}
 
 }
