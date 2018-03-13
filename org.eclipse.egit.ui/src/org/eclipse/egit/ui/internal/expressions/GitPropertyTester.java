@@ -8,17 +8,14 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.expressions;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.core.expressions.PropertyTester;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.internal.IRepositoryCommit;
-import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -31,46 +28,35 @@ import org.eclipse.jgit.revwalk.RevCommit;
  * A {@link PropertyTester} to test some properties related to commits and
  * commit histories. Offers the following property tests:
  * <dl>
- * <dt>Collection.isSingleFileHistory</dt>
- * <dd><code>true</code> if the active part is the history view, and the active
- * page is the git history page, and the page is filtered to a single file. The
- * expected <code>value</code> "resource" matches only if that single file is an
- * {@link IResource}, and likewise the <code>value</code> "file" matches only if
- * the single file is a {@link File}. Otherwise the test is <code>true</code> is
- * either case.</dd>
- * <dt>(RepositoryCommit|RevCommit).parentCount</dt>
+ * <dt>(IRepositoryCommit|RevCommit).parentCount</dt>
  * <dd>Evaluates to the number of parents of the commit. If an expected
  * <code>value</code> is given and is an integer value, the test is
  * <code>true</code> if the number of parents equals the given value. Otherwise
  * the test is <code>true</code> if the number of parents is &gt; 0.</dd>
- * <dt>(RepositoryCommit|Repository).isBare</dt>
+ * <dt>(IRepositoryCommit|Repository).isBare</dt>
  * <dd>Evaluates to <code>true</code> if the repository is not a bare
  * repository.</dd>
- * <dt>(RepositoryCommit|Repository).isSafe</dt>
+ * <dt>(IRepositoryCommit|Repository).isSafe</dt>
  * <dd>Evaluates to <code>true</code> if the repository is in a
  * {@link RepositoryState#SAFE SAFE} state.</dd>
- * <dt>(RepositoryCommit|Repository).canCommit</dt>
+ * <dt>(IRepositoryCommit|Repository).canCommit</dt>
  * <dd>Evaluates to <code>true</code> if the repository is in a state where we
  * can create a new commit.</dd>
- * <dt>RepositoryCommit.hasRef [args="&lt;ref prefixes&gt;"]</dt>
+ * <dt>IRepositoryCommit.hasRef [args="&lt;ref prefixes&gt;"]</dt>
  * <dd>Tests whether there are any refs starting with one of the given prefixes
  * point to the given commit. If no argument is given, or no
  * <code>&lt;ref_prefix&gt;</code> starts with "refs/", a default of
  * "refs/heads/" is assumed, i.e., the test is <code>true</code> if there is any
  * local branch pointing to the commit.</dd>
- * <dt>RepositoryCommit.hasMultipleRefs [args="&lt;ref prefixes&gt;"]</dt>
+ * <dt>IRepositoryCommit.hasMultipleRefs [args="&lt;ref prefixes&gt;"]</dt>
  * <dd>Like <code>hasRef</code>, but evaluates to <code>true</code> only if
  * there are more than one ref pointing to the commit.</dd>
  * </dl>
  * <p>
  * The <code>hasRef</code> and <code>hasMultipleRefs</code> tests may be
- * expensive if the {@link RevCommit} of the {@link RepositoryCommit} is
+ * expensive if the {@link RevCommit} of the {@link IRepositoryCommit} is
  * <em>not</em> a {@link PlotCommit} since they then must read the refs from the
  * repository.
- * </p>
- * <p>
- * The <code>isSingleFileHistory</code> test can be <code>true</code> only if
- * the git history page is active.
  * </p>
  */
 public class GitPropertyTester extends AbstractPropertyTester {
