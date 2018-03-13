@@ -108,11 +108,9 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 			String question) throws ExecutionException {
 		MessageDialog dlg = new MessageDialog(getShell(event),
 				UIText.DiscardChangesAction_confirmActionTitle, null, question,
-				MessageDialog.CONFIRM,
-				new String[] {
-						UIText.DiscardChangesAction_discardChangesButtonText,
-						IDialogConstants.CANCEL_LABEL },
-				0);
+				MessageDialog.CONFIRM, 0,
+				UIText.DiscardChangesAction_discardChangesButtonText,
+				IDialogConstants.CANCEL_LABEL);
 		return dlg.open() == Window.OK;
 	}
 
