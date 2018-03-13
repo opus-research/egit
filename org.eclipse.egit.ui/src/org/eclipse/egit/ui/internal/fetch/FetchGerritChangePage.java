@@ -9,7 +9,6 @@
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Marc Khouzam (Ericsson)  - Add an option not to checkout the new branch
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935, 495777
- *    Jaxsun McCarthy Huggan <jaxsun.mccarthy@tasktop.com> - Bug 509181
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
@@ -18,12 +17,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
@@ -122,8 +121,6 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Text refText;
 
-	private Button changeBranch;
-
 	private Button createBranch;
 
 	private Button createTag;
@@ -149,7 +146,6 @@ public class FetchGerritChangePage extends WizardPage {
 	private Button runInBackgroud;
 
 	private IInputValidator branchValidator;
-
 	private IInputValidator tagValidator;
 
 	private Button branchEditButton;
@@ -237,21 +233,10 @@ public class FetchGerritChangePage extends WizardPage {
 				.applyTo(checkoutGroup);
 		checkoutGroup.setText(UIText.FetchGerritChangePage_AfterFetchGroup);
 
-		// radio: checkout local branch
-		changeBranch = new Button(checkoutGroup, SWT.RADIO);
-		GridDataFactory.fillDefaults().span(3, 1).applyTo(changeBranch);
-		changeBranch.setText(UIText.FetchGerritChangePage_ChangeToLocalBranchRadio);
-		changeBranch.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				checkPage();
-			}
-		});
-
 		// radio: create local branch
 		createBranch = new Button(checkoutGroup, SWT.RADIO);
 		GridDataFactory.fillDefaults().span(1, 1).applyTo(createBranch);
-		createBranch.setText(UIText.FetchGerritChangePage_CreateLocalBranchRadio);
+		createBranch.setText(UIText.FetchGerritChangePage_LocalBranchRadio);
 		createBranch.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -349,13 +334,10 @@ public class FetchGerritChangePage extends WizardPage {
 			}
 		});
 
-		if ("checkout".equals(defaultCommand)) { //$NON-NLS-1$
+		if ("checkout".equals(defaultCommand)) //$NON-NLS-1$
 			checkout.setSelection(true);
-		} else if (getLocalRef(refName) != null) {
-			changeBranch.setSelection(true);
-		} else {
+		else
 			createBranch.setSelection(true);
-		}
 
 		warningAdditionalRefNotActive = new Composite(main, SWT.NONE);
 		GridDataFactory.fillDefaults().span(2, 1).grab(true, false)
@@ -375,16 +357,14 @@ public class FetchGerritChangePage extends WizardPage {
 			public void modifyText(ModifyEvent e) {
 				Change change = Change.fromRef(refText.getText());
 				if (change != null) {
-					branchText.setText(change.suggestBranchName());
+					branchText.setText(NLS
+							.bind(UIText.FetchGerritChangePage_SuggestedRefNamePattern,
+									change.getChangeNumber(),
+									change.getPatchSetNumber()));
 					tagText.setText(branchText.getText());
 				} else {
 					branchText.setText(""); //$NON-NLS-1$
 					tagText.setText(""); //$NON-NLS-1$
-				}
-				if (getLocalRef(refText.getText()) == null
-						&& changeBranch.getSelection()) {
-					createBranch.setSelection(true);
-					changeBranch.setSelection(false);
 				}
 				checkPage();
 			}
@@ -547,19 +527,13 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	private void checkPage() {
-		boolean hasLocalBranch = getLocalRef(refText.getText()) != null;
-		changeBranch.setEnabled(hasLocalBranch);
-		changeBranch.setVisible(hasLocalBranch);
-		GridData gd = (GridData) changeBranch.getLayoutData();
-		gd.exclude = !hasLocalBranch;
-
 		boolean createBranchSelected = createBranch.getSelection();
 		branchText.setEnabled(createBranchSelected);
 		branchText.setVisible(createBranchSelected);
 		branchTextlabel.setVisible(createBranchSelected);
 		branchEditButton.setVisible(createBranchSelected);
 		branchCheckoutButton.setVisible(createBranchSelected);
-		gd = (GridData) branchText.getLayoutData();
+		GridData gd = (GridData) branchText.getLayoutData();
 		gd.exclude = !createBranchSelected;
 		gd = (GridData) branchTextlabel.getLayoutData();
 		gd.exclude = !createBranchSelected;
@@ -614,18 +588,6 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 	}
 
-	private Ref getLocalRef(String ref) {
-		Change change = Change.fromRef(ref);
-		if (change != null) {
-			try {
-				return repository.findRef(change.computeFullRefName());
-			} catch (IOException e) {
-				// ignore
-			}
-		}
-		return null;
-	}
-
 	private List<Change> getRefsForContentAssist()
 			throws InvocationTargetException, InterruptedException {
 		if (changeRefs == null) {
@@ -657,7 +619,21 @@ public class FetchGerritChangePage extends WizardPage {
 									changeRefs.add(change);
 							}
 							Collections.sort(changeRefs,
-									Collections.reverseOrder());
+									new Comparator<Change>() {
+										@Override
+										public int compare(Change o1, Change o2) {
+											// change number descending
+											int changeDiff = o2.changeNumber
+													.compareTo(o1.changeNumber);
+											if (changeDiff == 0)
+												// patch set number descending
+												changeDiff = o2
+														.getPatchSetNumber()
+														.compareTo(
+																o1.getPatchSetNumber());
+											return changeDiff;
+										}
+									});
 						}
 					});
 		}
@@ -670,7 +646,6 @@ public class FetchGerritChangePage extends WizardPage {
 		final String uri = uriCombo.getText();
 		final boolean doCheckout = checkout.getSelection();
 		final boolean doCreateTag = createTag.getSelection();
-		final boolean doChangeBranch = changeBranch.getSelection();
 		final boolean doCreateBranch = createBranch.getSelection();
 		final boolean doCheckoutNewBranch = branchCheckoutButton.getSelection();
 		final boolean doActivateAdditionalRefs = (checkout.getSelection() || dontCheckout
@@ -692,9 +667,9 @@ public class FetchGerritChangePage extends WizardPage {
 				public IStatus runInWorkspace(IProgressMonitor monitor) {
 					try {
 						internalDoFetch(spec, uri, doCheckout, doCreateTag,
-								doChangeBranch, doCreateBranch,
-								doCheckoutNewBranch, doActivateAdditionalRefs,
-								textForTag, textForBranch, monitor);
+								doCreateBranch, doCheckoutNewBranch,
+								doActivateAdditionalRefs, textForTag,
+								textForBranch, monitor);
 					} catch (CoreException ce) {
 						return ce.getStatus();
 					} catch (Exception e) {
@@ -723,10 +698,10 @@ public class FetchGerritChangePage extends WizardPage {
 								InterruptedException {
 							try {
 								internalDoFetch(spec, uri, doCheckout,
-											doCreateTag, doChangeBranch,
-											doCreateBranch,
-										doCheckoutNewBranch, doActivateAdditionalRefs,
-										textForTag, textForBranch, monitor);
+											doCreateTag, doCreateBranch,
+											doCheckoutNewBranch,
+										doActivateAdditionalRefs, textForTag,
+										textForBranch, monitor);
 							} catch (RuntimeException e) {
 								throw e;
 							} catch (Exception e) {
@@ -748,9 +723,9 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	private void internalDoFetch(RefSpec spec, String uri, boolean doCheckout,
-			boolean doCreateTag, boolean doChangeBranch,
-			boolean doCreateBranch, boolean doCheckoutNewBranch,
-			boolean doActivateAdditionalRefs, String textForTag, String textForBranch, IProgressMonitor monitor)
+			boolean doCreateTag, boolean doCreateBranch,
+			boolean doCheckoutNewBranch, boolean doActivateAdditionalRefs,
+			String textForTag, String textForBranch, IProgressMonitor monitor)
 					throws IOException, CoreException, URISyntaxException,
 					GitAPIException {
 
@@ -763,31 +738,26 @@ public class FetchGerritChangePage extends WizardPage {
 				UIText.FetchGerritChangePage_GetChangeTaskName,
 				totalWork);
 
-		if (doChangeBranch) {
-			Ref localRef = getLocalRef(spec.getSource());
-			checkout(localRef.getName(), monitor);
-		} else {
-			try {
-				RevCommit commit = fetchChange(uri, spec, monitor);
+		try {
+			RevCommit commit = fetchChange(uri, spec,
+					monitor);
 
-				if (doCreateTag)
-					createTag(spec, textForTag, commit, monitor);
+			if (doCreateTag)
+				createTag(spec, textForTag, commit, monitor);
 
-				if (doCreateBranch)
-					createBranch(textForBranch, doCheckoutNewBranch, commit,
-							monitor);
+			if (doCreateBranch)
+				createBranch(textForBranch, doCheckoutNewBranch, commit, monitor);
 
-				if (doCheckout || doCreateTag)
-					checkout(commit.getName(), monitor);
+			if (doCheckout || doCreateTag)
+				checkout(commit, monitor);
 
-				if (doActivateAdditionalRefs)
-					activateAdditionalRefs();
+			if (doActivateAdditionalRefs)
+				activateAdditionalRefs();
 
-				storeLastUsedUri(uri);
+			storeLastUsedUri(uri);
 
-			} finally {
-				monitor.done();
-			}
+		} finally {
+			monitor.done();
 		}
 	}
 
@@ -862,10 +832,10 @@ public class FetchGerritChangePage extends WizardPage {
 		monitor.worked(1);
 	}
 
-	private void checkout(String name, IProgressMonitor monitor)
+	private void checkout(RevCommit commit, IProgressMonitor monitor)
 			throws CoreException {
 		monitor.setTaskName(UIText.FetchGerritChangePage_CheckingOutTaskName);
-		BranchOperationUI.checkout(repository, name).run(monitor);
+		BranchOperationUI.checkout(repository, commit.name()).run(monitor);
 
 		monitor.worked(1);
 	}
@@ -890,42 +860,17 @@ public class FetchGerritChangePage extends WizardPage {
 			final Text textField) {
 		KeyStroke stroke = UIUtils
 				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke != null)
+		if (stroke != null) {
 			UIUtils.addBulbDecorator(textField, NLS.bind(
 					UIText.FetchGerritChangePage_ContentAssistTooltip,
 					stroke.format()));
-
+		}
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
 				List<IContentProposal> resultList = new ArrayList<>();
 
-				// make the simplest possible pattern check: allow "*"
-				// for multiple characters
-				String patternString = contents;
-				// ignore spaces in the beginning
-				while (patternString.length() > 0
-						&& patternString.charAt(0) == ' ')
-					patternString = patternString.substring(1);
-
-				// we quote the string as it may contain spaces
-				// and other stuff colliding with the Pattern
-				patternString = Pattern.quote(patternString);
-
-				patternString = patternString.replaceAll("\\x2A", ".*"); //$NON-NLS-1$ //$NON-NLS-2$
-
-				// make sure we add a (logical) * at the end
-				if (!patternString.endsWith(".*")) //$NON-NLS-1$
-					patternString = patternString + ".*"; //$NON-NLS-1$
-
-				// let's compile a case-insensitive pattern (assumes ASCII only)
-				Pattern pattern;
-				try {
-					pattern = Pattern.compile(patternString,
-							Pattern.CASE_INSENSITIVE);
-				} catch (PatternSyntaxException e) {
-					pattern = null;
-				}
+				Pattern pattern = UIUtils.createProposalPattern(contents);
 
 				List<Change> proposals;
 				try {
@@ -937,18 +882,17 @@ public class FetchGerritChangePage extends WizardPage {
 					return null;
 				}
 
-				if (proposals != null)
+				if (proposals != null) {
 					for (final Change ref : proposals) {
 						if (pattern != null
 								&& !pattern.matcher(
 										ref.getChangeNumber().toString())
-										.matches())
+										.matches()) {
 							continue;
-						IContentProposal propsal = new ChangeContentProposal(
-								ref);
-						resultList.add(propsal);
+						}
+						resultList.add(new ChangeContentProposal(ref));
 					}
-
+				}
 				return resultList.toArray(new IContentProposal[resultList
 						.size()]);
 			}
@@ -975,6 +919,60 @@ public class FetchGerritChangePage extends WizardPage {
 		public void openProposalPopup() {
 			// Make this method accessible
 			super.openProposalPopup();
+		}
+	}
+
+	private final static class Change {
+		private final String refName;
+
+		private final Integer changeNumber;
+
+		private final Integer patchSetNumber;
+
+		static Change fromRef(String refName) {
+			try {
+				if (!refName.startsWith("refs/changes/")) //$NON-NLS-1$
+					return null;
+				String[] tokens = refName.substring(13).split("/"); //$NON-NLS-1$
+				if (tokens.length != 3)
+					return null;
+				Integer changeNumber = Integer.valueOf(tokens[1]);
+				Integer patchSetNumber = Integer.valueOf(tokens[2]);
+				return new Change(refName, changeNumber, patchSetNumber);
+			} catch (NumberFormatException e) {
+				// if we can't parse this, just return null
+				return null;
+			} catch (IndexOutOfBoundsException e) {
+				// if we can't parse this, just return null
+				return null;
+			}
+		}
+
+		private Change(String refName, Integer changeNumber,
+				Integer patchSetNumber) {
+			this.refName = refName;
+			this.changeNumber = changeNumber;
+			this.patchSetNumber = patchSetNumber;
+		}
+
+		public String getRefName() {
+			return refName;
+		}
+
+		public Integer getChangeNumber() {
+			return changeNumber;
+		}
+
+		public Integer getPatchSetNumber() {
+			return patchSetNumber;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return refName;
 		}
 	}
 
