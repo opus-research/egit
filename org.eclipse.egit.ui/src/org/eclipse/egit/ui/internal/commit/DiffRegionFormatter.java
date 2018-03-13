@@ -24,8 +24,6 @@ import org.eclipse.egit.ui.internal.history.FileDiff;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.Region;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.EditList;
@@ -41,90 +39,68 @@ import org.eclipse.osgi.util.NLS;
 public class DiffRegionFormatter extends DiffFormatter {
 
 	/**
-	 * A text {@link Region} describing an interesting region in a unified diff.
+	 * Diff style range
 	 */
 	public static class DiffRegion extends Region {
 
-		/** Constant {@value} indicating that no line number exists. */
-		public static final int NO_LINE = -1;
-
 		/**
-		 * The type of a {@link DiffRegion}.
+		 * Diff type
 		 */
 		public enum Type {
 
-			/** Added line. */
+			/**
+			 * Added line
+			 */
 			ADD,
 
-			/** Removed line. */
+			/**
+			 * Removed line
+			 */
 			REMOVE,
 
-			/** Hunk line. */
+			/**
+			 * Hunk line
+			 */
 			HUNK,
 
-			/** Headline. */
+			/**
+			 * Headline
+			 */
 			HEADLINE,
 
-			/** Header (after HEADLINE). */
+			/**
+			 * Header (after HEADLINE)
+			 */
 			HEADER,
 
-			/** A context line in a hunk. */
-			CONTEXT,
-
-			/** Other line. */
+			/**
+			 * Other line
+			 */
 			OTHER,
 
 		}
 
-		private final @NonNull Type type;
-
-		private final int aLine;
-
-		private final int bLine;
+		/**
+		 * Diff type
+		 */
+		public Type diffType = Type.OTHER;
 
 		/**
 		 * @param offset
 		 * @param length
 		 */
 		public DiffRegion(int offset, int length) {
-			this(offset, length, NO_LINE, NO_LINE, Type.OTHER);
+			super(offset, length);
 		}
 
 		/**
 		 * @param offset
 		 * @param length
-		 * @param aLine
-		 * @param bLine
 		 * @param type
 		 */
-		public DiffRegion(int offset, int length, int aLine, int bLine,
-				@NonNull Type type) {
+		public DiffRegion(int offset, int length, Type type) {
 			super(offset, length);
-			this.type = type;
-			this.aLine = aLine;
-			this.bLine = bLine;
-		}
-
-		/**
-		 * @return the {@link Type} of the region
-		 */
-		public @NonNull Type getType() {
-			return type;
-		}
-
-		/**
-		 * Returns the first logical line number of the region.
-		 *
-		 * @param side
-		 *            to get the line number of
-		 * @return the line number; -1 indicates that the range has no line
-		 *         number for the given side.
-		 */
-		public int getLine(@NonNull DiffEntry.Side side) {
-			if (DiffEntry.Side.NEW.equals(side)) {
-				return bLine;
-			}
-			return aLine;
+			this.diffType = type;
 		}
 
 		@Override
@@ -267,11 +243,6 @@ public class DiffRegionFormatter extends DiffFormatter {
 
 	private int linesWritten;
 
-	private int lastNewLine;
-
-	private int[] maximumLineNumbers = new int[] { DiffRegion.NO_LINE,
-			DiffRegion.NO_LINE };
-
 	/**
 	 * @param document
 	 * @param offset
@@ -297,7 +268,6 @@ public class DiffRegionFormatter extends DiffFormatter {
 		super(new DocumentOutputStream(document, offset));
 		this.stream = (DocumentOutputStream) getOutputStream();
 		this.maxLines = maxLines;
-		this.lastNewLine = DiffRegion.NO_LINE;
 	}
 
 	/**
@@ -341,19 +311,7 @@ public class DiffRegionFormatter extends DiffFormatter {
 	}
 
 	/**
-	 * Retrieves the maximum line numbers for hunk lines.
-	 *
-	 * @return an array with two elements, index 0 being the maximum old line
-	 *         number and index 1 the maximum new line number
-	 */
-	public int[] getMaximumLineNumbers() {
-		return maximumLineNumbers.clone();
-	}
-
-	/**
-	 * Create and add a new {@link DiffRegion} without line number information,
-	 * coalescing it with the previous region,if any, if that has the same type
-	 * and the two regions are adjacent.
+	 * Create and add diff style range
 	 *
 	 * @param type
 	 *            the {@link Type}
@@ -363,51 +321,24 @@ public class DiffRegionFormatter extends DiffFormatter {
 	 *            end offset
 	 * @return added range
 	 */
-	protected DiffRegion addRegion(@NonNull Type type, int start, int end) {
-		return addRegion(type, start, end, DiffRegion.NO_LINE,
-				DiffRegion.NO_LINE);
-	}
-
-	/**
-	 * Create and add a new {@link DiffRegion}, coalescing it with the previous
-	 * region,if any, if that has the same type and the two regions are
-	 * adjacent.
-	 *
-	 * @param type
-	 *            the {@link Type}
-	 * @param start
-	 *            start offset
-	 * @param end
-	 *            end offset
-	 * @param aLine
-	 *            line number in the old version, or {@link DiffRegion#NO_LINE}
-	 * @param bLine
-	 *            line number in the new version, or {@link DiffRegion#NO_LINE}
-	 * @return added range
-	 */
-	protected DiffRegion addRegion(@NonNull Type type, int start, int end,
-			int aLine, int bLine) {
-		maximumLineNumbers[0] = Math.max(aLine, maximumLineNumbers[0]);
-		maximumLineNumbers[1] = Math.max(bLine, maximumLineNumbers[1]);
-		if (bLine != DiffRegion.NO_LINE) {
-			lastNewLine = bLine;
-		}
+	protected DiffRegion addRegion(Type type, int start, int end) {
 		if (!regions.isEmpty()) {
 			DiffRegion last = regions.get(regions.size() - 1);
-			if (last.getType().equals(type)
+			if (last.diffType.equals(type)
 					&& start == last.getOffset() + last.getLength()) {
 				regions.remove(regions.size() - 1);
 				start = last.getOffset();
-				aLine = last.getLine(DiffEntry.Side.OLD);
-				bLine = last.getLine(DiffEntry.Side.NEW);
 			}
 		}
-		DiffRegion range = new DiffRegion(start, end - start, aLine, bLine,
-				type);
+		DiffRegion range = new DiffRegion(start, end - start, type);
 		regions.add(range);
 		return range;
 	}
 
+	/**
+	 * @see org.eclipse.jgit.diff.DiffFormatter#writeHunkHeader(int, int, int,
+	 *      int)
+	 */
 	@Override
 	protected void writeHunkHeader(int aStartLine, int aEndLine,
 			int bStartLine, int bEndLine) throws IOException {
@@ -415,16 +346,19 @@ public class DiffRegionFormatter extends DiffFormatter {
 		if (!regions.isEmpty()) {
 			DiffRegion last = regions.get(regions.size() - 1);
 			int lastEnd = last.getOffset() + last.getLength();
-			if (last.getType().equals(Type.HEADLINE) && lastEnd < start) {
+			if (last.diffType == Type.HEADLINE && lastEnd < start) {
 				addRegion(Type.HEADER, lastEnd, start);
 			}
 		}
 		super.writeHunkHeader(aStartLine, aEndLine, bStartLine, bEndLine);
 		stream.flushLine();
 		addRegion(Type.HUNK, start, stream.offset);
-		lastNewLine = bStartLine - 1;
 	}
 
+	/**
+	 * @see org.eclipse.jgit.diff.DiffFormatter#writeLine(char,
+	 *      org.eclipse.jgit.diff.RawText, int)
+	 */
 	@Override
 	protected void writeLine(char prefix, RawText text, int cur)
 			throws IOException {
@@ -441,18 +375,15 @@ public class DiffRegionFormatter extends DiffFormatter {
 			}
 			return;
 		}
-
-		int start = stream.offset;
-		super.writeLine(prefix, text, cur);
-		stream.flushLine();
 		if (prefix == ' ') {
-			addRegion(Type.CONTEXT, start, stream.offset, cur, ++lastNewLine);
-		} else if (prefix == '+') {
-			addRegion(Type.ADD, start, stream.offset, DiffRegion.NO_LINE, cur);
-
+			super.writeLine(prefix, text, cur);
+			stream.flushLine();
 		} else {
-			addRegion(Type.REMOVE, start, stream.offset, cur,
-					DiffRegion.NO_LINE);
+			Type type = prefix == '+' ? Type.ADD : Type.REMOVE;
+			int start = stream.offset;
+			super.writeLine(prefix, text, cur);
+			stream.flushLine();
+			addRegion(type, start, stream.offset);
 		}
 		linesWritten++;
 	}
