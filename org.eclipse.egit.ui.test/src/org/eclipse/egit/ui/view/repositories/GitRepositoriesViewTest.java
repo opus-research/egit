@@ -130,12 +130,13 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		fileiItem.doubleClick();
 		assertTrue(bot.activeEditor().getTitle().equals(FILE1));
 		bot.activeEditor().close();
-		refreshAndWait();
+		TestUtil.processUIEvents();
 
 		// open a branch (checkout)
 		checkoutWithDoubleClick(tree, "master");
 		String contentMaster = getTestFileContent();
 		checkoutWithDoubleClick(tree, "stable");
+		TestUtil.joinJobs(JobFamilies.CHECKOUT);
 		String contentStable = getTestFileContent();
 		assertNotEquals("Content of master and stable should differ",
 				contentMaster, contentStable);
@@ -149,7 +150,8 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		SWTBotShell shell = bot
 				.shell(UIText.RepositoriesView_CheckoutConfirmationTitle);
 		shell.bot().button(IDialogConstants.OK_LABEL).click();
-		TestUtil.joinJobs(JobFamilies.CHECKOUT);
+		TestUtil.processUIEvents();
+		TestUtil.waitForJobs(50, 5000);
 		refreshAndWait();
 	}
 
@@ -339,7 +341,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		removeSmartImportWizardToForceGitImportWizardUsage();
 		deleteAllProjects();
 		assertProjectExistence(PROJ2, false);
-		TestUtil.processUIEvents();
 		SWTBotTree tree = getOrOpenView().bot().tree();
 		String wizardTitle = NLS.bind(
 				UIText.GitCreateProjectViaWizardWizard_WizardTitle,
@@ -350,7 +351,6 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 				.getNode(PROJ2).select();
 		ContextMenuHelper.clickContextMenu(tree,
 				myUtil.getPluginLocalizedValue("ImportProjectsCommand"));
-		TestUtil.processUIEvents();
 		SWTBotShell shell = bot.shell(wizardTitle);
 		shell = bot.shell(wizardTitle);
 		// try import existing project first
