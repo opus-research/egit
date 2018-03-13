@@ -43,7 +43,7 @@ public class UnmergedBranchDialog<T> extends MessageDialog {
 	public UnmergedBranchDialog(Shell parentShell, List<T> nodes) {
 		super(parentShell, UIText.UnmergedBranchDialog_Title, null,
 				UIText.UnmergedBranchDialog_Message, MessageDialog.QUESTION,
-				new String[] { UIText.UnmergedBranchDialog_deleteButton,
+				new String[] { IDialogConstants.OK_LABEL,
 						IDialogConstants.CANCEL_LABEL }, 0);
 		this.nodes = nodes;
 	}
