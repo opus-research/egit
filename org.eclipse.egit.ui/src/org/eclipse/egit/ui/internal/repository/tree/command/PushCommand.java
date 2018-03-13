@@ -18,7 +18,6 @@ import java.util.List;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.push.PushBranchDialog;
 import org.eclipse.egit.ui.internal.push.PushBranchWizard;
 import org.eclipse.egit.ui.internal.push.PushTagsWizard;
 import org.eclipse.egit.ui.internal.push.PushWizard;
@@ -39,19 +38,19 @@ public class PushCommand extends
 		List<RepositoryTreeNode> nodes = getSelectedNodes(event);
 		RepositoryTreeNode node = nodes.get(0);
 
-		WizardDialog wizardDialog = null;
+		IWizard pushWiz = null;
 
 		try {
 			switch (node.getType()) {
 			case REF:
 				Ref ref = (Ref) node.getObject();
-				wizardDialog = new PushBranchDialog(getShell(event), new PushBranchWizard(node.getRepository(), ref);
+				pushWiz = new PushBranchWizard(node.getRepository(), ref);
 				break;
 			case TAG:
-				wizardDialog = new WizardDialog(getShell(event), createPushTagsWizard(nodes));
+				pushWiz = createPushTagsWizard(nodes);
 				break;
 			case REPO:
-				wizardDialog = new WizardDialog(getShell(event), newWizard) PushWizard(node.getRepository());
+				pushWiz = new PushWizard(node.getRepository());
 				break;
 			default:
 				throw new UnsupportedOperationException("type not supported!"); //$NON-NLS-1$
@@ -60,7 +59,10 @@ public class PushCommand extends
 			Activator.handleError(e1.getMessage(), e1, true);
 			return null;
 		}
-		wizardDialog.open();
+
+		WizardDialog dlg = new WizardDialog(getShell(event), pushWiz);
+		dlg.setHelpAvailable(pushWiz.isHelpAvailable());
+		dlg.open();
 
 		return null;
 	}

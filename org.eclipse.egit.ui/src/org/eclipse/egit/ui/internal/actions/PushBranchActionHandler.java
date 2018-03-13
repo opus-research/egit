@@ -12,8 +12,9 @@ import java.io.IOException;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.internal.push.PushBranchDialog;
 import org.eclipse.egit.ui.internal.push.PushBranchWizard;
+import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -35,8 +36,7 @@ public class PushBranchActionHandler extends RepositoryActionHandler {
 				ObjectId id = repository.resolve(repository.getFullBranch());
 				wizard = new PushBranchWizard(repository, id);
 			}
-			PushBranchDialog dlg = new PushBranchDialog(getShell(event),
-					wizard);
+			WizardDialog dlg = new WizardDialog(getShell(event), wizard);
 			dlg.open();
 		} catch (IOException ex) {
 			Activator.handleError(ex.getLocalizedMessage(), ex, false);
