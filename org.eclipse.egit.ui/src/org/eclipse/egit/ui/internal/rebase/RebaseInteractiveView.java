@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2016 SAP AG and others.
+ * Copyright (c) 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,7 +8,7 @@
  * Contributors:
  *    Tobias Pfeifer (SAP AG) - initial implementation
  *    Tobias Baumann (tobbaumann@gmail.com) - Bug 473950
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248, 460595
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
 
@@ -47,12 +47,10 @@ import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.bindings.keys.SWTKeySupport;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.layout.TreeColumnLayout;
@@ -85,18 +83,16 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.KeyAdapter;
-import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
@@ -115,8 +111,10 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
+import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.part.ViewPart;
 
 /**
@@ -131,8 +129,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	public static final String VIEW_ID = "org.eclipse.egit.ui.InteractiveRebaseView"; //$NON-NLS-1$
 
 	TreeViewer planTreeViewer;
-
-	private Composite headComposite;
 
 	private PlanLayout planLayout;
 
@@ -218,7 +214,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		} else if (o instanceof Repository) {
 			repo = (Repository) o;
 		} else {
-			IResource resource = AdapterUtils.adaptToAnyResource(o);
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
@@ -280,13 +276,17 @@ public class RebaseInteractiveView extends ViewPart implements
 		});
 		form = createForm(parent, toolkit);
 		createCommandToolBar(form, toolkit);
-		planTreeViewer = createPlanTreeViewer(form.getBody(), toolkit);
+		SashForm sashForm = createRebasePlanSashForm(form, toolkit);
+
+		Section rebasePlanSection = toolkit.createSection(sashForm,
+				ExpandableComposite.TITLE_BAR);
+		planTreeViewer = createPlanTreeViewer(rebasePlanSection, toolkit);
 
 		planLayout = new PlanLayout();
 		planTreeViewer.getTree().getParent().setLayout(planLayout);
 
 		createColumns(planLayout);
-		createStepActionToolBar(toolkit);
+		createStepActionToolBar(rebasePlanSection, toolkit);
 		createPopupMenu(planTreeViewer);
 
 		setupListeners();
@@ -398,14 +398,12 @@ public class RebaseInteractiveView extends ViewPart implements
 	}
 
 	private void createCommandToolBar(Form theForm, FormToolkit toolkit) {
-		headComposite = new Composite(theForm.getHead(), SWT.NONE);
-		theForm.setHeadClient(headComposite);
-		headComposite.setLayout(new GridLayout(2, false));
-		ToolBar toolBar = new ToolBar(headComposite, SWT.FLAT);
-		GridDataFactory.fillDefaults().grab(false, false).applyTo(toolBar);
+		ToolBar toolBar = new ToolBar(theForm.getHead(), SWT.FLAT);
+		toolBar.setOrientation(SWT.RIGHT_TO_LEFT);
+		theForm.setHeadClient(toolBar);
+
 		toolkit.adapt(toolBar);
 		toolkit.paintBordersFor(toolBar);
-		toolBar.setBackground(null);
 
 		startItem = new ToolItem(toolBar, SWT.NONE);
 		startItem.setImage(UIIcons.getImage(resources,
@@ -450,20 +448,33 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 		refreshItem.setText(UIText.InteractiveRebaseView_refreshItem_text);
-		toolBar.pack();
 	}
 
 	private static ToolItem createSeparator(ToolBar toolBar) {
 		return new ToolItem(toolBar, SWT.SEPARATOR);
 	}
 
-	private TreeViewer createPlanTreeViewer(Composite parent,
+	private TreeViewer createPlanTreeViewer(Section rebasePlanSection,
 			FormToolkit toolkit) {
 
-		Composite rebasePlanTableComposite = toolkit.createComposite(parent);
+		Composite rebasePlanTableComposite = toolkit
+				.createComposite(rebasePlanSection);
 		toolkit.paintBordersFor(rebasePlanTableComposite);
-		GridDataFactory.fillDefaults().grab(true, true)
+		rebasePlanSection.setClient(rebasePlanTableComposite);
+		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(rebasePlanTableComposite);
+
+		Composite toolbarComposite = toolkit.createComposite(rebasePlanSection);
+		toolbarComposite.setBackground(null);
+		RowLayout toolbarRowLayout = new RowLayout();
+		toolbarRowLayout.marginHeight = 0;
+		toolbarRowLayout.marginWidth = 0;
+		toolbarRowLayout.marginTop = 0;
+		toolbarRowLayout.marginBottom = 0;
+		toolbarRowLayout.marginLeft = 0;
+		toolbarRowLayout.marginRight = 0;
+		toolbarComposite.setLayout(toolbarRowLayout);
+
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(rebasePlanTableComposite);
 
@@ -480,6 +491,14 @@ public class RebaseInteractiveView extends ViewPart implements
 				FormToolkit.TREE_BORDER);
 		viewer.setContentProvider(RebaseInteractivePlanContentProvider.INSTANCE);
 		return viewer;
+	}
+
+	private SashForm createRebasePlanSashForm(final Form parent,
+			final FormToolkit toolkit) {
+		SashForm sashForm = new SashForm(parent.getBody(), SWT.NONE);
+		toolkit.adapt(sashForm, true, true);
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(sashForm);
+		return sashForm;
 	}
 
 	private Form createForm(Composite parent, final FormToolkit toolkit) {
@@ -587,16 +606,13 @@ public class RebaseInteractiveView extends ViewPart implements
 				new RebaseInteractiveDropTargetListener(this, planTreeViewer));
 	}
 
-	private void createStepActionToolBar(final FormToolkit toolkit) {
+	private void createStepActionToolBar(Section rebasePlanSection,
+			final FormToolkit toolkit) {
 		actionToolBarProvider = new RebaseInteractiveStepActionToolBarProvider(
-				headComposite, SWT.FLAT | SWT.WRAP, this);
-		ToolBar bar = actionToolBarProvider.getTheToolbar();
-		GridDataFactory.fillDefaults().grab(true, false)
-				.align(SWT.END, SWT.CENTER).applyTo(bar);
-		toolkit.adapt(bar);
-		toolkit.paintBordersFor(bar);
-		bar.setBackground(null);
-		bar.pack();
+				rebasePlanSection, SWT.FLAT | SWT.WRAP, this);
+		toolkit.adapt(actionToolBarProvider.getTheToolbar());
+		toolkit.paintBordersFor(actionToolBarProvider.getTheToolbar());
+		rebasePlanSection.setTextClient(actionToolBarProvider.getTheToolbar());
 	}
 
 	private static RebaseInteractivePlan.ElementType getType(Object element) {
@@ -773,17 +789,8 @@ public class RebaseInteractiveView extends ViewPart implements
 		});
 
 		TreeViewerColumn commitIDColumn = createColumn(headings[3]);
-		int minWidth;
-		GC gc = new GC(planTreeViewer.getControl().getDisplay());
-		try {
-			gc.setFont(planTreeViewer.getControl().getFont());
-			minWidth = Math.max(gc.stringExtent("0000000").x, //$NON-NLS-1$
-					gc.stringExtent(headings[3]).x) + 10;
-		} finally {
-			gc.dispose();
-		}
 		layout.setColumnData(commitIDColumn.getColumn(),
-				new ColumnPixelData(minWidth));
+				new ColumnPixelData(70));
 		commitIDColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -958,15 +965,12 @@ public class RebaseInteractiveView extends ViewPart implements
 				col.getColumn().pack();
 			}
 			// Re-distribute the space again, now that we know the true minimum
-			// widths. First dynamic column is the commit message; give that one
-			// a somewhat larger minimum width.
-			int minimumWidth = 200;
+			// widths.
 			for (TreeViewerColumn col : dynamicColumns) {
 				int width = col.getColumn().getWidth();
-				// Use width as weight
+				// Use width as weight, too.
 				planLayout.setColumnData(col.getColumn(),
-						new ColumnWeightData(width, minimumWidth));
-				minimumWidth = 80;
+						new ColumnWeightData(width, width));
 			}
 			planLayout.layout(planTreeViewer.getTree().getParent(), true);
 		}
@@ -1034,7 +1038,6 @@ public class RebaseInteractiveView extends ViewPart implements
 
 		Menu menu = manager.createContextMenu(planViewer.getControl());
 		planViewer.getControl().setMenu(menu);
-		planViewer.getControl().addKeyListener(new ContextMenuKeyListener());
 	}
 
 	private void createContextMenuItems(final TreeViewer planViewer) {
@@ -1064,43 +1067,6 @@ public class RebaseInteractiveView extends ViewPart implements
 				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
 				UIIcons.REWORD, RebaseInteractivePlan.ElementAction.REWORD,
 				planViewer, actionToolBarProvider));
-	}
-
-	private class ContextMenuKeyListener extends KeyAdapter {
-
-		@Override
-		public void keyPressed(KeyEvent e) {
-			int key = SWTKeySupport.convertEventToUnmodifiedAccelerator(e);
-			for (IAction item : contextMenuItems) {
-				if (key == item.getAccelerator()) {
-					e.doit = false;
-					item.run();
-					return;
-				}
-			}
-			int[] moveAccelerators = actionToolBarProvider
-					.getMoveAccelerators();
-			if (key == moveAccelerators[0]) {
-				actionToolBarProvider.moveUp();
-				e.doit = false;
-			} else if (key == moveAccelerators[1]) {
-				actionToolBarProvider.moveDown();
-				e.doit = false;
-			} else if ((e.stateMask & SWT.MODIFIER_MASK) == 0) {
-				switch (key) {
-				case SWT.ARROW_DOWN:
-				case SWT.ARROW_UP:
-				case SWT.PAGE_DOWN:
-				case SWT.PAGE_UP:
-				case SWT.HOME:
-				case SWT.END:
-					break;
-				default:
-					e.doit = false;
-					break;
-				}
-			}
-		}
 	}
 
 	private static GitDateFormatter getNewDateFormatter() {
