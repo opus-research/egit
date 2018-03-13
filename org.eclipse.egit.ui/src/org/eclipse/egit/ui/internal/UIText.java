@@ -101,9 +101,6 @@ public class UIText extends NLS {
 	public static String AddConfigEntryDialog_EnterValueMessage;
 
 	/** */
-	public static String AddConfigEntryDialog_InvalidKeyMessage;
-
-	/** */
 	public static String AddConfigEntryDialog_KeyComponentsMessage;
 
 	/** */
