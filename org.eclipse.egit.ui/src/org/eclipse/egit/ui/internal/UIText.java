@@ -2617,9 +2617,6 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
-	public static String CreateBranchPage_NormalizeBranchName;
-
-	/** */
 	public static String CreateBranchPage_SourceLabel;
 
 	/** */
@@ -4621,6 +4618,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RemoteConnectionPreferencePage_ZeroValueTooltip;
+
+	/** */
+	public static String RefreshPreferencesPage_RefreshIndexInterval;
+
+	/** */
+	public static String RefreshPreferencesPage_RefreshIndexIntervalTooltip;
 
 	/** */
 	public static String RefreshPreferencesPage_RefreshOnlyWhenActive;
