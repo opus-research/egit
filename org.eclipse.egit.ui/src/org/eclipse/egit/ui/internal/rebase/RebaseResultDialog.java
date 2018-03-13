@@ -520,7 +520,7 @@ public class RebaseResultDialog extends MessageDialog {
 	}
 
 	private static String getProblemDescription(CheckResult checkResult) {
-		StringBuilder result = new StringBuilder();
+		StringBuffer result = new StringBuffer();
 		if (checkResult.containsNonWorkspaceFiles())
 			result.append(UIText.RebaseResultDialog_notInWorkspaceMessage);
 		if (checkResult.containsNotSharedResources()) {
