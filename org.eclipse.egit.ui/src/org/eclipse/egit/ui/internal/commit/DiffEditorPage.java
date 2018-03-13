@@ -17,7 +17,7 @@ import static org.eclipse.egit.ui.UIPreferences.THEME_DiffRemoveBackgroundColor;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -547,9 +547,8 @@ public class DiffEditorPage extends TextEditor
 					.addAll(asList(new RepositoryCommit(commit.getRepository(),
 							untrackedCommit).getDiffs()));
 		}
-		FileDiff[] result = diffResult.toArray(new FileDiff[diffResult.size()]);
-		Arrays.sort(result, FileDiff.PATH_COMPARATOR);
-		return result;
+		Collections.sort(diffResult, FileDiff.PATH_COMPARATOR);
+		return diffResult.toArray(new FileDiff[diffResult.size()]);
 	}
 
 	/**
