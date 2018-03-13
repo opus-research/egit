@@ -34,6 +34,7 @@ import org.eclipse.egit.core.EclipseGitProgressTransformer;
 import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
+import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.api.Git;
@@ -46,7 +47,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidConfigurationException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.errors.TransportException;
-import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -66,7 +66,7 @@ public class PullOperation implements IEGitOperation {
 
 		private String reference;
 
-		private BranchRebaseMode upstreamConfig;
+		private UpstreamConfig upstreamConfig;
 
 		/**
 		 * @param remote
@@ -75,7 +75,7 @@ public class PullOperation implements IEGitOperation {
 		 */
 		public PullReferenceConfig(@Nullable String remote,
 				@Nullable String reference,
-				@Nullable BranchRebaseMode upstreamConfig) {
+				@Nullable UpstreamConfig upstreamConfig) {
 			this.remote = remote;
 			this.reference = reference;
 			this.upstreamConfig = upstreamConfig;
@@ -106,7 +106,7 @@ public class PullOperation implements IEGitOperation {
 		 * @return the upstream config strategy to use for the specified pull
 		 */
 		@Nullable
-		public BranchRebaseMode getUpstreamConfig() {
+		public UpstreamConfig getUpstreamConfig() {
 			return this.upstreamConfig;
 		}
 	}
@@ -182,7 +182,8 @@ public class PullOperation implements IEGitOperation {
 							if (config.getReference() != null) {
 								pull.setRemoteBranchName(config.getReference());
 							}
-							pull.setRebase(config.getUpstreamConfig());
+							pull.setRebase(config
+									.getUpstreamConfig() == UpstreamConfig.REBASE);
 						}
 						MergeStrategy strategy = Activator.getDefault()
 								.getPreferredMergeStrategy();

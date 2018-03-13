@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2016 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 499482
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
@@ -36,7 +35,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.events.ConfigChangedEvent;
 import org.eclipse.jgit.events.ConfigChangedListener;
 import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -359,16 +357,15 @@ public class GitRepositoriesViewBranchHandlingTest extends
 	@Test
 	public void testBranchConfiguration() throws Exception {
 		Repository repo = lookupRepository(clonedRepositoryFile);
-		try (Git git = new Git(repo)) {
-			git.branchCreate().setName("configTest")
-					.setStartPoint("refs/remotes/origin/master")
-					.setUpstreamMode(SetupUpstreamMode.TRACK).call();
-		}
-		BranchRebaseMode rebase = repo.getConfig().getEnum(
-				BranchRebaseMode.values(),
+		Git git = new Git(repo);
+		git.branchCreate().setName("configTest")
+				.setStartPoint("refs/remotes/origin/master")
+				.setUpstreamMode(SetupUpstreamMode.TRACK).call();
+
+		boolean rebase = repo.getConfig().getBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "configTest",
-				ConfigConstants.CONFIG_KEY_REBASE, BranchRebaseMode.NONE);
-		assertEquals(BranchRebaseMode.NONE, rebase);
+				ConfigConstants.CONFIG_KEY_REBASE, false);
+		assertFalse(rebase);
 
 		SWTBotView view = getOrOpenView();
 
@@ -427,16 +424,13 @@ public class GitRepositoriesViewBranchHandlingTest extends
 						.comboBoxWithLabel(
 								UIText.BranchConfigurationDialog_RemoteLabel)
 						.getText());
-		assertEquals(UIText.BranchRebaseMode_None,
-				configureBranchDialog.bot()
-						.comboBoxWithLabel(
-								UIText.BranchRebaseModeCombo_RebaseModeLabel)
-						.getText());
+		assertFalse(configureBranchDialog.bot()
+				.checkBox(UIText.BranchConfigurationDialog_RebaseLabel)
+				.isChecked());
 
 		configureBranchDialog.bot()
-				.comboBoxWithLabel(
-						UIText.BranchRebaseModeCombo_RebaseModeLabel)
-				.setSelection(0);
+				.checkBox(UIText.BranchConfigurationDialog_RebaseLabel)
+				.select();
 		// add a listener to wait for the configuration changed event
 		final AtomicBoolean changed = new AtomicBoolean();
 		ConfigChangedListener listener =
@@ -456,10 +450,10 @@ public class GitRepositoriesViewBranchHandlingTest extends
 			fail("We should have received a config change event");
 
 		refreshAndWait(); // Repo view updates itself after config change.
-		rebase = repo.getConfig().getEnum(BranchRebaseMode.values(),
+		rebase = repo.getConfig().getBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "configTest",
-				ConfigConstants.CONFIG_KEY_REBASE, BranchRebaseMode.NONE);
-		assertEquals(BranchRebaseMode.REBASE, rebase);
+				ConfigConstants.CONFIG_KEY_REBASE, false);
+		assertTrue(rebase);
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				clonedRepositoryFile);

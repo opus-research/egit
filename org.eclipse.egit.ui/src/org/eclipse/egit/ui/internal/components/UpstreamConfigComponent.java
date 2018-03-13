@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2013, 2016 Robin Stocker <robin@nibor.org> and others.
+ * Copyright (C) 2013 Robin Stocker <robin@nibor.org> and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,13 +10,11 @@ package org.eclipse.egit.ui.internal.components;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.egit.core.op.CreateLocalBranchOperation.UpstreamConfig;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -37,14 +35,16 @@ public class UpstreamConfigComponent {
 		 * @param upstreamConfig
 		 *            selected by the user
 		 */
-		public void upstreamConfigSelected(BranchRebaseMode upstreamConfig);
+		public void upstreamConfigSelected(UpstreamConfig upstreamConfig);
 	}
 
 	private final Composite container;
 
 	private Button configureUpstreamCheck;
 
-	private BranchRebaseModeCombo rebase;
+	private Button mergeRadio;
+
+	private Button rebaseRadio;
 
 	private List<UpstreamConfigSelectionListener> listeners = new ArrayList<>();
 
@@ -74,15 +74,25 @@ public class UpstreamConfigComponent {
 		upstreamConfigGroup.setLayoutData(GridDataFactory.fillDefaults()
 				.grab(true, false).indent(UIUtils.getControlIndent(), 0)
 				.create());
-		upstreamConfigGroup.setLayout(
-				GridLayoutFactory.swtDefaults().numColumns(2).create());
+		upstreamConfigGroup.setLayout(GridLayoutFactory.swtDefaults().create());
+		upstreamConfigGroup
+				.setText(UIText.UpstreamConfigComponent_PullGroup);
 
-		rebase = new BranchRebaseModeCombo(upstreamConfigGroup);
-		rebase.getViewer()
-				.addSelectionChangedListener(new ISelectionChangedListener() {
-
+		mergeRadio = new Button(upstreamConfigGroup, SWT.RADIO);
+		mergeRadio.setText(UIText.UpstreamConfigComponent_MergeRadio);
+		mergeRadio.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void selectionChanged(SelectionChangedEvent event) {
+			public void widgetSelected(SelectionEvent e) {
+				upstreamConfigSelected();
+			}
+		});
+		mergeRadio.setSelection(true);
+
+		rebaseRadio = new Button(upstreamConfigGroup, SWT.RADIO);
+		rebaseRadio.setText(UIText.UpstreamConfigComponent_RebaseRadio);
+		rebaseRadio.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
 				upstreamConfigSelected();
 			}
 		});
@@ -116,38 +126,37 @@ public class UpstreamConfigComponent {
 	 * @param upstreamConfig
 	 *            to set the controls to
 	 */
-	public void setUpstreamConfig(BranchRebaseMode upstreamConfig) {
-		if (upstreamConfig == null) {
+	public void setUpstreamConfig(UpstreamConfig upstreamConfig) {
+		if (upstreamConfig == UpstreamConfig.NONE) {
 			configureUpstreamCheck.setSelection(false);
 		} else {
 			configureUpstreamCheck.setSelection(true);
-			rebase.setRebaseMode(upstreamConfig);
+			mergeRadio.setSelection(upstreamConfig == UpstreamConfig.MERGE);
+			rebaseRadio.setSelection(upstreamConfig == UpstreamConfig.REBASE);
 		}
 		updateEnabled();
 	}
 
 	private void upstreamConfigSelected() {
-		BranchRebaseMode config = getSelectedRebaseMode();
+		UpstreamConfig config = getSelectedUpstreamConfig();
 		for (UpstreamConfigSelectionListener listener : listeners)
 			listener.upstreamConfigSelected(config);
 	}
 
-	/**
-	 * Retrieves the selected {@link BranchRebaseMode}.
-	 *
-	 * @return the {@link BranchRebaseMode}, or {@code null} if none selected.
-	 */
-	public BranchRebaseMode getSelectedRebaseMode() {
-		if (!configureUpstreamCheck.getSelection()) {
-			return null;
-		} else {
-			return rebase.getRebaseMode();
-		}
+	private UpstreamConfig getSelectedUpstreamConfig() {
+		if (!configureUpstreamCheck.getSelection())
+			return UpstreamConfig.NONE;
+		else if (mergeRadio.getSelection())
+			return UpstreamConfig.MERGE;
+		else if (rebaseRadio.getSelection())
+			return UpstreamConfig.REBASE;
+		return UpstreamConfig.NONE;
 	}
 
 	private void updateEnabled() {
 		boolean enabled = configureUpstreamCheck.getSelection();
 		upstreamConfigGroup.setEnabled(enabled);
-		rebase.setEnabled(enabled);
+		mergeRadio.setEnabled(enabled);
+		rebaseRadio.setEnabled(enabled);
 	}
 }
