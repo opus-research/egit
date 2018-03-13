@@ -248,7 +248,7 @@ public class GitRepositoriesViewFetchAndPushTest extends
 		// push from other repository
 		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.PUSH, 60,
 				TimeUnit.SECONDS);
-		PushOperationUI op =new PushOperationUI(repository, "origin", false);
+		PushOperationUI op = new PushOperationUI(repository, "origin", false);
 		op.start();
 		TestUtil.openJobResultDialog(jobJoiner.join());
 
