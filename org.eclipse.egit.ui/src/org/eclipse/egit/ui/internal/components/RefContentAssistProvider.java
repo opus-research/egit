@@ -11,8 +11,6 @@ package org.eclipse.egit.ui.internal.components;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -133,22 +131,11 @@ public class RefContentAssistProvider {
 			Activator.handleError(e.getMessage(), e, true);
 			return result;
 		}
-		sortByName(result);
 		if (source)
 			sourceRefs = result;
 		else
 			destinationRefs = result;
 		return result;
-	}
-
-	private void sortByName(List<Ref> refs) {
-		Collections.sort(refs, new Comparator<Ref>() {
-
-			@Override
-			public int compare(Ref ref1, Ref ref2) {
-				return ref1.getName().compareToIgnoreCase(ref2.getName());
-			}
-		});
 	}
 
 	/**
