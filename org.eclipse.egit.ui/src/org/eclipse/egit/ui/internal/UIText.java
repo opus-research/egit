@@ -1487,9 +1487,6 @@ public class UIText extends NLS {
 	public static String SourceBranchPage_remoteListingCancelled;
 
 	/** */
-	public static String SourceBranchPage_cannotCreateTemp;
-
-	/** */
 	public static String SourceBranchPage_CompositeTransportErrorMessage;
 
 	/** */
@@ -5215,6 +5212,9 @@ public class UIText extends NLS {
 	public static String StagingView_Add_Change_ID;
 
 	/** */
+	public static String StagingView_Assume_Unchanged;
+
+	/** */
 	public static String StagingView_Commit;
 
 	/** */
@@ -5297,6 +5297,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_UnstagedSort;
+
+	/** */
+	public static String StagingView_Untrack;
 
 	/** */
 	public static String StagingView_StageAllItemMenuLabel;
@@ -5594,6 +5597,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_BrowseDialogMessage;
+
+	/** */
+	public static String ProjectUtils_Invalid_ProjectFile;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);
