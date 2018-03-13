@@ -115,8 +115,6 @@ import org.eclipse.ui.progress.WorkbenchJob;
  */
 public class FetchGerritChangePage extends WizardPage {
 
-	private static final String GERRIT_CHANGE_REF_PREFIX = "refs/changes/"; //$NON-NLS-1$
-
 	private static final Pattern GERRIT_FETCH_PATTERN = Pattern.compile(
 			"git fetch (\\w+:\\S+) (refs/changes/\\d+/\\d+/\\d+) && git (\\w+) FETCH_HEAD"); //$NON-NLS-1$
 
@@ -124,7 +122,7 @@ public class FetchGerritChangePage extends WizardPage {
 			"(?:https?://\\S+?/|/)?([1-9][0-9]*)(?:/([1-9][0-9]*)(?:/([1-9][0-9]*)(?:\\.\\.\\d+)?)?)?(?:/\\S*)?"); //$NON-NLS-1$
 
 	private static final Pattern GERRIT_CHANGE_REF_PATTERN = Pattern
-			.compile("refs/changes/\\d+/(\\d+)(?:/(\\d+))?"); //$NON-NLS-1$
+			.compile("refs/changes/\\d+/(\\d+)(?:/\\d*)"); //$NON-NLS-1$
 
 	private enum CheckoutMode {
 		CREATE_BRANCH, CREATE_TAG, CHECKOUT_FETCH_HEAD, NOCHECKOUT
@@ -221,7 +219,7 @@ public class FetchGerritChangePage extends WizardPage {
 		String defaultUri = null;
 		String defaultCommand = null;
 		String defaultChange = null;
-		Change candidateChange = null;
+		String candidateChange = null;
 		if (clipText != null) {
 			Matcher matcher = GERRIT_FETCH_PATTERN.matcher(clipText);
 			if (matcher.matches()) {
@@ -446,12 +444,7 @@ public class FetchGerritChangePage extends WizardPage {
 		if (defaultChange != null) {
 			refText.setText(defaultChange);
 		} else if (candidateChange != null) {
-			String ref = candidateChange.getRefName();
-			if (ref != null) {
-				refText.setText(ref);
-			} else {
-				refText.setText(candidateChange.getChangeNumber().toString());
-			}
+			refText.setText(candidateChange);
 		}
 
 		// get all available Gerrit URIs from the repository
@@ -538,56 +531,46 @@ public class FetchGerritChangePage extends WizardPage {
 	 *
 	 * @param input
 	 *            string to derive a change number from
-	 * @return the change number and possibly also the patch set number, or
-	 *         {@code null} if none could be determined.
+	 * @return the change number as a string, or {@code null} if none could be
+	 *         determined.
 	 */
-	protected static Change determineChangeFromString(String input) {
+	protected static String determineChangeFromString(String input) {
 		if (input == null) {
 			return null;
 		}
-		try {
-			Matcher matcher = GERRIT_URL_PATTERN.matcher(input);
-			if (matcher.matches()) {
-				String first = matcher.group(1);
-				String second = matcher.group(2);
-				String third = matcher.group(3);
-				if (second != null && !second.isEmpty()) {
-					if (third != null && !third.isEmpty()) {
-						return Change.create(Integer.parseInt(second),
-								Integer.parseInt(third));
-					} else if (input.startsWith("http")) { //$NON-NLS-1$
-						// A URL ending with two digits: take the first as
-						// change
-						// number
-						return Change.create(Integer.parseInt(first),
-								Integer.parseInt(second));
-					} else {
-						// Take the numerically larger. Might be a fragment like
-						// /10/65510 as in refs/changes/10/65510/6, or /65510/6
-						// as in https://git.eclipse.org/r/#/c/65510/6. This is
-						// a heuristic, it might go wrong on a Gerrit where
-						// there are not many changes (yet), and one of them has
-						// many patch sets.
-						int firstNum = Integer.parseInt(first);
-						int secondNum = Integer.parseInt(second);
-						if (firstNum > secondNum) {
-							return Change.create(firstNum, secondNum);
-						} else {
-							return Change.create(secondNum);
-						}
-					}
+		Matcher matcher = GERRIT_URL_PATTERN.matcher(input);
+		if (matcher.matches()) {
+			String first = matcher.group(1);
+			String second = matcher.group(2);
+			String third = matcher.group(3);
+			if (second != null && !second.isEmpty()) {
+				if (third != null && !third.isEmpty()) {
+					return second;
+				} else if (input.startsWith("http")) { //$NON-NLS-1$
+					// A URL ending with two digits: take the first.
+					return first;
 				} else {
-					return Change.create(Integer.parseInt(first));
+					// Take the numerically larger. Might be a fragment like
+					// /10/65510 as in refs/changes/10/65510/6, or /65510/6 as
+					// in https://git.eclipse.org/r/#/c/65510/6. This is a
+					// heuristic, it might go wrong on a Gerrit where there are
+					// not many changes (yet), and one of them has many patch
+					// sets.
+					try {
+						if (Integer.parseInt(first) > Integer
+								.parseInt(second)) {
+							return first;
+						} else {
+							return second;
+						}
+					} catch (NumberFormatException e) {
+						// Numerical overflow?
+						return null;
+					}
 				}
+			} else {
+				return first;
 			}
-			matcher = GERRIT_CHANGE_REF_PATTERN.matcher(input);
-			if (matcher.matches()) {
-				int firstNum = Integer.parseInt(matcher.group(1));
-				int secondNum = Integer.parseInt(matcher.group(2));
-				return Change.create(firstNum, secondNum);
-			}
-		} catch (NumberFormatException e) {
-			// Numerical overflow?
 		}
 		return null;
 	}
@@ -598,20 +581,8 @@ public class FetchGerritChangePage extends WizardPage {
 			String clipText = (String) clipboard
 					.getContents(TextTransfer.getInstance());
 			if (clipText != null) {
-				Change input = determineChangeFromString(
-						clipText.trim());
-				if (input != null) {
-					String toInsert = input.getChangeNumber().toString();
-					if (input.getPatchSetNumber() != null) {
-						if (text.getText().trim().isEmpty() || text
-								.getSelectionText().equals(text.getText())) {
-							// Paste will replace everything
-							toInsert = input.getRefName();
-						} else {
-							toInsert = toInsert + '/'
-									+ input.getPatchSetNumber();
-						}
-					}
+				String toInsert = determineChangeFromString(clipText.trim());
+				if (toInsert != null) {
 					clipboard.setContents(new Object[] { toInsert },
 							new Transfer[] { TextTransfer.getInstance() });
 					try {
@@ -1036,7 +1007,7 @@ public class FetchGerritChangePage extends WizardPage {
 		}
 	}
 
-	final static class Change implements Comparable<Change> {
+	private final static class Change implements Comparable<Change> {
 		private final String refName;
 
 		private final Integer changeNumber;
@@ -1045,13 +1016,10 @@ public class FetchGerritChangePage extends WizardPage {
 
 		static Change fromRef(String refName) {
 			try {
-				if (refName == null
-						|| !refName.startsWith(GERRIT_CHANGE_REF_PREFIX)) {
+				if (refName == null || !refName.startsWith("refs/changes/")) { //$NON-NLS-1$
 					return null;
 				}
-				String[] tokens = refName
-						.substring(GERRIT_CHANGE_REF_PREFIX.length())
-						.split("/"); //$NON-NLS-1$
+				String[] tokens = refName.substring(13).split("/"); //$NON-NLS-1$
 				if (tokens.length != 3) {
 					return null;
 				}
@@ -1069,19 +1037,6 @@ public class FetchGerritChangePage extends WizardPage {
 				// if we can't parse this, just return null
 				return null;
 			}
-		}
-
-		static Change create(int changeNumber) {
-			return new Change(null, Integer.valueOf(changeNumber), null);
-		}
-
-		static Change create(int changeNumber, int patchSetNumber) {
-			int subDir = changeNumber % 100;
-			return new Change(
-					GERRIT_CHANGE_REF_PREFIX + subDir + '/' + changeNumber + '/'
-							+ patchSetNumber,
-					Integer.valueOf(changeNumber),
-					Integer.valueOf(patchSetNumber));
 		}
 
 		private Change(String refName, Integer changeNumber,
@@ -1123,14 +1078,9 @@ public class FetchGerritChangePage extends WizardPage {
 
 		@Override
 		public int compareTo(Change o) {
-			int changeDiff = this.changeNumber.compareTo(o.getChangeNumber());
+			int changeDiff = this.changeNumber.compareTo(o.changeNumber);
 			if (changeDiff == 0) {
-				if (patchSetNumber == null) {
-					return o.getPatchSetNumber() != null ? -1 : 0;
-				} else if (o.getPatchSetNumber() == null) {
-					return 1;
-				}
-				changeDiff = this.patchSetNumber
+				changeDiff = this.getPatchSetNumber()
 						.compareTo(o.getPatchSetNumber());
 			}
 			return changeDiff;
