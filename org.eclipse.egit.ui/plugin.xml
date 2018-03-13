@@ -3244,7 +3244,7 @@
               label="%HistoryShowVersions.label"
               style="push">
             <visibleWhen checkEnabled="true" />
-         </command>org.eclipse.egit.ui.history.ShowBlame
+         </command>
          <command
               commandId="org.eclipse.egit.ui.history.OpenInTextEditorCommand"
               label="%HistoryOpenInTextEditorCommand.label"
@@ -3487,16 +3487,6 @@
                commandId="org.eclipse.egit.ui.ImportChangedProjectsCommandId"
                icon="icons/obj16/import_prj.png"
                label="%ImportChangedProjects.label"
-               style="push">
-            <visibleWhen checkEnabled="true" />
-         </command>
-      </menuContribution>
-      <menuContribution
-            allPopups="false"
-            locationURI="popup:org.eclipse.egit.ui.InteractiveRebaseView?after=additions">
-         <command
-               commandId="org.eclipse.egit.ui.history.OpenInCommitViewerCommand"
-               label="%RebaseInteractiveOpenInCommitViewer.label"
                style="push">
             <visibleWhen checkEnabled="true" />
          </command>
@@ -5279,59 +5269,17 @@
                <command
                      commandId="org.eclipse.egit.ui.AbortRebase"
                      style="push">
-                  <visibleWhen>
-                     <or>
-                        <with variable="activeMenuSelection">
-                           <count value="1" />
-                           <iterate>
-                              <instanceof value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode" />
-                              <test property="GitRepository.canAbortRebase" />
-                           </iterate>
-                        </with>
-                        <test
-                              property="GitSelection.projectsSingleRepository"
-                              args="canAbortRebase">
-                        </test>
-                     </or>
-                  </visibleWhen>
+                  <visibleWhen checkEnabled="true" />
                </command>
                <command
                      commandId="org.eclipse.egit.ui.ContinueRebase"
                      style="push">
-                  <visibleWhen>
-                     <or>
-                        <with variable="activeMenuSelection">
-                           <count value="1" />
-                           <iterate>
-                              <instanceof value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode" />
-                              <test property="GitRepository.canContinueRebase" />
-                           </iterate>
-                        </with>
-                        <test
-                              property="GitSelection.projectsSingleRepository"
-                              args="canContinueRebase">
-                        </test>
-                     </or>
-                  </visibleWhen>
+                  <visibleWhen checkEnabled="true" />
                </command>
                <command
                      commandId="org.eclipse.egit.ui.SkipRebase"
                      style="push">
-                  <visibleWhen>
-                     <or>
-                        <with variable="activeMenuSelection">
-                           <count value="1" />
-                           <iterate>
-                              <instanceof value="org.eclipse.egit.ui.internal.repository.tree.RepositoryNode" />
-                              <test property="GitRepository.canAbortRebase" />
-                           </iterate>
-                        </with>
-                        <test
-                              property="GitSelection.projectsSingleRepository"
-                              args="canAbortRebase">
-                        </test>
-                     </or>
-                  </visibleWhen>
+                  <visibleWhen checkEnabled="true" />
                </command>
             </menu>
             <command
