@@ -12,7 +12,6 @@ import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
@@ -50,22 +49,17 @@ public final class ReleaseFinishOperation extends AbstractReleaseOperation {
 	public void execute(IProgressMonitor monitor) throws CoreException {
 		String releaseBranchName = repository.getConfig().getReleaseBranchName(versionName);
 		String master = repository.getConfig().getMaster();
-		SubMonitor progress = SubMonitor.convert(monitor, 3);
-		mergeResult = mergeTo(progress.newChild(1), releaseBranchName, master,
-				false /* TODO */, false);
+		mergeResult = mergeTo(monitor, releaseBranchName, master, false /* TODO */, false);
 		if (!mergeResult.getMergeStatus().isSuccessful()) {
 			// problems during merge to master => this repository is not in a healthy state
 			return;
 		}
 
 		// this may result in conflicts, but that's ok
-		safeCreateTag(progress.newChild(1),
-				repository.getConfig().getVersionTagPrefix() + versionName,
+		safeCreateTag(monitor, repository.getConfig().getVersionTagPrefix() + versionName,
 				NLS.bind(CoreText.ReleaseFinishOperation_releaseOf, versionName));
 
-		finish(progress.newChild(1), releaseBranchName,
-				false /* TODO: squash should also be supported for releases */,
-				false /* TODO: keep should also be supported for releases */,
-				false);
+		finish(monitor, releaseBranchName, false /* TODO: squash should also be supported for releases */
+				, false /* TODO: keep should also be supported for releases */, false);
 	}
 }

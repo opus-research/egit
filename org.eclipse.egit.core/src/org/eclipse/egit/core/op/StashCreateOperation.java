@@ -15,6 +15,7 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.jgit.api.Git;
@@ -100,14 +101,15 @@ public class StashCreateOperation implements IEGitOperation {
 					throw new TeamException(e.getLocalizedMessage(),
 							e.getCause());
 				} finally {
-					if (commit != null) {
+					if (commit != null)
 						repository.notifyIndexChanged();
-					}
+					pm.done();
 				}
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(action, getSchedulingRule(),
-				IWorkspace.AVOID_UPDATE, monitor);
+				IWorkspace.AVOID_UPDATE,
+				monitor != null ? monitor : new NullProgressMonitor());
 	}
 
 	@Override

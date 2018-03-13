@@ -44,25 +44,31 @@ public class DisconnectProviderOperation implements IEGitOperation {
 		projectList = projs;
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#execute(org.eclipse.core.runtime.IProgressMonitor)
+	 */
 	@Override
 	public void execute(IProgressMonitor m) throws CoreException {
 
 		SubMonitor progress = SubMonitor.convert(m,
 				CoreText.DisconnectProviderOperation_disconnecting,
-				projectList.size());
+				projectList.size() * 200);
 		for (IProject p : projectList) {
 			// TODO is this the right location?
-			if (GitTraceLocation.CORE.isActive()) {
+			if (GitTraceLocation.CORE.isActive())
 				GitTraceLocation.getTrace().trace(
 						GitTraceLocation.CORE.getLocation(),
 						"disconnect " + p.getName()); //$NON-NLS-1$
-			}
 			unmarkTeamPrivate(p);
 			RepositoryProvider.unmap(p);
-			p.refreshLocal(IResource.DEPTH_INFINITE, progress.newChild(1));
+			progress.worked(100);
+			p.refreshLocal(IResource.DEPTH_INFINITE, progress.newChild(100));
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see org.eclipse.egit.core.op.IEGitOperation#getSchedulingRule()
+	 */
 	@Override
 	public ISchedulingRule getSchedulingRule() {
 		return new MultiRule(projectList.toArray(new IProject[projectList.size()]));
@@ -78,11 +84,10 @@ public class DisconnectProviderOperation implements IEGitOperation {
 				}
 				if (c[k].isTeamPrivateMember()) {
 					// TODO is this the right location?
-					if (GitTraceLocation.CORE.isActive()) {
+					if (GitTraceLocation.CORE.isActive())
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.CORE.getLocation(),
 								"notTeamPrivate " + c[k]); //$NON-NLS-1$
-					}
 					c[k].setTeamPrivateMember(false);
 				}
 			}
