@@ -8,14 +8,12 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.httpauth;
 
-import static org.eclipse.swtbot.swt.finder.waits.Conditions.shellIsActive;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.common.EGitTestCase;
@@ -62,7 +60,7 @@ public class PushTest extends EGitTestCase {
 		cloneOperation
 				.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
 						"agitter", "letmein"));
-		cloneOperation.run(new NullProgressMonitor());
+		cloneOperation.run(null);
 		file = new File(localRepoPath, SampleTestRepository.A_txt_name);
 		assertTrue(file.exists());
 		localRepository = Activator.getDefault().getRepositoryCache()
@@ -75,10 +73,9 @@ public class PushTest extends EGitTestCase {
 		// change file
 		TestUtil.appendFileContent(file, "additional content", true);
 		// commit change
-		try (Git git = new Git(localRepository)) {
-			git.add().addFilepattern(SampleTestRepository.A_txt_name).call();
-			git.commit().setMessage("Change").call();
-		}
+		Git git = new Git(localRepository);
+		git.add().addFilepattern(SampleTestRepository.A_txt_name).call();
+		git.commit().setMessage("Change").call();
 		configurePush();
 		// push change
 		PushWizardTester wizardTester = new PushWizardTester();
@@ -93,7 +90,6 @@ public class PushTest extends EGitTestCase {
 		wizardTester.finish();
 		loginDialogTester.login("agitter", "letmein");
 		PushResultDialogTester pushResultDialogTester = new PushResultDialogTester();
-		bot.waitUntil(shellIsActive("Push Results: push"));
 		String expectedMessage = "Repository " + remoteRepository.getUri();
 		pushResultDialogTester.assertResultMessage(expectedMessage);
 		pushResultDialogTester.closeDialog();

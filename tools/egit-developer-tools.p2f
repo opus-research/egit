@@ -92,9 +92,9 @@
         <repository location='http://download.eclipse.org/tools/orbit/downloads/drops/R20150519210750/repository/'/>
       </repositories>
     </iu>
-    <iu id='org.eclipse.jetty.bundles.f.feature.group' name='Jetty - Bundles: all the jetty bundles' version='9.4.5.v20170502'>
+    <iu id='org.eclipse.jetty.bundles.f.feature.group' name='Jetty - Bundles: all the jetty bundles' version='7.6.14.v20131031'>
       <repositories size='1'>
-        <repository location='http://download.eclipse.org/jetty/updates/jetty-bundles-9.x/9.4.5.v20170502/'/>
+        <repository location='http://download.eclipse.org/jetty/updates/jetty-bundles-7.x/7.6.14.v20131031/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.egit.feature.group' name='Eclipse EGit' version='0.0.0'>
@@ -112,9 +112,29 @@
         <repository location='http://download.eclipse.org/egit/updates-nightly'/>
       </repositories>
     </iu>
+    <iu id='org.eclipse.jgit.java7.feature.group' name='Eclipse JGit optional Java 7 bundle' version='0.0.0'>
+      <repositories size='1'>
+        <repository location='http://download.eclipse.org/egit/updates-nightly'/>
+      </repositories>
+    </iu>
     <iu id='org.eclipse.jgit.pgm.feature.group' name='Eclipse JGit Command Line Interface' version='0.0.0'>
       <repositories size='1'>
         <repository location='http://download.eclipse.org/egit/updates-nightly'/>
+      </repositories>
+    </iu>
+    <iu id='org.eclipse.pde.api.tools.ee.j2se15.group' name='J2SE-1.5 Execution Environment Description' version='0.0.0'>
+      <repositories size='1'>
+        <repository location='http://download.eclipse.org/eclipse/updates/4.4'/>
+      </repositories>
+    </iu>
+    <iu id='org.eclipse.pde.api.tools.ee.javase16.group' name='JavaSE-1.6 Execution Environment Description' version='0.0.0'>
+      <repositories size='1'>
+        <repository location='http://download.eclipse.org/eclipse/updates/4.4'/>
+      </repositories>
+    </iu>
+    <iu id='org.eclipse.pde.api.tools.ee.javase17.group' name='JavaSE-1.7 Execution Environment Description' version='0.0.0'>
+      <repositories size='1'>
+        <repository location='http://download.eclipse.org/eclipse/updates/4.4'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.pde.api.tools.ee.javase18.group' name='JavaSE-1.8 Execution Environment Description' version='0.0.0'>
@@ -127,9 +147,9 @@
         <repository location='http://update.eclemma.org/'/>
       </repositories>
     </iu>
-    <iu id='com.github.spotbugs.plugin.eclipse.feature.group' name='SpotBugs Feature' version='0.0.0'>
+    <iu id='edu.umd.cs.findbugs.plugin.eclipse.feature.group' name='FindBugs Feature' version='0.0.0'>
       <repositories size='1'>
-        <repository location='https://spotbugs.github.io/eclipse/'/>
+        <repository location='http://findbugs.cs.umd.edu/eclipse'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.mylyn_feature.feature.group' name='Mylyn' version='0.0.0'>

@@ -1,5 +1,6 @@
 /******************************************************************************
- *  Copyright (c) 2010, 2016 SAP AG, GitHub Inc., and others
+ *  Copyright (c) 2010 SAP AG.
+ *  Copyright (c) 2011, 2014 GitHub Inc.
  *  and other copyright owners as documented in the project's IP log.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +9,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 495777
  *****************************************************************************/
 package org.eclipse.egit.ui.internal.commit.command;
 
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,13 +29,11 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.egit.core.op.CherryPickOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
 import org.eclipse.egit.ui.internal.UIRepositoryUtils;
 import org.eclipse.egit.ui.internal.UIText;
-import org.eclipse.egit.ui.internal.branch.LaunchFinder;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
 import org.eclipse.egit.ui.internal.handler.SelectionHandler;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -94,7 +91,7 @@ public class CherryPickHandler extends SelectionHandler {
 
 		final CherryPickOperation op = new CherryPickOperation(repo, commit);
 		Job job = new Job(MessageFormat.format(
-				UIText.CherryPickHandler_JobName, Integer.valueOf(1))) {
+				UIText.CherryPickHandler_JobName, 1)) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				try {
@@ -141,30 +138,22 @@ public class CherryPickHandler extends SelectionHandler {
 			final Repository repository, final RevCommit commit)
 			throws ExecutionException {
 		final AtomicBoolean confirmed = new AtomicBoolean(false);
-		String message;
+		final String message;
 		try {
 			message = MessageFormat.format(
-					UIText.CherryPickHandler_ConfirmMessage, Integer.valueOf(1),
+					UIText.CherryPickHandler_ConfirmMessage, 1,
 					repository.getBranch());
 		} catch (IOException e) {
 			throw new ExecutionException(
 					"Exception obtaining current repository branch", e); //$NON-NLS-1$
 		}
 
-		ILaunchConfiguration launch = LaunchFinder
-				.getRunningLaunchConfiguration(
-						Collections.singleton(repository), null);
-		if (launch != null) {
-			message += "\n\n" + MessageFormat.format( //$NON-NLS-1$
-					UIText.LaunchFinder_RunningLaunchMessage, launch.getName());
-		}
-		final String question = message;
 		shell.getDisplay().syncExec(new Runnable() {
 
 			@Override
 			public void run() {
 				ConfirmCherryPickDialog dialog = new ConfirmCherryPickDialog(
-						shell, question, repository, Arrays.asList(commit));
+						shell, message, repository, Arrays.asList(commit));
 				int result = dialog.open();
 				confirmed.set(result == Window.OK);
 			}
@@ -180,7 +169,7 @@ public class CherryPickHandler extends SelectionHandler {
 				String message, Repository repository, List<RevCommit> revCommits) {
 			super(parentShell, UIText.CherryPickHandler_ConfirmTitle, null,
 					message, MessageDialog.CONFIRM, new String[] {
-							UIText.CherryPickHandler_cherryPickButtonLabel,
+							IDialogConstants.OK_LABEL,
 							IDialogConstants.CANCEL_LABEL }, 0);
 			setShellStyle(getShellStyle() | SWT.RESIZE);
 

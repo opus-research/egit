@@ -17,10 +17,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Semaphore;
@@ -34,7 +32,6 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -49,7 +46,6 @@ import org.eclipse.egit.core.internal.CoreText;
 import org.eclipse.egit.core.internal.job.RuleUtil;
 import org.eclipse.egit.core.internal.trace.GitTraceLocation;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
-import org.eclipse.egit.core.internal.util.ResourceUtil;
 import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheIterator;
@@ -112,22 +108,15 @@ public class IndexDiffCacheEntry {
 		}
 	};
 
-	private final Set<ListenerHandle> listenerHandles = new HashSet<>();
+	private final Set<ListenerHandle> indexChangedListenerHandles = new HashSet<>();
+
+	private final Set<ListenerHandle> refsChangedListenerHandles = new HashSet<>();
 
 	/**
 	 * Keep hard references to submodules -- we need them in the cache at least
 	 * as long as the parent repository.
 	 */
-	private final Map<Repository, String> submodules = new HashMap<>();
-
-	private final IndexDiffChangedListener submoduleListener = (submodule,
-			diffData) -> {
-		String path = submodules.get(submodule);
-		if (path != null) {
-			scheduleUpdateJob(Collections.singletonList(path),
-					Collections.emptyList());
-		}
-	};
+	private final Set<Repository> submodules = new HashSet<>();
 
 	private IResourceChangeListener resourceChangeListener;
 
@@ -147,27 +136,24 @@ public class IndexDiffCacheEntry {
 			addIndexDiffChangedListener(listener);
 		}
 
-		listenerHandles.add(repository.getListenerList()
+		indexChangedListenerHandles.add(repository.getListenerList()
 				.addIndexChangedListener(indexChangedListener));
-		listenerHandles.add(repository.getListenerList()
+		refsChangedListenerHandles.add(repository.getListenerList()
 				.addRefsChangedListener(refsChangedListener));
-		// Add a listener also to all submodules in order to be notified when
+		// Add the listeners also to all submodules in order to be notified when
 		// a branch switch or so occurs in a submodule.
 		try (SubmoduleWalk walk = SubmoduleWalk.forIndex(repository)) {
 			while (walk.next()) {
 				Repository submodule = walk.getRepository();
-				if (submodule != null && !submodule.isBare()) {
+				if (submodule != null) {
 					Repository cached = org.eclipse.egit.core.Activator
 							.getDefault().getRepositoryCache().lookupRepository(
 									submodule.getDirectory().getAbsoluteFile());
-					submodules.put(cached, walk.getPath());
-					IndexDiffCacheEntry submoduleCache = org.eclipse.egit.core.Activator
-							.getDefault().getIndexDiffCache()
-							.getIndexDiffCacheEntry(cached);
-					if (submoduleCache != null) {
-						submoduleCache
-								.addIndexDiffChangedListener(submoduleListener);
-					}
+					indexChangedListenerHandles.add(cached.getListenerList()
+							.addIndexChangedListener(indexChangedListener));
+					refsChangedListenerHandles.add(cached.getListenerList()
+							.addRefsChangedListener(refsChangedListener));
+					submodules.add(cached);
 					submodule.close();
 				}
 			}
@@ -634,12 +620,9 @@ public class IndexDiffCacheEntry {
 	private List<String> calcTreeFilterPaths(Collection<String> filesToUpdate) {
 		List<String> paths = new ArrayList<String>();
 		for (String fileToUpdate : filesToUpdate) {
-			for (String untrackedFolder : indexDiffData.getUntrackedFolders()) {
-				if (fileToUpdate.startsWith(untrackedFolder)
-						&& !fileToUpdate.equals(untrackedFolder)) {
+			for (String untrackedFolder : indexDiffData.getUntrackedFolders())
+				if (fileToUpdate.startsWith(untrackedFolder))
 					paths.add(untrackedFolder);
-				}
-			}
 			paths.add(fileToUpdate);
 		}
 		return paths;
@@ -689,24 +672,8 @@ public class IndexDiffCacheEntry {
 
 	private void createResourceChangeListener() {
 		resourceChangeListener = new IResourceChangeListener() {
-
-			private final Map<IProject, IPath> deletedProjects = new HashMap<>();
-
 			@Override
 			public void resourceChanged(IResourceChangeEvent event) {
-				if (event.getDelta() != null) {
-					SkipNotInterestingDeltaVisitor skipNotInterestingVisitor = new SkipNotInterestingDeltaVisitor();
-					try {
-						event.getDelta().accept(skipNotInterestingVisitor);
-						if (!skipNotInterestingVisitor
-								.hasAtLeastOneInterestingDelta()) {
-							return;
-						}
-					} catch (CoreException e) {
-						Activator.logError(e.getMessage(), e);
-					}
-				}
-
 				Repository repository = getRepository();
 				if (repository == null) {
 					ResourcesPlugin.getWorkspace()
@@ -714,55 +681,27 @@ public class IndexDiffCacheEntry {
 					resourceChangeListener = null;
 					return;
 				}
-				if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
-					// Deletion of a project.
-					IResource resource = event.getResource();
-					if (resource.getType() == IResource.PROJECT) {
-						IPath projectPath = resource.getLocation();
-						if (projectPath != null) {
-							IPath repoPath = ResourceUtil
-									.getRepositoryRelativePath(projectPath,
-											repository);
-							if (repoPath != null) {
-								deletedProjects.put((IProject) resource,
-										projectPath);
-							}
-						}
-					}
-					// Recomputing the index diff on PRE_DELETE might still find
-					// the files/resources. We'll handle it in the POST_CHANGE
-					// event for the deletion.
-					return;
-				}
-				GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(
-						repository, deletedProjects);
+				GitResourceDeltaVisitor visitor = new GitResourceDeltaVisitor(repository);
 				try {
 					event.getDelta().accept(visitor);
 				} catch (CoreException e) {
 					Activator.logError(e.getMessage(), e);
 					return;
 				}
+				Collection<String> filesToUpdate = visitor.getFilesToUpdate();
 				if (visitor.getGitIgnoreChanged()) {
 					scheduleReloadJob("A .gitignore changed"); //$NON-NLS-1$
-				} else if (visitor.isProjectDeleted()) {
-					scheduleReloadJob("A project was deleted"); //$NON-NLS-1$
 				} else if (indexDiffData == null) {
 					scheduleReloadJob("Resource changed, no diff available"); //$NON-NLS-1$
-				} else {
-					Collection<String> filesToUpdate = visitor
-							.getFilesToUpdate();
-					Collection<IResource> resourcesToUpdate = visitor
-							.getResourcesToUpdate();
-					if (!filesToUpdate.isEmpty()) {
-						scheduleUpdateJob(filesToUpdate, resourcesToUpdate);
-					}
+				} else if (!filesToUpdate.isEmpty()) {
+					scheduleUpdateJob(filesToUpdate,
+							visitor.getResourcesToUpdate());
 				}
 			}
 
 		};
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
-				resourceChangeListener, IResourceChangeEvent.POST_CHANGE
-						| IResourceChangeEvent.PRE_DELETE);
+				resourceChangeListener, IResourceChangeEvent.POST_CHANGE);
 	}
 
 	/**
@@ -779,10 +718,14 @@ public class IndexDiffCacheEntry {
 	 * are canceled.
 	 */
 	public void dispose() {
-		for (ListenerHandle h : listenerHandles) {
+		for (ListenerHandle h : indexChangedListenerHandles) {
 			h.remove();
 		}
-		listenerHandles.clear();
+		for (ListenerHandle h : refsChangedListenerHandles) {
+			h.remove();
+		}
+		indexChangedListenerHandles.clear();
+		refsChangedListenerHandles.clear();
 		submodules.clear();
 		if (resourceChangeListener != null) {
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);

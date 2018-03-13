@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2017 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -18,7 +18,6 @@ import java.io.IOException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.core.op.RebaseOperation;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commands.shared.AbstractRebaseCommandHandler;
@@ -30,7 +29,6 @@ import org.eclipse.jgit.lib.Ref.Storage;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.revplot.PlotCommit;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.osgi.util.NLS;
 
 /**
@@ -49,12 +47,8 @@ public abstract class AbstractRebaseHistoryCommandHandler extends
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		RevCommit revCommit = AdapterUtils
-				.adapt(getSelection(event).getFirstElement(), RevCommit.class);
-		if (!(revCommit instanceof PlotCommit)) {
-			return null;
-		}
-		PlotCommit commit = (PlotCommit) revCommit;
+
+		PlotCommit commit = (PlotCommit) getSelection(event).getFirstElement();
 		final Repository repository = getRepository(event);
 		if (repository == null)
 			return null;

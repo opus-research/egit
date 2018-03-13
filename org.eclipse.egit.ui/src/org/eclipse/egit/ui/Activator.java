@@ -208,18 +208,6 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	}
 
 	/**
-	 * Utility method to log warnings for this plug-in.
-	 *
-	 * @param message
-	 *            User comprehensible message
-	 * @param thr
-	 *            The exception through which we noticed the warning
-	 */
-	public static void logWarning(final String message, final Throwable thr) {
-		handleIssue(IStatus.WARNING, message, thr, false);
-	}
-
-	/**
 	 * @param message
 	 * @param e
 	 */
@@ -308,6 +296,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	@Override
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
+		resourceManager = new LocalResourceManager(
+				JFaceResources.getResources());
 		// we want to be notified about debug options changes
 		Dictionary<String, String> props = new Hashtable<>(4);
 		props.put(DebugOptions.LISTENER_SYMBOLICNAME, context.getBundle()
@@ -398,8 +388,8 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 			@Override
 			public void windowActivated(IWorkbenchWindow window) {
 				updateUiState();
-				// 500: give the UI task a chance to update the active state
-				rcs.schedule(500);
+				if (rcs.doReschedule)
+					rcs.schedule();
 				refreshJob.triggerRefresh();
 			}
 		};
@@ -601,35 +591,16 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 * A Job that looks at the repository meta data and triggers a refresh of
 	 * the resources in the affected projects.
 	 */
-	private static class RepositoryChangeScanner extends Job
-			implements IPropertyChangeListener {
-
-		// volatile in order to ensure thread synchronization
-		private volatile boolean doReschedule;
-
-		private int interval;
-
-		private final RepositoryCache repositoryCache;
-
+	static class RepositoryChangeScanner extends Job {
 		RepositoryChangeScanner() {
 			super(UIText.Activator_repoScanJobName);
 			setRule(new RepositoryCacheRule());
-			setSystem(true);
-			setUser(false);
-			repositoryCache = org.eclipse.egit.core.Activator.getDefault()
-					.getRepositoryCache();
-			updateRefreshInterval();
 		}
 
-		@Override
-		public boolean shouldSchedule() {
-			return doReschedule;
-		}
-
-		@Override
-		public boolean shouldRun() {
-			return doReschedule;
-		}
+		// FIXME, need to be more intelligent about this to avoid too much work
+		private static final long REPO_SCAN_INTERVAL = 10000L;
+		// volatile in order to ensure thread synchronization
+		private volatile boolean doReschedule = true;
 
 		void setReschedule(boolean reschedule){
 			doReschedule = reschedule;
@@ -637,10 +608,25 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 
 		@Override
 		protected IStatus run(IProgressMonitor monitor) {
+			if (!doReschedule)
+				return Status.OK_STATUS;
+
+			// The core plugin might have been stopped before we could cancel
+			// this job.
+			RepositoryCache repositoryCache = org.eclipse.egit.core.Activator
+					.getDefault().getRepositoryCache();
+			if (repositoryCache == null)
+				return Status.OK_STATUS;
+
+			Repository[] repos = repositoryCache.getAllRepositories();
+			if (repos.length == 0)
+				return Status.OK_STATUS;
+
 			// When people use Git from the command line a lot of changes
 			// may happen. Don't scan when inactive depending on the user's
 			// choice.
-			if (getDefault().getPreferenceStore()
+
+			if (Activator.getDefault().getPreferenceStore()
 					.getBoolean(UIPreferences.REFESH_ONLY_WHEN_ACTIVE)) {
 				if (!isActive()) {
 					monitor.done();
@@ -648,77 +634,45 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 				}
 			}
 
-			Repository[] repos = repositoryCache.getAllRepositories();
-			if (repos.length == 0) {
-				return Status.OK_STATUS;
-			}
-
 			monitor.beginTask(UIText.Activator_scanningRepositories,
 					repos.length);
 			try {
 				for (Repository repo : repos) {
-					if (monitor.isCanceled()) {
+					if (monitor.isCanceled())
 						break;
-					}
-					if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+					if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 						GitTraceLocation.getTrace().trace(
 								GitTraceLocation.REPOSITORYCHANGESCANNER
 										.getLocation(),
 								"Scanning " + repo + " for changes"); //$NON-NLS-1$ //$NON-NLS-2$
-					}
 
 					repo.scanForRepoChanges();
 					monitor.worked(1);
 				}
 			} catch (IOException e) {
-				if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+				if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 					GitTraceLocation.getTrace().trace(
 							GitTraceLocation.REPOSITORYCHANGESCANNER
 									.getLocation(),
 							"Stopped rescheduling " + getName() + "job"); //$NON-NLS-1$ //$NON-NLS-2$
-				}
 				return createErrorStatus(UIText.Activator_scanError, e);
 			} finally {
 				monitor.done();
 			}
-			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+			if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 				GitTraceLocation.getTrace().trace(
 						GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
 						"Rescheduling " + getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-			}
-			schedule(interval);
+			if (doReschedule)
+				schedule(REPO_SCAN_INTERVAL);
 			return Status.OK_STATUS;
-		}
-
-		@Override
-		public void propertyChange(PropertyChangeEvent event) {
-			if (!UIPreferences.REFESH_INDEX_INTERVAL
-					.equals(event.getProperty())) {
-				return;
-			}
-			updateRefreshInterval();
-		}
-
-		private void updateRefreshInterval() {
-			interval = getRefreshIndexInterval();
-			setReschedule(interval > 0);
-			cancel();
-			schedule(interval);
-		}
-
-		/**
-		 * @return interval in milliseconds for automatic index check, 0 is if
-		 *         check should be disabled
-		 */
-		private static int getRefreshIndexInterval() {
-			return 1000 * getDefault().getPreferenceStore()
-					.getInt(UIPreferences.REFESH_INDEX_INTERVAL);
 		}
 	}
 
 	private void setupRepoChangeScanner() {
 		rcs = new RepositoryChangeScanner();
-		getPreferenceStore().addPropertyChangeListener(rcs);
+		rcs.setSystem(true);
+		rcs.schedule(RepositoryChangeScanner.REPO_SCAN_INTERVAL);
 	}
 
 	@Override
@@ -729,36 +683,32 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 		}
 
 		if (focusListener != null) {
-			if (PlatformUI.isWorkbenchRunning()) {
+			if (PlatformUI.isWorkbenchRunning())
 				PlatformUI.getWorkbench().removeWindowListener(focusListener);
-			}
 			focusListener = null;
 		}
 
-		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
 					"Trying to cancel " + rcs.getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-		}
 
-		getPreferenceStore().removePropertyChangeListener(rcs);
 		rcs.setReschedule(false);
+
 		rcs.cancel();
-		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
 					"Trying to cancel " + refreshJob.getName() + " job"); //$NON-NLS-1$ //$NON-NLS-2$
-		}
 		refreshJob.cancel();
 
 		rcs.join();
 		refreshJob.join();
 
-		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive()) {
+		if (GitTraceLocation.REPOSITORYCHANGESCANNER.isActive())
 			GitTraceLocation.getTrace().trace(
 					GitTraceLocation.REPOSITORYCHANGESCANNER.getLocation(),
 					"Jobs terminated"); //$NON-NLS-1$
-		}
 		if (resourceManager != null) {
 			resourceManager.dispose();
 			resourceManager = null;
@@ -784,16 +734,7 @@ public class Activator extends AbstractUIPlugin implements DebugOptionsListener 
 	 *
 	 * @return the {@link ResourceManager} of this plugin
 	 */
-	public synchronized ResourceManager getResourceManager() {
-		if (resourceManager == null) {
-			Display display = PlatformUI.getWorkbench().getDisplay();
-			if (display == null) {
-				// Workbench already closed?
-				throw new IllegalStateException();
-			}
-			resourceManager = new LocalResourceManager(JFaceResources
-					.getResources(display));
-		}
+	public ResourceManager getResourceManager() {
 		return resourceManager;
 	}
 

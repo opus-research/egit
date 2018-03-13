@@ -151,7 +151,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 
 		bundlesViewer = new TableViewer(table);
 		bundlesViewer.setLabelProvider(new GitLabelProvider());
-		bundlesViewer.setContentProvider(ArrayContentProvider.getInstance());
+		bundlesViewer.setContentProvider(new ArrayContentProvider());
 		bundlesViewer.setComparator(new ViewerComparator());
 		counterLabel = new Label(comp, SWT.NONE);
 		counterLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
@@ -239,7 +239,7 @@ public class GitScmUrlImportWizardPage extends WizardPage implements
 	 * @return Returns the content of the stripped URI as a string.
 	 */
 	private static String removeTag(URI scmUri) {
-		StringBuilder sb = new StringBuilder();
+		StringBuffer sb = new StringBuffer();
 		sb.append(scmUri.getScheme()).append(':');
 		String ssp = scmUri.getSchemeSpecificPart();
 		int j = ssp.indexOf(';');

@@ -3,7 +3,6 @@
  * Copyright (C) 2011, Dariusz Luksza <dariusz@luksza.org>
  * Copyright (C) 2012, 2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2014, Axel Richard <axel.richard@obeo.fr>
- * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -59,8 +58,7 @@ public class StagingEntry extends PlatformObject
 				Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** modified in working tree compared to index */
-		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE,
-				Action.ASSUME_UNCHANGED, Action.UNTRACK)),
+		MODIFIED(EnumSet.of(Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
 
 		/** modified in working tree compared to index, changed in index compared to HEAD */
 		MODIFIED_AND_CHANGED(EnumSet.of(Action.REPLACE_WITH_FILE_IN_GIT_INDEX, Action.REPLACE_WITH_HEAD_REVISION, Action.STAGE)),
@@ -101,18 +99,13 @@ public class StagingEntry extends PlatformObject
 		DELETE,
 		IGNORE,
 		LAUNCH_MERGE_TOOL,
-		REPLACE_WITH_OURS_THEIRS_MENU,
-		ASSUME_UNCHANGED,
-		UNTRACK
+		REPLACE_WITH_OURS_THEIRS_MENU
 	}
 
 	private final Repository repository;
 	private final State state;
 	private final String path;
-
-	private boolean fileLoaded;
-
-	private IFile file;
+	private final IFile file;
 
 	private String name;
 
@@ -133,6 +126,7 @@ public class StagingEntry extends PlatformObject
 		this.repository = repository;
 		this.state = state;
 		this.path = path;
+		this.file = ResourceUtil.getFileForLocation(repository, path, false);
 	}
 
 	/**
@@ -200,10 +194,6 @@ public class StagingEntry extends PlatformObject
 	 *         workspace, null otherwise.
 	 */
 	public IFile getFile() {
-		if (!fileLoaded) {
-			fileLoaded = true;
-			file = ResourceUtil.getFileForLocation(repository, path, false);
-		}
 		return file;
 	}
 
@@ -233,13 +223,11 @@ public class StagingEntry extends PlatformObject
 
 	@Override
 	public int getProblemSeverity() {
-		IFile f = getFile();
-		if (f == null)
+		if (file == null)
 			return SEVERITY_NONE;
 
 		try {
-			return f.findMaxProblemSeverity(IMarker.PROBLEM, true,
-					IResource.DEPTH_ZERO);
+			return file.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_ONE);
 		} catch (CoreException e) {
 			return SEVERITY_NONE;
 		}
@@ -339,7 +327,7 @@ public class StagingEntry extends PlatformObject
 
 	@Override
 	public String toString() {
-		return "StagingEntry[" + state + ' ' + path + ']'; //$NON-NLS-1$
+		return "StagingEntry[" + state + " " + path + "]"; //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
 	}
 
 	@Override

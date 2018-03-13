@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2016 SAP AG and others.
+ * Copyright (c) 2010, 2013 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 499482
  *******************************************************************************/
 package org.eclipse.egit.ui.view.repositories;
 
@@ -21,16 +20,13 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.core.commands.State;
 import org.eclipse.egit.core.RepositoryUtil;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
-import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.decorators.GitLightweightDecorator;
-import org.eclipse.egit.ui.internal.repository.tree.command.ToggleBranchHierarchyCommand;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.TestUtil;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -39,7 +35,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.events.ConfigChangedEvent;
 import org.eclipse.jgit.events.ConfigChangedListener;
 import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.lib.BranchConfig.BranchRebaseMode;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -47,9 +42,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
-import org.eclipse.swtbot.swt.finder.SWTBot;
 import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -57,8 +50,6 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.ui.IPageLayout;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -141,10 +132,8 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		refreshAndWait();
-		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
-				repositoryFile);
 		localItem.getNode(1).select();
+		refreshAndWait();
 		ContextMenuHelper.clickContextMenuSync(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		refreshAndWait();
@@ -198,17 +187,14 @@ public class GitRepositoriesViewBranchHandlingTest extends
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("CheckoutCommand"));
 		TestUtil.joinJobs(JobFamilies.CHECKOUT);
-		refreshAndWait();
-		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
-				repositoryFile);
 		localItem.getNode(1).select();
+		refreshAndWait();
 		ContextMenuHelper.clickContextMenu(view.bot().tree(), myUtil
 				.getPluginLocalizedValue("RepoViewDeleteBranch.label"));
 		SWTBotShell confirmPopup = bot
 				.shell(UIText.UnmergedBranchDialog_Title);
 		confirmPopup.activate();
-		confirmPopup.bot().button(UIText.UnmergedBranchDialog_deleteButtonLabel)
-				.click();
+		confirmPopup.bot().button(IDialogConstants.OK_LABEL).click();
 		refreshAndWait();
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				repositoryFile);
@@ -369,57 +355,17 @@ public class GitRepositoriesViewBranchHandlingTest extends
 	}
 
 	@Test
-	public void testRebaseDialogOnRepo() throws Exception {
-		ICommandService srv = CommonUtils.getService(PlatformUI.getWorkbench(),
-				ICommandService.class);
-		State commandState = srv.getCommand(ToggleBranchHierarchyCommand.ID)
-				.getState(ToggleBranchHierarchyCommand.TOGGLE_STATE);
-		Boolean isHierarchical = (Boolean) commandState.getValue();
-		commandState.setValue(Boolean.TRUE);
-		try {
-			SWTBotTree tree = getOrOpenView().bot().tree();
-
-			myRepoViewUtil.getRootItem(tree, clonedRepositoryFile).select();
-
-			ContextMenuHelper.clickContextMenu(tree,
-					myUtil.getPluginLocalizedValue("RebaseCommand.label2"));
-
-			String title = MessageFormat.format(
-					UIText.RebaseTargetSelectionDialog_RebaseTitleWithBranch,
-					FileRepositoryBuilder.create(clonedRepositoryFile)
-							.getBranch());
-
-			SWTBotShell targetSelectionDialog = bot.shell(title);
-			SWTBot dialogBot = targetSelectionDialog.bot();
-			SWTBotTree dialogTree = dialogBot.tree();
-			assertEquals("Should have a node selected", 1,
-					dialogTree.selectionCount());
-			String[] result = { null };
-			PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
-				TreeItem[] selected = dialogTree.widget.getSelection();
-				result[0] = selected[0].getText();
-			});
-			assertTrue("master node should be selected",
-					result[0] != null && result[0].contains("master"));
-			targetSelectionDialog.close();
-		} finally {
-			commandState.setValue(isHierarchical);
-		}
-	}
-
-	@Test
 	public void testBranchConfiguration() throws Exception {
 		Repository repo = lookupRepository(clonedRepositoryFile);
-		try (Git git = new Git(repo)) {
-			git.branchCreate().setName("configTest")
-					.setStartPoint("refs/remotes/origin/master")
-					.setUpstreamMode(SetupUpstreamMode.TRACK).call();
-		}
-		BranchRebaseMode rebase = repo.getConfig().getEnum(
-				BranchRebaseMode.values(),
+		Git git = new Git(repo);
+		git.branchCreate().setName("configTest")
+				.setStartPoint("refs/remotes/origin/master")
+				.setUpstreamMode(SetupUpstreamMode.TRACK).call();
+
+		boolean rebase = repo.getConfig().getBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "configTest",
-				ConfigConstants.CONFIG_KEY_REBASE, BranchRebaseMode.NONE);
-		assertEquals(BranchRebaseMode.NONE, rebase);
+				ConfigConstants.CONFIG_KEY_REBASE, false);
+		assertFalse(rebase);
 
 		SWTBotView view = getOrOpenView();
 
@@ -478,16 +424,13 @@ public class GitRepositoriesViewBranchHandlingTest extends
 						.comboBoxWithLabel(
 								UIText.BranchConfigurationDialog_RemoteLabel)
 						.getText());
-		assertEquals(UIText.BranchRebaseMode_None,
-				configureBranchDialog.bot()
-						.comboBoxWithLabel(
-								UIText.BranchRebaseModeCombo_RebaseModeLabel)
-						.getText());
+		assertFalse(configureBranchDialog.bot()
+				.checkBox(UIText.BranchConfigurationDialog_RebaseLabel)
+				.isChecked());
 
 		configureBranchDialog.bot()
-				.comboBoxWithLabel(
-						UIText.BranchRebaseModeCombo_RebaseModeLabel)
-				.setSelection(0);
+				.checkBox(UIText.BranchConfigurationDialog_RebaseLabel)
+				.select();
 		// add a listener to wait for the configuration changed event
 		final AtomicBoolean changed = new AtomicBoolean();
 		ConfigChangedListener listener =
@@ -507,10 +450,10 @@ public class GitRepositoriesViewBranchHandlingTest extends
 			fail("We should have received a config change event");
 
 		refreshAndWait(); // Repo view updates itself after config change.
-		rebase = repo.getConfig().getEnum(BranchRebaseMode.values(),
+		rebase = repo.getConfig().getBoolean(
 				ConfigConstants.CONFIG_BRANCH_SECTION, "configTest",
-				ConfigConstants.CONFIG_KEY_REBASE, BranchRebaseMode.NONE);
-		assertEquals(BranchRebaseMode.REBASE, rebase);
+				ConfigConstants.CONFIG_KEY_REBASE, false);
+		assertTrue(rebase);
 
 		localItem = myRepoViewUtil.getLocalBranchesItem(view.bot().tree(),
 				clonedRepositoryFile);

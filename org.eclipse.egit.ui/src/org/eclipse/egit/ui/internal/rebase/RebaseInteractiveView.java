@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2017 SAP AG and others.
+ * Copyright (c) 2013, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,7 +8,7 @@
  * Contributors:
  *    Tobias Pfeifer (SAP AG) - initial implementation
  *    Tobias Baumann (tobbaumann@gmail.com) - Bug 473950
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248, 460595, 518607
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 477248
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.rebase;
 
@@ -44,16 +44,13 @@ import org.eclipse.egit.ui.internal.commands.shared.ProcessStepsRebaseCommand;
 import org.eclipse.egit.ui.internal.commands.shared.SkipRebaseCommand;
 import org.eclipse.egit.ui.internal.commit.CommitEditor;
 import org.eclipse.egit.ui.internal.commit.RepositoryCommit;
-import org.eclipse.egit.ui.internal.components.RepositoryMenuUtil.RepositoryToolbarAction;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
-import org.eclipse.egit.ui.internal.selection.RepositorySelectionProvider;
 import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IMenuListener;
+import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.action.Separator;
-import org.eclipse.jface.bindings.keys.SWTKeySupport;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.layout.TreeColumnLayout;
@@ -86,19 +83,17 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.KeyAdapter;
-import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolBar;
@@ -112,14 +107,14 @@ import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.ISelectionService;
 import org.eclipse.ui.IViewSite;
-import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
+import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
+import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.part.ViewPart;
 
 /**
@@ -134,8 +129,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	public static final String VIEW_ID = "org.eclipse.egit.ui.InteractiveRebaseView"; //$NON-NLS-1$
 
 	TreeViewer planTreeViewer;
-
-	private Composite headComposite;
 
 	private PlanLayout planLayout;
 
@@ -179,12 +172,22 @@ public class RebaseInteractiveView extends ViewPart implements
 
 	private IPropertyChangeListener uiPrefsListener;
 
-	private IWorkbenchAction switchRepositoriesAction;
+	private InitialSelection initialSelection;
 
 	@Override
 	public void init(IViewSite site) throws PartInitException {
 		super.init(site);
 		setPartName(UIText.InteractiveRebaseView_this_partName);
+		initInitialSelection(site);
+	}
+
+	private void initInitialSelection(IViewSite site) {
+		this.initialSelection = new InitialSelection(
+				site.getWorkbenchWindow().getSelectionService().getSelection());
+		if (!isViewInputDerivableFromSelection(initialSelection.selection)) {
+			this.initialSelection.activeEditor = site.getPage()
+					.getActiveEditor();
+		}
 	}
 
 	private static boolean isViewInputDerivableFromSelection(Object o) {
@@ -199,10 +202,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	 * @param o
 	 */
 	public void setInput(Object o) {
-		newInput(o, true);
-	}
-
-	private void newInput(Object o, boolean force) {
 		if (o == null)
 			return;
 
@@ -215,7 +214,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		} else if (o instanceof Repository) {
 			repo = (Repository) o;
 		} else {
-			IResource resource = AdapterUtils.adaptToAnyResource(o);
+			IResource resource = AdapterUtils.adapt(o, IResource.class);
 			if (resource != null) {
 				RepositoryMapping mapping = RepositoryMapping
 						.getMapping(resource);
@@ -228,9 +227,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		if (repo == null) {
 			repo = AdapterUtils.adapt(o, Repository.class);
 		}
-		if (repo == null && !force) {
-			return;
-		}
+
 		currentRepository = repo;
 		showRepository(repo);
 	}
@@ -246,10 +243,6 @@ public class RebaseInteractiveView extends ViewPart implements
 	public void dispose() {
 		removeListeners();
 		resources.dispose();
-		if (switchRepositoriesAction != null) {
-			switchRepositoriesAction.dispose();
-			switchRepositoriesAction = null;
-		}
 		super.dispose();
 	}
 
@@ -283,13 +276,17 @@ public class RebaseInteractiveView extends ViewPart implements
 		});
 		form = createForm(parent, toolkit);
 		createCommandToolBar(form, toolkit);
-		planTreeViewer = createPlanTreeViewer(form.getBody(), toolkit);
+		SashForm sashForm = createRebasePlanSashForm(form, toolkit);
+
+		Section rebasePlanSection = toolkit.createSection(sashForm,
+				ExpandableComposite.TITLE_BAR);
+		planTreeViewer = createPlanTreeViewer(rebasePlanSection, toolkit);
 
 		planLayout = new PlanLayout();
 		planTreeViewer.getTree().getParent().setLayout(planLayout);
 
 		createColumns(planLayout);
-		createStepActionToolBar(toolkit);
+		createStepActionToolBar(rebasePlanSection, toolkit);
 		createPopupMenu(planTreeViewer);
 
 		setupListeners();
@@ -397,28 +394,16 @@ public class RebaseInteractiveView extends ViewPart implements
 		linkSelectionAction.setImageDescriptor(UIIcons.ELCL16_SYNCED);
 		toolbar.add(linkSelectionAction);
 
-		switchRepositoriesAction = new RepositoryToolbarAction(false,
-				() -> currentRepository,
-				repo -> setInput(new StructuredSelection(repo)));
-		toolbar.add(switchRepositoriesAction);
-
-		UIUtils.notifySelectionChangedWithCurrentSelection(
-				selectionChangedListener, getSite());
-
-		getSite().setSelectionProvider(new RepositorySelectionProvider(
-				planTreeViewer, () -> currentRepository));
+		reactOnInitalSelection();
 	}
 
 	private void createCommandToolBar(Form theForm, FormToolkit toolkit) {
-		headComposite = new Composite(theForm.getHead(), SWT.NONE);
-		theForm.setHeadClient(headComposite);
-		GridLayoutFactory.fillDefaults().numColumns(2).equalWidth(false)
-				.margins(0, 0).applyTo(headComposite);
-		ToolBar toolBar = new ToolBar(headComposite, SWT.FLAT);
-		GridDataFactory.fillDefaults().grab(false, false).applyTo(toolBar);
+		ToolBar toolBar = new ToolBar(theForm.getHead(), SWT.FLAT);
+		toolBar.setOrientation(SWT.RIGHT_TO_LEFT);
+		theForm.setHeadClient(toolBar);
+
 		toolkit.adapt(toolBar);
 		toolkit.paintBordersFor(toolBar);
-		toolBar.setBackground(null);
 
 		startItem = new ToolItem(toolBar, SWT.NONE);
 		startItem.setImage(UIIcons.getImage(resources,
@@ -463,20 +448,33 @@ public class RebaseInteractiveView extends ViewPart implements
 			}
 		});
 		refreshItem.setText(UIText.InteractiveRebaseView_refreshItem_text);
-		toolBar.pack();
 	}
 
 	private static ToolItem createSeparator(ToolBar toolBar) {
 		return new ToolItem(toolBar, SWT.SEPARATOR);
 	}
 
-	private TreeViewer createPlanTreeViewer(Composite parent,
+	private TreeViewer createPlanTreeViewer(Section rebasePlanSection,
 			FormToolkit toolkit) {
 
-		Composite rebasePlanTableComposite = toolkit.createComposite(parent);
+		Composite rebasePlanTableComposite = toolkit
+				.createComposite(rebasePlanSection);
 		toolkit.paintBordersFor(rebasePlanTableComposite);
-		GridDataFactory.fillDefaults().grab(true, true)
+		rebasePlanSection.setClient(rebasePlanTableComposite);
+		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(rebasePlanTableComposite);
+
+		Composite toolbarComposite = toolkit.createComposite(rebasePlanSection);
+		toolbarComposite.setBackground(null);
+		RowLayout toolbarRowLayout = new RowLayout();
+		toolbarRowLayout.marginHeight = 0;
+		toolbarRowLayout.marginWidth = 0;
+		toolbarRowLayout.marginTop = 0;
+		toolbarRowLayout.marginBottom = 0;
+		toolbarRowLayout.marginLeft = 0;
+		toolbarRowLayout.marginRight = 0;
+		toolbarComposite.setLayout(toolbarRowLayout);
+
 		GridLayoutFactory.fillDefaults().extendedMargins(2, 2, 2, 2)
 				.applyTo(rebasePlanTableComposite);
 
@@ -493,6 +491,14 @@ public class RebaseInteractiveView extends ViewPart implements
 				FormToolkit.TREE_BORDER);
 		viewer.setContentProvider(RebaseInteractivePlanContentProvider.INSTANCE);
 		return viewer;
+	}
+
+	private SashForm createRebasePlanSashForm(final Form parent,
+			final FormToolkit toolkit) {
+		SashForm sashForm = new SashForm(parent.getBody(), SWT.NONE);
+		toolkit.adapt(sashForm, true, true);
+		GridDataFactory.fillDefaults().grab(true, true).applyTo(sashForm);
+		return sashForm;
 	}
 
 	private Form createForm(Composite parent, final FormToolkit toolkit) {
@@ -521,26 +527,38 @@ public class RebaseInteractiveView extends ViewPart implements
 			public void selectionChanged(IWorkbenchPart part,
 					ISelection selection) {
 				if (!listenOnRepositoryViewSelection
-						|| part == getSite().getPart()) {
+						|| part == getSite().getPart())
 					return;
-				}
+
 				// this may happen if we switch between editors
 				if (part instanceof IEditorPart) {
 					IEditorInput input = ((IEditorPart) part).getEditorInput();
-					if (input instanceof IFileEditorInput) {
-						newInput(
-								new StructuredSelection(
-										((IFileEditorInput) input).getFile()),
-								false);
-					}
-				} else {
-					newInput(selection, false);
-				}
+					if (input instanceof IFileEditorInput)
+						setInput(new StructuredSelection(
+								((IFileEditorInput) input).getFile()));
+				} else
+					setInput(selection);
 			}
 		};
 
 		ISelectionService srv = CommonUtils.getService(getSite(), ISelectionService.class);
 		srv.addPostSelectionListener(selectionChangedListener);
+	}
+
+	private void reactOnInitalSelection() {
+		selectionChangedListener.selectionChanged(initialSelection.activeEditor,
+				initialSelection.selection);
+		this.initialSelection = null;
+	}
+
+	private static final class InitialSelection {
+		ISelection selection;
+
+		IEditorPart activeEditor;
+
+		InitialSelection(ISelection selection) {
+			this.selection = selection;
+		}
 	}
 
 	private class RebaseCommandItemSelectionListener extends SelectionAdapter {
@@ -588,16 +606,13 @@ public class RebaseInteractiveView extends ViewPart implements
 				new RebaseInteractiveDropTargetListener(this, planTreeViewer));
 	}
 
-	private void createStepActionToolBar(final FormToolkit toolkit) {
+	private void createStepActionToolBar(Section rebasePlanSection,
+			final FormToolkit toolkit) {
 		actionToolBarProvider = new RebaseInteractiveStepActionToolBarProvider(
-				headComposite, SWT.FLAT | SWT.WRAP, this);
-		ToolBar bar = actionToolBarProvider.getTheToolbar();
-		GridDataFactory.fillDefaults().grab(true, false)
-				.align(SWT.END, SWT.CENTER).applyTo(bar);
-		toolkit.adapt(bar);
-		toolkit.paintBordersFor(bar);
-		bar.setBackground(null);
-		bar.pack();
+				rebasePlanSection, SWT.FLAT | SWT.WRAP, this);
+		toolkit.adapt(actionToolBarProvider.getTheToolbar());
+		toolkit.paintBordersFor(actionToolBarProvider.getTheToolbar());
+		rebasePlanSection.setTextClient(actionToolBarProvider.getTheToolbar());
 	}
 
 	private static RebaseInteractivePlan.ElementType getType(Object element) {
@@ -774,17 +789,8 @@ public class RebaseInteractiveView extends ViewPart implements
 		});
 
 		TreeViewerColumn commitIDColumn = createColumn(headings[3]);
-		int minWidth;
-		GC gc = new GC(planTreeViewer.getControl().getDisplay());
-		try {
-			gc.setFont(planTreeViewer.getControl().getFont());
-			minWidth = Math.max(gc.stringExtent("0000000").x, //$NON-NLS-1$
-					gc.stringExtent(headings[3]).x) + 10;
-		} finally {
-			gc.dispose();
-		}
 		layout.setColumnData(commitIDColumn.getColumn(),
-				new ColumnPixelData(minWidth));
+				new ColumnPixelData(70));
 		commitIDColumn.setLabelProvider(new HighlightingColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -912,6 +918,7 @@ public class RebaseInteractiveView extends ViewPart implements
 		} else {
 			currentPlan = null;
 			planIndexer = null;
+			form.setText(UIText.RebaseInteractiveView_NoSelection);
 		}
 		refresh();
 	}
@@ -934,8 +941,6 @@ public class RebaseInteractiveView extends ViewPart implements
 				try {
 					planTreeViewer.setInput(currentPlan);
 					refreshUI();
-					// Force a selection changed event
-					planTreeViewer.setSelection(planTreeViewer.getSelection());
 				} finally {
 					t.setRedraw(true);
 				}
@@ -960,15 +965,12 @@ public class RebaseInteractiveView extends ViewPart implements
 				col.getColumn().pack();
 			}
 			// Re-distribute the space again, now that we know the true minimum
-			// widths. First dynamic column is the commit message; give that one
-			// a somewhat larger minimum width.
-			int minimumWidth = 200;
+			// widths.
 			for (TreeViewerColumn col : dynamicColumns) {
 				int width = col.getColumn().getWidth();
-				// Use width as weight
+				// Use width as weight, too.
 				planLayout.setColumnData(col.getColumn(),
-						new ColumnWeightData(width, minimumWidth));
-				minimumWidth = 80;
+						new ColumnWeightData(width, width));
 			}
 			planLayout.layout(planTreeViewer.getTree().getParent(), true);
 		}
@@ -1018,25 +1020,24 @@ public class RebaseInteractiveView extends ViewPart implements
 		createContextMenuItems(planViewer);
 
 		MenuManager manager = new MenuManager();
-		Control c = planViewer.getControl();
-		manager.setRemoveAllWhenShown(true);
-		manager.addMenuListener(m -> {
-			c.setFocus();
-			boolean selectionNotEmpty = !planViewer.getSelection().isEmpty();
-			boolean rebaseNotStarted = currentPlan != null
-					&& !currentPlan.hasRebaseBeenStartedYet();
-			boolean menuEnabled = selectionNotEmpty && rebaseNotStarted;
-			if (menuEnabled) {
-				for (PlanContextMenuAction item : contextMenuItems) {
-					m.add(item);
-				}
+		manager.addMenuListener(new IMenuListener() {
+			@Override
+			public void menuAboutToShow(IMenuManager menuManager) {
+				boolean selectionNotEmpty = !planViewer.getSelection()
+						.isEmpty();
+				boolean rebaseNotStarted = !currentPlan
+						.hasRebaseBeenStartedYet();
+				boolean menuEnabled = selectionNotEmpty && rebaseNotStarted;
+				for (PlanContextMenuAction item : contextMenuItems)
+					item.setEnabled(menuEnabled);
 			}
-			m.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		});
-		Menu menu = manager.createContextMenu(c);
-		c.setMenu(menu);
-		c.addKeyListener(new ContextMenuKeyListener());
-		getSite().registerContextMenu(manager, planTreeViewer);
+
+		for (PlanContextMenuAction item : contextMenuItems)
+			manager.add(item);
+
+		Menu menu = manager.createContextMenu(planViewer.getControl());
+		planViewer.getControl().setMenu(menu);
 	}
 
 	private void createContextMenuItems(final TreeViewer planViewer) {
@@ -1066,43 +1067,6 @@ public class RebaseInteractiveView extends ViewPart implements
 				UIText.RebaseInteractiveStepActionToolBarProvider_RewordText,
 				UIIcons.REWORD, RebaseInteractivePlan.ElementAction.REWORD,
 				planViewer, actionToolBarProvider));
-	}
-
-	private class ContextMenuKeyListener extends KeyAdapter {
-
-		@Override
-		public void keyPressed(KeyEvent e) {
-			int key = SWTKeySupport.convertEventToUnmodifiedAccelerator(e);
-			for (IAction item : contextMenuItems) {
-				if (key == item.getAccelerator()) {
-					e.doit = false;
-					item.run();
-					return;
-				}
-			}
-			int[] moveAccelerators = actionToolBarProvider
-					.getMoveAccelerators();
-			if (key == moveAccelerators[0]) {
-				actionToolBarProvider.moveUp();
-				e.doit = false;
-			} else if (key == moveAccelerators[1]) {
-				actionToolBarProvider.moveDown();
-				e.doit = false;
-			} else if ((e.stateMask & SWT.MODIFIER_MASK) == 0) {
-				switch (key) {
-				case SWT.ARROW_DOWN:
-				case SWT.ARROW_UP:
-				case SWT.PAGE_DOWN:
-				case SWT.PAGE_UP:
-				case SWT.HOME:
-				case SWT.END:
-					break;
-				default:
-					e.doit = false;
-					break;
-				}
-			}
-		}
 	}
 
 	private static GitDateFormatter getNewDateFormatter() {

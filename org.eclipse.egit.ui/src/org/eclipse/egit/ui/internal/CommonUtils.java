@@ -6,7 +6,6 @@
  * Copyright (C) 2014, IBM Corporation (Markus Keller <markus_keller@ch.ibm.com>)
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
  * Copyright (C) 2015, Thomas Wolf <thomas.wolf@paranor.ch>
- * Copyright (C) 2016, Stefan Dirix <sdirix@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,11 +14,9 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal;
 
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,7 +28,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.jface.util.Policy;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
@@ -124,19 +120,6 @@ public class CommonUtils {
 		@Override
 		public int compare(IResource r1, IResource r2) {
 			return Policy.getComparator().compare(r1.getName(), r2.getName());
-		}
-	};
-
-	/**
-	 * Comparator for comparing (@link Path} by the result of
-	 * {@link Path#toAbsolutePath()}
-	 */
-	public static final Comparator<Path> PATH_STRING_COMPARATOR = new Comparator<Path>() {
-		@Override
-		public int compare(Path p1, Path p2) {
-			return STRING_ASCENDING_COMPARATOR.compare(
-					p1.toAbsolutePath().toString(),
-					p2.toAbsolutePath().toString());
 		}
 	};
 
@@ -265,25 +248,5 @@ public class CommonUtils {
 			return start + 1;
 		}
 		return -1;
-	}
-
-	/**
-	 * Creates a comma separated list of all non-null resource names. The last
-	 * element is separated with an ampersand.
-	 *
-	 * @param resources
-	 *            the collection of {@link IResource}s.
-	 * @return A comma separated list the resource names. The last element is
-	 *         separated with an ampersand.
-	 */
-	public static String getResourceNames(Iterable<IResource> resources) {
-		final List<String> names = new LinkedList<>();
-		for (IResource resource : resources) {
-			if (resource.getName() != null) {
-				names.add(resource.getName());
-			}
-		}
-
-		return StringUtils.join(names, ", ", " & "); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

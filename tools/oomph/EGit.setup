@@ -6,48 +6,15 @@
     xmlns:git="http://www.eclipse.org/oomph/setup/git/1.0"
     xmlns:pde="http://www.eclipse.org/oomph/setup/pde/1.0"
     xmlns:predicates="http://www.eclipse.org/oomph/predicates/1.0"
-    xmlns:projects="http://www.eclipse.org/oomph/setup/projects/1.0"
     xmlns:setup="http://www.eclipse.org/oomph/setup/1.0"
     xmlns:setup.p2="http://www.eclipse.org/oomph/setup/p2/1.0"
+    xmlns:setup.targlets="http://www.eclipse.org/oomph/setup/targlets/1.0"
     xmlns:setup.workingsets="http://www.eclipse.org/oomph/setup/workingsets/1.0"
     xmlns:workingsets="http://www.eclipse.org/oomph/workingsets/1.0"
-    xsi:schemaLocation="http://www.eclipse.org/oomph/setup/git/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/Git.ecore http://www.eclipse.org/oomph/setup/pde/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/PDE.ecore http://www.eclipse.org/oomph/predicates/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/Predicates.ecore http://www.eclipse.org/oomph/setup/projects/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/Projects.ecore http://www.eclipse.org/oomph/setup/workingsets/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/SetupWorkingSets.ecore http://www.eclipse.org/oomph/workingsets/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/WorkingSets.ecore"
+    xsi:schemaLocation="http://www.eclipse.org/oomph/setup/git/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/Git.ecore http://www.eclipse.org/oomph/setup/pde/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/PDE.ecore http://www.eclipse.org/oomph/predicates/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/Predicates.ecore http://www.eclipse.org/oomph/setup/targlets/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/SetupTarglets.ecore http://www.eclipse.org/oomph/setup/workingsets/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/SetupWorkingSets.ecore http://www.eclipse.org/oomph/workingsets/1.0 http://git.eclipse.org/c/oomph/org.eclipse.oomph.git/plain/setups/models/WorkingSets.ecore"
     name="egit"
     label="EGit"
     setup:toolVersion="8">
-  <annotation
-      source="http://www.eclipse.org/oomph/setup/BrandingInfo">
-    <detail
-        key="imageURI">
-      <value>http://git.eclipse.org/c/egit/egit.git/plain/org.eclipse.egit/egit.png</value>
-    </detail>
-    <detail
-        key="siteURI">
-      <value>https://projects.eclipse.org/projects/technology.egit</value>
-    </detail>
-  </annotation>
-  <setupTask
-      xsi:type="setup:CompoundTask"
-      name="User Preferences">
-    <annotation
-        source="http://www.eclipse.org/oomph/setup/UserPreferences"/>
-    <setupTask
-        xsi:type="setup:CompoundTask"
-        name="org.eclipse.core.resources">
-      <setupTask
-          xsi:type="setup:PreferenceTask"
-          key="/instance/org.eclipse.core.resources/encoding"
-          value="UTF-8"/>
-    </setupTask>
-    <setupTask
-        xsi:type="setup:CompoundTask"
-        name="org.eclipse.pde.api.tools">
-      <setupTask
-          xsi:type="setup:PreferenceTask"
-          key="/instance/org.eclipse.pde.api.tools/missing_default_api_profile"
-          value="Warning"/>
-    </setupTask>
-  </setupTask>
   <setupTask
       xsi:type="setup.p2:P2Task">
     <requirement
@@ -56,37 +23,15 @@
         name="org.eclipse.swtbot.ide.feature.group"/>
     <requirement
         name="org.eclipse.swtbot.generator.feature.feature.group"/>
-    <requirement
-        name="AnyEditTools.feature.group"
-        optional="true"/>
-    <requirement
-        name="fr.obeo.releng.targetplatform-feature.feature.group"
-        optional="true"/>
-    <requirement
-        name="com.github.spotbugs.plugin.eclipse.feature.group"
-        optional="true"/>
     <repository
         url="http://download.eclipse.org/egit/updates-nightly"/>
     <repository
-        url="http://download.eclipse.org/technology/swtbot/releases/latest"/>
-    <repository
-        url="http://mbarbero.github.io/fr.obeo.releng.targetplatform/p2/latest/"/>
-    <repository
-        url="http://download.eclipse.org/modeling/tmf/xtext/updates/composite/latest/"/>
-    <repository
-        url="http://andrei.gmxhome.de/eclipse/"/>
-    <repository
-        url="https://spotbugs.github.io/eclipse/"/>
+        url="http://download.eclipse.org/technology/swtbot/releases/2.1.1"/>
   </setupTask>
   <setupTask
       xsi:type="setup:EclipseIniTask"
       option="-Xmx"
       value="1g"
-      vm="true"/>
-  <setupTask
-      xsi:type="setup:EclipseIniTask"
-      option="-Doomph.redirection.egit="
-      value="https://git.eclipse.org/c/egit/egit.git/plain/tools/oomph/EGit.setup->${git.clone.egit.location|uri}/tools/oomph/EGit.setup"
       vm="true"/>
   <setupTask
       xsi:type="setup:ResourceCreationTask"
@@ -95,47 +40,25 @@
       targetURL="${workspace.location|uri}/.metadata/.plugins/org.eclipse.jdt.ui/dialog_settings.xml"
       encoding="UTF-8"/>
   <setupTask
+      xsi:type="setup:CompoundTask"
+      name="org.eclipse.pde.api.tools">
+    <setupTask
+        xsi:type="setup:PreferenceTask"
+        key="/instance/org.eclipse.pde.api.tools/missing_default_api_profile"
+        value="Warning"/>
+  </setupTask>
+  <setupTask
       xsi:type="setup:VariableTask"
       name="eclipse.target.platform"
-      defaultValue="egit-4.6"
-      storageURI="scope://Workspace">
-    <description>Default target platform for EGit development. Must be >= egit-4.6, otherwise the smartimport fragment will not compile.</description>
-  </setupTask>
+      defaultValue="Luna"
+      storageURI="scope://Workspace"/>
   <setupTask
       xsi:type="pde:APIBaselineTask"
       name="EGit"
-      activate="false"
-      version="4.8.0"
-      location="${workspace.location/../api.baseline/4.8.0}"
-      remoteURI="http://download.eclipse.org/egit/updates-4.8/org.eclipse.egit.repository-4.8.0.201706111038-r.zip">
-    <description>EGit 4.8.0 API baseline; to be used with branch stable-4.9</description>
-  </setupTask>
-  <setupTask
-      xsi:type="pde:APIBaselineTask"
-      name="EGit"
-      version="4.9.0"
-      location="${workspace.location/../api.baseline/4.9.0}"
-      remoteURI="http://download.eclipse.org/egit/updates-4.9/org.eclipse.egit.repository-4.9.0.201710071750-r.zip">
-    <description>EGit 4.9.0 API baseline; to be used with branch master</description>
-  </setupTask>
-  <setupTask
-      xsi:type="pde:APIBaselineTask"
-      name="EGit"
-      activate="false"
-      version="4.7.1"
-      location="${workspace.location/../api.baseline/4.7.1}"
-      remoteURI="http://download.eclipse.org/egit/updates-4.7.1/org.eclipse.egit.repository-4.7.1.201706071930-r.zip">
-    <description>EGit 4.7.1 API baseline; to be used with branch stable-4.8</description>
-  </setupTask>
-  <stream name="master"
-      label="Workspace setup for branch master">
-    <setupTask
-        xsi:type="setup:VariableTask"
-        name="eclipse.target.platform"
-        defaultValue="egit-4.6"
-        storageURI="scope://Workspace">
-      <description>Default target platform for EGit development. Must be >= egit-4.6, otherwise the smartimport fragment will not compile.</description>
-    </setupTask>
+      version="4.0.1"
+      location="${workspace.location/../api.baseline}"
+      remoteURI="http://download.eclipse.org/egit/updates-4.0.1/org.eclipse.egit.repository-4.0.1.201506240215-r.zip"/>
+  <stream name="master">
     <setupTask
         xsi:type="git:GitCloneTask"
         id="git.clone.jgit"
@@ -156,12 +79,6 @@
           <value>remoteURI</value>
         </detail>
       </annotation>
-      <configSections
-          name="gerrit">
-        <properties
-            key="createchangeid"
-            value="true"/>
-      </configSections>
       <description>JGit</description>
     </setupTask>
     <setupTask
@@ -184,111 +101,96 @@
           <value>remoteURI</value>
         </detail>
       </annotation>
-      <configSections
-          name="gerrit">
-        <properties
-            key="createchangeid"
-            value="true"/>
-      </configSections>
       <description>EGit</description>
     </setupTask>
     <setupTask
-        xsi:type="git:GitCloneTask"
-        id="git.clone.egit-github"
-        remoteURI="egit/egit-github"
-        checkoutBranch="master">
-      <annotation
-          source="http://www.eclipse.org/oomph/setup/InducedChoices">
-        <detail
-            key="inherit">
-          <value>eclipse.git.gerrit.remoteURIs</value>
-        </detail>
-        <detail
-            key="label">
-          <value>EGit Github Connector Gerrit Repository</value>
-        </detail>
-        <detail
-            key="target">
-          <value>remoteURI</value>
-        </detail>
-      </annotation>
-      <configSections
-          name="gerrit">
-        <properties
-            key="createchangeid"
-            value="true"/>
-      </configSections>
-      <description>EGit Github Connector</description>
-    </setupTask>
-    <setupTask
-        xsi:type="projects:ProjectsImportTask">
-      <sourceLocator
-          rootFolder="${git.clone.jgit.location}"
-          locateNestedProjects="true"/>
-      <sourceLocator
-          rootFolder="${git.clone.egit.location}"
-          locateNestedProjects="true"/>
-      <sourceLocator
-          rootFolder="${git.clone.egit-github.location}"
-          locateNestedProjects="true"/>
-      <description>Import the EGit/JGit projects from the git clones into the workspace</description>
-    </setupTask>
-    <setupTask
-        xsi:type="pde:TargetPlatformTask"
-        id="egit-4.6"
-        name="egit-4.6">
-      <description>EGit Neon target</description>
+        xsi:type="setup.targlets:TargletTask">
+      <targlet
+          name="EGit"
+          activeRepositoryList="${eclipse.target.platform}">
+        <requirement
+            name="org.eclipse.platform.feature.group"/>
+        <requirement
+            name="org.eclipse.jdt.feature.group"/>
+        <requirement
+            name="org.eclipse.pde.feature.group"/>
+        <requirement
+            name="org.eclipse.jgit.ant"/>
+        <requirement
+            name="org.eclipse.jgit.ant.test"/>
+        <requirement
+            name="org.eclipse.jgit.http.test"/>
+        <requirement
+            name="org.eclipse.jgit.http.apache.feature.group"/>
+        <requirement
+            name="org.eclipse.jgit.junit.feature.group"/>
+        <requirement
+            name="org.eclipse.jgit.pgm.feature.group"/>
+        <requirement
+            name="org.eclipse.jgit.pgm.source.feature.group"/>
+        <requirement
+            name="org.eclipse.jgit.pgm.test"/>
+        <requirement
+            name="org.eclipse.jgit.target"/>
+        <requirement
+            name="org.eclipse.jgit.test"/>
+        <requirement
+            name="org.eclipse.egit.feature.group"/>
+        <requirement
+            name="org.eclipse.egit.core.test"/>
+        <requirement
+            name="org.eclipse.egit.mylyn.feature.group"/>
+        <requirement
+            name="org.eclipse.egit.mylyn.ui.test"/>
+        <requirement
+            name="org.eclipse.egit.target"/>
+        <requirement
+            name="org.eclipse.egit.ui.test"/>
+        <requirement
+            name="org.eclipse.egit.source.feature.group"/>
+        <requirement
+            name="org.eclipse.swtbot.eclipse.core"/>
+        <sourceLocator
+            rootFolder="${git.clone.jgit.location}"
+            locateNestedProjects="true"/>
+        <sourceLocator
+            rootFolder="${git.clone.egit.location}"/>
+        <repositoryList
+            name="Mars">
+          <repository
+              url="http://download.eclipse.org/releases/mars"/>
+          <repository
+              url="http://download.eclipse.org/modeling/emf/cdo/orbit/latest-R"/>
+          <repository
+              url="http://download.eclipse.org/jetty/updates/jetty-bundles-7.x/7.6.14.v20131031"/>
+          <repository
+              url="http://download.eclipse.org/technology/swtbot/releases/2.1.1"/>
+        </repositoryList>
+        <repositoryList
+            name="Luna">
+          <repository
+              url="http://download.eclipse.org/releases/luna"/>
+          <repository
+              url="http://download.eclipse.org/modeling/emf/cdo/orbit/latest-R"/>
+          <repository
+              url="http://download.eclipse.org/jetty/updates/jetty-bundles-7.x/7.6.14.v20131031"/>
+          <repository
+              url="http://download.eclipse.org/technology/swtbot/releases/2.1.1"/>
+        </repositoryList>
+      </targlet>
     </setupTask>
     <setupTask
         xsi:type="setup.workingsets:WorkingSetTask">
-      <workingSet
-          name="EGit Github Connector">
-        <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.mylyn.github.core"/>
-          <operand
-              xsi:type="workingsets:ExclusionPredicate"
-              excludedWorkingSet="//@streams[name='master']/@setupTasks.6/@workingSets.6 //@streams[name='master']/@setupTasks.6/@workingSets.1"/>
-        </predicate>
-      </workingSet>
-      <workingSet
-          name="EGit Github Connector Tests">
-        <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.mylyn.github.core"/>
-          <operand
-              xsi:type="predicates:FilePredicate"
-              filePattern="META-INF/MANIFEST.MF"
-              contentPattern="org\.junit"/>
-        </predicate>
-      </workingSet>
       <workingSet
           name="EGit">
         <predicate
             xsi:type="predicates:AndPredicate">
           <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.egit.core"/>
+              xsi:type="predicates:NamePredicate"
+              pattern="org\.eclipse\.egit.*"/>
           <operand
               xsi:type="workingsets:ExclusionPredicate"
-              excludedWorkingSet="//@streams[name='master']/@setupTasks.6/@workingSets.6 //@streams[name='master']/@setupTasks.6/@workingSets.3"/>
-        </predicate>
-      </workingSet>
-      <workingSet
-          name="EGit Tests">
-        <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.egit.core"/>
-          <operand
-              xsi:type="predicates:FilePredicate"
-              filePattern="META-INF/MANIFEST.MF"
-              contentPattern="org\.junit"/>
+              excludedWorkingSet="//@streams[name='master']/@setupTasks.3/@workingSets.2 //@streams[name='master']/@setupTasks.3/@workingSets.3"/>
         </predicate>
       </workingSet>
       <workingSet
@@ -296,50 +198,27 @@
         <predicate
             xsi:type="predicates:AndPredicate">
           <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.jgit"/>
+              xsi:type="predicates:NamePredicate"
+              pattern="org\.eclipse\.jgit.*"/>
           <operand
               xsi:type="workingsets:ExclusionPredicate"
-              excludedWorkingSet="//@streams[name='master']/@setupTasks.6/@workingSets.6 //@streams[name='master']/@setupTasks.6/@workingSets.5"/>
+              excludedWorkingSet="//@streams[name='master']/@setupTasks.3/@workingSets.2 //@streams[name='master']/@setupTasks.3/@workingSets.3"/>
         </predicate>
       </workingSet>
       <workingSet
-          name="JGit Tests">
+          name="EGit/JGit Tests">
         <predicate
-            xsi:type="predicates:AndPredicate">
-          <operand
-              xsi:type="predicates:RepositoryPredicate"
-              project="org.eclipse.jgit"/>
-          <operand
-              xsi:type="predicates:FilePredicate"
-              filePattern="META-INF/MANIFEST.MF"
-              contentPattern="org\.junit"/>
-        </predicate>
+            xsi:type="predicates:FilePredicate"
+            filePattern="META-INF/MANIFEST.MF"
+            contentPattern="org\.junit"/>
       </workingSet>
       <workingSet
-          name="Releng">
+          name="EGit/JGit Features">
         <predicate
-            xsi:type="predicates:OrPredicate">
-          <operand
-              xsi:type="predicates:NaturePredicate"
-              nature="org.eclipse.pde.FeatureNature"/>
-          <operand
-              xsi:type="predicates:NaturePredicate"
-              nature="org.eclipse.pde.UpdateSiteNature"/>
-          <operand
-              xsi:type="predicates:NamePredicate"
-              pattern="org\.eclipse\.jgit\.target"/>
-          <operand
-              xsi:type="predicates:NamePredicate"
-              pattern="org\.eclipse\.egit\.target"/>
-          <operand
-              xsi:type="predicates:NamePredicate"
-              pattern="org\.eclipse\.jgit\.packaging"/>
-        </predicate>
+            xsi:type="predicates:NaturePredicate"
+            nature="org.eclipse.pde.FeatureNature"/>
       </workingSet>
-      <description>Initialize working sets</description>
     </setupTask>
-    <description>Clone all EGit/JGit repositories, import projects, set target platform, initialize working sets</description>
   </stream>
   <logicalProjectContainer
       xsi:type="setup:ProjectCatalog"

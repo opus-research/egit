@@ -47,7 +47,6 @@ import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.treewalk.filter.TreeFilterMarker;
-import org.eclipse.jgit.util.LfsHelper;
 import org.eclipse.ui.model.WorkbenchAdapter;
 
 /**
@@ -57,31 +56,18 @@ import org.eclipse.ui.model.WorkbenchAdapter;
 public class FileDiff extends WorkbenchAdapter {
 
 	/**
-	 * Comparator for sorting FileDiffs based on getPath(). Compares first the
-	 * directory part, if those are equal, the filename part.
+	 * Comparator for sorting FileDiffs based on getPath().
 	 */
 	public static final Comparator<FileDiff> PATH_COMPARATOR = new Comparator<FileDiff>() {
-
 		@Override
-		public int compare(FileDiff left, FileDiff right) {
-			String leftPath = left.getPath();
-			String rightPath = right.getPath();
-			int i = leftPath.lastIndexOf('/');
-			int j = rightPath.lastIndexOf('/');
-			int p = leftPath.substring(0, i + 1)
-					.compareTo(rightPath.substring(0, j + 1));
-			if (p != 0) {
-				return p;
-			}
-			return leftPath.compareTo(rightPath);
+		public int compare(FileDiff o1, FileDiff o2) {
+			return o1.getPath().compareTo(o2.getPath());
 		}
 	};
 
 	private final RevCommit commit;
 
 	private DiffEntry diffEntry;
-
-	private Repository repository;
 
 	static ObjectId[] trees(final RevCommit commit, final RevCommit[] parents) {
 		final ObjectId[] r = new ObjectId[parents.length + 1];
@@ -153,7 +139,7 @@ public class FileDiff extends WorkbenchAdapter {
 			List<DiffEntry> renames = detector.compute(walk.getObjectReader(),
 					org.eclipse.jgit.lib.NullProgressMonitor.INSTANCE);
 			for (DiffEntry m : renames) {
-				final FileDiff d = new FileDiff(repository, commit, m);
+				final FileDiff d = new FileDiff(commit, m);
 				r.add(d);
 				for (Iterator<DiffEntry> i = xentries.iterator(); i.hasNext();) {
 					DiffEntry n = i.next();
@@ -164,7 +150,7 @@ public class FileDiff extends WorkbenchAdapter {
 				}
 			}
 			for (DiffEntry m : xentries) {
-				final FileDiff d = new FileDiff(repository, commit, m);
+				final FileDiff d = new FileDiff(commit, m);
 				r.add(d);
 			}
 		}
@@ -181,8 +167,7 @@ public class FileDiff extends WorkbenchAdapter {
 
 				int treeFilterMarks = treeFilterMarker.getMarks(walk);
 
-				final FileDiffForMerges d = new FileDiffForMerges(repository,
-						commit,
+				final FileDiffForMerges d = new FileDiffForMerges(commit,
 						treeFilterMarks);
 				d.path = walk.getPathString();
 				int m0 = 0;
@@ -312,10 +297,7 @@ public class FileDiff extends WorkbenchAdapter {
 			throws IOException {
 		if (id.equals(ObjectId.zeroId()))
 			return new RawText(new byte[] {});
-		ObjectLoader ldr = LfsHelper.getSmudgeFiltered(repository,
-				reader.open(id, Constants.OBJ_BLOB),
-				LfsHelper.getAttributesForPath(repository, getPath())
-						.get(Constants.ATTR_DIFF));
+		ObjectLoader ldr = reader.open(id, Constants.OBJ_BLOB);
 		return new RawText(ldr.getCachedBytes(Integer.MAX_VALUE));
 	}
 
@@ -411,14 +393,10 @@ public class FileDiff extends WorkbenchAdapter {
 	 * Create a file diff for a specified {@link RevCommit} and
 	 * {@link DiffEntry}
 	 *
-	 * @param repo
-	 *
 	 * @param c
 	 * @param entry
 	 */
-	public FileDiff(final Repository repo, final RevCommit c,
-			final DiffEntry entry) {
-		repository = repo;
+	public FileDiff(final RevCommit c, final DiffEntry entry) {
 		diffEntry = entry;
 		commit = c;
 	}
@@ -473,9 +451,8 @@ public class FileDiff extends WorkbenchAdapter {
 
 		private final int treeFilterMarks;
 
-		private FileDiffForMerges(final Repository repo, final RevCommit c,
-				int treeFilterMarks) {
-			super(repo, c, null);
+		private FileDiffForMerges(final RevCommit c, int treeFilterMarks) {
+			super (c, null);
 			this.treeFilterMarks = treeFilterMarks;
 		}
 

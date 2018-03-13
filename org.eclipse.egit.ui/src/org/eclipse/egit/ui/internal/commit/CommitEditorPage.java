@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright (c) 2011, 2016 GitHub Inc. and others.
+ *  Copyright (c) 2011, 2015 GitHub Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,7 +7,6 @@
  *
  *  Contributors:
  *    Kevin Sawicki (GitHub Inc.) - initial API and implementation
- *    Thomas Wolf <thomas.wolf@paranor.ch> - preference-based date formatting
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.commit;
 
@@ -19,6 +18,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -30,10 +30,8 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
-import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
-import org.eclipse.egit.ui.internal.PreferenceBasedDateFormatter;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.dialogs.SpellcheckableMessageArea;
@@ -44,11 +42,9 @@ import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.resource.LocalResourceManager;
-import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.ViewerComparator;
-import org.eclipse.jgit.annotations.NonNull;
+import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -57,10 +53,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.RevWalkUtils;
-import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
@@ -72,7 +66,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.IManagedForm;
 import org.eclipse.ui.forms.editor.FormEditor;
@@ -81,27 +74,18 @@ import org.eclipse.ui.forms.events.ExpansionAdapter;
 import org.eclipse.ui.forms.events.ExpansionEvent;
 import org.eclipse.ui.forms.events.HyperlinkAdapter;
 import org.eclipse.ui.forms.events.HyperlinkEvent;
-import org.eclipse.ui.forms.widgets.AbstractHyperlink;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Hyperlink;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
-import org.eclipse.ui.part.IShowInSource;
 import org.eclipse.ui.part.ShowInContext;
 
 /**
  * Commit editor page class displaying author, committer, parent commits,
  * message, and file information in form sections.
  */
-public class CommitEditorPage extends FormPage
-		implements ISchedulingRule, IShowInSource {
-
-	/**
-	 * Max number of branches, after that we compute "commit on branch" info
-	 * asynchronously
-	 */
-	private static final int BRANCH_LIMIT_FOR_SYNC_LOAD = 42;
+public class CommitEditorPage extends FormPage implements ISchedulingRule {
 
 	private static final String SIGNED_OFF_BY = "Signed-off-by: {0} <{1}>"; //$NON-NLS-1$
 
@@ -123,8 +107,6 @@ public class CommitEditorPage extends FormPage
 
 	private CommitFileDiffViewer diffViewer;
 
-	private FocusTracker focusTracker = new FocusTracker();
-
 	/**
 	 * Create commit editor page
 	 *
@@ -145,24 +127,6 @@ public class CommitEditorPage extends FormPage
 		super(editor, id, title);
 	}
 
-	/**
-	 * Add the given {@link Control} to this form's focus tracking.
-	 *
-	 * @param control
-	 *            to add to focus tracking
-	 */
-	protected void addToFocusTracking(@NonNull Control control) {
-		focusTracker.addToFocusTracking(control);
-	}
-
-	private void addSectionTextToFocusTracking(@NonNull Section composite) {
-		for (Control control : composite.getChildren()) {
-			if (control instanceof AbstractHyperlink) {
-				addToFocusTracking(control);
-			}
-		}
-	}
-
 	private void hookExpansionGrabbing(final Section section) {
 		section.addExpansionListener(new ExpansionAdapter() {
 
@@ -179,13 +143,13 @@ public class CommitEditorPage extends FormPage
 		return (Image) this.resources.get(descriptor);
 	}
 
-	Section createSection(Composite parent, FormToolkit toolkit, String title,
-			int span, int extraStyles) {
-		Section section = toolkit.createSection(parent, extraStyles);
+	Section createSection(Composite parent, FormToolkit toolkit,
+			int span) {
+		Section section = toolkit.createSection(parent,
+				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
+						| ExpandableComposite.EXPANDED);
 		GridDataFactory.fillDefaults().span(span, 1).grab(true, true)
 				.applyTo(section);
-		section.setText(title);
-		addSectionTextToFocusTracking(section);
 		return section;
 	}
 
@@ -206,23 +170,11 @@ public class CommitEditorPage extends FormPage
 				person.getEmailAddress());
 	}
 
-	private void setPerson(Text text, PersonIdent person, boolean isAuthor) {
-		PreferenceBasedDateFormatter formatter = PreferenceBasedDateFormatter
-				.create();
-		boolean isRelative = formatter
-				.getFormat() == GitDateFormatter.Format.RELATIVE;
-		String textTemplate = null;
-		if (isAuthor) {
-			textTemplate = isRelative
-					? UIText.CommitEditorPage_LabelAuthorRelative
-					: UIText.CommitEditorPage_LabelAuthor;
-		} else {
-			textTemplate = isRelative
-					? UIText.CommitEditorPage_LabelCommitterRelative
-					: UIText.CommitEditorPage_LabelCommitter;
-		}
-		text.setText(MessageFormat.format(textTemplate, person.getName(),
-				person.getEmailAddress(), formatter.formatDate(person)));
+	private String replaceSignedOffByLine(String message, PersonIdent person) {
+		Pattern pattern = Pattern.compile(
+				"^\\s*" + Pattern.quote(getSignedOffByLine(person)) //$NON-NLS-1$
+						+ "\\s*$", Pattern.MULTILINE); //$NON-NLS-1$
+		return pattern.matcher(message).replaceAll(""); //$NON-NLS-1$
 	}
 
 	private Composite createUserArea(Composite parent, FormToolkit toolkit,
@@ -241,24 +193,14 @@ public class CommitEditorPage extends FormPage
 
 		boolean signedOff = isSignedOffBy(person);
 
-		final Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
-		addToFocusTracking(userText);
-		setPerson(userText, person, author);
+		Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
+		userText.setText(MessageFormat.format(
+				author ? UIText.CommitEditorPage_LabelAuthor
+						: UIText.CommitEditorPage_LabelCommitter, person
+						.getName(), person.getEmailAddress(), person.getWhen()));
 		toolkit.adapt(userText, false, false);
 		userText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
-		IPropertyChangeListener uiPrefsListener = (event) -> {
-			String property = event.getProperty();
-			if (UIPreferences.DATE_FORMAT.equals(property)
-					|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
-				setPerson(userText, person, author);
-				userArea.layout();
-			}
-		};
-		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(uiPrefsListener);
-		userText.addDisposeListener((e) -> {
-			Activator.getDefault().getPreferenceStore()
-					.removePropertyChangeListener(uiPrefsListener);
-		});
+
 		GridDataFactory.fillDefaults().span(signedOff ? 1 : 2, 1)
 				.applyTo(userText);
 		if (signedOff) {
@@ -340,7 +282,6 @@ public class CommitEditorPage extends FormPage
 					}
 				}
 			});
-			addToFocusTracking(link);
 		}
 	}
 
@@ -423,14 +364,20 @@ public class CommitEditorPage extends FormPage
 
 	private void createMessageArea(Composite parent, FormToolkit toolkit,
 			int span) {
-		Section messageSection = createSection(parent, toolkit,
-				UIText.CommitEditorPage_SectionMessage, span,
-				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
-						| ExpandableComposite.EXPANDED);
+		Section messageSection = createSection(parent, toolkit, span);
 		Composite messageArea = createSectionClient(messageSection, toolkit);
+
+		messageSection.setText(UIText.CommitEditorPage_SectionMessage);
 
 		RevCommit commit = getCommit().getRevCommit();
 		String message = commit.getFullMessage();
+
+		PersonIdent author = commit.getAuthorIdent();
+		if (author != null)
+			message = replaceSignedOffByLine(message, author);
+		PersonIdent committer = commit.getCommitterIdent();
+		if (committer != null)
+			message = replaceSignedOffByLine(message, committer);
 
 		SpellcheckableMessageArea textContent = new SpellcheckableMessageArea(
 				messageArea, message, true, toolkit.getBorderStyle()) {
@@ -457,34 +404,26 @@ public class CommitEditorPage extends FormPage
 			textContent.setData(FormToolkit.KEY_DRAW_BORDER,
 					FormToolkit.TEXT_BORDER);
 
-		StyledText textWidget = textContent.getTextWidget();
-		Point size = textWidget.computeSize(SWT.DEFAULT,
+		Point size = textContent.getTextWidget().computeSize(SWT.DEFAULT,
 				SWT.DEFAULT);
 		int yHint = size.y > 80 ? 80 : SWT.DEFAULT;
 		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, yHint).minSize(1, 20)
 				.grab(true, true).applyTo(textContent);
 
-		addToFocusTracking(textWidget);
 		updateSectionClient(messageSection, messageArea, toolkit);
 	}
 
 	private void createBranchesArea(Composite parent, FormToolkit toolkit,
 			int span) {
-		branchSection = createSection(parent, toolkit,
-				UIText.CommitEditorPage_SectionBranchesEmpty, span,
-				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE);
-		((GridData) branchSection
-				.getLayoutData()).grabExcessVerticalSpace = false;
+		branchSection = createSection(parent, toolkit, span);
+		branchSection.setText(UIText.CommitEditorPage_SectionBranchesEmpty);
 		Composite branchesArea = createSectionClient(branchSection, toolkit);
 
 		branchViewer = new TableViewer(toolkit.createTable(branchesArea,
 				SWT.V_SCROLL | SWT.H_SCROLL));
-		Control control = branchViewer.getControl();
-		control.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TREE_BORDER);
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 50)
-				.applyTo(control);
-		addToFocusTracking(control);
-		branchViewer.setComparator(new ViewerComparator());
+				.applyTo(branchViewer.getControl());
+		branchViewer.setSorter(new ViewerSorter());
 		branchViewer.setLabelProvider(new GitLabelProvider() {
 
 			@Override
@@ -494,32 +433,31 @@ public class CommitEditorPage extends FormPage
 
 		});
 		branchViewer.setContentProvider(ArrayContentProvider.getInstance());
+		branchViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+
 		updateSectionClient(branchSection, branchesArea, toolkit);
 	}
 
 	private void fillBranches(List<Ref> result) {
-		if (!result.isEmpty()) {
-			branchViewer.setInput(result);
-			branchSection.setText(MessageFormat.format(
-					UIText.CommitEditorPage_SectionBranches,
-					Integer.valueOf(result.size())));
-		}
+		branchViewer.setInput(result);
+		branchSection.setText(MessageFormat.format(
+				UIText.CommitEditorPage_SectionBranches,
+				Integer.valueOf(result.size())));
 	}
 
 	void createDiffArea(Composite parent, FormToolkit toolkit, int span) {
-		diffSection = createSection(parent, toolkit,
-				UIText.CommitEditorPage_SectionFilesEmpty, span,
-				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
-						| ExpandableComposite.EXPANDED);
+		diffSection = createSection(parent, toolkit, span);
+		diffSection.setText(UIText.CommitEditorPage_SectionFilesEmpty);
 		Composite filesArea = createSectionClient(diffSection, toolkit);
 
 		diffViewer = new CommitFileDiffViewer(filesArea, getSite(), SWT.MULTI
 				| SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION
 				| toolkit.getBorderStyle());
-		Control control = diffViewer.getControl();
-		control.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TREE_BORDER);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(control);
-		addToFocusTracking(control);
+		diffViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+		GridDataFactory.fillDefaults().grab(true, true)
+				.applyTo(diffViewer.getControl());
 		diffViewer.setContentProvider(ArrayContentProvider.getInstance());
 		diffViewer.setTreeWalk(getCommit().getRepository(), null);
 
@@ -530,15 +468,11 @@ public class CommitEditorPage extends FormPage
 		return AdapterUtils.adapt(getEditor(), RepositoryCommit.class);
 	}
 
+	/**
+	 * @see org.eclipse.ui.forms.editor.FormPage#createFormContent(org.eclipse.ui.forms.IManagedForm)
+	 */
 	@Override
 	protected void createFormContent(IManagedForm managedForm) {
-		managedForm.addPart(new FocusManagerFormPart(focusTracker) {
-
-			@Override
-			public void setDefaultFocus() {
-				getManagedForm().getForm().setFocus();
-			}
-		});
 		Composite body = managedForm.getForm().getBody();
 		body.addDisposeListener(new DisposeListener() {
 
@@ -554,18 +488,7 @@ public class CommitEditorPage extends FormPage
 
 		FormToolkit toolkit = managedForm.getToolkit();
 
-		Composite displayArea = new Composite(body, toolkit.getOrientation()) {
-
-			@Override
-			public boolean setFocus() {
-				Control control = focusTracker.getLastFocusControl();
-				if (control != null && control.forceFocus()) {
-					return true;
-				}
-				return super.setFocus();
-			}
-		};
-		toolkit.adapt(displayArea);
+		Composite displayArea = toolkit.createComposite(body);
 		GridLayoutFactory.fillDefaults().numColumns(2).applyTo(displayArea);
 
 		createHeaderArea(displayArea, toolkit, 2);
@@ -576,8 +499,8 @@ public class CommitEditorPage extends FormPage
 	}
 
 	void createChangesArea(Composite displayArea, FormToolkit toolkit) {
-		createBranchesArea(displayArea, toolkit, 2);
-		createDiffArea(displayArea, toolkit, 2);
+		createDiffArea(displayArea, toolkit, 1);
+		createBranchesArea(displayArea, toolkit, 1);
 	}
 
 	private List<Ref> loadTags() {
@@ -598,111 +521,54 @@ public class CommitEditorPage extends FormPage
 	}
 
 	private List<Ref> loadBranches() {
-		RepositoryCommit commit = getCommit();
-		Repository repository = commit.getRepository();
-		Map<String, Ref> refsMap = getAllBranchRefs(repository);
-		if (refsMap.isEmpty()) {
-			return Collections.emptyList();
-		}
-		if (refsMap.size() < BRANCH_LIMIT_FOR_SYNC_LOAD) {
-			return findBranchesReachableFromCommit(commit, refsMap);
-		} else {
-			Job branchRefreshJob = new CommitEditorPageJob(commit) {
-				@Override
-				protected IStatus run(IProgressMonitor monitor) {
-					List<Ref> branches = findBranchesReachableFromCommit(commit,
-							refsMap);
-					updateUI(monitor, () -> fillBranches(branches));
-					return Status.OK_STATUS;
-				}
-			};
-			branchRefreshJob.schedule();
-			return Collections.emptyList();
-		}
-	}
-
-	private List<Ref> findBranchesReachableFromCommit(RepositoryCommit commit,
-			Map<String, Ref> refsMap) {
-		try (RevWalk revWalk = new RevWalk(commit.getRepository())) {
-			return RevWalkUtils.findBranchesReachableFrom(commit.getRevCommit(),
-					revWalk, refsMap.values());
-		} catch (IOException e) {
-			Activator.handleError(e.getMessage(), e, false);
-			return Collections.emptyList();
-		}
-	}
-
-	private Map<String, Ref> getAllBranchRefs(Repository repository) {
-		Map<String, Ref> refsMap = new HashMap<>();
-		try {
+		Repository repository = getCommit().getRepository();
+		RevCommit commit = getCommit().getRevCommit();
+		try (RevWalk revWalk = new RevWalk(repository)) {
+			Map<String, Ref> refsMap = new HashMap<>();
 			refsMap.putAll(repository.getRefDatabase().getRefs(
 					Constants.R_HEADS));
 			refsMap.putAll(repository.getRefDatabase().getRefs(
 					Constants.R_REMOTES));
+			return RevWalkUtils.findBranchesReachableFrom(commit, revWalk, refsMap.values());
 		} catch (IOException e) {
 			Activator.handleError(e.getMessage(), e, false);
-			return Collections.emptyMap();
+			return Collections.emptyList();
 		}
-		return refsMap;
 	}
 
 	void loadSections() {
-		Job refreshJob = new CommitEditorPageJob(getCommit()) {
+		RepositoryCommit commit = getCommit();
+		Job refreshJob = new Job(MessageFormat.format(
+				UIText.CommitEditorPage_JobName, commit.getRevCommit().name())) {
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				final List<Ref> tags = loadTags();
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
 				final List<Ref> branches = loadBranches();
-				if (monitor.isCanceled()) {
-					return Status.CANCEL_STATUS;
-				}
 				final FileDiff[] diffs = getCommit().getDiffs();
-				updateUI(monitor, () -> {
-					fillTags(getManagedForm().getToolkit(), tags);
-					fillDiffs(diffs);
-					fillBranches(branches);
-				});
+
+				final ScrolledForm form = getManagedForm().getForm();
+				if (UIUtils.isUsable(form))
+					form.getDisplay().syncExec(new Runnable() {
+
+						@Override
+						public void run() {
+							if (!UIUtils.isUsable(form))
+								return;
+
+							fillTags(getManagedForm().getToolkit(), tags);
+							fillDiffs(diffs);
+							fillBranches(branches);
+							form.reflow(true);
+							form.layout(true, true);
+						}
+					});
+
 				return Status.OK_STATUS;
 			}
 		};
+		refreshJob.setRule(this);
 		refreshJob.schedule();
-	}
-
-	private abstract class CommitEditorPageJob extends Job {
-
-		protected final RepositoryCommit commit;
-
-		public CommitEditorPageJob(RepositoryCommit commit) {
-			super(MessageFormat.format(UIText.CommitEditorPage_JobName,
-					commit.getRevCommit().name()));
-			this.commit = commit;
-			setRule(CommitEditorPage.this);
-		}
-
-		@Override
-		public boolean belongsTo(Object family) {
-			return CommitEditorPage.this == family;
-		}
-
-		protected final void updateUI(IProgressMonitor monitor, Runnable task) {
-			ScrolledForm form = getManagedForm().getForm();
-			PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
-				if (!shouldContinue(monitor, form)) {
-					return;
-				}
-				task.run();
-				form.reflow(true);
-				form.layout(true, true);
-			});
-		}
-
-		protected boolean shouldContinue(IProgressMonitor monitor,
-				ScrolledForm form) {
-			return UIUtils.isUsable(form) && !monitor.isCanceled();
-		}
 	}
 
 	/**
@@ -710,13 +576,6 @@ public class CommitEditorPage extends FormPage
 	 */
 	public void refresh() {
 		loadSections();
-	}
-
-	@Override
-	public void dispose() {
-		focusTracker.dispose();
-		Job.getJobManager().cancel(this);
-		super.dispose();
 	}
 
 	@Override
@@ -729,11 +588,11 @@ public class CommitEditorPage extends FormPage
 		return rule == this;
 	}
 
-	@Override
-	public ShowInContext getShowInContext() {
-		if (diffViewer != null && diffViewer.getControl().isFocusControl()) {
+	ShowInContext getShowInContext() {
+		if (diffViewer != null && diffViewer.getControl().isFocusControl())
 			return diffViewer.getShowInContext();
-		}
-		return null;
+		else
+			return null;
 	}
+
 }

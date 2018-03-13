@@ -66,7 +66,7 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void openAllEditorPagesOnValidCommit() throws Exception {
-		final AtomicReference<IEditorPart> editorRef = new AtomicReference<>();
+		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
 			@Override
@@ -98,7 +98,7 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 
 	@Test
 	public void showAnnotations() throws Exception {
-		final AtomicReference<IEditorPart> editorRef = new AtomicReference<>();
+		final AtomicReference<IEditorPart> editorRef = new AtomicReference<IEditorPart>();
 		PlatformUI.getWorkbench().getDisplay().syncExec(new Runnable() {
 
 			@Override
@@ -110,7 +110,7 @@ public class CommitEditorTest extends LocalRepositoryTestCase {
 		});
 		assertNotNull(editorRef.get());
 		SWTBotEditor commitEditor = bot.activeEditor();
-		SWTBotTable table = commitEditor.bot().table(1);
+		SWTBotTable table = commitEditor.bot().table(0);
 		assertTrue(table.rowCount() > 0);
 		table.select(0);
 		ContextMenuHelper.clickContextMenuSync(table,

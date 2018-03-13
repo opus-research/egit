@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2008, 2016, Shawn O. Pearce <spearce@spearce.org> and others
+ * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -8,7 +8,6 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
-import org.eclipse.core.runtime.Assert;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.widgets.Composite;
@@ -27,14 +26,11 @@ class StorageSizeFieldEditor extends StringFieldEditor {
 
 	StorageSizeFieldEditor(String name, String labelText, Composite parent,
 			int min, int max) {
-		Assert.isTrue(min > 0 && min < max);
 		init(name, labelText);
 		setTextLimit(10);
 		setEmptyStringAllowed(false);
-		setErrorMessage(
-				JFaceResources.format("IntegerFieldEditor.errorMessageRange", //$NON-NLS-1$
-						new Object[] { Integer.valueOf(min),
-								Integer.valueOf(max) }));
+		setErrorMessage(JFaceResources
+				.getString("IntegerFieldEditor.errorMessage")); //$NON-NLS-1$
 		createControl(parent);
 		minValidValue = min;
 		maxValidValue = max;
@@ -111,8 +107,7 @@ class StorageSizeFieldEditor extends StringFieldEditor {
 			return 0;
 
 		int mul = 1;
-		char lastChar = n.charAt(n.length() - 1);
-		switch (Character.toLowerCase(lastChar)) {
+		switch (Character.toLowerCase(n.charAt(n.length() - 1))) {
 		case 'g':
 			mul = GB;
 			break;
@@ -122,11 +117,6 @@ class StorageSizeFieldEditor extends StringFieldEditor {
 		case 'k':
 			mul = KB;
 			break;
-		default:
-			if (Character.isDigit(lastChar)) {
-				break;
-			}
-			return 0; // Invalid input
 		}
 		if (mul > 1)
 			n = n.substring(0, n.length() - 1).trim();

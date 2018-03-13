@@ -59,18 +59,6 @@ public class ResourceStateFactory {
 	@NonNull
 	public static final IResourceState UNKNOWN_STATE = new ResourceState();
 
-	/**
-	 * Singleton {@link IResourceState} returned for ignored files.
-	 */
-	@NonNull
-	private static final IResourceState IGNORED = new ResourceState() {
-
-		@Override
-		public boolean isIgnored() {
-			return true;
-		}
-	};
-
 	@NonNull
 	private static final ResourceStateFactory INSTANCE = new ResourceStateFactory();
 
@@ -242,6 +230,7 @@ public class ResourceStateFactory {
 			// Could not be made relative.
 			return UNKNOWN_STATE;
 		}
+		ResourceState result = new ResourceState();
 		if (file.isContainer()) {
 			if (!repoRelativePath.endsWith("/")) { //$NON-NLS-1$
 				repoRelativePath += '/';
@@ -250,29 +239,25 @@ public class ResourceStateFactory {
 				// The Eclipse resource model handles a symlink to a folder like
 				// the container it refers to but git status handles the symlink
 				// source like a special file.
-				return extractFileProperties(indexDiffData, repoRelativePath);
+				extractFileProperties(indexDiffData, repoRelativePath, result);
 			} else {
-				return extractContainerProperties(indexDiffData,
-						repoRelativePath, file);
+				extractContainerProperties(indexDiffData, repoRelativePath,
+						file, result);
 			}
 		} else {
-			return extractFileProperties(indexDiffData, repoRelativePath);
+			extractFileProperties(indexDiffData, repoRelativePath, result);
 		}
+		return result;
 	}
 
-	private @NonNull IResourceState extractFileProperties(
-			@NonNull IndexDiffData indexDiffData,
-			@NonNull String repoRelativePath) {
+	private void extractFileProperties(@NonNull IndexDiffData indexDiffData,
+			@NonNull String repoRelativePath, @NonNull ResourceState state) {
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
 		boolean ignored = ignoredFiles.contains(repoRelativePath)
 				|| containsPrefixPath(ignoredFiles, repoRelativePath);
-		if (ignored) {
-			// Leave the rest at the default (false, NOT_STAGED)
-			return IGNORED;
-		}
-		ResourceState state = new ResourceState();
+		state.setIgnored(ignored);
 		Set<String> untracked = indexDiffData.getUntracked();
-		state.setTracked(!untracked.contains(repoRelativePath));
+		state.setTracked(!ignored && !untracked.contains(repoRelativePath));
 
 		Set<String> added = indexDiffData.getAdded();
 		Set<String> removed = indexDiffData.getRemoved();
@@ -301,23 +286,19 @@ public class ResourceStateFactory {
 
 		Set<String> assumeUnchanged = indexDiffData.getAssumeUnchanged();
 		state.setAssumeUnchanged(assumeUnchanged.contains(repoRelativePath));
-		return state;
 	}
 
-	private @NonNull IResourceState extractContainerProperties(
+	private void extractContainerProperties(
 			@NonNull IndexDiffData indexDiffData,
-			@NonNull String repoRelativePath,
-			@NonNull FileSystemItem directory) {
+			@NonNull String repoRelativePath, @NonNull FileSystemItem directory,
+			@NonNull ResourceState state) {
 		Set<String> ignoredFiles = indexDiffData.getIgnoredNotInIndex();
+		Set<String> untrackedFolders = indexDiffData.getUntrackedFolders();
 		boolean ignored = containsPrefixPath(ignoredFiles, repoRelativePath)
 				|| !directory.hasContainerAnyFiles();
-		if (ignored) {
-			return IGNORED;
-		}
-		ResourceState state = new ResourceState();
-		Set<String> untrackedFolders = indexDiffData.getUntrackedFolders();
-		state.setTracked(
-				!containsPrefixPath(untrackedFolders, repoRelativePath));
+		state.setIgnored(ignored);
+		state.setTracked(!ignored
+				&& !containsPrefixPath(untrackedFolders, repoRelativePath));
 
 		// containers are marked as staged whenever file was added, removed or
 		// changed
@@ -340,7 +321,6 @@ public class ResourceStateFactory {
 		state.setDirty(containsPrefix(modified, repoRelativePath)
 				|| containsPrefix(untracked, repoRelativePath)
 				|| containsPrefix(missing, repoRelativePath));
-		return state;
 	}
 
 	private boolean containsPrefix(Set<String> collection, String prefix) {

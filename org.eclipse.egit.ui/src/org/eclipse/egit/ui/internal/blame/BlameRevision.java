@@ -19,11 +19,11 @@ import org.eclipse.egit.core.internal.CompareCoreUtils;
 import org.eclipse.jface.text.revisions.Revision;
 import org.eclipse.jface.text.source.LineRange;
 import org.eclipse.jgit.diff.DiffAlgorithm;
-import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.EditList;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
@@ -33,7 +33,6 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.util.LfsHelper;
 import org.eclipse.swt.graphics.RGB;
 
 /**
@@ -212,10 +211,8 @@ public class BlameRevision extends Revision {
 			if (diffEntry == null)
 				return null;
 
-			RawText oldText = readText(repository, diffEntry.getOldId(), reader,
-					diffEntry.getOldPath());
-			RawText newText = readText(repository, diffEntry.getNewId(), reader,
-					diffEntry.getNewPath());
+			RawText oldText = readText(diffEntry.getOldId(), reader);
+			RawText newText = readText(diffEntry.getNewId(), reader);
 
 			StoredConfig config = repository.getConfig();
 			DiffAlgorithm diffAlgorithm = DiffAlgorithm.getAlgorithm(config
@@ -232,12 +229,10 @@ public class BlameRevision extends Revision {
 		}
 	}
 
-	private static RawText readText(Repository db, AbbreviatedObjectId blobId,
-			ObjectReader reader, String path) throws IOException {
-		ObjectLoader oldLoader = LfsHelper.getSmudgeFiltered(db,
-				reader.open(blobId.toObjectId(), Constants.OBJ_BLOB),
-				LfsHelper.getAttributesForPath(db, path)
-						.get(Constants.ATTR_DIFF));
+	private static RawText readText(AbbreviatedObjectId blobId,
+			ObjectReader reader) throws IOException {
+		ObjectLoader oldLoader = reader.open(blobId.toObjectId(),
+				Constants.OBJ_BLOB);
 		return new RawText(oldLoader.getCachedBytes());
 	}
 

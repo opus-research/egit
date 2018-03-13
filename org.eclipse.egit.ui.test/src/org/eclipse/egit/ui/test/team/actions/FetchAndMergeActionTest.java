@@ -172,7 +172,7 @@ public class FetchAndMergeActionTest extends LocalRepositoryTestCase {
 		JobJoiner jobJoiner = JobJoiner.startListening(JobFamilies.FETCH, 20, TimeUnit.SECONDS);
 		ContextMenuHelper.clickContextMenu(projectExplorerTree, "Team",
 				menuString);
-		TestUtil.openJobResultDialog(jobJoiner.join());
+		jobJoiner.join();
 	}
 
 	private SWTBotShell openMergeDialog() throws Exception {

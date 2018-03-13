@@ -12,7 +12,6 @@
 package org.eclipse.egit.ui.internal.repository.tree.command;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.core.JobFamilies;
 import org.eclipse.egit.core.internal.CoreText;
-import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.op.ConnectProviderOperation;
 import org.eclipse.egit.core.project.RepositoryFinder;
@@ -41,7 +39,6 @@ import org.eclipse.egit.ui.internal.repository.RepositorySearchWizard;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.jface.window.Window;
 import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.team.core.RepositoryProvider;
 
@@ -65,49 +62,32 @@ public class AddCommand extends
 	}
 
 	private void addRepository(File repositoryDir) {
-		GerritUtil.tryToAutoConfigureForGerrit(repositoryDir);
 		util.addConfiguredRepository(repositoryDir);
-		if (doAutoShare()) {
+		if (doAutoShare())
 			autoShareProjects(repositoryDir);
-		}
 	}
 
 	private void autoShareProjects(File repositoryDir) {
-		// Don't even try to auto-share for bare repositories.
-		IPath workingDirPath;
-		try {
-			Repository repo = Activator.getDefault().getRepositoryCache()
-					.lookupRepository(repositoryDir);
-			if (repo.isBare()) {
-				return;
-			}
-			workingDirPath = new Path(repo.getWorkTree().getAbsolutePath());
-		} catch (IOException e) {
-			org.eclipse.egit.ui.Activator.logError(e.getLocalizedMessage(), e);
-			return;
-		}
+		IPath workingDirPath = new Path(repositoryDir.getAbsolutePath())
+				.removeLastSegments(1);
 		Map<IProject, File> connections = new HashMap<>();
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		for (IProject project : projects) {
-			// Skip closed projects
-			if (!project.isAccessible()) {
-				continue;
-			}
 			RepositoryProvider provider = RepositoryProvider
 					.getProvider(project);
-			if (provider != null) {
+			if (provider != null)
 				continue;
-			}
+
 			IPath location = project.getLocation();
-			if (location == null) {
+			if (location == null)
 				continue;
-			}
+
 			// In case the project is not inside the working directory, don't
 			// even search for a mapping.
-			if (!workingDirPath.isPrefixOf(location)) {
+			if (!workingDirPath.isPrefixOf(location))
 				continue;
-			}
+
 			RepositoryFinder f = new RepositoryFinder(project);
 			f.setFindInChildren(false);
 			try {
