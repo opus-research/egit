@@ -1487,6 +1487,9 @@ public class UIText extends NLS {
 	public static String SourceBranchPage_remoteListingCancelled;
 
 	/** */
+	public static String SourceBranchPage_cannotCreateTemp;
+
+	/** */
 	public static String SourceBranchPage_CompositeTransportErrorMessage;
 
 	/** */
