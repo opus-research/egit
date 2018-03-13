@@ -3861,7 +3861,7 @@ public class StagingView extends ViewPart
 		if (pushUpstream) {
 			pushMode = gerritMode ? PushMode.GERRIT : PushMode.UPSTREAM;
 		}
-		Job commitJob = new CommitJob(currentRepository, commitOperation)
+		final Job commitJob = new CommitJob(currentRepository, commitOperation)
 				.setOpenCommitEditor(openNewCommitsAction.isChecked())
 				.setPushUpstream(pushMode);
 
@@ -3875,7 +3875,8 @@ public class StagingView extends ViewPart
 					@Override
 					public void run() {
 						enableAllWidgets(true);
-						if (event.getResult().isOK()) {
+						IStatus result = commitJob.getResult();
+						if (result != null && result.isOK()) {
 							commitMessageText.setText(EMPTY_STRING);
 						}
 					}
