@@ -29,7 +29,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.forms.editor.FormEditor;
-import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
@@ -93,9 +92,7 @@ public class StashEditorPage extends CommitEditorPage {
 			FormToolkit toolkit, int span) {
 		String sectionTitle = MessageFormat.format(
 				UIText.StashEditorPage_StagedChanges, Integer.valueOf(0));
-		stagedDiffSection = createSection(parent, toolkit, sectionTitle, span,
-				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
-						| ExpandableComposite.EXPANDED);
+		stagedDiffSection = createSection(parent, toolkit, sectionTitle, span);
 		Composite unstagedChangesArea = createSectionClient(
 				stagedDiffSection, toolkit);
 
