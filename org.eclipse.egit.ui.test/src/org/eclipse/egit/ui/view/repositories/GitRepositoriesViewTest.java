@@ -48,7 +48,6 @@ import org.eclipse.swtbot.swt.finder.utils.TableCollection;
 import org.eclipse.swtbot.swt.finder.waits.Conditions;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotButton;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
-import org.eclipse.swtbot.swt.finder.widgets.SWTBotText;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.ui.IPageLayout;
@@ -674,9 +673,7 @@ public class GitRepositoriesViewTest extends GitRepositoriesViewTestBase {
 		// create second branch (123)
 		ContextMenuHelper.clickContextMenu(tree, "Create Branch...");
 		createBranchShell = bot.shell(UIText.CreateBranchWizard_NewBranchTitle);
-		SWTBotText bn = createBranchShell.bot().textWithId("BranchName");
-		TestUtil.processUIEvents();
-		bn.setText("123");
+		createBranchShell.bot().textWithId("BranchName").setText("123");
 		createBranchShell.bot().checkBox(UIText.CreateBranchPage_CheckoutButton)
 				.deselect();
 		createBranchShell.bot().button(IDialogConstants.FINISH_LABEL).click();
