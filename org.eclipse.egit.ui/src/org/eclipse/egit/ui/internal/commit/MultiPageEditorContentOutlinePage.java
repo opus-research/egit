@@ -71,8 +71,8 @@ public class MultiPageEditorContentOutlinePage extends ContentOutlinePage {
 	/**
 	 * Creates a new {@link MultiPageEditorContentOutlinePage} for the given
 	 * top-level editor part. It will track page changes and create and manage
-	 * outline pages for any nested {@link IEditorPart}s of thattop-level editor
-	 * part.
+	 * outline pages for any nested {@link IEditorPart}s of that top-level
+	 * editor part.
 	 *
 	 * @param editorPart
 	 *            the outline page belongs to

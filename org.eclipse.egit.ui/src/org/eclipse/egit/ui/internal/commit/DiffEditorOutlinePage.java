@@ -47,7 +47,6 @@ import org.eclipse.ui.PlatformUI;
 /**
  * A {@link NestedContentOutlinePage} for the {DiffEditorPage}, displaying an
  * outline for {@link DiffDocument}s.
- *
  */
 public class DiffEditorOutlinePage extends NestedContentOutlinePage {
 
