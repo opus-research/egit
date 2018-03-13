@@ -49,7 +49,6 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.ViewerSorter;
-import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -61,7 +60,6 @@ import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CLabel;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Image;
@@ -81,7 +79,6 @@ import org.eclipse.ui.forms.events.ExpansionAdapter;
 import org.eclipse.ui.forms.events.ExpansionEvent;
 import org.eclipse.ui.forms.events.HyperlinkAdapter;
 import org.eclipse.ui.forms.events.HyperlinkEvent;
-import org.eclipse.ui.forms.widgets.AbstractHyperlink;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.Hyperlink;
@@ -117,8 +114,6 @@ public class CommitEditorPage extends FormPage
 
 	private CommitFileDiffViewer diffViewer;
 
-	private FocusTracker focusTracker = new FocusTracker();
-
 	/**
 	 * Create commit editor page
 	 *
@@ -139,24 +134,6 @@ public class CommitEditorPage extends FormPage
 		super(editor, id, title);
 	}
 
-	/**
-	 * Add the given {@link Control} to this form's focus tracking.
-	 *
-	 * @param control
-	 *            to add to focus tracking
-	 */
-	protected void addToFocusTracking(@NonNull Control control) {
-		focusTracker.addToFocusTracking(control);
-	}
-
-	private void addSectionTextToFocusTracking(@NonNull Section composite) {
-		for (Control control : composite.getChildren()) {
-			if (control instanceof AbstractHyperlink) {
-				addToFocusTracking(control);
-			}
-		}
-	}
-
 	private void hookExpansionGrabbing(final Section section) {
 		section.addExpansionListener(new ExpansionAdapter() {
 
@@ -173,15 +150,13 @@ public class CommitEditorPage extends FormPage
 		return (Image) this.resources.get(descriptor);
 	}
 
-	Section createSection(Composite parent, FormToolkit toolkit, String title,
+	Section createSection(Composite parent, FormToolkit toolkit,
 			int span) {
 		Section section = toolkit.createSection(parent,
 				ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE
 						| ExpandableComposite.EXPANDED);
 		GridDataFactory.fillDefaults().span(span, 1).grab(true, true)
 				.applyTo(section);
-		section.setText(title);
-		addSectionTextToFocusTracking(section);
 		return section;
 	}
 
@@ -245,7 +220,6 @@ public class CommitEditorPage extends FormPage
 		boolean signedOff = isSignedOffBy(person);
 
 		final Text userText = new Text(userArea, SWT.FLAT | SWT.READ_ONLY);
-		addToFocusTracking(userText);
 		setPerson(userText, person, author);
 		toolkit.adapt(userText, false, false);
 		userText.setData(FormToolkit.KEY_DRAW_BORDER, Boolean.FALSE);
@@ -343,7 +317,6 @@ public class CommitEditorPage extends FormPage
 					}
 				}
 			});
-			addToFocusTracking(link);
 		}
 	}
 
@@ -426,9 +399,10 @@ public class CommitEditorPage extends FormPage
 
 	private void createMessageArea(Composite parent, FormToolkit toolkit,
 			int span) {
-		Section messageSection = createSection(parent, toolkit,
-				UIText.CommitEditorPage_SectionMessage, span);
+		Section messageSection = createSection(parent, toolkit, span);
 		Composite messageArea = createSectionClient(messageSection, toolkit);
+
+		messageSection.setText(UIText.CommitEditorPage_SectionMessage);
 
 		RevCommit commit = getCommit().getRevCommit();
 		String message = commit.getFullMessage();
@@ -465,30 +439,25 @@ public class CommitEditorPage extends FormPage
 			textContent.setData(FormToolkit.KEY_DRAW_BORDER,
 					FormToolkit.TEXT_BORDER);
 
-		StyledText textWidget = textContent.getTextWidget();
-		Point size = textWidget.computeSize(SWT.DEFAULT,
+		Point size = textContent.getTextWidget().computeSize(SWT.DEFAULT,
 				SWT.DEFAULT);
 		int yHint = size.y > 80 ? 80 : SWT.DEFAULT;
 		GridDataFactory.fillDefaults().hint(SWT.DEFAULT, yHint).minSize(1, 20)
 				.grab(true, true).applyTo(textContent);
 
-		addToFocusTracking(textWidget);
 		updateSectionClient(messageSection, messageArea, toolkit);
 	}
 
 	private void createBranchesArea(Composite parent, FormToolkit toolkit,
 			int span) {
-		branchSection = createSection(parent, toolkit,
-				UIText.CommitEditorPage_SectionBranchesEmpty, span);
+		branchSection = createSection(parent, toolkit, span);
+		branchSection.setText(UIText.CommitEditorPage_SectionBranchesEmpty);
 		Composite branchesArea = createSectionClient(branchSection, toolkit);
 
 		branchViewer = new TableViewer(toolkit.createTable(branchesArea,
 				SWT.V_SCROLL | SWT.H_SCROLL));
-		Control control = branchViewer.getControl();
-		control.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TREE_BORDER);
 		GridDataFactory.fillDefaults().grab(true, true).hint(SWT.DEFAULT, 50)
-				.applyTo(control);
-		addToFocusTracking(control);
+				.applyTo(branchViewer.getControl());
 		branchViewer.setSorter(new ViewerSorter());
 		branchViewer.setLabelProvider(new GitLabelProvider() {
 
@@ -499,6 +468,9 @@ public class CommitEditorPage extends FormPage
 
 		});
 		branchViewer.setContentProvider(ArrayContentProvider.getInstance());
+		branchViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+
 		updateSectionClient(branchSection, branchesArea, toolkit);
 	}
 
@@ -510,17 +482,17 @@ public class CommitEditorPage extends FormPage
 	}
 
 	void createDiffArea(Composite parent, FormToolkit toolkit, int span) {
-		diffSection = createSection(parent, toolkit,
-				UIText.CommitEditorPage_SectionFilesEmpty, span);
+		diffSection = createSection(parent, toolkit, span);
+		diffSection.setText(UIText.CommitEditorPage_SectionFilesEmpty);
 		Composite filesArea = createSectionClient(diffSection, toolkit);
 
 		diffViewer = new CommitFileDiffViewer(filesArea, getSite(), SWT.MULTI
 				| SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION
 				| toolkit.getBorderStyle());
-		Control control = diffViewer.getControl();
-		control.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TREE_BORDER);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(control);
-		addToFocusTracking(control);
+		diffViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+		GridDataFactory.fillDefaults().grab(true, true)
+				.applyTo(diffViewer.getControl());
 		diffViewer.setContentProvider(ArrayContentProvider.getInstance());
 		diffViewer.setTreeWalk(getCommit().getRepository(), null);
 
@@ -531,15 +503,11 @@ public class CommitEditorPage extends FormPage
 		return AdapterUtils.adapt(getEditor(), RepositoryCommit.class);
 	}
 
+	/**
+	 * @see org.eclipse.ui.forms.editor.FormPage#createFormContent(org.eclipse.ui.forms.IManagedForm)
+	 */
 	@Override
 	protected void createFormContent(IManagedForm managedForm) {
-		managedForm.addPart(new FocusManagerFormPart(focusTracker) {
-
-			@Override
-			public void setDefaultFocus() {
-				getManagedForm().getForm().setFocus();
-			}
-		});
 		Composite body = managedForm.getForm().getBody();
 		body.addDisposeListener(new DisposeListener() {
 
@@ -555,18 +523,7 @@ public class CommitEditorPage extends FormPage
 
 		FormToolkit toolkit = managedForm.getToolkit();
 
-		Composite displayArea = new Composite(body, toolkit.getOrientation()) {
-
-			@Override
-			public boolean setFocus() {
-				Control control = focusTracker.getLastFocusControl();
-				if (control != null && control.forceFocus()) {
-					return true;
-				}
-				return super.setFocus();
-			}
-		};
-		toolkit.adapt(displayArea);
+		Composite displayArea = toolkit.createComposite(body);
 		GridLayoutFactory.fillDefaults().numColumns(2).applyTo(displayArea);
 
 		createHeaderArea(displayArea, toolkit, 2);
@@ -657,12 +614,6 @@ public class CommitEditorPage extends FormPage
 	}
 
 	@Override
-	public void dispose() {
-		focusTracker.dispose();
-		super.dispose();
-	}
-
-	@Override
 	public boolean contains(ISchedulingRule rule) {
 		return rule == this;
 	}
@@ -679,4 +630,5 @@ public class CommitEditorPage extends FormPage
 		}
 		return null;
 	}
+
 }

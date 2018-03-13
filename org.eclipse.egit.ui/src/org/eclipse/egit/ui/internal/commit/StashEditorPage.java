@@ -28,7 +28,6 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.forms.editor.FormEditor;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -91,19 +90,20 @@ public class StashEditorPage extends CommitEditorPage {
 
 	private void createIndexArea(Composite parent,
 			FormToolkit toolkit, int span) {
+		stagedDiffSection = createSection(parent, toolkit, span);
 		String sectionTitle = MessageFormat.format(
 				UIText.StashEditorPage_StagedChanges, Integer.valueOf(0));
-		stagedDiffSection = createSection(parent, toolkit, sectionTitle, span);
+		stagedDiffSection.setText(sectionTitle);
 		Composite unstagedChangesArea = createSectionClient(
 				stagedDiffSection, toolkit);
 
 		stagedDiffViewer = new CommitFileDiffViewer(unstagedChangesArea,
 				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
 						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
-		Control control = stagedDiffViewer.getControl();
-		control.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TREE_BORDER);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(control);
-		addToFocusTracking(control);
+		stagedDiffViewer.getTable().setData(FormToolkit.KEY_DRAW_BORDER,
+				FormToolkit.TREE_BORDER);
+		GridDataFactory.fillDefaults().grab(true, true)
+				.applyTo(stagedDiffViewer.getControl());
 		stagedDiffViewer.setContentProvider(ArrayContentProvider
 				.getInstance());
 		stagedDiffViewer.setTreeWalk(getCommit().getRepository(), null);
