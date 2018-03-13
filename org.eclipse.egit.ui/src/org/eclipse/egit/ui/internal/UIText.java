@@ -2892,15 +2892,6 @@ public class UIText extends NLS {
 	public static String FetchResultDialog_ConfigureButton;
 
 	/** */
-	public static String FetchResultDialog_HideDialog;
-
-	/** */
-	public static String DialogsPreferencePage_HideFetchSuccessCheckbox;
-
-	/** */
-	public static String FetchResultDialog_HideDialogButton;
-
-	/** */
 	public static String FetchResultDialog_labelEmptyResult;
 
 	/** */
@@ -3609,18 +3600,6 @@ public class UIText extends NLS {
 	public static String DialogsPreferencePage_HideConfirmationGroupHeader;
 
 	/** */
-	public static String DialogsPreferencePage_HideInfoGroupHeader;
-
-	/** */
-	public static String DialogsPreferencePage_HideFetchInfoDialog;
-
-	/** */
-	public static String DialogsPreferencePage_HidePullInfoDialog;
-
-	/** */
-	public static String DialogsPreferencePage_HidePushInfoDialog;
-
-	/** */
 	public static String DialogsPreferencePage_HideWarningGroupHeader;
 
 	/** */
@@ -3874,6 +3853,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GitSelectRepositoryPage_PageMessage;
+
+	/** */
+	public static String GitSelectRepositoryPage_BareRepositoriesHidden;
 
 	/** */
 	public static String GitSelectRepositoryPage_PageTitle;
