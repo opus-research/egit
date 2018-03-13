@@ -1568,6 +1568,9 @@ public class UIText extends NLS {
 	public static String ReflogView_DateColumnHeader;
 
 	/** */
+	public static String ReflogView_ErrorOnLoad;
+
+	/** */
 	public static String ReflogView_ErrorOnOpenCommit;
 
 	/** */
@@ -2465,25 +2468,7 @@ public class UIText extends NLS {
 	public static String GlobalConfigurationPreferencePage_repositorySettingNoRepositories;
 
 	/** */
-	public static String SpellcheckableMessageArea_redo;
-
-	/** */
 	public static String SpellcheckableMessageArea_showWhitespace;
-
-	/** */
-	public static String SpellcheckableMessageArea_undo;
-
-	/** */
-	public static String SpellCheckingMessageArea_copy;
-
-	/** */
-	public static String SpellCheckingMessageArea_cut;
-
-	/** */
-	public static String SpellCheckingMessageArea_paste;
-
-	/** */
-	public static String SpellCheckingMessageArea_selectAll;
 
 	/** */
 	public static String CommitMessageComponent_MessageInvalidAuthor;
@@ -2852,6 +2837,9 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_CreatingTagTaskName;
 
 	/** */
+	public static String FetchGerritChangePage_FetchingRemoteRefsMessage;
+
+	/** */
 	public static String FetchGerritChangePage_FetchingTaskName;
 
 	/** */
@@ -2876,7 +2864,7 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_PageTitle;
 
 	/** */
-	public static String FetchGerritChangePage_RunInBackground;
+	public static String FetchGerritChangePage_ShowingProposalsJobName;
 
 	/** */
 	public static String FetchGerritChangePage_SuggestedRefNamePattern;
@@ -3108,6 +3096,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchNameNormalizer_Tooltip;
+
+	/** */
+	public static String BranchNameNormalizer_TooltipForTag;
 
 	/** */
 	public static String BranchRebaseMode_Rebase;
@@ -4589,6 +4580,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NewRepositoryWizard_WizardTitle;
+
+	/** */
+	public static String NonBlockingWizardDialog_BackgroundJobName;
 
 	/** */
 	public static String NonDeletedFilesDialog_NonDeletedFilesMessage;
