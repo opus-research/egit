@@ -112,28 +112,18 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	@Override
 	public final void selectionChanged(IAction action, ISelection selection) {
 		mySelection = selection;
-		if (handler.alwaysCheckEnabled()) {
-			handler.setSelection(mySelection);
-			if (action != null) {
+		// Compare selection of handler, as it converts it to a suitable
+		// selection. E.g. an ITextSelection is converted to a selection of the
+		// file. We are only interested in the selection change if a different
+		// file was selected, not if the offset of the text selection changed.
+		IStructuredSelection selectionBefore = handler.getSelection();
+		handler.setSelection(mySelection);
+		if (action != null) {
+			IStructuredSelection selectionAfter = handler.getSelection();
+			boolean equalSelection = (selectionBefore == null) ? selectionAfter == null
+					: selectionBefore.equals(selectionAfter);
+			if (!equalSelection)
 				action.setEnabled(isEnabled());
-			}
-		} else {
-			// Compare selection of handler, as it converts it to a suitable
-			// selection. E.g. an ITextSelection is converted to a selection of
-			// the file. We are only interested in the selection change if a
-			// different file was selected, not if the offset of the text
-			// selection changed.
-			IStructuredSelection selectionBefore = handler.getSelection();
-			handler.setSelection(mySelection);
-			if (action != null) {
-				IStructuredSelection selectionAfter = handler.getSelection();
-				boolean equalSelection = (selectionBefore == null)
-						? selectionAfter == null
-						: selectionBefore.equals(selectionAfter);
-				if (!equalSelection) {
-					action.setEnabled(isEnabled());
-				}
-			}
 		}
 	}
 

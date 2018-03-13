@@ -16,6 +16,8 @@ package org.eclipse.egit.ui.internal.history;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +41,7 @@ import org.eclipse.egit.ui.internal.EgitUiEditorUtils;
 import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.blame.BlameOperation;
+import org.eclipse.egit.ui.internal.handler.IGlobalActionProvider;
 import org.eclipse.egit.ui.internal.revision.GitCompareFileRevisionEditorInput;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
@@ -57,6 +60,7 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.Constants;
@@ -93,7 +97,8 @@ import org.eclipse.ui.themes.ColorUtil;
 /**
  * Viewer to display {@link FileDiff} objects in a table.
  */
-public class CommitFileDiffViewer extends TableViewer {
+public class CommitFileDiffViewer extends TableViewer
+		implements IGlobalActionProvider {
 	private static final String LINESEP = System.getProperty("line.separator"); //$NON-NLS-1$
 
 	private Repository db;
@@ -121,6 +126,8 @@ public class CommitFileDiffViewer extends TableViewer {
 	private IAction showInHistory;
 
 	private final IWorkbenchSite site;
+
+	private final Set<IAction> globalActions = new HashSet<>();
 
 	/**
 	 * Shows a list of file changed by a commit.
@@ -337,7 +344,8 @@ public class CommitFileDiffViewer extends TableViewer {
 		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
 				() -> doCopy());
 		copy.setEnabled(true);
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
+		globalActions.add(selectAll);
+		globalActions.add(copy);
 		mgr.add(selectAll);
 		mgr.add(copy);
 
@@ -724,5 +732,15 @@ public class CommitFileDiffViewer extends TableViewer {
 				}
 			}
 		}
+	}
+
+	@Override
+	public Viewer getViewer() {
+		return this;
+	}
+
+	@Override
+	public Collection<IAction> getActions() {
+		return globalActions;
 	}
 }

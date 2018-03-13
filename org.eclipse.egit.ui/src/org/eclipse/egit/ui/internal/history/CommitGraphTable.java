@@ -22,9 +22,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.IParameter;
@@ -42,6 +45,7 @@ import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
+import org.eclipse.egit.ui.internal.handler.IGlobalActionProvider;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
 import org.eclipse.egit.ui.internal.history.command.HistoryViewCommands;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
@@ -63,6 +67,7 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -107,7 +112,7 @@ import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.part.IPageSite;
 
-class CommitGraphTable {
+class CommitGraphTable implements IGlobalActionProvider {
 	static Font highlightFont() {
 		final Font n, h;
 
@@ -159,6 +164,8 @@ class CommitGraphTable {
 	private boolean trace = GitTraceLocation.HISTORYVIEW.isActive();
 
 	private boolean enableAntialias = true;
+
+	private final Set<IAction> globalActions = new HashSet<>();
 
 	CommitGraphTable(Composite parent, final TableLoader loader,
 			final ResourceManager resources) {
@@ -276,7 +283,8 @@ class CommitGraphTable {
 		final IAction selectAll = ActionUtils.createGlobalAction(
 				ActionFactory.SELECT_ALL,
 				() -> getTableView().getTable().selectAll());
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
+		globalActions.add(selectAll);
+		globalActions.add(copy);
 
 		getTableView().addOpenListener(new IOpenListener() {
 			@Override
@@ -855,5 +863,15 @@ class CommitGraphTable {
 			parameter.parameters = parameters;
 			return new CommandContributionItem(parameter);
 		}
+	}
+
+	@Override
+	public Viewer getViewer() {
+		return getTableView();
+	}
+
+	@Override
+	public Collection<IAction> getActions() {
+		return globalActions;
 	}
 }

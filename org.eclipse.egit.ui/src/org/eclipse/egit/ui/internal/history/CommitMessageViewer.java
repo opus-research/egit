@@ -17,7 +17,10 @@ package org.eclipse.egit.ui.internal.history;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
@@ -31,6 +34,7 @@ import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.BooleanPrefAction;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
+import org.eclipse.egit.ui.internal.handler.IGlobalActionProvider;
 import org.eclipse.egit.ui.internal.history.FormatJob.FormatResult;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.MenuManager;
@@ -54,6 +58,7 @@ import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.events.ListenerHandle;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.events.RefsChangedListener;
@@ -71,7 +76,8 @@ import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 
-class CommitMessageViewer extends HyperlinkSourceViewer {
+class CommitMessageViewer extends HyperlinkSourceViewer
+		implements IGlobalActionProvider {
 
 	static final String HEADER_CONTENT_TYPE = "__egit_commit_msg_header"; //$NON-NLS-1$
 
@@ -110,6 +116,8 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 	private BooleanPrefAction wrapCommentsPrefAction;
 
 	private BooleanPrefAction fillParagraphsPrefAction;
+
+	private final Set<IAction> globalActions = new HashSet<>();
 
 	CommitMessageViewer(final Composite parent, final IPageSite site, IWorkbenchPartSite partSite) {
 		super(parent, null, SWT.READ_ONLY);
@@ -176,7 +184,9 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 		final IAction copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
 				() -> doOperation(ITextOperationTarget.COPY),
 				() -> canDoOperation(ITextOperationTarget.COPY));
-		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
+		globalActions.add(selectAll);
+		globalActions.add(copy);
+
 		final MenuManager mgr = new MenuManager();
 		Control c = getControl();
 		c.setMenu(mgr.createContextMenu(c));
@@ -222,7 +232,6 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 			}
 		};
 		mgr.add(fillParagraphsPrefAction);
-
 	}
 
 	void addDoneListenerToFormatJob() {
@@ -535,6 +544,16 @@ class CommitMessageViewer extends HyperlinkSourceViewer {
 	private void setFill(boolean fill) {
 		this.fill = fill;
 		format();
+	}
+
+	@Override
+	public Viewer getViewer() {
+		return this;
+	}
+
+	@Override
+	public Collection<IAction> getActions() {
+		return globalActions;
 	}
 
 }
