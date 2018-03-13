@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2011, 2016 Bernard Leach <leachbj@bouncycastle.org> and others.
+ * Copyright (C) 2011, 2017 Bernard Leach <leachbj@bouncycastle.org> and others.
  * Copyright (C) 2015 SAP SE (Christian Georgi <christian.georgi@sap.com>)
  * Copyright (C) 2015 Denis Zygann <d.zygann@web.de>
  * Copyright (C) 2016 IBM (Daniel Megert <daniel_megert@ch.ibm.com>)
@@ -61,8 +61,11 @@ import org.eclipse.egit.core.internal.gerrit.GerritUtil;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffCacheEntry;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffChangedListener;
 import org.eclipse.egit.core.internal.indexdiff.IndexDiffData;
+import org.eclipse.egit.core.internal.job.JobUtil;
 import org.eclipse.egit.core.internal.job.RuleUtil;
+import org.eclipse.egit.core.op.AssumeUnchangedOperation;
 import org.eclipse.egit.core.op.CommitOperation;
+import org.eclipse.egit.core.op.UntrackOperation;
 import org.eclipse.egit.core.project.RepositoryMapping;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.JobFamilies;
@@ -85,6 +88,7 @@ import org.eclipse.egit.ui.internal.commit.CommitJob;
 import org.eclipse.egit.ui.internal.commit.CommitMessageHistory;
 import org.eclipse.egit.ui.internal.commit.CommitProposalProcessor;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
+import org.eclipse.egit.ui.internal.components.RepositoryMenuUtil.RepositoryToolbarAction;
 import org.eclipse.egit.ui.internal.components.ToggleableWarningLabel;
 import org.eclipse.egit.ui.internal.decorators.IProblemDecoratable;
 import org.eclipse.egit.ui.internal.decorators.ProblemLabelDecorator;
@@ -98,6 +102,8 @@ import org.eclipse.egit.ui.internal.operations.DeletePathsOperationUI;
 import org.eclipse.egit.ui.internal.operations.IgnoreOperationUI;
 import org.eclipse.egit.ui.internal.push.PushMode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
+import org.eclipse.egit.ui.internal.selection.MultiViewerSelectionProvider;
+import org.eclipse.egit.ui.internal.selection.RepositorySelectionProvider;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ControlContribution;
 import org.eclipse.jface.action.IAction;
@@ -109,6 +115,7 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.dialogs.DialogSettings;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -151,8 +158,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.events.ListenerHandle;
-import org.eclipse.jgit.events.RefsChangedEvent;
-import org.eclipse.jgit.events.RefsChangedListener;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -211,6 +216,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.forms.IFormColors;
 import org.eclipse.ui.forms.widgets.ExpandableComposite;
 import org.eclipse.ui.forms.widgets.Form;
@@ -223,6 +229,7 @@ import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
+import org.eclipse.ui.progress.WorkbenchJob;
 
 /**
  * A GitX style staging view with embedded commit dialog.
@@ -319,6 +326,12 @@ public class StagingView extends ViewPart
 
 	private IAction compareModeAction;
 
+	private IWorkbenchAction switchRepositoriesAction;
+
+	/** The currently set repository, even if it is bare. */
+	private Repository realRepository;
+
+	/** The currently set repository, if it's not a bare repository. */
 	@Nullable
 	private Repository currentRepository;
 
@@ -650,14 +663,11 @@ public class StagingView extends ViewPart
 			if (!RepositoryUtil.PREFS_DIRECTORIES_REL.equals(event.getKey())) {
 				return;
 			}
-
 			final Repository repo = currentRepository;
-			if (repo == null)
+			if (repo == null || Activator.getDefault().getRepositoryUtil()
+					.contains(repo)) {
 				return;
-
-			if (Activator.getDefault().getRepositoryUtil().contains(repo))
-				return;
-
+			}
 			reload(null);
 		}
 
@@ -1255,7 +1265,9 @@ public class StagingView extends ViewPart
 		UIUtils.notifySelectionChangedWithCurrentSelection(
 				selectionChangedListener, site);
 
-		site.setSelectionProvider(unstagedViewer);
+		site.setSelectionProvider(new RepositorySelectionProvider(
+				new MultiViewerSelectionProvider(unstagedViewer, stagedViewer),
+				() -> realRepository));
 
 		ViewerFilter filter = new ViewerFilter() {
 			@Override
@@ -1799,6 +1811,15 @@ public class StagingView extends ViewPart
 		toolbar.add(linkSelectionAction);
 
 		toolbar.add(new Separator());
+
+		switchRepositoriesAction = new RepositoryToolbarAction(false,
+				() -> realRepository,
+				repo -> {
+					if (realRepository != repo) {
+						reload(repo);
+					}
+				});
+		toolbar.add(switchRepositoriesAction);
 
 		compareModeAction = new Action(UIText.StagingView_CompareMode,
 				IAction.AS_CHECK_BOX) {
@@ -2720,8 +2741,12 @@ public class StagingView extends ViewPart
 				boolean addLaunchMergeTool = availableActions.contains(StagingEntry.Action.LAUNCH_MERGE_TOOL);
 				boolean addReplaceWithOursTheirsMenu = availableActions
 						.contains(StagingEntry.Action.REPLACE_WITH_OURS_THEIRS_MENU);
+				boolean addAssumeUnchanged = availableActions
+						.contains(StagingEntry.Action.ASSUME_UNCHANGED);
+				boolean addUntrack = availableActions
+						.contains(StagingEntry.Action.UNTRACK);
 
-				if (addStage)
+				if (addStage) {
 					menuMgr.add(
 							new Action(UIText.StagingView_StageItemMenuLabel,
 									UIIcons.ELCL16_ADD) {
@@ -2730,7 +2755,8 @@ public class StagingView extends ViewPart
 							stage(selection);
 						}
 					});
-				if (addUnstage)
+				}
+				if (addUnstage) {
 					menuMgr.add(
 							new Action(UIText.StagingView_UnstageItemMenuLabel,
 									UIIcons.UNSTAGE) {
@@ -2739,39 +2765,46 @@ public class StagingView extends ViewPart
 							unstage(selection);
 						}
 					});
+				}
 				boolean selectionIncludesNonWorkspaceResources = selectionIncludesNonWorkspaceResources(fileSelection);
-				if (addReplaceWithFileInGitIndex)
-					if (selectionIncludesNonWorkspaceResources)
+				if (addReplaceWithFileInGitIndex) {
+					if (selectionIncludesNonWorkspaceResources) {
 						menuMgr.add(new ReplaceAction(
 								UIText.StagingView_replaceWithFileInGitIndex,
 								fileSelection, false));
-					else
+					} else {
 						menuMgr.add(createItem(
 								UIText.StagingView_replaceWithFileInGitIndex,
 								ActionCommands.DISCARD_CHANGES_ACTION,
 								fileSelection)); // replace with index
-				if (addReplaceWithHeadRevision)
-					if (selectionIncludesNonWorkspaceResources)
+					}
+				}
+				if (addReplaceWithHeadRevision) {
+					if (selectionIncludesNonWorkspaceResources) {
 						menuMgr.add(new ReplaceAction(
 								UIText.StagingView_replaceWithHeadRevision,
 								fileSelection, true));
-					else
+					} else {
 						menuMgr.add(createItem(
 								UIText.StagingView_replaceWithHeadRevision,
 								ActionCommands.REPLACE_WITH_HEAD_ACTION,
 								fileSelection));
+					}
+				}
 				if (addIgnore) {
 					if (!stagingFolderSet.isEmpty()) {
 						menuMgr.add(new IgnoreFoldersAction(stagingFolderSet));
 					}
 					menuMgr.add(new IgnoreAction(fileSelection));
 				}
-				if (addDelete)
+				if (addDelete) {
 					menuMgr.add(new DeleteAction(fileSelection));
-				if (addLaunchMergeTool)
+				}
+				if (addLaunchMergeTool) {
 					menuMgr.add(createItem(UIText.StagingView_MergeTool,
 							ActionCommands.MERGE_TOOL_ACTION,
 							fileSelection));
+				}
 				if (addReplaceWithOursTheirsMenu) {
 					MenuManager replaceWithMenu = new MenuManager(
 							UIText.StagingView_ReplaceWith);
@@ -2779,6 +2812,25 @@ public class StagingView extends ViewPart
 					oursTheirsMenu.initialize(getSite());
 					replaceWithMenu.add(oursTheirsMenu);
 					menuMgr.add(replaceWithMenu);
+				}
+				if (addAssumeUnchanged) {
+					menuMgr.add(
+							new Action(UIText.StagingView_Assume_Unchanged,
+									UIIcons.ASSUME_UNCHANGED) {
+								@Override
+								public void run() {
+									assumeUnchanged(selection);
+								}
+							});
+				}
+				if (addUntrack) {
+					menuMgr.add(new Action(UIText.StagingView_Untrack,
+							UIIcons.UNTRACK) {
+						@Override
+						public void run() {
+							untrack(selection);
+						}
+					});
 				}
 				menuMgr.add(new Separator());
 				menuMgr.add(createShowInMenu());
@@ -3374,6 +3426,46 @@ public class StagingView extends ViewPart
 		}
 	}
 
+	private void assumeUnchanged(@NonNull IStructuredSelection selection) {
+		List<IPath> locations = new ArrayList<>();
+		collectPaths(selection.toList(), locations);
+
+		if (locations.isEmpty()) {
+			return;
+		}
+
+		JobUtil.scheduleUserJob(
+				new AssumeUnchangedOperation(currentRepository, locations, true),
+				UIText.AssumeUnchanged_assumeUnchanged,
+				JobFamilies.ASSUME_NOASSUME_UNCHANGED);
+	}
+
+	private void untrack(@NonNull IStructuredSelection selection) {
+		List<IPath> locations = new ArrayList<>();
+		collectPaths(selection.toList(), locations);
+
+		if (locations.isEmpty()) {
+			return;
+		}
+
+		JobUtil.scheduleUserJob(
+				new UntrackOperation(currentRepository, locations),
+				UIText.Untrack_untrack, JobFamilies.UNTRACK);
+	}
+
+	private void collectPaths(Object o, List<IPath> result) {
+		if (o instanceof Iterable<?>) {
+			((Iterable<?>) o).forEach(child -> collectPaths(child, result));
+		} else if (o instanceof StagingFolderEntry) {
+			StagingViewContentProvider contentProvider = getContentProvider(unstagedViewer);
+			List<StagingEntry> entries = contentProvider
+					.getStagingEntriesFiltered((StagingFolderEntry) o);
+			collectPaths(entries, result);
+		} else if (o instanceof StagingEntry) {
+			result.add(AdapterUtils.adapt(o, IPath.class));
+		}
+	}
+
 	private void resetPathsToExpand() {
 		pathsToExpandInStaged = new HashSet<>();
 		pathsToExpandInUnstaged = new HashSet<>();
@@ -3413,6 +3505,7 @@ public class StagingView extends ViewPart
 	 */
 	private void clearRepository(@Nullable Repository repository) {
 		saveCommitMessageComponentState();
+		realRepository = repository;
 		currentRepository = null;
 		StagingViewUpdate update = new StagingViewUpdate(null, null, null);
 		setStagingViewerInput(unstagedViewer, update, null, null);
@@ -3426,6 +3519,9 @@ public class StagingView extends ViewPart
 			form.setText(UIText.StagingView_NoSelectionTitle);
 		}
 		updateIgnoreErrorsButtonVisibility();
+		updateRebaseButtonVisibility(false);
+		// Force a selection changed event
+		unstagedViewer.setSelection(unstagedViewer.getSelection());
 	}
 
 	/**
@@ -3483,117 +3579,101 @@ public class StagingView extends ViewPart
 			return;
 		}
 		if (repository == null) {
-			asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					clearRepository(null);
-				}
-			});
+			asyncUpdate(() -> clearRepository(null));
 			return;
 		}
 
 		if (!isValidRepo(repository)) {
-			asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					clearRepository(repository);
-				}
-			});
+			asyncUpdate(() -> clearRepository(repository));
 			return;
 		}
 
 		final boolean repositoryChanged = currentRepository != repository;
+		realRepository = repository;
 		currentRepository = repository;
 
-		asyncExec(new Runnable() {
-
-			@Override
-			public void run() {
-				if (isDisposed()) {
-					return;
-				}
-
-				final IndexDiffData indexDiff = doReload(repository);
-				boolean indexDiffAvailable = indexDiffAvailable(indexDiff);
-				boolean noConflicts = noConflicts(indexDiff);
-
-				if (repositoryChanged) {
-					// Reset paths, they're from the old repository
-					resetPathsToExpand();
-					if (refsChangedListener != null)
-						refsChangedListener.remove();
-					refsChangedListener = repository.getListenerList()
-							.addRefsChangedListener(new RefsChangedListener() {
-
-								@Override
-								public void onRefsChanged(RefsChangedEvent event) {
-									updateRebaseButtonVisibility(repository
-											.getRepositoryState().isRebasing());
-								}
-
-							});
-				}
-				final StagingViewUpdate update = new StagingViewUpdate(repository, indexDiff, null);
-				Object[] unstagedExpanded = unstagedViewer.getVisibleExpandedElements();
-				Object[] stagedExpanded = stagedViewer.getVisibleExpandedElements();
-
-				int unstagedElementsCount = updateAutoExpand(unstagedViewer,
-						getUnstaged(indexDiff));
-				int stagedElementsCount = updateAutoExpand(stagedViewer,
-						getStaged(indexDiff));
-				int elementsCount = unstagedElementsCount + stagedElementsCount;
-
-				if (elementsCount > getMaxLimitForListMode()) {
-					listPresentationAction.setEnabled(false);
-					if (presentation == Presentation.LIST) {
-						compactTreePresentationAction.setChecked(true);
-						switchToCompactModeInternal(true);
-					} else {
-						setExpandCollapseActionsVisible(false,
-								unstagedElementsCount <= getMaxLimitForListMode(),
-								true);
-						setExpandCollapseActionsVisible(true,
-								stagedElementsCount <= getMaxLimitForListMode(),
-								true);
-					}
-				} else {
-					listPresentationAction.setEnabled(true);
-					boolean changed = getPreferenceStore().getBoolean(
-							UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED);
-					if (changed) {
-						listPresentationAction.setChecked(true);
-						switchToListMode();
-					} else if (presentation != Presentation.LIST) {
-						setExpandCollapseActionsVisible(false, true, true);
-						setExpandCollapseActionsVisible(true, true, true);
-					}
-				}
-
-				setStagingViewerInput(unstagedViewer, update, unstagedExpanded,
-						pathsToExpandInUnstaged);
-				setStagingViewerInput(stagedViewer, update, stagedExpanded,
-						pathsToExpandInStaged);
-				resetPathsToExpand();
-				refreshAction.setEnabled(true);
-
-				updateRebaseButtonVisibility(repository.getRepositoryState()
-						.isRebasing());
-
-				updateIgnoreErrorsButtonVisibility();
-
-				boolean rebaseContinueEnabled = indexDiffAvailable
-						&& repository.getRepositoryState().isRebasing()
-						&& noConflicts;
-				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
-
-				form.setText(GitLabels.getStyledLabelSafe(repository).toString());
-				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
-				enableCommitWidgets(indexDiffAvailable && noConflicts);
-
-				updateCommitButtons();
-				updateSectionText();
+		asyncUpdate(() -> {
+			if (isDisposed()) {
+				return;
 			}
 
+			final IndexDiffData indexDiff = doReload(repository);
+			boolean indexDiffAvailable = indexDiffAvailable(indexDiff);
+			boolean noConflicts = noConflicts(indexDiff);
+
+			if (repositoryChanged) {
+				// Reset paths, they're from the old repository
+				resetPathsToExpand();
+				if (refsChangedListener != null)
+					refsChangedListener.remove();
+				refsChangedListener = repository.getListenerList()
+						.addRefsChangedListener(
+								event -> updateRebaseButtonVisibility(repository
+										.getRepositoryState().isRebasing()));
+			}
+			final StagingViewUpdate update = new StagingViewUpdate(repository,
+					indexDiff, null);
+			Object[] unstagedExpanded = unstagedViewer
+					.getVisibleExpandedElements();
+			Object[] stagedExpanded = stagedViewer.getVisibleExpandedElements();
+
+			int unstagedElementsCount = updateAutoExpand(unstagedViewer,
+					getUnstaged(indexDiff));
+			int stagedElementsCount = updateAutoExpand(stagedViewer,
+					getStaged(indexDiff));
+			int elementsCount = unstagedElementsCount + stagedElementsCount;
+
+			if (elementsCount > getMaxLimitForListMode()) {
+				listPresentationAction.setEnabled(false);
+				if (presentation == Presentation.LIST) {
+					compactTreePresentationAction.setChecked(true);
+					switchToCompactModeInternal(true);
+				} else {
+					setExpandCollapseActionsVisible(false,
+							unstagedElementsCount <= getMaxLimitForListMode(),
+							true);
+					setExpandCollapseActionsVisible(true,
+							stagedElementsCount <= getMaxLimitForListMode(),
+							true);
+				}
+			} else {
+				listPresentationAction.setEnabled(true);
+				boolean changed = getPreferenceStore().getBoolean(
+						UIPreferences.STAGING_VIEW_PRESENTATION_CHANGED);
+				if (changed) {
+					listPresentationAction.setChecked(true);
+					switchToListMode();
+				} else if (presentation != Presentation.LIST) {
+					setExpandCollapseActionsVisible(false, true, true);
+					setExpandCollapseActionsVisible(true, true, true);
+				}
+			}
+
+			setStagingViewerInput(unstagedViewer, update, unstagedExpanded,
+					pathsToExpandInUnstaged);
+			setStagingViewerInput(stagedViewer, update, stagedExpanded,
+					pathsToExpandInStaged);
+			resetPathsToExpand();
+			// Force a selection changed event
+			unstagedViewer.setSelection(unstagedViewer.getSelection());
+			refreshAction.setEnabled(true);
+
+			updateRebaseButtonVisibility(
+					repository.getRepositoryState().isRebasing());
+
+			updateIgnoreErrorsButtonVisibility();
+
+			boolean rebaseContinueEnabled = indexDiffAvailable
+					&& repository.getRepositoryState().isRebasing()
+					&& noConflicts;
+			rebaseContinueButton.setEnabled(rebaseContinueEnabled);
+
+			form.setText(GitLabels.getStyledLabelSafe(repository).toString());
+			updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
+			enableCommitWidgets(indexDiffAvailable && noConflicts);
+
+			updateCommitButtons();
+			updateSectionText();
 		});
 	}
 
@@ -3942,9 +4022,11 @@ public class StagingView extends ViewPart
 
 	private void commit(boolean pushUpstream) {
 		if (!isCommitWithoutFilesAllowed()) {
-			MessageDialog.openError(getSite().getShell(),
-					UIText.StagingView_committingNotPossible,
-					UIText.StagingView_noStagedFiles);
+			MessageDialog md = new MessageDialog(getSite().getShell(),
+					UIText.StagingView_committingNotPossible, null,
+					UIText.StagingView_noStagedFiles, MessageDialog.ERROR,
+					new String[] { IDialogConstants.CLOSE_LABEL }, 0);
+			md.open();
 			return;
 		}
 		if (!commitMessageComponent.checkCommitInfo())
@@ -4072,6 +4154,11 @@ public class StagingView extends ViewPart
 			refsChangedListener.remove();
 		}
 
+		if (switchRepositoriesAction != null) {
+			switchRepositoriesAction.dispose();
+			switchRepositoriesAction = null;
+		}
+
 		getPreferenceStore().removePropertyChangeListener(uiPrefsListener);
 
 		getDialogSettings().put(STORE_SORT_STATE, sortAction.isChecked());
@@ -4091,6 +4178,30 @@ public class StagingView extends ViewPart
 
 	private void asyncExec(Runnable runnable) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(runnable);
+	}
+
+	private void asyncUpdate(Runnable runnable) {
+		Job update = new WorkbenchJob(UIText.StagingView_LoadJob) {
+
+			@Override
+			public IStatus runInUIThread(IProgressMonitor monitor) {
+				try {
+					runnable.run();
+					return Status.OK_STATUS;
+				} catch (Exception e) {
+					return Activator.createErrorStatus(e.getLocalizedMessage(),
+							e);
+				}
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				return family == JobFamilies.STAGING_VIEW_RELOAD
+						|| super.belongsTo(family);
+			}
+		};
+		update.setSystem(true);
+		update.schedule();
 	}
 
 	/**
