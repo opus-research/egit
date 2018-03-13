@@ -50,6 +50,16 @@
                value="org.eclipse.team.core.repository=org.eclipse.egit.core.GitProvider">
          </filter>
          <action
+               class="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
+               id="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitAction"
+               label="%ReplaceWithCommitAction_label"
+               menubarPath="replaceWithMenu/gitReplaceWithGroup2"/>
+         <action
+               class="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
+               id="org.eclipse.egit.ui.internal.actions.ReplaceWithRefAction"
+               label="%ReplaceWithRefAction_label"
+               menubarPath="replaceWithMenu/gitReplaceWithGroup2"/>
+         <action
                class="org.eclipse.egit.ui.internal.actions.ApplyPatchAction"
                definitionId="org.eclipse.egit.ui.team.ApplyPatch"
                enablesFor="*"
@@ -2177,7 +2187,7 @@
                class="org.eclipse.egit.ui.internal.actions.CompareWithCommitActionHandler">
          </class>
          <activeWhen>
-            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
+            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
          </activeWhen>
       </handler>
       <handler
@@ -2186,7 +2196,7 @@
                class="org.eclipse.egit.ui.internal.actions.CompareWithRefActionHandler">
          </class>
          <activeWhen>
-            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
+            <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
          </activeWhen>
       </handler>
       <handler
@@ -2197,7 +2207,7 @@
          <activeWhen>
             <and>
                <count value="1" />
-               <test property="GitSelection.resourcesSingleRepository" args="isSafe" />         	
+               <test property="GitSelection.resourcesSingleRepository" args="isSafe" />
                <test property="org.eclipse.egit.ui.resources.ResourceState.hasTrackedResources" />
             </and>
          </activeWhen>
@@ -2208,7 +2218,7 @@
                class="org.eclipse.egit.ui.internal.actions.DiscardChangesActionHandler">
          </class>
          <activeWhen>
-            <test property="GitSelection.resourcesAllInRepository" args="isSafe" />         	
+            <test property="GitSelection.resourcesAllInRepository" args="isSafe" />
          </activeWhen>
       </handler>
       <handler
@@ -2217,25 +2227,7 @@
                class="org.eclipse.egit.ui.internal.actions.ReplaceWithHeadActionHandler">
          </class>
          <activeWhen>
-            <test property="GitSelection.resourcesAllInRepository" args="isSafe" />         	
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.team.ReplaceWithCommit">
-         <class
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitActionHandler">
-         </class>
-         <activeWhen>
-            <test property="GitSelection.resourcesSingleRepository" args="isSafe" />         	
-         </activeWhen>
-      </handler>
-      <handler
-            commandId="org.eclipse.egit.ui.team.ReplaceWithRef">
-         <class
-               class="org.eclipse.egit.ui.internal.actions.ReplaceWithRefActionHandler">
-         </class>
-         <activeWhen>
-            <test property="GitSelection.resourcesSingleRepository" args="isSafe" />         	
+            <test property="GitSelection.resourcesAllInRepository" args="isSafe" />
          </activeWhen>
       </handler>
    </extension>
@@ -4747,7 +4739,7 @@
                label="%CompareWithBranchOrTagAction.label"
                style="push">
             <visibleWhen checkEnabled="false">
-               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
+               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
             </visibleWhen>
          </command>
          <command
@@ -4755,7 +4747,7 @@
                label="%CompareWithCommitAction.label"
                style="push">
             <visibleWhen checkEnabled="false">
-               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />         	
+               <reference definitionId="org.eclipse.egit.ui.resourcesSingleRepository" />
             </visibleWhen>
          </command>
       </menuContribution>
@@ -4781,7 +4773,7 @@
             <visibleWhen checkEnabled="false">
                <and>
                   <count value="1" />
-                  <test property="GitSelection.resourcesSingleRepository" args="isSafe" />         	
+                  <test property="GitSelection.resourcesSingleRepository" args="isSafe" />
                   <test property="org.eclipse.egit.ui.resources.ResourceState.hasTrackedResources" />
                </and>
             </visibleWhen>
@@ -4791,19 +4783,41 @@
             allPopups="false"
             locationURI="popup:replaceWithMenu?after=gitReplaceWithGroup2">
          <command
-               commandId="org.eclipse.egit.ui.team.ReplaceWithRef"
-               label="%ReplaceWithRefAction_label"
-               style="push">
-            <visibleWhen checkEnabled="false">
-               <test property="GitSelection.resourcesSingleRepository" args="isSafe" />         	
-            </visibleWhen>
-         </command>
-         <command
                commandId="org.eclipse.egit.ui.team.ReplaceWithCommit"
                label="%ReplaceWithCommitAction_label"
                style="push">
-            <visibleWhen checkEnabled="false">
-               <test property="GitSelection.resourcesSingleRepository" args="isSafe" />         	
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <reference
+                        definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
+                  </reference>
+                  <reference
+                        definitionId="org.eclipse.egit.ui.egitOnlyResourceMapping">
+                  </reference>
+                  <reference
+                        definitionId="org.eclipse.egit.ui.resourcesAllInRepository">
+                  </reference>
+               </and>
+            </visibleWhen>
+         </command>
+         <command
+               commandId="org.eclipse.egit.ui.team.ReplaceWithRef"
+               label="%ReplaceWithRefAction_label"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                  <reference
+                        definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
+                  </reference>
+                  <reference
+                        definitionId="org.eclipse.egit.ui.egitOnlyResourceMapping">
+                  </reference>
+                  <reference
+                        definitionId="org.eclipse.egit.ui.resourcesAllInRepository">
+                  </reference>
+               </and>
             </visibleWhen>
          </command>
       </menuContribution>
@@ -5610,11 +5624,13 @@
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithCommitActionHandler"
             id="org.eclipse.egit.ui.team.ReplaceWithCommit"
             name="%ReplaceWithCommitCommand.name">
       </command>
       <command
             categoryId="org.eclipse.egit.ui.commandCategory"
+            defaultHandler="org.eclipse.egit.ui.internal.actions.ReplaceWithRefActionHandler"
             id="org.eclipse.egit.ui.team.ReplaceWithRef"
             name="%ReplaceWithRefCommand.name">
       </command>
