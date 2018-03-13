@@ -3692,6 +3692,9 @@ public class UIText extends NLS {
 	public static String DiscardChangesAction_discardChanges;
 
 	/** */
+	public static String DiscardChangesAction_discardChangesButtonText;
+
+	/** */
 	public static String Disconnect_disconnect;
 
 	/** */
@@ -4273,9 +4276,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommitEditor_showGitRepo;
-
-	/** */
-	public static String CommitEditor_toolbarCheckOut;
 
 	/** */
 	public static String CommitEditor_TitleHeaderCommit;

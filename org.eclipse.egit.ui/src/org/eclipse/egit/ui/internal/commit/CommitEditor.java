@@ -20,7 +20,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.CommonUtils;
-import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.command.CheckoutHandler;
 import org.eclipse.egit.ui.internal.commit.command.CherryPickHandler;
@@ -31,15 +30,11 @@ import org.eclipse.egit.ui.internal.commit.command.ShowInHistoryHandler;
 import org.eclipse.egit.ui.internal.commit.command.StashApplyHandler;
 import org.eclipse.egit.ui.internal.commit.command.StashDropHandler;
 import org.eclipse.egit.ui.internal.repository.RepositoriesView;
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.ContributionManager;
 import org.eclipse.jface.action.ControlContribution;
-import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.ToolBarManager;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -265,19 +260,6 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		return new CommandContributionItem(parameter);
 	}
 
-	private IContributionItem createActionContributionItem(String commandId,
-			String title, ImageDescriptor icon) {
-		IAction action = new Action(title, icon) {
-
-			@Override
-			public void run() {
-				CommonUtils.runCommand(commandId,
-						new StructuredSelection(getCommit()));
-			}
-		};
-		return new ActionContributionItem(action);
-	}
-
 	/**
 	 * @see org.eclipse.ui.forms.editor.SharedHeaderFormEditor#createHeaderContents(org.eclipse.ui.forms.IManagedForm)
 	 */
@@ -359,8 +341,7 @@ public class CommitEditor extends SharedHeaderFormEditor implements
 		} else {
 			toolbar.add(createCommandContributionItem(CreateTagHandler.ID));
 			toolbar.add(createCommandContributionItem(CreateBranchHandler.ID));
-			toolbar.add(createActionContributionItem(CheckoutHandler.ID,
-					UIText.CommitEditor_toolbarCheckOut, UIIcons.CHECKOUT));
+			toolbar.add(createCommandContributionItem(CheckoutHandler.ID));
 			toolbar.add(createCommandContributionItem(CherryPickHandler.ID));
 			toolbar.add(createCommandContributionItem(RevertHandler.ID));
 			toolbar.add(createCommandContributionItem(ShowInHistoryHandler.ID));
