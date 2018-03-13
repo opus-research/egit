@@ -202,10 +202,11 @@ public class DefaultGitSynchronizer implements GitSynchronizer {
 					view = (CompareTreeView) PlatformUI.getWorkbench()
 							.getActiveWorkbenchWindow().getActivePage()
 							.showView(CompareTreeView.ID);
-					if (includeLocal)
+					if (includeLocal) {
 						view.setInput(resources, rightRev);
-					else
+					} else {
 						view.setInput(resources, leftRev, rightRev);
+					}
 				} catch (PartInitException e) {
 					Activator.handleError(e.getMessage(), e, true);
 				}

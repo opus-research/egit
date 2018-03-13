@@ -29,6 +29,8 @@ public class GitCorePreferenceInitializer extends AbstractPreferenceInitializer 
 		p.putInt(GitCorePreferences.core_streamFileThreshold, 50 * MB);
 		p.putBoolean(GitCorePreferences.core_autoShareProjects, true);
 		p.putBoolean(GitCorePreferences.core_autoIgnoreDerivedResources, true);
+		p.putBoolean(GitCorePreferences.core_autoStageDeletion, false);
+		p.putBoolean(GitCorePreferences.core_autoStageMoves, true);
 
 		String defaultRepoDir = RepositoryUtil.getDefaultDefaultRepositoryDir();
 		p.put(GitCorePreferences.core_defaultRepositoryDir, defaultRepoDir);

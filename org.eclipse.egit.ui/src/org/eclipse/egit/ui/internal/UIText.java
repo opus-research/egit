@@ -193,6 +193,12 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_CreateProjectsTask;
 
 	/** */
+	public static String SecureStoreUtils_errorClearingCredentials;
+
+	/** */
+	public static String SecureStoreUtils_errorReadingCredentials;
+
+	/** */
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
@@ -266,12 +272,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GerritConfigurationPage_UserLabel;
-
-	/** */
-	public static String EGitCredentialsProvider_errorReadingCredentials;
-
-	/** */
-	public static String EGitCredentialsProvider_FailedToClearCredentials;
 
 	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
@@ -3247,6 +3247,12 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_AlwaysUseStagingView;
 
 	/** */
+	public static String CommittingPreferencePage_autoStageDeletion;
+
+	/** */
+	public static String CommittingPreferencePage_autoStageMoves;
+
+	/** */
 	public static String CommittingPreferencePage_AutoStageOnCommit;
 
 	/** */
@@ -4093,6 +4099,12 @@ public class UIText extends NLS {
 	public static String UIUtils_StartTypingForPreviousValuesMessage;
 
 	/** */
+	public static String UIUtils_PressShortcutForRemoteRefMessage;
+
+	/** */
+	public static String UIUtils_StartTypingForRemoteRefMessage;
+
+	/** */
 	public static String UIUtils_ShowInMenuLabel;
 
 	/** */
@@ -4313,6 +4325,9 @@ public class UIText extends NLS {
 	public static String StashEditorPage_LabelParent2;
 
 	/** */
+	public static String MultiPageEditorContentOutlinePage_NoOutline;
+
+	/** */
 	public static String Header_contextMenu_copy;
 
 	/** */
@@ -4335,9 +4350,6 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_CompareWorkingDirectoryMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_FileDoesNotExist;
-
-	/** */
 	public static String CommitFileDiffViewer_MergeCommitMultiAncestorMessage;
 
 	/** */
@@ -4347,13 +4359,28 @@ public class UIText extends NLS {
 	public static String CommitFileDiffViewer_OpenPreviousInEditorMenuLabel;
 
 	/** */
-	public static String CommitFileDiffViewer_notContainedInCommit;
-
-	/** */
 	public static String CommitFileDiffViewer_ShowAnnotationsMenuLabel;
 
 	/** */
 	public static String CommitFileDiffViewer_ShowInHistoryLabel;
+
+	/** */
+	public static String DiffViewer_FileDoesNotExist;
+
+	/** */
+	public static String DiffViewer_OpenComparisonLinkLabel;
+
+	/** */
+	public static String DiffViewer_OpenWorkingTreeLinkLabel;
+
+	/** */
+	public static String DiffViewer_OpenInEditorLinkLabel;
+
+	/** */
+	public static String DiffViewer_OpenPreviousLinkLabel;
+
+	/** */
+	public static String DiffViewer_notContainedInCommit;
 
 	/** */
 	public static String CommitGraphTable_CommitId;

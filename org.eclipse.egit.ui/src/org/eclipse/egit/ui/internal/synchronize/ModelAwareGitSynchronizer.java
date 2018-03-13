@@ -79,7 +79,7 @@ public class ModelAwareGitSynchronizer extends DefaultGitSynchronizer {
 			Activator.error(e.getTargetException().getMessage(),
 					e.getTargetException());
 		} catch (InterruptedException e) {
-			// Nothin to do, operation has been cancelled
+			// Nothing to do, operation has been cancelled
 		}
 	}
 
@@ -112,7 +112,7 @@ public class ModelAwareGitSynchronizer extends DefaultGitSynchronizer {
 			Activator.error(e.getTargetException().getMessage(),
 					e.getTargetException());
 		} catch (InterruptedException e) {
-			// Nothin to do, operation has been cancelled
+			// Nothing to do, operation has been cancelled
 		}
 	}
 
