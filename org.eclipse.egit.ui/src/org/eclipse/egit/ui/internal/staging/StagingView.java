@@ -11,7 +11,6 @@
  * Contributors:
  *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969, 473544
  *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 481683
- *    Lars Vogel <Lars.Vogel@vogella.com> - Bug 497197
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -656,7 +655,10 @@ public class StagingView extends ViewPart implements IShowInSource {
 				// ignore
 			}
 		});
+		form.setImage(getImage(UIIcons.REPOSITORY));
+		form.setText(UIText.StagingView_NoSelectionTitle);
 		GridDataFactory.fillDefaults().grab(true, true).applyTo(form);
+		toolkit.decorateFormHeading(form);
 		GridLayoutFactory.swtDefaults().applyTo(form.getBody());
 
 		mainSashForm = new SashForm(form.getBody(), SWT.HORIZONTAL);
@@ -1914,22 +1916,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 	}
 
 	private void updateSectionText() {
-		// local variable needed to avoid potential NPE warning
-		final Repository repository = currentRepository;
-		stagedSection
-				.setText(MessageFormat.format(UIText.StagingView_StagedChanges,
+		stagedSection.setText(MessageFormat
+				.format(UIText.StagingView_StagedChanges,
 						getSectionCount(stagedViewer)));
-
-		String unstagedSectionText = ""; //$NON-NLS-1$
-		if (currentRepository == null) {
-			unstagedSectionText = UIText.StagingView_NoSelectionTitle;
-		} else if (repository != null) {
-			unstagedSectionText = GitLabels.getStyledLabelSafe(repository)
-					.toString();
-		}
 		unstagedSection.setText(MessageFormat.format(
-				unstagedSectionText + "\n" //$NON-NLS-1$
-						+ UIText.StagingView_UnstagedChanges,
+				UIText.StagingView_UnstagedChanges,
 				getSectionCount(unstagedViewer)));
 	}
 
@@ -2743,6 +2734,11 @@ public class StagingView extends ViewPart implements IShowInSource {
 		enableCommitWidgets(false);
 		refreshAction.setEnabled(false);
 		updateSectionText();
+		if (repository != null && repository.isBare()) {
+			form.setText(UIText.StagingView_BareRepoSelection);
+		} else {
+			form.setText(UIText.StagingView_NoSelectionTitle);
+		}
 		updateIgnoreErrorsButtonVisibility();
 	}
 
@@ -2900,6 +2896,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 						&& noConflicts;
 				rebaseContinueButton.setEnabled(rebaseContinueEnabled);
 
+				form.setText(GitLabels.getStyledLabelSafe(repository).toString());
 				updateCommitMessageComponent(repositoryChanged, indexDiffAvailable);
 				enableCommitWidgets(indexDiffAvailable && noConflicts);
 
