@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2016, 2017 Thomas Wolf <thomas.wolf@paranor.ch>
- *
+ * Copyright (c) 2016 Thomas Wolf <thomas.wolf@paranor.ch>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -29,8 +28,6 @@ public class ShowPushResultAction extends RepositoryJobResultAction {
 
 	private final String destination;
 
-	private final @NonNull PushMode pushMode;
-
 	/**
 	 * Creates a new {@link ShowPushResultAction}.
 	 *
@@ -43,17 +40,14 @@ public class ShowPushResultAction extends RepositoryJobResultAction {
 	 * @param showConfigureButton
 	 *            {@code true} to show a configure button in the
 	 *            {@link PushResultDialog}
-	 * @param pushMode
-	 *            the push was for
 	 */
 	public ShowPushResultAction(@NonNull Repository repository,
 			PushOperationResult result, String destination,
-			boolean showConfigureButton, @NonNull PushMode pushMode) {
+			boolean showConfigureButton) {
 		super(repository, UIText.ShowPushResultAction_name);
 		this.operationResult = result;
 		this.destination = destination;
 		this.showConfigure = showConfigureButton;
-		this.pushMode = pushMode;
 	}
 
 	private boolean isModal(Shell shell) {
@@ -66,7 +60,7 @@ public class ShowPushResultAction extends RepositoryJobResultAction {
 		Shell shell = PlatformUI.getWorkbench().getModalDialogShellProvider()
 				.getShell();
 		PushResultDialog dialog = new PushResultDialog(shell, repository,
-				operationResult, destination, isModal(shell), pushMode);
+				operationResult, destination, isModal(shell));
 		dialog.showConfigureButton(showConfigure);
 		dialog.open();
 	}
