@@ -71,8 +71,8 @@ public class MultiPageEditorContentOutlinePage extends ContentOutlinePage {
 	/**
 	 * Creates a new {@link MultiPageEditorContentOutlinePage} for the given
 	 * top-level editor part. It will track page changes and create and manage
-	 * outline pages for any nested {@link IEditorPart}s of that top-level
-	 * editor part.
+	 * outline pages for any nested {@link IEditorPart}s of thattop-level editor
+	 * part.
 	 *
 	 * @param editorPart
 	 *            the outline page belongs to
@@ -89,13 +89,8 @@ public class MultiPageEditorContentOutlinePage extends ContentOutlinePage {
 		emptyPage.createControl(book);
 		emptyPage
 				.setMessage(UIText.MultiPageEditorContentOutlinePage_NoOutline);
-		Object activePage = editorPart.getSelectedPage();
-		if (activePage instanceof IEditorPart) {
-			showPage(createOutlinePage((IEditorPart) activePage));
-		} else {
-			currentPage = emptyPage;
-			book.showPage(emptyPage.getControl());
-		}
+		currentPage = emptyPage;
+		book.showPage(emptyPage.getControl());
 		pageListener = (event) -> {
 			Object newPage = event.getSelectedPage();
 			if (!(newPage instanceof IEditorPart)) {
@@ -199,7 +194,7 @@ public class MultiPageEditorContentOutlinePage extends ContentOutlinePage {
 		}
 		localBars = bars.get(currentPage);
 		Control control = page.getControl();
-		if (control == null || control.isDisposed()) {
+		if (control == null) {
 			page.createControl(book);
 			page.setActionBars(localBars);
 			control = page.getControl();
