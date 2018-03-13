@@ -152,10 +152,8 @@ public class FetchGerritChangeTest {
 	public void testChangeRefs() {
 		assertEquals(Change.create(65510, 6), FetchGerritChangePage
 				.determineChangeFromString("refs/changes/10/65510/6"));
-		assertEquals(Change.create(65510), FetchGerritChangePage
+		assertNull(FetchGerritChangePage
 				.determineChangeFromString("refs/changes/10/65510/"));
-		assertEquals(Change.create(65510), FetchGerritChangePage
-				.determineChangeFromString("refs/changes/10/65510"));
 		assertNull(FetchGerritChangePage
 				.determineChangeFromString("refs/changes/10/"));
 		assertEquals(Change.create(65510, 6), FetchGerritChangePage
