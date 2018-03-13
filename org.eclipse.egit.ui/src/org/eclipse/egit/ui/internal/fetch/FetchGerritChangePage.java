@@ -8,7 +8,7 @@
  * Contributors:
  *    Mathias Kinzler (SAP AG) - initial implementation
  *    Marc Khouzam (Ericsson)  - Add an option not to checkout the new branch
- *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935, 495777
+ *    Thomas Wolf <thomas.wolf@paranor.ch> - Bug 493935
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.fetch;
 
@@ -41,7 +41,6 @@ import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
 import org.eclipse.egit.ui.internal.branch.BranchOperationUI;
-import org.eclipse.egit.ui.internal.branch.LaunchFinder;
 import org.eclipse.egit.ui.internal.dialogs.AbstractBranchSelectionDialog;
 import org.eclipse.egit.ui.internal.dialogs.BranchEditDialog;
 import org.eclipse.egit.ui.internal.dialogs.CheckoutConflictDialog;
@@ -108,6 +107,8 @@ import org.eclipse.ui.PlatformUI;
  */
 public class FetchGerritChangePage extends WizardPage {
 
+	private static final String RUN_IN_BACKGROUND = "runInBackground"; //$NON-NLS-1$
+
 	private final Repository repository;
 
 	private final IDialogSettings settings;
@@ -142,7 +143,7 @@ public class FetchGerritChangePage extends WizardPage {
 
 	private Button activateAdditionalRefs;
 
-	private Button runInBackground;
+	private Button runInBackgroud;
 
 	private IInputValidator branchValidator;
 	private IInputValidator tagValidator;
@@ -373,11 +374,11 @@ public class FetchGerritChangePage extends WizardPage {
 		} else if (candidateChange != null) {
 			refText.setText(candidateChange);
 		}
-		runInBackground = new Button(main, SWT.CHECK);
+		runInBackgroud = new Button(main, SWT.CHECK);
 		GridDataFactory.fillDefaults().span(2, 1).align(SWT.BEGINNING, SWT.END)
 				.grab(true, true)
-				.applyTo(runInBackground);
-		runInBackground.setText(UIText.RunInBackground_label);
+				.applyTo(runInBackgroud);
+		runInBackgroud.setText(UIText.FetchGerritChangePage_RunInBackground);
 
 		// get all available Gerrit URIs from the repository
 		SortedSet<String> uris = new TreeSet<>();
@@ -511,13 +512,11 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	private void storeRunInBackgroundSelection() {
-		settings.put(GerritDialogSettings.RUN_IN_BACKGROUND,
-				runInBackground.getSelection());
+		settings.put(RUN_IN_BACKGROUND, runInBackgroud.getSelection());
 	}
 
 	private void restoreRunInBackgroundSelection() {
-		runInBackground.setSelection(
-				settings.getBoolean(GerritDialogSettings.RUN_IN_BACKGROUND));
+		runInBackgroud.setSelection(settings.getBoolean(RUN_IN_BACKGROUND));
 	}
 
 	@Override
@@ -642,6 +641,7 @@ public class FetchGerritChangePage extends WizardPage {
 	}
 
 	boolean doFetch() {
+
 		final RefSpec spec = new RefSpec().setSource(refText.getText())
 				.setDestination(Constants.FETCH_HEAD);
 		final String uri = uriCombo.getText();
@@ -654,13 +654,9 @@ public class FetchGerritChangePage extends WizardPage {
 		final String textForTag = tagText.getText();
 		final String textForBranch = branchText.getText();
 
-		if (doCheckoutNewBranch && LaunchFinder
-				.shouldCancelBecauseOfRunningLaunches(repository, null)) {
-			return false;
-		}
 		storeRunInBackgroundSelection();
 
-		if (runInBackground.getSelection()) {
+		if (runInBackgroud.getSelection()) {
 			Job job = new WorkspaceJob(
 					UIText.FetchGerritChangePage_GetChangeTaskName) {
 
@@ -691,28 +687,27 @@ public class FetchGerritChangePage extends WizardPage {
 			return true;
 		} else {
 			try {
-				getWizard().getContainer().run(true, true,
-						new IRunnableWithProgress() {
-
-							@Override
-							public void run(IProgressMonitor monitor)
-									throws InvocationTargetException,
-									InterruptedException {
-								try {
-									internalDoFetch(spec, uri, doCheckout,
+			getWizard().getContainer().run(true, true,
+					new IRunnableWithProgress() {
+						@Override
+						public void run(IProgressMonitor monitor)
+								throws InvocationTargetException,
+								InterruptedException {
+							try {
+								internalDoFetch(spec, uri, doCheckout,
 											doCreateTag, doCreateBranch,
 											doCheckoutNewBranch,
-											doActivateAdditionalRefs,
-											textForTag, textForBranch, monitor);
-								} catch (RuntimeException e) {
-									throw e;
-								} catch (Exception e) {
-									throw new InvocationTargetException(e);
-								} finally {
-									monitor.done();
-								}
+										doActivateAdditionalRefs, textForTag,
+										textForBranch, monitor);
+							} catch (RuntimeException e) {
+								throw e;
+							} catch (Exception e) {
+								throw new InvocationTargetException(e);
+							} finally {
+								monitor.done();
 							}
-						});
+						}
+					});
 			} catch (InvocationTargetException e) {
 				Activator.handleError(e.getCause().getMessage(), e.getCause(),
 						true);
@@ -741,7 +736,8 @@ public class FetchGerritChangePage extends WizardPage {
 				totalWork);
 
 		try {
-			RevCommit commit = fetchChange(uri, spec, monitor);
+			RevCommit commit = fetchChange(uri, spec,
+					monitor);
 
 			if (doCreateTag)
 				createTag(spec, textForTag, commit, monitor);
