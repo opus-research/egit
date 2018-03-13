@@ -40,6 +40,7 @@ import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
 import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
+import org.eclipse.egit.ui.internal.UIIcons;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.actions.ResetMenu;
 import org.eclipse.egit.ui.internal.history.SWTCommitList.SWTLane;
@@ -234,6 +235,8 @@ class CommitGraphTable {
 
 		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
 				() -> doCopy());
+		copy.setText(UIText.CommitGraphTable_CopyCommitIdLabel);
+		copy.setImageDescriptor(UIIcons.ELCL16_ID);
 		table.setUseHashlookup(true);
 
 		table.addSelectionChangedListener(new ISelectionChangedListener() {
@@ -374,12 +377,14 @@ class CommitGraphTable {
 	void setInput(final RevFlag hFlag, final SWTCommitList list,
 			final SWTCommit[] asArray, HistoryPageInput input, boolean keepPosition) {
 		int topIndex = -1;
-		if (keepPosition)
+		if (keepPosition) {
 			topIndex = table.getTable().getTopIndex();
+		}
 		setHistoryPageInput(input);
 		final SWTCommitList oldList = allCommits;
-		if (oldList != null && oldList != list)
+		if (oldList != null && oldList != list) {
 			oldList.dispose();
+		}
 		highlight = hFlag;
 		allCommits = list;
 		int newAllCommitsLength = allCommits.size();
@@ -387,13 +392,18 @@ class CommitGraphTable {
 		if (asArray != null && asArray.length > 0) {
 			if (oldList != list || allCommitsLength < newAllCommitsLength)
 				initCommitsMap();
-		} else
+		} else {
 			table.getTable().deselectAll();
+			// Fire an event
+			table.setSelection(table.getSelection());
+		}
 		allCommitsLength = newAllCommitsLength;
-		if (commitToShow != null)
+		if (commitToShow != null) {
 			selectCommit(commitToShow);
-		if (keepPosition)
+		}
+		if (keepPosition) {
 			table.getTable().setTopIndex(topIndex);
+		}
 	}
 
 	void setHistoryPageInput(HistoryPageInput input) {

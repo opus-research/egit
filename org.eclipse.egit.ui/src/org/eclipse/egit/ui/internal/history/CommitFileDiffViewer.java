@@ -39,8 +39,6 @@ import org.eclipse.egit.ui.internal.blame.BlameOperation;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -54,6 +52,8 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -157,6 +157,17 @@ public class CommitFileDiffViewer extends TableViewer {
 
 		setLabelProvider(new FileDiffLabelProvider(dimmedForegroundRgb));
 		setContentProvider(new FileDiffContentProvider());
+		setComparator(new ViewerComparator() {
+
+			@Override
+			public int compare(Viewer viewer, Object left, Object right) {
+				if (left instanceof FileDiff && right instanceof FileDiff) {
+					return FileDiff.PATH_COMPARATOR.compare((FileDiff) left,
+							(FileDiff) right);
+				}
+				return super.compare(viewer, left, right);
+			}
+		});
 		addOpenListener(new IOpenListener() {
 			@Override
 			public void open(final OpenEvent event) {
@@ -320,18 +331,12 @@ public class CommitFileDiffViewer extends TableViewer {
 		selectAll.setEnabled(true);
 		copy = ActionUtils.createGlobalAction(ActionFactory.COPY,
 				() -> doCopy());
+		copy.setText(UIText.CommitFileDiffViewer_CopyFilePathMenuLabel);
 		copy.setEnabled(true);
 		ActionUtils.setGlobalActions(getControl(), copy, selectAll);
 		mgr.add(selectAll);
 		mgr.add(copy);
-
-		// See https://bugs.eclipse.org/bugs/show_bug.cgi?id=477510
-		mgr.addMenuListener(new IMenuListener() {
-			@Override
-			public void menuAboutToShow(IMenuManager manager) {
-				getControl().setFocus();
-			}
-		});
+		mgr.addMenuListener(manager -> getControl().setFocus());
 	}
 
 	private void updateActionEnablement(ISelection selection) {

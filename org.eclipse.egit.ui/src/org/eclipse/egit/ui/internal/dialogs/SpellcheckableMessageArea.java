@@ -14,6 +14,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -26,6 +27,7 @@ import org.eclipse.egit.core.internal.Utils;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.UIPreferences;
 import org.eclipse.egit.ui.UIUtils;
+import org.eclipse.egit.ui.internal.ActionUtils;
 import org.eclipse.egit.ui.internal.CommonUtils;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.action.Action;
@@ -35,10 +37,9 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.action.SubMenuManager;
-import org.eclipse.jface.commands.ActionHandler;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.JFacePreferences;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IPainter;
@@ -76,9 +77,8 @@ import org.eclipse.swt.custom.BidiSegmentListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -87,12 +87,11 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Layout;
-import org.eclipse.ui.ActiveShellExpression;
-import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.actions.ActionFactory;
+import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.editors.text.TextSourceViewerConfiguration;
-import org.eclipse.ui.handlers.IHandlerActivation;
 import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.AnnotationPreference;
@@ -101,6 +100,7 @@ import org.eclipse.ui.texteditor.ITextEditorActionDefinitionIds;
 import org.eclipse.ui.texteditor.IUpdate;
 import org.eclipse.ui.texteditor.MarkerAnnotationPreferences;
 import org.eclipse.ui.texteditor.SourceViewerDecorationSupport;
+import org.eclipse.ui.themes.IThemeManager;
 
 /**
  * Text field with support for spellchecking.
@@ -117,33 +117,29 @@ public class SpellcheckableMessageArea extends Composite {
 		/**
 		 * Creates a new action.
 		 *
-		 * @param viewer the viewer
-		 * @param operationCode the opcode
+		 * @param target
+		 *            to operate on
+		 * @param operationCode
+		 *            the opcode
 		 */
-		public TextViewerAction(ITextViewer viewer, int operationCode) {
+		public TextViewerAction(ITextOperationTarget target,
+				int operationCode) {
 			fOperationCode= operationCode;
-			fOperationTarget= viewer.getTextOperationTarget();
+			fOperationTarget = target;
 			update();
 		}
 
 		/**
 		 * Updates the enabled state of the action.
-		 * Fires a property change if the enabled state changes.
-		 *
-		 * @see Action#firePropertyChange(String, Object, Object)
 		 */
 		@Override
 		public void update() {
 			// XXX: workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=206111
-			if (fOperationCode == ITextOperationTarget.REDO)
+			if (fOperationCode == ITextOperationTarget.REDO) {
 				return;
-
-			boolean wasEnabled= isEnabled();
-			boolean isEnabled= (fOperationTarget != null && fOperationTarget.canDoOperation(fOperationCode));
-			setEnabled(isEnabled);
-
-			if (wasEnabled != isEnabled)
-				firePropertyChange(ENABLED, wasEnabled ? Boolean.TRUE : Boolean.FALSE, isEnabled ? Boolean.TRUE : Boolean.FALSE);
+			}
+			setEnabled(fOperationTarget != null
+					&& fOperationTarget.canDoOperation(fOperationCode));
 		}
 
 		/**
@@ -222,7 +218,7 @@ public class SpellcheckableMessageArea extends Composite {
 		}
 	}
 
-	private final SourceViewer sourceViewer;
+	private final HyperlinkSourceViewer sourceViewer;
 
 	private TextSourceViewerConfiguration configuration;
 
@@ -231,9 +227,7 @@ public class SpellcheckableMessageArea extends Composite {
 	// XXX: workaround for https://bugs.eclipse.org/400727
 	private int brokenBidiPlatformTextWidth;
 
-	private ActionHandler quickFixActionHandler;
-
-	private ActionHandler contentAssistActionHandler;
+	private IAction contentAssistAction;
 
 	/**
 	 * @param parent
@@ -260,14 +254,28 @@ public class SpellcheckableMessageArea extends Composite {
 	 * @param styles
 	 */
 	public SpellcheckableMessageArea(Composite parent, String initialText,
-			boolean readOnly,
-			int styles) {
+			boolean readOnly, int styles) {
 		super(parent, styles);
 		setLayout(new FillLayout());
 
 		AnnotationModel annotationModel = new AnnotationModel();
 		sourceViewer = new HyperlinkSourceViewer(this, null,
-				SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
+				SWT.MULTI | SWT.V_SCROLL | SWT.WRAP) {
+			@Override
+			protected void handleJFacePreferencesChange(
+					PropertyChangeEvent event) {
+				if (JFaceResources.TEXT_FONT.equals(event.getProperty())) {
+					Font themeFont = UIUtils.getFont(
+							UIPreferences.THEME_CommitMessageEditorFont);
+					Font jFaceFont = JFaceResources.getTextFont();
+					if (themeFont.equals(jFaceFont)) {
+						setFont(jFaceFont);
+					}
+				} else {
+					super.handleJFacePreferencesChange(event);
+				}
+			}
+		};
 		getTextWidget().setAlwaysShowScrollBars(false);
 		getTextWidget().setFont(UIUtils
 				.getFont(UIPreferences.THEME_CommitMessageEditorFont));
@@ -285,45 +293,39 @@ public class SpellcheckableMessageArea extends Composite {
 		createMarginPainter();
 
 		configureHardWrap();
-		final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							configureHardWrap();
-							if (brokenBidiPlatformTextWidth != -1) {
-								layout();
-							}
+
+		final IPropertyChangeListener propertyChangeListener = event -> {
+			if (UIPreferences.COMMIT_DIALOG_HARD_WRAP_MESSAGE
+					.equals(event.getProperty())) {
+				getDisplay().asyncExec(() -> {
+					if (!isDisposed()) {
+						configureHardWrap();
+						if (brokenBidiPlatformTextWidth != -1) {
+							layout();
 						}
-					});
-				}
+					}
+				});
 			}
 		};
 		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
-		final IPropertyChangeListener syntaxColoringChangeListener = new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				if (JFacePreferences.HYPERLINK_COLOR
-						.equals(event.getProperty())) {
-					getDisplay().asyncExec(new Runnable() {
-						@Override
-						public void run() {
-							if (!isDisposed()) {
-								sourceViewer.refresh();
-							}
-						}
-					});
-				}
+		final IPropertyChangeListener themeListener = event -> {
+			String property = event.getProperty();
+			if (IThemeManager.CHANGE_CURRENT_THEME.equals(property)
+					|| UIPreferences.THEME_CommitMessageEditorFont
+							.equals(property)) {
+				Font themeFont = UIUtils
+						.getFont(UIPreferences.THEME_CommitMessageEditorFont);
+				getDisplay().asyncExec(() -> {
+					if (!isDisposed()) {
+						sourceViewer.setFont(themeFont);
+					}
+				});
 			}
 		};
-		JFacePreferences.getPreferenceStore()
-				.addPropertyChangeListener(syntaxColoringChangeListener);
+		PlatformUI.getWorkbench().getThemeManager()
+				.addPropertyChangeListener(themeListener);
+
 		final SourceViewerDecorationSupport support = configureAnnotationPreferences();
-		if (isEditable(sourceViewer)) {
-			quickFixActionHandler = createQuickFixActionHandler(sourceViewer);
-		}
 
 		Document document = new Document(initialText);
 
@@ -357,7 +359,8 @@ public class SpellcheckableMessageArea extends Composite {
 				IContentAssistant assistant = createContentAssistant(viewer);
 				// Add content assist proposal handler if assistant exists
 				if (assistant != null)
-					contentAssistActionHandler = createContentAssistActionHandler(sourceViewer);
+					contentAssistAction = createContentAssistAction(
+							sourceViewer);
 				return assistant;
 			}
 
@@ -388,9 +391,8 @@ public class SpellcheckableMessageArea extends Composite {
 			public void widgetDisposed(DisposeEvent disposeEvent) {
 				support.uninstall();
 				Activator.getDefault().getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
-				JFacePreferences.getPreferenceStore()
-						.removePropertyChangeListener(
-								syntaxColoringChangeListener);
+				PlatformUI.getWorkbench().getThemeManager()
+						.removePropertyChangeListener(themeListener);
 			}
 		});
 	}
@@ -484,53 +486,49 @@ public class SpellcheckableMessageArea extends Composite {
 		}
 	}
 
+	private TextViewerAction createFromActionFactory(ActionFactory factory,
+			int operationCode) {
+		IWorkbenchAction template = factory
+				.create(PlatformUI.getWorkbench().getActiveWorkbenchWindow());
+		TextViewerAction action = new TextViewerAction(sourceViewer,
+				operationCode);
+		action.setText(template.getText());
+		action.setImageDescriptor(template.getImageDescriptor());
+		action.setDisabledImageDescriptor(
+				template.getDisabledImageDescriptor());
+		action.setActionDefinitionId(template.getActionDefinitionId());
+		template.dispose();
+		return action;
+	}
+
 	private void configureContextMenu() {
 		final boolean editable = isEditable(sourceViewer);
-		final TextViewerAction cutAction;
-		final TextViewerAction undoAction;
-		final TextViewerAction redoAction;
-		final TextViewerAction pasteAction;
+		TextViewerAction cutAction;
+		TextViewerAction undoAction;
+		TextViewerAction redoAction;
+		TextViewerAction pasteAction;
+		IAction quickFixAction;
 		if (editable) {
-			cutAction = new TextViewerAction(sourceViewer,
+			cutAction = createFromActionFactory(ActionFactory.CUT,
 					ITextOperationTarget.CUT);
-			cutAction.setText(UIText.SpellCheckingMessageArea_cut);
-			cutAction
-					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_CUT);
-
-			undoAction = new TextViewerAction(sourceViewer,
+			undoAction = createFromActionFactory(ActionFactory.UNDO,
 					ITextOperationTarget.UNDO);
-			undoAction.setText(UIText.SpellcheckableMessageArea_undo);
-			undoAction
-					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_UNDO);
-
-			redoAction = new TextViewerAction(sourceViewer,
+			redoAction = createFromActionFactory(ActionFactory.REDO,
 					ITextOperationTarget.REDO);
-			redoAction.setText(UIText.SpellcheckableMessageArea_redo);
-			redoAction
-					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_REDO);
-
-			pasteAction = new TextViewerAction(sourceViewer,
+			pasteAction = createFromActionFactory(ActionFactory.PASTE,
 					ITextOperationTarget.PASTE);
-			pasteAction.setText(UIText.SpellCheckingMessageArea_paste);
-			pasteAction
-					.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_PASTE);
+			quickFixAction = new QuickfixAction(sourceViewer);
 		} else {
 			cutAction = null;
 			undoAction = null;
 			redoAction = null;
 			pasteAction = null;
+			quickFixAction = null;
 		}
-
-		final TextViewerAction copyAction = new TextViewerAction(sourceViewer,
-				ITextOperationTarget.COPY);
-		copyAction.setText(UIText.SpellCheckingMessageArea_copy);
-		copyAction.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_COPY);
-
-		final TextViewerAction selectAllAction = new TextViewerAction(
-				sourceViewer, ITextOperationTarget.SELECT_ALL);
-		selectAllAction.setText(UIText.SpellCheckingMessageArea_selectAll);
-		selectAllAction
-				.setActionDefinitionId(IWorkbenchCommandConstants.EDIT_SELECT_ALL);
+		TextViewerAction copyAction = createFromActionFactory(
+				ActionFactory.COPY, ITextOperationTarget.COPY);
+		TextViewerAction selectAllAction = createFromActionFactory(
+				ActionFactory.SELECT_ALL, ITextOperationTarget.SELECT_ALL);
 
 		final TextEditorPropertyAction showWhitespaceAction = new TextEditorPropertyAction(
 				UIText.SpellcheckableMessageArea_showWhitespace,
@@ -621,16 +619,20 @@ public class SpellcheckableMessageArea extends Composite {
 		};
 
 		MenuManager contextMenu = new MenuManager();
-		if (cutAction != null)
+		if (cutAction != null) {
 			contextMenu.add(cutAction);
+		}
 		contextMenu.add(copyAction);
-		if (pasteAction != null)
+		if (pasteAction != null) {
 			contextMenu.add(pasteAction);
+		}
 		contextMenu.add(selectAllAction);
-		if (undoAction != null)
+		if (undoAction != null) {
 			contextMenu.add(undoAction);
-		if (redoAction != null)
+		}
+		if (redoAction != null) {
 			contextMenu.add(redoAction);
+		}
 		contextMenu.add(new Separator());
 		contextMenu.add(showWhitespaceAction);
 		contextMenu.add(new Separator());
@@ -648,101 +650,23 @@ public class SpellcheckableMessageArea extends Composite {
 		}
 
 		final StyledText textWidget = getTextWidget();
+		List<IAction> globalActions = new ArrayList<>();
+		if (editable) {
+			globalActions.add(cutAction);
+			globalActions.add(pasteAction);
+			globalActions.add(undoAction);
+			globalActions.add(redoAction);
+			globalActions.add(quickFixAction);
+		}
+		globalActions.add(copyAction);
+		globalActions.add(selectAllAction);
+		if (contentAssistAction != null) {
+			globalActions.add(contentAssistAction);
+		}
+		ActionUtils.setGlobalActions(textWidget, globalActions,
+				getHandlerService());
+
 		textWidget.setMenu(contextMenu.createContextMenu(textWidget));
-
-		textWidget.addFocusListener(new FocusListener() {
-
-			private IHandlerActivation cutHandlerActivation;
-			private IHandlerActivation copyHandlerActivation;
-			private IHandlerActivation pasteHandlerActivation;
-			private IHandlerActivation selectAllHandlerActivation;
-			private IHandlerActivation undoHandlerActivation;
-			private IHandlerActivation redoHandlerActivation;
-			private IHandlerActivation quickFixHandlerActivation;
-			private IHandlerActivation contentAssistHandlerActivation;
-
-			@Override
-			public void focusGained(FocusEvent e) {
-				IHandlerService service = getHandlerService();
-				if (service == null)
-					return;
-
-				if (cutAction != null) {
-					cutAction.update();
-					cutHandlerActivation = service.activateHandler(
-							IWorkbenchCommandConstants.EDIT_CUT,
-							new ActionHandler(cutAction),
-							new ActiveShellExpression(getParent().getShell()));
-				}
-				copyAction.update();
-
-				copyHandlerActivation = service.activateHandler(
-						IWorkbenchCommandConstants.EDIT_COPY,
-						new ActionHandler(copyAction),
-						new ActiveShellExpression(getParent().getShell()));
-				if (pasteAction != null)
-					this.pasteHandlerActivation = service.activateHandler(
-							IWorkbenchCommandConstants.EDIT_PASTE,
-							new ActionHandler(pasteAction),
-							new ActiveShellExpression(getParent().getShell()));
-				selectAllHandlerActivation = service.activateHandler(
-						IWorkbenchCommandConstants.EDIT_SELECT_ALL,
-						new ActionHandler(selectAllAction),
-						new ActiveShellExpression(getParent().getShell()));
-				if (undoAction != null)
-					undoHandlerActivation = service.activateHandler(
-							IWorkbenchCommandConstants.EDIT_UNDO,
-							new ActionHandler(undoAction),
-							new ActiveShellExpression(getParent().getShell()));
-				if (redoAction != null)
-					redoHandlerActivation = service.activateHandler(
-							IWorkbenchCommandConstants.EDIT_REDO,
-							new ActionHandler(redoAction),
-							new ActiveShellExpression(getParent().getShell()));
-				if (quickFixActionHandler != null)
-					quickFixHandlerActivation = getHandlerService().activateHandler(
-							quickFixActionHandler.getAction().getActionDefinitionId(),
-							quickFixActionHandler,
-							new ActiveShellExpression(getParent().getShell()));
-				if (contentAssistActionHandler != null)
-					contentAssistHandlerActivation = getHandlerService().activateHandler(
-							contentAssistActionHandler.getAction().getActionDefinitionId(),
-							contentAssistActionHandler,
-							new ActiveShellExpression(getParent().getShell()));
-			}
-
-			@Override
-			public void focusLost(FocusEvent e) {
-				IHandlerService service = getHandlerService();
-				if (service == null)
-					return;
-
-				if (cutHandlerActivation != null)
-					service.deactivateHandler(cutHandlerActivation);
-
-				if (copyHandlerActivation != null)
-					service.deactivateHandler(copyHandlerActivation);
-
-				if (pasteHandlerActivation != null)
-					service.deactivateHandler(pasteHandlerActivation);
-
-				if (selectAllHandlerActivation != null)
-					service.deactivateHandler(selectAllHandlerActivation);
-
-				if (undoHandlerActivation != null)
-					service.deactivateHandler(undoHandlerActivation);
-
-				if (redoHandlerActivation != null)
-					service.deactivateHandler(redoHandlerActivation);
-
-				if (quickFixHandlerActivation != null)
-					service.deactivateHandler(quickFixHandlerActivation);
-
-				if (contentAssistHandlerActivation != null)
-					service.deactivateHandler(contentAssistHandlerActivation);
-			}
-
-		});
 
         sourceViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 
@@ -777,32 +701,36 @@ public class SpellcheckableMessageArea extends Composite {
 
 	private void addProposals(final SubMenuManager quickFixMenu) {
 		IAnnotationModel sourceModel = sourceViewer.getAnnotationModel();
+		if (sourceModel == null) {
+			return;
+		}
 		Iterator annotationIterator = sourceModel.getAnnotationIterator();
 		while (annotationIterator.hasNext()) {
 			Annotation annotation = (Annotation) annotationIterator.next();
 			boolean isDeleted = annotation.isMarkedDeleted();
-			boolean isIncluded = includes(sourceModel.getPosition(annotation),
-					getTextWidget().getCaretOffset());
-			boolean isFixable = sourceViewer.getQuickAssistAssistant().canFix(
-					annotation);
-			if (!isDeleted && isIncluded && isFixable) {
+			boolean isIncluded = !isDeleted
+					&& includes(sourceModel.getPosition(annotation),
+							getTextWidget().getCaretOffset());
+			boolean isFixable = isIncluded && sourceViewer
+					.getQuickAssistAssistant().canFix(annotation);
+			if (isFixable) {
 				IQuickAssistProcessor processor = sourceViewer
-				.getQuickAssistAssistant()
-				.getQuickAssistProcessor();
+						.getQuickAssistAssistant().getQuickAssistProcessor();
 				IQuickAssistInvocationContext context = sourceViewer
-				.getQuickAssistInvocationContext();
+						.getQuickAssistInvocationContext();
 				ICompletionProposal[] proposals = processor
-				.computeQuickAssistProposals(context);
+						.computeQuickAssistProposals(context);
 
-				for (ICompletionProposal proposal : proposals)
+				for (ICompletionProposal proposal : proposals) {
 					quickFixMenu.add(createQuickFixAction(proposal));
+				}
 			}
 		}
 	}
 
 	private boolean includes(Position position, int caretOffset) {
-		return position.includes(caretOffset)
-		|| (position.offset + position.length) == caretOffset;
+		return position != null && (position.includes(caretOffset)
+				|| (position.offset + position.length) == caretOffset);
 	}
 
 	private IAction createQuickFixAction(final ICompletionProposal proposal) {
@@ -895,47 +823,26 @@ public class SpellcheckableMessageArea extends Composite {
 
 		public QuickfixAction(ITextOperationTarget target) {
 			textOperationTarget = target;
+			setActionDefinitionId(
+					ITextEditorActionDefinitionIds.QUICK_ASSIST);
 		}
 
 		@Override
 		public void run() {
-			textOperationTarget.doOperation(ISourceViewer.QUICK_ASSIST);
-		}
-
-	}
-
-	private ActionHandler createQuickFixActionHandler(
-			final ITextOperationTarget textOperationTarget) {
-		Action quickFixAction = new QuickfixAction(textOperationTarget);
-		quickFixAction.setActionDefinitionId(
-				ITextEditorActionDefinitionIds.QUICK_ASSIST);
-		return new ActionHandler(quickFixAction);
-	}
-
-	private static class ContentAssistAction extends Action {
-
-		private final SourceViewer viewer;
-
-		public ContentAssistAction(SourceViewer viewer) {
-			this.viewer = viewer;
-		}
-
-		@Override
-		public void run() {
-			if (viewer.canDoOperation(ISourceViewer.CONTENTASSIST_PROPOSALS)
-					&& viewer.getTextWidget().isFocusControl()) {
-				viewer.doOperation(ISourceViewer.CONTENTASSIST_PROPOSALS);
+			if (textOperationTarget.canDoOperation(ISourceViewer.QUICK_ASSIST)) {
+				textOperationTarget.doOperation(ISourceViewer.QUICK_ASSIST);
 			}
 		}
 
 	}
 
-	private ActionHandler createContentAssistActionHandler(
+	private IAction createContentAssistAction(
 			final SourceViewer viewer) {
-		Action proposalAction = new ContentAssistAction(viewer);
+		Action proposalAction = new TextViewerAction(viewer,
+				ISourceViewer.CONTENTASSIST_PROPOSALS);
 		proposalAction
 				.setActionDefinitionId(ITextEditorActionDefinitionIds.CONTENT_ASSIST_PROPOSALS);
-		return new ActionHandler(proposalAction);
+		return proposalAction;
 	}
 
 	/**
@@ -1089,31 +996,41 @@ public class SpellcheckableMessageArea extends Composite {
 		IntList wrapOffsets = new IntList();
 		int wordStart = 0;
 		int lineStart = 0;
-		boolean lastWasSpace = true;
-		boolean onlySpaces = true;
-		for (int i = 0; i < line.length(); i++) {
+		int length = line.length();
+		int nofPreviousWordChars = 0;
+		int nofCurrentWordChars = 0;
+		for (int i = 0; i < length; i++) {
 			char ch = line.charAt(i);
 			if (ch == ' ') {
-				lastWasSpace = true;
+				nofPreviousWordChars += nofCurrentWordChars;
+				nofCurrentWordChars = 0;
 			} else if (ch == '\n') {
 				lineStart = i + 1;
 				wordStart = i + 1;
-				lastWasSpace = true;
-				onlySpaces = true;
+				nofPreviousWordChars = 0;
+				nofCurrentWordChars = 0;
 			} else { // a word character
-				if (lastWasSpace) {
-					lastWasSpace = false;
-					if (!onlySpaces) { // don't break line with <spaces><veryLongWord>
+				if (nofCurrentWordChars == 0) {
+					// Break only if we had a certain number of previous
+					// non-space characters. If we had less, break only if we
+					// had at least one non-space character and the current line
+					// offset is at least half the maximum width. This prevents
+					// breaking if we have <blanks><very_long_word>, and also
+					// for things like "[1] <very_long_word>" or mark-up lists
+					// such as " * <very_long_word>".
+					if (nofPreviousWordChars > maxLineLength / 10
+							|| nofPreviousWordChars > 0
+									&& (i - lineStart) > maxLineLength / 2) {
 						wordStart = i;
 					}
-				} else {
-					onlySpaces = false;
 				}
+				nofCurrentWordChars++;
 				if (i >= lineStart + maxLineLength) {
 					if (wordStart != lineStart) { // don't break before a single long word
 						wrapOffsets.add(wordStart);
 						lineStart = wordStart;
-						onlySpaces = true;
+						nofPreviousWordChars = 0;
+						nofCurrentWordChars = 0;
 					}
 				}
 			}

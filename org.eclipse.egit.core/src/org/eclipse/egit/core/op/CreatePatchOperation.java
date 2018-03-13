@@ -35,7 +35,6 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.egit.core.Activator;
@@ -163,16 +162,12 @@ public class CreatePatchOperation implements IEGitOperation {
 
 	@Override
 	public void execute(IProgressMonitor monitor) throws CoreException {
-		EclipseGitProgressTransformer gitMonitor;
-		if (monitor == null)
-			gitMonitor = new EclipseGitProgressTransformer(
-					new NullProgressMonitor());
-		else
-			gitMonitor = new EclipseGitProgressTransformer(monitor);
+		EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(
+				monitor);
 
 		final StringBuilder sb = new StringBuilder();
 		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try (final DiffFormatter diffFmt = new DiffFormatter(outputStream) {
+		final DiffFormatter diffFmt = new DiffFormatter(outputStream) {
 			private IProject project;
 
 			@Override
@@ -189,68 +184,59 @@ public class CreatePatchOperation implements IEGitOperation {
 				}
 				super.format(ent);
 			}
-		}) {
-			diffFmt.setProgressMonitor(gitMonitor);
-			diffFmt.setContext(contextLines);
+		};
 
-			if (headerFormat != null && headerFormat != DiffHeaderFormat.NONE) {
-				writeGitPatchHeader(sb);
-			}
+		diffFmt.setProgressMonitor(gitMonitor);
+		diffFmt.setContext(contextLines);
 
-			diffFmt.setRepository(repository);
-			diffFmt.setPathFilter(pathFilter);
+		if (headerFormat != null && headerFormat != DiffHeaderFormat.NONE)
+			writeGitPatchHeader(sb);
 
-			try {
-				if (commit != null) {
-					RevCommit[] parents = commit.getParents();
-					if (parents.length > 1) {
-						throw new IllegalStateException(
-								CoreText.CreatePatchOperation_cannotCreatePatchForMergeCommit);
-					}
+		diffFmt.setRepository(repository);
+		diffFmt.setPathFilter(pathFilter);
 
-					ObjectId parentId;
-					if (parents.length > 0) {
-						parentId = parents[0].getId();
-					} else {
-						parentId = null;
-					}
-					List<DiffEntry> diffs = diffFmt.scan(parentId,
-							commit.getId());
-					for (DiffEntry ent : diffs) {
-						String path;
-						if (ChangeType.DELETE.equals(ent.getChangeType())) {
-							path = ent.getOldPath();
-						} else {
-							path = ent.getNewPath();
-						}
-						currentEncoding = CompareCoreUtils
-								.getResourceEncoding(repository, path);
-						diffFmt.format(ent);
-					}
-				} else {
-					diffFmt.format(
-							new DirCacheIterator(repository.readDirCache()),
-							new FileTreeIterator(repository));
+		try {
+			if (commit != null) {
+				RevCommit[] parents = commit.getParents();
+				if (parents.length > 1)
+					throw new IllegalStateException(
+							CoreText.CreatePatchOperation_cannotCreatePatchForMergeCommit);
+
+				ObjectId parentId;
+				if (parents.length > 0)
+					parentId = parents[0].getId();
+				else
+					parentId = null;
+				List<DiffEntry> diffs = diffFmt.scan(parentId, commit.getId());
+				for (DiffEntry ent : diffs) {
+					String path;
+					if (ChangeType.DELETE.equals(ent.getChangeType()))
+						path = ent.getOldPath();
+					else
+						path = ent.getNewPath();
+					currentEncoding = CompareCoreUtils.getResourceEncoding(repository, path);
+					diffFmt.format(ent);
 				}
-				diffFmt.flush();
-			} catch (IOException e) {
-				Activator.logError(
-						CoreText.CreatePatchOperation_patchFileCouldNotBeWritten,
-						e);
+			} else {
+				diffFmt.format(
+						new DirCacheIterator(repository.readDirCache()),
+						new FileTreeIterator(repository));
 			}
-
-			try {
-				String encoding = currentEncoding != null ? currentEncoding
-						: RawParseUtils.UTF8_CHARSET.name();
-				sb.append(outputStream.toString(encoding));
-			} catch (UnsupportedEncodingException e) {
-				sb.append(outputStream.toString());
-			}
-
-			if (DiffHeaderFormat.WORKSPACE == headerFormat) {
-				updateWorkspacePatchPrefixes(sb, diffFmt);
-			}
+			diffFmt.flush();
+		} catch (IOException e) {
+			Activator.logError(CoreText.CreatePatchOperation_patchFileCouldNotBeWritten, e);
 		}
+
+		try {
+			String encoding = currentEncoding != null ? currentEncoding
+					: RawParseUtils.UTF8_CHARSET.name();
+			sb.append(outputStream.toString(encoding));
+		} catch (UnsupportedEncodingException e) {
+			sb.append(outputStream.toString());
+		}
+
+		if (DiffHeaderFormat.WORKSPACE == headerFormat)
+			updateWorkspacePatchPrefixes(sb, diffFmt);
 
 		patchContent = sb.toString();
 	}
@@ -293,7 +279,7 @@ public class CreatePatchOperation implements IEGitOperation {
 			int brace = segment.indexOf('}');
 			if (brace > 0) {
 				String keyword = segment.substring(0, brace);
-				keyword = keyword.toUpperCase().replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
+				keyword = keyword.toUpperCase(Locale.ROOT).replaceAll(" ", "_"); //$NON-NLS-1$ //$NON-NLS-2$
 				value = processKeyword(commit, DiffHeaderKeyword.valueOf(keyword));
 			}
 
@@ -304,11 +290,9 @@ public class CreatePatchOperation implements IEGitOperation {
 			} else if (!evaluated.isEmpty())
 				evaluated.add(trailingCharacters);
 		}
-		StringBuffer buffer = new StringBuffer();
-		for (String string : evaluated)
-			buffer.append(string);
-
-		sb.append(buffer);
+		for (String string : evaluated) {
+			sb.append(string);
+		}
 	}
 
 	private static String processKeyword(RevCommit commit, DiffHeaderKeyword keyword) {

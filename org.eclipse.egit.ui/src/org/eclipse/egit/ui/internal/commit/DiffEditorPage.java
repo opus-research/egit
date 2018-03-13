@@ -17,7 +17,7 @@ import static org.eclipse.egit.ui.UIPreferences.THEME_DiffRemoveBackgroundColor;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +28,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.egit.core.AdapterUtils;
 import org.eclipse.egit.ui.Activator;
@@ -66,6 +67,7 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -209,7 +211,12 @@ public class DiffEditorPage extends TextEditor
 	protected ISourceViewer createSourceViewer(Composite parent,
 			IVerticalRuler ruler, int styles) {
 		DiffViewer viewer = new DiffViewer(parent, ruler, getOverviewRuler(),
-				isOverviewRulerVisible(), styles);
+				isOverviewRulerVisible(), styles) {
+			@Override
+			protected void setFont(Font font) {
+				// Don't do anything; AbstractTextEditor handles this.
+			}
+		};
 		getSourceViewerDecorationSupport(viewer);
 		ProjectionSupport projector = new ProjectionSupport(viewer,
 				getAnnotationAccess(), getSharedColors());
@@ -546,8 +553,9 @@ public class DiffEditorPage extends TextEditor
 					.addAll(asList(new RepositoryCommit(commit.getRepository(),
 							untrackedCommit).getDiffs()));
 		}
-		Collections.sort(diffResult, FileDiff.PATH_COMPARATOR);
-		return diffResult.toArray(new FileDiff[diffResult.size()]);
+		FileDiff[] result = diffResult.toArray(new FileDiff[diffResult.size()]);
+		Arrays.sort(result, FileDiff.PATH_COMPARATOR);
+		return result;
 	}
 
 	/**
@@ -562,39 +570,41 @@ public class DiffEditorPage extends TextEditor
 		if (commit == null) {
 			return;
 		}
-		if (commit.getRevCommit().getParentCount() > 1) {
+		if (!commit.isStash() && commit.getRevCommit().getParentCount() > 1) {
 			setInput(new DiffEditorInput(commit, null));
 			return;
 		}
-		final DiffDocument document = new DiffDocument();
-		final DiffRegionFormatter formatter = new DiffRegionFormatter(
-				document);
 
 		Job job = new Job(UIText.DiffEditorPage_TaskGeneratingDiff) {
 
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				FileDiff diffs[] = getDiffs(commit);
-				monitor.beginTask("", diffs.length); //$NON-NLS-1$
-				Repository repository = commit.getRepository();
-				for (FileDiff diff : diffs) {
-					if (monitor.isCanceled())
-						break;
-					monitor.setTaskName(diff.getPath());
-					try {
-						formatter.write(repository, diff);
-					} catch (IOException ignore) {
-						// Ignored
+				DiffDocument document = new DiffDocument();
+				try (DiffRegionFormatter formatter = new DiffRegionFormatter(
+						document)) {
+					SubMonitor progress = SubMonitor.convert(monitor,
+							diffs.length);
+					Repository repository = commit.getRepository();
+					for (FileDiff diff : diffs) {
+						if (progress.isCanceled()) {
+							break;
+						}
+						progress.subTask(diff.getPath());
+						try {
+							formatter.write(repository, diff);
+						} catch (IOException ignore) {
+							// Ignored
+						}
+						progress.worked(1);
 					}
-					monitor.worked(1);
+					document.connect(formatter);
 				}
-				monitor.done();
 				new UIJob(UIText.DiffEditorPage_TaskUpdatingViewer) {
 
 					@Override
 					public IStatus runInUIThread(IProgressMonitor uiMonitor) {
 						if (UIUtils.isUsable(getPartControl())) {
-							document.connect(formatter);
 							setInput(new DiffEditorInput(commit, document));
 						}
 						return Status.OK_STATUS;
@@ -651,7 +661,8 @@ public class DiffEditorPage extends TextEditor
 			if (element instanceof CommitEditorInput) {
 				RepositoryCommit commit = ((CommitEditorInput) element)
 						.getCommit();
-				if (commit != null && commit.getRevCommit() != null
+				if (commit != null && !commit.isStash()
+						&& commit.getRevCommit() != null
 						&& commit.getRevCommit().getParentCount() > 1) {
 					return Activator.createErrorStatus(
 							UIText.DiffEditorPage_WarningNoDiffForMerge);
