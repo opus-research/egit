@@ -150,9 +150,8 @@ public abstract class AbstractSynchronizeViewTest extends
 
 	protected void createTag(String tagName)
 			throws Exception {
-		try (Git git = new Git(lookupRepository(repositoryFile))) {
-			git.tag().setName(tagName).setMessage(tagName).call();
-		}
+		new Git(lookupRepository(repositoryFile)).tag().setName(tagName)
+				.setMessage(tagName).call();
 	}
 
 	protected void makeChangesAndCommit(String projectName) throws Exception {
