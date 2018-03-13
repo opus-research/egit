@@ -24,12 +24,8 @@ public class CommitMessageComponentStateManager {
 
 	private static final String EMPTY = "empty"; //$NON-NLS-1$
 
-	private static final int MEMBER_COUNT = 6; // number of members in
+	private static final int MEMBER_COUNT = 5; // number of members in
 												// CommitMessageComponentState
-
-	// number of members in CommitMessageComponentState, before caret
-	// positioning was introduced
-	private static final int MEMBER_COUNT_WITHOUT_CARET_POSITION = 5;
 
 	/**
 	 * @param repository
@@ -40,9 +36,7 @@ public class CommitMessageComponentStateManager {
 		IDialogSettings dialogSettings = getDialogSettings();
 		String[] values = new String[] { Boolean.toString(state.getAmend()),
 				state.getAuthor(), state.getCommitMessage(),
-				state.getCommitter(),
-				state.getHeadCommit().getName().toString(),
-				String.valueOf(state.getCaretPosition()) };
+				state.getCommitter(), state.getHeadCommit().getName().toString() };
 		dialogSettings.put(repository.getDirectory().getAbsolutePath(), values);
 	}
 
@@ -54,23 +48,14 @@ public class CommitMessageComponentStateManager {
 		IDialogSettings dialogSettings = getDialogSettings();
 		String[] values = dialogSettings.getArray(repository.getDirectory()
 				.getAbsolutePath());
-		if (values == null
-				|| values.length < MEMBER_COUNT_WITHOUT_CARET_POSITION) {
+		if (values == null || values.length < MEMBER_COUNT)
 			return null;
-		}
-
 		CommitMessageComponentState state = new CommitMessageComponentState();
 		state.setAmend(Boolean.parseBoolean(values[0]));
 		state.setAuthor(values[1]);
 		state.setCommitMessage(values[2]);
 		state.setCommitter(values[3]);
 		state.setHeadCommit(ObjectId.fromString(values[4]));
-		if (values.length >= MEMBER_COUNT) {
-			state.setCaretPosition(Integer.parseInt(values[5]));
-		} else {
-			state.setCaretPosition(
-					CommitMessageComponentState.CARET_DEFAULT_POSITION);
-		}
 		return state;
 	}
 
