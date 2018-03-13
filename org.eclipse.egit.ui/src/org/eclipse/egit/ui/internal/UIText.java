@@ -3542,9 +3542,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_Branches_Nodetext;
 
 	/** */
-	public static String RepositoriesView_CheckoutConfirmationDefaultButtonLabel;
-
-	/** */
 	public static String RepositoriesView_CheckoutConfirmationMessage;
 
 	/** */
