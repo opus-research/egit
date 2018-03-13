@@ -172,9 +172,7 @@ public class ConfigurationEditorComponent {
 
 		if (editableConfig instanceof FileBasedConfig) {
 			Composite locationPanel = new Composite(main, SWT.NONE);
-			GridLayout locationLayout = new GridLayout(3, false);
-			locationLayout.marginWidth = 0;
-			locationPanel.setLayout(locationLayout);
+			locationPanel.setLayout(new GridLayout(4, false));
 			GridDataFactory.fillDefaults().grab(true, false).span(2, 1)
 					.applyTo(locationPanel);
 			Label locationLabel = new Label(locationPanel, SWT.NONE);
@@ -404,7 +402,11 @@ public class ConfigurationEditorComponent {
 				} else if (first instanceof Entry) {
 					((Entry) first).removeValue();
 					markDirty();
-				}
+				} else
+					Activator
+							.handleError(
+									UIText.ConfigurationEditorComponent_NoSectionSubsectionMessage,
+									null, true);
 
 				super.widgetSelected(e);
 			}
@@ -499,7 +501,7 @@ public class ConfigurationEditorComponent {
 	}
 
 	private void updateEnablement() {
-		remove.setEnabled(editable && !tv.getSelection().isEmpty());
+		remove.setEnabled(editable);
 		newValue.setEnabled(editable);
 	}
 

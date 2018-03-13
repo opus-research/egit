@@ -20,7 +20,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -94,10 +93,10 @@ public class ConnectProviderOperationTest extends GitTestCase {
 			// not windows???
 			return;
 		}
-		if (!device.toLowerCase(Locale.ROOT).equals(device)) {
-			path = path.setDevice(device.toLowerCase(Locale.ROOT));
+		if (!device.toLowerCase().equals(device)) {
+			path = path.setDevice(device.toLowerCase());
 		} else {
-			path = path.setDevice(device.toUpperCase(Locale.ROOT));
+			path = path.setDevice(device.toUpperCase());
 		}
 		assertNotEquals(path, new Path(gitDir.toString()));
 		assertNotEquals(path.toFile().toString(),

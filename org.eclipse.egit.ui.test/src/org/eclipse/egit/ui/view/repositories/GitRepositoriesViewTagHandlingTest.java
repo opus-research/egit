@@ -164,8 +164,7 @@ public class GitRepositoriesViewTagHandlingTest extends
 		TestUtil.joinJobs(JobFamilies.RESET);
 
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
-				.button(UIText.CommandConfirmationHardResetDialog_resetButtonLabel)
-				.click();
+				.button(IDialogConstants.YES_LABEL).click();
 
 		TestUtil.waitForJobs(50, 5000);
 		Job.getJobManager().join(JobFamilies.RESET, null);

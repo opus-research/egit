@@ -36,7 +36,7 @@ public final class FeatureCheckoutOperation extends AbstractFeatureOperation {
 		boolean dontCloseProjects = false;
 		BranchOperation branchOperation = new BranchOperation(
 				repository.getRepository(), branchName, dontCloseProjects);
-		branchOperation.execute(monitor);
+		branchOperation.execute(null);
 		result = branchOperation.getResult();
 	}
 
