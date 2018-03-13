@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2006, 2016 Shawn O. Pearce <spearce@spearce.org> and others.
+ * Copyright (C) 2006, 2013 Shawn O. Pearce <spearce@spearce.org> and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -94,22 +94,9 @@ public abstract class RepositoryAction extends AbstractHandler implements
 		Command command = srv.getCommand(commandId);
 
 		ExecutionEvent event = hsrv.createExecutionEvent(command, null);
-		if (event.getApplicationContext() instanceof IEvaluationContext) {
-			IEvaluationContext context = (IEvaluationContext) event
-					.getApplicationContext();
-
-			context.addVariable(ISources.ACTIVE_CURRENT_SELECTION_NAME,
-					mySelection);
-
-			// save current menu selection (from parent) if it exists
-			Object menuSelection = context
-					.getVariable(ISources.ACTIVE_MENU_SELECTION_NAME);
-			if (menuSelection != null) {
-				context.addVariable(ISources.ACTIVE_MENU_SELECTION_NAME,
-						menuSelection);
-			}
-		}
-
+		if (event.getApplicationContext() instanceof IEvaluationContext)
+			((IEvaluationContext) event.getApplicationContext()).addVariable(
+					ISources.ACTIVE_CURRENT_SELECTION_NAME, mySelection);
 		return event;
 	}
 
@@ -125,18 +112,28 @@ public abstract class RepositoryAction extends AbstractHandler implements
 	@Override
 	public final void selectionChanged(IAction action, ISelection selection) {
 		mySelection = selection;
-		// Compare selection of handler, as it converts it to a suitable
-		// selection. E.g. an ITextSelection is converted to a selection of the
-		// file. We are only interested in the selection change if a different
-		// file was selected, not if the offset of the text selection changed.
-		IStructuredSelection selectionBefore = handler.getSelection();
-		handler.setSelection(mySelection);
-		if (action != null) {
-			IStructuredSelection selectionAfter = handler.getSelection();
-			boolean equalSelection = (selectionBefore == null) ? selectionAfter == null
-					: selectionBefore.equals(selectionAfter);
-			if (!equalSelection)
+		if (handler.alwaysCheckEnabled()) {
+			handler.setSelection(mySelection);
+			if (action != null) {
 				action.setEnabled(isEnabled());
+			}
+		} else {
+			// Compare selection of handler, as it converts it to a suitable
+			// selection. E.g. an ITextSelection is converted to a selection of
+			// the file. We are only interested in the selection change if a
+			// different file was selected, not if the offset of the text
+			// selection changed.
+			IStructuredSelection selectionBefore = handler.getSelection();
+			handler.setSelection(mySelection);
+			if (action != null) {
+				IStructuredSelection selectionAfter = handler.getSelection();
+				boolean equalSelection = (selectionBefore == null)
+						? selectionAfter == null
+						: selectionBefore.equals(selectionAfter);
+				if (!equalSelection) {
+					action.setEnabled(isEnabled());
+				}
+			}
 		}
 	}
 

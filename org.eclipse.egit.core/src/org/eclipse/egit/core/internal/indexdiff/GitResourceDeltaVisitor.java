@@ -15,7 +15,9 @@ package org.eclipse.egit.core.internal.indexdiff;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -53,7 +55,11 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 
 	private final Collection<IResource> resourcesToUpdate;
 
+	private final Map<IProject, IPath> deletedProjects;
+
 	private boolean gitIgnoreChanged = false;
+
+	private boolean projectDeleted = false;
 
 	/**
 	 * Constructs {@link GitResourceDeltaVisitor}
@@ -63,10 +69,26 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 	 *            {@link IResourceDelta}s
 	 */
 	public GitResourceDeltaVisitor(Repository repository) {
+		this(repository, Collections.<IProject, IPath> emptyMap());
+	}
+
+	/**
+	 * Constructs {@link GitResourceDeltaVisitor}
+	 *
+	 * @param repository
+	 *            which should be considered during visiting
+	 *            {@link IResourceDelta}s
+	 * @param deletedProjects
+	 *            possibly empty map of projects that were removed from the
+	 *            workspace, with their (former) locations
+	 */
+	public GitResourceDeltaVisitor(Repository repository,
+			Map<IProject, IPath> deletedProjects) {
 		this.repository = repository;
 
 		filesToUpdate = new HashSet<String>();
 		resourcesToUpdate = new HashSet<IResource>();
+		this.deletedProjects = deletedProjects;
 	}
 
 	@Override
@@ -77,6 +99,13 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 		}
 
 		if (resource.getType() == IResource.PROJECT) {
+			if (delta.getKind() == IResourceDelta.REMOVED) {
+				IPath loc = deletedProjects.remove(resource);
+				if (loc != null) {
+					projectDeleted |= !loc.toFile().isDirectory();
+				}
+				return false;
+			}
 			// If the resource is not part of a project under
 			// Git revision control or from a different repository
 			if (!ResourceUtil.isSharedWithGit(resource)) {
@@ -145,11 +174,7 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 			return false;
 		}
 
-		// If the file has changed but not in a way that we
-		// care about (e.g. marker changes to files) then
-		// ignore
-		if (delta.getKind() == IResourceDelta.CHANGED
-				&& (delta.getFlags() & INTERESTING_CHANGES) == 0) {
+		if (!isInteresting(delta)) {
 			return false;
 		}
 
@@ -174,6 +199,21 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 
 		filesToUpdate.add(path);
 		resourcesToUpdate.add(resource);
+		return true;
+	}
+
+	/**
+	 * If the file has changed but not in a way that we care about (e.g. marker
+	 * changes to files) then ignore
+	 *
+	 * @param delta
+	 * @return true - if change is interesting
+	 */
+	static boolean isInteresting(IResourceDelta delta) {
+		if (delta.getKind() == IResourceDelta.CHANGED
+				&& (delta.getFlags() & INTERESTING_CHANGES) == 0) {
+			return false;
+		}
 		return true;
 	}
 
@@ -251,5 +291,15 @@ public class GitResourceDeltaVisitor implements IResourceDeltaVisitor {
 	 */
 	public boolean getGitIgnoreChanged() {
 		return gitIgnoreChanged;
+	}
+
+	/**
+	 * Returns whether a project was deleted.
+	 *
+	 * @return {@code true} if a project in the repository was deleted,
+	 *         {@code false} otherwise
+	 */
+	public boolean isProjectDeleted() {
+		return projectDeleted;
 	}
 }
