@@ -3560,9 +3560,6 @@ public class UIText extends NLS {
 	public static String RepositoriesView_CheckoutConfirmationToggleMessage;
 
 	/** */
-	public static String RepositoriesView_CheckoutConfirmationOkButtonLabel;
-
-	/** */
 	public static String RepositoriesView_ClipboardContentNoGitRepoMessage;
 
 	/** */
