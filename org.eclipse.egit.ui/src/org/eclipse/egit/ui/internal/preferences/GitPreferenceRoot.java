@@ -194,30 +194,12 @@ public class GitPreferenceRoot extends DoublePreferencesPreferencePage
 				.applyTo(repoChangeScannerGroup);
 		repoChangeScannerGroup
 				.setText(UIText.GitPreferenceRoot_RepoChangeScannerGroupHeader);
-
-		IntegerFieldEditor intervalField = new IntegerFieldEditor(
-				UIPreferences.REFESH_INDEX_INTERVAL,
-				UIText.RefreshPreferencesPage_RefreshIndexInterval,
-				repoChangeScannerGroup);
-		intervalField.getLabelControl(repoChangeScannerGroup).setToolTipText(
-				UIText.RefreshPreferencesPage_RefreshIndexIntervalTooltip);
-		addField(intervalField);
 		addField(new BooleanFieldEditor(UIPreferences.REFESH_ON_INDEX_CHANGE,
 				UIText.RefreshPreferencesPage_RefreshWhenIndexChange,
-				repoChangeScannerGroup) {
-			@Override
-			public int getNumberOfControls() {
-				return 2;
-			}
-		});
+				repoChangeScannerGroup));
 		addField(new BooleanFieldEditor(UIPreferences.REFESH_ONLY_WHEN_ACTIVE,
 				UIText.RefreshPreferencesPage_RefreshOnlyWhenActive,
-				repoChangeScannerGroup) {
-			@Override
-			public int getNumberOfControls() {
-				return 2;
-			}
-		});
+				repoChangeScannerGroup));
 		updateMargins(repoChangeScannerGroup);
 
 		Group mergeGroup = new Group(main, SWT.SHADOW_ETCHED_IN);

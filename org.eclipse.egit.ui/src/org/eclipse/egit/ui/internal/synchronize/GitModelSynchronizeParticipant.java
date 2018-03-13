@@ -55,7 +55,6 @@ import org.eclipse.egit.ui.internal.synchronize.model.GitModelBlob;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
-import org.eclipse.jgit.annotations.Nullable;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.team.core.TeamException;
@@ -413,10 +412,8 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 		return value != null ? value.booleanValue() : defaultValue;
 	}
 
-	private @Nullable String getPathForResource(IResource resource) {
-		return resource.getLocation() != null
-				? resource.getLocation().toPortableString()
-				: null;
+	private String getPathForResource(IResource resource) {
+		return resource.getLocation().toPortableString();
 	}
 
 	private Set<IResource> getIncludedResources(IMemento memento) {
