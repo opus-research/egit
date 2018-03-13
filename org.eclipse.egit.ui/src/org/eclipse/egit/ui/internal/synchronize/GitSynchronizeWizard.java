@@ -103,7 +103,7 @@ public class GitSynchronizeWizard extends Wizard {
 					continue;
 				}
 
-				IResource res = AdapterUtils.adaptToAnyResource(o);
+				IResource res = AdapterUtils.adapt(o, IResource.class);
 				if (res == null) {
 					continue;
 				}
