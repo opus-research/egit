@@ -413,9 +413,7 @@ public class GitModelSynchronizeParticipant extends ModelSynchronizeParticipant 
 	}
 
 	private String getPathForResource(IResource resource) {
-		return resource.getLocation() != null
-				? resource.getLocation().toPortableString()
-				: null;
+		return resource.getLocation().toPortableString();
 	}
 
 	private Set<IResource> getIncludedResources(IMemento memento) {
