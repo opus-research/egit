@@ -8,7 +8,7 @@
  * Copyright (C) 2012-2013 Robin Stocker <robin@nibor.org>
  * Copyright (C) 2012, François Rey <eclipse.org_@_francois_._rey_._name>
  * Copyright (C) 2015, IBM Corporation (Dani Megert <daniel_megert@ch.ibm.com>)
- * Copyright (C) 2015-2017 Thomas Wolf <thomas.wolf@paranor.ch>
+ * Copyright (C) 2015-2016 Thomas Wolf <thomas.wolf@paranor.ch>
  * Copyright (C) 2015-2017, Stefan Dirix <sdirix@eclipsesource.com>
  *
  * All rights reserved. This program and the accompanying materials
@@ -50,7 +50,6 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.commit.DiffDocument;
 import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
-import org.eclipse.egit.ui.internal.components.RepositoryMenuUtil.RepositoryToolbarAction;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
 import org.eclipse.egit.ui.internal.fetch.FetchHeadChangedEvent;
@@ -59,10 +58,8 @@ import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
 import org.eclipse.egit.ui.internal.repository.tree.FolderNode;
 import org.eclipse.egit.ui.internal.repository.tree.RefNode;
-import org.eclipse.egit.ui.internal.repository.tree.RepositoryNode;
 import org.eclipse.egit.ui.internal.repository.tree.RepositoryTreeNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
-import org.eclipse.egit.ui.internal.selection.RepositorySelectionProvider;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.Action;
@@ -105,7 +102,6 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.diff.DiffConfig;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -211,16 +207,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			@Override
 			public void propertyChange(final PropertyChangeEvent event) {
 				if (prefName.equals(event.getProperty())) {
-					Control control = historyPage.getControl();
-					if (control != null && !control.isDisposed()) {
-						control.getDisplay().asyncExec(() -> {
-							if (!control.isDisposed()) {
-								setChecked(
-										historyPage.store.getBoolean(prefName));
-								apply(isChecked());
-							}
-						});
-					}
+					setChecked(historyPage.store.getBoolean(prefName));
+					apply(isChecked());
 				}
 			}
 
@@ -325,8 +313,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		ShowFilterAction showAllResourceVersionsAction;
 
-		RepositoryToolbarAction switchRepositoryAction;
-
 		private GitHistoryPage historyPage;
 
 		GitHistoryPageActions(GitHistoryPage historyPage) {
@@ -341,7 +327,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 
 		private void createActions() {
-			createRepositorySwitchAction();
 			createFindToolbarAction();
 			createRefreshAction();
 			createFilterActions();
@@ -362,31 +347,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			wrapCommentAction.setEnabled(showCommentAction.isChecked());
 			fillCommentAction.setEnabled(showCommentAction.isChecked());
-		}
-
-		private void createRepositorySwitchAction() {
-			switchRepositoryAction = new RepositoryToolbarAction(true,
-					() -> historyPage.currentRepo,
-					repo -> {
-						Repository current = historyPage.currentRepo;
-						if (current != null && repo.getDirectory()
-								.equals(current.getDirectory())) {
-							HistoryPageInput currentInput = historyPage
-									.getInputInternal();
-							if (currentInput != null
-									&& currentInput.getItems() == null
-									&& currentInput.getFileList() == null) {
-								// Already showing this repo unfiltered
-								return;
-							}
-						}
-						if (historyPage.selectionTracker != null) {
-							historyPage.selectionTracker.clearSelection();
-						}
-						historyPage.getHistoryView()
-								.showHistoryFor(new RepositoryNode(null, repo));
-					});
-			actionsToDispose.add(switchRepositoryAction);
 		}
 
 		private void createFindToolbarAction() {
@@ -448,7 +408,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		private void createFilterActions() {
 			showAllRepoVersionsAction = new ShowFilterAction(
-					ShowFilter.SHOWALLREPO, UIIcons.FILTERNONE,
+					ShowFilter.SHOWALLREPO, UIIcons.REPOSITORY,
 					UIText.GitHistoryPage_AllInRepoMenuLabel,
 					UIText.GitHistoryPage_AllInRepoTooltip);
 
@@ -1317,11 +1277,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		attachCommitSelectionChanged();
 		initActions();
 
-		getSite().setSelectionProvider(
-				new RepositorySelectionProvider(graph.getTableView(), () -> {
-					HistoryPageInput myInput = getInputInternal();
-					return myInput != null ? myInput.getRepository() : null;
-				}));
+		getSite().setSelectionProvider(graph.getTableView());
 		getSite().registerContextMenu(POPUP_ID, popupMgr, graph.getTableView());
 		// due to the issues described in bug 322751, it makes no
 		// sense to set a selection provider for the site here
@@ -1487,7 +1443,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 	private void setupToolBar() {
 		IToolBarManager mgr = getSite().getActionBars().getToolBarManager();
 		mgr.add(actions.findAction);
-		mgr.add(actions.switchRepositoryAction);
 		mgr.add(new Separator());
 		mgr.add(actions.showAllRepoVersionsAction);
 		mgr.add(actions.showAllProjectVersionsAction);
@@ -2201,13 +2156,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 			AnyObjectId headId = resolveHead(db, true);
 			if (headId == null) {
-				TableViewer viewer = graph.getTableView();
-				viewer.setInput(new SWTCommit[0]);
+				graph.getTableView().setInput(new SWTCommit[0]);
 				currentHeadId = null;
 				currentFetchHeadId = null;
-				currentRepo = db;
-				// Force a selection changed event
-				viewer.setSelection(viewer.getSelection());
 				return;
 			}
 			AnyObjectId fetchHeadId = resolveFetchHead(db);
@@ -2454,7 +2405,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (UIUtils.isUsable(diffViewer)) {
 				IDocument document = new Document();
 				diffViewer.setDocument(document);
-				resizeCommentAndDiffScrolledComposite();
 			}
 			return;
 		}
@@ -2548,7 +2498,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 		Point size = commentAndDiffComposite
 				.computeSize(SWT.DEFAULT, SWT.DEFAULT);
-		commentAndDiffComposite.layout();
 		commentAndDiffScrolledComposite.setMinSize(size);
 		resizing = false;
 
