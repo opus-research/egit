@@ -12,9 +12,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.reflog;
 
-import java.io.File;
 import java.util.Collection;
-import java.util.Objects;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -27,7 +25,6 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ReflogEntry;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.model.WorkbenchAdapter;
 import org.eclipse.ui.progress.DeferredTreeContentManager;
 import org.eclipse.ui.progress.IDeferredWorkbenchAdapter;
@@ -43,42 +40,7 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 	private Object currentInput;
 
 	/**
-	 * Serializes concurrent attempts to load the reflog.
-	 */
-	private static class ReflogSchedulingRule implements ISchedulingRule {
-
-		private final File gitDir;
-
-		public ReflogSchedulingRule(File gitDir) {
-			this.gitDir = gitDir;
-		}
-
-		@Override
-		public boolean contains(ISchedulingRule rule) {
-			if (rule instanceof ReflogSchedulingRule) {
-				return Objects.equals(gitDir,
-						((ReflogSchedulingRule) rule).gitDir);
-			}
-			return false;
-		}
-
-		@Override
-		public boolean isConflicting(ISchedulingRule rule) {
-			return rule instanceof ReflogSchedulingRule;
-		}
-
-	}
-
-	private static final WorkbenchAdapter ERROR_ELEMENT = new WorkbenchAdapter() {
-
-		@Override
-		public String getLabel(Object object) {
-			return UIText.ReflogView_ErrorOnLoad;
-		}
-	};
-
-	/**
-	 * Input class for this content provider.
+	 * Input class for this content provider
 	 */
 	public static class ReflogInput extends WorkbenchAdapter
 			implements IDeferredWorkbenchAdapter {
@@ -86,8 +48,6 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 		private final Repository repository;
 
 		private final String ref;
-
-		private final ISchedulingRule rule;
 
 		private Collection<ReflogEntry> refLog;
 
@@ -102,7 +62,6 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 			Assert.isNotNull(ref, "Ref cannot be null"); //$NON-NLS-1$
 			this.repository = repository;
 			this.ref = ref;
-			this.rule = new ReflogSchedulingRule(repository.getDirectory());
 		}
 
 		/**
@@ -114,35 +73,23 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 			return repository;
 		}
 
-		/**
-		 * Retrieves the ref.
-		 *
-		 * @return the ref
-		 */
-		public String getRef() {
-			return ref;
-		}
-
 		@Override
 		public Object[] getChildren(Object o) {
 			if (refLog != null) {
 				return refLog.toArray();
 			}
-			return null;
+			return super.getChildren(o);
 		}
 
 		@Override
 		public void fetchDeferredChildren(Object object,
 				IElementCollector collector, IProgressMonitor monitor) {
-			if (refLog != null) {
-				return; // Already loaded.
-			}
 			try (Git git = new Git(repository)) {
 				refLog = git.reflog().setRef(ref).call();
 				collector.add(refLog.toArray(), monitor);
 			} catch (Exception e) {
 				Activator.logError("Error running reflog command", e); //$NON-NLS-1$
-				collector.add(ERROR_ELEMENT, monitor);
+				collector.add(new ErrorElement(), monitor);
 			}
 		}
 
@@ -153,7 +100,15 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 
 		@Override
 		public ISchedulingRule getRule(Object object) {
-			return rule;
+			return null;
+		}
+	}
+
+	private static class ErrorElement extends WorkbenchAdapter {
+
+		@Override
+		public String getLabel(Object object) {
+			return UIText.ReflogView_ErrorOnLoad;
 		}
 	}
 
@@ -169,7 +124,8 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 		}
 		currentInput = newInput;
 		if (viewer instanceof AbstractTreeViewer && newInput != null) {
-			loader = new DeferredBatchLoader((AbstractTreeViewer) viewer);
+			loader = new DeferredTreeContentManager(
+					(AbstractTreeViewer) viewer);
 		}
 	}
 
@@ -185,11 +141,6 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 	@Override
 	public Object[] getChildren(Object parentElement) {
 		if (parentElement instanceof ReflogInput && loader != null) {
-			Object[] knownChildren = ((ReflogInput) parentElement)
-					.getChildren(parentElement);
-			if (knownChildren != null) {
-				return knownChildren;
-			}
 			return loader.getChildren(parentElement);
 		}
 		return new Object[0];
@@ -203,54 +154,5 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 	@Override
 	public boolean hasChildren(Object element) {
 		return false;
-	}
-
-	/**
-	 * A variant of {@link DeferredTreeContentManager} that doesn't use a
-	 * separate UI job to fill in the tree. With UI jobs, it's simply impossible
-	 * to know what has already been added when there are several loading jobs.
-	 * For our use case (load the whole reflog, then add it to the tree) a
-	 * {@link org.eclipse.swt.widgets.Display#syncExec(Runnable) syncExec()} is
-	 * sufficient.
-	 */
-	private static class DeferredBatchLoader
-			extends DeferredTreeContentManager {
-
-		private AbstractTreeViewer viewer;
-
-		public DeferredBatchLoader(AbstractTreeViewer viewer) {
-			super(viewer);
-			this.viewer = viewer;
-		}
-
-		/**
-		 * Add child nodes, removing the error element if appropriate. Contrary
-		 * to the super implementation, this does <em>not</em> use a UI job but
-		 * a simple {@link org.eclipse.swt.widgets.Display#syncExec(Runnable)
-		 * syncExec()}.
-		 *
-		 * @param parent
-		 *            to add the {@code children} to
-		 * @param children
-		 *            to add to the {@code parent}
-		 * @param monitor
-		 *            is ignored
-		 */
-		@Override
-		protected void addChildren(Object parent, Object[] children,
-				IProgressMonitor monitor) {
-			Control control = viewer.getControl();
-			if (control == null || control.isDisposed()) {
-				return;
-			}
-			control.getDisplay().syncExec(() -> {
-				if (!control.isDisposed()) {
-					if (children.length != 1 || children[0] != ERROR_ELEMENT) {
-						viewer.remove(ERROR_ELEMENT);
-					}
-					viewer.add(parent, children);
-				}
-			});
-		}
 	}
 }
