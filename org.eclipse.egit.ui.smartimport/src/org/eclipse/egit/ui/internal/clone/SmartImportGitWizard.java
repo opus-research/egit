@@ -55,7 +55,6 @@ public class SmartImportGitWizard extends AbstractGitCloneWizard
 		}
 		setDefaultPageImageDescriptor(UIIcons.WIZBAN_IMPORT_REPO);
 		this.easymportWizard = new SmartImportWizard();
-		setWindowTitle(UIText.GitImportWizard_WizardTitle);
 	}
 
 	@Override

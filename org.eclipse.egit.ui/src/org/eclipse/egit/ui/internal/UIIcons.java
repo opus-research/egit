@@ -141,9 +141,6 @@ public class UIIcons {
 	/** Synchronize Wizard banner */
 	public final static ImageDescriptor WIZBAN_SYNCHRONIZE;
 
-	/** History view, show full repo history */
-	public final static ImageDescriptor FILTERNONE;
-
 	/** History view, select all version in same project */
 	public final static ImageDescriptor FILTERPROJECT;
 
@@ -333,12 +330,6 @@ public class UIIcons {
 	/** "Unstage all" icon */
 	public final static ImageDescriptor UNSTAGE_ALL;
 
-	/** Assume Unchanged icon */
-	public final static ImageDescriptor ASSUME_UNCHANGED;
-
-	/** Untrack icon */
-	public final static ImageDescriptor UNTRACK;
-
 	/** {@link #BRANCH} overlaid with {@link #OVR_CHECKEDOUT}. */
 	public final static ImageDescriptor CHECKED_OUT_BRANCH;
 
@@ -389,7 +380,6 @@ public class UIIcons {
 		CHECKBOX_ENABLED_UNCHECKED = map("checkboxes/enabled_unchecked.png"); //$NON-NLS-1$
 		CHECKBOX_DISABLED_CHECKED = map("checkboxes/disabled_checked.png"); //$NON-NLS-1$
 		CHECKBOX_DISABLED_UNCHECKED = map("checkboxes/disabled_unchecked.png"); //$NON-NLS-1$
-		FILTERNONE = map("elcl16/filter_none.png"); //$NON-NLS-1$
 		FILTERRESOURCE = map("elcl16/filterresource.png"); //$NON-NLS-1$
 		FILTERPROJECT = map("elcl16/filterproject.png"); //$NON-NLS-1$
 		FILTERFOLDER = map("elcl16/filterfolder.png"); //$NON-NLS-1$
@@ -453,8 +443,6 @@ public class UIIcons {
 		STATE_SORT = map("obj16/state_sort_co.png"); //$NON-NLS-1$
 		UNSTAGE = map("obj16/unstage.png"); //$NON-NLS-1$
 		UNSTAGE_ALL = map("elcl16/unstage_all.png"); //$NON-NLS-1$
-		ASSUME_UNCHANGED = map("obj16/assume_unchanged.png"); //$NON-NLS-1$
-		UNTRACK = map("obj16/untrack.png"); //$NON-NLS-1$
 		CHECKED_OUT_BRANCH = new DecorationOverlayDescriptor(BRANCH,
 				OVR_CHECKEDOUT, IDecoration.TOP_LEFT);
 	}

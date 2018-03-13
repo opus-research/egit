@@ -1322,12 +1322,6 @@ public class UIText extends NLS {
 	public static String RepositoryAction_multiRepoSelectionTitle;
 
 	/** */
-	public static String RepositoryToolbarAction_label;
-
-	/** */
-	public static String RepositoryToolbarAction_tooltip;
-
-	/** */
 	public static String RepositoryCommit_AuthorDate;
 
 	/** */
@@ -1485,6 +1479,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String SourceBranchPage_remoteListingCancelled;
+
+	/** */
+	public static String SourceBranchPage_cannotCreateTemp;
 
 	/** */
 	public static String SourceBranchPage_CompositeTransportErrorMessage;
@@ -2424,6 +2421,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_NoConfigLocationKnown;
+
+	/** */
+	public static String ConfigurationEditorComponent_NoSectionSubsectionMessage;
 
 	/** */
 	public static String ConfigurationEditorComponent_OpenEditorButton;
@@ -4160,9 +4160,6 @@ public class UIText extends NLS {
 	public static String UnmergedBranchDialog_Title;
 
 	/** */
-	public static String UnmergedBranchDialog_deleteButtonLabel;
-
-	/** */
 	public static String Untrack_untrack;
 
 	/** */
@@ -5212,9 +5209,6 @@ public class UIText extends NLS {
 	public static String StagingView_Add_Change_ID;
 
 	/** */
-	public static String StagingView_Assume_Unchanged;
-
-	/** */
 	public static String StagingView_Commit;
 
 	/** */
@@ -5299,9 +5293,6 @@ public class UIText extends NLS {
 	public static String StagingView_UnstagedSort;
 
 	/** */
-	public static String StagingView_Untrack;
-
-	/** */
 	public static String StagingView_StageAllItemMenuLabel;
 
 	/** */
@@ -5354,9 +5345,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_MessageErrors;
-
-	/** */
-	public static String StagingView_LoadJob;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;
@@ -5594,12 +5582,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String CommandConfirmationHardResetDialog_resetButtonLabel;
-
-	/** */
-	public static String RepositorySearchDialog_BrowseDialogMessage;
-
-	/** */
-	public static String ProjectUtils_Invalid_ProjectFile;
 
 	static {
 		initializeMessages(BUNDLE_NAME, UIText.class);

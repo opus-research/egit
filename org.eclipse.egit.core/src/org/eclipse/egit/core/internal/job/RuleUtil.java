@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.egit.core.internal.job;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -121,34 +120,12 @@ public class RuleUtil {
 			return new MultiRule(rules.toArray(new ISchedulingRule[rules.size()]));
 	}
 
-	/**
-	 * Determines the set of projects that are affected by a change in a
-	 * repository.
-	 *
-	 * @param repository
-	 *            to find the projects for
-	 * @return an array of all {@link IProject}s that are affected by a change
-	 *         in the given repository
-	 */
-	public static IProject[] getProjects(Repository repository) {
-		return getProjects(repository.getWorkTree());
-	}
-
-	/**
-	 * Determines the set of projects that are affected by a change in a
-	 * repository.
-	 *
-	 * @param workTreeDirectory
-	 *            working tree directory of the repository to find the projects
-	 *            for
-	 * @return an array of all {@link IProject}s that are affected by a change
-	 *         in the given repository
-	 */
-	public static IProject[] getProjects(File workTreeDirectory) {
+	private static IProject[] getProjects(Repository repository) {
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
 		List<IProject> result = new ArrayList<IProject>();
-		final Path workTree = workTreeDirectory.getAbsoluteFile().toPath();
+		final Path workTree = repository.getWorkTree().getAbsoluteFile()
+				.toPath();
 		for (IProject p : projects) {
 			IPath projectLocation = p.getLocation();
 			if (projectLocation == null) {

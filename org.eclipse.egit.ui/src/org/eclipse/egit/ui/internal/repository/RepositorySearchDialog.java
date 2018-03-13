@@ -268,8 +268,6 @@ public class RepositorySearchDialog extends WizardPage {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				DirectoryDialog dd = new DirectoryDialog(getShell());
-				dd.setMessage(
-						UIText.RepositorySearchDialog_BrowseDialogMessage);
 				dd.setFilterPath(dir.getText());
 				String directory = dd.open();
 				if (directory != null) {
