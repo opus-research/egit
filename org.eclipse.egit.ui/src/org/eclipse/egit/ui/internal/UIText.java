@@ -1568,9 +1568,6 @@ public class UIText extends NLS {
 	public static String ReflogView_DateColumnHeader;
 
 	/** */
-	public static String ReflogView_ErrorOnLoad;
-
-	/** */
 	public static String ReflogView_ErrorOnOpenCommit;
 
 	/** */
