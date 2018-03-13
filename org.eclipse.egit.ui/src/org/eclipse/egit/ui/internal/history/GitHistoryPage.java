@@ -51,7 +51,6 @@ import org.eclipse.egit.ui.internal.commit.DiffRegionFormatter;
 import org.eclipse.egit.ui.internal.commit.DiffViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkSourceViewer;
 import org.eclipse.egit.ui.internal.dialogs.HyperlinkTokenScanner;
-import org.eclipse.egit.ui.internal.fetch.FetchHeadChangedEvent;
 import org.eclipse.egit.ui.internal.history.FindToolbar.StatusListener;
 import org.eclipse.egit.ui.internal.repository.tree.AdditionalRefNode;
 import org.eclipse.egit.ui.internal.repository.tree.FileNode;
@@ -756,9 +755,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 
 	/** Last HEAD */
 	private AnyObjectId currentHeadId;
-
-	/** Last FETCH_HEAD */
-	private AnyObjectId currentFetchHeadId;
 
 	/** Repository of the last input*/
 	private Repository currentRepo;
@@ -1592,8 +1588,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 														.getLocation(),
 												"Executing async repository changed event"); //$NON-NLS-1$
 							refschangedRunnable = null;
-							initAndStartRevWalk(
-									!(e instanceof FetchHeadChangedEvent));
+							initAndStartRevWalk(true);
 						}
 					}
 				};
@@ -2074,18 +2069,16 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			if (headId == null) {
 				graph.getTableView().setInput(new SWTCommit[0]);
 				currentHeadId = null;
-				currentFetchHeadId = null;
 				return;
 			}
-			AnyObjectId fetchHeadId = resolveFetchHead(db);
 
 			List<FilterPath> paths = buildFilterPaths(input.getItems(), input
 					.getFileList(), db);
 
-			if (forceNewWalk || shouldRedraw(db, headId, fetchHeadId, paths)) {
+			if (forceNewWalk || shouldRedraw(db, headId, paths)) {
 				releaseGenerateHistoryJob();
 
-				SWTWalk walk = createNewWalk(db, headId, fetchHeadId);
+				SWTWalk walk = createNewWalk(db, headId);
 				setWalkStartPoints(walk, db, headId);
 
 				setupFileViewer(walk, db, paths);
@@ -2103,8 +2096,7 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		}
 	}
 
-	private boolean shouldRedraw(Repository db, AnyObjectId headId,
-			AnyObjectId fetchHeadId, List<FilterPath> paths) {
+	private boolean shouldRedraw(Repository db, AnyObjectId headId, List<FilterPath> paths) {
 		boolean pathChanged = pathChanged(pathFilters, paths);
 		boolean headChanged = headId == null || !headId.equals(currentHeadId);
 		boolean repoChanged = false;
@@ -2118,9 +2110,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS);
 		currentShowAdditionalRefs = store
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_ADDITIONAL_REFS);
-		boolean fetchHeadChanged = currentShowAdditionalRefs
-				&& fetchHeadId != null
-				&& !fetchHeadId.equals(currentFetchHeadId);
 
 		boolean showNotesChanged = currentShowNotes != store
 				.getBoolean(UIPreferences.RESOURCEHISTORY_SHOW_NOTES);
@@ -2134,9 +2123,9 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 			currentRepo = db;
 		}
 
-		return pathChanged || headChanged || fetchHeadChanged || repoChanged
-				|| allBranchesChanged || additionalRefsChange
-				|| showNotesChanged || followRenamesChanged;
+		return pathChanged
+			|| headChanged || repoChanged || allBranchesChanged
+			|| additionalRefsChange || showNotesChanged || followRenamesChanged;
 	}
 
 	/**
@@ -2162,14 +2151,6 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 							.getDefault().getRepositoryUtil()
 							.getRepositoryName(db)));
 		return headId;
-	}
-
-	private AnyObjectId resolveFetchHead(Repository db) {
-		try {
-			return db.resolve(Constants.FETCH_HEAD);
-		} catch (IOException e) {
-			return null;
-		}
 	}
 
 	private ArrayList<FilterPath> buildFilterPaths(final IResource[] inResources,
@@ -2252,10 +2233,8 @@ public class GitHistoryPage extends HistoryPage implements RefsChangedListener,
 		return !o.equals(n);
 	}
 
-	private @NonNull SWTWalk createNewWalk(Repository db, AnyObjectId headId,
-			AnyObjectId fetchHeadId) {
+	private @NonNull SWTWalk createNewWalk(Repository db, AnyObjectId headId) {
 		currentHeadId = headId;
-		currentFetchHeadId = fetchHeadId;
 		SWTWalk walk = new SWTWalk(db);
 		try {
 			if (store

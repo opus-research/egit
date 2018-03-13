@@ -1568,9 +1568,6 @@ public class UIText extends NLS {
 	public static String ReflogView_DateColumnHeader;
 
 	/** */
-	public static String ReflogView_ErrorOnLoad;
-
-	/** */
 	public static String ReflogView_ErrorOnOpenCommit;
 
 	/** */
@@ -2855,9 +2852,6 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_CreatingTagTaskName;
 
 	/** */
-	public static String FetchGerritChangePage_FetchingRemoteRefsMessage;
-
-	/** */
 	public static String FetchGerritChangePage_FetchingTaskName;
 
 	/** */
@@ -2882,7 +2876,7 @@ public class UIText extends NLS {
 	public static String FetchGerritChangePage_PageTitle;
 
 	/** */
-	public static String FetchGerritChangePage_ShowingProposalsJobName;
+	public static String FetchGerritChangePage_RunInBackground;
 
 	/** */
 	public static String FetchGerritChangePage_SuggestedRefNamePattern;
@@ -4598,9 +4592,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String NewRepositoryWizard_WizardTitle;
-
-	/** */
-	public static String NonBlockingWizardDialog_BackgroundJobName;
 
 	/** */
 	public static String NonDeletedFilesDialog_NonDeletedFilesMessage;
