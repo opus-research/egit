@@ -120,6 +120,20 @@
             </adapter>
          </factory>
          <factory
+               adaptableType="org.eclipse.egit.ui.internal.reflog.ReflogItem"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.team.ui.history.IHistoryPageSource">
+            </adapter>
+         </factory>
+         <factory
+               adaptableType="org.eclipse.egit.core.internal.rebase.RebaseInteractivePlan$PlanElement"
+               class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
+            <adapter
+                  type="org.eclipse.team.ui.history.IHistoryPageSource">
+            </adapter>
+         </factory>
+         <factory
 	       adaptableType="org.eclipse.egit.ui.internal.synchronize.model.GitModelRoot"
                class="org.eclipse.egit.ui.internal.factories.GitAdapterFactory">
             <adapter
@@ -5486,6 +5500,10 @@
       <image
             commandId="org.eclipse.egit.ui.internal.reflog.OpenInCommitViewerCommand"
             icon="icons/obj16/open-commit.png">
+      </image>
+      <image
+            commandId="org.eclipse.egit.ui.internal.reflog.CopyCommand"
+            icon="icons/elcl16/sha1.png">
       </image>
       <image
             commandId="org.eclipse.egit.ui.RebaseInteractiveCurrent"
