@@ -112,7 +112,6 @@ import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.dialogs.DialogSettings;
-import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -3948,10 +3947,9 @@ public class StagingView extends ViewPart
 
 	private void commit(boolean pushUpstream) {
 		if (!isCommitWithoutFilesAllowed()) {
-			MessageDialog.open(MessageDialog.ERROR, getSite().getShell(),
+			MessageDialog.openError(getSite().getShell(),
 					UIText.StagingView_committingNotPossible,
-					UIText.StagingView_noStagedFiles, SWT.NONE,
-					new String[] { IDialogConstants.CLOSE_LABEL });
+					UIText.StagingView_noStagedFiles);
 			return;
 		}
 		if (!commitMessageComponent.checkCommitInfo())
