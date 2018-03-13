@@ -1139,9 +1139,6 @@ public class UIText extends NLS {
 	public static String CancelAfterSaveDialog_Title;
 
 	/** */
-	public static String CancelAfterSaveDialog_cancelCommitButtonLabel;
-
-	/** */
 	public static String CleanRepositoryPage_cleanDirs;
 
 	/** */
