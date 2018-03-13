@@ -93,7 +93,21 @@ public class ResetMenu {
 		final String jobName;
 		switch (resetType) {
 		case HARD:
-			if (!confirmHardReset(shell, repo)) {
+			String question = UIText.ResetTargetSelectionDialog_ResetConfirmQuestion;
+			ILaunchConfiguration launch = LaunchFinder
+					.getRunningLaunchConfiguration(Collections.singleton(repo),
+							null);
+			if (launch != null) {
+				question = MessageFormat.format(question,
+						"\n\n" + MessageFormat.format( //$NON-NLS-1$
+								UIText.LaunchFinder_RunningLaunchMessage,
+								launch.getName()));
+			} else {
+				question = MessageFormat.format(question, ""); //$NON-NLS-1$
+			}
+			if (!MessageDialog.openQuestion(shell,
+					UIText.ResetTargetSelectionDialog_ResetQuestion,
+					question)) {
 				return;
 			}
 			jobName = UIText.HardResetToRevisionAction_hardReset;
@@ -111,31 +125,5 @@ public class ResetMenu {
 		ResetOperation operation = new ResetOperation(repo, commitId.getName(),
 				resetType);
 		JobUtil.scheduleUserWorkspaceJob(operation, jobName, JobFamilies.RESET);
-	}
-
-	/**
-	 * Ask the user to confirm hard reset. Warns the user if a running launch
-	 * could be affected by the reset.
-	 *
-	 * @param shell
-	 * @param repo
-	 * @return {@code true} if the user confirmed hard reset
-	 */
-	public static boolean confirmHardReset(Shell shell, final Repository repo) {
-		String question = UIText.ResetTargetSelectionDialog_ResetConfirmQuestion;
-		ILaunchConfiguration launch = LaunchFinder
-				.getRunningLaunchConfiguration(Collections.singleton(repo),
-						null);
-		if (launch != null) {
-			question = MessageFormat.format(question,
-					"\n\n" + MessageFormat.format( //$NON-NLS-1$
-							UIText.LaunchFinder_RunningLaunchMessage,
-							launch.getName()));
-		} else {
-			question = MessageFormat.format(question, ""); //$NON-NLS-1$
-		}
-		return MessageDialog.openQuestion(shell,
-				UIText.ResetTargetSelectionDialog_ResetQuestion,
-				question);
 	}
 }
