@@ -344,6 +344,7 @@ public class CommitUI  {
 		includeList(indexDiff.getMissing(), notIndexed);
 		includeList(indexDiff.getModified(), notIndexed);
 		includeList(indexDiff.getUntracked(), notTracked);
+		monitor.done();
 	}
 
 	static class CountingVisitor implements IResourceVisitor {
