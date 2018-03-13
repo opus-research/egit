@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (C) 2015, 2016 Thomas Wolf <thomas.wolf@paranor.ch>.
+ * Copyright (C) 2015 Thomas Wolf <thomas.wolf@paranor.ch>.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jgit.annotations.Nullable;
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IRegion;
@@ -44,7 +43,7 @@ import org.eclipse.ui.texteditor.HyperlinkDetectorDescriptor;
  */
 public class HyperlinkSourceViewer extends SourceViewer {
 	// The default SourceViewer doesn't do this and instead AbstractTextEditor
-	// has code that does all that. For our uses it is much more convenient if
+	// has code that does all that. For our uses,it is much more convenient if
 	// the viewer itself handles this.
 
 	private Configuration configuration;
@@ -143,12 +142,11 @@ public class HyperlinkSourceViewer extends SourceViewer {
 		preferenceKeysForActivation
 				.add(AbstractTextEditor.PREFERENCE_HYPERLINK_KEY_MODIFIER);
 		// All applicable individual hyperlink detectors settings.
-		Set<String> targets = configuration.getHyperlinkDetectorTargets(this)
-				.keySet();
+		Map targets = configuration.getHyperlinkDetectorTargets(this);
 		for (HyperlinkDetectorDescriptor desc : EditorsUI
 				.getHyperlinkDetectorRegistry()
 				.getHyperlinkDetectorDescriptors()) {
-			if (targets.contains(desc.getTargetId())) {
+			if (targets.keySet().contains(desc.getTargetId())) {
 				preferenceKeysForEnablement.add(desc.getId());
 				preferenceKeysForActivation.add(desc.getId()
 						+ HyperlinkDetectorDescriptor.STATE_MASK_POSTFIX);
@@ -208,7 +206,7 @@ public class HyperlinkSourceViewer extends SourceViewer {
 		 * {@link #internalGetHyperlinkDetectors(ISourceViewer)} to get the
 		 * hyperlink detectors.
 		 * <p>
-		 * Sets up the hyperlink detectors such that they are active on both
+		 * Sets up the hyperlink detetctors such that they are active on both
 		 * {@link SWT#NONE} and on the configured modifier key combination if
 		 * the viewer is configured to open hyperlinks on direct click, i.e., if
 		 * {@link TextSourceViewerConfiguration#getHyperlinkStateMask(ISourceViewer)
@@ -278,8 +276,7 @@ public class HyperlinkSourceViewer extends SourceViewer {
 		}
 
 		@Override
-		protected Map<String, IAdaptable> getHyperlinkDetectorTargets(
-				ISourceViewer sourceViewer) {
+		protected Map getHyperlinkDetectorTargets(ISourceViewer sourceViewer) {
 			// Just so that we have visibility on this in the enclosing class.
 			return super.getHyperlinkDetectorTargets(sourceViewer);
 		}
