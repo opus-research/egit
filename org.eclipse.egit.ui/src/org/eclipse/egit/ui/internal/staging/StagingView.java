@@ -181,7 +181,6 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -295,29 +294,21 @@ public class StagingView extends ViewPart
 
 	private ToolBarManager stagedToolBarManager;
 
-	private IAction listPresentationAction;
+	private Action listPresentationAction;
 
-	private IAction treePresentationAction;
+	private Action treePresentationAction;
 
-	private IAction compactTreePresentationAction;
+	private Action compactTreePresentationAction;
 
-	private IAction unstagedExpandAllAction;
+	private Action unstagedExpandAllAction;
 
-	private IAction unstagedCollapseAllAction;
+	private Action unstagedCollapseAllAction;
 
-	private IAction stagedExpandAllAction;
+	private Action stagedExpandAllAction;
 
-	private IAction stagedCollapseAllAction;
+	private Action stagedCollapseAllAction;
 
-	private IAction unstageAction;
-
-	private IAction stageAction;
-
-	private IAction unstageAllAction;
-
-	private IAction stageAllAction;
-
-	private IAction compareModeAction;
+	private Action compareModeAction;
 
 	@Nullable
 	private Repository currentRepository;
@@ -808,50 +799,6 @@ public class StagingView extends ViewPart
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(stagingSashForm);
 
-		unstageAction = new Action(UIText.StagingView_UnstageItemMenuLabel,
-				UIIcons.UNSTAGE) {
-			@Override
-			public void run() {
-				unstage((IStructuredSelection) stagedViewer.getSelection());
-			}
-		};
-		unstageAction.setToolTipText(UIText.StagingView_UnstageItemTooltip);
-		stageAction = new Action(UIText.StagingView_StageItemMenuLabel,
-				UIIcons.ELCL16_ADD) {
-			@Override
-			public void run() {
-				stage((IStructuredSelection) unstagedViewer.getSelection());
-			}
-		};
-		stageAction.setToolTipText(UIText.StagingView_StageItemTooltip);
-
-		unstageAction.setEnabled(false);
-		stageAction.setEnabled(false);
-
-		unstageAllAction = new Action(
-				UIText.StagingView_UnstageAllItemMenuLabel,
-				UIIcons.UNSTAGE_ALL) {
-			@Override
-			public void run() {
-				stagedViewer.getTree().selectAll();
-				unstage((IStructuredSelection) stagedViewer.getSelection());
-			}
-		};
-		unstageAllAction
-				.setToolTipText(UIText.StagingView_UnstageAllItemTooltip);
-		stageAllAction = new Action(UIText.StagingView_StageAllItemMenuLabel,
-				UIIcons.ELCL16_ADD_ALL) {
-			@Override
-			public void run() {
-				unstagedViewer.getTree().selectAll();
-				stage((IStructuredSelection) unstagedViewer.getSelection());
-			}
-		};
-		stageAllAction.setToolTipText(UIText.StagingView_StageAllItemTooltip);
-
-		unstageAllAction.setEnabled(false);
-		stageAllAction.setEnabled(false);
-
 		unstagedSection = toolkit.createSection(stagingSashForm,
 				ExpandableComposite.TITLE_BAR);
 
@@ -867,15 +814,7 @@ public class StagingView extends ViewPart
 				.applyTo(unstagedComposite);
 
 		unstagedViewer = createViewer(unstagedComposite, true,
-				selection -> unstage(selection), stageAction);
-
-		unstagedViewer.addSelectionChangedListener(event -> {
-			boolean hasSelection = !event.getSelection().isEmpty();
-			if (hasSelection != stageAction.isEnabled()) {
-				stageAction.setEnabled(hasSelection);
-				unstagedToolBarManager.update(true);
-			}
-		});
+				selection -> unstage(selection));
 		Composite rebaseAndCommitComposite = toolkit.createComposite(mainSashForm);
 		rebaseAndCommitComposite.setLayout(GridLayoutFactory.fillDefaults().create());
 
@@ -1140,17 +1079,10 @@ public class StagingView extends ViewPart
 				.applyTo(stagedComposite);
 
 		stagedViewer = createViewer(stagedComposite, false,
-				selection -> stage(selection), unstageAction);
+				selection -> stage(selection));
 		stagedViewer.getLabelProvider().addListener(event -> {
 			updateMessage();
 			updateCommitButtons();
-		});
-		stagedViewer.addSelectionChangedListener(event -> {
-			boolean hasSelection = !event.getSelection().isEmpty();
-			if (hasSelection != unstageAction.isEnabled()) {
-				unstageAction.setEnabled(hasSelection);
-				stagedToolBarManager.update(true);
-			}
 		});
 
 		selectionChangedListener = new ISelectionListener() {
@@ -1183,9 +1115,6 @@ public class StagingView extends ViewPart
 				.addPreferenceChangeListener(prefListener);
 
 		updateSectionText();
-		stagedSection.setToolTipText(UIText.StagingView_StagedChangesTooltip);
-		unstagedSection
-				.setToolTipText(UIText.StagingView_UnstagedChangesTooltip);
 		updateToolbar();
 		enableCommitWidgets(false);
 		refreshAction.setEnabled(false);
@@ -1538,8 +1467,6 @@ public class StagingView extends ViewPart
 
 		unstagedToolBarManager = new ToolBarManager(SWT.FLAT | SWT.HORIZONTAL);
 
-		unstagedToolBarManager.add(stageAction);
-		unstagedToolBarManager.add(stageAllAction);
 		unstagedToolBarManager.add(sortAction);
 		unstagedToolBarManager.add(unstagedExpandAllAction);
 		unstagedToolBarManager.add(unstagedCollapseAllAction);
@@ -1578,8 +1505,6 @@ public class StagingView extends ViewPart
 
 		stagedToolBarManager = new ToolBarManager(SWT.FLAT | SWT.HORIZONTAL);
 
-		stagedToolBarManager.add(unstageAction);
-		stagedToolBarManager.add(unstageAllAction);
 		stagedToolBarManager.add(stagedExpandAllAction);
 		stagedToolBarManager.add(stagedCollapseAllAction);
 		stagedToolBarManager.update(true);
@@ -2024,29 +1949,14 @@ public class StagingView extends ViewPart
 	private StagingViewContentProvider createStagingContentProvider(
 			boolean unstaged) {
 		StagingViewContentProvider provider = new StagingViewContentProvider(
-				this, unstaged) {
-
-			@Override
-			public void inputChanged(Viewer viewer, Object oldInput,
-					Object newInput) {
-				super.inputChanged(viewer, oldInput, newInput);
-				if (unstaged) {
-					stageAllAction.setEnabled(getCount() > 0);
-					unstagedToolBarManager.update(true);
-				} else {
-					unstageAllAction.setEnabled(getCount() > 0);
-					stagedToolBarManager.update(true);
-				}
-			}
-		};
+				this, unstaged);
 		provider.setFileNameMode(getPreferenceStore().getBoolean(
 				UIPreferences.STAGING_VIEW_FILENAME_MODE));
 		return provider;
 	}
 
 	private TreeViewer createViewer(Composite parent, boolean unstaged,
-			final Consumer<IStructuredSelection> dropAction,
-			IAction... tooltipActions) {
+			final Consumer<IStructuredSelection> dropAction) {
 		final TreeViewer viewer = createTree(parent);
 		GridDataFactory.fillDefaults().grab(true, true)
 				.applyTo(viewer.getControl());
@@ -2056,11 +1966,6 @@ public class StagingView extends ViewPart
 		StagingViewContentProvider contentProvider = createStagingContentProvider(
 				unstaged);
 		viewer.setContentProvider(contentProvider);
-		if (tooltipActions != null && tooltipActions.length > 0) {
-			StagingViewTooltips tooltips = new StagingViewTooltips(viewer,
-					tooltipActions);
-			tooltips.setShift(new Point(1, 1));
-		}
 		viewer.addDragSupport(DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK,
 				new Transfer[] { LocalSelectionTransfer.getTransfer(),
 						FileTransfer.getInstance() },
@@ -2722,18 +2627,14 @@ public class StagingView extends ViewPart
 						.contains(StagingEntry.Action.REPLACE_WITH_OURS_THEIRS_MENU);
 
 				if (addStage)
-					menuMgr.add(
-							new Action(UIText.StagingView_StageItemMenuLabel,
-									UIIcons.ELCL16_ADD) {
+					menuMgr.add(new Action(UIText.StagingView_StageItemMenuLabel) {
 						@Override
 						public void run() {
 							stage(selection);
 						}
 					});
 				if (addUnstage)
-					menuMgr.add(
-							new Action(UIText.StagingView_UnstageItemMenuLabel,
-									UIIcons.UNSTAGE) {
+					menuMgr.add(new Action(UIText.StagingView_UnstageItemMenuLabel) {
 						@Override
 						public void run() {
 							unstage(selection);
@@ -2988,8 +2889,7 @@ public class StagingView extends ViewPart
 		private final IStructuredSelection selection;
 
 		DeleteAction(IStructuredSelection selection) {
-			super(UIText.StagingView_DeleteItemMenuLabel,
-					UIIcons.ELCL16_DELETE);
+			super(UIText.StagingView_DeleteItemMenuLabel);
 			this.selection = selection;
 		}
 
