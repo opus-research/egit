@@ -147,7 +147,6 @@ public class InitDialog extends TitleAreaDialog {
 		super.create();
 		setTitle(InitDialog_initializeRepository);
 		setMessage(InitDialog_chooseBranchNamesAndPrefixes);
-		getShell().setText(InitDialog_initializeRepository);
 	}
 
 	@Override
