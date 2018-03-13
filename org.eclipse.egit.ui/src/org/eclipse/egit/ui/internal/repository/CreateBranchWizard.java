@@ -73,8 +73,6 @@ public class CreateBranchWizard extends Wizard {
 			// simply don't select the drop down
 			myPage = new CreateBranchPage(repository, (Ref) null);
 		}
-		if (newBranchName != null)
-			myPage.setBranchName(newBranchName);
 		setWindowTitle(UIText.CreateBranchWizard_NewBranchTitle);
 	}
 
@@ -118,14 +116,5 @@ public class CreateBranchWizard extends Wizard {
 	 */
 	public String getNewBranchName() {
 		return newBranchName;
-	}
-
-	/**
-	 * @param newBranchName
-	 */
-	public void setNewBranchName(String newBranchName) {
-		this.newBranchName = newBranchName;
-		if (myPage != null)
-			myPage.setBranchName(newBranchName);
 	}
 }
