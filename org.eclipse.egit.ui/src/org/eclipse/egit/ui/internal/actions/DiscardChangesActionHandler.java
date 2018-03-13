@@ -45,8 +45,6 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		// capture selection from active part as long as we have context
-		mySelection = getSelection(event);
 
 		IWorkbenchPart part = getPart(event);
 		String question = UIText.DiscardChangesAction_confirmActionMessage;
@@ -67,13 +65,8 @@ public class DiscardChangesActionHandler extends RepositoryActionHandler {
 		if (!performAction)
 			return null;
 		final DiscardChangesOperation operation = createOperation(part, event);
-
-		// cleanup mySelection to avoid side effects later after execution
-		mySelection = null;
-
-		if (operation == null) {
+		if (operation == null)
 			return null;
-		}
 		String jobname = UIText.DiscardChangesAction_discardChanges;
 		Job job = new WorkspaceJob(jobname) {
 			@Override
