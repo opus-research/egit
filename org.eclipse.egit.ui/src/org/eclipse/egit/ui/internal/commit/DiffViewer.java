@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.compare.ITypedElement;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -840,7 +841,8 @@ public class DiffViewer extends HyperlinkSourceViewer {
 					: null;
 			try {
 				if (file != null) {
-					CompareUtils.compare(file, repository, np, op,
+					IResource[] resources = new IResource[] { file, };
+					CompareUtils.compare(resources, repository, np, op,
 							newCommit.getName(), oldCommit.getName(), false,
 							page);
 				} else {
