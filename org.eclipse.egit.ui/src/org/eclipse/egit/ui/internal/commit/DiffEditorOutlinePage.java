@@ -32,7 +32,6 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.OpenEvent;
@@ -65,8 +64,6 @@ public class DiffEditorOutlinePage extends NestedContentOutlinePage {
 		viewer.setAutoExpandLevel(2);
 		viewer.setContentProvider(new DiffContentProvider());
 		viewer.setLabelProvider(new DiffLabelProvider());
-		viewer.addDoubleClickListener(
-				event -> openFolder(event.getSelection()));
 		viewer.addOpenListener(event -> fireOpenEvent(event));
 		if (input != null) {
 			viewer.setInput(input);
@@ -129,20 +126,6 @@ public class DiffEditorOutlinePage extends NestedContentOutlinePage {
 	 */
 	public void removeOpenListener(IOpenListener listener) {
 		openListeners.remove(listener);
-	}
-
-	private void openFolder(ISelection currentSelection) {
-		if (currentSelection instanceof IStructuredSelection) {
-			Object currentNode = ((IStructuredSelection) currentSelection)
-					.getFirstElement();
-			if (currentNode instanceof DiffContentProvider.Folder) {
-				TreeViewer viewer = getTreeViewerChecked();
-				if (viewer != null) {
-					viewer.setExpandedState(currentNode,
-							!viewer.getExpandedState(currentNode));
-				}
-			}
-		}
 	}
 
 	private void fireOpenEvent(OpenEvent event) {
