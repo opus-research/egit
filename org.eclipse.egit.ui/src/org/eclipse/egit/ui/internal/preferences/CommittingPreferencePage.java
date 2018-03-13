@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2010, 2013 Robin Stocker <robin@nibor.org> and others.
  * Copyright (C) 2015 SAP SE (Christian Georgi <christian.georgi@sap.com>)
- * Copyright (C) 2016, 2017 Thomas Wolf <thomas.wolf@paranor.ch>
+ * Copyright (C) 2016 Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,6 +10,10 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.preferences;
 
+import java.io.IOException;
+
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.egit.core.GitCorePreferences;
 import org.eclipse.egit.ui.Activator;
@@ -21,9 +25,12 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditor;
+import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.IntegerFieldEditor;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.Policy;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -38,7 +45,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /** Preferences for committing with commit dialog/staging view. */
-public class CommittingPreferencePage extends DoublePreferencesPreferencePage
+public class CommittingPreferencePage extends FieldEditorPreferencePage
 		implements IWorkbenchPreferencePage {
 
 	private BooleanFieldEditor useStagingView;
@@ -57,6 +64,8 @@ public class CommittingPreferencePage extends DoublePreferencesPreferencePage
 
 	private Group generalGroup;
 
+	private ScopedPreferenceStore corePreferences;
+
 	/** */
 	public CommittingPreferencePage() {
 		super(GRID);
@@ -65,18 +74,19 @@ public class CommittingPreferencePage extends DoublePreferencesPreferencePage
 
 	@Override
 	public void init(IWorkbench workbench) {
-		// Nothing to do
+		corePreferences = new ScopedPreferenceStore(InstanceScope.INSTANCE,
+				org.eclipse.egit.core.Activator.getPluginId());
+	}
+
+	@Override
+	public void dispose() {
+		super.dispose();
+		corePreferences = null;
 	}
 
 	@Override
 	protected IPreferenceStore doGetPreferenceStore() {
 		return Activator.getDefault().getPreferenceStore();
-	}
-
-	@Override
-	protected IPreferenceStore doGetSecondaryPreferenceStore() {
-		return new ScopedPreferenceStore(InstanceScope.INSTANCE,
-				org.eclipse.egit.core.Activator.getPluginId());
 	}
 
 	@Override
@@ -119,7 +129,7 @@ public class CommittingPreferencePage extends DoublePreferencesPreferencePage
 
 			@Override
 			public IPreferenceStore getPreferenceStore() {
-				return getSecondaryPreferenceStore();
+				return corePreferences;
 			}
 		};
 		addField(autoStageDeletion);
@@ -130,7 +140,7 @@ public class CommittingPreferencePage extends DoublePreferencesPreferencePage
 
 			@Override
 			public IPreferenceStore getPreferenceStore() {
-				return getSecondaryPreferenceStore();
+				return corePreferences;
 			}
 		};
 		addField(autoStageMoves);
@@ -290,11 +300,25 @@ public class CommittingPreferencePage extends DoublePreferencesPreferencePage
 
 	@Override
 	public boolean performOk() {
-		getPreferenceStore().setValue(UIPreferences.WARN_BEFORE_COMMITTING,
+		doGetPreferenceStore().setValue(UIPreferences.WARN_BEFORE_COMMITTING,
 				warnCheckbox.getSelection());
-		getPreferenceStore().setValue(UIPreferences.BLOCK_COMMIT,
+		doGetPreferenceStore().setValue(UIPreferences.BLOCK_COMMIT,
 				blockCheckbox.getSelection());
-		return super.performOk();
+		boolean isOk = super.performOk();
+		if (isOk && corePreferences.needsSaving()) {
+			try {
+				corePreferences.save();
+			} catch (IOException e) {
+				String message = JFaceResources.format(
+						"PreferenceDialog.saveErrorMessage", //$NON-NLS-1$
+						new Object[] { getTitle(), e.getMessage() });
+				Policy.getStatusHandler().show(
+						new Status(IStatus.ERROR, Policy.JFACE, message, e),
+						JFaceResources
+								.getString("PreferenceDialog.saveErrorTitle")); //$NON-NLS-1$
+			}
+		}
+		return isOk;
 	}
 
 	private Group createGroup(Composite parent, int numColumns) {

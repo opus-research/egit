@@ -5,9 +5,6 @@
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *    wim.jongman@remainsoftware.com - branch normalization
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.dialogs;
 
@@ -16,7 +13,6 @@ import org.eclipse.egit.core.op.RenameBranchOperation;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.internal.ValidationUtils;
-import org.eclipse.egit.ui.internal.components.BranchNameNormalizer;
 import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -111,9 +107,6 @@ public class BranchRenameDialog extends TitleAreaDialog {
 			}
 		});
 
-		BranchNameNormalizer normalizer = new BranchNameNormalizer(name,
-				UIText.BranchRenameDialog_NormalizeNameTooltip);
-		normalizer.setVisible(false);
 		getButton(OK).setEnabled(false);
 	}
 
