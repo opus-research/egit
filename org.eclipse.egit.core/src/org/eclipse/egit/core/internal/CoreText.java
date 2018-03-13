@@ -487,6 +487,18 @@ public class CoreText extends NLS {
 	/** */
 	public static String Utils_InvalidAdapterError;
 
+	/** */
+	public static String ReportingTypedConfigGetter_invalidConfig;
+
+	/** */
+	public static String ReportingTypedConfigGetter_invalidConfigIgnored;
+
+	/** */
+	public static String ReportingTypedConfigGetter_invalidConfigWithLocation;
+
+	/** */
+	public static String ReportingTypedConfigGetter_invalidConfigWithLocationIgnored;
+
 	static {
 		initializeMessages(BUNDLE_NAME,	CoreText.class);
 	}
