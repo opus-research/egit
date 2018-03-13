@@ -12,7 +12,6 @@ package org.eclipse.egit.ui;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -173,44 +172,14 @@ public class UIUtils {
 	}
 
 	/**
-	 * A provider of candidate elements for which content proposals may be
-	 * generated.
-	 *
-	 * @param <T>
-	 *            type of the candidate elements
+	 * Used for
+	 * {@link UIUtils#addRefContentProposalToText(Text, Repository, IRefListProvider)}
 	 */
-	public interface IContentProposalCandidateProvider<T> {
-
+	public interface IRefListProvider {
 		/**
-		 * Retrieves the collection of candidates eligible for content proposal
-		 * generation.
-		 *
-		 * @return collection of candidates
+		 * @return the List of {@link Ref}s to propose
 		 */
-		public Collection<? extends T> getCandidates();
-	}
-
-	/**
-	 * A factory for creating {@link IContentProposal}s for {@link Ref}s.
-	 *
-	 * @param <T>
-	 *            type of elements to create proposals for
-	 */
-	public interface IContentProposalFactory<T> {
-
-		/**
-		 * Gets a new {@link IContentProposal} for the given element. May or may
-		 * not consider the {@link Pattern} and creates a proposal only if it
-		 * matches the element with implementation-defined semantics.
-		 *
-		 * @param pattern
-		 *            constructed from current input to aid in selecting
-		 *            meaningful proposals; may be {@code null}
-		 * @param element
-		 *            to consider creating a proposal for
-		 * @return a new {@link IContentProposal}, or {@code null} if none
-		 */
-		public IContentProposal getProposal(Pattern pattern, T element);
+		public List<Ref> getRefList();
 	}
 
 	/**
@@ -455,56 +424,19 @@ public class UIUtils {
 	 * @param refListProvider
 	 *            provides the {@link Ref}s to show in the proposal
 	 */
-	public static final void addRefContentProposalToText(Text textField,
-			Repository repository,
-			IContentProposalCandidateProvider<Ref> refListProvider) {
-		UIUtils.<Ref> addContentProposalToText(textField,
-				refListProvider, (pattern, ref) -> {
-					String shortenedName = Repository
-							.shortenRefName(ref.getName());
-					if (pattern != null
-							&& !pattern.matcher(ref.getName()).matches()
-							&& !pattern.matcher(shortenedName).matches()) {
-						return null;
-					}
-					return new RefContentProposal(repository, ref);
-				}, UIText.UIUtils_StartTypingForRemoteRefMessage,
-				UIText.UIUtils_PressShortcutForRemoteRefMessage);
-	}
-
-	/**
-	 * Adds a content proposal for arbitrary elements to a text field.
-	 *
-	 * @param <T>
-	 *            type of the proposal candidate objects
-	 *
-	 * @param textField
-	 *            the text field
-	 * @param candidateProvider
-	 *            {@link IContentProposalCandidateProvider} providing the
-	 *            candidates eligible for creating {@link IContentProposal}s
-	 * @param factory
-	 *            {@link IContentProposalFactory} to use to create proposals
-	 *            from candidates
-	 * @param startTypingMessage
-	 *            hover message if no content assist key binding is active
-	 * @param shortcutMessage
-	 *            hover message if a content assist key binding is active,
-	 *            should have a "{0}" placeholder that will be filled by the
-	 *            appropriate keystroke
-	 */
-	public static final <T> void addContentProposalToText(Text textField,
-			IContentProposalCandidateProvider<T> candidateProvider,
-			IContentProposalFactory<T> factory, String startTypingMessage,
-			String shortcutMessage) {
+	public static final void addRefContentProposalToText(final Text textField,
+			final Repository repository, final IRefListProvider refListProvider) {
 		KeyStroke stroke = UIUtils
 				.getKeystrokeOfBestActiveBindingFor(IWorkbenchCommandConstants.EDIT_CONTENT_ASSIST);
-		if (stroke == null) {
-			addBulbDecorator(textField, startTypingMessage);
-		} else {
+		if (stroke == null)
 			addBulbDecorator(textField,
-					NLS.bind(shortcutMessage, stroke.format()));
-		}
+					UIText.UIUtils_StartTypingForRemoteRefMessage);
+		else
+			addBulbDecorator(
+					textField,
+					NLS.bind(UIText.UIUtils_PressShortcutForRemoteRefMessage,
+							stroke.format()));
+
 		IContentProposalProvider cp = new IContentProposalProvider() {
 			@Override
 			public IContentProposal[] getProposals(String contents, int position) {
@@ -539,16 +471,20 @@ public class UIUtils {
 					pattern = null;
 				}
 
-				Collection<? extends T> candidates = candidateProvider
-						.getCandidates();
+				List<Ref> proposals = refListProvider.getRefList();
 
-				if (candidates != null)
-					for (final T ref : candidates) {
-						IContentProposal proposal = factory.getProposal(pattern,
-								ref);
-						if (proposal != null) {
-							resultList.add(proposal);
-						}
+				if (proposals != null)
+					for (final Ref ref : proposals) {
+						final String shortenedName = Repository
+								.shortenRefName(ref.getName());
+						if (pattern != null
+								&& !pattern.matcher(ref.getName()).matches()
+								&& !pattern.matcher(shortenedName).matches())
+							continue;
+
+						IContentProposal propsal = new RefContentProposal(
+								repository, ref);
+						resultList.add(propsal);
 					}
 
 				return resultList.toArray(new IContentProposal[resultList
@@ -560,8 +496,8 @@ public class UIUtils {
 				new TextContentAdapter(), cp, stroke,
 				UIUtils.VALUE_HELP_ACTIVATIONCHARS);
 		// set the acceptance style to always replace the complete content
-		adapter.setProposalAcceptanceStyle(
-				ContentProposalAdapter.PROPOSAL_REPLACE);
+		adapter
+				.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 	}
 
 	/**
