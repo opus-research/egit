@@ -45,19 +45,16 @@ class SynchronizeFetchJob extends WorkspaceJob {
 
 	@Override
 	public IStatus runInWorkspace(IProgressMonitor monitor) {
-		SubMonitor progress = SubMonitor.convert(monitor,
-				UIText.SynchronizeFetchJob_TaskName, gsdSet.size());
+		monitor.beginTask(UIText.SynchronizeFetchJob_TaskName, gsdSet.size());
 
 		for (GitSynchronizeData gsd : gsdSet) {
 			Repository repo = gsd.getRepository();
 			StoredConfig repoConfig = repo.getConfig();
 			String remoteName = gsd.getDstRemoteName();
-			if (remoteName == null) {
-				progress.worked(1);
+			if (remoteName == null)
 				continue;
-			}
 
-			progress.subTask(NLS.bind(UIText.SynchronizeFetchJob_SubTaskName,
+			monitor.subTask(NLS.bind(UIText.SynchronizeFetchJob_SubTaskName,
 					remoteName));
 
 			RemoteConfig config;
@@ -65,21 +62,26 @@ class SynchronizeFetchJob extends WorkspaceJob {
 				config = new RemoteConfig(repoConfig, remoteName);
 			} catch (URISyntaxException e) {
 				Activator.logError(e.getMessage(), e);
-				progress.worked(1);
 				continue;
 			}
 
 			FetchOperationUI fetchOperationUI = new FetchOperationUI(repo,
 					config, timeout, false);
 			fetchOperationUI.setCredentialsProvider(new EGitCredentialsProvider());
+			SubMonitor subMonitor = SubMonitor.convert(monitor);
+
 			try {
-				fetchOperationUI.execute(progress.newChild(1));
+				fetchOperationUI.execute(subMonitor);
 				gsd.updateRevs();
 			} catch (Exception e) {
 				showInformationDialog(remoteName);
 				Activator.logError(e.getMessage(), e);
 			}
+
+			monitor.worked(1);
 		}
+
+		monitor.done();
 		return Status.OK_STATUS;
 	}
 
