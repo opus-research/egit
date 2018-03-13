@@ -1,6 +1,6 @@
-target "staging" with source configurePhase
+target "4.4-luna" with source configurePhase
 
-location "http://download.eclipse.org/staging/neon/" {
+location "http://download.eclipse.org/releases/luna/" {
 	org.eclipse.sdk.ide lazy
 	org.eclipse.emf.sdk.feature.group lazy
 	org.eclipse.mylyn.commons.sdk.feature.group lazy
