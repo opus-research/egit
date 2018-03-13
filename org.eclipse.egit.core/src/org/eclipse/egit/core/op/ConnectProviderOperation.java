@@ -60,7 +60,7 @@ import org.eclipse.team.core.RepositoryProvider;
  * Connects Eclipse to an existing Git repository
  */
 public class ConnectProviderOperation implements IEGitOperation {
-	private final Map<IProject, File> projects = new LinkedHashMap<>();
+	private final Map<IProject, File> projects = new LinkedHashMap<IProject, File>();
 
 	private boolean refreshResources = true;
 
@@ -162,33 +162,22 @@ public class ConnectProviderOperation implements IEGitOperation {
 		}
 		RepositoryProvider.map(project, GitProvider.ID);
 
-		IPath gitPath = actualMapping.getGitDirAbsolutePath();
 		if (refreshResources) {
 			touchGitResources(project, subMon.newChild(10));
 			project.refreshLocal(IResource.DEPTH_INFINITE, subMon.newChild(30));
-			if (gitPath != null) {
-				try {
-					Repository repository = org.eclipse.egit.core.Activator
-							.getDefault().getRepositoryCache()
-							.lookupRepository(gitPath.toFile());
-					IndexDiffCacheEntry cacheEntry = org.eclipse.egit.core.Activator
-							.getDefault().getIndexDiffCache()
-							.getIndexDiffCacheEntry(repository);
-					if (cacheEntry != null) {
-						cacheEntry.refresh();
-					}
-				} catch (IOException e) {
-					Activator.logError(e.getMessage(), e);
-				}
+			IndexDiffCacheEntry cacheEntry = org.eclipse.egit.core.Activator
+					.getDefault().getIndexDiffCache()
+					.getIndexDiffCacheEntry(actualMapping.getRepository());
+			if (cacheEntry != null) {
+				cacheEntry.refresh();
 			}
 		} else {
 			subMon.worked(40);
 		}
 
 		autoIgnoreDerivedResources(project, subMon.newChild(10));
-		if (gitPath != null) {
-			autoIgnoreWorkspaceMetaData(gitPath.toFile());
-		}
+		autoIgnoreWorkspaceMetaData(
+				actualMapping.getRepository().getDirectory().toPath());
 	}
 
 	/**
@@ -249,12 +238,12 @@ public class ConnectProviderOperation implements IEGitOperation {
 	 * repository (which is not recommended)
 	 *
 	 * @param gitDir
-	 *            the .git directory containing the repository metadata
+	 *            path of git directory containing the git repository
 	 */
-	private static void autoIgnoreWorkspaceMetaData(File gitDir) {
+	private static void autoIgnoreWorkspaceMetaData(java.nio.file.Path gitDir) {
 		java.nio.file.Path workspaceRoot = ResourcesPlugin.getWorkspace()
 				.getRoot().getLocation().toFile().toPath();
-		try (Repository r = FileRepositoryBuilder.create(gitDir)) {
+		try (Repository r = FileRepositoryBuilder.create(gitDir.toFile())) {
 			if (!r.isBare()
 					&& workspaceRoot.startsWith(r.getWorkTree().toPath())) {
 				Collection<IPath> ignoredPaths = buildIgnoredPathsList(
@@ -272,7 +261,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 	private static Collection<IPath> buildIgnoredPathsList(
 			java.nio.file.Path workspaceRoot,
 			String... metaDataDirectoryNames) {
-		Collection<IPath> ignoredPaths = new HashSet<>();
+		Collection<IPath> ignoredPaths = new HashSet<IPath>();
 		for (String m : metaDataDirectoryNames) {
 			Path metaData = new Path(
 					workspaceRoot.resolve(m).toAbsolutePath().toString());
@@ -289,7 +278,7 @@ public class ConnectProviderOperation implements IEGitOperation {
 
 	private List<IPath> findDerivedResources(IContainer c)
 			throws CoreException {
-		List<IPath> derived = new ArrayList<>();
+		List<IPath> derived = new ArrayList<IPath>();
 		IResource[] members = c.members(IContainer.INCLUDE_HIDDEN);
 		for (IResource r : members) {
 			if (r.isDerived())
