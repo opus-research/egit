@@ -5,7 +5,6 @@
  * Copyright (C) 2010, Jens Baumgart <jens.baumgart@sap.com>
  * Copyright (C) 2010, 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
- * Copyright (C) 2017, SATO Yusuke <yusuke.sato.zz@gmail.com>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -112,23 +111,14 @@ public class BranchOperation extends BaseOperation {
 					CheckoutCommand co = git.checkout();
 					co.setName(target);
 
-					OperationLogger opLogger = new OperationLogger(
-							CoreText.Start_Checkout, CoreText.End_Checkout,
-							CoreText.Error_Checkout, new String[] { target,
-									OperationLogger.getPath(repository) });
-					opLogger.logStart();
 					try {
 						co.call();
-						opLogger.logEnd();
 					} catch (CheckoutConflictException e) {
-						opLogger.logError(e);
 						return;
 					} catch (JGitInternalException e) {
-						opLogger.logError(e);
 						throw new CoreException(
 								Activator.error(e.getMessage(), e));
 					} catch (GitAPIException e) {
-						opLogger.logError(e);
 						throw new CoreException(
 								Activator.error(e.getMessage(), e));
 					} finally {
@@ -167,7 +157,7 @@ public class BranchOperation extends BaseOperation {
 
 			private void refreshAffectedProjects(SubMonitor progress)
 					throws CoreException {
-				List<String> pathsToHandle = new ArrayList<>();
+				List<String> pathsToHandle = new ArrayList<String>();
 				pathsToHandle.addAll(result.getModifiedList());
 				pathsToHandle.addAll(result.getRemovedList());
 				pathsToHandle.addAll(result.getConflictList());
@@ -239,7 +229,7 @@ public class BranchOperation extends BaseOperation {
 		if (targetTreeId == null || currentTreeId == null)
 			return new IProject[0];
 
-		Map<File, IProject> locations = new HashMap<>();
+		Map<File, IProject> locations = new HashMap<File, IProject>();
 		for (IProject project : currentProjects) {
 			IPath location = project.getLocation();
 			if (location == null)
@@ -249,7 +239,7 @@ public class BranchOperation extends BaseOperation {
 			locations.put(location.toFile(), project);
 		}
 
-		List<IProject> toBeClosed = new ArrayList<>();
+		List<IProject> toBeClosed = new ArrayList<IProject>();
 		File root = repository.getWorkTree();
 		try (TreeWalk walk = new TreeWalk(repository)) {
 			walk.addTree(targetTreeId);
