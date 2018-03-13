@@ -71,7 +71,8 @@ public class SelectionPropertyTester extends PropertyTester {
 
 			Object firstElement = selection.getFirstElement();
 
-			IResource resource = AdapterUtils.adaptToAnyResource(firstElement);
+			IResource resource = AdapterUtils.adapt(firstElement,
+					IResource.class);
 			if ((resource != null) && (resource instanceof IFile
 					|| resource instanceof IFolder)) {
 				RepositoryMapping m = RepositoryMapping.getMapping(resource);
