@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.op.BranchOperation;
 import org.eclipse.egit.core.op.CommitOperation;
 import org.eclipse.egit.core.op.CreateLocalBranchOperation;
@@ -30,7 +31,7 @@ import org.eclipse.egit.gitflow.GitFlowRepository;
 import org.eclipse.egit.gitflow.InitParameters;
 import org.eclipse.egit.gitflow.WrongGitFlowStateException;
 import org.eclipse.egit.gitflow.internal.CoreText;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -124,10 +125,12 @@ public final class InitOperation extends GitFlowOperation {
 			throw new CoreException(error(e.getMessage(), e));
 		}
 
+		SubMonitor progress = SubMonitor.convert(monitor, 3);
 		if (!repository.hasBranches()) {
 			new CommitOperation(repository.getRepository(),
 					repository.getConfig().getUser(), repository.getConfig().getUser(),
-					CoreText.InitOperation_initialCommit).execute(monitor);
+					CoreText.InitOperation_initialCommit)
+							.execute(progress.newChild(1));
 		}
 
 		try {
@@ -139,10 +142,10 @@ public final class InitOperation extends GitFlowOperation {
 			if (!repository.hasBranch(develop)) {
 				CreateLocalBranchOperation branchFromHead = createBranchFromHead(
 						develop, head);
-				branchFromHead.execute(monitor);
+				branchFromHead.execute(progress.newChild(1));
 				BranchOperation checkoutOperation = new BranchOperation(
 						repository.getRepository(), develop);
-				checkoutOperation.execute(monitor);
+				checkoutOperation.execute(progress.newChild(1));
 			}
 		} catch (WrongGitFlowStateException e) {
 			throw new CoreException(error(e));

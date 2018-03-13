@@ -3,6 +3,7 @@
  * Copyright (C) 2011, Mathias Kinzler <mathias.kinzler@sap.com>
  * Copyright (C) 2012, Robin Stocker <robin@nibor.org>
  * Copyright (C) 2015, Stephan Hackstedt <stephan.hackstedt@googlemail.com>
+ * Copyright (C) 2016, Thomas Wolf <thomas.wolf@paranor.ch>
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +38,6 @@ import org.eclipse.osgi.util.NLS;
  * Push operation: pushing from local repository to one or many remote ones.
  */
 public class PushOperation {
-	private static final int WORK_UNITS_PER_TRANSPORT = 10;
 
 	private final Repository localDb;
 
@@ -152,16 +152,16 @@ public class PushOperation {
 			}
 
 		final int totalWork;
-		if (specification != null)
-			totalWork = specification.getURIsNumber()
-					* WORK_UNITS_PER_TRANSPORT;
-		else
+		if (specification != null) {
+			totalWork = specification.getURIsNumber();
+		} else {
 			totalWork = 1;
+		}
 
 		String taskName = dryRun ? CoreText.PushOperation_taskNameDryRun
 				: CoreText.PushOperation_taskNameNormalRun;
-		SubMonitor progress = SubMonitor.convert(actMonitor, taskName,
-				totalWork);
+		SubMonitor progress = SubMonitor.convert(actMonitor, totalWork);
+		progress.setTaskName(taskName);
 
 		operationResult = new PushOperationResult();
 		try (Git git = new Git(localDb)) {
@@ -170,16 +170,16 @@ public class PushOperation {
 					if (progress.isCanceled()) {
 						operationResult.addOperationResult(uri,
 								CoreText.PushOperation_resultCancelled);
+						progress.worked(1);
 						continue;
 					}
 
 					Collection<RemoteRefUpdate> refUpdates = specification
 							.getRefUpdates(uri);
 					final EclipseGitProgressTransformer gitSubMonitor = new EclipseGitProgressTransformer(
-							progress.newChild(WORK_UNITS_PER_TRANSPORT / 2));
+							progress.newChild(1));
 
-					try {
-						Transport transport = Transport.open(localDb, uri);
+					try (Transport transport = Transport.open(localDb, uri)) {
 						transport.setDryRun(dryRun);
 						transport.setTimeout(timeout);
 						if (credentialsProvider != null) {
@@ -203,8 +203,6 @@ public class PushOperation {
 					} catch (Exception e) {
 						handleException(uri, e, e.getMessage());
 					}
-
-					progress.worked(WORK_UNITS_PER_TRANSPORT / 2);
 				}
 			else {
 				final EclipseGitProgressTransformer gitMonitor = new EclipseGitProgressTransformer(

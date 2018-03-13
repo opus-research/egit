@@ -77,6 +77,9 @@ public class CoreText extends NLS {
 	public static String ConfigureFetchAfterCloneTask_couldNotFetch;
 
 	/** */
+	public static String ConnectProviderOperation_autoIgnoreMetaData;
+
+	/** */
 	public static String ConnectProviderOperation_connecting;
 
 	/** */
@@ -200,6 +203,21 @@ public class CoreText extends NLS {
 	public static String RepositoryFinder_finding;
 
 	/** */
+	public static String RepositoryPathChecker_errAbsoluteRepoPath;
+
+	/** */
+	public static String RepositoryPathChecker_errNoCloneCommand;
+
+	/** */
+	public static String RepositoryPathChecker_errNoDirectory;
+
+	/** */
+	public static String RepositoryPathChecker_errNotAbsoluteRepoPath;
+
+	/** */
+	public static String RepositoryPathChecker_errNoURL;
+
+	/** */
 	public static String RepositoryUtil_DirectoryIsNotGitDirectory;
 
 	/** */
@@ -270,6 +288,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String CloneOperation_title;
+
+	/** */
+	public static String CloneOperation_configuring;
 
 	/** */
 	public static String CreateLocalBranchOperation_CreatingBranchMessage;
@@ -378,6 +399,9 @@ public class CoreText extends NLS {
 
 	/** */
 	public static String GitBranchResourceVariantTreeSubscriber_gitRepository;
+
+	/** */
+	public static String GitLazyResourceVariantTreeSubscriber_name;
 
 	/** */
 	public static String OperationAlreadyExecuted;
