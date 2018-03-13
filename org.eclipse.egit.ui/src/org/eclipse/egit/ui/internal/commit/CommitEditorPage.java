@@ -246,7 +246,7 @@ public class CommitEditorPage extends FormPage
 			if (UIPreferences.DATE_FORMAT.equals(property)
 					|| UIPreferences.DATE_FORMAT_CHOICE.equals(property)) {
 				setPerson(userText, person, author);
-				userArea.layout();
+				userText.requestLayout();
 			}
 		};
 		Activator.getDefault().getPreferenceStore().addPropertyChangeListener(uiPrefsListener);
