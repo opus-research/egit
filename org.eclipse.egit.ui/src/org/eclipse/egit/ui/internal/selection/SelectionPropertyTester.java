@@ -71,8 +71,7 @@ public class SelectionPropertyTester extends PropertyTester {
 
 			Object firstElement = selection.getFirstElement();
 
-			IResource resource = AdapterUtils.adapt(firstElement,
-					IResource.class);
+			IResource resource = AdapterUtils.adaptToAnyResource(firstElement);
 			if ((resource != null) && (resource instanceof IFile
 					|| resource instanceof IFolder)) {
 				RepositoryMapping m = RepositoryMapping.getMapping(resource);
@@ -131,10 +130,15 @@ public class SelectionPropertyTester extends PropertyTester {
 		Repository repo = null;
 		for (Object element : collection) {
 			IContainer container = AdapterUtils.adapt(element,
-					IContainer.class);
+					IProject.class);
 			RepositoryMapping mapping = null;
 			if (container != null) {
 				mapping = RepositoryMapping.getMapping(container);
+			} else {
+				container = AdapterUtils.adapt(element, IContainer.class);
+				if (container != null) {
+					mapping = RepositoryMapping.getMapping(container);
+				}
 			}
 			if (container != null && mapping != null
 					&& container.equals(mapping.getContainer())) {
