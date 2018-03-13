@@ -707,19 +707,6 @@
 				<visibleWhen
 						checkEnabled="false">
 					<and>
-                        <with variable="activeMenu">
-                            <not>
-                                <iterate operator="or">
-                                    <equals value="#AbstractTextEditorRulerContext" />
-                                </iterate>
-                            </not>
-                        </with>
-						<with variable="org.eclipse.egit.ui.currentRepository">
-							<test
-									forcePluginActivation="true"
-									property="GitFlowRepository.isInitialized">
-							</test>
-						</with>
 						<reference
 								definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
 						</reference>
@@ -741,19 +728,6 @@
 				<visibleWhen
 						checkEnabled="false">
 					<and>
-                        <with variable="activeMenu">
-                            <not>
-                                <iterate operator="or">
-                                    <equals value="#AbstractTextEditorRulerContext" />
-                                </iterate>
-                            </not>
-                        </with>
-						<with variable="org.eclipse.egit.ui.currentRepository">
-							<test
-									forcePluginActivation="true"
-									property="GitFlowRepository.isInitialized">
-							</test>
-						</with>
 						<reference
 								definitionId="org.eclipse.egit.ui.resourcesSingleRepository">
 						</reference>
