@@ -109,6 +109,8 @@ public class RebaseResultDialog extends MessageDialog {
 	 */
 	public static void show(final RebaseResult result,
 			final Repository repository) {
+
+		// do not show result dialog if user abort rebase operation
 		if (result.getStatus() == Status.ABORTED) {
 			return;
 		}
@@ -117,6 +119,7 @@ public class RebaseResultDialog extends MessageDialog {
 				|| result.getStatus() == Status.STASH_APPLY_CONFLICTS
 				|| Activator.getDefault().getPreferenceStore().getBoolean(
 						UIPreferences.SHOW_REBASE_CONFIRM);
+
 
 		if(result.getStatus() == Status.CONFLICTS) {
 			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
