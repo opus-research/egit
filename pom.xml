@@ -63,7 +63,7 @@
 
   <properties>
     <egit-version>4.6.1-SNAPSHOT</egit-version>
-    <tycho-version>0.26.0</tycho-version>
+    <tycho-version>1.0.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     <jboss-tycho-plugins-version>0.26.0</jboss-tycho-plugins-version>
     <mockito-version>1.8.4</mockito-version>
@@ -75,7 +75,7 @@
     <tycho.scmUrl>scm:git:https://git.eclipse.org/r/egit/egit.git</tycho.scmUrl>
     <test.vmparams></test.vmparams>
     <coretest.vmparams></coretest.vmparams>
-    <uitest.vmparams>-Dorg.eclipse.swtbot.search.timeout=30000 -Dorg.eclipse.swtbot.screenshots.dir=target/screenshots -Xmx1024m</uitest.vmparams>
+    <uitest.vmparams>-Dorg.eclipse.swtbot.search.timeout=30000 -Dorg.eclipse.swtbot.screenshots.dir=target/screenshots -Xmx1024m -XX:MaxPermSize=150m</uitest.vmparams>
     <eclipse-with-smartimport>http://download.eclipse.org/eclipse/updates/4.6milestones/S-4.6M6-201603170200</eclipse-with-smartimport>
   </properties>
 
@@ -362,6 +362,7 @@
             <source>1.8</source>
             <target>1.8</target>
             <!-- Do not use useProjectSettings; it'll always override -nowarn -->
+            <useProjectSettings>false</useProjectSettings>
             <compilerArgs>
               <arg>-properties</arg>
               <arg>${project.basedir}/.settings/org.eclipse.jdt.core.prefs</arg>
