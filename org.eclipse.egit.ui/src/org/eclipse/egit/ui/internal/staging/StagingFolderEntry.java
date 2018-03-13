@@ -138,8 +138,4 @@ public class StagingFolderEntry implements IAdaptable, IProblemDecoratable {
 		return getLocation().hashCode();
 	}
 
-	@Override
-	public String toString() {
-		return "StagingFolderEntry[" + repoRelativePath + "]"; //$NON-NLS-1$//$NON-NLS-2$
-	}
 }
