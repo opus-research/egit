@@ -1322,6 +1322,12 @@ public class UIText extends NLS {
 	public static String RepositoryAction_multiRepoSelectionTitle;
 
 	/** */
+	public static String RepositoryToolbarAction_label;
+
+	/** */
+	public static String RepositoryToolbarAction_tooltip;
+
+	/** */
 	public static String RepositoryCommit_AuthorDate;
 
 	/** */
@@ -2421,6 +2427,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String ConfigurationEditorComponent_NoConfigLocationKnown;
+
+	/** */
+	public static String ConfigurationEditorComponent_NoSectionSubsectionMessage;
 
 	/** */
 	public static String ConfigurationEditorComponent_OpenEditorButton;
@@ -5342,6 +5351,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_MessageErrors;
+
+	/** */
+	public static String StagingView_LoadJob;
 
 	/** */
 	public static String StashApplyCommand_applyFailed;
