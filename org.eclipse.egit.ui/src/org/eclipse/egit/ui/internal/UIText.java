@@ -2618,9 +2618,6 @@ public class UIText extends NLS {
 	public static String CreateBranchPage_MissingSourceMessage;
 
 	/** */
-	public static String CreateBranchPage_NormalizeNameTooltip;
-
-	/** */
 	public static String CreateBranchPage_SourceLabel;
 
 	/** */
@@ -3120,9 +3117,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String BranchRenameDialog_NewNameLabel;
-
-	/** */
-	public static String BranchRenameDialog_NormalizeNameTooltip;
 
 	/** */
 	public static String BranchRenameDialog_RenameExceptionMessage;
@@ -5291,6 +5285,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StagingView_LinkSelection;
+
+	/** */
+	public static String StagingView_rebaseContinueHint;
 
 	/** */
 	public static String StagingView_replaceWithFileInGitIndex;
