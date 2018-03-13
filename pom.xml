@@ -21,7 +21,7 @@
 
   <groupId>org.eclipse.egit</groupId>
   <artifactId>egit-parent</artifactId>
-  <version>4.5.0-SNAPSHOT</version>
+  <version>4.6.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>EGit Parent</name>
@@ -62,7 +62,7 @@
   </licenses>
 
   <properties>
-    <egit-version>4.5.0-SNAPSHOT</egit-version>
+    <egit-version>4.6.0-SNAPSHOT</egit-version>
     <tycho-version>0.23.0</tycho-version>
     <tycho-extras-version>${tycho-version}</tycho-extras-version>
     <jboss-tycho-plugins-version>0.22.0</jboss-tycho-plugins-version>
@@ -361,8 +361,8 @@
           <version>${tycho-version}</version>
           <configuration>
             <encoding>UTF-8</encoding>
-            <source>1.8</source>
-            <target>1.8</target>
+            <source>1.7</source>
+            <target>1.7</target>
             <!-- Do not use useProjectSettings; it'll always override -nowarn -->
             <compilerArgs>
               <arg>-properties</arg>
@@ -475,7 +475,7 @@
           <configuration>
             <sourceEncoding>utf-8</sourceEncoding>
             <minimumTokens>100</minimumTokens>
-            <targetJdk>1.8</targetJdk>
+            <targetJdk>1.7</targetJdk>
             <format>xml</format>
             <failOnViolation>false</failOnViolation>
           </configuration>
