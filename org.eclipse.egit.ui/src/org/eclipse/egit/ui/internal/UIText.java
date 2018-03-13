@@ -3689,9 +3689,6 @@ public class UIText extends NLS {
 	public static String DiscardChangesAction_discardChanges;
 
 	/** */
-	public static String DiscardChangesAction_discardChangesButtonText;
-
-	/** */
 	public static String Disconnect_disconnect;
 
 	/** */
