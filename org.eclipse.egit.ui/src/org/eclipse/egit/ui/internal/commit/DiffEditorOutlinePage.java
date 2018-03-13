@@ -55,7 +55,7 @@ public class DiffEditorOutlinePage extends NestedContentOutlinePage {
 
 	private CopyOnWriteArrayList<IOpenListener> openListeners = new CopyOnWriteArrayList<>();
 
-	private ISelection initialSelection;
+	private ISelection selection;
 
 	@Override
 	public void createControl(Composite parent) {
@@ -69,9 +69,8 @@ public class DiffEditorOutlinePage extends NestedContentOutlinePage {
 			viewer.setInput(input);
 		}
 		createContextMenu(viewer);
-		if (initialSelection != null) {
-			viewer.setSelection(initialSelection);
-			initialSelection = null;
+		if (selection != null) {
+			viewer.setSelection(selection);
 		}
 	}
 
@@ -83,21 +82,28 @@ public class DiffEditorOutlinePage extends NestedContentOutlinePage {
 	 */
 	public void setInput(IDocument input) {
 		this.input = input;
-		TreeViewer viewer = getTreeViewer();
-		if (viewer != null && viewer.getControl() != null
-				&& !viewer.getControl().isDisposed()) {
+		TreeViewer viewer = getTreeViewerChecked();
+		if (viewer != null) {
 			viewer.setInput(input);
 		}
 	}
 
 	@Override
 	public void setSelection(ISelection selection) {
-		TreeViewer viewer = getTreeViewer();
+		this.selection = selection;
+		TreeViewer viewer = getTreeViewerChecked();
 		if (viewer != null) {
 			super.setSelection(selection);
-		} else {
-			initialSelection = selection;
 		}
+	}
+
+	private TreeViewer getTreeViewerChecked() {
+		TreeViewer viewer = getTreeViewer();
+		if (viewer == null || viewer.getControl() == null
+				|| viewer.getControl().isDisposed()) {
+			return null;
+		}
+		return viewer;
 	}
 
 	/**
@@ -218,10 +224,10 @@ public class DiffEditorOutlinePage extends NestedContentOutlinePage {
 	}
 
 	private Collection<FileDiffRegion> getSelectedFileDiffs() {
-		ISelection selection = getSelection();
+		ISelection currentSelection = getSelection();
 		List<FileDiffRegion> result = new ArrayList<>();
-		if (!selection.isEmpty() && selection instanceof StructuredSelection) {
-			for (Object selected : ((StructuredSelection) selection).toList()) {
+		if (!currentSelection.isEmpty() && currentSelection instanceof StructuredSelection) {
+			for (Object selected : ((StructuredSelection) currentSelection).toList()) {
 				if (selected instanceof FileDiffRegion
 						&& !((FileDiffRegion) selected).getDiff()
 								.isSubmodule()) {
