@@ -246,24 +246,18 @@ class BranchProjectTracker {
 		File parent = repository.getWorkTree();
 		for (String path : paths) {
 			File root;
-			if (!REPO_ROOT.equals(path)) {
+			if (!REPO_ROOT.equals(path))
 				root = new File(parent, path);
-			} else {
+			else
 				root = parent;
-			}
-			if (!root.isDirectory()) {
+
+			if (!root.isDirectory())
 				continue;
-			}
 			File projectDescription = new File(root,
 					IProjectDescription.DESCRIPTION_FILE_NAME);
-			if (!projectDescription.isFile()) {
+			if (!projectDescription.isFile())
 				continue;
-			}
-			ProjectRecord record = new ProjectRecord(projectDescription);
-			if (record.getProjectDescription() == null) {
-				continue;
-			}
-			records.add(record);
+			records.add(new ProjectRecord(projectDescription));
 		}
 		if (records.isEmpty()) {
 			return;
