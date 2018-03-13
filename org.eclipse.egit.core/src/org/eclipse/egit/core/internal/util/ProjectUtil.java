@@ -68,12 +68,9 @@ public class ProjectUtil {
 	 */
 	public static IProject[] getValidOpenProjects(Repository repository)
 			throws CoreException {
-		if (repository == null || repository.isBare()) {
-			return new IProject[0];
-		}
 		final IProject[] projects = ResourcesPlugin.getWorkspace().getRoot()
 				.getProjects();
-		List<IProject> result = new ArrayList<>();
+		List<IProject> result = new ArrayList<IProject>();
 		final Path repositoryPath = new Path(
 				repository.getWorkTree().getAbsolutePath());
 		for (IProject p : projects) {
@@ -246,9 +243,6 @@ public class ProjectUtil {
 	public static void refreshRepositoryResources(Repository repository,
 			Collection<String> relativePaths, IProgressMonitor monitor)
 			throws CoreException {
-		if (repository == null || repository.isBare()) {
-			return;
-		}
 		if (relativePaths.isEmpty() || relativePaths.contains("")) { //$NON-NLS-1$
 			refreshResources(getProjects(repository), monitor);
 			return;
@@ -256,7 +250,7 @@ public class ProjectUtil {
 
 		IPath repositoryPath = new Path(repository.getWorkTree().getAbsolutePath());
 		IProject[] projects = null;
-		Set<IResource> resources = new LinkedHashSet<>();
+		Set<IResource> resources = new LinkedHashSet<IResource>();
 		for (String relativePath : relativePaths) {
 			IPath location = repositoryPath.append(relativePath);
 			IResource resource = ResourceUtil
@@ -289,10 +283,7 @@ public class ProjectUtil {
 	 * @return list of projects, with nested projects first.
 	 */
 	public static IProject[] getProjects(Repository repository) {
-		if (repository == null || repository.isBare()) {
-			return new IProject[0];
-		}
-		List<IProject> result = new ArrayList<>();
+		List<IProject> result = new ArrayList<IProject>();
 		for (IProject project : getProjectsUnderPath(
 				new Path(repository.getWorkTree().getAbsolutePath()))) {
 			RepositoryMapping mapping = RepositoryMapping.getMapping(project);
@@ -316,10 +307,7 @@ public class ProjectUtil {
 	 */
 	public static IProject[] getProjectsContaining(Repository repository,
 			Collection<String> fileList) throws CoreException {
-		if (repository == null || repository.isBare()) {
-			return new IProject[0];
-		}
-		Set<IProject> result = new LinkedHashSet<>();
+		Set<IProject> result = new LinkedHashSet<IProject>();
 		File workTree = repository.getWorkTree();
 
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
@@ -414,7 +402,7 @@ public class ProjectUtil {
 	public static IProject[] getProjectsUnderPath(@NonNull final IPath path) {
 		IProject[] allProjects = getProjectsForContainerMatch(ResourcesPlugin
 				.getWorkspace().getRoot());
-		Set<IProject> projects = new HashSet<>();
+		Set<IProject> projects = new HashSet<IProject>();
 		for (IProject p : allProjects) {
 			IPath loc = p.getLocation();
 			if (loc != null && path.isPrefixOf(loc)) {
@@ -469,7 +457,7 @@ public class ProjectUtil {
 		Set<String> directoriesVisited;
 		// Initialize recursion guard for recursive symbolic links
 		if (visistedDirs == null) {
-			directoriesVisited = new HashSet<>();
+			directoriesVisited = new HashSet<String>();
 			directoriesVisited.add(directory.getAbsolutePath());
 		} else
 			directoriesVisited = visistedDirs;

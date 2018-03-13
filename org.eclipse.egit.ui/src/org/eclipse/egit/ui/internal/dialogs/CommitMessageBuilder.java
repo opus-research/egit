@@ -29,6 +29,7 @@ import org.eclipse.egit.ui.CommitMessageWithCaretPosition;
 import org.eclipse.egit.ui.ICommitMessageProvider;
 import org.eclipse.egit.ui.ICommitMessageProvider2;
 import org.eclipse.egit.ui.internal.UIText;
+import org.eclipse.jgit.annotations.NonNull;
 import org.eclipse.jgit.lib.Repository;
 
 class CommitMessageBuilder {
@@ -42,6 +43,9 @@ class CommitMessageBuilder {
 
 	private final IResource[] resourcesArray;
 
+	@NonNull
+	private final Repository repository;
+
 	private boolean isMessageEmpty;
 
 	/**
@@ -49,13 +53,14 @@ class CommitMessageBuilder {
 	 * files, that are about to be committed.
 	 *
 	 * @param repository
-	 *            the message is built for
+	 *            the repository, messages are built for
 	 * @param paths
 	 *            list of file paths, selected for the next commit
 	 */
-	CommitMessageBuilder(Repository repository,
+	CommitMessageBuilder(@NonNull Repository repository,
 			Collection<String> paths) {
-		this.resourcesArray = toResourceArray(repository, paths);
+		this.repository = repository;
+		this.resourcesArray = toResourceArray(paths);
 	}
 
 	/**
@@ -197,11 +202,7 @@ class CommitMessageBuilder {
 		return providers;
 	}
 
-	private IResource[] toResourceArray(Repository repository,
-			Collection<String> paths) {
-		if (repository == null || repository.isBare()) {
-			return new IResource[0];
-		}
+	private IResource[] toResourceArray(Collection<String> paths) {
 		Set<IResource> resources = new HashSet<>();
 		for (String path : paths) {
 			IFile file = null;
