@@ -141,4 +141,9 @@ public class CompareIndexWithHeadActionHandler extends RepositoryActionHandler {
 
 		return false;
 	}
+
+	@Override
+	protected boolean alwaysCheckEnabled() {
+		return true;
+	}
 }
