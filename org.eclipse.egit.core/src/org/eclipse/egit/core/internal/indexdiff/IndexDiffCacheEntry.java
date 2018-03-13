@@ -112,22 +112,15 @@ public class IndexDiffCacheEntry {
 		}
 	};
 
-	private final Set<ListenerHandle> listenerHandles = new HashSet<>();
+	private final Set<ListenerHandle> indexChangedListenerHandles = new HashSet<>();
+
+	private final Set<ListenerHandle> refsChangedListenerHandles = new HashSet<>();
 
 	/**
 	 * Keep hard references to submodules -- we need them in the cache at least
 	 * as long as the parent repository.
 	 */
-	private final Map<Repository, String> submodules = new HashMap<>();
-
-	private final IndexDiffChangedListener submoduleListener = (submodule,
-			diffData) -> {
-		String path = submodules.get(submodule);
-		if (path != null) {
-			scheduleUpdateJob(Collections.singletonList(path),
-					Collections.emptyList());
-		}
-	};
+	private final Set<Repository> submodules = new HashSet<>();
 
 	private IResourceChangeListener resourceChangeListener;
 
@@ -147,27 +140,24 @@ public class IndexDiffCacheEntry {
 			addIndexDiffChangedListener(listener);
 		}
 
-		listenerHandles.add(repository.getListenerList()
+		indexChangedListenerHandles.add(repository.getListenerList()
 				.addIndexChangedListener(indexChangedListener));
-		listenerHandles.add(repository.getListenerList()
+		refsChangedListenerHandles.add(repository.getListenerList()
 				.addRefsChangedListener(refsChangedListener));
-		// Add a listener also to all submodules in order to be notified when
+		// Add the listeners also to all submodules in order to be notified when
 		// a branch switch or so occurs in a submodule.
 		try (SubmoduleWalk walk = SubmoduleWalk.forIndex(repository)) {
 			while (walk.next()) {
 				Repository submodule = walk.getRepository();
-				if (submodule != null && !submodule.isBare()) {
+				if (submodule != null) {
 					Repository cached = org.eclipse.egit.core.Activator
 							.getDefault().getRepositoryCache().lookupRepository(
 									submodule.getDirectory().getAbsoluteFile());
-					submodules.put(cached, walk.getPath());
-					IndexDiffCacheEntry submoduleCache = org.eclipse.egit.core.Activator
-							.getDefault().getIndexDiffCache()
-							.getIndexDiffCacheEntry(cached);
-					if (submoduleCache != null) {
-						submoduleCache
-								.addIndexDiffChangedListener(submoduleListener);
-					}
+					indexChangedListenerHandles.add(cached.getListenerList()
+							.addIndexChangedListener(indexChangedListener));
+					refsChangedListenerHandles.add(cached.getListenerList()
+							.addRefsChangedListener(refsChangedListener));
+					submodules.add(cached);
 					submodule.close();
 				}
 			}
@@ -779,10 +769,14 @@ public class IndexDiffCacheEntry {
 	 * are canceled.
 	 */
 	public void dispose() {
-		for (ListenerHandle h : listenerHandles) {
+		for (ListenerHandle h : indexChangedListenerHandles) {
 			h.remove();
 		}
-		listenerHandles.clear();
+		for (ListenerHandle h : refsChangedListenerHandles) {
+			h.remove();
+		}
+		indexChangedListenerHandles.clear();
+		refsChangedListenerHandles.clear();
 		submodules.clear();
 		if (resourceChangeListener != null) {
 			ResourcesPlugin.getWorkspace().removeResourceChangeListener(resourceChangeListener);
