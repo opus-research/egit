@@ -12,9 +12,7 @@
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.reflog;
 
-import java.io.File;
 import java.util.Collection;
-import java.util.Objects;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -42,34 +40,7 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 	private Object currentInput;
 
 	/**
-	 * Serializes concurrent attempts to load the reflog.
-	 */
-	private static class ReflogSchedulingRule implements ISchedulingRule {
-
-		private final File gitDir;
-
-		public ReflogSchedulingRule(File gitDir) {
-			this.gitDir = gitDir;
-		}
-
-		@Override
-		public boolean contains(ISchedulingRule rule) {
-			if (rule instanceof ReflogSchedulingRule) {
-				return Objects.equals(gitDir,
-						((ReflogSchedulingRule) rule).gitDir);
-			}
-			return false;
-		}
-
-		@Override
-		public boolean isConflicting(ISchedulingRule rule) {
-			return rule instanceof ReflogSchedulingRule;
-		}
-
-	}
-
-	/**
-	 * Input class for this content provider.
+	 * Input class for this content provider
 	 */
 	public static class ReflogInput extends WorkbenchAdapter
 			implements IDeferredWorkbenchAdapter {
@@ -77,8 +48,6 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 		private final Repository repository;
 
 		private final String ref;
-
-		private final ISchedulingRule rule;
 
 		private Collection<ReflogEntry> refLog;
 
@@ -93,7 +62,6 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 			Assert.isNotNull(ref, "Ref cannot be null"); //$NON-NLS-1$
 			this.repository = repository;
 			this.ref = ref;
-			this.rule = new ReflogSchedulingRule(repository.getDirectory());
 		}
 
 		/**
@@ -105,21 +73,12 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 			return repository;
 		}
 
-		/**
-		 * Retrieves the ref.
-		 *
-		 * @return the ref
-		 */
-		public String getRef() {
-			return ref;
-		}
-
 		@Override
 		public Object[] getChildren(Object o) {
 			if (refLog != null) {
 				return refLog.toArray();
 			}
-			return null;
+			return super.getChildren(o);
 		}
 
 		@Override
@@ -127,9 +86,7 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 				IElementCollector collector, IProgressMonitor monitor) {
 			try (Git git = new Git(repository)) {
 				refLog = git.reflog().setRef(ref).call();
-				if (!monitor.isCanceled()) {
-					collector.add(refLog.toArray(), monitor);
-				}
+				collector.add(refLog.toArray(), monitor);
 			} catch (Exception e) {
 				Activator.logError("Error running reflog command", e); //$NON-NLS-1$
 				collector.add(new ErrorElement(), monitor);
@@ -143,7 +100,7 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 
 		@Override
 		public ISchedulingRule getRule(Object object) {
-			return rule;
+			return null;
 		}
 	}
 
@@ -184,11 +141,6 @@ public class ReflogViewContentProvider implements ITreeContentProvider {
 	@Override
 	public Object[] getChildren(Object parentElement) {
 		if (parentElement instanceof ReflogInput && loader != null) {
-			Object[] knownChildren = ((ReflogInput) parentElement)
-					.getChildren(parentElement);
-			if (knownChildren != null) {
-				return knownChildren;
-			}
 			return loader.getChildren(parentElement);
 		}
 		return new Object[0];
