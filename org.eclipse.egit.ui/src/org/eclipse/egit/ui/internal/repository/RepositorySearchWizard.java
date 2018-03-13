@@ -25,25 +25,20 @@ public class RepositorySearchWizard extends Wizard {
 
 	private RepositorySearchDialog searchPage;
 
-	private boolean suppressBare;
-
 	/**
 	 * Create repository search wizard
 	 *
 	 * @param existingDirs
-	 * @param suppressBare
 	 */
-	public RepositorySearchWizard(Collection<String> existingDirs,
-			boolean suppressBare) {
+	public RepositorySearchWizard(Collection<String> existingDirs) {
 		dirs = existingDirs;
-		this.suppressBare = suppressBare;
 		setWindowTitle(UIText.RepositorySearchDialog_AddGitRepositories);
 		setNeedsProgressMonitor(true);
 	}
 
 	@Override
 	public void addPages() {
-		searchPage = new RepositorySearchDialog(dirs, true, suppressBare);
+		searchPage = new RepositorySearchDialog(dirs, true);
 		addPage(searchPage);
 	}
 
