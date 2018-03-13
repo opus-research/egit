@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2016 SAP AG and others.
+ * Copyright (c) 2010, 2015 SAP AG and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,7 +11,6 @@
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Only check out on double-click
  *    Daniel Megert <daniel_megert@ch.ibm.com> - Don't reveal selection on refresh
  *    Robin Stocker <robin@nibor.org> - Show In support
- *    Daniel Megert <daniel_megert@ch.ibm.com> - Show Git Staging view in Show In menu
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.repository;
 
@@ -66,7 +65,6 @@ import org.eclipse.egit.ui.internal.repository.tree.StashedCommitNode;
 import org.eclipse.egit.ui.internal.repository.tree.TagNode;
 import org.eclipse.egit.ui.internal.repository.tree.WorkingDirNode;
 import org.eclipse.egit.ui.internal.selection.SelectionUtils;
-import org.eclipse.egit.ui.internal.staging.StagingView;
 import org.eclipse.egit.ui.internal.trace.GitTraceLocation;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -798,8 +796,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 	@Override
 	public boolean show(ShowInContext context) {
 		ISelection selection = context.getSelection();
-		if ((selection instanceof IStructuredSelection)
-				&& !selection.isEmpty()) {
+		if (selection instanceof IStructuredSelection) {
 			IStructuredSelection ss = (IStructuredSelection) selection;
 			List<IPath> paths = new ArrayList<>();
 			for (Iterator it = ss.iterator(); it.hasNext();) {
@@ -826,13 +823,6 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 		if(context.getInput() instanceof IFileEditorInput) {
 			IFileEditorInput input = (IFileEditorInput) context.getInput();
 			showResource(input.getFile());
-			return true;
-		}
-		Repository repository = AdapterUtils.adapt(context.getInput(),
-				Repository.class);
-		if (repository != null) {
-			showRepository(repository);
-			return true;
 		}
 		return false;
 	}
@@ -857,8 +847,7 @@ public class RepositoriesView extends CommonNavigator implements IShowInSource, 
 				.getSelection();
 		for (Object element : selection.toList())
 			if (element instanceof RepositoryNode)
-				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID,
-						StagingView.VIEW_ID };
+				return new String[] { IHistoryView.VIEW_ID, ReflogView.VIEW_ID };
 
 		// Make sure History view is always listed, regardless of perspective
 		return new String[] { IHistoryView.VIEW_ID };

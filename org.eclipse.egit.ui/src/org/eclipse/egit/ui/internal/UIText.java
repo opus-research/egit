@@ -193,12 +193,6 @@ public class UIText extends NLS {
 	public static String WizardProjectsImportPage_CreateProjectsTask;
 
 	/** */
-	public static String SecureStoreUtils_errorClearingCredentials;
-
-	/** */
-	public static String SecureStoreUtils_errorReadingCredentials;
-
-	/** */
 	public static String SecureStoreUtils_writingCredentialsFailed;
 
 	/** */
@@ -272,6 +266,12 @@ public class UIText extends NLS {
 
 	/** */
 	public static String GerritConfigurationPage_UserLabel;
+
+	/** */
+	public static String EGitCredentialsProvider_errorReadingCredentials;
+
+	/** */
+	public static String EGitCredentialsProvider_FailedToClearCredentials;
 
 	/** */
 	public static String EgitUiUtils_CouldNotOpenEditorMessage;
@@ -1108,9 +1108,6 @@ public class UIText extends NLS {
 	public static String RepositorySearchDialog_SearchRecursiveToolTip;
 
 	/** */
-	public static String RepositorySearchDialog_SearchResult;
-
-	/** */
 	public static String RepositorySearchDialog_SearchResultGroup;
 
 	/** */
@@ -1118,12 +1115,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_SearchTooltip;
-
-	/** */
-	public static String RepositorySearchDialog_SkipHidden;
-
-	/** */
-	public static String RepositorySearchDialog_SkipHiddenTooltip;
 
 	/** */
 	public static String RepositorySearchDialog_SomeDirectoriesHiddenMessage;
@@ -1343,6 +1334,9 @@ public class UIText extends NLS {
 
 	/** */
 	public static String RepositorySearchDialog_NoSearchAvailableMessage;
+
+	/** */
+	public static String RepositorySearchDialog_NothingFoundMessage;
 
 	/** */
 	public static String RepositorySearchDialog_searchRepositoriesMessage;
@@ -3253,12 +3247,6 @@ public class UIText extends NLS {
 	public static String CommittingPreferencePage_AlwaysUseStagingView;
 
 	/** */
-	public static String CommittingPreferencePage_autoStageDeletion;
-
-	/** */
-	public static String CommittingPreferencePage_autoStageMoves;
-
-	/** */
 	public static String CommittingPreferencePage_AutoStageOnCommit;
 
 	/** */
@@ -4329,9 +4317,6 @@ public class UIText extends NLS {
 
 	/** */
 	public static String StashEditorPage_LabelParent2;
-
-	/** */
-	public static String MultiPageEditorContentOutlinePage_NoOutline;
 
 	/** */
 	public static String Header_contextMenu_copy;
