@@ -24,6 +24,7 @@ import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.egit.ui.test.ContextMenuHelper;
 import org.eclipse.egit.ui.test.JobJoiner;
 import org.eclipse.egit.ui.test.TestUtil;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -101,8 +102,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 						"ReplaceWithPreviousVersionAction.label");
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
-				.button(UIText.DiscardChangesAction_discardChangesButtonText)
-				.click();
+				.button(IDialogConstants.OK_LABEL).click();
 		SWTBotShell selectDialog = bot
 				.shell(UIText.CommitSelectDialog_WindowTitle);
 		assertEquals(2, selectDialog.bot().table().rowCount());
@@ -115,8 +115,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
-				.button(UIText.DiscardChangesAction_discardChangesButtonText)
-				.click();
+				.button(IDialogConstants.OK_LABEL).click();
 		TestUtil.waitForJobs(100, 5000);
 
 		selectDialog = bot.shell(UIText.CommitSelectDialog_WindowTitle);
@@ -141,9 +140,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 	private void executeReplace(SWTBotShell dialog) {
 		JobJoiner jobJoiner = JobJoiner.startListening(
 				JobFamilies.DISCARD_CHANGES, 30, TimeUnit.SECONDS);
-		dialog.bot()
-				.button(UIText.DiscardChangesAction_discardChangesButtonText)
-				.click();
+		dialog.bot().button(IDialogConstants.OK_LABEL).click();
 		jobJoiner.join();
 	}
 }
