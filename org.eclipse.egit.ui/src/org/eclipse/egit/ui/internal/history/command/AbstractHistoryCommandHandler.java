@@ -81,16 +81,17 @@ abstract class AbstractHistoryCommandHandler extends AbstractHandler {
 		if (input instanceof RepositoryTreeNode) {
 			return ((RepositoryTreeNode) input).getRepository();
 		}
-		Repository repo = AdapterUtils.adapt(input, Repository.class);
-		if (repo != null) {
-			return repo;
-		}
-		IResource resource = AdapterUtils.adaptToAnyResource(input);
+		IResource resource = AdapterUtils.adapt(input, IResource.class);
 		if (resource != null) {
 			Repository repository = ResourceUtil.getRepository(resource);
 			if (repository != null) {
 				return repository;
 			}
+		}
+
+		Repository repo = AdapterUtils.adapt(input, Repository.class);
+		if (repo != null) {
+			return repo;
 		}
 
 		throw new ExecutionException(
