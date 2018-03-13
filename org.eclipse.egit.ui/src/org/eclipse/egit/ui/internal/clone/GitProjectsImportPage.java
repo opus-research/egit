@@ -20,13 +20,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.internal.util.ProjectUtil;
 import org.eclipse.egit.ui.Activator;
 import org.eclipse.egit.ui.internal.GitLabelProvider;
@@ -405,29 +405,32 @@ public class GitProjectsImportPage extends WizardPage {
 
 				@Override
 				public void run(IProgressMonitor monitor) {
+
+					monitor.beginTask(
+							UIText.WizardProjectsImportPage_SearchingMessage,
+							100);
 					selectedProjects = new ProjectRecord[0];
 					Collection<File> files = new ArrayList<>();
+					monitor.worked(10);
 					if (directory.isDirectory()) {
-						SubMonitor progress = SubMonitor.convert(monitor, 2);
-						progress.setTaskName(
-								UIText.WizardProjectsImportPage_SearchingMessage);
 						boolean searchNested = nestedProjects;
 
 						boolean found = ProjectUtil.findProjectFiles(files,
-								directory, searchNested, progress.newChild(1));
+								directory, searchNested, monitor);
 
-						if (!found) {
+						if (!found)
 							return;
-						}
+
 						ArrayList<ProjectRecord> result = new ArrayList<>();
-						progress.setWorkRemaining(files.size());
-						progress.subTask(
-								UIText.WizardProjectsImportPage_ProcessingMessage);
-						for (File file : files) {
+						Iterator<File> filesIterator = files.iterator();
+						monitor.worked(50);
+						monitor
+								.subTask(UIText.WizardProjectsImportPage_ProcessingMessage);
+						while (filesIterator.hasNext()) {
+							File file = filesIterator.next();
 							if (isSelected(file)) {
 								result.add(new ProjectRecord(file));
 							}
-							progress.worked(1);
 						}
 						selectedProjects = result
 								.toArray(new ProjectRecord[result.size()]);
@@ -437,7 +440,10 @@ public class GitProjectsImportPage extends WizardPage {
 							Display.getDefault().syncExec(() -> setErrorMessage(
 									UIText.GitProjectsImportPage_NoProjectsMessage));
 						}
+					} else {
+						monitor.worked(60);
 					}
+					monitor.done();
 				}
 
 				private boolean isSelected(File pFile) {
