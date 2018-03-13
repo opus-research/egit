@@ -358,6 +358,9 @@ public class PullWizardPage extends WizardPage {
 			if (!branchConfig.isRemoteLocal() && merge != null
 					&& merge.startsWith(Constants.R_HEADS)) {
 				return Repository.shortenRefName(merge);
+			} else if (merge == null
+					&& fullBranch.startsWith(Constants.R_HEADS)) {
+				return branchName;
 			}
 		}
 		return ""; //$NON-NLS-1$
