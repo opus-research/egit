@@ -14,7 +14,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.egit.core.Activator;
 import org.eclipse.egit.core.op.CloneOperation;
 import org.eclipse.egit.ui.common.EGitTestCase;
@@ -61,7 +60,7 @@ public class PushTest extends EGitTestCase {
 		cloneOperation
 				.setCredentialsProvider(new UsernamePasswordCredentialsProvider(
 						"agitter", "letmein"));
-		cloneOperation.run(new NullProgressMonitor());
+		cloneOperation.run(null);
 		file = new File(localRepoPath, SampleTestRepository.A_txt_name);
 		assertTrue(file.exists());
 		localRepository = Activator.getDefault().getRepositoryCache()
