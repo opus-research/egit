@@ -11,7 +11,6 @@
  * Contributors:
  *    Tobias Baumann <tobbaumann@gmail.com> - Bug 373969, 473544
  *    Thomas Wolf <thomas.wolf@paranor.ch>
- *    Tobias Hein <th.mailinglists@googlemail.com> - Bug 499697
  *******************************************************************************/
 package org.eclipse.egit.ui.internal.staging;
 
@@ -2304,9 +2303,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 					return;
 				}
 			}
-			if (treeItem.isDisposed()) {
-				return;
-			}
 			if (treeItem.getData() != null && visit(treeItem)) {
 				traversePrecedingSiblings(treeItem);
 			}
@@ -3627,8 +3623,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 				loadExistingState(helper, oldState);
 		} else { // repository did not change
 			if (!commitMessageComponent.getHeadCommit().equals(
-					helper.getPreviousCommit())
-					|| !commitMessageComponent.isAmending()) {
+					helper.getPreviousCommit())) {
 				if (!commitMessageComponent.isAmending()
 						&& userEnteredCommitMessage())
 					addHeadChangedWarning(commitMessageComponent
@@ -3641,20 +3636,6 @@ public class StagingView extends ViewPart implements IShowInSource {
 				.isAmending());
 		amendPreviousCommitAction.setEnabled(helper.amendAllowed());
 		updateMessage();
-	}
-
-	/**
-	 * Resets the commit message component state and saves the overwritten
-	 * commit message into message history
-	 */
-	public void resetCommitMessageComponent() {
-		if (currentRepository != null) {
-			String commitMessage = commitMessageComponent.getCommitMessage();
-			if (commitMessage.trim().length() > 0) {
-				CommitMessageHistory.saveCommitHistory(commitMessage);
-			}
-			loadInitialState(new CommitHelper(currentRepository));
-		}
 	}
 
 	private void loadExistingState(CommitHelper helper,
@@ -3727,7 +3708,7 @@ public class StagingView extends ViewPart implements IShowInSource {
 			if (message.trim().equals(chIdLine))
 				return false;
 
-			// change id was added automatically, but there is more in the
+			// change id was added automatically, but ther is more in the
 			// message; strip the id, and check for the signed-off-by tag
 			message = message.replace(chIdLine, ""); //$NON-NLS-1$
 		}
