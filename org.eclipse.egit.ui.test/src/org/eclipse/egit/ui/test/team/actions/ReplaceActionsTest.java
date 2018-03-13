@@ -59,8 +59,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		clickReplaceWith(menuLabel);
 		SWTBotShell confirm = bot
 				.shell(UIText.DiscardChangesAction_confirmActionTitle);
-		executeReplace(confirm,
-				UIText.DiscardChangesAction_discardChangesButtonText);
+		executeReplace(confirm);
 		String replacedContent = getTestFileContent();
 		assertThat(replacedContent, not(initialContent));
 	}
@@ -103,8 +102,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 						"ReplaceWithPreviousVersionAction.label");
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
-				.button(UIText.DiscardChangesAction_discardChangesButtonText)
-				.click();
+				.button(IDialogConstants.OK_LABEL).click();
 		SWTBotShell selectDialog = bot
 				.shell(UIText.CommitSelectDialog_WindowTitle);
 		assertEquals(2, selectDialog.bot().table().rowCount());
@@ -117,8 +115,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 
 		clickReplaceWith(menuLabel);
 		bot.shell(UIText.DiscardChangesAction_confirmActionTitle).bot()
-				.button(UIText.DiscardChangesAction_discardChangesButtonText)
-				.click();
+				.button(IDialogConstants.OK_LABEL).click();
 		TestUtil.waitForJobs(100, 5000);
 
 		selectDialog = bot.shell(UIText.CommitSelectDialog_WindowTitle);
@@ -126,7 +123,7 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 		SWTBotTable table = selectDialog.bot().table();
 		assertEquals("Master commit", table.cell(0, 1));
 		table.select(0);
-		executeReplace(selectDialog, IDialogConstants.OK_LABEL);
+		executeReplace(selectDialog);
 		TestUtil.waitForJobs(100, 5000);
 
 		String replacedContent = getTestFileContent();
@@ -140,12 +137,10 @@ public class ReplaceActionsTest extends LocalRepositoryTestCase {
 				menuLabel);
 	}
 
-	private void executeReplace(SWTBotShell dialog, String buttonLabel) {
+	private void executeReplace(SWTBotShell dialog) {
 		JobJoiner jobJoiner = JobJoiner.startListening(
 				JobFamilies.DISCARD_CHANGES, 30, TimeUnit.SECONDS);
-		dialog.bot()
-				.button(buttonLabel)
-				.click();
+		dialog.bot().button(IDialogConstants.OK_LABEL).click();
 		jobJoiner.join();
 	}
 }

@@ -280,8 +280,7 @@ public class BranchAndResetActionTest extends LocalRepositoryTestCase {
 				.click();
 
 		bot.shell(UIText.ResetTargetSelectionDialog_ResetQuestion).bot()
-				.button(UIText.CommandConfirmationHardResetDialog_resetButtonLabel)
-				.click();
+				.button(IDialogConstants.YES_LABEL).click();
 
 		Job.getJobManager().join(JobFamilies.RESET, null);
 		String reset = getTestFileContent();

@@ -94,7 +94,6 @@ import org.eclipse.ui.forms.events.HyperlinkEvent;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ImageHyperlink;
-import org.eclipse.ui.model.IWorkbenchAdapter;
 import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
@@ -185,28 +184,19 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 			@Override
 			public String getText(Object element) {
-				if (element instanceof ReflogEntry) {
-					final ReflogEntry entry = (ReflogEntry) element;
-					return entry.getNewId().abbreviate(7).name();
-				}
-				return null;
+				final ReflogEntry entry = (ReflogEntry) element;
+				return entry.getNewId().abbreviate(7).name();
 			}
 
 			@Override
 			public String getToolTipText(Object element) {
-				if (element instanceof ReflogEntry) {
-					final ReflogEntry entry = (ReflogEntry) element;
-					return entry.getNewId().name();
-				}
-				return null;
+				final ReflogEntry entry = (ReflogEntry) element;
+				return entry.getNewId().name();
 			}
 
 			@Override
 			public Image getImage(Object element) {
-				if (element instanceof ReflogEntry) {
-					return branchImage;
-				}
-				return null;
+				return branchImage;
 			}
 
 		});
@@ -217,14 +207,9 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 			@Override
 			public String getText(Object element) {
-				if (element instanceof ReflogEntry) {
-					final ReflogEntry entry = (ReflogEntry) element;
-					RevCommit c = getCommit(entry);
-					return c == null ? "" : c.getShortMessage(); //$NON-NLS-1$
-				} else if (element instanceof IWorkbenchAdapter) {
-					return ((IWorkbenchAdapter) element).getLabel(element);
-				}
-				return null;
+				final ReflogEntry entry = (ReflogEntry) element;
+				RevCommit c = getCommit(entry);
+				return c == null ? "" : c.getShortMessage(); //$NON-NLS-1$
 			}
 
 			private RevCommit getCommit(final ReflogEntry entry) {
@@ -244,12 +229,10 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 			@Override
 			public String getText(Object element) {
-				if (element instanceof ReflogEntry) {
-					final ReflogEntry entry = (ReflogEntry) element;
-					final PersonIdent who = entry.getWho();
-					return dateFormatter.formatDate(who);
-				}
-				return null;
+				final ReflogEntry entry = (ReflogEntry) element;
+				final PersonIdent who = entry.getWho();
+				// TODO add option to use RelativeDateFormatter
+				return dateFormatter.formatDate(who);
 			}
 
 			@Override
@@ -268,18 +251,12 @@ public class ReflogView extends ViewPart implements RefsChangedListener, IShowIn
 
 			@Override
 			public String getText(Object element) {
-				if (element instanceof ReflogEntry) {
-					final ReflogEntry entry = (ReflogEntry) element;
-					return entry.getComment();
-				}
-				return null;
+				final ReflogEntry entry = (ReflogEntry) element;
+				return entry.getComment();
 			}
 
 			@Override
 			public Image getImage(Object element) {
-				if (!(element instanceof ReflogEntry)) {
-					return null;
-				}
 				String comment = ((ReflogEntry) element).getComment();
 				if (comment.startsWith("commit:") || comment.startsWith("commit (initial):")) //$NON-NLS-1$ //$NON-NLS-2$
 					return (Image) resourceManager.get(UIIcons.COMMIT);

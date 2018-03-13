@@ -11,7 +11,6 @@ package org.eclipse.egit.ui.internal.components;
 import java.text.MessageFormat;
 
 import org.eclipse.egit.ui.UIUtils;
-import org.eclipse.egit.ui.internal.UIText;
 import org.eclipse.jface.bindings.keys.KeyStroke;
 import org.eclipse.jface.fieldassist.ContentProposal;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
@@ -44,17 +43,6 @@ public class BranchNameNormalizer {
 	private boolean visible;
 
 	/**
-	 * Creates a new {@link BranchNameNormalizer} using
-	 * {@link UIText#BranchNameNormalizer_Tooltip} as tooltip text.
-	 *
-	 * @param text
-	 *            {@link Text} to operate on
-	 */
-	public BranchNameNormalizer(Text text) {
-		this(text, UIText.BranchNameNormalizer_Tooltip);
-	}
-
-	/**
 	 * Creates a new {@link BranchNameNormalizer}.
 	 *
 	 * @param text
@@ -68,12 +56,8 @@ public class BranchNameNormalizer {
 		if (stroke == null) {
 			stroke = KeyStroke.getInstance(SWT.MOD1, ' ');
 		}
-		if (tooltipText == null || tooltipText.isEmpty()) {
-			decorator = UIUtils.addBulbDecorator(text, null);
-		} else {
-			decorator = UIUtils.addBulbDecorator(text,
-					MessageFormat.format(tooltipText, stroke.format()));
-		}
+		decorator = UIUtils.addBulbDecorator(text,
+				MessageFormat.format(tooltipText, stroke.format()));
 		decorator.hide();
 		ContentProposalAdapter proposer = new ContentProposalAdapter(text,
 				new TextContentAdapter(),

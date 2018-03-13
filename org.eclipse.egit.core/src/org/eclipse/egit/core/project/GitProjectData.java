@@ -338,7 +338,7 @@ public class GitProjectData {
 					try {
 						Repository r = Activator.getDefault()
 								.getRepositoryCache().lookupRepository(git);
-						if (m != null && r != null && !r.isBare()
+						if (m != null && r != null
 								&& gitCandidate.equals(r.getWorkTree())) {
 							if (data.map(m)) {
 								data.mappings.put(m.getContainerPath(), m);

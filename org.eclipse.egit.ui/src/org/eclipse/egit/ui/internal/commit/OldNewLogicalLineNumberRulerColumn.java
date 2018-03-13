@@ -105,8 +105,7 @@ public class OldNewLogicalLineNumberRulerColumn extends LineNumberRulerColumn {
 			// drawn.
 			Rectangle bounds = super.getControl().getBounds();
 			gc.setForeground(lineColor);
-			gc.drawLine(x * zoom / 100, 0, x * zoom / 100,
-					bounds.height * zoom / 100);
+			gc.drawLine(x, 0, x, bounds.height);
 			gc.setForeground(foreground);
 		}
 
