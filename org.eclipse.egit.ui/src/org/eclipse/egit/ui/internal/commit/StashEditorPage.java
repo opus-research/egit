@@ -91,9 +91,10 @@ public class StashEditorPage extends CommitEditorPage {
 
 	private void createIndexArea(Composite parent,
 			FormToolkit toolkit, int span) {
+		stagedDiffSection = createSection(parent, toolkit, span);
 		String sectionTitle = MessageFormat.format(
 				UIText.StashEditorPage_StagedChanges, Integer.valueOf(0));
-		stagedDiffSection = createSection(parent, toolkit, sectionTitle, span);
+		stagedDiffSection.setText(sectionTitle);
 		Composite unstagedChangesArea = createSectionClient(
 				stagedDiffSection, toolkit);
 
@@ -101,9 +102,12 @@ public class StashEditorPage extends CommitEditorPage {
 				getSite(), SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
 						| SWT.FULL_SELECTION | toolkit.getBorderStyle());
 		Control control = stagedDiffViewer.getControl();
-		control.setData(FormToolkit.KEY_DRAW_BORDER, FormToolkit.TREE_BORDER);
-		GridDataFactory.fillDefaults().grab(true, true).applyTo(control);
-		addToFocusTracking(control);
+		if (control != null) {
+			control.setData(FormToolkit.KEY_DRAW_BORDER,
+					FormToolkit.TREE_BORDER);
+			GridDataFactory.fillDefaults().grab(true, true).applyTo(control);
+			addToFocusTracking(control);
+		}
 		stagedDiffViewer.setContentProvider(ArrayContentProvider
 				.getInstance());
 		stagedDiffViewer.setTreeWalk(getCommit().getRepository(), null);
