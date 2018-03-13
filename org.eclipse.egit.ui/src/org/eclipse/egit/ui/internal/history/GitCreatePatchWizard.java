@@ -31,7 +31,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.egit.core.op.CreatePatchOperation;
 import org.eclipse.egit.core.op.CreatePatchOperation.DiffHeaderFormat;
 import org.eclipse.egit.core.project.RepositoryMapping;
@@ -168,9 +167,8 @@ public class GitCreatePatchWizard extends Wizard {
 				@Override
 				public void run(IProgressMonitor monitor)
 						throws InvocationTargetException {
-					SubMonitor progress = SubMonitor.convert(monitor, 2);
 					try {
-						operation.execute(progress.newChild(1));
+						operation.execute(monitor);
 
 						String content = operation.getPatchContent();
 						if (file != null) {
@@ -178,14 +176,11 @@ public class GitCreatePatchWizard extends Wizard {
 							IFile[] files = ResourcesPlugin.getWorkspace()
 									.getRoot()
 									.findFilesForLocationURI(file.toURI());
-							progress.setWorkRemaining(files.length);
-							for (IFile f : files) {
-								f.refreshLocal(IResource.DEPTH_ZERO,
-										progress.newChild(1));
-							}
-						} else {
+							for (int i = 0; i < files.length; i++)
+								files[i].refreshLocal(IResource.DEPTH_ZERO,
+										monitor);
+						} else
 							copyToClipboard(content);
-						}
 					} catch (IOException e) {
 						throw new InvocationTargetException(e);
 					} catch (CoreException e) {
@@ -313,6 +308,9 @@ public class GitCreatePatchWizard extends Wizard {
 			GridLayout gridLayout = new GridLayout(2, false);
 			composite.setLayout(gridLayout);
 			composite.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+			GridData gd = new GridData(GridData.HORIZONTAL_ALIGN_BEGINNING);
+			gd.horizontalSpan = 2;
 
 			formatLabel = new Label(composite, SWT.NONE);
 			formatLabel.setText(UIText.GitCreatePatchWizard_Format);

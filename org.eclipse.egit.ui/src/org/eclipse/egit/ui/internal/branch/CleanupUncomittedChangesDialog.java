@@ -97,8 +97,6 @@ public class CleanupUncomittedChangesDialog extends MessageDialog {
 			shouldContinue = stashCreateUI.createStash(getShell());
 			break;
 		case IDialogConstants.CANCEL_ID:
-		default:
-			break;
 		}
 		super.buttonPressed(buttonId);
 	}
