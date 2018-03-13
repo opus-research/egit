@@ -17,14 +17,6 @@ import org.eclipse.core.net.proxy.IProxyData;
 import org.eclipse.core.net.proxy.IProxyService;
 
 class EclipseAuthenticator extends Authenticator {
-	static class MPCWorkaround extends EclipseAuthenticator {
-
-		MPCWorkaround(IProxyService s) {
-			super(s);
-		}
-
-	}
-
 	private final IProxyService service;
 
 	EclipseAuthenticator(final IProxyService s) {
